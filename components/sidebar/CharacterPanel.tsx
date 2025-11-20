@@ -26,14 +26,6 @@ const textMap: Record<string, string> = {
   gray: 'text-gray-400'
 };
 
-const trackMap: Record<string, string> = {
-  red: 'bg-red-900',
-  blue: 'bg-blue-900',
-  green: 'bg-green-900',
-  yellow: 'bg-yellow-900',
-  purple: 'bg-purple-900',
-  gray: 'bg-gray-800'
-};
 
 const getStatusConfig = (status: string) => {
   const normalized = status.toLowerCase();
@@ -182,14 +174,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
 
           {/* Dynamic Attributes */}
           {attributes.map((attr, idx) => {
-             const rawColor = attr.color?.toLowerCase().trim();
-             // If no color provided, default to gray preset
-             const colorKey = rawColor || 'gray';
-             const isPreset = Object.prototype.hasOwnProperty.call(colorMap, colorKey);
-
-             const colorClass = isPreset ? colorMap[colorKey] : '';
-             const textClass = isPreset ? textMap[colorKey] : '';
-             const trackClass = (isPreset ? trackMap[colorKey] : trackMap.gray) || trackMap.gray;
+             const rawColor = attr.color?.toLowerCase().trim() || 'gray';
+             const gradientClass = colorMap[rawColor];
+             const textColorClass = textMap[rawColor] || 'text-theme-text';
 
              const percentage = attr.maxValue > 0 ? Math.max(0, Math.min(100, (attr.value / attr.maxValue) * 100)) : 0;
 
@@ -197,19 +184,19 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
                <div key={idx}>
                 <div className="flex justify-between text-xs mb-1">
                   <span
-                    className={`font-bold ${textClass}`}
-                    style={!isPreset ? { color: attr.color } : {}}
+                    className={`font-bold ${textColorClass}`}
+                    style={!gradientClass ? { color: attr.color } : {}}
                   >
                     {attr.label}
                   </span>
                   <span className="text-theme-muted">{attr.value}/{attr.maxValue}</span>
                 </div>
-                <div className={`w-full h-2 ${trackClass} rounded-full overflow-hidden border border-theme-border/50`}>
+                <div className="w-full h-2 bg-theme-surface-highlight rounded-full overflow-hidden border border-theme-border/50">
                   <div
-                    className={`h-full ${isPreset ? colorClass : ''} transition-all duration-700 ease-out`}
+                    className={`h-full ${gradientClass || ''} transition-all duration-700 ease-out bg-linear-to-r`}
                     style={{
                       width: `${percentage}%`,
-                      backgroundColor: isPreset ? undefined : attr.color
+                      backgroundColor: gradientClass ? undefined : attr.color
                     }}
                   ></div>
                 </div>

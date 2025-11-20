@@ -148,6 +148,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('gemini', 'apiKey', e.target.value)}
                    placeholder={getEnvApiKey() ? t.loadedFromEnv : t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
+                   onBlur={loadModels}
                  />
                  <input
                    type="text"
@@ -155,6 +156,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('gemini', 'baseUrl', e.target.value)}
                    placeholder="Base URL (Optional)"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
+                   onBlur={loadModels}
                  />
               </div>
               {/* OpenAI Inputs */}
@@ -177,6 +179,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openai', 'apiKey', e.target.value)}
                    placeholder={t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
+                   onBlur={loadModels}
                  />
                  <input
                    type="text"
@@ -184,6 +187,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openai', 'baseUrl', e.target.value)}
                    placeholder="https://openrouter.ai/api/v1"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
+                   onBlur={loadModels}
                  />
               </div>
             </div>
@@ -235,13 +239,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isEnabled ? 'translate-x-4' : ''}`}></span>
                          </button>
                       )}
-                   </div>
+                      </div>
 
                    <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${section.hasEnable && !isEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
                       <select
                         value={config.provider}
                         onChange={(e) => updateFunction(sectionKey, 'provider', e.target.value)}
-                        className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
+                        className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
                       >
                         <option value="gemini">Gemini</option>
                         <option value="openai">OpenAI</option>
@@ -251,7 +255,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                          <select
                             value={config.modelId}
                             onChange={(e) => updateFunction(sectionKey, 'modelId', e.target.value)}
-                            className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none"
+                            className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
                             disabled={loadingModels}
                          >
                             <option value={config.modelId}>{config.modelId} (Current)</option>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameState, LanguageCode } from '../types';
 import { LanguageSelector } from './LanguageSelector';
 import { THEMES, TRANSLATIONS } from '../utils/constants';
@@ -40,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const t = TRANSLATIONS[language];
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
   const { character } = gameState;
+  const [showSystemFooter, setShowSystemFooter] = useState(true);
 
   const itemContext = `Theme: ${gameState.theme}. Quest: ${gameState.currentQuest}. Location: ${gameState.currentLocation}.`;
 
@@ -100,7 +101,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Status Bar */}
       <div className="bg-black/40 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
          <span>Tokens: {gameState.totalTokens.toLocaleString()}</span>
-         <button onClick={onOpenLogs} className="hover:text-theme-primary underline">View Logs</button>
+         <div className="flex gap-4">
+            <button onClick={() => setShowSystemFooter(!showSystemFooter)} className="hover:text-theme-primary underline">
+              {showSystemFooter ? 'Hide System' : 'Show System'}
+            </button>
+            <button onClick={onOpenLogs} className="hover:text-theme-primary underline">View Logs</button>
+         </div>
       </div>
 
       <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-4 hidden md:block">
@@ -112,6 +118,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {t.tree.viewMap}
          </button>
 
+       {showSystemFooter && (
+        <div>
+
          <SystemFooter
            language={language}
            themeFont={currentThemeConfig.fontClass}
@@ -121,6 +130,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
            onSettings={onSettings}
            onCloseMobile={onCloseMobile}
          />
+         </div>
+       )}
       </div>
     </div>
   );
