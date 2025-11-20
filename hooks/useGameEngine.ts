@@ -3,12 +3,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { AISettings, StorySegment, LanguageCode } from '../types';
 import { useGameState } from './useGameState';
 import { useGamePersistence } from './useGamePersistence';
-import { 
-  generateAdventureTurn, 
-  generateSceneImage, 
-  updateAIConfig, 
-  generateStoryOutline, 
-  summarizeContext 
+import {
+  generateAdventureTurn,
+  generateSceneImage,
+  updateAIConfig,
+  generateStoryOutline,
+  summarizeContext
 } from '../services/geminiService';
 import { THEMES, LANG_MAP, DEFAULTS, TRANSLATIONS } from '../utils/constants';
 
@@ -27,7 +27,7 @@ export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
   const [view, setView] = useState<'start' | 'initializing' | 'game'>('start');
   const { saveSlots, currentSlotId, setCurrentSlotId, createSaveSlot, loadSlot, deleteSlot, isAutoSaving } = useGamePersistence(gameState, setGameState, view);
-  
+
   const [language, setLanguage] = useState<LanguageCode>('en');
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -52,10 +52,29 @@ export const useGameEngine = () => {
     if (savedSettingsStr) {
        try {
          const parsed = JSON.parse(savedSettingsStr);
-         if (!parsed.contextLen) parsed.contextLen = 16;
-         setAiSettings(parsed);
-         updateAIConfig(parsed);
-       } catch (e) {}
+
+         // Deep merge with DEFAULTS to ensure new keys (like 'translation', 'lore') exist
+         const mergedSettings: AISettings = {
+            ...DEFAULTS,
+            ...parsed,
+            gemini: { ...DEFAULTS.gemini, ...(parsed.gemini || {}) },
+            openai: { ...DEFAULTS.openai, ...(parsed.openai || {}) },
+            story: { ...DEFAULTS.story, ...(parsed.story || {}) },
+            image: { ...DEFAULTS.image, ...(parsed.image || {}) },
+            video: { ...DEFAULTS.video, ...(parsed.video || {}) },
+            audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
+            translation: { ...DEFAULTS.translation, ...(parsed.translation || {}) },
+            lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
+         };
+
+         if (!mergedSettings.contextLen) mergedSettings.contextLen = 16;
+
+         setAiSettings(mergedSettings);
+         updateAIConfig(mergedSettings);
+       } catch (e) {
+         console.error("Failed to load settings", e);
+         updateAIConfig(DEFAULTS);
+       }
     } else {
       updateAIConfig(DEFAULTS);
     }
@@ -108,7 +127,7 @@ export const useGameEngine = () => {
       // Summarization Logic
       let contextNodes = deriveHistory(gameState.nodes, parentId);
       if (!isInit) contextNodes.push({ id: userNodeId, parentId, text: action, choices: [], imagePrompt: "", role: "user", timestamp: Date.now() } as any);
-      
+
       const limit = aiSettings.contextLen || 16;
       let effectiveSummary = gameState.accumulatedSummary;
       let segmentsToSend = contextNodes;
@@ -119,17 +138,17 @@ export const useGameEngine = () => {
          if (overflowCount >= 4) {
              const toSummarize = contextNodes.slice(0, overflowCount);
              const textBlock = toSummarize.map(s => `${s.role}: ${s.text}`).join("\n");
-             
+
              // Call Summary Service
              const sumResult = await summarizeContext(textBlock, LANG_MAP[language]);
-             
-             effectiveSummary = effectiveSummary 
+
+             effectiveSummary = effectiveSummary
                  ? `${effectiveSummary}\n[Later]: ${sumResult.summary}`
                  : sumResult.summary;
-             
+
              segmentsToSend = contextNodes.slice(overflowCount);
              summarySnapshot = sumResult.summary;
-             
+
              // Log the summary action
              setGameState(prev => ({
                 ...prev,
@@ -141,15 +160,16 @@ export const useGameEngine = () => {
 
       // Generate Turn
       const { response, log, usage } = await generateAdventureTurn(
-          segmentsToSend, 
-          effectiveSummary, 
-          gameState.outline, 
-          action, 
-          LANG_MAP[language]
+          segmentsToSend,
+          effectiveSummary,
+          gameState.outline,
+          action,
+          LANG_MAP[language],
+          THEMES[gameState.theme]?.narrativeStyle // Pass the style
       );
 
       // Sanitize choices to ensure strict string array
-      const sanitizedChoices = Array.isArray(response.choices) 
+      const sanitizedChoices = Array.isArray(response.choices)
           ? response.choices.map(c => {
               if (typeof c === 'object' && c !== null) {
                   return (c as any).choice || (c as any).text || (c as any).label || JSON.stringify(c);
@@ -195,7 +215,7 @@ export const useGameEngine = () => {
             [modelNodeId]: modelNode
         },
         activeNodeId: modelNodeId,
-        rootNodeId: prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId), 
+        rootNodeId: prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
         inventory: newInventory,
         relationships: newRels,
         currentQuest: response.currentQuest || prev.currentQuest,
@@ -224,17 +244,18 @@ export const useGameEngine = () => {
       } else {
          setGameState(prev => ({ ...prev, isImageGenerating: false }));
       }
-      
+
       return toastMessage;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      const errorMsg = error.message || "Error connecting to the universe...";
       setGameState(prev => ({
         ...prev,
         isProcessing: false,
-        error: "Error connecting to the universe...",
+        error: errorMsg,
       }));
-      return null;
+      return `Error: ${errorMsg}`;
     }
   };
 
@@ -242,10 +263,10 @@ export const useGameEngine = () => {
     let selectedTheme = initialTheme || Object.keys(THEMES)[Math.floor(Math.random() * Object.keys(THEMES).length)];
     const slotId = createSaveSlot(selectedTheme);
     setCurrentSlotId(slotId);
-    
+
     // Strict Reset
     resetState(selectedTheme);
-    
+
     setView('initializing');
     try {
        const { outline, log } = await generateStoryOutline(selectedTheme, LANG_MAP[language], customContext);

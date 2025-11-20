@@ -5,72 +5,77 @@ export const THEMES: Record<string, ThemeConfig> = {
   fantasy: {
     name: "Fantasy",
     vars: {
-      '--theme-bg': '#020617', 
-      '--theme-surface': '#0f172a', 
-      '--theme-surface-highlight': '#1e293b', 
-      '--theme-border': '#334155', 
-      '--theme-primary': '#f59e0b', 
-      '--theme-primary-hover': '#d97706', 
-      '--theme-text': '#e2e8f0', 
-      '--theme-muted': '#94a3b8', 
+      '--theme-bg': '#020617',
+      '--theme-surface': '#0f172a',
+      '--theme-surface-highlight': '#1e293b',
+      '--theme-border': '#334155',
+      '--theme-primary': '#f59e0b',
+      '--theme-primary-hover': '#d97706',
+      '--theme-text': '#e2e8f0',
+      '--theme-muted': '#94a3b8',
     },
-    fontClass: 'font-fantasy'
+    fontClass: 'font-fantasy',
+    narrativeStyle: "Epic, high-fantasy tone. Use archaic but accessible language. Focus on magic, destiny, and grand landscapes. Describe combat with flair."
   },
   scifi: {
     name: "Sci-Fi",
     vars: {
-      '--theme-bg': '#000000', 
-      '--theme-surface': '#09090b', 
-      '--theme-surface-highlight': '#18181b', 
-      '--theme-border': '#27272a', 
-      '--theme-primary': '#06b6d4', 
-      '--theme-primary-hover': '#0891b2', 
-      '--theme-text': '#e4e4e7', 
-      '--theme-muted': '#a1a1aa', 
+      '--theme-bg': '#000000',
+      '--theme-surface': '#09090b',
+      '--theme-surface-highlight': '#18181b',
+      '--theme-border': '#27272a',
+      '--theme-primary': '#06b6d4',
+      '--theme-primary-hover': '#0891b2',
+      '--theme-text': '#e4e4e7',
+      '--theme-muted': '#a1a1aa',
     },
-    fontClass: 'font-scifi'
+    fontClass: 'font-scifi',
+    narrativeStyle: "Technical, sleek, and analytical. Use terminology related to space, physics, and advanced tech. Emphasize the cold vastness of space and the hum of machinery."
   },
   cyberpunk: {
     name: "Cyberpunk",
     vars: {
-      '--theme-bg': '#1a0b2e', 
-      '--theme-surface': '#2e1065', 
-      '--theme-surface-highlight': '#4c1d95', 
-      '--theme-border': '#701a75', 
-      '--theme-primary': '#d946ef', 
-      '--theme-primary-hover': '#c026d3', 
-      '--theme-text': '#fdf4ff', 
-      '--theme-muted': '#e879f9', 
+      '--theme-bg': '#1a0b2e',
+      '--theme-surface': '#2e1065',
+      '--theme-surface-highlight': '#4c1d95',
+      '--theme-border': '#701a75',
+      '--theme-primary': '#d946ef',
+      '--theme-primary-hover': '#c026d3',
+      '--theme-text': '#fdf4ff',
+      '--theme-muted': '#e879f9',
     },
-    fontClass: 'font-cyberpunk'
+    fontClass: 'font-cyberpunk',
+    narrativeStyle: "Gritty, noir, and neon-soaked. Use slang (choom, delta, preem). Focus on high-tech low-life, corporate oppression, and body modification. Fast-paced and cynical."
   },
   horror: {
     name: "Horror",
     vars: {
-      '--theme-bg': '#1c1917', 
-      '--theme-surface': '#292524', 
-      '--theme-surface-highlight': '#44403c', 
-      '--theme-border': '#7f1d1d', 
-      '--theme-primary': '#ef4444', 
-      '--theme-primary-hover': '#dc2626', 
-      '--theme-text': '#e7e5e4', 
-      '--theme-muted': '#a8a29e', 
+      '--theme-bg': '#1c1917',
+      '--theme-surface': '#292524',
+      '--theme-surface-highlight': '#44403c',
+      '--theme-border': '#7f1d1d',
+      '--theme-primary': '#ef4444',
+      '--theme-primary-hover': '#dc2626',
+      '--theme-text': '#e7e5e4',
+      '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-horror'
+    fontClass: 'font-horror',
+    narrativeStyle: "Tense, atmospheric, and unsettling. Focus on sensory details—sounds, smells, shadows. Build dread slowly. Use psychological horror elements."
   },
   mystery: {
     name: "Mystery",
     vars: {
-      '--theme-bg': '#0a0a0a', 
-      '--theme-surface': '#171717', 
-      '--theme-surface-highlight': '#262626', 
-      '--theme-border': '#404040', 
-      '--theme-primary': '#fbbf24', 
-      '--theme-primary-hover': '#f59e0b', 
-      '--theme-text': '#d4d4d4', 
-      '--theme-muted': '#737373', 
+      '--theme-bg': '#0a0a0a',
+      '--theme-surface': '#171717',
+      '--theme-surface-highlight': '#262626',
+      '--theme-border': '#404040',
+      '--theme-primary': '#fbbf24',
+      '--theme-primary-hover': '#f59e0b',
+      '--theme-text': '#d4d4d4',
+      '--theme-muted': '#737373',
     },
-    fontClass: 'font-serif'
+    fontClass: 'font-serif',
+    narrativeStyle: "Analytical, observant, and suspenseful. Focus on clues, dialogue nuances, and deduction. The tone should be noir or classical detective style."
   },
   modern_romance: {
     name: "Modern Romance",
@@ -84,7 +89,8 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fce7f3',
       '--theme-muted': '#db2777',
     },
-    fontClass: 'font-sans'
+    fontClass: 'font-sans',
+    narrativeStyle: "Emotional, intimate, and contemporary. Focus on interpersonal dynamics, feelings, and modern social settings. Light-hearted or dramatic depending on context."
   },
   palace_drama: {
     name: "Palace Drama",
@@ -98,7 +104,8 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fffbeb',
       '--theme-muted': '#92400e',
     },
-    fontClass: 'font-fantasy'
+    fontClass: 'font-fantasy',
+    narrativeStyle: "Formal, treacherous, and elegant. Use courtly language. Focus on hierarchy, hidden agendas, schemes, and etiquette. High stakes social maneuvering."
   },
   wuxia: {
     name: "Wuxia",
@@ -107,12 +114,13 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-surface': '#2a2a2a',
       '--theme-surface-highlight': '#3d3d3d',
       '--theme-border': '#525252',
-      '--theme-primary': '#ef4444', 
+      '--theme-primary': '#ef4444',
       '--theme-primary-hover': '#b91c1c',
       '--theme-text': '#f5f5f4',
       '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-serif'
+    fontClass: 'font-serif',
+    narrativeStyle: "Heroic, poetic, and martial. Describe actions with specific martial arts moves. Focus on 'Jianghu' (the martial world), honor, brotherhood, and revenge."
   },
   xianxia: {
     name: "Xianxia",
@@ -121,12 +129,13 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-surface': '#1e293b',
       '--theme-surface-highlight': '#334155',
       '--theme-border': '#64748b',
-      '--theme-primary': '#38bdf8', 
+      '--theme-primary': '#38bdf8',
       '--theme-primary-hover': '#0284c7',
       '--theme-text': '#f0f9ff',
       '--theme-muted': '#94a3b8',
     },
-    fontClass: 'font-fantasy'
+    fontClass: 'font-fantasy',
+    narrativeStyle: "Ethereal, grand, and transcendent. Focus on cultivation levels, spiritual energy (Qi), immortals, beasts, and defying the heavens. Scale is massive."
   },
   ceo: {
     name: "Urban CEO",
@@ -135,14 +144,14 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-surface': '#1f2937',
       '--theme-surface-highlight': '#374151',
       '--theme-border': '#4b5563',
-      '--theme-primary': '#6366f1', 
+      '--theme-primary': '#6366f1',
       '--theme-primary-hover': '#4f46e5',
       '--theme-text': '#f9fafb',
       '--theme-muted': '#9ca3af',
     },
-    fontClass: 'font-sans'
+    fontClass: 'font-sans',
+    narrativeStyle: "Sharp, luxurious, and dramatic. Focus on wealth, power, business deals, and dominant personalities. Modern high-society setting."
   },
-  // --- NEW THEMES ---
   long_aotian: {
     name: "Long Aotian (OP)",
     vars: {
@@ -155,7 +164,8 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#ffffff',
       '--theme-muted': '#bfbfbf',
     },
-    fontClass: 'font-serif' // Assertive, bold
+    fontClass: 'font-serif',
+    narrativeStyle: "Arrogant, domineering, and unstoppable. The protagonist is the center of the world. Everyone is shocked by their power. Face-slapping tropes are encouraged."
   },
   villain_op: {
     name: "Villain OP",
@@ -169,7 +179,8 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f3e8ff',
       '--theme-muted': '#a855f7',
     },
-    fontClass: 'font-fantasy'
+    fontClass: 'font-fantasy',
+    narrativeStyle: "Dark, manipulative, and ruthless. The protagonist is an overlord or mastermind. Focus on crushing 'heroes' and seizing power. No mercy."
   },
   period_drama: {
     name: "Period Drama",
@@ -183,6 +194,7 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f5f0e6',
       '--theme-muted': '#a89f91',
     },
-    fontClass: 'font-serif'
+    fontClass: 'font-serif',
+    narrativeStyle: "Historical, grounded, and atmospheric. Focus on the specific era's customs, struggles, and daily life. Realistic tone."
   }
 };

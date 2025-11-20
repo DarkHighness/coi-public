@@ -50,5 +50,15 @@ export const DEFAULTS: AISettings = {
     provider: 'gemini',
     modelId: 'gemini-2.5-flash-preview-tts',
     enabled: true
+  },
+  translation: {
+    provider: 'gemini',
+    modelId: 'gemini-2.5-flash',
+    enabled: true
+  },
+  lore: {
+    provider: 'gemini',
+    modelId: 'gemini-2.5-flash',
+    enabled: true
   }
 };

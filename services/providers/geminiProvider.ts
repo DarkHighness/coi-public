@@ -4,23 +4,32 @@ import { ModelInfo } from "../../types";
 
 export interface GeminiConfig {
   apiKey?: string;
-  baseUrl?: string; 
+  baseUrl?: string;
 }
 
 export const getGeminiClient = (config: GeminiConfig) => new GoogleGenAI({
   apiKey: config.apiKey
 });
 
+export const validateGeminiConnection = async (config: GeminiConfig): Promise<void> => {
+  try {
+    const ai = getGeminiClient(config);
+    await ai.models.list();
+  } catch (e: any) {
+    throw new Error(e.message || "Failed to connect to Gemini API");
+  }
+};
+
 export const fetchGeminiModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
   try {
     const ai = getGeminiClient(config);
     const response = await ai.models.list();
-    
+
     const models = [];
     for await (const model of response) {
       models.push(model);
     }
-    
+
     return models
       .filter(m => m.name.includes('gemini') || m.name.includes('imagen') || m.name.includes('veo'))
       .map(m => ({
@@ -59,7 +68,7 @@ export const generateGeminiJson = async (
 
   const text = response.text;
   if (!text) throw new Error("No response from Gemini AI");
-  
+
   // Extract Usage
   const usage = {
     promptTokens: response.usageMetadata?.promptTokenCount || 0,
@@ -131,7 +140,7 @@ export const generateGeminiVideo = async (
   const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
   if (!videoUri) throw new Error("No video URI returned");
 
-  const response = await fetch(`${videoUri}&key=${config.apiKey || process.env.API_KEY}`);
+  const response = await fetch(`${videoUri}&key=${config.apiKey}`);
   const blob = await response.blob();
   return { url: URL.createObjectURL(blob), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, raw: operation };
 };
@@ -158,12 +167,12 @@ export const generateGeminiSpeech = async (
 
   const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
   if (!base64Audio) throw new Error("No audio content generated");
-  
+
   const usage = {
     promptTokens: response.usageMetadata?.promptTokenCount || 0,
     completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
     totalTokens: response.usageMetadata?.totalTokenCount || 0
   };
-  
+
   return { audio: base64Audio, usage, raw: response };
 };

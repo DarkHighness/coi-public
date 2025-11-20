@@ -16,6 +16,15 @@ const getClient = (config: OpenAIConfig) => {
   });
 };
 
+export const validateOpenAIConnection = async (config: OpenAIConfig): Promise<void> => {
+  try {
+    const client = getClient(config);
+    await client.models.list();
+  } catch (e: any) {
+    throw new Error(e.message || "Failed to connect to OpenAI API");
+  }
+};
+
 export const fetchOpenAIModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
   try {
     const client = getClient(config);
@@ -38,10 +47,10 @@ export const fetchOpenAICompletion = async (
   config: OpenAIConfig,
   systemPrompt: string,
   messages: { role: string; content: string }[],
-  jsonMode: boolean = true
+  schema?: any // Strict JSON Schema
 ): Promise<any> => {
   const client = getClient(config);
-  
+
   // Format messages for OpenAI SDK
   const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'system', content: systemPrompt },
@@ -51,15 +60,15 @@ export const fetchOpenAICompletion = async (
   const response = await client.chat.completions.create({
     model: config.modelId,
     messages: chatMessages,
-    response_format: jsonMode ? { type: 'json_object' } : undefined,
+    response_format: schema ? { type: 'json_schema', json_schema: schema } : { type: 'json_object' },
     temperature: 0.8,
   });
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("No content returned from OpenAI");
 
-  const result = jsonMode ? JSON.parse(content) : content;
-  
+  const result = JSON.parse(content);
+
   // Normalize Usage
   const usage = {
     promptTokens: response.usage?.prompt_tokens || 0,
@@ -85,7 +94,7 @@ export const generateOpenAIImage = async (
 
   const b64 = response.data[0]?.b64_json;
   const url = b64 ? `data:image/png;base64,${b64}` : null;
-  
+
   // OpenAI Image generation doesn't return standard token usage, but we can log the request
   return { url, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, raw: response };
 };
@@ -108,6 +117,6 @@ export const generateOpenAISpeech = async (
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  
+
   return { audio: btoa(binary), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
 };

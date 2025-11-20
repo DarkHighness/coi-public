@@ -9,7 +9,9 @@ import { Toast } from './components/Toast';
 import { THEMES, TRANSLATIONS } from './utils/constants';
 import { FeedLayout } from './types';
 import { MobileNav, MobileTab } from './components/MobileNav';
-import { EnvironmentalEffects } from './components/EnvironmentalEffects';
+import { getEnvApiKey } from './utils/env';
+import { validateConnection } from './services/geminiService';
+// import { EnvironmentalEffects } from './components/EnvironmentalEffects';
 import { LogPanel } from './components/sidebar/LogPanel';
 
 // Lazy Load Heavy Components for Code Splitting
@@ -18,6 +20,7 @@ const SettingsModal = React.lazy(() => import('./components/SettingsModal').then
 const SaveManager = React.lazy(() => import('./components/SaveManager').then(module => ({ default: module.SaveManager })));
 const DestinyMap = React.lazy(() => import('./components/DestinyMap').then(module => ({ default: module.DestinyMap })));
 const StoryTimeline = React.lazy(() => import('./components/StoryTimeline').then(module => ({ default: module.StoryTimeline })));
+const EnvironmentalEffects = React.lazy(() => import('./components/EnvironmentalEffects').then(module => ({ default: module.EnvironmentalEffects })));
 
 export default function App() {
   const {
@@ -42,8 +45,8 @@ export default function App() {
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isDestinyMapOpen, setIsDestinyMapOpen] = useState(false);
   const [isLogPanelOpen, setIsLogPanelOpen] = useState(false);
-  const [notification, setNotification] = useState<{show: boolean, msg: string}>({show: false, msg: ''});
-  
+  const [notification, setNotification] = useState<{show: boolean, msg: string, type: 'info' | 'error'}>({show: false, msg: '', type: 'info'});
+
   // Mobile Nav State
   const [mobileTab, setMobileTab] = useState<MobileTab>('story');
 
@@ -66,9 +69,9 @@ export default function App() {
     localStorage.setItem('chronicles_feedlayout', feedLayout);
   }, [feedLayout]);
 
-  const showToast = (msg: string) => {
-      setNotification({show: true, msg});
-      setTimeout(() => setNotification({show: false, msg: ''}), 3000);
+  const showToast = (msg: string, type: 'info' | 'error' = 'info') => {
+      setNotification({show: true, msg, type});
+      setTimeout(() => setNotification({show: false, msg: '', type: 'info'}), 3000);
   };
 
   const handleFork = (nodeId: string) => {
@@ -81,27 +84,54 @@ export default function App() {
   const handlePlayerAction = async (action: string) => {
       const toastMsg = await handleAction(action);
       if (toastMsg) {
-          showToast(toastMsg);
+          if (toastMsg.startsWith('Error:')) {
+             showToast(toastMsg.replace('Error: ', ''), 'error');
+          } else {
+             showToast(toastMsg);
+          }
       }
   };
 
   const validateConfig = () => {
       const storyProvider = aiSettings.story.provider;
       if (storyProvider === 'gemini') {
-          if (aiSettings.gemini.apiKey || process.env.API_KEY) return true;
+          if (aiSettings.gemini.apiKey || getEnvApiKey()) return true;
       } else if (storyProvider === 'openai') {
           if (aiSettings.openai.apiKey) return true;
       }
       return false;
   };
 
-  const handleStartGame = (theme: string, customContext?: string) => {
+  const performValidation = async (): Promise<boolean> => {
       if (!validateConfig()) {
-          showToast(t.missingApiKey);
+          showToast(t.missingApiKey, 'error');
           setIsSettingsOpen(true);
-          return;
+          return false;
       }
-      startNewGame(theme, customContext);
+
+      const provider = aiSettings.story.provider as 'gemini' | 'openai';
+      showToast("Validating connection...", 'info');
+
+      const { isValid, error } = await validateConnection(provider);
+
+      if (!isValid) {
+          showToast(error || "Invalid API Key or Connection Failed", 'error');
+          setIsSettingsOpen(true);
+          return false;
+      }
+      return true;
+  };
+
+  const handleStartGame = async (theme: string, customContext?: string) => {
+      if (await performValidation()) {
+          startNewGame(theme, customContext);
+      }
+  };
+
+  const handleContinueGame = async () => {
+      if (await performValidation()) {
+          setView('game');
+      }
   };
 
   const LoadingFallback = () => (
@@ -113,11 +143,11 @@ export default function App() {
   if (view === 'start') {
     return (
       <>
-        <StartScreen 
+        <StartScreen
           language={language}
           setLanguage={setLanguage}
           onStart={handleStartGame}
-          onContinue={() => setView('game')}
+          onContinue={handleContinueGame}
           onLoad={() => setIsSaveManagerOpen(true)}
           onSettings={() => setIsSettingsOpen(true)}
           hasSave={saveSlots.length > 0}
@@ -130,9 +160,10 @@ export default function App() {
             currentSettings={aiSettings}
             onSave={handleSaveSettings}
             themeFont={currentThemeConfig.fontClass}
+            showToast={showToast}
           />
           {isSaveManagerOpen && (
-             <SaveManager 
+             <SaveManager
                 slots={saveSlots}
                 currentSlotId={null}
                 onSwitch={switchSlot}
@@ -142,7 +173,7 @@ export default function App() {
              />
           )}
         </Suspense>
-        <Toast show={notification.show} message={notification.msg} />
+        <Toast show={notification.show} message={notification.msg} type={notification.type} />
       </>
     );
   }
@@ -152,7 +183,7 @@ export default function App() {
      return (
        <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
           <div className="absolute inset-0 bg-black/60 z-0"></div>
-          
+
           <div className="relative z-10 flex flex-col items-center gap-6 animate-pulse">
              <div className="w-16 h-16 border-4 border-theme-primary border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(var(--theme-primary),0.4)]"></div>
              <h2 className={`text-2xl md:text-4xl ${currentThemeConfig.fontClass} tracking-widest uppercase text-center px-4`}>
@@ -183,18 +214,20 @@ export default function App() {
 
       {/* Environmental Overlay - Placed underneath interactive elements but above background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          <EnvironmentalEffects 
-              currentText={effectText} 
-              imagePrompt={effectPrompt} 
-              theme={gameState.theme} 
-          />
+          <Suspense fallback={<div className="w-full h-full bg-theme-bg transition-colors duration-1000"></div>}>
+              <EnvironmentalEffects
+                  currentText={effectText}
+                  imagePrompt={effectPrompt}
+                  theme={gameState.theme}
+              />
+          </Suspense>
       </div>
 
       <div className="flex flex-1 h-full overflow-hidden relative z-10">
-        
+
         {/* Desktop Sidebar (Hidden on Mobile) */}
         <div className="hidden md:flex w-80 border-r border-theme-border bg-theme-surface/90 backdrop-blur shrink-0 relative z-20">
-           <Sidebar 
+           <Sidebar
              gameState={gameState}
              language={language}
              setLanguage={setLanguage}
@@ -211,12 +244,12 @@ export default function App() {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col relative h-full min-w-0">
-           
+
            {/* Mobile View Switching Logic */}
            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
               {/* 1. Story Feed View (Visible if tab=story or on Desktop) */}
               <div className={`flex-1 flex flex-col h-full w-full absolute inset-0 transition-opacity duration-300 ${mobileTab === 'story' ? 'z-10 opacity-100 pointer-events-auto' : 'md:opacity-100 md:pointer-events-auto opacity-0 pointer-events-none'}`}>
-                 <StoryFeed 
+                 <StoryFeed
                    gameState={gameState}
                    currentHistory={currentHistory}
                    language={language}
@@ -230,10 +263,10 @@ export default function App() {
                    disableImages={aiSettings.image.enabled === false}
                    onFork={handleFork}
                  />
-                 
+
                  {/* Action Panel fixed at bottom of feed */}
                  <div className="flex-none z-30 pb-16 md:pb-0"> {/* Padding for Mobile Nav */}
-                    <ActionPanel 
+                    <ActionPanel
                       gameState={gameState}
                       currentHistory={currentHistory}
                       language={language}
@@ -245,7 +278,7 @@ export default function App() {
 
               {/* 2. Status/Sidebar View (Mobile Only) */}
               <div className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 md:hidden ${mobileTab === 'status' ? 'translate-x-0' : 'translate-x-full'}`}>
-                  <Sidebar 
+                  <Sidebar
                      gameState={gameState}
                      language={language}
                      setLanguage={setLanguage}
@@ -300,20 +333,20 @@ export default function App() {
         {/* Desktop Timeline (Hidden on Mobile/Tablet) */}
         <div className="hidden xl:flex shrink-0 z-10">
            <Suspense fallback={<div className="w-72 bg-theme-surface/30 animate-pulse"></div>}>
-             <StoryTimeline 
-                segments={currentHistory} 
+             <StoryTimeline
+                segments={currentHistory}
                 theme={gameState.theme}
                 language={language}
              />
            </Suspense>
         </div>
       </div>
-      
+
       {/* Mobile Bottom Navigation */}
-      <MobileNav 
-        currentTab={mobileTab} 
-        setTab={setMobileTab} 
-        language={language} 
+      <MobileNav
+        currentTab={mobileTab}
+        setTab={setMobileTab}
+        language={language}
       />
 
       {/* Modals (Lazy Loaded) */}
@@ -333,10 +366,11 @@ export default function App() {
           currentSettings={aiSettings}
           onSave={handleSaveSettings}
           themeFont={currentThemeConfig.fontClass}
+          showToast={showToast}
         />
 
         {isSaveManagerOpen && (
-           <SaveManager 
+           <SaveManager
               slots={saveSlots}
               currentSlotId={currentSlotId}
               onSwitch={switchSlot}
@@ -347,7 +381,7 @@ export default function App() {
         )}
 
         {isDestinyMapOpen && (
-           <DestinyMap 
+           <DestinyMap
               gameState={gameState}
               language={language}
               onNavigate={(nodeId) => {
@@ -357,16 +391,16 @@ export default function App() {
               onClose={() => setIsDestinyMapOpen(false)}
            />
         )}
-        
+
         {isLogPanelOpen && (
-          <LogPanel 
-            logs={gameState.logs} 
-            onClose={() => setIsLogPanelOpen(false)} 
+          <LogPanel
+            logs={gameState.logs}
+            onClose={() => setIsLogPanelOpen(false)}
           />
         )}
       </Suspense>
 
-      <Toast show={isAutoSaving || notification.show} message={notification.show ? notification.msg : t.autoSaving} />
+      <Toast show={isAutoSaving || notification.show} message={notification.show ? notification.msg : t.autoSaving} type={notification.type} />
     </div>
   );
 }

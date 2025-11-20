@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageCode, AISettings, ModelInfo } from '../types';
 import { TRANSLATIONS } from '../utils/constants';
-import { getModels } from '../services/geminiService';
+import { getModels, validateConnection } from '../services/geminiService';
+import { getEnvApiKey } from '../utils/env';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,10 +12,11 @@ interface SettingsModalProps {
   currentSettings: AISettings;
   onSave: (settings: AISettings) => void; // Now acts as onUpdate
   themeFont: string;
+  showToast: (msg: string, type?: 'info' | 'error') => void;
 }
 
 type Tab = 'credentials' | 'models';
-type FunctionKey = 'story' | 'image' | 'video' | 'audio';
+type FunctionKey = 'story' | 'image' | 'video' | 'audio' | 'translation' | 'lore';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -22,7 +24,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   language,
   currentSettings,
   onSave,
-  themeFont
+  themeFont,
+  showToast
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('credentials');
   const [geminiModels, setGeminiModels] = useState<ModelInfo[]>([]);
@@ -79,7 +82,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded w-full max-w-2xl shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] relative overflow-hidden flex flex-col max-h-[90vh]">
-        
+
         <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center">
           <h2 className={`text-2xl text-theme-primary ${themeFont}`}>{t.settings}</h2>
           <button onClick={onClose} className="text-theme-muted hover:text-theme-text">
@@ -93,8 +96,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                key={tab}
                onClick={() => setActiveTab(tab)}
                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
-                 activeTab === tab 
-                   ? 'bg-theme-surface text-theme-primary border-b-2 border-theme-primary' 
+                 activeTab === tab
+                   ? 'bg-theme-surface text-theme-primary border-b-2 border-theme-primary'
                    : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight'
                }`}
              >
@@ -104,20 +107,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
-          
+
           {activeTab === 'credentials' && (
             <div className="space-y-8 animate-slide-in">
               {/* Gemini Inputs */}
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
-                 <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">{t.creds.geminiTitle}</h3>
-                 <input 
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t.creds.geminiTitle}</h3>
+                    <button
+                      onClick={async () => {
+                        const { isValid, error } = await validateConnection('gemini');
+                        showToast(isValid ? "Connection Successful" : (error || "Connection Failed"), isValid ? 'info' : 'error');
+                      }}
+                      className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+                    >
+                      Test Connection
+                    </button>
+                 </div>
+                 <input
                    type="password"
                    value={currentSettings.gemini.apiKey || ''}
                    onChange={(e) => updateCreds('gemini', 'apiKey', e.target.value)}
-                   placeholder={process.env.API_KEY ? "Loaded from ENV" : t.creds.apiKeyPlaceholder}
+                   placeholder={getEnvApiKey() ? "Loaded from ENV" : t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                  />
-                 <input 
+                 <input
                    type="text"
                    value={currentSettings.gemini.baseUrl || ''}
                    onChange={(e) => updateCreds('gemini', 'baseUrl', e.target.value)}
@@ -127,15 +141,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               {/* OpenAI Inputs */}
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
-                 <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">{t.creds.openaiTitle}</h3>
-                 <input 
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t.creds.openaiTitle}</h3>
+                    <button
+                      onClick={async () => {
+                        const { isValid, error } = await validateConnection('openai');
+                        showToast(isValid ? "Connection Successful" : (error || "Connection Failed"), isValid ? 'info' : 'error');
+                      }}
+                      className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+                    >
+                      Test Connection
+                    </button>
+                 </div>
+                 <input
                    type="password"
                    value={currentSettings.openai.apiKey || ''}
                    onChange={(e) => updateCreds('openai', 'apiKey', e.target.value)}
                    placeholder={t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                  />
-                 <input 
+                 <input
                    type="text"
                    value={currentSettings.openai.baseUrl || ''}
                    onChange={(e) => updateCreds('openai', 'baseUrl', e.target.value)}
@@ -148,17 +173,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {activeTab === 'models' && (
             <div className="space-y-6 animate-slide-in">
-              
+
               {/* Context Length Slider */}
               <div className="space-y-2 pb-4 border-b border-theme-border">
                   <div className="flex justify-between">
                     <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">{t.models.contextLen}</label>
                     <span className="text-theme-text font-mono">{currentSettings.contextLen || 16} turns</span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="4" 
-                    max="50" 
+                  <input
+                    type="range"
+                    min="4"
+                    max="50"
                     step="2"
                     value={currentSettings.contextLen || 16}
                     onChange={(e) => updateSettings({...currentSettings, contextLen: parseInt(e.target.value)})}
@@ -172,6 +197,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 { key: 'image', label: t.models.image, help: t.models.imageHelp, hasEnable: true },
                 { key: 'video', label: t.models.video, help: t.models.videoHelp, hasEnable: true },
                 { key: 'audio', label: t.models.audio, help: t.models.audioHelp, hasEnable: true },
+                { key: 'translation', label: t.models.translation, help: t.models.translationHelp, hasEnable: true },
+                { key: 'lore', label: t.models.lore, help: t.models.loreHelp, hasEnable: true },
               ] as const).map((section) => {
                 const sectionKey = section.key as FunctionKey;
                 const config = currentSettings[sectionKey];
@@ -183,7 +210,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    <div className="flex items-center justify-between">
                       <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">{section.label}</label>
                       {section.hasEnable && (
-                         <button 
+                         <button
                             onClick={() => updateFunction(sectionKey, 'enabled', !isEnabled)}
                             className={`w-8 h-4 rounded-full relative transition-colors ${isEnabled ? 'bg-green-500' : 'bg-theme-border'}`}
                          >
@@ -191,9 +218,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                          </button>
                       )}
                    </div>
-                   
+
                    <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${section.hasEnable && !isEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                      <select 
+                      <select
                         value={config.provider}
                         onChange={(e) => updateFunction(sectionKey, 'provider', e.target.value)}
                         className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"

@@ -9,7 +9,7 @@ export interface GameState {
   relationships: Relationship[];
   currentQuest: string;
   character: CharacterStatus;
-  
+
   // Location System
   currentLocation: string;
   knownLocations: string[];
@@ -17,12 +17,12 @@ export interface GameState {
   // Meta
   outline: StoryOutline | null;
   accumulatedSummary: string; // The summary of the story *prior* to the current context window
-  
+
   isProcessing: boolean;
   isImageGenerating: boolean;
   error: string | null;
   theme: string;
-  
+
   // Stats & Logs
   totalTokens: number;
   logs: LogEntry[];
@@ -79,7 +79,7 @@ export interface CharacterStatus {
   name: string;
   title: string;
   attributes: CharacterAttribute[];
-  skills: Skill[]; 
+  skills: Skill[];
   status: string;
 }
 
@@ -107,7 +107,7 @@ export interface StorySegment {
 export interface GameResponse {
   narrative: string;
   choices: string[];
-  inventory: string[]; 
+  inventory: string[];
   relationships: Relationship[];
   currentQuest: string;
   character: CharacterStatus;
@@ -124,9 +124,10 @@ export interface ItemExplanation {
 }
 
 export interface ThemeConfig {
+  name: string;
   vars: Record<string, string>;
   fontClass: string;
-  name: string;
+  narrativeStyle?: string;
 }
 
 export type LanguageCode = 'en' | 'zh';
@@ -153,6 +154,8 @@ export interface AISettings {
   image: FunctionConfig;
   video: FunctionConfig;
   audio: FunctionConfig;
+  translation: FunctionConfig;
+  lore: FunctionConfig;
 }
 
 export interface ModelInfo {
