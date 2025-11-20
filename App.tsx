@@ -7,9 +7,6 @@ import { FeedLayout } from './types';
 import { MobileNav, MobileTab } from './components/MobileNav';
 import { getEnvApiKey } from './utils/env';
 import { validateConnection } from './services/geminiService';
-import { LogPanel } from './components/sidebar/LogPanel';
-import { MobileGameLayout } from './components/layout/MobileGameLayout';
-import { DesktopGameLayout } from './components/layout/DesktopGameLayout';
 import { useAmbience } from './hooks/useAmbience';
 
 // Lazy Load Heavy Components for Code Splitting
@@ -18,6 +15,9 @@ const SettingsModal = React.lazy(() => import('./components/SettingsModal').then
 const SaveManager = React.lazy(() => import('./components/SaveManager').then(module => ({ default: module.SaveManager })));
 const DestinyMap = React.lazy(() => import('./components/DestinyMap').then(module => ({ default: module.DestinyMap })));
 const EnvironmentalEffects = React.lazy(() => import('./components/EnvironmentalEffects').then(module => ({ default: module.EnvironmentalEffects })));
+const LogPanel = React.lazy(() => import('./components/sidebar/LogPanel').then(module => ({ default: module.LogPanel })));
+const MobileGameLayout = React.lazy(() => import('./components/layout/MobileGameLayout').then(module => ({ default: module.MobileGameLayout })));
+const DesktopGameLayout = React.lazy(() => import('./components/layout/DesktopGameLayout').then(module => ({ default: module.DesktopGameLayout })));
 
 export default function App() {
   const {
@@ -67,9 +67,27 @@ export default function App() {
     }
   }, [currentHistory]);
 
-  // Audio Ambience
+  // Centralized Menu/View State Handler to ensure Audio stops
+  const handleInterfaceState = (
+      action: () => void,
+      shouldStopAudio: boolean = true
+  ) => {
+      if (shouldStopAudio) {
+          // Explicitly disable typing state to stop audio immediately
+          // This acts as a "pause" for the scene flow
+          setIsTyping(false);
+      }
+      action();
+  };
+
+  // Audio Ambience Logic
+  // We rely on isTyping being false when menus are open (via handleInterfaceState)
+  // But we also keep the reactive checks for safety
+  const isAnyMenuOpen = isSettingsOpen || isSaveManagerOpen || isDestinyMapOpen || isLogPanelOpen || isMagicMirrorOpen;
+  const shouldPlayAmbience = view === 'game' && isTyping && !isAnyMenuOpen && mobileTab === 'story';
+
   useAmbience(
-    (view === 'game' && isTyping && !isSettingsOpen && !isSaveManagerOpen && !isDestinyMapOpen && !isLogPanelOpen) ? currentSegment?.environment : undefined,
+    shouldPlayAmbience ? currentSegment?.environment : undefined,
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
     aiSettings.audioVolume?.bgmMuted ?? false
   );
@@ -267,59 +285,61 @@ export default function App() {
       </div>
 
       <div className="flex flex-1 h-full overflow-hidden relative z-10">
-        <MobileGameLayout
-          gameState={gameState}
-          currentHistory={currentHistory}
-          language={language}
-          setLanguage={setLanguage}
-          isTranslating={isTranslating}
-          mobileTab={mobileTab}
-          setMobileTab={setMobileTab}
-          feedLayout={feedLayout}
-          setFeedLayout={setFeedLayout}
-          onAnimate={(url) => {
-             setMagicMirrorImage(url);
-             setIsMagicMirrorOpen(true);
-          }}
-          onGenerateImage={generateImageForNode}
-          onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
-          onFork={handleFork}
-          onAction={handlePlayerAction}
-          onNewGame={() => setView('start')}
-          onMagicMirror={() => setIsMagicMirrorOpen(true)}
-          onSettings={() => setIsSettingsOpen(true)}
-          onOpenSaves={() => setIsSaveManagerOpen(true)}
-          onOpenMap={() => setIsDestinyMapOpen(true)}
-          onOpenLogs={() => setIsLogPanelOpen(true)}
-          aiSettings={aiSettings}
-          onTypingComplete={() => setIsTyping(false)}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <MobileGameLayout
+            gameState={gameState}
+            currentHistory={currentHistory}
+            language={language}
+            setLanguage={setLanguage}
+            isTranslating={isTranslating}
+            mobileTab={mobileTab}
+            setMobileTab={setMobileTab}
+            feedLayout={feedLayout}
+            setFeedLayout={setFeedLayout}
+            onAnimate={(url) => {
+              setMagicMirrorImage(url);
+              handleInterfaceState(() => setIsMagicMirrorOpen(true));
+            }}
+            onGenerateImage={generateImageForNode}
+            onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
+            onFork={handleFork}
+            onAction={handlePlayerAction}
+            onNewGame={() => handleInterfaceState(() => setView('start'))}
+            onMagicMirror={() => handleInterfaceState(() => setIsMagicMirrorOpen(true))}
+            onSettings={() => handleInterfaceState(() => setIsSettingsOpen(true))}
+            onOpenSaves={() => handleInterfaceState(() => setIsSaveManagerOpen(true))}
+            onOpenMap={() => handleInterfaceState(() => setIsDestinyMapOpen(true))}
+            onOpenLogs={() => handleInterfaceState(() => setIsLogPanelOpen(true))}
+            aiSettings={aiSettings}
+            onTypingComplete={() => setIsTyping(false)}
+          />
 
-        <DesktopGameLayout
-          gameState={gameState}
-          currentHistory={currentHistory}
-          language={language}
-          setLanguage={setLanguage}
-          isTranslating={isTranslating}
-          feedLayout={feedLayout}
-          setFeedLayout={setFeedLayout}
-          onAnimate={(url) => {
-             setMagicMirrorImage(url);
-             setIsMagicMirrorOpen(true);
-          }}
-          onGenerateImage={generateImageForNode}
-          onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
-          onFork={handleFork}
-          onAction={handlePlayerAction}
-          onNewGame={() => setView('start')}
-          onMagicMirror={() => setIsMagicMirrorOpen(true)}
-          onSettings={() => setIsSettingsOpen(true)}
-          onOpenSaves={() => setIsSaveManagerOpen(true)}
-          onOpenMap={() => setIsDestinyMapOpen(true)}
-          onOpenLogs={() => setIsLogPanelOpen(true)}
-          aiSettings={aiSettings}
-          onTypingComplete={() => setIsTyping(false)}
-        />
+          <DesktopGameLayout
+            gameState={gameState}
+            currentHistory={currentHistory}
+            language={language}
+            setLanguage={setLanguage}
+            isTranslating={isTranslating}
+            feedLayout={feedLayout}
+            setFeedLayout={setFeedLayout}
+            onAnimate={(url) => {
+              setMagicMirrorImage(url);
+              handleInterfaceState(() => setIsMagicMirrorOpen(true));
+            }}
+            onGenerateImage={generateImageForNode}
+            onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
+            onFork={handleFork}
+            onAction={handlePlayerAction}
+            onNewGame={() => handleInterfaceState(() => setView('start'))}
+            onMagicMirror={() => handleInterfaceState(() => setIsMagicMirrorOpen(true))}
+            onSettings={() => handleInterfaceState(() => setIsSettingsOpen(true))}
+            onOpenSaves={() => handleInterfaceState(() => setIsSaveManagerOpen(true))}
+            onOpenMap={() => handleInterfaceState(() => setIsDestinyMapOpen(true))}
+            onOpenLogs={() => handleInterfaceState(() => setIsLogPanelOpen(true))}
+            aiSettings={aiSettings}
+            onTypingComplete={() => setIsTyping(false)}
+          />
+        </Suspense>
       </div>
 
       {/* Mobile Bottom Navigation */}

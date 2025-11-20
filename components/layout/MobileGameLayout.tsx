@@ -108,9 +108,9 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
       </div>
 
-      {/* 3. Menu Grid View */}
-       <div className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 ${mobileTab === 'menu' ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="p-6">
+       {/* 3. Menu Grid View */}
+       <div className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === 'menu' ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6 pb-24">
              <h2 className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} mb-8`}>{t.menu}</h2>
              <div className="grid grid-cols-2 gap-4">
                 <button onClick={onOpenMap} className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors">
@@ -139,7 +139,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                 </button>
              </div>
           </div>
-           <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
        </div>
 
        {/* Mobile Bottom Navigation */}

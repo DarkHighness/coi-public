@@ -12,8 +12,29 @@ export const useAmbience = (environment?: string, volume: number = 0.5, muted: b
   }, [volume, muted]);
 
   useEffect(() => {
-    // If no environment is provided, or it's the same as current, do nothing
-    if (!environment || environment === currentEnv) return;
+    // If environment is undefined, fade out current track and stop
+    if (!environment) {
+        if (audioRef.current) {
+            const oldAudio = audioRef.current;
+            // Clear ref immediately to prevent race conditions
+            audioRef.current = null;
+            setCurrentEnv(undefined);
+
+            const fadeOutInterval = setInterval(() => {
+                if (oldAudio.volume > 0.05) {
+                    oldAudio.volume -= 0.05;
+                } else {
+                    oldAudio.volume = 0;
+                    oldAudio.pause();
+                    clearInterval(fadeOutInterval);
+                }
+            }, 100);
+        }
+        return;
+    }
+
+    // If it's the same as current, do nothing
+    if (environment === currentEnv) return;
 
     const playNewTrack = async () => {
       try {
