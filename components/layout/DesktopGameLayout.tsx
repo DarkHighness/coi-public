@@ -25,6 +25,7 @@ interface DesktopGameLayoutProps {
   onOpenMap: () => void;
   onOpenLogs: () => void;
   aiSettings: any;
+  onTypingComplete?: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -46,7 +47,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenSaves,
   onOpenMap,
   onOpenLogs,
-  aiSettings
+  aiSettings,
+  onTypingComplete
 }) => {
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
@@ -81,6 +83,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
                onRetry={onRetry}
                disableImages={aiSettings.image.enabled === false}
                onFork={onFork}
+               aiSettings={aiSettings}
+               onTypingComplete={onTypingComplete}
              />
 
              {/* Action Panel */}

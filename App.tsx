@@ -1,27 +1,22 @@
-
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { StartScreen } from './components/StartScreen';
-import { Sidebar } from './components/Sidebar';
-import { StoryFeed } from './components/StoryFeed';
-import { ActionPanel } from './components/ActionPanel';
 import { Toast } from './components/Toast';
 import { THEMES, TRANSLATIONS } from './utils/constants';
 import { FeedLayout } from './types';
 import { MobileNav, MobileTab } from './components/MobileNav';
 import { getEnvApiKey } from './utils/env';
 import { validateConnection } from './services/geminiService';
-// import { EnvironmentalEffects } from './components/EnvironmentalEffects';
 import { LogPanel } from './components/sidebar/LogPanel';
 import { MobileGameLayout } from './components/layout/MobileGameLayout';
 import { DesktopGameLayout } from './components/layout/DesktopGameLayout';
+import { useAmbience } from './hooks/useAmbience';
 
 // Lazy Load Heavy Components for Code Splitting
 const MagicMirror = React.lazy(() => import('./components/MagicMirror').then(module => ({ default: module.MagicMirror })));
 const SettingsModal = React.lazy(() => import('./components/SettingsModal').then(module => ({ default: module.SettingsModal })));
 const SaveManager = React.lazy(() => import('./components/SaveManager').then(module => ({ default: module.SaveManager })));
 const DestinyMap = React.lazy(() => import('./components/DestinyMap').then(module => ({ default: module.DestinyMap })));
-const StoryTimeline = React.lazy(() => import('./components/StoryTimeline').then(module => ({ default: module.StoryTimeline })));
 const EnvironmentalEffects = React.lazy(() => import('./components/EnvironmentalEffects').then(module => ({ default: module.EnvironmentalEffects })));
 
 export default function App() {
@@ -53,11 +48,32 @@ export default function App() {
   // Mobile Nav State
   const [mobileTab, setMobileTab] = useState<MobileTab>('story');
 
+  // Typing State for Audio Control
+  const [isTyping, setIsTyping] = useState(false);
+
   const t = TRANSLATIONS[language];
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
 
   // Determine current context for effects
   const currentSegment = currentHistory[currentHistory.length - 1];
+
+  // Reset typing state when a new model segment appears
+  useEffect(() => {
+    const last = currentHistory[currentHistory.length - 1];
+    if (last?.role === 'model') {
+        setIsTyping(true);
+    } else {
+        setIsTyping(false);
+    }
+  }, [currentHistory]);
+
+  // Audio Ambience
+  useAmbience(
+    (view === 'game' && isTyping && !isSettingsOpen && !isSaveManagerOpen && !isDestinyMapOpen && !isLogPanelOpen) ? currentSegment?.environment : undefined,
+    aiSettings.audioVolume?.bgmVolume ?? 0.5,
+    aiSettings.audioVolume?.bgmMuted ?? false
+  );
+
   const effectText = currentSegment ? currentSegment.text : "";
   const effectPrompt = currentSegment ? currentSegment.imagePrompt : "";
 
@@ -276,6 +292,7 @@ export default function App() {
           onOpenMap={() => setIsDestinyMapOpen(true)}
           onOpenLogs={() => setIsLogPanelOpen(true)}
           aiSettings={aiSettings}
+          onTypingComplete={() => setIsTyping(false)}
         />
 
         <DesktopGameLayout
@@ -301,6 +318,7 @@ export default function App() {
           onOpenMap={() => setIsDestinyMapOpen(true)}
           onOpenLogs={() => setIsLogPanelOpen(true)}
           aiSettings={aiSettings}
+          onTypingComplete={() => setIsTyping(false)}
         />
       </div>
 

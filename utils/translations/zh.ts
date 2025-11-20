@@ -250,6 +250,12 @@ export const zh = {
         name: "病娇",
         narrativeStyle: "痴迷、激烈、危险。聚焦占有欲、嫉妒、极度奉献以及爱与疯狂之间的一线之隔。",
         backgroundTemplate: "你救了【名字】，当时他还是个孩子。你忘了这事。但他从未忘记。他长大了，将对你的爱扭曲成黑暗的执念。现在，他绑架/囚禁了你。他把你像易碎的娃娃一样对待。他会杀死任何看你一眼的人。他一边洗去手上的血，一边低语甜言蜜语。'你是我的，'他说。'只能是我的。'"
+      },
+      cs_student: {
+        name: "高冷学霸",
+        narrativeStyle: "理智、犀利、充满技术梗。使用计算机术语和逻辑分析。面对混乱的群聊保持高冷的优越感，用智商碾压对手。",
+        backgroundTemplate: "你是某顶尖大学计算机科学与技术系的保研生，拥有令人羡慕的GPA和发际线。你误入了一个名为'绿群'的神秘聊天群/社区。这里充斥着男娘、男同以及各种不可名状的'不正常人类'。作为一名崇尚逻辑与秩序的精英，你本该退群，但某种奇怪的好胜心（或者只是为了收集人类多样性样本）让你留了下来。你将用你的键盘和逻辑，在这个混沌的数字斗兽场中杀出一条血路。",
+        example: "看着屏幕上滚动的'看看你的'和'好似喵'，你推了推眼镜，嘴角勾起一抹冷笑。'这种低级的激将法，'你飞快地敲击机械键盘，轴体发出清脆的响声，'就像是用冒泡排序来处理亿级数据一样可笑。'你按下回车，发送了一段精心构造的逻辑陷阱，静静等待着对方破防。"
       }
     },
     roll: "掷骰 (冒险)",
@@ -262,6 +268,7 @@ export const zh = {
     tabs: {
       credentials: "密钥",
       models: "模型",
+      audio: "音效"
     },
     creds: {
       geminiTitle: "Google Gemini 配置",
@@ -331,7 +338,15 @@ export const zh = {
     languageLabel: "语言",
     connectionSuccess: "连接成功",
     connectionFailed: "连接失败",
-    loadedFromEnv: "已从环境变量加载",
+    testConnection: "测试连接",
+    audioSettings: {
+      environment: "环境音效",
+      voice: "语音 / TTS",
+      volume: "音量",
+      muted: "已静音",
+      active: "开启"
+    },
+    loadedFromEnv: "从环境变量加载",
     loadingGeneric: "加载中...",
     failedToLoadInfo: "无法从档案中检索信息。",
     noInfoAvailable: "暂无详细信息。"

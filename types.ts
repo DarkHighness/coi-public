@@ -54,6 +54,8 @@ export interface StoryOutline {
   worldSetting: string;
   locations: string[]; // Initial locations
   character: CharacterStatus; // Initial character state
+  inventory?: InventoryItem[]; // Initial inventory
+  relationships?: Relationship[]; // Initial relationships
 }
 
 export interface SaveSlot {
@@ -109,6 +111,7 @@ export interface StorySegment {
   // Fork-safe Summary State
   accumulatedSummary?: string; // The total summary of the story up to this node
   summarizedIndex?: number; // The index in the history chain where the summary ends
+  environment?: string; // The environment ambience for this segment
 }
 
 export interface Location {
@@ -194,6 +197,7 @@ export interface GameResponse {
   currentQuest?: string; // Legacy support
   imagePrompt: string;
   theme?: string; // Optional update
+  environment?: string; // The detected environment for audio ambience
 }
 
 export interface ItemExplanation {
@@ -231,6 +235,12 @@ export interface AISettings {
   image: FunctionConfig;
   video: FunctionConfig;
   audio: FunctionConfig;
+  audioVolume: {
+    bgmVolume: number;
+    bgmMuted: boolean;
+    ttsVolume: number;
+    ttsMuted: boolean;
+  };
   translation: FunctionConfig;
   lore: FunctionConfig;
   language: LanguageCode;

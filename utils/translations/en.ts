@@ -251,6 +251,12 @@ export const en = {
         narrativeStyle: "Obsessive, intense, and dangerous. Focus on possession, jealousy, extreme devotion, and the fine line between love and madness.",
         backgroundTemplate: "You saved [Name] when he was a child. You forgot about it. But he never did. He grew up twisting his love for you into a dark obsession. Now, he has kidnapped/trapped you. He treats you like a fragile doll. He will kill anyone who looks at you. He whispers sweet nothings while cleaning blood off his hands. 'You are mine,' he says. 'Only mine.'",
         example: "The chain on your ankle rattles as you try to move. The room is filled with your photos—hundreds of them. Sleeping, eating, walking. He enters with a tray of food. He smiles, a sweet, innocent smile that doesn't reach his dead eyes. 'I made your favorite,' he says softly. 'Why are you crying, my love? Are you trying to leave me again? I'll have to break your legs if you do that.'"
+      },
+      cs_student: {
+        name: "Aloof CS Genius",
+        narrativeStyle: "Rational, sharp, and full of tech jargon. Use computer science terminology and logical analysis. Maintain a sense of intellectual superiority amidst chaotic chat groups, crushing opponents with IQ.",
+        backgroundTemplate: "You are a top-tier Computer Science student with guaranteed grad school admission, an enviable GPA, and a surprisingly intact hairline. You've stumbled into a mysterious chat group/community called 'Green Group'. It's filled with femboys, gay men, and various 'abnormal humans'. As an elite who values logic and order, you should have left, but a strange competitiveness (or perhaps just a desire to collect samples of human diversity) made you stay. You will use your keyboard and logic to carve a bloody path through this chaotic digital colosseum.",
+        example: "Watching the scrolling messages of 'Show me yours' and 'LMAO', you push up your glasses, a cold sneer curling your lips. 'Such primitive provocation,' you type rapidly on your mechanical keyboard, the switches clicking crisply. 'It's as laughable as using bubble sort on a dataset of billions.' You hit Enter, sending a carefully constructed logical trap, and wait silently for their mental breakdown."
       }
     },
     roll: "Roll (Risk)",
@@ -332,6 +338,14 @@ export const en = {
     languageLabel: "Language",
     connectionSuccess: "Connection Successful",
     connectionFailed: "Connection Failed",
+    testConnection: "Test Connection",
+    audioSettings: {
+      environment: "Environment Ambience",
+      voice: "Voice / TTS",
+      volume: "Volume",
+      muted: "Muted",
+      active: "Active"
+    },
     loadedFromEnv: "Loaded from ENV",
     loadingGeneric: "Loading...",
     failedToLoadInfo: "Failed to retrieve information from the archives.",

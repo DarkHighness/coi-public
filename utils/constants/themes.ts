@@ -1,8 +1,8 @@
-
 import { ThemeConfig } from "../../types";
 
 export const THEMES: Record<string, ThemeConfig> = {
-  fantasy: {    vars: {
+  fantasy: {
+    vars: {
       '--theme-bg': '#020617',
       '--theme-surface': '#0f172a',
       '--theme-surface-highlight': '#1e293b',
@@ -12,8 +12,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#e2e8f0',
       '--theme-muted': '#94a3b8',
     },
-    fontClass: 'font-fantasy',  },
-  scifi: {    vars: {
+    fontClass: 'font-fantasy',
+  },
+  scifi: {
+    vars: {
       '--theme-bg': '#000000',
       '--theme-surface': '#09090b',
       '--theme-surface-highlight': '#18181b',
@@ -23,8 +25,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#e4e4e7',
       '--theme-muted': '#a1a1aa',
     },
-    fontClass: 'font-scifi',  },
-  cyberpunk: {    vars: {
+    fontClass: 'font-scifi',
+  },
+  cyberpunk: {
+    vars: {
       '--theme-bg': '#1a0b2e',
       '--theme-surface': '#2e1065',
       '--theme-surface-highlight': '#4c1d95',
@@ -34,8 +38,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fdf4ff',
       '--theme-muted': '#e879f9',
     },
-    fontClass: 'font-cyberpunk',  },
-  horror: {    vars: {
+    fontClass: 'font-cyberpunk',
+  },
+  horror: {
+    vars: {
       '--theme-bg': '#1c1917',
       '--theme-surface': '#292524',
       '--theme-surface-highlight': '#44403c',
@@ -45,8 +51,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#e7e5e4',
       '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-horror',  },
-  mystery: {    vars: {
+    fontClass: 'font-horror',
+  },
+  mystery: {
+    vars: {
       '--theme-bg': '#0a0a0a',
       '--theme-surface': '#171717',
       '--theme-surface-highlight': '#262626',
@@ -56,8 +64,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#d4d4d4',
       '--theme-muted': '#737373',
     },
-    fontClass: 'font-serif',  },
-  modern_romance: {    vars: {
+    fontClass: 'font-serif',
+  },
+  modern_romance: {
+    vars: {
       '--theme-bg': '#1a1018',
       '--theme-surface': '#291521',
       '--theme-surface-highlight': '#451e30',
@@ -67,8 +77,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fce7f3',
       '--theme-muted': '#db2777',
     },
-    fontClass: 'font-sans',  },
-  palace_drama: {    vars: {
+    fontClass: 'font-sans',
+  },
+  palace_drama: {
+    vars: {
       '--theme-bg': '#220505',
       '--theme-surface': '#450a0a',
       '--theme-surface-highlight': '#600f0f',
@@ -78,8 +90,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fffbeb',
       '--theme-muted': '#92400e',
     },
-    fontClass: 'font-fantasy',  },
-  wuxia: {    vars: {
+    fontClass: 'font-fantasy',
+  },
+  wuxia: {
+    vars: {
       '--theme-bg': '#1c1c1c',
       '--theme-surface': '#2a2a2a',
       '--theme-surface-highlight': '#3d3d3d',
@@ -89,8 +103,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f5f5f4',
       '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-serif',  },
-  xianxia: {    vars: {
+    fontClass: 'font-serif',
+  },
+  xianxia: {
+    vars: {
       '--theme-bg': '#0f1c2e',
       '--theme-surface': '#1e293b',
       '--theme-surface-highlight': '#334155',
@@ -100,8 +116,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f0f9ff',
       '--theme-muted': '#94a3b8',
     },
-    fontClass: 'font-serif',  },
-  ceo: {    vars: {
+    fontClass: 'font-serif',
+  },
+  ceo: {
+    vars: {
       '--theme-bg': '#111827',
       '--theme-surface': '#1f2937',
       '--theme-surface-highlight': '#374151',
@@ -111,8 +129,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f9fafb',
       '--theme-muted': '#9ca3af',
     },
-    fontClass: 'font-sans',  },
-  long_aotian: {    vars: {
+    fontClass: 'font-sans',
+  },
+  long_aotian: {
+    vars: {
       '--theme-bg': '#000000',
       '--theme-surface': '#1a1a1a',
       '--theme-surface-highlight': '#333333',
@@ -122,8 +142,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#ffffff',
       '--theme-muted': '#bfbfbf',
     },
-    fontClass: 'font-serif',  },
-  villain_op: {    vars: {
+    fontClass: 'font-serif',
+  },
+  villain_op: {
+    vars: {
       '--theme-bg': '#0f0505',
       '--theme-surface': '#2b0b0b',
       '--theme-surface-highlight': '#4a1414',
@@ -133,8 +155,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f3e8ff',
       '--theme-muted': '#a855f7',
     },
-    fontClass: 'font-fantasy',  },
-  period_drama: {    vars: {
+    fontClass: 'font-fantasy',
+  },
+  period_drama: {
+    vars: {
       '--theme-bg': '#2c241b', // Dark Sepia/Brown
       '--theme-surface': '#433629',
       '--theme-surface-highlight': '#5c4d3c',
@@ -144,8 +168,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f5f0e6',
       '--theme-muted': '#a89f91',
     },
-    fontClass: 'font-serif',  },
-  female_growth: {    vars: {
+    fontClass: 'font-serif',
+  },
+  female_growth: {
+    vars: {
       '--theme-bg': '#1a0505',
       '--theme-surface': '#2b0a0a',
       '--theme-surface-highlight': '#4a1212',
@@ -155,8 +181,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fff1f2',
       '--theme-muted': '#fda4af',
     },
-    fontClass: 'font-serif',  },
-  war_god: {    vars: {
+    fontClass: 'font-serif',
+  },
+  war_god: {
+    vars: {
       '--theme-bg': '#0a0a0a',
       '--theme-surface': '#171717',
       '--theme-surface-highlight': '#262626',
@@ -166,8 +194,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f5f5f5',
       '--theme-muted': '#737373',
     },
-    fontClass: 'font-fantasy',  },
-  ancient_romance: {    vars: {
+    fontClass: 'font-fantasy',
+  },
+  ancient_romance: {
+    vars: {
       '--theme-bg': '#1c1917',
       '--theme-surface': '#292524',
       '--theme-surface-highlight': '#44403c',
@@ -177,8 +207,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fafaf9',
       '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-serif',  },
-  love_after_marriage: {    vars: {
+    fontClass: 'font-serif',
+  },
+  love_after_marriage: {
+    vars: {
       '--theme-bg': '#1f1016',
       '--theme-surface': '#381a26',
       '--theme-surface-highlight': '#5e2a3e',
@@ -188,8 +220,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fce7f3',
       '--theme-muted': '#fbcfe8',
     },
-    fontClass: 'font-sans',  },
-  angst: {    vars: {
+    fontClass: 'font-sans',
+  },
+  angst: {
+    vars: {
       '--theme-bg': '#0f172a',
       '--theme-surface': '#1e293b',
       '--theme-surface-highlight': '#334155',
@@ -199,8 +233,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f1f5f9',
       '--theme-muted': '#64748b',
     },
-    fontClass: 'font-serif',  },
-  reunion: {    vars: {
+    fontClass: 'font-serif',
+  },
+  reunion: {
+    vars: {
       '--theme-bg': '#18181b',
       '--theme-surface': '#27272a',
       '--theme-surface-highlight': '#3f3f46',
@@ -210,8 +246,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f4f4f5',
       '--theme-muted': '#71717a',
     },
-    fontClass: 'font-serif',  },
-  return_strong: {    vars: {
+    fontClass: 'font-serif',
+  },
+  return_strong: {
+    vars: {
       '--theme-bg': '#000000',
       '--theme-surface': '#111111',
       '--theme-surface-highlight': '#222222',
@@ -221,8 +259,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#ffffff',
       '--theme-muted': '#a3a3a3',
     },
-    fontClass: 'font-fantasy',  },
-  farming: {    vars: {
+    fontClass: 'font-fantasy',
+  },
+  farming: {
+    vars: {
       '--theme-bg': '#14281d', // Dark Green
       '--theme-surface': '#1d3b2a',
       '--theme-surface-highlight': '#2d5740',
@@ -232,8 +272,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f0fdf4',
       '--theme-muted': '#86efac',
     },
-    fontClass: 'font-sans',  },
-  republican: {    vars: {
+    fontClass: 'font-sans',
+  },
+  republican: {
+    vars: {
       '--theme-bg': '#1a1614',
       '--theme-surface': '#2b2420',
       '--theme-surface-highlight': '#423832',
@@ -243,8 +285,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f5f5f4',
       '--theme-muted': '#a8a29e',
     },
-    fontClass: 'font-serif',  },
-  intrigue: {    vars: {
+    fontClass: 'font-serif',
+  },
+  intrigue: {
+    vars: {
       '--theme-bg': '#190808',
       '--theme-surface': '#360f0f',
       '--theme-surface-highlight': '#591c1c',
@@ -254,8 +298,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fef2f2',
       '--theme-muted': '#fca5a5',
     },
-    fontClass: 'font-serif',  },
-  survival: {    vars: {
+    fontClass: 'font-serif',
+  },
+  survival: {
+    vars: {
       '--theme-bg': '#1a120b',
       '--theme-surface': '#2e1f12',
       '--theme-surface-highlight': '#4a321d',
@@ -265,8 +311,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#fff7ed',
       '--theme-muted': '#fdba74',
     },
-    fontClass: 'font-scifi',  },
-  patriotism: {    vars: {
+    fontClass: 'font-scifi',
+  },
+  patriotism: {
+    vars: {
       '--theme-bg': '#1e1b4b', // Dark Blue
       '--theme-surface': '#312e81',
       '--theme-surface-highlight': '#4338ca',
@@ -276,8 +324,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#eef2ff',
       '--theme-muted': '#a5b4fc',
     },
-    fontClass: 'font-serif',  },
-  son_in_law: {    vars: {
+    fontClass: 'font-serif',
+  },
+  son_in_law: {
+    vars: {
       '--theme-bg': '#111827',
       '--theme-surface': '#1f2937',
       '--theme-surface-highlight': '#374151',
@@ -287,8 +337,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f9fafb',
       '--theme-muted': '#9ca3af',
     },
-    fontClass: 'font-sans',  },
-  white_moonlight: {    vars: {
+    fontClass: 'font-sans',
+  },
+  white_moonlight: {
+    vars: {
       '--theme-bg': '#0f172a',
       '--theme-surface': '#1e293b',
       '--theme-surface-highlight': '#334155',
@@ -298,8 +350,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#f8fafc',
       '--theme-muted': '#94a3b8',
     },
-    fontClass: 'font-serif',  },
-  yandere: {    vars: {
+    fontClass: 'font-serif',
+  },
+  yandere: {
+    vars: {
       '--theme-bg': '#000000',
       '--theme-surface': '#1a0505',
       '--theme-surface-highlight': '#330a0a',
@@ -309,5 +363,19 @@ export const THEMES: Record<string, ThemeConfig> = {
       '--theme-text': '#ffe4e6',
       '--theme-muted': '#fda4af',
     },
-    fontClass: 'font-horror',  }
+    fontClass: 'font-horror',
+  },
+  cs_student: {
+    vars: {
+      '--theme-bg': '#022c22', // teal-950
+      '--theme-surface': '#064e3b', // emerald-900
+      '--theme-surface-highlight': '#065f46', // emerald-800
+      '--theme-border': '#059669', // emerald-600
+      '--theme-primary': '#34d399', // emerald-400
+      '--theme-primary-hover': '#10b981', // emerald-500
+      '--theme-text': '#ecfdf5', // emerald-50
+      '--theme-muted': '#6ee7b7', // emerald-300
+    },
+    fontClass: 'font-sans', // Standard modern font fits CS best
+  },
 };

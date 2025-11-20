@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { StorySegment, LanguageCode } from '../types';
+import { StorySegment, LanguageCode, AISettings } from '../types';
 import { TRANSLATIONS } from '../utils/constants';
 import { StoryImage } from './render/StoryImage';
 import { StoryText } from './render/StoryText';
@@ -22,6 +22,8 @@ export interface StoryCardProps {
   disableImages?: boolean;
   shouldAnimate?: boolean;
   onGenerateImage?: (id: string) => void;
+  aiSettings?: AISettings;
+  onTypingComplete?: () => void;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -32,7 +34,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   language = 'en',
   disableImages = false,
   shouldAnimate = true,
-  onGenerateImage
+  onGenerateImage,
+  aiSettings,
+  onTypingComplete
 }) => {
 
   if (segment.role === 'user') {
@@ -86,6 +90,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           isLast={isLast}
           language={language as LanguageCode}
           shouldAnimate={shouldAnimate}
+          aiSettings={aiSettings}
+          onTypingComplete={onTypingComplete}
         />
         <div className="px-6">
            <TokenStats usage={segment.usage} language={language} />

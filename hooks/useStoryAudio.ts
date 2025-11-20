@@ -2,10 +2,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { generateSpeech } from '../services/geminiService';
 
-export const useStoryAudio = (text: string) => {
+export const useStoryAudio = (
+  text: string,
+  volume: number = 1.0,
+  muted: boolean = false,
+  onWarning?: (msg: string) => void
+) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
 
   useEffect(() => {
@@ -17,6 +23,13 @@ export const useStoryAudio = (text: string) => {
     };
   }, []);
 
+  // Update volume dynamically if playing
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = muted ? 0 : volume;
+    }
+  }, [volume, muted]);
+
   const stopAudio = () => {
     if (sourceNodeRef.current) {
       sourceNodeRef.current.stop();
@@ -26,6 +39,11 @@ export const useStoryAudio = (text: string) => {
   };
 
   const playAudio = async () => {
+    if (muted) {
+      onWarning?.("Voice is muted in settings.");
+      return;
+    }
+
     if (isPlaying) {
       stopAudio();
       return;
@@ -36,6 +54,12 @@ export const useStoryAudio = (text: string) => {
     try {
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.connect(audioContextRef.current.destination);
+      }
+
+      if (gainNodeRef.current) {
+         gainNodeRef.current.gain.value = volume;
       }
 
       if (audioContextRef.current.state === 'suspended') {
@@ -50,8 +74,14 @@ export const useStoryAudio = (text: string) => {
 
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      
+
+      // Connect to gain node instead of destination
+      if (gainNodeRef.current) {
+        source.connect(gainNodeRef.current);
+      } else {
+        source.connect(audioContextRef.current.destination);
+      }
+
       source.onended = () => {
         setIsPlaying(false);
       };

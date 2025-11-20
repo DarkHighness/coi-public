@@ -1,5 +1,5 @@
 
-import { GameResponse, StorySegment, AISettings, CharacterStatus, Relationship, StoryOutline, ModelInfo, TokenUsage, LogEntry } from "../types";
+import { GameResponse, StorySegment, AISettings, CharacterStatus, Relationship, StoryOutline, ModelInfo, TokenUsage, LogEntry, InventoryItem, Quest } from "../types";
 import {
   GeminiConfig,
   generateGeminiJson,
@@ -14,12 +14,15 @@ import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, TRANSLATIONS } from "../utils/consta
 import { gameResponseSchema, translationSchema, storyOutlineSchema, summarySchema } from "./schemas";
 import { getEnvApiKey } from "../utils/env";
 import {
-  getAdventureSystemInstruction,
+  getCoreSystemInstruction,
+  getStaticWorldContext,
+  getDynamicStoryContext,
   getSceneImagePrompt,
   getItemDescriptionPrompt,
   getTranslationPrompt,
   getOutlinePrompt,
-  getSummaryPrompt
+  getSummaryPrompt,
+  getCurrentStateContext
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
 import { THEMES } from "../utils/constants/themes"; // Keep for fallback if needed, or remove if fully migrated. Keeping for now just in case.
@@ -148,6 +151,9 @@ export const generateAdventureTurn = async (
   recentHistory: StorySegment[],
   accumulatedSummary: string,
   outline: StoryOutline | null,
+  inventory: InventoryItem[],
+  relationships: Relationship[],
+  quests: Quest[],
   userAction: string,
   language: string = 'English',
   themeKey?: string
@@ -163,33 +169,74 @@ export const generateAdventureTurn = async (
   const narrativeStyle = themeData?.narrativeStyle || "Standard adventure tone.";
   const example = themeData?.example;
 
-  const systemInstruction = getAdventureSystemInstruction(language, outline, accumulatedSummary, narrativeStyle, example);
-
+  // Split System Instruction for better KV Cache
+  const coreSystemInstruction = getCoreSystemInstruction(language, narrativeStyle, example);
+  const staticWorldContext = getStaticWorldContext(outline);
+  const dynamicStoryContext = getDynamicStoryContext(accumulatedSummary);
+  const currentStateContext = getCurrentStateContext(inventory, relationships, quests);
 
   let result, usage, raw;
 
   if (provider === 'openai') {
-    const messages = recentHistory.map(seg => ({
+    const messages = [];
+
+    // 1. Core Rules (Static)
+    // 2. World Setting (Static)
+    // 3. Dynamic Summary (Mutable)
+    // 4. Current State (Mutable)
+    // OpenAI supports multiple system messages. We stack them in order of stability.
+    messages.push({ role: 'system', content: staticWorldContext });
+    if (dynamicStoryContext) {
+        messages.push({ role: 'system', content: dynamicStoryContext });
+    }
+    messages.push({ role: 'system', content: currentStateContext });
+
+    // Append History
+    messages.push(...recentHistory.map(seg => ({
       role: seg.role === 'model' ? 'assistant' : 'user',
       content: seg.text
-    }));
+    })));
+
+    // Append Current Action
     messages.push({ role: 'user', content: userAction });
+
     const specificConfig = { ...openaiConfig, modelId: modelId };
     const schema = toOpenAIStrictSchema(gameResponseSchema);
 
-    ({ result, usage, raw } = await fetchOpenAICompletion(specificConfig, systemInstruction, messages, schema));
-    const log = createLogEntry('openai', modelId, 'chat/completions', { systemInstruction, messages }, raw, usage);
+    // Pass coreSystemInstruction as the primary system prompt
+    ({ result, usage, raw } = await fetchOpenAICompletion(specificConfig, coreSystemInstruction, messages, schema));
+    const log = createLogEntry('openai', modelId, 'chat/completions', { coreSystemInstruction, staticWorldContext, dynamicStoryContext, messages }, raw, usage);
     return { response: result, log, usage };
   } else {
     // ... gemini implementation
+    // For Gemini, we combine Core + Static World into the system instruction to maximize static prefix.
+    // Dynamic Summary is injected into the chat history.
+
+    const fullSystemInstruction = `${coreSystemInstruction}\n\n${staticWorldContext}`;
+
     const historyParts = recentHistory.map(seg => ({
       role: seg.role,
       parts: [{ text: seg.text }]
     }));
-    const contents = [...historyParts, { role: 'user', parts: [{ text: userAction }] }];
 
-    ({ result, usage, raw } = await generateGeminiJson(geminiConfig, modelId, contents, systemInstruction, gameResponseSchema));
-    const log = createLogEntry('gemini', modelId, 'generateContent', { systemInstruction, contents }, raw, usage);
+    // Construct contents
+    const contents = [];
+
+    // Inject dynamic summary if it exists
+    if (dynamicStoryContext) {
+        contents.push({ role: 'user', parts: [{ text: `[MEMORY RECALL]\n${dynamicStoryContext}` }] });
+        contents.push({ role: 'model', parts: [{ text: "Memory accessed." }] });
+    }
+
+    // Inject current state
+    contents.push({ role: 'user', parts: [{ text: `[CURRENT STATUS]\n${currentStateContext}` }] });
+    contents.push({ role: 'model', parts: [{ text: "Status updated." }] });
+
+    contents.push(...historyParts);
+    contents.push({ role: 'user', parts: [{ text: userAction }] });
+
+    ({ result, usage, raw } = await generateGeminiJson(geminiConfig, modelId, contents, fullSystemInstruction, gameResponseSchema));
+    const log = createLogEntry('gemini', modelId, 'generateContent', { fullSystemInstruction, contents }, raw, usage);
     return { response: result, log, usage };
   }
 };

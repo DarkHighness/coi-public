@@ -28,6 +28,7 @@ interface MobileGameLayoutProps {
   onOpenMap: () => void;
   onOpenLogs: () => void;
   aiSettings: any;
+  onTypingComplete?: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -51,7 +52,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenSaves,
   onOpenMap,
   onOpenLogs,
-  aiSettings
+  aiSettings,
+  onTypingComplete
 }) => {
   const t = TRANSLATIONS[language];
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
@@ -71,6 +73,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
            onRetry={onRetry}
            disableImages={aiSettings.image.enabled === false}
            onFork={onFork}
+           aiSettings={aiSettings}
+           onTypingComplete={onTypingComplete}
          />
 
          {/* Action Panel fixed at bottom of feed */}

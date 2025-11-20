@@ -29,27 +29,38 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({ segments, theme, l
         {t.timeline}
         <span className="w-8 h-[1px] bg-theme-primary/50 ml-2"></span>
       </h2>
-      
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-0 pr-2 scroll-smooth">
-        {narrativeSegments.map((seg, index) => (
-          <div key={seg.id} className="relative pl-6 pb-6 border-l border-theme-border hover:border-theme-primary/50 transition-colors group last:border-l-0 last:pb-0">
-            {/* Dot */}
-            <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-theme-surface border-2 border-theme-muted group-hover:border-theme-primary group-hover:bg-theme-primary transition-all z-10 shadow-sm"></div>
-            
-            {/* Content */}
-            <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors cursor-default relative -top-1">
-               {seg.imageUrl && (
-                 <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity border border-theme-border group-hover:border-theme-primary/30">
-                    <img src={seg.imageUrl} alt="Moment" className="w-full h-full object-cover" />
-                 </div>
-               )}
-               <p className="line-clamp-3 leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif">
-                 {seg.text}
-               </p>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-0 pr-2 scroll-smooth pt-1">
+        {narrativeSegments.map((seg, index) => {
+          const isFirst = index === 0;
+          const isLast = index === narrativeSegments.length - 1;
+
+          return (
+            <div key={seg.id} className={`relative pl-6 pb-6 group ${isLast ? 'pb-0' : ''}`}>
+              {/* Line */}
+              <div className={`absolute left-0 w-[1px] bg-theme-border group-hover:bg-theme-primary/50 transition-colors
+                 ${isFirst ? 'top-2' : 'top-0'}
+                 ${isLast ? 'h-2' : 'bottom-0'}
+              `}></div>
+
+              {/* Dot */}
+              <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-theme-surface border-2 border-theme-muted group-hover:border-theme-primary group-hover:bg-theme-primary transition-all z-10 shadow-sm"></div>
+
+              {/* Content */}
+              <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors cursor-default relative -top-1">
+                 {seg.imageUrl && (
+                   <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity border border-theme-border group-hover:border-theme-primary/30">
+                      <img src={seg.imageUrl} alt="Moment" className="w-full h-full object-cover" />
+                   </div>
+                 )}
+                 <p className="line-clamp-3 leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif">
+                   {seg.text}
+                 </p>
+              </div>
             </div>
-          </div>
-        ))}
-        
+          );
+        })}
+
         {narrativeSegments.length === 0 && (
            <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">
               <div className="w-1 h-16 bg-gradient-to-b from-transparent via-theme-muted/30 to-transparent"></div>

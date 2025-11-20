@@ -48,6 +48,12 @@ export const DEFAULTS: AISettings = {
     modelId: 'gemini-2.5-flash-preview-tts',
     enabled: true
   },
+  audioVolume: {
+    bgmVolume: 0.5,
+    bgmMuted: false,
+    ttsVolume: 1.0,
+    ttsMuted: false
+  },
   translation: {
     provider: 'gemini',
     modelId: 'gemini-2.5-flash',

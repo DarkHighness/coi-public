@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LanguageCode, AISettings, ModelInfo } from '../types';
 import { TRANSLATIONS } from '../utils/constants';
@@ -15,7 +14,7 @@ interface SettingsModalProps {
   showToast: (msg: string, type?: 'info' | 'error') => void;
 }
 
-type Tab = 'credentials' | 'models';
+type Tab = 'credentials' | 'models' | 'audio';
 type FunctionKey = 'story' | 'image' | 'video' | 'audio' | 'translation' | 'lore';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -91,7 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="flex border-b border-theme-border bg-theme-bg">
-           {(['credentials', 'models'] as Tab[]).map((tab) => (
+           {(['credentials', 'models', 'audio'] as Tab[]).map((tab) => (
              <button
                key={tab}
                onClick={() => setActiveTab(tab)}
@@ -139,7 +138,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
-                      Test Connection
+                      {t.testConnection}
                     </button>
                  </div>
                  <input
@@ -170,7 +169,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
-                      Test Connection
+                      {t.testConnection}
                     </button>
                  </div>
                  <input
@@ -268,6 +267,98 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    </div>
                 </div>
               );})}
+            </div>
+          )}
+
+          {activeTab === 'audio' && (
+            <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+               {/* Environment Audio */}
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t.audioSettings.environment}</h3>
+                     <button
+                        onClick={() => updateSettings({
+                           ...currentSettings,
+                           audioVolume: {
+                               ...currentSettings.audioVolume,
+                               bgmMuted: !currentSettings.audioVolume?.bgmMuted
+                           }
+                        })}
+                        className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border transition-colors ${
+                           currentSettings.audioVolume?.bgmMuted
+                              ? 'bg-red-500/20 border-red-500 text-red-500'
+                              : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
+                        }`}
+                     >
+                        {currentSettings.audioVolume?.bgmMuted ? t.audioSettings.muted : t.audioSettings.active}
+                     </button>
+                  </div>
+                  <div className={`space-y-2 ${currentSettings.audioVolume?.bgmMuted ? 'opacity-50 pointer-events-none' : ''}`}>
+                     <div className="flex justify-between text-xs text-theme-muted">
+                        <span>{t.audioSettings.volume}</span>
+                        <span>{Math.round((currentSettings.audioVolume?.bgmVolume ?? 0.5) * 100)}%</span>
+                     </div>
+                     <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={currentSettings.audioVolume?.bgmVolume ?? 0.5}
+                        onChange={(e) => updateSettings({
+                           ...currentSettings,
+                           audioVolume: {
+                               ...currentSettings.audioVolume,
+                               bgmVolume: parseFloat(e.target.value)
+                           }
+                        })}
+                        className="w-full accent-theme-primary"
+                     />
+                  </div>
+               </div>
+
+               {/* TTS Audio */}
+               <div className="space-y-4 pt-6 border-t border-theme-border">
+                  <div className="flex justify-between items-center">
+                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t.audioSettings.voice}</h3>
+                     <button
+                        onClick={() => updateSettings({
+                           ...currentSettings,
+                           audioVolume: {
+                               ...currentSettings.audioVolume,
+                               ttsMuted: !currentSettings.audioVolume?.ttsMuted
+                           }
+                        })}
+                        className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border transition-colors ${
+                           currentSettings.audioVolume?.ttsMuted
+                              ? 'bg-red-500/20 border-red-500 text-red-500'
+                              : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
+                        }`}
+                     >
+                        {currentSettings.audioVolume?.ttsMuted ? t.audioSettings.muted : t.audioSettings.active}
+                     </button>
+                  </div>
+                  <div className={`space-y-2 ${currentSettings.audioVolume?.ttsMuted ? 'opacity-50 pointer-events-none' : ''}`}>
+                     <div className="flex justify-between text-xs text-theme-muted">
+                        <span>{t.audioSettings.volume}</span>
+                        <span>{Math.round((currentSettings.audioVolume?.ttsVolume ?? 1.0) * 100)}%</span>
+                     </div>
+                     <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={currentSettings.audioVolume?.ttsVolume ?? 1.0}
+                        onChange={(e) => updateSettings({
+                           ...currentSettings,
+                           audioVolume: {
+                               ...currentSettings.audioVolume,
+                               ttsVolume: parseFloat(e.target.value)
+                           }
+                        })}
+                        className="w-full accent-theme-primary"
+                     />
+                  </div>
+               </div>
             </div>
           )}
 

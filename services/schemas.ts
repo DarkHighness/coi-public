@@ -48,6 +48,35 @@ export const storyOutlineSchema: Schema = {
       },
       required: ["name", "title", "attributes", "skills", "status"],
       description: "The initialized character profile suited for this story."
+    },
+    inventory: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING, description: "Name of the item." },
+          description: { type: Type.STRING, description: "Visual description of the item." },
+          lore: { type: Type.STRING, description: "Brief lore or history." },
+          isMystery: { type: Type.BOOLEAN, description: "True if the item's true nature is hidden." }
+        },
+        required: ["name", "description"]
+      },
+      description: "Initial items in the inventory (1-3 items)."
+    },
+    relationships: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING, description: "Name of the NPC" },
+          description: { type: Type.STRING },
+          status: { type: Type.STRING, description: "Relationship status (e.g. Friend, Rival)" },
+          affinity: { type: Type.INTEGER, description: "Starting affinity (0-100)" },
+          affinityKnown: { type: Type.BOOLEAN }
+        },
+        required: ["name", "description", "status"]
+      },
+      description: "Initial relationships (1-2 NPCs)."
     }
   },
   required: ["title", "premise", "mainGoal", "worldSetting", "locations", "character"]
@@ -161,6 +190,11 @@ export const gameResponseSchema: Schema = {
     imagePrompt: {
       type: Type.STRING,
       description: "Visual description for the scene.",
+    },
+    environment: {
+      type: Type.STRING,
+      enum: ["forest", "dungeon", "city", "tavern", "ocean", "combat", "mystical", "quiet", "cave", "market", "rain", "storm"],
+      description: "The current environmental ambience."
     },
     theme: {
       type: Type.STRING,

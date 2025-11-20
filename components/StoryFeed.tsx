@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { GameState, LanguageCode, FeedLayout, StorySegment } from '../types';
+import { GameState, LanguageCode, FeedLayout, StorySegment, AISettings } from '../types';
 import { StoryCard } from './StoryCard';
 import { TRANSLATIONS } from '../utils/constants';
 import { FeedHeader } from './feed/FeedHeader';
@@ -17,6 +17,8 @@ interface StoryFeedProps {
   onRetry: () => void;
   disableImages?: boolean;
   onFork?: (id: string) => void;
+  aiSettings?: AISettings;
+  onTypingComplete?: () => void;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -29,7 +31,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onGenerateImage,
   onRetry,
   disableImages = false,
-  onFork
+  onFork,
+  aiSettings,
+  onTypingComplete
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -159,6 +163,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                          language={language}
                          disableImages={disableImages}
                          shouldAnimate={shouldAnimate}
+                         aiSettings={aiSettings}
+                         onTypingComplete={index === currentHistory.length - 1 ? onTypingComplete : undefined}
                        />
                      </div>
                   </React.Fragment>
@@ -194,6 +200,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                           language={language}
                           disableImages={disableImages}
                           shouldAnimate={false} // Stack mode doesn't usually re-type
+                          aiSettings={aiSettings}
+                          onTypingComplete={undefined} // Stack mode doesn't animate typing usually
                       />
                   </div>
                )}

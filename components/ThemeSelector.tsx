@@ -39,7 +39,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     <>
       <div className="w-full flex flex-col gap-3">
         {/* Theme Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-2 pb-20 md:pb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-2 pb-20 md:pb-4">
           {/* Random Option */}
           <button
             onClick={() => onSelect('')}
@@ -87,7 +87,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                       className="w-3 h-3 rounded-full mb-2"
                       style={{ backgroundColor: theme.vars['--theme-primary'], boxShadow: `0 0 10px ${theme.vars['--theme-primary']}` }}
                     ></div>
-                    <h4 className={`font-bold uppercase tracking-wide text-base leading-tight text-theme-text group-hover:text-theme-primary transition-colors truncate ${theme.fontClass}`}>
+                    <h4 className={`font-bold uppercase tracking-wide text-sm leading-tight text-theme-text group-hover:text-theme-primary transition-colors ${theme.fontClass}`}>
                       {name}
                     </h4>
                     <p className="text-xs text-theme-muted mt-1 line-clamp-2">

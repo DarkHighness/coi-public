@@ -78,6 +78,7 @@ export const useGameEngine = () => {
             image: { ...DEFAULTS.image, ...(parsed.image || {}) },
             video: { ...DEFAULTS.video, ...(parsed.video || {}) },
             audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
+            audioVolume: { ...DEFAULTS.audioVolume, ...(parsed.audioVolume || {}) },
             translation: { ...DEFAULTS.translation, ...(parsed.translation || {}) },
             lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
          };
@@ -230,6 +231,9 @@ export const useGameEngine = () => {
           segmentsToSend,
           effectiveSummary,
           gameStateRef.current.outline,
+          gameStateRef.current.inventory,
+          gameStateRef.current.relationships,
+          gameStateRef.current.quests,
           action,
           LANG_MAP[language],
           gameStateRef.current.theme // Pass the theme key
@@ -258,7 +262,8 @@ export const useGameEngine = () => {
         usage: usage,
         // Inherit summary state from the user node (which was just updated)
         accumulatedSummary: effectiveSummary,
-        summarizedIndex: lastIndex
+        summarizedIndex: lastIndex,
+        environment: response.environment
       };
 
       // Determine Toast Message based on state changes
@@ -495,6 +500,11 @@ export const useGameEngine = () => {
           ...prev,
           outline,
           character: outline.character,
+          inventory: (outline.inventory || []).map((item: any) => ({
+              ...item,
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5)
+          })),
+          relationships: outline.relationships || [],
           quests: [{
               id: 'main_quest_init',
               title: outline.mainGoal || "Survive and explore.",
