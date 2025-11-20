@@ -6,7 +6,7 @@ interface ThemeSelectorProps {
   themes: typeof THEMES;
   onSelect: (theme: string) => void;
   onHover: (theme: string) => void;
-  translations: Record<string, string>;
+  translations: Record<string, any>;
   randomLabel: string;
   t: any; // Full translations object
   language: LanguageCode;
@@ -32,20 +32,14 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     setPreviewTheme(null);
   };
 
-  // Helper to get language-aware content
-  const getContent = (theme: any, field: 'narrativeStyle' | 'backgroundTemplate' | 'example') => {
-    const zhField = `${field}_zh` as keyof typeof theme;
-    return language === 'zh' && theme[zhField] ? theme[zhField] : theme[field];
-  };
-
   const previewData = previewTheme ? themes[previewTheme] : null;
-  const previewName = previewTheme ? (translations[previewTheme] || previewData?.name) : '';
+  const previewName = previewTheme ? t.themes[previewTheme]?.name : '';
 
   return (
     <>
-      <div className="w-full h-full flex flex-col gap-3 overflow-hidden">
+      <div className="w-full flex flex-col gap-3">
         {/* Theme Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-2 custom-scrollbar pb-20 md:pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-2 pb-20 md:pb-4">
           {/* Random Option */}
           <button
             onClick={() => onSelect('')}
@@ -63,13 +57,22 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
           {themeKeys.map((key) => {
             const theme = themes[key];
-            const name = translations[key] || theme.name;
+            const name = t.themes[key]?.name;
+            const narrativeStyle = t.themes[key]?.narrativeStyle;
 
             return (
-              <button
+              <div
                 key={key}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(key)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onSelect(key);
+                  }
+                }}
                 onMouseEnter={() => onHover(key)}
-                className="relative p-5 rounded-xl border border-theme-border hover:border-theme-primary transition-all text-left group overflow-hidden bg-theme-surface-highlight/20 hover:bg-theme-surface-highlight/40"
+                className="relative p-5 rounded-xl border border-theme-border hover:border-theme-primary transition-all text-left group overflow-hidden bg-theme-surface-highlight/20 hover:bg-theme-surface-highlight/40 cursor-pointer"
               >
                 {/* Background Gradient */}
                 <div
@@ -88,7 +91,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                       {name}
                     </h4>
                     <p className="text-xs text-theme-muted mt-1 line-clamp-2">
-                      {getContent(theme, 'narrativeStyle')?.split('.')[0]}
+                      {narrativeStyle?.split('.')[0]}
                     </p>
                   </div>
 
@@ -108,7 +111,10 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                       </svg>
                     </button>
                     <button
-                      onClick={() => onSelect(key)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(key);
+                      }}
                       className="p-2 rounded-lg bg-theme-primary/10 border border-theme-primary hover:bg-theme-primary hover:text-theme-bg transition-all"
                       title={t.themeStart}
                     >
@@ -118,7 +124,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     </button>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -143,7 +149,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             {/* Header */}
             <div className="relative z-10 p-6 border-b border-theme-border flex items-center justify-between">
               <div>
-                <h2 className={`text-3xl font-bold uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-theme-text to-theme-muted ${previewData.fontClass}`}>
+                <h2 className={`text-3xl font-bold uppercase tracking-tighter text-white bg-clip-text bg-gradient-to-r from-theme-text to-theme-muted ${previewData.fontClass}`}>
                   {previewName}
                 </h2>
                 <div className="mt-1 flex items-center gap-2">
@@ -166,14 +172,14 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
               <div>
                 <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2">{t.narrativeStyle}</h3>
                 <p className="text-theme-muted italic text-base leading-relaxed">
-                  "{getContent(previewData, 'narrativeStyle')}"
+                  "{t.themes[previewTheme]?.narrativeStyle}"
                 </p>
               </div>
 
               <div className="bg-theme-bg/50 p-6 rounded-lg border border-theme-border/50 relative">
                 <div className="absolute -top-3 -left-3 text-4xl text-theme-primary/20 font-serif">"</div>
                 <p className={`text-theme-text/90 leading-loose ${previewData.fontClass === 'font-serif' ? 'font-serif text-lg' : 'font-sans'}`}>
-                  {getContent(previewData, 'example')}
+                  {t.themes[previewTheme]?.example}
                 </p>
                 <div className="absolute -bottom-3 -right-3 text-4xl text-theme-primary/20 font-serif rotate-180">"</div>
               </div>

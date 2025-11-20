@@ -177,7 +177,7 @@ export const useGameEngine = () => {
           gameStateRef.current.outline,
           action,
           LANG_MAP[language],
-          THEMES[gameStateRef.current.theme]?.narrativeStyle // Pass the style
+          gameStateRef.current.theme // Pass the theme key
       );
 
       // Sanitize choices to ensure strict string array

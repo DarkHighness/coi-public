@@ -81,10 +81,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Menu Content */}
-        <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 max-w-xl mx-auto w-full space-y-8 pb-12 overflow-y-auto">
+        <div className="flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-y-auto">
 
           {mode === 'main' ? (
-            <div className="space-y-4 animate-slide-in">
+            <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full">
               {hasSave && (
                 <button
                   onClick={onContinue}
@@ -135,7 +135,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                  </button>
               </div>
 
-              <div className="flex-1 overflow-hidden relative h-full min-h-0">
+              <div className="flex-1 relative min-h-0">
                   <ThemeSelector
                     themes={THEMES}
                     onSelect={(theme) => onStart(theme, customContext)}

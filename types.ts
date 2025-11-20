@@ -64,6 +64,7 @@ export interface SaveSlot {
   timestamp: number;
   theme: string;
   summary: string;
+  // No need to store full state here, just metadata
 }
 
 export interface CharacterAttribute {
@@ -200,15 +201,8 @@ export interface ItemExplanation {
 }
 
 export interface ThemeConfig {
-  name: string;
   vars: Record<string, string>;
   fontClass: string;
-  narrativeStyle?: string;
-  narrativeStyle_zh?: string;
-  backgroundTemplate?: string;
-  backgroundTemplate_zh?: string;
-  example?: string;
-  example_zh?: string;
 }
 
 export type LanguageCode = 'en' | 'zh';
