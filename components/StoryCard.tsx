@@ -41,6 +41,22 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
   return (
     <div className="flex flex-col mb-16 animate-slide-in space-y-6 group/card max-w-3xl mx-auto">
+
+      {/* Summary Snapshot Display */}
+      {segment.summarySnapshot && (
+        <div className="flex justify-center my-6 animate-fade-in">
+          <div className="bg-theme-surface/40 border border-theme-border/40 rounded-lg p-6 max-w-xl text-center backdrop-blur-sm shadow-sm">
+            <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-theme-primary/80 mb-3 font-semibold">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>Story So Far</span>
+            </div>
+            <div className="text-sm text-theme-text/90 italic font-serif leading-relaxed">
+              {segment.summarySnapshot}
+            </div>
+          </div>
+        </div>
+      )}
+
       <StoryImage
         imageUrl={segment.imageUrl}
         isLast={isLast}

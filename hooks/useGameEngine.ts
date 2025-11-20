@@ -111,6 +111,17 @@ export const useGameEngine = () => {
     const userNodeId = `user-${newSegmentId}`;
     const parentId = isInit ? null : gameStateRef.current.activeNodeId;
 
+    // --- Fork-Safe Summary Retrieval ---
+    let baseSummary = "";
+    let baseIndex = 0;
+
+    if (parentId && gameStateRef.current.nodes[parentId]) {
+        const pNode = gameStateRef.current.nodes[parentId];
+        baseSummary = pNode.accumulatedSummary || "";
+        baseIndex = pNode.summarizedIndex || 0;
+    }
+    // -----------------------------------
+
     if (!isInit) {
       setGameState(prev => ({
         ...prev,
@@ -126,7 +137,9 @@ export const useGameEngine = () => {
                 imagePrompt: "",
                 role: "user",
                 timestamp: Date.now(),
-                usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } // User msgs have no token cost locally
+                usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, // User msgs have no token cost locally
+                accumulatedSummary: baseSummary,
+                summarizedIndex: baseIndex
             }
         },
         activeNodeId: userNodeId
@@ -138,37 +151,79 @@ export const useGameEngine = () => {
     try {
       // Summarization Logic
       let contextNodes = deriveHistory(gameStateRef.current.nodes, parentId);
-      if (!isInit) contextNodes.push({ id: userNodeId, parentId, text: action, choices: [], imagePrompt: "", role: "user", timestamp: Date.now() } as any);
+
+      // Create temp user node for context calculation
+      const tempUserNode: StorySegment = {
+          id: userNodeId,
+          parentId,
+          text: action,
+          choices: [],
+          imagePrompt: "",
+          role: "user",
+          timestamp: Date.now(),
+          accumulatedSummary: baseSummary,
+          summarizedIndex: baseIndex
+      };
+
+      if (!isInit) contextNodes.push(tempUserNode);
 
       const limit = aiSettings.contextLen || 16;
-      let effectiveSummary = gameStateRef.current.accumulatedSummary;
-      let segmentsToSend = contextNodes;
+      const summaryStep = 4;
+
+      let effectiveSummary = baseSummary;
+      let lastIndex = baseIndex;
       let summarySnapshot = "";
 
-      if (contextNodes.length > limit) {
-         const overflowCount = contextNodes.length - limit;
-         if (overflowCount >= 4) {
-             const toSummarize = contextNodes.slice(0, overflowCount);
-             const textBlock = toSummarize.map(s => `${s.role}: ${s.text}`).join("\n");
+      // Calculate range to summarize: from lastIndex to (total - limit)
+      // We keep 'limit' messages as fresh context
+      const totalLength = contextNodes.length;
+      const safeZoneStart = Math.max(0, totalLength - limit);
+      const summarizeEnd = safeZoneStart;
+      const nodesToSummarizeCount = summarizeEnd - lastIndex;
 
-             // Call Summary Service
-             const sumResult = await summarizeContext(textBlock, LANG_MAP[language]);
+      if (nodesToSummarizeCount >= summaryStep) {
+          const toSummarize = contextNodes.slice(lastIndex, summarizeEnd);
+          const textBlock = toSummarize.map(s => `${s.role}: ${s.text}`).join("\n");
 
-             effectiveSummary = effectiveSummary
-                 ? `${effectiveSummary}\n[Later]: ${sumResult.summary}`
-                 : sumResult.summary;
+          // Call Summary Service
+          const sumResult = await summarizeContext(textBlock, LANG_MAP[language]);
 
-             segmentsToSend = contextNodes.slice(overflowCount);
-             summarySnapshot = sumResult.summary;
+          effectiveSummary = effectiveSummary
+              ? `${effectiveSummary}\n[Later]: ${sumResult.summary}`
+              : sumResult.summary;
 
-             // Log the summary action
-             setGameState(prev => ({
-                ...prev,
-                logs: [sumResult.log, ...prev.logs].slice(0, 50), // Keep last 50 logs
-                totalTokens: prev.totalTokens + (sumResult.log.usage?.totalTokens || 0)
-             }));
-         }
+          summarySnapshot = sumResult.summary;
+          lastIndex = summarizeEnd;
+
+          // Log the summary action
+          setGameState(prev => ({
+            ...prev,
+            logs: [sumResult.log, ...prev.logs].slice(0, 50),
+            totalTokens: prev.totalTokens + (sumResult.log.usage?.totalTokens || 0)
+          }));
       }
+
+      // Update the user node in state with the FINAL summary state for this turn
+      // This ensures that if we fork from here later, we have the correct state
+      if (!isInit) {
+          setGameState(prev => ({
+              ...prev,
+              nodes: {
+                  ...prev.nodes,
+                  [userNodeId]: {
+                      ...prev.nodes[userNodeId],
+                      accumulatedSummary: effectiveSummary,
+                      summarizedIndex: lastIndex
+                  }
+              },
+              // Update global view for UI (optional, but good for debugging)
+              accumulatedSummary: effectiveSummary,
+              lastSummarizedIndex: lastIndex
+          }));
+      }
+
+      // We send everything from the last summarized point onwards
+      let segmentsToSend = contextNodes.slice(lastIndex);
 
       // Generate Turn
       const { response, log, usage } = await generateAdventureTurn(
@@ -200,7 +255,10 @@ export const useGameEngine = () => {
         role: "model",
         timestamp: Date.now(),
         summarySnapshot: summarySnapshot || undefined,
-        usage: usage
+        usage: usage,
+        // Inherit summary state from the user node (which was just updated)
+        accumulatedSummary: effectiveSummary,
+        summarizedIndex: lastIndex
       };
 
       // Determine Toast Message based on state changes
@@ -380,7 +438,7 @@ export const useGameEngine = () => {
         inventory: newInventory,
         relationships: newRels,
         quests: newQuests,
-        currentQuest: newQuests.find(q => q.status === 'active' && q.type === 'main')?.title || prev.currentQuest, // Fallback sync
+        currentQuest: newQuests.find(q => q.status === 'active' && q.type === 'main')?.title || undefined, // Fallback sync
         currentLocation: newCurrentLocation,
         knownLocations: newKnownLocations,
         locations: newLocations,

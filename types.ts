@@ -8,11 +8,8 @@ export interface GameState {
   inventory: InventoryItem[];
   relationships: Relationship[];
   quests: Quest[];
-  // Deprecated: currentQuest (use quests instead)
-  currentQuest?: string;
   character: CharacterStatus;
 
-  // Location System
   // Location System
   currentLocation: string;
   knownLocations: string[];
@@ -21,6 +18,7 @@ export interface GameState {
   // Meta
   outline: StoryOutline | null;
   accumulatedSummary: string; // The summary of the story *prior* to the current context window
+  lastSummarizedIndex: number; // Track how many nodes have been summarized to avoid re-summarizing
 
   isProcessing: boolean;
   isImageGenerating: boolean;
@@ -107,6 +105,10 @@ export interface StorySegment {
   timestamp: number;
   summarySnapshot?: string; // If this node triggered a summary, store it here
   usage?: TokenUsage;
+
+  // Fork-safe Summary State
+  accumulatedSummary?: string; // The total summary of the story up to this node
+  summarizedIndex?: number; // The index in the history chain where the summary ends
 }
 
 export interface Location {

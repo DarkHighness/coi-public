@@ -30,10 +30,12 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
   const { nodes, activeNodeId, rootNodeId } = gameState;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Panning state
+  // Panning & Zoom state
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
+  const [isReady, setIsReady] = useState(false); // Prevent initial flash
 
   // Build Tree and Layout
   const { treeRoot, width, height, flatNodes } = useMemo(() => {
@@ -84,6 +86,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
       // Y-position is determined by leaf counting or simple spacing to avoid overlap.
 
       let maxY = 0;
+      let maxX = 0;
       const flatList: TreeNode[] = [];
 
       // Helper to assign coordinates
@@ -91,6 +94,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
       const layoutNode = (node: TreeNode, depth: number, startY: number): number => {
           node.depth = depth;
           node.x = 50 + depth * LEVEL_SPACING;
+          maxX = Math.max(maxX, node.x);
 
           // If leaf, assign Y and increment global Y tracker
           if (node.children.length === 0) {
@@ -130,29 +134,40 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
 
       return {
           treeRoot: root,
-          width: 50 + (Object.values(nodes).length) * (LEVEL_SPACING / 2) + 500, // Rough estimate
+          width: maxX + NODE_WIDTH + 500, // Ensure enough width based on actual node positions
           height: maxY + 200,
           flatNodes: flatList
       };
 
   }, [nodes, rootNodeId, activeNodeId]);
 
-  // Auto-center active node
-  useEffect(() => {
-      if (flatNodes.length > 0 && containerRef.current) {
-          const activeNode = flatNodes.find(n => n.id === activeNodeId);
-          if (activeNode) {
-             const containerW = containerRef.current.clientWidth;
-             const containerH = containerRef.current.clientHeight;
+  // Helper to center a node
+  const centerNode = (targetId: string | null, targetScale = scale) => {
+      if (!targetId || !containerRef.current) return;
+      const target = flatNodes.find(n => n.id === targetId);
+      if (target) {
+          const containerW = containerRef.current.clientWidth;
+          const containerH = containerRef.current.clientHeight;
 
-             // Center the active node
-             setPan({
-                 x: containerW / 2 - activeNode.x - NODE_WIDTH / 2,
-                 y: containerH / 2 - activeNode.y
-             });
-          }
+          // Calculate center with scale consideration
+          // We want: pan.x + target.x * scale + NODE_WIDTH/2 * scale = containerW / 2
+          // So: pan.x = containerW / 2 - (target.x + NODE_WIDTH/2) * scale
+
+          setPan({
+              x: containerW / 2 - (target.x + NODE_WIDTH / 2) * targetScale,
+              y: containerH / 2 - (target.y) * targetScale
+          });
       }
-  }, [activeNodeId, flatNodes.length]); // Only re-center on node change or initial load
+  };
+
+  // Initial centering
+  useEffect(() => {
+      if (flatNodes.length > 0 && containerRef.current && !isReady) {
+          centerNode(activeNodeId, 1);
+          // Small timeout to ensure layout is stable and prevent flash
+          requestAnimationFrame(() => setIsReady(true));
+      }
+  }, [flatNodes, activeNodeId]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
       setIsDragging(true);
@@ -185,6 +200,33 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
 
   const handleTouchEnd = () => setIsDragging(false);
 
+  // Zoom Handlers
+  const handleZoom = (delta: number) => {
+      const newScale = Math.min(Math.max(0.2, scale + delta), 2);
+      // Zoom towards center of screen
+      if (containerRef.current) {
+          const { clientWidth, clientHeight } = containerRef.current;
+          // Current center in world coords
+          // CenterX = (clientWidth/2 - pan.x) / scale
+          const worldCenterX = (clientWidth / 2 - pan.x) / scale;
+          const worldCenterY = (clientHeight / 2 - pan.y) / scale;
+
+          // New pan to keep worldCenter at screen center
+          // pan.x = clientWidth/2 - worldCenterX * newScale
+          setPan({
+              x: clientWidth / 2 - worldCenterX * newScale,
+              y: clientHeight / 2 - worldCenterY * newScale
+          });
+      }
+      setScale(newScale);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+      e.preventDefault();
+      const scaleAmount = -e.deltaY * 0.001;
+      handleZoom(scaleAmount);
+  };
+
   return (
     <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur flex flex-col animate-fade-in text-theme-text">
        {/* Header */}
@@ -192,7 +234,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
           <div>
             <h2 className="text-3xl font-fantasy text-theme-primary tracking-wide">{t.tree.map}</h2>
             <p className="text-xs text-theme-muted mt-1">
-               Timeline Browser • {Object.keys(nodes).length} Moments • Drag to Pan
+               Timeline Browser • {Object.keys(nodes).length} Moments • Drag to Pan • Scroll to Zoom
             </p>
           </div>
           <button onClick={onClose} className="text-theme-muted hover:text-theme-primary transition-colors p-2 border border-transparent hover:border-theme-muted rounded-full">
@@ -211,11 +253,17 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
          onTouchStart={handleTouchStart}
          onTouchMove={handleTouchMove}
          onTouchEnd={handleTouchEnd}
+         onWheel={handleWheel}
+         style={{ opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease-in' }}
        >
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
 
           <svg
-             style={{ transform: `translate(${pan.x}px, ${pan.y}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease-out' }}
+             style={{
+                 transformOrigin: '0 0',
+                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                 transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+             }}
              width={Math.max(4000, width)}
              height={Math.max(2000, height)}
              className="block"
@@ -296,10 +344,44 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
        </div>
 
        {/* Controls overlay */}
-       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-theme-surface-highlight/80 backdrop-blur rounded-full border border-theme-border text-xs text-theme-muted flex gap-4 shadow-xl">
-          <button onClick={() => setPan({ x: 0, y: 0 })} className="hover:text-theme-text">Reset View</button>
-          <span>|</span>
-          <span>Drag to Pan • Click to Time Travel</span>
+       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="px-4 py-2 bg-theme-surface-highlight/90 backdrop-blur rounded-full border border-theme-border text-xs text-theme-muted flex items-center gap-4 shadow-xl">
+
+              {/* Navigation Controls */}
+              <div className="flex gap-2 border-r border-theme-border pr-4">
+                  <button
+                    onClick={() => centerNode(rootNodeId)}
+                    className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
+                    title="Go to Start"
+                  >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                  </button>
+                  <button
+                    onClick={() => centerNode(activeNodeId)}
+                    className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
+                    title="Go to Current"
+                  >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  </button>
+              </div>
+
+              {/* Zoom Controls */}
+              <div className="flex gap-2 items-center">
+                  <button
+                    onClick={() => handleZoom(-0.2)}
+                    className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
+                  >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path></svg>
+                  </button>
+                  <span className="w-8 text-center font-mono opacity-70">{Math.round(scale * 100)}%</span>
+                  <button
+                    onClick={() => handleZoom(0.2)}
+                    className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
+                  >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                  </button>
+              </div>
+          </div>
        </div>
     </div>
   );
