@@ -29,10 +29,67 @@ export const fetchOpenAIModels = async (config: OpenAIConfig): Promise<ModelInfo
   try {
     const client = getClient(config);
     const list = await client.models.list();
-    return list.data.map((m) => ({
-      id: m.id,
-      name: m.id
-    }));
+    return list.data.map((m: any) => {
+      const id = m.id.toLowerCase();
+      const capabilities = {
+        text: false,
+        image: false,
+        video: false,
+        audio: false
+      };
+
+      // 1. Try to detect from OpenRouter-style 'architecture' fields
+      if (m.architecture) {
+          const { modality, output_modalities } = m.architecture;
+          if (output_modalities) {
+              if (output_modalities.includes('text')) capabilities.text = true;
+              if (output_modalities.includes('image')) capabilities.image = true;
+              if (output_modalities.includes('audio')) capabilities.audio = true;
+              if (output_modalities.includes('video')) capabilities.video = true;
+          } else if (modality) {
+             if (modality.includes('->text')) capabilities.text = true;
+             if (modality.includes('->image')) capabilities.image = true;
+             if (modality.includes('->audio')) capabilities.audio = true;
+             if (modality.includes('->video')) capabilities.video = true;
+          }
+      }
+
+      // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
+      const hasExplicitInfo = capabilities.text || capabilities.image || capabilities.video || capabilities.audio;
+
+      if (!hasExplicitInfo) {
+          // Image
+          if (id.includes('dall-e') || id.includes('stable-diffusion') || id.includes('flux') || id.includes('midjourney') || id.includes('image')) {
+              capabilities.image = true;
+          }
+          // Audio
+          if (id.includes('tts') || id.includes('whisper') || id.includes('audio')) {
+              capabilities.audio = true;
+          }
+          // Video
+          if (id.includes('sora') || id.includes('video') || id.includes('runway') || id.includes('luma')) {
+              capabilities.video = true;
+          }
+
+          // Text (Default)
+          // If it's not explicitly another modality, or if it matches known LLM patterns
+          if (capabilities.image || capabilities.audio || capabilities.video) {
+              // If it has other capabilities, check if it's also text (multimodal)
+              if (id.startsWith('gpt') || id.includes('chat') || id.includes('claude') || id.includes('gemini') || id.includes('llama') || id.includes('mistral')) {
+                  capabilities.text = true;
+              }
+          } else {
+              // If no other capability detected, assume text
+              capabilities.text = true;
+          }
+      }
+
+      return {
+        id: m.id,
+        name: m.name || m.id,
+        capabilities
+      };
+    });
   } catch (e) {
     console.warn("Failed to list OpenAI models", e);
     return [
@@ -82,14 +139,39 @@ export const fetchOpenAICompletion = async (
 
 export const generateOpenAIImage = async (
   config: OpenAIConfig,
-  prompt: string
+  prompt: string,
+  resolution: string = "1024x1024"
 ): Promise<{ url: string | null, usage?: any, raw?: any }> => {
   const client = getClient(config);
+
+  let size: any = resolution;
+
+  // DALL-E 3 requires specific sizes
+  if (config.modelId?.includes('dall-e-3')) {
+      // Map new resolutions to DALL-E 3 supported sizes
+      // Portrait: 2:3, 3:4, 4:5, 9:16 -> 1024x1792
+      if (["832x1248", "864x1184", "896x1152", "768x1344"].includes(resolution)) {
+          size = "1024x1792";
+      }
+      // Landscape: 3:2, 4:3, 5:4, 16:9, 21:9 -> 1792x1024
+      else if (["1248x832", "1184x864", "1152x896", "1344x768", "1536x672"].includes(resolution)) {
+          size = "1792x1024";
+      }
+      // Square: 1:1 -> 1024x1024
+      else {
+          size = "1024x1024";
+      }
+  } else {
+      // DALL-E 2 only supports squares (256, 512, 1024)
+      // Since our UI only provides non-standard squares or high-res rectangles, we default to 1024x1024
+      size = "1024x1024";
+  }
+
   const response = await client.images.generate({
     model: config.modelId || 'dall-e-3',
     prompt: prompt,
     n: 1,
-    size: "1024x1024",
+    size: size,
     response_format: "b64_json"
   });
 

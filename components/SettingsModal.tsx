@@ -29,6 +29,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('credentials');
   const [geminiModels, setGeminiModels] = useState<ModelInfo[]>([]);
   const [openaiModels, setOpenaiModels] = useState<ModelInfo[]>([]);
+  const [openrouterModels, setOpenrouterModels] = useState<ModelInfo[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [showSaveIndicator, setShowSaveIndicator] = useState(false);
 
@@ -43,13 +44,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const loadModels = async () => {
       setLoadingModels(true);
-      const [g, o] = await Promise.all([
+      const [g, o, or] = await Promise.all([
           getModels('gemini'),
-          getModels('openai')
+          getModels('openai'),
+          getModels('openrouter')
       ]);
       setGeminiModels(g);
       setOpenaiModels(o);
+      setOpenrouterModels(or);
       setLoadingModels(false);
+  };
+
+  // Filter and Sort Models
+  const getFilteredModels = (provider: 'gemini' | 'openai' | 'openrouter', type: FunctionKey) => {
+      const list = provider === 'gemini' ? geminiModels : (provider === 'openai' ? openaiModels : openrouterModels);
+      let filtered = list;
+
+      if (type === 'image') {
+          filtered = list.filter(m => m.capabilities?.image ?? (m.id.includes('imagen') || m.id.includes('dall-e') || m.id.includes('vision')));
+      } else if (type === 'video') {
+          filtered = list.filter(m => m.capabilities?.video ?? (m.id.includes('veo') || m.id.includes('sora')));
+      } else if (type === 'audio') {
+          filtered = list.filter(m => m.capabilities?.audio ?? (m.id.includes('gemini') || m.id.includes('tts') || m.id.includes('audio')));
+      } else {
+          // Text/Story/Lore/Translation
+          filtered = list.filter(m => m.capabilities?.text ?? (!m.id.includes('dall-e') && !m.id.includes('tts') && !m.id.includes('veo')));
+      }
+
+      return filtered.sort((a, b) => a.name.localeCompare(b.name));
   };
 
   // Instant Update Handler
@@ -68,7 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     updateSettings(newSettings);
   };
 
-  const updateCreds = (provider: 'gemini' | 'openai', field: 'apiKey' | 'baseUrl', value: string) => {
+  const updateCreds = (provider: 'gemini' | 'openai' | 'openrouter', field: 'apiKey' | 'baseUrl', value: string) => {
     const newSettings = {
       ...currentSettings,
       [provider]: { ...currentSettings[provider], [field]: value }
@@ -184,6 +206,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    type="text"
                    value={currentSettings.openai.baseUrl || ''}
                    onChange={(e) => updateCreds('openai', 'baseUrl', e.target.value)}
+                   placeholder="https://api.openai.com/v1"
+                   className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
+                   onBlur={loadModels}
+                 />
+              </div>
+
+              {/* OpenRouter Inputs */}
+              <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">OpenRouter</h3>
+                    <button
+                      onClick={async () => {
+                        const { isValid, error } = await validateConnection('openrouter');
+                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
+                      }}
+                      className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+                    >
+                      {t.testConnection}
+                    </button>
+                 </div>
+                 <input
+                   type="password"
+                   value={currentSettings.openrouter.apiKey || ''}
+                   onChange={(e) => updateCreds('openrouter', 'apiKey', e.target.value)}
+                   placeholder={t.creds.apiKeyPlaceholder}
+                   className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
+                   onBlur={loadModels}
+                 />
+                 <input
+                   type="text"
+                   value={currentSettings.openrouter.baseUrl || ''}
+                   onChange={(e) => updateCreds('openrouter', 'baseUrl', e.target.value)}
                    placeholder="https://openrouter.ai/api/v1"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
                    onBlur={loadModels}
@@ -224,7 +278,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 const sectionKey = section.key as FunctionKey;
                 const config = currentSettings[sectionKey];
                 const isEnabled = config.enabled !== false;
-                const modelList = config.provider === 'gemini' ? geminiModels : openaiModels;
+                const modelList = getFilteredModels(config.provider, sectionKey);
+                const isModelValid = modelList.some(m => m.id === config.modelId);
 
                 return (
                 <div key={section.key} className="space-y-3 pb-6 border-b border-theme-border last:border-0">
@@ -246,24 +301,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         onChange={(e) => updateFunction(sectionKey, 'provider', e.target.value)}
                         className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
                       >
-                        <option value="gemini">Gemini</option>
-                        <option value="openai">OpenAI</option>
+                        <option value="gemini" className="text-black dark:text-white">Gemini</option>
+                        <option value="openai" className="text-black dark:text-white">OpenAI</option>
+                        <option value="openrouter" className="text-black dark:text-white">OpenRouter</option>
                       </select>
 
                       <div className="col-span-2 relative">
                          <select
                             value={config.modelId}
                             onChange={(e) => updateFunction(sectionKey, 'modelId', e.target.value)}
-                            className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
+                            className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${!isModelValid && !loadingModels ? 'border-red-500 text-red-500' : 'border-theme-border'}`}
                             disabled={loadingModels}
                          >
-                            <option value={config.modelId}>{config.modelId} (Current)</option>
+                            <option value={config.modelId} className="text-black dark:text-white">{config.modelId} (Current)</option>
                             {modelList.map(m => (
-                                <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                                <option key={m.id} value={m.id} className="text-black dark:text-white">{m.name || m.id}</option>
                             ))}
                          </select>
                          {loadingModels && <div className="absolute right-2 top-2 text-theme-muted text-xs">{t.loadingGeneric}</div>}
+                         {!isModelValid && !loadingModels && (
+                             <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+                                 Model not found in list. Please select a valid model.
+                             </div>
+                         )}
                       </div>
+
+                      {sectionKey === 'image' && (
+                          <div className="col-span-3 mt-1 border-t border-theme-border pt-2">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t.models.resolution}</label>
+                                <select
+                                    value={config.resolution || '1024x1024'}
+                                    onChange={(e) => updateFunction(sectionKey, 'resolution', e.target.value)}
+                                    className="bg-theme-bg border border-theme-border rounded p-1 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-1/2 text-white"
+                                >
+                                    <option value="1024x1024" className="text-black dark:text-white">{t.models.resolutions.ratio11}</option>
+                                    <option value="832x1248" className="text-black dark:text-white">{t.models.resolutions.ratio23}</option>
+                                    <option value="1248x832" className="text-black dark:text-white">{t.models.resolutions.ratio32}</option>
+                                    <option value="864x1184" className="text-black dark:text-white">{t.models.resolutions.ratio34}</option>
+                                    <option value="1184x864" className="text-black dark:text-white">{t.models.resolutions.ratio43}</option>
+                                    <option value="896x1152" className="text-black dark:text-white">{t.models.resolutions.ratio45}</option>
+                                    <option value="1152x896" className="text-black dark:text-white">{t.models.resolutions.ratio54}</option>
+                                    <option value="768x1344" className="text-black dark:text-white">{t.models.resolutions.ratio916}</option>
+                                    <option value="1344x768" className="text-black dark:text-white">{t.models.resolutions.ratio169}</option>
+                                    <option value="1536x672" className="text-black dark:text-white">{t.models.resolutions.ratio219}</option>
+                                </select>
+                              </div>
+                          </div>
+                      )}
                    </div>
                 </div>
               );})}

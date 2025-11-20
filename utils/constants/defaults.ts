@@ -28,6 +28,10 @@ export const DEFAULTS: AISettings = {
     apiKey: undefined,
     baseUrl: DEFAULT_OPENAI_BASE_URL
   },
+  openrouter: {
+    apiKey: undefined,
+    baseUrl: "https://openrouter.ai/api/v1"
+  },
   contextLen: 10, // Summarize after 10 turns
   story: {
     provider: 'gemini',
@@ -36,7 +40,8 @@ export const DEFAULTS: AISettings = {
   image: {
     provider: 'gemini',
     modelId: 'imagen-4.0-generate-001',
-    enabled: true
+    enabled: true,
+    resolution: '512x512'
   },
   video: {
     provider: 'gemini',

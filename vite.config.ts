@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
             manualChunks: {
               'vendor-react': ['react', 'react-dom'],
               'vendor-ai': ['openai', '@google/genai'],
+              'vendor-openrouter': ['@openrouter/sdk'],
             }
           }
         }

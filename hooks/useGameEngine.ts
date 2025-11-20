@@ -169,7 +169,8 @@ export const useGameEngine = () => {
       if (!isInit) contextNodes.push(tempUserNode);
 
       const limit = aiSettings.contextLen || 16;
-      const summaryStep = 4;
+      // Use contextLen as the step to avoid too frequent summarization
+      const summaryStep = limit;
 
       let effectiveSummary = baseSummary;
       let lastIndex = baseIndex;
@@ -182,7 +183,8 @@ export const useGameEngine = () => {
       const summarizeEnd = safeZoneStart;
       const nodesToSummarizeCount = summarizeEnd - lastIndex;
 
-      if (nodesToSummarizeCount >= summaryStep) {
+      // Only summarize if we have enough new nodes AND we are advancing (not regressing)
+      if (nodesToSummarizeCount >= summaryStep && summarizeEnd > lastIndex) {
           const toSummarize = contextNodes.slice(lastIndex, summarizeEnd);
           const textBlock = toSummarize.map(s => `${s.role}: ${s.text}`).join("\n");
 
@@ -202,6 +204,9 @@ export const useGameEngine = () => {
             logs: [sumResult.log, ...prev.logs].slice(0, 50),
             totalTokens: prev.totalTokens + (sumResult.log.usage?.totalTokens || 0)
           }));
+      } else {
+          // Ensure lastIndex is at least baseIndex to prevent regression
+          lastIndex = Math.max(lastIndex, baseIndex);
       }
 
       // Update the user node in state with the FINAL summary state for this turn

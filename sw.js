@@ -18,8 +18,13 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Basic Cache-First Strategy for static assets, Network-First for APIs
-  if (event.request.url.includes('generativelanguage.googleapis.com') || event.request.url.includes('api')) {
-      event.respondWith(fetch(event.request));
+  // We return early to let the browser handle API requests naturally (bypassing SW)
+  if (
+      event.request.url.includes('generativelanguage.googleapis.com') ||
+      event.request.url.includes('api.openai.com') ||
+      event.request.url.includes('openrouter.ai') ||
+      event.request.url.includes('api')
+  ) {
       return;
   }
 

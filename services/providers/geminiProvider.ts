@@ -82,16 +82,34 @@ export const generateGeminiJson = async (
 export const generateGeminiImage = async (
   config: GeminiConfig,
   model: string,
-  prompt: string
+  prompt: string,
+  resolution: string = "1024x1024"
 ): Promise<{ url: string | null, usage?: any, raw?: any }> => {
   const ai = getGeminiClient(config);
+
+  // Map resolution to aspect ratio
+  let aspectRatio = "1:1";
+  switch (resolution) {
+    case "1024x1024": aspectRatio = "1:1"; break;
+    case "832x1248": aspectRatio = "2:3"; break;
+    case "1248x832": aspectRatio = "3:2"; break;
+    case "864x1184": aspectRatio = "3:4"; break;
+    case "1184x864": aspectRatio = "4:3"; break;
+    case "896x1152": aspectRatio = "4:5"; break;
+    case "1152x896": aspectRatio = "5:4"; break;
+    case "768x1344": aspectRatio = "9:16"; break;
+    case "1344x768": aspectRatio = "16:9"; break;
+    case "1536x672": aspectRatio = "21:9"; break;
+    default: aspectRatio = "1:1"; break;
+  }
+
   try {
     const response = await ai.models.generateImages({
       model: model,
       prompt: prompt,
       config: {
         numberOfImages: 1,
-        aspectRatio: "16:9",
+        aspectRatio: aspectRatio,
         outputMimeType: "image/jpeg",
       },
     });

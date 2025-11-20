@@ -11,6 +11,32 @@ export const useGamePersistence = (
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
 
+  // Helper to sanitize and fix state on load
+  const sanitizeState = (parsed: any): GameState => {
+      // Migrations
+      if (!parsed.logs) parsed.logs = [];
+      if (!parsed.totalTokens) parsed.totalTokens = 0;
+
+      // Reset processing state on load to prevent stuck state
+      parsed.isProcessing = false;
+      parsed.isImageGenerating = false;
+      parsed.error = null;
+
+      // Fix Dangling User Node (Crash/Exit during generation)
+      // If the last node is a 'user' node, it means we never got a response.
+      // Revert to parent so the user can try again.
+      if (parsed.activeNodeId && parsed.nodes[parsed.activeNodeId]) {
+          const lastNode = parsed.nodes[parsed.activeNodeId];
+          if (lastNode.role === 'user') {
+              console.warn("Detected dangling user node (crash recovery). Reverting to parent.");
+              if (lastNode.parentId) {
+                  parsed.activeNodeId = lastNode.parentId;
+              }
+          }
+      }
+      return parsed as GameState;
+  };
+
   // Load Slots and Current Game on Mount
   useEffect(() => {
     const slotsStr = localStorage.getItem('chronicles_meta_slots');
@@ -25,11 +51,8 @@ export const useGamePersistence = (
              const data = localStorage.getItem(`chronicles_save_${lastSlotId}`);
              if (data) {
                  const parsed = JSON.parse(data);
-                 // Migrations
-                 if (!parsed.logs) parsed.logs = [];
-                 if (!parsed.totalTokens) parsed.totalTokens = 0;
-
-                 setGameState(parsed);
+                 const sanitized = sanitizeState(parsed);
+                 setGameState(sanitized);
                  setCurrentSlotId(lastSlotId);
              }
         }
@@ -38,6 +61,7 @@ export const useGamePersistence = (
       }
     }
   }, []);
+
 
   // Auto-Save Logic
   useEffect(() => {
@@ -96,11 +120,8 @@ export const useGamePersistence = (
      const data = localStorage.getItem(`chronicles_save_${id}`);
      if (data) {
          const parsed = JSON.parse(data);
-         // Migrations
-         if (!parsed.logs) parsed.logs = [];
-         if (!parsed.totalTokens) parsed.totalTokens = 0;
-
-         setGameState(parsed);
+         const sanitized = sanitizeState(parsed);
+         setGameState(sanitized);
          setCurrentSlotId(id);
          return true;
      }

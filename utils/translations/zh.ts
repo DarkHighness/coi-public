@@ -290,7 +290,20 @@ export const zh = {
       loreHelp: "用于生成物品描述和背景故事。",
       enableFeature: "启用此功能",
       contextLen: "上下文长度",
-      contextLenHelp: "触发总结前的对话轮数 (越高记忆越好，成本越高)。"
+      contextLenHelp: "触发总结前的对话轮数 (越高记忆越好，成本越高)。",
+      resolution: "分辨率 / 宽高比",
+      resolutions: {
+          ratio11: "1:1 正方形 (1024x1024)",
+          ratio23: "2:3 竖屏 (832x1248)",
+          ratio32: "3:2 横屏 (1248x832)",
+          ratio34: "3:4 竖屏 (864x1184)",
+          ratio43: "4:3 横屏 (1184x864)",
+          ratio45: "4:5 竖屏 (896x1152)",
+          ratio54: "5:4 横屏 (1152x896)",
+          ratio916: "9:16 手机 (768x1344)",
+          ratio169: "16:9 桌面 (1344x768)",
+          ratio219: "21:9 电影 (1536x672)"
+      }
     },
     outline: {
        title: "故事大纲",

@@ -23,7 +23,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             Close Console
           </button>
        </div>
-       
+
        {/* Content */}
        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-theme-bg/50">
           {logs.length === 0 && (
@@ -32,7 +32,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 <p>No logs recorded in this session.</p>
              </div>
           )}
-          
+
           {logs.map((log) => {
              const isError = !!log.response?.error || !!log.request?.error;
              return (
@@ -73,7 +73,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                         </div>
                      </div>
                   </div>
-                  
+
                   {/* Log Footer (Usage) */}
                   {log.usage && (
                      <div className="px-4 py-2 bg-theme-surface-highlight/10 border-t border-theme-border/30 flex justify-end gap-6 text-xs text-yellow-500/80">

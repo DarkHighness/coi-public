@@ -25,10 +25,18 @@ import {
   getCurrentStateContext
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
-import { THEMES } from "../utils/constants/themes"; // Keep for fallback if needed, or remove if fully migrated. Keeping for now just in case.
+import {
+  OpenRouterConfig,
+  fetchOpenRouterModels,
+  validateOpenRouterConnection,
+  generateOpenRouterJson,
+  generateOpenRouterImage,
+  generateOpenRouterSpeech
+} from "./providers/openRouterProvider";
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
+let openRouterConfig: OpenRouterConfig = { apiKey: "", baseUrl: "" };
 let currentSettings: AISettings = JSON.parse(JSON.stringify(DEFAULTS));
 
 export const updateAIConfig = (settings: AISettings) => {
@@ -36,9 +44,11 @@ export const updateAIConfig = (settings: AISettings) => {
   const geminiBase = settings.gemini.baseUrl ? settings.gemini.baseUrl.replace(/\/+$/, "") : undefined;
   geminiConfig = { apiKey: settings.gemini.apiKey || getEnvApiKey(), baseUrl: geminiBase };
 
-
   const openaiBase = settings.openai.baseUrl ? settings.openai.baseUrl.replace(/\/+$/, "") : DEFAULT_OPENAI_BASE_URL;
   openaiConfig = { apiKey: settings.openai.apiKey || "", baseUrl: openaiBase, modelId: "" };
+
+  const openRouterBase = settings.openrouter?.baseUrl ? settings.openrouter.baseUrl.replace(/\/+$/, "") : "https://openrouter.ai/api/v1";
+  openRouterConfig = { apiKey: settings.openrouter?.apiKey || "", baseUrl: openRouterBase };
 };
 
 const getProviderConfig = (func: 'story' | 'image' | 'video' | 'audio' | 'translation' | 'lore') => {
@@ -73,15 +83,18 @@ const getLangCode = (language: string): 'en' | 'zh' => {
 
 // --- API Functions ---
 
-export const getModels = async (provider: 'gemini' | 'openai'): Promise<ModelInfo[]> => {
+export const getModels = async (provider: 'gemini' | 'openai' | 'openrouter'): Promise<ModelInfo[]> => {
   if (provider === 'gemini') return await fetchGeminiModels(geminiConfig);
+  if (provider === 'openrouter') return await fetchOpenRouterModels(openRouterConfig);
   return await fetchOpenAIModels({ ...openaiConfig, apiKey: currentSettings.openai.apiKey || '' });
 };
 
-export const validateConnection = async (provider: 'gemini' | 'openai'): Promise<{ isValid: boolean; error?: string }> => {
+export const validateConnection = async (provider: 'gemini' | 'openai' | 'openrouter'): Promise<{ isValid: boolean; error?: string }> => {
   try {
     if (provider === 'gemini') {
       await validateGeminiConnection(geminiConfig);
+    } else if (provider === 'openrouter') {
+      await validateOpenRouterConnection(openRouterConfig);
     } else {
       await validateOpenAIConnection({ ...openaiConfig, apiKey: currentSettings.openai.apiKey || '' });
     }
@@ -112,7 +125,12 @@ export const generateStoryOutline = async (
     const specificConfig = { ...openaiConfig, modelId: modelId };
     const schema = toOpenAIStrictSchema(storyOutlineSchema);
     ({ result, usage, raw } = await fetchOpenAICompletion(specificConfig, sys, [{ role: "user", content: prompt }], schema));
-    const log = createLogEntry('openai', modelId, 'chat/completions', { system: sys, prompt }, raw, usage);
+    const log = createLogEntry(provider, modelId, 'chat/completions', { system: sys, prompt }, raw, usage);
+    return { outline: result, log };
+  } else if (provider === 'openrouter') {
+    const schema = toOpenAIStrictSchema(storyOutlineSchema);
+    ({ result } = await generateOpenRouterJson(openRouterConfig, modelId, sys, [{ role: "user", content: prompt }], schema));
+    const log = createLogEntry(provider, modelId, 'chat/completions', { system: sys, prompt }, result, undefined);
     return { outline: result, log };
   } else {
     // ... gemini implementation
@@ -133,7 +151,12 @@ export const summarizeContext = async (textToSummarize: string, language: string
       const specificConfig = { ...openaiConfig, modelId: modelId };
       const schema = toOpenAIStrictSchema(summarySchema);
       ({ result, usage, raw } = await fetchOpenAICompletion(specificConfig, sys, [{ role: "user", content: prompt }], schema));
-      const log = createLogEntry('openai', modelId, 'chat/completions', { prompt }, raw, usage);
+      const log = createLogEntry(provider, modelId, 'chat/completions', { prompt }, raw, usage);
+      return { summary: result.summary, log };
+    } else if (provider === 'openrouter') {
+      const schema = toOpenAIStrictSchema(summarySchema);
+      ({ result } = await generateOpenRouterJson(openRouterConfig, modelId, sys, [{ role: "user", content: prompt }], schema));
+      const log = createLogEntry(provider, modelId, 'chat/completions', { prompt }, result, undefined);
       return { summary: result.summary, log };
     } else {
       // ... gemini implementation
@@ -205,8 +228,25 @@ export const generateAdventureTurn = async (
 
     // Pass coreSystemInstruction as the primary system prompt
     ({ result, usage, raw } = await fetchOpenAICompletion(specificConfig, coreSystemInstruction, messages, schema));
-    const log = createLogEntry('openai', modelId, 'chat/completions', { coreSystemInstruction, staticWorldContext, dynamicStoryContext, messages }, raw, usage);
+    const log = createLogEntry(provider, modelId, 'chat/completions', { coreSystemInstruction, staticWorldContext, dynamicStoryContext, messages }, raw, usage);
     return { response: result, log, usage };
+  } else if (provider === 'openrouter') {
+    const messages = [];
+    messages.push({ role: 'system', content: staticWorldContext });
+    if (dynamicStoryContext) {
+        messages.push({ role: 'system', content: dynamicStoryContext });
+    }
+    messages.push({ role: 'system', content: currentStateContext });
+    messages.push(...recentHistory.map(seg => ({
+      role: seg.role === 'model' ? 'assistant' : 'user',
+      content: seg.text
+    })));
+    messages.push({ role: 'user', content: userAction });
+
+    const schema = toOpenAIStrictSchema(gameResponseSchema);
+    ({ result } = await generateOpenRouterJson(openRouterConfig, modelId, coreSystemInstruction, messages, schema));
+    const log = createLogEntry(provider, modelId, 'chat/completions', { coreSystemInstruction, staticWorldContext, dynamicStoryContext, messages }, result, undefined);
+    return { response: result, log, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
   } else {
     // ... gemini implementation
     // For Gemini, we combine Core + Static World into the system instruction to maximize static prefix.
@@ -242,20 +282,28 @@ export const generateAdventureTurn = async (
 };
 
 export const generateSceneImage = async (prompt: string): Promise<{ url: string | null, log: LogEntry }> => {
-  const { provider, modelId, enabled } = getProviderConfig('image');
+  const { provider, modelId, enabled, resolution } = getProviderConfig('image');
   if (!enabled) return { url: null, log: createLogEntry('none', 'none', 'image', { disabled: true }, null) };
 
   const styledPrompt = getSceneImagePrompt(prompt);
   let url, usage, raw;
 
-  if (provider === 'openai') {
-     const specificConfig = { ...openaiConfig, modelId: modelId };
-     ({ url, usage, raw } = await generateOpenAIImage(specificConfig, styledPrompt));
-     const log = createLogEntry('openai', modelId, 'images/generations', { prompt: styledPrompt }, raw, usage);
+  if (provider === 'openai' || provider === 'openrouter') {
+     const specificConfig = provider === 'openai'
+        ? { ...openaiConfig, modelId: modelId }
+        : { apiKey: openRouterConfig.apiKey, baseUrl: openRouterConfig.baseUrl || 'https://openrouter.ai/api/v1', modelId: modelId };
+
+     if (provider === 'openrouter') {
+         ({ url, usage, raw } = await generateOpenRouterImage(specificConfig, modelId, styledPrompt, resolution));
+     } else {
+         ({ url, usage, raw } = await generateOpenAIImage(specificConfig, styledPrompt, resolution));
+     }
+
+     const log = createLogEntry(provider, modelId, 'images/generations', { prompt: styledPrompt, resolution }, raw, usage);
      return { url, log };
   } else {
-     ({ url, usage, raw } = await generateGeminiImage(geminiConfig, modelId, styledPrompt));
-     const log = createLogEntry('gemini', modelId, 'generateImages', { prompt: styledPrompt }, raw, usage);
+     ({ url, usage, raw } = await generateGeminiImage(geminiConfig, modelId, styledPrompt, resolution));
+     const log = createLogEntry('gemini', modelId, 'generateImages', { prompt: styledPrompt, resolution }, raw, usage);
      return { url, log };
   }
 };
@@ -269,11 +317,9 @@ export const getItemDescription = async (item: string, context: string, language
     let result;
     if (provider === 'openai') {
        const specificConfig = { ...openaiConfig, modelId: modelId };
-       // Note: getItemDescription doesn't have a strict schema defined in schemas.ts yet, it returns any.
-       // For now, we might need to define one or fallback to json_object if no schema passed.
-       // But fetchOpenAICompletion now expects schema or defaults to json_object if undefined.
-       // Let's use json_object for now as there is no schema imported for this.
        ({ result } = await fetchOpenAICompletion(specificConfig, sys, [{ role: "user", content: prompt }]));
+    } else if (provider === 'openrouter') {
+       ({ result } = await generateOpenRouterJson(openRouterConfig, modelId, sys, [{ role: "user", content: prompt }]));
     } else {
        ({ result } = await generateGeminiJson(geminiConfig, modelId, [{role: 'user', parts: [{ text: prompt }]}], sys));
     }
@@ -309,6 +355,9 @@ export const translateGameContent = async (
        const specificConfig = { ...openaiConfig, modelId: modelId };
        const schema = toOpenAIStrictSchema(translationSchema);
        ({ result } = await fetchOpenAICompletion(specificConfig, sys, [{ role: "user", content: prompt }], schema));
+    } else if (provider === 'openrouter') {
+       const schema = toOpenAIStrictSchema(translationSchema);
+       ({ result } = await generateOpenRouterJson(openRouterConfig, modelId, sys, [{ role: "user", content: prompt }], schema));
     } else {
       ({ result } = await generateGeminiJson(geminiConfig, modelId, [{ role: 'user', parts: [{ text: prompt }]}], sys, translationSchema));
     }
@@ -334,6 +383,9 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
   if (provider === 'openai') {
      const specificConfig = { ...openaiConfig, modelId: modelId };
      const { audio } = await generateOpenAISpeech(specificConfig, text);
+     return audio;
+  } else if (provider === 'openrouter') {
+     const { audio } = await generateOpenRouterSpeech(openRouterConfig, modelId, text);
      return audio;
   } else {
      const { audio } = await generateGeminiSpeech(geminiConfig, modelId, text, voiceName);

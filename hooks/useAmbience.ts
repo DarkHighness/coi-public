@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const useAmbience = (environment?: string, volume: number = 0.5, muted: boolean = false) => {
+export const useAmbience = (
+  environment?: string,
+  volume: number = 0.5,
+  muted: boolean = false,
+  onPlay?: (env: string) => void
+) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentEnv, setCurrentEnv] = useState<string | undefined>(undefined);
+  const onPlayRef = useRef(onPlay);
+
+  useEffect(() => {
+    onPlayRef.current = onPlay;
+  }, [onPlay]);
 
   // Update volume/mute for active track
   useEffect(() => {
@@ -18,7 +28,6 @@ export const useAmbience = (environment?: string, volume: number = 0.5, muted: b
             const oldAudio = audioRef.current;
             // Clear ref immediately to prevent race conditions
             audioRef.current = null;
-            setCurrentEnv(undefined);
 
             const fadeOutInterval = setInterval(() => {
                 if (oldAudio.volume > 0.05) {
@@ -30,10 +39,13 @@ export const useAmbience = (environment?: string, volume: number = 0.5, muted: b
                 }
             }, 100);
         }
-        return;
-    }
 
-    // If it's the same as current, do nothing
+        // Always reset currentEnv if environment is missing, even if audioRef was null
+        if (currentEnv !== undefined) {
+            setCurrentEnv(undefined);
+        }
+        return;
+    }    // If it's the same as current, do nothing
     if (environment === currentEnv) return;
 
     const playNewTrack = async () => {
@@ -80,6 +92,9 @@ export const useAmbience = (environment?: string, volume: number = 0.5, muted: b
         // 5. Update ref and state
         audioRef.current = newAudio;
         setCurrentEnv(environment);
+        if (onPlayRef.current) {
+          onPlayRef.current(environment);
+        }
 
       } catch (error) {
         console.warn(`Failed to play ambience for ${environment}:`, error);

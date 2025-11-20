@@ -51,6 +51,9 @@ export default function App() {
   // Typing State for Audio Control
   const [isTyping, setIsTyping] = useState(false);
 
+  // Ref to track last played environment for notifications
+  const lastPlayedEnvRef = useRef<string | undefined>(undefined);
+
   const t = TRANSLATIONS[language];
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
 
@@ -67,16 +70,15 @@ export default function App() {
     }
   }, [currentHistory]);
 
-  // Centralized Menu/View State Handler to ensure Audio stops
+  // Centralized Menu/View State Handler
+  // We rely on reactive state (isAnyMenuOpen) to handle audio pausing/stopping
+  // instead of manually toggling isTyping, which causes audio to not resume after closing a menu.
   const handleInterfaceState = (
       action: () => void,
       shouldStopAudio: boolean = true
   ) => {
-      if (shouldStopAudio) {
-          // Explicitly disable typing state to stop audio immediately
-          // This acts as a "pause" for the scene flow
-          setIsTyping(false);
-      }
+      // Note: We previously set isTyping(false) here, but that permanently killed audio for the turn.
+      // Now we let the useAmbience hook handle the pause via isAnyMenuOpen check.
       action();
   };
 
@@ -89,7 +91,14 @@ export default function App() {
   useAmbience(
     shouldPlayAmbience ? currentSegment?.environment : undefined,
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
-    aiSettings.audioVolume?.bgmMuted ?? false
+    aiSettings.audioVolume?.bgmMuted ?? false,
+    (env) => {
+      if (env !== lastPlayedEnvRef.current) {
+        const envName = env.charAt(0).toUpperCase() + env.slice(1);
+        showToast(`${t.audioSettings.environment}: ${envName}`);
+        lastPlayedEnvRef.current = env;
+      }
+    }
   );
 
   const effectText = currentSegment ? currentSegment.text : "";
@@ -130,13 +139,22 @@ export default function App() {
   };
 
   const validateConfig = () => {
-      const storyProvider = aiSettings.story.provider;
-      if (storyProvider === 'gemini') {
-          if (aiSettings.gemini.apiKey || getEnvApiKey()) return true;
-      } else if (storyProvider === 'openai') {
-          if (aiSettings.openai.apiKey) return true;
-      }
-      return false;
+      const hasApiKey = (provider: string) => {
+          if (provider === 'gemini') return !!(aiSettings.gemini.apiKey || getEnvApiKey());
+          if (provider === 'openai') return !!aiSettings.openai.apiKey;
+          if (provider === 'openrouter') return !!aiSettings.openrouter?.apiKey;
+          return false;
+      };
+
+      // Story is always enabled
+      if (!hasApiKey(aiSettings.story.provider)) return false;
+
+      // Check other enabled features
+      if (aiSettings.image.enabled && !hasApiKey(aiSettings.image.provider)) return false;
+      if (aiSettings.audio.enabled && !hasApiKey(aiSettings.audio.provider)) return false;
+      if (aiSettings.video.enabled && !hasApiKey(aiSettings.video.provider)) return false;
+
+      return true;
   };
 
   const performValidation = async (): Promise<boolean> => {
@@ -146,15 +164,21 @@ export default function App() {
           return false;
       }
 
-      const provider = aiSettings.story.provider as 'gemini' | 'openai';
-      showToast("Validating connection...", 'info');
+      showToast("Validating connections...", 'info');
 
-      const { isValid, error } = await validateConnection(provider);
+      const providersToCheck = new Set<string>();
+      providersToCheck.add(aiSettings.story.provider);
+      if (aiSettings.image.enabled) providersToCheck.add(aiSettings.image.provider);
+      if (aiSettings.audio.enabled) providersToCheck.add(aiSettings.audio.provider);
+      if (aiSettings.video.enabled) providersToCheck.add(aiSettings.video.provider);
 
-      if (!isValid) {
-          showToast(error || "Invalid API Key or Connection Failed", 'error');
-          setIsSettingsOpen(true);
-          return false;
+      for (const provider of Array.from(providersToCheck)) {
+          const { isValid, error } = await validateConnection(provider as any);
+          if (!isValid) {
+              showToast(`${provider}: ${error || "Connection Failed"}`, 'error');
+              setIsSettingsOpen(true);
+              return false;
+          }
       }
       return true;
   };

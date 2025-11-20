@@ -290,7 +290,20 @@ export const en = {
       loreHelp: "Used for generating item descriptions and lore.",
       enableFeature: "Enable this feature",
       contextLen: "Context Length",
-      contextLenHelp: "Number of turns before summarization (Higher = More Memory, Higher Cost)."
+      contextLenHelp: "Number of turns before summarization (Higher = More Memory, Higher Cost).",
+      resolution: "Resolution / Aspect Ratio",
+      resolutions: {
+          ratio11: "1:1 Square (1024x1024)",
+          ratio23: "2:3 Portrait (832x1248)",
+          ratio32: "3:2 Landscape (1248x832)",
+          ratio34: "3:4 Portrait (864x1184)",
+          ratio43: "4:3 Landscape (1184x864)",
+          ratio45: "4:5 Portrait (896x1152)",
+          ratio54: "5:4 Landscape (1152x896)",
+          ratio916: "9:16 Mobile (768x1344)",
+          ratio169: "16:9 Desktop (1344x768)",
+          ratio219: "21:9 Cinematic (1536x672)"
+      }
     },
     outline: {
        title: "Story Outline",

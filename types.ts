@@ -213,7 +213,7 @@ export interface ThemeConfig {
 
 export type LanguageCode = 'en' | 'zh';
 
-export type AIProvider = 'gemini' | 'openai';
+export type AIProvider = 'gemini' | 'openai' | 'openrouter';
 
 export interface ProviderCredentials {
   apiKey?: string;
@@ -224,11 +224,13 @@ export interface FunctionConfig {
   provider: AIProvider;
   modelId: string;
   enabled?: boolean;
+  resolution?: string; // e.g. "512x512", "1024x1024"
 }
 
 export interface AISettings {
   gemini: ProviderCredentials;
   openai: ProviderCredentials;
+  openrouter: ProviderCredentials;
   contextLen: number; // Max conversation turns before summarization
 
   story: FunctionConfig;
@@ -249,6 +251,12 @@ export interface AISettings {
 export interface ModelInfo {
   id: string;
   name?: string;
+  capabilities?: {
+    image?: boolean;
+    video?: boolean;
+    audio?: boolean;
+    text?: boolean;
+  };
 }
 
 export type FeedLayout = 'scroll' | 'stack';
