@@ -22,10 +22,10 @@ export const storyOutlineSchema: Schema = {
                 label: { type: Type.STRING, description: "Name of attribute (e.g. Health, Sanity, Credits)." },
                 value: { type: Type.INTEGER, description: "Starting value" },
                 maxValue: { type: Type.INTEGER, description: "Maximum value" },
-                color: { 
-                   type: Type.STRING, 
+                color: {
+                   type: Type.STRING,
                    enum: ["red", "blue", "green", "yellow", "purple", "gray"],
-                   description: "Visual color hint." 
+                   description: "Visual color hint."
                 }
              }
           },
@@ -71,96 +71,108 @@ export const gameResponseSchema: Schema = {
     choices: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "A list of 2-4 actions the user can take next. MUST be simple strings, not objects. Choices must advance the plot.",
+      description: "A list of 2-4 actions the user can take next. MUST be simple strings.",
     },
-    inventory: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "The COMPLETE updated list of items in the user's inventory based on the story events.",
-    },
-    relationships: {
+    inventoryActions: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
+          action: { type: Type.STRING, enum: ["add", "remove", "update"] },
+          item: { type: Type.STRING, description: "Name of the item." },
+          newItem: { type: Type.STRING, description: "New name if action is 'update'." },
+          description: { type: Type.STRING, description: "Visual description of the item." },
+          lore: { type: Type.STRING, description: "Brief lore or history." },
+          isMystery: { type: Type.BOOLEAN, description: "True if the item's true nature is hidden." }
+        },
+        required: ["action", "item"]
+      },
+      description: "List of changes to the inventory."
+    },
+    relationshipActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          action: { type: Type.STRING, enum: ["add", "update", "remove"] },
           name: { type: Type.STRING, description: "Name of the NPC" },
-          description: { type: Type.STRING, description: "Brief description of who they are and their current relevance." },
-          status: { type: Type.STRING, description: "Current status (e.g. Ally, Enemy, Neutral, Romance, Deceased)" },
-          affinity: { type: Type.INTEGER, description: "Affinity score from 0 (Hated) to 100 (Soulmate). 50 is Neutral. ALWAYS provide a number even if unknown." },
-          affinityKnown: { type: Type.BOOLEAN, description: "Set to FALSE if the player does not know the character's true feelings (hidden/mysterious). Default TRUE." }
+          description: { type: Type.STRING },
+          status: { type: Type.STRING },
+          affinity: { type: Type.INTEGER },
+          affinityKnown: { type: Type.BOOLEAN }
         },
-        required: ["name", "description", "status", "affinity", "affinityKnown"]
+        required: ["action", "name"]
       },
-      description: "The COMPLETE list of significant characters met so far and their updated relationship status/affinity."
+      description: "List of changes to relationships. Empty if no changes."
     },
-    currentQuest: {
-      type: Type.STRING,
-      description: "The current main objective or quest description.",
-    },
-    currentLocation: {
-        type: Type.STRING,
-        description: "The specific location where the scene is currently taking place."
-    },
-    knownLocations: {
-        type: Type.ARRAY,
-        items: { type: Type.STRING },
-        description: "List of significant locations the player has visited or unlocked."
-    },
-    character: {
-      type: Type.OBJECT,
-      properties: {
-        name: { type: Type.STRING, description: "Character name" },
-        title: { type: Type.STRING, description: "Class/Role/Title (e.g. Cyber-Samurai, Level 3 Mage)" },
-        attributes: {
-          type: Type.ARRAY,
-          items: {
-             type: Type.OBJECT,
-             properties: {
-                label: { type: Type.STRING, description: "Name of attribute (e.g. Health, Sanity, Credits, Energy)" },
-                value: { type: Type.INTEGER, description: "Current value" },
-                maxValue: { type: Type.INTEGER, description: "Maximum value" },
-                color: { 
-                   type: Type.STRING, 
-                   enum: ["red", "blue", "green", "yellow", "purple", "gray"],
-                   description: "Visual color hint for UI" 
-                }
-             }
-          },
-          description: "A dynamic list of character stats relevant to the story. 1-3 stats max. If the story doesn't use stats (e.g. pure mystery), return an empty array."
+    locationActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          type: { type: Type.STRING, enum: ["current", "known"] },
+          action: { type: Type.STRING, enum: ["update", "add"] },
+          name: { type: Type.STRING, description: "Name of the location." },
+          description: { type: Type.STRING, description: "Visual description of the location." },
+          lore: { type: Type.STRING, description: "Brief lore or history." }
         },
-        skills: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING, description: "Skill name" },
-              level: { type: Type.STRING, description: "Mastery level (e.g. Novice, Expert, Lvl 1)" },
-              description: { type: Type.STRING, description: "Short description" }
-            },
-            required: ["name", "level"]
-          },
-          description: "List of learned skills/abilities."
-        },
-        status: { type: Type.STRING, description: "Current condition (e.g. Healthy, Poisoned, Malfunctioning)" }
+        required: ["type", "action", "name"]
       },
-      required: ["name", "title", "attributes", "skills", "status"],
-      description: "Updated character statistics based on story events."
+      description: "Updates to location. Use type='current' to move the player. Use type='known' to add discovered places."
+    },
+    characterActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          target: { type: Type.STRING, enum: ["attribute", "skill", "status"] },
+          action: { type: Type.STRING, enum: ["add", "remove", "update"] },
+          name: { type: Type.STRING, description: "Name of the attribute/skill. Use 'status' if target is status." },
+          value: { type: Type.STRING, description: "New value (for status/skill level) or stringified number (for attributes)." }, // Schema limitation: mixed types hard, use string/int handling in code or separate fields. Let's use value as generic or specific fields.
+          // To keep it simple for the AI, let's define specific value fields or just use 'value' as integer for attributes?
+          // Actually, for attributes it's an integer. For status/skill it's a string.
+          // Let's split or just use a flexible approach.
+          // Better approach for Schema:
+          intValue: { type: Type.INTEGER, description: "For attributes: the new value." },
+          strValue: { type: Type.STRING, description: "For status/skills: the new value/level." },
+          maxValue: { type: Type.INTEGER },
+          color: { type: Type.STRING },
+          description: { type: Type.STRING }
+        },
+        required: ["target", "action", "name"]
+      },
+      description: "Changes to character stats, skills, or status condition."
+    },
+    questActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          action: { type: Type.STRING, enum: ["add", "update", "complete", "fail"] },
+          id: { type: Type.STRING, description: "Unique ID for the quest (e.g. 'find_relic')." },
+          title: { type: Type.STRING, description: "Quest title." },
+          description: { type: Type.STRING, description: "Quest objective." },
+          type: { type: Type.STRING, enum: ["main", "side"] }
+        },
+        required: ["action", "id"]
+      },
+      description: "Updates to quests."
     },
     imagePrompt: {
       type: Type.STRING,
-      description: "A detailed visual description of the current scene for an image generator. Focus on environment and mood.",
+      description: "Visual description for the scene.",
     },
     theme: {
       type: Type.STRING,
       enum: [
-        "fantasy", "scifi", "cyberpunk", "horror", "mystery", 
+        "fantasy", "scifi", "cyberpunk", "horror", "mystery",
         "modern_romance", "palace_drama", "wuxia", "xianxia", "ceo",
         "long_aotian", "villain_op", "period_drama"
       ],
-      description: "The current genre/theme of the story based on the context.",
+      description: "Update the theme ONLY if it shifts significantly.",
     }
   },
-  required: ["narrative", "choices", "inventory", "relationships", "currentQuest", "currentLocation", "knownLocations", "character", "imagePrompt", "theme"],
+  required: ["narrative", "choices", "inventoryActions", "relationshipActions", "locationActions", "characterActions", "questActions", "imagePrompt"],
 };
 
 export const translationSchema: Schema = {

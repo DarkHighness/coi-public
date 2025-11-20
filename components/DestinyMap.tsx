@@ -29,7 +29,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
   const t = TRANSLATIONS[language];
   const { nodes, activeNodeId, rootNodeId } = gameState;
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Panning state
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -41,8 +41,8 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
 
       // 1. Build Hierarchy
       const nodeMap = new Map<string, TreeNode>();
-      const allSegments = Object.values(nodes);
-      
+      const allSegments = Object.values(nodes) as StorySegment[];
+
       // Initialize wrapper objects
       allSegments.forEach(seg => {
           nodeMap.set(seg.id, {
@@ -80,9 +80,9 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
       if (!root) return { treeRoot: null, width: 0, height: 0, flatNodes: [] };
 
       // 2. Calculate Layout (Horizontal Tree)
-      // We use a simple recursive traversal. 
+      // We use a simple recursive traversal.
       // Y-position is determined by leaf counting or simple spacing to avoid overlap.
-      
+
       let maxY = 0;
       const flatList: TreeNode[] = [];
 
@@ -91,7 +91,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
       const layoutNode = (node: TreeNode, depth: number, startY: number): number => {
           node.depth = depth;
           node.x = 50 + depth * LEVEL_SPACING;
-          
+
           // If leaf, assign Y and increment global Y tracker
           if (node.children.length === 0) {
               node.y = startY;
@@ -103,7 +103,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
           // If branch, layout children vertically
           let currentChildY = startY;
           const childCenters: number[] = [];
-          
+
           // Sort children to keep main path somewhat central or consistent
           node.children.sort((a, b) => a.segment.timestamp - b.segment.timestamp);
 
@@ -118,7 +118,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
           const minChildY = childCenters[0];
           const maxChildY = childCenters[childCenters.length - 1];
           node.y = (minChildY + maxChildY) / 2;
-          
+
           maxY = Math.max(maxY, node.y);
           flatList.push(node);
 
@@ -144,7 +144,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
           if (activeNode) {
              const containerW = containerRef.current.clientWidth;
              const containerH = containerRef.current.clientHeight;
-             
+
              // Center the active node
              setPan({
                  x: containerW / 2 - activeNode.x - NODE_WIDTH / 2,
@@ -169,6 +169,22 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
 
   const handleMouseUp = () => setIsDragging(false);
 
+  // Touch Support
+  const handleTouchStart = (e: React.TouchEvent) => {
+      setIsDragging(true);
+      setLastMouse({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - lastMouse.x;
+      const dy = e.touches[0].clientY - lastMouse.y;
+      setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+      setLastMouse({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = () => setIsDragging(false);
+
   return (
     <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur flex flex-col animate-fade-in text-theme-text">
        {/* Header */}
@@ -185,20 +201,23 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
        </div>
 
        {/* Canvas */}
-       <div 
+       <div
          ref={containerRef}
          className="flex-1 overflow-hidden relative bg-theme-bg cursor-grab active:cursor-grabbing select-none"
          onMouseDown={handleMouseDown}
          onMouseMove={handleMouseMove}
          onMouseUp={handleMouseUp}
          onMouseLeave={handleMouseUp}
+         onTouchStart={handleTouchStart}
+         onTouchMove={handleTouchMove}
+         onTouchEnd={handleTouchEnd}
        >
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
-          
-          <svg 
+
+          <svg
              style={{ transform: `translate(${pan.x}px, ${pan.y}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease-out' }}
-             width={Math.max(4000, width)} 
-             height={Math.max(2000, height)} 
+             width={Math.max(4000, width)}
+             height={Math.max(2000, height)}
              className="block"
           >
              {/* Connections */}
@@ -208,9 +227,9 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
                     // Horizontal Cubic Bezier
                     const midX = (node.x + NODE_WIDTH + child.x) / 2;
                     const d = `M ${node.x + NODE_WIDTH} ${node.y} C ${midX} ${node.y}, ${midX} ${child.y}, ${child.x} ${child.y}`;
-                    
+
                     return (
-                        <path 
+                        <path
                            key={`${node.id}-${child.id}`}
                            d={d}
                            fill="none"
@@ -227,30 +246,30 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
                  const isCurrent = node.id === activeNodeId;
                  const isModel = node.segment.role === 'model';
                  const isActivePath = node.isMainPath;
-                 
+
                  return (
-                    <g 
-                      key={node.id} 
+                    <g
+                      key={node.id}
                       transform={`translate(${node.x}, ${node.y})`}
                       onClick={(e) => {
                           e.stopPropagation(); // Prevent drag trigger
-                          onNavigate(node.id); 
-                          onClose(); 
+                          onNavigate(node.id);
+                          onClose();
                       }}
                       className="cursor-pointer hover:opacity-80"
                       style={{ transition: 'transform 0.3s' }}
                     >
                        {/* Node Content Box */}
-                       <rect 
-                          x="0" y={-NODE_HEIGHT/2} 
-                          width={NODE_WIDTH} height={NODE_HEIGHT} 
+                       <rect
+                          x="0" y={-NODE_HEIGHT/2}
+                          width={NODE_WIDTH} height={NODE_HEIGHT}
                           rx="4"
                           fill={isCurrent ? "var(--theme-surface-highlight)" : "var(--theme-surface)"}
                           stroke={isCurrent ? "var(--theme-primary)" : (isActivePath ? "var(--theme-border)" : "var(--theme-border)")}
                           strokeWidth={isCurrent ? 2 : 1}
                           className="shadow-sm"
                        />
-                       
+
                        {/* Role Badge */}
                        <rect x="0" y={-NODE_HEIGHT/2} width="4" height={NODE_HEIGHT} rx="2" fill={isModel ? "var(--theme-primary)" : "var(--theme-muted)"} opacity={0.5} />
 
@@ -265,7 +284,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
                                </p>
                            </div>
                        </foreignObject>
-                       
+
                        {/* Current Indicator Dot */}
                        {isCurrent && (
                            <circle cx={NODE_WIDTH} cy="0" r="5" fill="var(--theme-primary)" className="animate-pulse" />
@@ -275,7 +294,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
              })}
           </svg>
        </div>
-       
+
        {/* Controls overlay */}
        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-theme-surface-highlight/80 backdrop-blur rounded-full border border-theme-border text-xs text-theme-muted flex gap-4 shadow-xl">
           <button onClick={() => setPan({ x: 0, y: 0 })} className="hover:text-theme-text">Reset View</button>

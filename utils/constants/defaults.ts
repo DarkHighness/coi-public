@@ -4,14 +4,11 @@ import { CharacterStatus, AISettings, LanguageCode } from "../../types";
 export const INITIAL_PROMPT = "Begin the adventure. Create a setting and character introduction.";
 
 export const DEFAULT_CHARACTER: CharacterStatus = {
-  name: "Traveler",
-  title: "Novice",
-  attributes: [
-    { label: "Health", value: 100, maxValue: 100, color: "red" },
-    { label: "Stamina", value: 100, maxValue: 100, color: "green" }
-  ],
+  name: "Initializing...",
+  title: "Loading...",
+  attributes: [],
   skills: [],
-  status: "Healthy"
+  status: "Pending"
 };
 
 export const LANG_MAP: Record<LanguageCode, string> = {
@@ -60,5 +57,6 @@ export const DEFAULTS: AISettings = {
     provider: 'gemini',
     modelId: 'gemini-2.5-flash',
     enabled: true
-  }
+  },
+  language: 'en'
 };

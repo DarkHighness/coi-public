@@ -110,6 +110,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {activeTab === 'credentials' && (
             <div className="space-y-8 animate-slide-in">
+              <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+                  <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">{t.languageLabel}</h3>
+                  <div className="flex gap-4">
+                      <button
+                          onClick={() => updateSettings({ ...currentSettings, language: 'en' })}
+                          className={`flex-1 py-2 rounded border transition-colors ${currentSettings.language === 'en' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
+                      >
+                          English
+                      </button>
+                      <button
+                          onClick={() => updateSettings({ ...currentSettings, language: 'zh' })}
+                          className={`flex-1 py-2 rounded border transition-colors ${currentSettings.language === 'zh' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
+                      >
+                          中文 (Chinese)
+                      </button>
+                  </div>
+              </div>
+
               {/* Gemini Inputs */}
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
                  <div className="flex justify-between items-center mb-4">
@@ -117,7 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       onClick={async () => {
                         const { isValid, error } = await validateConnection('gemini');
-                        showToast(isValid ? "Connection Successful" : (error || "Connection Failed"), isValid ? 'info' : 'error');
+                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
@@ -128,7 +146,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    type="password"
                    value={currentSettings.gemini.apiKey || ''}
                    onChange={(e) => updateCreds('gemini', 'apiKey', e.target.value)}
-                   placeholder={getEnvApiKey() ? "Loaded from ENV" : t.creds.apiKeyPlaceholder}
+                   placeholder={getEnvApiKey() ? t.loadedFromEnv : t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                  />
                  <input
@@ -146,7 +164,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       onClick={async () => {
                         const { isValid, error } = await validateConnection('openai');
-                        showToast(isValid ? "Connection Successful" : (error || "Connection Failed"), isValid ? 'info' : 'error');
+                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
@@ -241,7 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <option key={m.id} value={m.id}>{m.name || m.id}</option>
                             ))}
                          </select>
-                         {loadingModels && <div className="absolute right-2 top-2 text-theme-muted text-xs">Loading...</div>}
+                         {loadingModels && <div className="absolute right-2 top-2 text-theme-muted text-xs">{t.loadingGeneric}</div>}
                       </div>
                    </div>
                 </div>

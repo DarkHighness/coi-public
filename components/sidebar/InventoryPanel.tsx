@@ -4,8 +4,10 @@ import { InventoryItem } from '../InventoryItem';
 import { LanguageCode } from '../../types';
 import { TRANSLATIONS, LANG_MAP } from '../../utils/constants';
 
+import { InventoryItem as InventoryItemType } from '../../types';
+
 interface InventoryPanelProps {
-  inventory: string[];
+  inventory: InventoryItemType[];
   language: LanguageCode;
   themeFont: string;
   itemContext: string;
@@ -14,12 +16,12 @@ interface InventoryPanelProps {
 export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory = [], language, themeFont, itemContext }) => {
   const t = TRANSLATIONS[language];
   const [isOpen, setIsOpen] = useState(true);
-  
+
   const safeInventory = Array.isArray(inventory) ? inventory : [];
 
   return (
     <div className="mb-6">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-left text-theme-primary uppercase text-xs font-bold tracking-widest mb-4 flex items-center justify-between group ${themeFont}`}
       >
@@ -39,10 +41,10 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory = [], 
             <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">{t.emptyInventory}</p>
           ) : (
             safeInventory.map((item) => (
-              <InventoryItem 
-                key={item} 
-                name={item} 
-                language={LANG_MAP[language]} 
+              <InventoryItem
+                key={item.id}
+                item={item}
+                language={LANG_MAP[language]}
                 context={itemContext}
               />
             ))

@@ -14,7 +14,7 @@ interface ActionPanelProps {
 export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHistory, language, isTranslating, onAction }) => {
   const [customInput, setCustomInput] = useState("");
   const t = TRANSLATIONS[language];
-  
+
   const lastSegment = currentHistory.filter(s => s.role === 'model').slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
   const isDisabled = gameState.isProcessing || isTranslating;
@@ -57,7 +57,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
   const calculateRoll = () => {
     const d20 = Math.floor(Math.random() * 20) + 1;
     let outcome = t.fail;
-    
+
     if (d20 === 1) outcome = t.critFail;
     else if (d20 < 10) outcome = t.fail;
     else if (d20 < 20) outcome = t.success;
@@ -80,10 +80,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
     <div className="flex-none w-full z-30">
       {/* Gradient fade to blend with content */}
       <div className="h-8 bg-gradient-to-t from-theme-bg to-transparent pointer-events-none"></div>
-      
+
       <div className="bg-theme-bg p-4 pb-6 md:px-8">
         <div className="max-w-4xl mx-auto space-y-4">
-          
+
           {/* Action Chips (Choices) */}
           {!gameState.isProcessing && !isTranslating && availableChoices.length > 0 && (
             <div className="flex flex-wrap gap-2 justify-center animate-fade-in-up">
@@ -100,7 +100,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
                       </span>
                       {label}
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => handleRollClick(e, label)}
                       className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
                       title={t.roll}
@@ -115,35 +115,45 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
 
           {/* Input Bar */}
           <div className="relative">
-             <form onSubmit={handleCustomSubmit} className="relative flex items-center gap-2 bg-theme-surface border border-theme-border rounded-xl shadow-lg p-1.5 transition-colors focus-within:border-theme-primary/50 focus-within:ring-1 focus-within:ring-theme-primary/50">
-                
+             <form onSubmit={handleCustomSubmit} className="relative flex items-end gap-2 bg-theme-surface border border-theme-border rounded-xl shadow-lg p-2 transition-colors focus-within:border-theme-primary/50 focus-within:ring-1 focus-within:ring-theme-primary/50">
+
                 {/* Roll Button (Integrated) */}
                 <button
                   type="button"
                   onClick={(e) => handleRollClick(e, customInput)}
                   disabled={isDisabled || !customInput.trim()}
-                  className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded-lg transition-colors disabled:opacity-30"
+                  className="p-2 mb-0.5 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded-lg transition-colors disabled:opacity-30 flex-none"
                   title={t.roll}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
                 </button>
 
                 {/* Main Input */}
-                <input
-                  type="text"
+                <textarea
                   value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
+                  onChange={(e) => {
+                    setCustomInput(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleCustomSubmit(e);
+                    }
+                  }}
                   placeholder={t.placeholder}
                   disabled={isDisabled}
-                  className="flex-1 bg-transparent text-theme-text px-2 py-2 focus:outline-none placeholder-theme-muted/50"
-                  autoComplete="off"
+                  rows={1}
+                  className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-[44px] max-h-[120px] self-center"
+                  style={{ height: 'auto' }}
                 />
 
                 {/* Send/Act Button */}
                 <button
                   type="submit"
                   disabled={isDisabled || !customInput.trim()}
-                  className="p-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-all disabled:bg-theme-surface-highlight disabled:text-theme-muted shadow-md"
+                  className="p-2 mb-0.5 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-all disabled:bg-theme-surface-highlight disabled:text-theme-muted shadow-md flex-none"
                 >
                    <svg className="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>

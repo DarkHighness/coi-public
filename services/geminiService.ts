@@ -86,13 +86,18 @@ import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
 
 // ...
 
+import { THEMES } from "../utils/constants/themes";
+
+// ...
+
 export const generateStoryOutline = async (
   theme: string,
   language: string,
   customContext?: string
 ): Promise<{ outline: StoryOutline, log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig('story');
-  const prompt = getOutlinePrompt(theme, language, customContext);
+  const themeConfig = Object.values(THEMES).find(t => t.name === theme) || THEMES.fantasy;
+  const prompt = getOutlinePrompt(theme, language, customContext, themeConfig.backgroundTemplate);
   const sys = "You are a master storyteller. Output strictly valid JSON.";
 
   let result, usage, raw;
@@ -146,7 +151,27 @@ export const generateAdventureTurn = async (
 ): Promise<{ response: GameResponse, log: LogEntry, usage: TokenUsage }> => {
 
   const { provider, modelId } = getProviderConfig('story');
-  const systemInstruction = getAdventureSystemInstruction(language, outline, accumulatedSummary, themeStyle);
+  // Find theme config based on style or default
+  // Note: themeStyle passed here is just the string description. We might need to look up by name if available in state,
+  // but currently generateAdventureTurn doesn't receive the theme name directly, only themeStyle.
+  // However, we can try to match the themeStyle to find the example, or pass theme name in future.
+  // For now, let's try to find a matching theme by narrativeStyle, or just rely on what we have.
+  // Actually, better approach: The caller (useGameEngine) has access to the theme name.
+  // But changing the signature of generateAdventureTurn might be too invasive right now.
+  // Let's see if we can infer it or if we should update the signature.
+  // Looking at useGameEngine.ts (from memory/context), it calls generateAdventureTurn.
+  // Let's update the signature of generateAdventureTurn to accept themeName instead of (or in addition to) themeStyle.
+
+  // Wait, I can't easily change the signature without updating useGameEngine.ts as well.
+  // Let's look at useGameEngine.ts again to see how it calls this.
+  // It calls: generateAdventureTurn(history, gameStateRef.current.accumulatedSummary, gameStateRef.current.outline, action, settings.language, themeConfig.narrativeStyle);
+  // So I can just pass the theme name as a new argument or replace themeStyle with themeName and look it up inside.
+  // But themeStyle is used directly.
+  // Let's add themeName as an optional argument to generateAdventureTurn.
+
+  const themeConfig = Object.values(THEMES).find(t => t.narrativeStyle === themeStyle);
+  const systemInstruction = getAdventureSystemInstruction(language, outline, accumulatedSummary, themeStyle, themeConfig?.example);
+
 
   let result, usage, raw;
 

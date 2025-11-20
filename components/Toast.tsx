@@ -9,8 +9,8 @@ interface ToastProps {
 export const Toast: React.FC<ToastProps> = ({ show, message, type = 'info' }) => {
   return (
     <div
-      className={`fixed bottom-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg transition-all duration-300 z-[100] ${
-        show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+      className={`fixed top-24 right-4 px-6 py-3 rounded-full shadow-lg transition-all duration-300 z-[100] ${
+        show ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
       } ${
         type === 'error'
           ? 'bg-red-900/90 text-red-100 border border-red-700'

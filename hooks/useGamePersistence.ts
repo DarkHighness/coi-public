@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { GameState, SaveSlot } from '../types';
 
 export const useGamePersistence = (
-  gameState: GameState, 
+  gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
   view: string
 ) => {
@@ -11,13 +11,31 @@ export const useGamePersistence = (
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
 
-  // Load Slots on Mount
+  // Load Slots and Current Game on Mount
   useEffect(() => {
     const slotsStr = localStorage.getItem('chronicles_meta_slots');
     if (slotsStr) {
       try {
-        setSaveSlots(JSON.parse(slotsStr));
-      } catch(e) {}
+        const parsedSlots = JSON.parse(slotsStr);
+        setSaveSlots(parsedSlots);
+
+        // Try to restore last active session
+        const lastSlotId = localStorage.getItem('chronicles_current_slot');
+        if (lastSlotId) {
+             const data = localStorage.getItem(`chronicles_save_${lastSlotId}`);
+             if (data) {
+                 const parsed = JSON.parse(data);
+                 // Migrations
+                 if (!parsed.logs) parsed.logs = [];
+                 if (!parsed.totalTokens) parsed.totalTokens = 0;
+
+                 setGameState(parsed);
+                 setCurrentSlotId(lastSlotId);
+             }
+        }
+      } catch(e) {
+          console.error("Failed to load saves", e);
+      }
     }
   }, []);
 
@@ -26,18 +44,18 @@ export const useGamePersistence = (
     if (view === 'game' && currentSlotId && gameState.rootNodeId) {
       // Debounce could be added here, but for now simple effect
       localStorage.setItem(`chronicles_save_${currentSlotId}`, JSON.stringify(gameState));
-      
+
       // Update Slot Meta
-      const summaryText = gameState.activeNodeId && gameState.nodes[gameState.activeNodeId] 
-         ? gameState.nodes[gameState.activeNodeId].text.substring(0, 60) + "..." 
+      const summaryText = gameState.activeNodeId && gameState.nodes[gameState.activeNodeId]
+         ? gameState.nodes[gameState.activeNodeId].text.substring(0, 60) + "..."
          : "In Progress";
-         
-      const updatedSlots = saveSlots.map(s => 
-         s.id === currentSlotId 
-         ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText } 
+
+      const updatedSlots = saveSlots.map(s =>
+         s.id === currentSlotId
+         ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText }
          : s
       );
-      
+
       // Only update if changed to avoid loops
       if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
           setSaveSlots(updatedSlots);
@@ -49,6 +67,15 @@ export const useGamePersistence = (
       return () => clearTimeout(timer);
     }
   }, [gameState, currentSlotId, view]);
+
+  // Persist Current Slot ID
+  useEffect(() => {
+      if (currentSlotId) {
+          localStorage.setItem('chronicles_current_slot', currentSlotId);
+      } else {
+          localStorage.removeItem('chronicles_current_slot');
+      }
+  }, [currentSlotId]);
 
   const createSaveSlot = (theme: string) => {
      const id = Date.now().toString();
@@ -72,7 +99,7 @@ export const useGamePersistence = (
          // Migrations
          if (!parsed.logs) parsed.logs = [];
          if (!parsed.totalTokens) parsed.totalTokens = 0;
-         
+
          setGameState(parsed);
          setCurrentSlotId(id);
          return true;

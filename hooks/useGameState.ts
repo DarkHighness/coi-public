@@ -9,12 +9,14 @@ const INITIAL_STATE: GameState = {
   rootNodeId: null,
   inventory: [],
   relationships: [],
-  currentQuest: "Initializing...",
+  quests: [],
+  currentQuest: "Unknown", // Legacy/Fallback
   character: DEFAULT_CHARACTER,
-  
+
   // Location System
   currentLocation: "Unknown",
   knownLocations: [],
+  locations: [],
 
   outline: null,
   accumulatedSummary: "",
@@ -33,7 +35,7 @@ export const useGameState = () => {
     setGameState({
       ...INITIAL_STATE,
       theme: theme,
-      currentQuest: "Initializing...",
+      currentQuest: "Unknown",
       // Ensure explicit reset of all accumulation fields
       accumulatedSummary: "",
       nodes: {},

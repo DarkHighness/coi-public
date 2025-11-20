@@ -16,9 +16,9 @@ interface InventoryItemDetailProps {
 
 export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loading, details, language }) => {
   const t = TRANSLATIONS[language as LanguageCode] || TRANSLATIONS.en;
-  
-  const showMoreLabel = language === 'zh' ? '展开' : 'Show More';
-  const showLessLabel = language === 'zh' ? '收起' : 'Show Less';
+
+  const showMoreLabel = t.showMore;
+  const showLessLabel = t.showLess;
 
   if (loading) {
     return (
@@ -38,8 +38,8 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loadin
     <div className="space-y-3">
       <p className="leading-relaxed">{details.description}</p>
       {details.lore && (
-        <ItemLore 
-            lore={details.lore} 
+        <ItemLore
+            lore={details.lore}
             labelHistory={t.history}
             labelShowMore={showMoreLabel}
             labelShowLess={showLessLabel}

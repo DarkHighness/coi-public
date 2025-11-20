@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CharacterStatus, LanguageCode, Skill } from '../../types';
 import { TRANSLATIONS } from '../../utils/constants';
@@ -27,9 +26,18 @@ const textMap: Record<string, string> = {
   gray: 'text-gray-400'
 };
 
+const trackMap: Record<string, string> = {
+  red: 'bg-red-900',
+  blue: 'bg-blue-900',
+  green: 'bg-green-900',
+  yellow: 'bg-yellow-900',
+  purple: 'bg-purple-900',
+  gray: 'bg-gray-800'
+};
+
 const getStatusConfig = (status: string) => {
   const normalized = status.toLowerCase();
-  
+
   if (normalized.includes('poison') || normalized.includes('toxic')) {
     return {
       icon: (
@@ -102,7 +110,7 @@ const getStatusConfig = (status: string) => {
       style: 'bg-yellow-900/20 text-yellow-200 border-yellow-500/30'
     };
   }
-  
+
   // Default generic
   return {
     icon: (
@@ -117,7 +125,7 @@ const SkillItem: React.FC<{ skill: Skill }> = ({ skill }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div 
+    <div
       className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group
         ${isExpanded ? 'bg-theme-surface-highlight/30 border-theme-primary/30' : 'hover:bg-theme-surface-highlight/20 hover:border-theme-primary/20'}
       `}
@@ -131,7 +139,7 @@ const SkillItem: React.FC<{ skill: Skill }> = ({ skill }) => {
           {skill.level}
         </span>
       </div>
-      
+
       <div className={`overflow-hidden transition-all duration-300 ${isExpanded && skill.description ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="px-2 pb-2 pt-0">
           <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
@@ -154,7 +162,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
 
   return (
     <div className="animate-fade-in mb-6">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-left text-theme-primary uppercase text-xs font-bold tracking-widest mb-4 flex items-center justify-between group ${themeFont}`}
       >
@@ -171,26 +179,41 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
              <span className="font-bold text-lg text-theme-text tracking-wide">{character.name}</span>
              <span className="text-xs text-theme-muted uppercase tracking-wider">{character.title}</span>
           </div>
-          
+
           {/* Dynamic Attributes */}
           {attributes.map((attr, idx) => {
-             const colorClass = colorMap[attr.color] || colorMap.gray;
-             const textClass = textMap[attr.color] || textMap.gray;
-             const percentage = Math.max(0, Math.min(100, (attr.value / attr.maxValue) * 100));
+             const rawColor = attr.color?.toLowerCase().trim();
+             // If no color provided, default to gray preset
+             const colorKey = rawColor || 'gray';
+             const isPreset = Object.prototype.hasOwnProperty.call(colorMap, colorKey);
+
+             const colorClass = isPreset ? colorMap[colorKey] : '';
+             const textClass = isPreset ? textMap[colorKey] : '';
+             const trackClass = (isPreset ? trackMap[colorKey] : trackMap.gray) || trackMap.gray;
+
+             const percentage = attr.maxValue > 0 ? Math.max(0, Math.min(100, (attr.value / attr.maxValue) * 100)) : 0;
 
              return (
                <div key={idx}>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className={`${textClass} font-bold`}>{attr.label}</span>
+                  <span
+                    className={`font-bold ${textClass}`}
+                    style={!isPreset ? { color: attr.color } : {}}
+                  >
+                    {attr.label}
+                  </span>
                   <span className="text-theme-muted">{attr.value}/{attr.maxValue}</span>
                 </div>
-                <div className="w-full h-2 bg-theme-bg rounded-full overflow-hidden border border-theme-border">
-                  <div 
-                    className={`h-full bg-gradient-to-r ${colorClass} transition-all duration-700 ease-out`}
-                    style={{ width: `${percentage}%` }}
+                <div className={`w-full h-2 ${trackClass} rounded-full overflow-hidden border border-theme-border/50`}>
+                  <div
+                    className={`h-full ${isPreset ? colorClass : ''} transition-all duration-700 ease-out`}
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: isPreset ? undefined : attr.color
+                    }}
                   ></div>
                 </div>
-              </div>
+               </div>
              );
           })}
 

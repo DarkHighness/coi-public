@@ -1,68 +1,44 @@
-
 import React, { useState } from 'react';
-import { LanguageCode } from '../../types';
+import { LanguageCode, Location } from '../../types';
 import { TRANSLATIONS } from '../../utils/constants';
-import { getItemDescription } from '../../services/geminiService';
 
 interface LocationPanelProps {
   currentLocation: string;
   knownLocations: string[];
+  locations: Location[];
   language: LanguageCode;
   themeFont: string;
   itemContext: string;
 }
 
-interface LocationDetail {
-  description: string;
-  lore: string;
-}
-
-export const LocationPanel: React.FC<LocationPanelProps> = ({ currentLocation, knownLocations = [], language, themeFont, itemContext }) => {
+export const LocationPanel: React.FC<LocationPanelProps> = ({ currentLocation, knownLocations = [], locations = [], language, themeFont }) => {
   const t = TRANSLATIONS[language];
   const [isOpen, setIsOpen] = useState(true);
-  
-  // Track expanded state for each location separately or singular?
-  // Singular expanded location is cleaner for mobile.
   const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
-  const [details, setDetails] = useState<LocationDetail | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleLocationClick = async (location: string) => {
-    if (!location || location === t.unknown) return;
-    
-    // Collapse if clicking the same one
-    if (expandedLocation === location) {
+  const handleLocationClick = (locationName: string) => {
+    if (expandedLocation === locationName) {
       setExpandedLocation(null);
-      return;
-    }
-
-    setExpandedLocation(location);
-    setLoading(true);
-    setDetails(null);
-
-    try {
-      const result = await getItemDescription(location, itemContext, language === 'zh' ? 'Chinese' : 'English');
-      setDetails(result);
-    } catch (e) {
-      console.error("Failed to fetch location details", e);
-    } finally {
-      setLoading(false);
+    } else {
+      setExpandedLocation(locationName);
     }
   };
 
-  const renderLocationItem = (location: string, isCurrent: boolean) => {
-    const isExpanded = expandedLocation === location;
+  const renderLocationItem = (locationName: string, isCurrent: boolean) => {
+    const isExpanded = expandedLocation === locationName;
+    const locationData = locations.find(l => l.name === locationName);
+
     return (
-      <div key={location} className={`mb-2 transition-all ${isExpanded ? 'bg-theme-surface-highlight/30' : ''} rounded`}>
-         <button 
-           onClick={() => handleLocationClick(location)}
+      <div key={locationName} className={`mb-2 transition-all ${isExpanded ? 'bg-theme-surface-highlight/30' : ''} rounded`}>
+         <button
+           onClick={() => handleLocationClick(locationName)}
            className={`w-full text-left px-3 py-2 rounded border transition-all duration-300 flex justify-between items-center ${
-             isCurrent 
+             isCurrent
                ? 'bg-theme-surface-highlight/50 border-theme-primary/30 text-theme-text hover:bg-theme-primary/10'
                : 'bg-theme-bg border-theme-border/50 text-theme-muted hover:text-theme-primary hover:border-theme-primary/50'
            }`}
          >
-             <span className={`font-bold tracking-wide text-xs ${isCurrent ? 'text-theme-primary' : ''}`}>{location}</span>
+             <span className={`font-bold tracking-wide text-xs ${isCurrent ? 'text-theme-primary' : ''}`}>{locationName}</span>
              {isCurrent && (
                <svg className="w-3 h-3 text-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
              )}
@@ -71,23 +47,18 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({ currentLocation, k
          {/* Inline Details */}
          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
             <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/20">
-                {loading ? (
-                   <div className="flex items-center gap-2 text-xs text-theme-muted animate-pulse">
-                       <div className="w-3 h-3 border-2 border-theme-muted border-t-transparent rounded-full animate-spin"></div>
-                       {t.consultingArchives}
-                   </div>
-                ) : details ? (
+                {locationData ? (
                    <div className="space-y-2 text-xs animate-fade-in">
-                      <p className="text-theme-text leading-relaxed">{details.description}</p>
-                      {details.lore && (
+                      <p className="text-theme-text leading-relaxed">{locationData.description}</p>
+                      {locationData.lore && (
                         <div className="pt-2 border-t border-theme-border/20 mt-1">
                            <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">{t.history}</span>
-                           <p className="text-theme-muted italic">{details.lore}</p>
+                           <p className="text-theme-muted italic">{locationData.lore}</p>
                         </div>
                       )}
                    </div>
                 ) : (
-                   <div className="text-xs text-red-400">Failed to load info.</div>
+                   <div className="text-xs text-theme-muted italic opacity-50">{t.noInfoAvailable}</div>
                 )}
             </div>
          </div>
@@ -97,7 +68,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({ currentLocation, k
 
   return (
     <div className="mb-6 relative">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-left text-theme-primary uppercase text-xs font-bold tracking-widest mb-4 flex items-center justify-between group ${themeFont}`}
       >
@@ -107,7 +78,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({ currentLocation, k
         </span>
         <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
       </button>
-      
+
       <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
          <div className="space-y-1">
             {/* Current Location */}

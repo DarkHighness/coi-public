@@ -53,52 +53,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="hidden md:block">
            <LanguageSelector language={language} setLanguage={setLanguage} disabled={isTranslating || gameState.isProcessing} />
         </div>
-        <button className="md:hidden text-theme-text" onClick={onCloseMobile}>
-           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+           <button className="text-theme-primary text-xs uppercase font-bold border border-theme-primary px-2 py-1 rounded" onClick={onNewGame}>
+              {t.newGame}
+           </button>
+           <button className="text-theme-text" onClick={onCloseMobile}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+           </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-6 pb-32 md:pb-6 space-y-8 scroll-smooth">
         {character && (
-          <CharacterPanel 
-            character={character} 
-            language={language} 
-            themeFont={currentThemeConfig.fontClass} 
+          <CharacterPanel
+            character={character}
+            language={language}
+            themeFont={currentThemeConfig.fontClass}
           />
         )}
         <LocationPanel
           currentLocation={gameState.currentLocation}
           knownLocations={gameState.knownLocations}
+          locations={gameState.locations || []}
           language={language}
           themeFont={currentThemeConfig.fontClass}
           itemContext={itemContext}
         />
-        <QuestPanel 
-          quest={gameState.currentQuest} 
-          language={language} 
-          themeFont={currentThemeConfig.fontClass} 
+        <QuestPanel
+          quests={gameState.quests || []}
+          language={language}
+          themeFont={currentThemeConfig.fontClass}
         />
-        <RelationshipPanel 
-          relationships={gameState.relationships || []} 
-          language={language} 
-          themeFont={currentThemeConfig.fontClass} 
+        <RelationshipPanel
+          relationships={gameState.relationships || []}
+          language={language}
+          themeFont={currentThemeConfig.fontClass}
         />
-        <InventoryPanel 
-          inventory={gameState.inventory || []} 
-          language={language} 
-          themeFont={currentThemeConfig.fontClass} 
-          itemContext={itemContext} 
+        <InventoryPanel
+          inventory={gameState.inventory || []}
+          language={language}
+          themeFont={currentThemeConfig.fontClass}
+          itemContext={itemContext}
         />
       </div>
-      
+
       {/* Status Bar */}
       <div className="bg-black/40 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
          <span>Tokens: {gameState.totalTokens.toLocaleString()}</span>
          <button onClick={onOpenLogs} className="hover:text-theme-primary underline">View Logs</button>
       </div>
 
-      <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-4">
-         <button 
+      <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-4 hidden md:block">
+         <button
            onClick={onOpenMap}
            className="w-full py-2 text-sm bg-theme-surface-highlight/50 border border-theme-border hover:border-theme-primary text-theme-text rounded transition-colors flex items-center justify-center gap-2"
          >
@@ -106,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {t.tree.viewMap}
          </button>
 
-         <SystemFooter 
+         <SystemFooter
            language={language}
            themeFont={currentThemeConfig.fontClass}
            onMagicMirror={onMagicMirror}

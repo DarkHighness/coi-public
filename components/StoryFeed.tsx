@@ -13,6 +13,7 @@ interface StoryFeedProps {
   layout: FeedLayout;
   setLayout: (layout: FeedLayout) => void;
   onAnimate: (imageUrl: string) => void;
+  onGenerateImage: (id: string) => void;
   onRetry: () => void;
   disableImages?: boolean;
   onFork?: (id: string) => void;
@@ -25,6 +26,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   layout,
   setLayout,
   onAnimate,
+  onGenerateImage,
   onRetry,
   disableImages = false,
   onFork
@@ -143,7 +145,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                                 e.stopPropagation();
                                 onFork(segment.id);
                             }}
-                            className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-colors cursor-pointer"
+                            className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
                             title={t.tree.fork}
                           >
                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>

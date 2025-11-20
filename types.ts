@@ -5,14 +5,18 @@ export interface GameState {
   activeNodeId: string | null; // The leaf node of the current path
   rootNodeId: string | null;
 
-  inventory: string[];
+  inventory: InventoryItem[];
   relationships: Relationship[];
-  currentQuest: string;
+  quests: Quest[];
+  // Deprecated: currentQuest (use quests instead)
+  currentQuest?: string;
   character: CharacterStatus;
 
   // Location System
+  // Location System
   currentLocation: string;
   knownLocations: string[];
+  locations: Location[];
 
   // Meta
   outline: StoryOutline | null;
@@ -104,17 +108,89 @@ export interface StorySegment {
   usage?: TokenUsage;
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  description: string;
+  lore?: string;
+  isVisited?: boolean;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  lore?: string;
+  isMystery?: boolean;
+  icon?: string;
+}
+
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  type: 'main' | 'side';
+  status: 'active' | 'completed' | 'failed';
+}
+
+export interface InventoryAction {
+  action: 'add' | 'remove' | 'update';
+  item: string;
+  newItem?: string; // For 'update' name change
+  // New fields for rich items
+  description?: string;
+  lore?: string;
+  isMystery?: boolean;
+}
+
+export interface QuestAction {
+  action: 'add' | 'update' | 'complete' | 'fail';
+  id: string;
+  title?: string;
+  description?: string;
+  type?: 'main' | 'side';
+}
+
+export interface RelationshipAction {
+  action: 'add' | 'update' | 'remove';
+  name: string;
+  description?: string;
+  status?: string;
+  affinity?: number;
+  affinityKnown?: boolean;
+}
+
+export interface LocationAction {
+  type: 'current' | 'known';
+  action: 'update' | 'add';
+  name: string;
+  description?: string;
+  lore?: string;
+}
+
+export interface CharacterAction {
+  target: 'attribute' | 'skill' | 'status';
+  action: 'add' | 'remove' | 'update';
+  name: string; // Name of attribute/skill, or 'status'
+  value?: any; // Generic value
+  intValue?: number; // For attributes
+  strValue?: string; // For skills/status
+  maxValue?: number;
+  color?: string;
+  description?: string;
+}
+
 export interface GameResponse {
   narrative: string;
   choices: string[];
-  inventory: string[];
-  relationships: Relationship[];
-  currentQuest: string;
-  character: CharacterStatus;
-  currentLocation: string;
-  knownLocations: string[];
+  inventoryActions: InventoryAction[];
+  relationshipActions: RelationshipAction[];
+  locationActions: LocationAction[];
+  characterActions: CharacterAction[];
+  questActions: QuestAction[];
+  currentQuest?: string; // Legacy support
   imagePrompt: string;
-  theme: string;
+  theme?: string; // Optional update
 }
 
 export interface ItemExplanation {
@@ -128,6 +204,11 @@ export interface ThemeConfig {
   vars: Record<string, string>;
   fontClass: string;
   narrativeStyle?: string;
+  narrativeStyle_zh?: string;
+  backgroundTemplate?: string;
+  backgroundTemplate_zh?: string;
+  example?: string;
+  example_zh?: string;
 }
 
 export type LanguageCode = 'en' | 'zh';
@@ -156,6 +237,7 @@ export interface AISettings {
   audio: FunctionConfig;
   translation: FunctionConfig;
   lore: FunctionConfig;
+  language: LanguageCode;
 }
 
 export interface ModelInfo {
