@@ -27,6 +27,13 @@ export const useGamePersistence = (
       if (!parsed.explicitLine) parsed.explicitLine = { primary: "Survive", secondary: "Find your way." };
       if (!parsed.implicitLine) parsed.implicitLine = { content: "Unknown forces are watching." };
 
+      // Migration: accumulatedSummary -> summaries
+      if (parsed.accumulatedSummary && (!parsed.summaries || parsed.summaries.length === 0)) {
+          parsed.summaries = [parsed.accumulatedSummary];
+          delete parsed.accumulatedSummary;
+      }
+      if (!parsed.summaries) parsed.summaries = [];
+
       // Reset processing state on load to prevent stuck state
       parsed.isProcessing = false;
       // Always clear image generation state on load
@@ -94,13 +101,34 @@ export const useGamePersistence = (
           await saveGameState(currentSlotId, gameState);
 
           // Update Slot Meta
-          const summaryText = gameState.activeNodeId && gameState.nodes[gameState.activeNodeId]
-             ? gameState.nodes[gameState.activeNodeId].text.substring(0, 60) + "..."
+          const activeNode = gameState.activeNodeId ? gameState.nodes[gameState.activeNodeId] : null;
+          const summaryText = activeNode
+             ? activeNode.text.substring(0, 60) + "..."
              : "In Progress";
+
+          // Find the latest image for preview
+          let previewImage: string | undefined;
+          if (activeNode) {
+              let curr: typeof activeNode | null = activeNode;
+              let steps = 0;
+              // Look back up to 5 steps for an image
+              while (curr && steps < 5) {
+                  if (curr.imageUrl) {
+                      previewImage = curr.imageUrl;
+                      break;
+                  }
+                  if (curr.parentId) {
+                      curr = gameState.nodes[curr.parentId];
+                  } else {
+                      curr = null;
+                  }
+                  steps++;
+              }
+          }
 
           const updatedSlots = saveSlots.map(s =>
              s.id === currentSlotId
-             ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText }
+             ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText, previewImage }
              : s
           );
 

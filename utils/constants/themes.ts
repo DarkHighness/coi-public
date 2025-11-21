@@ -378,4 +378,43 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: 'font-sans', // Standard modern font fits CS best
   },
+  infinite_flow: {
+    vars: {
+      '--theme-bg': '#09090b',
+      '--theme-surface': '#18181b',
+      '--theme-surface-highlight': '#27272a',
+      '--theme-border': '#3f3f46',
+      '--theme-primary': '#f43f5e', // Rose/Red for danger
+      '--theme-primary-hover': '#e11d48',
+      '--theme-text': '#e4e4e7',
+      '--theme-muted': '#a1a1aa',
+    },
+    fontClass: 'font-scifi',
+  },
+  entertainment: {
+    vars: {
+      '--theme-bg': '#1a1018',
+      '--theme-surface': '#291521',
+      '--theme-surface-highlight': '#451e30',
+      '--theme-border': '#f472b6', // Pink
+      '--theme-primary': '#fbbf24', // Gold
+      '--theme-primary-hover': '#f59e0b',
+      '--theme-text': '#fdf2f8',
+      '--theme-muted': '#fbcfe8',
+    },
+    fontClass: 'font-sans',
+  },
+  esports: {
+    vars: {
+      '--theme-bg': '#020617',
+      '--theme-surface': '#0f172a',
+      '--theme-surface-highlight': '#1e293b',
+      '--theme-border': '#3b82f6', // Blue
+      '--theme-primary': '#22c55e', // Green (RGB vibes)
+      '--theme-primary-hover': '#16a34a',
+      '--theme-text': '#f8fafc',
+      '--theme-muted': '#94a3b8',
+    },
+    fontClass: 'font-sans',
+  },
 };

@@ -9,6 +9,12 @@ export const zh = {
       side: "支线任务",
       empty: "暂无进行中的任务。"
     },
+    environment: "环境",
+    ambience: "氛围",
+    appearance: "外貌",
+    profession: "职业",
+    background: "背景",
+    details: "详情",
     inventory: "物品栏",
     emptyInventory: "你的物品栏是空的。",
     relationships: "人际关系",

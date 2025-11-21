@@ -77,6 +77,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
            onFork={onFork}
            aiSettings={aiSettings}
            onTypingComplete={onTypingComplete}
+           currentAmbience={currentAmbience}
          />
 
          {/* Action Panel fixed at bottom of feed */}

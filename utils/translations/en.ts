@@ -10,6 +10,11 @@ export const en = {
       empty: "No active quests."
     },
     inventory: "Inventory",
+    environment: "Environment",
+    appearance: "Appearance",
+    profession: "Profession",
+    background: "Background",
+    details: "Details",
     emptyInventory: "Your inventory is empty.",
     relationships: "Relationships",
     emptyRelationships: "You haven't met anyone significant yet.",

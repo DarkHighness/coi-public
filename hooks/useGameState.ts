@@ -19,7 +19,7 @@ const INITIAL_STATE: GameState = {
   locations: [],
 
   outline: null,
-  accumulatedSummary: "",
+  summaries: [],
   lastSummarizedIndex: 0,
   isProcessing: false,
   isImageGenerating: false,
@@ -37,7 +37,7 @@ export const useGameState = () => {
       ...INITIAL_STATE,
       theme: theme,
       // Ensure explicit reset of all accumulation fields
-      accumulatedSummary: "",
+      summaries: [],
       nodes: {},
       rootNodeId: null,
       activeNodeId: null,

@@ -18,6 +18,7 @@ interface StoryFeedProps {
   onFork?: (id: string) => void;
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
+  currentAmbience?: string;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -31,7 +32,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   disableImages = false,
   onFork,
   aiSettings,
-  onTypingComplete
+  onTypingComplete,
+  currentAmbience
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
         setLayout={setLayout}
         activeIndex={safeActiveIndex}
         totalSegments={currentHistory.length}
+        environment={activeSegment?.environment}
+        ambience={currentAmbience}
       />
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 md:p-8 lg:px-12 scroll-smooth relative">

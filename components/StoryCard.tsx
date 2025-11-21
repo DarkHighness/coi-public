@@ -73,6 +73,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
         manualImageGen={aiSettings?.manualImageGen}
+        imageSkipped={segment.imageSkipped}
       />
 
       {/* Manual Image Generation Button */}

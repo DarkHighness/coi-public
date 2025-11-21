@@ -134,12 +134,12 @@ export const useGameEngine = () => {
     const parentId = isInit ? null : gameStateRef.current.activeNodeId;
 
     // --- Fork-Safe Summary Retrieval ---
-    let baseSummary = "";
+    let baseSummaries: string[] = [];
     let baseIndex = 0;
 
     if (parentId && gameStateRef.current.nodes[parentId]) {
         const pNode = gameStateRef.current.nodes[parentId];
-        baseSummary = pNode.accumulatedSummary || "";
+        baseSummaries = pNode.summaries || [];
         baseIndex = pNode.summarizedIndex || 0;
     }
     // -----------------------------------
@@ -160,7 +160,7 @@ export const useGameEngine = () => {
                 role: "user",
                 timestamp: Date.now(),
                 usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, // User msgs have no token cost locally
-                accumulatedSummary: baseSummary,
+                summaries: baseSummaries,
                 summarizedIndex: baseIndex
             }
         },
@@ -183,39 +183,37 @@ export const useGameEngine = () => {
           imagePrompt: "",
           role: "user",
           timestamp: Date.now(),
-          accumulatedSummary: baseSummary,
+          summaries: baseSummaries,
           summarizedIndex: baseIndex
       };
 
       if (!isInit) contextNodes.push(tempUserNode);
 
-      const limit = aiSettings.contextLen || 16;
+      const limit = aiSettings.contextLen || 10;
       // Use contextLen as the step to avoid too frequent summarization
       const summaryStep = limit;
 
-      let effectiveSummary = baseSummary;
+      let effectiveSummaries = [...baseSummaries];
       let lastIndex = baseIndex;
       let summarySnapshot = "";
 
       // Calculate range to summarize: from lastIndex to (total - limit)
       // We keep 'limit' messages as fresh context
       const totalLength = contextNodes.length;
-      const safeZoneStart = Math.max(0, totalLength - limit);
-      const summarizeEnd = safeZoneStart;
+      const keepFresh = 4; // Keep last 2 turns fresh
+      const summarizeEnd = Math.max(lastIndex, totalLength - keepFresh);
       const nodesToSummarizeCount = summarizeEnd - lastIndex;
 
       // Only summarize if we have enough new nodes AND we are advancing (not regressing)
       if (nodesToSummarizeCount >= summaryStep && summarizeEnd > lastIndex) {
           const toSummarize = contextNodes.slice(lastIndex, summarizeEnd);
           const textBlock = toSummarize.map(s => `${s.role}: ${s.text}`).join("\n");
+          const previousSummary = effectiveSummaries.length > 0 ? effectiveSummaries[effectiveSummaries.length - 1] : "";
 
           // Call Summary Service
-          const sumResult = await summarizeContext(textBlock, LANG_MAP[language]);
+          const sumResult = await summarizeContext(previousSummary, textBlock, LANG_MAP[language]);
 
-          effectiveSummary = effectiveSummary
-              ? `${effectiveSummary}\n[Later]: ${sumResult.summary}`
-              : sumResult.summary;
-
+          effectiveSummaries.push(sumResult.summary);
           summarySnapshot = sumResult.summary;
           lastIndex = summarizeEnd;
 
@@ -239,12 +237,12 @@ export const useGameEngine = () => {
                   ...prev.nodes,
                   [userNodeId]: {
                       ...prev.nodes[userNodeId],
-                      accumulatedSummary: effectiveSummary,
+                      summaries: effectiveSummaries,
                       summarizedIndex: lastIndex
                   }
               },
               // Update global view for UI (optional, but good for debugging)
-              accumulatedSummary: effectiveSummary,
+              summaries: effectiveSummaries,
               lastSummarizedIndex: lastIndex
           }));
       }
@@ -255,11 +253,13 @@ export const useGameEngine = () => {
       // Generate Turn
       const { response, log, usage } = await generateAdventureTurn({
           recentHistory: segmentsToSend,
-          accumulatedSummary: effectiveSummary,
+          summaries: effectiveSummaries,
           outline: gameStateRef.current.outline,
           inventory: gameStateRef.current.inventory,
           relationships: gameStateRef.current.relationships,
           quests: gameStateRef.current.quests,
+          locations: gameStateRef.current.locations,
+          currentLocationId: gameStateRef.current.currentLocation,
           character: gameStateRef.current.character,
           userAction: action,
           language: LANG_MAP[language],
@@ -289,9 +289,10 @@ export const useGameEngine = () => {
         summarySnapshot: summarySnapshot || undefined,
         usage: usage,
         // Inherit summary state from the user node (which was just updated)
-        accumulatedSummary: effectiveSummary,
+        summaries: effectiveSummaries,
         summarizedIndex: lastIndex,
-        environment: response.environment
+        environment: response.environment,
+        imageSkipped: !response.generateImage // Mark if image was intentionally skipped
       };
 
       // Determine Toast Message based on state changes
@@ -338,7 +339,10 @@ export const useGameEngine = () => {
                       description: act.description || "Unknown",
                       status: act.status || "Neutral",
                       affinity: act.affinity || 50,
-                      affinityKnown: act.affinityKnown ?? true
+                      affinityKnown: act.affinityKnown ?? true,
+                      appearance: act.appearance,
+                      personality: act.personality,
+                      notes: act.notes
                   });
               } else if (act.action === 'remove' && idx !== -1) {
                   newRels.splice(idx, 1);
@@ -347,6 +351,9 @@ export const useGameEngine = () => {
                   if (act.status) newRels[idx].status = act.status;
                   if (act.affinity !== undefined) newRels[idx].affinity = act.affinity;
                   if (act.affinityKnown !== undefined) newRels[idx].affinityKnown = act.affinityKnown;
+                  if (act.appearance) newRels[idx].appearance = act.appearance;
+                  if (act.personality) newRels[idx].personality = act.personality;
+                  if (act.notes) newRels[idx].notes = act.notes;
               }
           });
       }
@@ -394,13 +401,17 @@ export const useGameEngine = () => {
                           name: act.name,
                           description: act.description,
                           lore: act.lore,
-                          isVisited: act.type === 'current'
+                          isVisited: act.type === 'current',
+                          environment: act.environment,
+                          notes: act.notes
                       });
                   }
               } else {
                   if (act.description) newLocations[locIdx].description = act.description;
                   if (act.lore) newLocations[locIdx].lore = act.lore;
                   if (act.type === 'current') newLocations[locIdx].isVisited = true;
+                  if (act.environment) newLocations[locIdx].environment = act.environment;
+                  if (act.notes) newLocations[locIdx].notes = act.notes;
               }
           });
       }
@@ -475,7 +486,7 @@ export const useGameEngine = () => {
         knownLocations: newKnownLocations,
         locations: newLocations,
         character: newCharacter,
-        accumulatedSummary: effectiveSummary,
+        summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
         theme: response.theme || forceTheme || prev.theme,
@@ -566,7 +577,8 @@ export const useGameEngine = () => {
           isProcessing: false,
           logs: [log, ...prev.logs],
           totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
-          generateImage: false
+          generateImage: false,
+          summaries: []
       }));
        navigate('/game');
 

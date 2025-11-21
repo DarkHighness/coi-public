@@ -231,9 +231,9 @@ export const generateStoryOutline = async (
   return { outline: result, log };
 };
 
-export const summarizeContext = async (textToSummarize: string, language: string): Promise<{ summary: string, log: LogEntry }> => {
+export const summarizeContext = async (previousSummary: string, newTurns: string, language: string): Promise<{ summary: string, log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig('story');
-  const prompt = getSummaryPrompt(textToSummarize, language);
+  const prompt = getSummaryPrompt(previousSummary, newTurns, language);
   const sys = "You are a diligent scribe. Output strictly valid JSON.";
   const contents = [{ role: 'user', parts: [{ text: prompt }] }];
 
@@ -251,11 +251,13 @@ export const generateAdventureTurn = async (
 ): Promise<{ response: GameResponse, log: LogEntry, usage: TokenUsage }> => {
   const {
     recentHistory,
-    accumulatedSummary,
+    summaries,
     outline,
     inventory,
     relationships,
     quests,
+    locations,
+    currentLocationId,
     character,
     userAction,
     language = 'English',
@@ -286,8 +288,8 @@ export const generateAdventureTurn = async (
   // Split System Instruction for better KV Cache
   const coreSystemInstruction = getCoreSystemInstruction(language, narrativeStyle, example);
   const staticWorldContext = getStaticWorldContext(outline);
-  const dynamicStoryContext = getDynamicStoryContext(accumulatedSummary);
-  const currentStateContext = getCurrentStateContext(inventory, relationships, quests, character);
+  const dynamicStoryContext = getDynamicStoryContext(summaries);
+  const currentStateContext = getCurrentStateContext(inventory, relationships, quests, locations, currentLocationId, character);
 
   // Combine system instructions
   const fullSystemInstruction = `${coreSystemInstruction}\n\n${staticWorldContext}`;

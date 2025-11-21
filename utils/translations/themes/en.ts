@@ -58,6 +58,24 @@ export const themes : Record<string, {
     backgroundTemplate: "You are a mortal with a unique [Physique/Talent], discovered by a wandering cultivator. Taken to the [Sect Name], you begin your path to immortality. But the world of cultivation is cruel—only the strong survive. As you climb from Qi Condensation to Foundation Building and beyond, you will face demonic beasts, rival cultivators, and heavenly tribulations. Your ultimate goal: to shatter the void and ascend.",
     example: "You sit cross-legged on the peak, pulling in the spiritual energy of heaven and earth. It flows into your meridians like a river, circulating through the Small Heavenly Cycle. Your dantian glows with golden light as you break through to Foundation Building. Thunder rumbles overhead—the first tribulation. You open your eyes, lightning reflecting in your pupils. 'Come,' you whisper to the heavens."
   },
+  infinite_flow: {
+    name: "Infinite Flow",
+    narrativeStyle: "Tense, varied, survival-focused. Mix of genres. Focus on rules, team dynamics, and the test of human nature.",
+    backgroundTemplate: "Do you want to know the meaning of life? Do you want to truly... live? The moment you clicked that popup, you were transported to the [God Space]. Here, there are zombies, aliens, and haunted houses. You must complete deadly missions to earn points and upgrade yourself. Here, weakness is a sin, and your teammates could be your lifeline or the ones who stab you in the back.",
+    example: "The teleportation light fades, and you find yourself standing on top of a speeding train. The wind howls, and in the distance, a city is collapsing. A cold mechanical voice rings in your ears: 'Mission Objective: Survive for 24 hours. Current survivors: 15/15.' You touch the Desert Eagle at your waist and look at the newcomers with varying expressions. 'Listen,' you say coldly, 'if you want to live, shut up and follow me.'"
+  },
+  entertainment: {
+    name: "Entertainment Industry",
+    narrativeStyle: "Glamorous, gossipy, dramatic. Focus on fame, fans, and behind-the-scenes capital games. The thrill of rising from scandal to stardom.",
+    backgroundTemplate: "You are a washed-up child star/shelved trainee, burdened with [Scandal/Debt]. By accident, you gain a [System/Second Chance]. You participate in the hottest talent show, shocking everyone with your amazing talent/acting. Facing smears from rivals and suppression from capital, you slap them in the face with your work. From D-list to Best Actor/Diva, you will be crowned King/Queen.",
+    example: "The spotlight hits you, blindingly bright. Below, screams like a tsunami erupt. Fans hold up your light signs, forming a golden ocean. You grip the microphone, feeling the sweat on your palm. Once, there were only boos and curses here. You corner of your mouth lifts into a perfect business smile. 'This song is for everyone who waited for me.'"
+  },
+  esports: {
+    name: "Esports",
+    narrativeStyle: "Passionate, professional, fast-paced. Heavy use of gaming terminology. Focus on teamwork, mechanics (APM), and the competitive spirit of never giving up.",
+    backgroundTemplate: "The former [Genius Teen/Champion Captain], forced to retire due to [Injury/Conspiracy], became a net cafe admin. But your blood hasn't cooled. With the launch of a new game/season, you gather a group of [Problem Teens/Veterans] to form team [Team Name]. From city leagues to the World Finals, you will face former teammates and powerful Korean teams. The goal is only one: that golden trophy.",
+    example: "The screen turns black and white; the Nexus is exploding. 'Is it over?' the caster sighs with regret. 'No! Not yet!' you roar, your fingers becoming a blur on the keyboard. Resurrection countdown hits zero. Your character rushes out of the fountain like lightning, a pentakill to turn the tide. Your teammates' screams come through the headset, and the whole stadium stands up to cheer. 'We are the champions!'"
+  },
   ceo: {
     name: "Urban/CEO Drama",
     narrativeStyle: "Sharp, luxurious, and dramatic. Focus on wealth, power, business deals, and dominant personalities. Modern high-society setting.",

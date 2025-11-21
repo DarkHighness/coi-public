@@ -85,6 +85,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
                onFork={onFork}
                aiSettings={aiSettings}
                onTypingComplete={onTypingComplete}
+               currentAmbience={currentAmbience}
              />
 
              {/* Action Panel */}

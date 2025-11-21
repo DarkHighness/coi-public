@@ -248,6 +248,7 @@ export default function App() {
                   currentText={effectText}
                   imagePrompt={effectPrompt}
                   theme={gameState.theme}
+                  backgroundImage={currentSegment?.imageUrl}
               />
           </Suspense>
       </div>

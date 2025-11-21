@@ -1,4 +1,3 @@
-
 export interface GameState {
   // Tree Structure: ID -> Segment
   nodes: Record<string, StorySegment>;
@@ -17,7 +16,7 @@ export interface GameState {
 
   // Meta
   outline: StoryOutline | null;
-  accumulatedSummary: string; // The summary of the story *prior* to the current context window
+  summaries: string[]; // Array of summaries, where the last one is the most current
   lastSummarizedIndex: number; // Track how many nodes have been summarized to avoid re-summarizing
 
   isProcessing: boolean;
@@ -64,6 +63,7 @@ export interface SaveSlot {
   timestamp: number;
   theme: string;
   summary: string;
+  previewImage?: string;
   // No need to store full state here, just metadata
 }
 
@@ -97,6 +97,9 @@ export interface Relationship {
   status: string;
   affinity: number;
   affinityKnown?: boolean;
+  appearance?: string;
+  personality?: string;
+  notes?: string;
 }
 
 export interface StorySegment {
@@ -112,9 +115,10 @@ export interface StorySegment {
   usage?: TokenUsage;
 
   // Fork-safe Summary State
-  accumulatedSummary?: string; // The total summary of the story up to this node
+  summaries?: string[]; // The total summary of the story up to this node
   summarizedIndex?: number; // The index in the history chain where the summary ends
   environment?: string; // The environment ambience for this segment
+  imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
 }
 
 export interface Location {
@@ -123,6 +127,8 @@ export interface Location {
   description: string;
   lore?: string;
   isVisited?: boolean;
+  environment?: string;
+  notes?: string;
 }
 
 export interface InventoryItem {
@@ -167,6 +173,9 @@ export interface RelationshipAction {
   status?: string;
   affinity?: number;
   affinityKnown?: boolean;
+  appearance?: string;
+  personality?: string;
+  notes?: string;
 }
 
 export interface LocationAction {
@@ -175,6 +184,8 @@ export interface LocationAction {
   name: string;
   description?: string;
   lore?: string;
+  environment?: string;
+  notes?: string;
 }
 
 export interface CharacterAction {
@@ -191,11 +202,13 @@ export interface CharacterAction {
 
 export interface AdventureTurnInput {
   recentHistory: StorySegment[];
-  accumulatedSummary: string;
+  summaries: string[];
   outline: StoryOutline | null;
   inventory: InventoryItem[];
   relationships: Relationship[];
   quests: Quest[];
+  locations: Location[];
+  currentLocationId: string;
   character: CharacterStatus;
   userAction: string;
   language: string;

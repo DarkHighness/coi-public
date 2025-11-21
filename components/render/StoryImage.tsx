@@ -14,6 +14,7 @@ interface StoryImageProps {
   imageGenerationEnabled: boolean;
   manualImageGen?: boolean;
   themeFont?: string;
+  imageSkipped?: boolean;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
@@ -27,9 +28,13 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   disableImages,
   imageGenerationEnabled,
   manualImageGen,
-  themeFont
+  themeFont,
+  imageSkipped
 }) => {
   if (disableImages) return null;
+
+  // If image was intentionally skipped by AI, do not render anything
+  if (imageSkipped && !imageUrl && !isGenerating) return null;
 
   // State 3: Has imagePrompt AND imageUrl - Show image with action buttons
   if (imageUrl && imagePrompt) {

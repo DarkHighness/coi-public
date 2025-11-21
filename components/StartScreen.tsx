@@ -60,8 +60,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       <ButterflyBackground />
 
       {/* Left Panel: Branding & Atmosphere */}
-
-      {/* Left Panel: Branding & Atmosphere */}
       <div className="relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none">
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
            <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg">
@@ -77,10 +75,18 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </div>
 
       {/* Right Panel: Interaction */}
-      <div className="relative z-20 lg:w-6/12 h-2/3 lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col">
+      <div className="relative z-20 lg:w-6/12 h-2/3 lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden">
+
+        {/* Save Preview Background */}
+        {latestSave?.previewImage && (
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-20 blur-md transition-opacity duration-1000 pointer-events-none"
+              style={{ backgroundImage: `url(${latestSave.previewImage})` }}
+            />
+        )}
 
         {/* Top Bar */}
-        <div className="flex justify-end items-center gap-4 p-6 lg:p-8">
+        <div className="relative z-10 flex justify-end items-center gap-4 p-6 lg:p-8">
            <button
              onClick={onSettings}
              className="p-2 text-theme-muted hover:text-theme-primary transition-colors rounded-full hover:bg-theme-surface-highlight/50"
@@ -92,7 +98,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Menu Content */}
-        <div className="flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-y-auto">
+        <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-y-auto">
 
           {mode === 'main' ? (
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full">
@@ -177,7 +183,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 text-center text-xs text-theme-muted/50 uppercase tracking-widest shrink-0">
+        <div className="relative z-10 p-6 text-center text-xs text-theme-muted/50 uppercase tracking-widest shrink-0">
           v1.0.1 • Powered by Gemini 3 Pro
         </div>
       </div>
