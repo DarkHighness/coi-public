@@ -215,8 +215,10 @@ export default function App() {
     handleSaveSettings(newSettings);
 
     showToast(
-      newMuted ? t("audioSettings.muted") || "Muted" : t("audioSettings.unmuted") || "Unmuted",
-      "info"
+      newMuted
+        ? t("audioSettings.muted") || "Muted"
+        : t("audioSettings.unmuted") || "Unmuted",
+      "info",
     );
   };
 

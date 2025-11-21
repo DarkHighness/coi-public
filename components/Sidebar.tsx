@@ -110,7 +110,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           relationships={gameState.relationships || []}
           themeFont={currentThemeConfig.fontClass}
           listState={gameState.uiState?.relationships}
-          onUpdateList={(newState) => onUpdateUIState("relationships", newState)}
+          onUpdateList={(newState) =>
+            onUpdateUIState("relationships", newState)
+          }
         />
         <InventoryPanel
           inventory={gameState.inventory || []}
@@ -122,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Status Bar */}
-      <div className="bg-black/40 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
+      <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
         <span>Tokens: {gameState.totalTokens.toLocaleString()}</span>
         <div className="flex gap-4">
           <button

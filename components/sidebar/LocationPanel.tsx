@@ -41,7 +41,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     locationItems,
     listState,
     onUpdateList,
-    5
+    5,
   );
 
   const handleLocationClick = (locationName: string) => {
@@ -74,7 +74,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     e.dataTransfer.dropEffect = "move";
   };
 
-  const renderLocationItem = (item: typeof locationItems[0]) => {
+  const renderLocationItem = (item: (typeof locationItems)[0]) => {
     const isExpanded = expandedLocation === item.name;
     const locationData = item.data;
     const isCurrent = item.isCurrent;
@@ -88,8 +88,12 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
           isExpanded ? "bg-theme-surface-highlight/30" : ""
         } ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"} rounded flex items-center gap-1`}
         draggable={isEditMode}
-        onDragStart={isEditMode ? (e) => handleDragStart(e, item.id) : undefined}
-        onDragEnter={isEditMode ? (e) => handleDragEnter(e, item.id) : undefined}
+        onDragStart={
+          isEditMode ? (e) => handleDragStart(e, item.id) : undefined
+        }
+        onDragEnter={
+          isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
+        }
         onDragOver={isEditMode ? handleDragOver : undefined}
         onDragEnd={handleDragEnd}
       >

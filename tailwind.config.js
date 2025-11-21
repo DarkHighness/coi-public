@@ -10,24 +10,6 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        theme: {
-          bg: "rgb(var(--theme-bg-rgb) / <alpha-value>)",
-          surface: "rgb(var(--theme-surface-rgb) / <alpha-value>)",
-          "surface-highlight": "rgb(var(--theme-surface-highlight-rgb) / <alpha-value>)",
-          border: "rgb(var(--theme-border-rgb) / <alpha-value>)",
-          primary: "rgb(var(--theme-primary-rgb) / <alpha-value>)",
-          "primary-hover": "rgb(var(--theme-primary-hover-rgb) / <alpha-value>)",
-          text: "rgb(var(--theme-text-rgb) / <alpha-value>)",
-          muted: "rgb(var(--theme-muted-rgb) / <alpha-value>)",
-        },
-      },
-      fontFamily: {
-        fantasy: ["Cinzel", "serif"],
-        scifi: ["Orbitron", "sans-serif"],
-        horror: ["Creepster", "cursive"],
-        cyberpunk: ["Rajdhani", "sans-serif"],
-      },
       animation: {
         "fade-in": "fadeIn 0.8s ease-out",
         "fade-in-up": "fadeInUp 0.8s ease-out",

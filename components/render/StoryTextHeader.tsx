@@ -17,8 +17,6 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   const { t } = useTranslation();
 
   return (
-
-
     <div className="flex justify-between items-start mb-2">
       <span className="text-xs text-theme-primary font-bold uppercase tracking-widest opacity-50">
         {t("narrator")}
@@ -27,10 +25,11 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
       <button
         onClick={onPlay}
         disabled={isLoading}
-        className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider transition-all ${isPlaying
+        className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider transition-all ${
+          isPlaying
             ? "text-theme-primary animate-pulse"
             : "text-theme-muted hover:text-theme-text"
-          }`}
+        }`}
         title={label}
       >
         {isLoading ? (
@@ -72,4 +71,4 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
       </button>
     </div>
   );
-}
+};

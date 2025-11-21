@@ -61,7 +61,9 @@ export const useGameEngine = () => {
   const [aiSettings, setAiSettings] = useState<AISettings>(DEFAULTS);
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">("system");
+  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">(
+    "system",
+  );
 
   // Derived Language State
   const language = i18n.language as LanguageCode;
@@ -87,14 +89,17 @@ export const useGameEngine = () => {
     // Determine active mode
     let activeMode = themeMode;
     if (themeMode === "system") {
-      activeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+      activeMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "night"
+        : "day";
     }
 
     // Select variables based on mode
     // Default to 'vars' (Night) if dayVars is missing or mode is night
-    const targetVars = (activeMode === "day" && themeConfig.dayVars)
-      ? themeConfig.dayVars
-      : themeConfig.vars;
+    const targetVars =
+      activeMode === "day" && themeConfig.dayVars
+        ? themeConfig.dayVars
+        : themeConfig.vars;
 
     // Apply Colors
     Object.entries(targetVars).forEach(([key, value]) => {
@@ -114,7 +119,6 @@ export const useGameEngine = () => {
 
     // Clean up alpha override (we don't use it anymore since we have proper palettes)
     root.style.removeProperty("--theme-alpha-override");
-
   }, [gameState.theme, themeMode]);
 
   // Init Settings
@@ -168,7 +172,11 @@ export const useGameEngine = () => {
 
     // Load Theme Mode
     const savedMode = localStorage.getItem("chronicles_theme_mode");
-    if (savedMode === "night" || savedMode === "day" || savedMode === "system") {
+    if (
+      savedMode === "night" ||
+      savedMode === "day" ||
+      savedMode === "system"
+    ) {
       setThemeMode(savedMode as any);
     }
   }, []);

@@ -36,7 +36,9 @@ export function DetailedListModal<T>({
       <div className="w-full max-w-2xl bg-theme-bg border border-theme-border rounded-lg shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[80vh]">
         {/* Header */}
         <div className="p-4 border-b border-theme-border flex justify-between items-center bg-theme-surface sticky top-0 z-10">
-          <h2 className={`text-xl font-bold text-theme-primary uppercase tracking-widest ${themeFont}`}>
+          <h2
+            className={`text-xl font-bold text-theme-primary uppercase tracking-widest ${themeFont}`}
+          >
             {title}
           </h2>
           <button
@@ -44,8 +46,18 @@ export function DetailedListModal<T>({
             className="text-theme-muted hover:text-theme-primary transition-colors p-2 -mr-2"
             aria-label={t("close") || "Close"}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -66,7 +78,12 @@ export function DetailedListModal<T>({
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
         </div>
@@ -74,7 +91,9 @@ export function DetailedListModal<T>({
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain">
           {filteredItems.length > 0 ? (
-            filteredItems.map((item, idx) => <div key={idx}>{renderItem(item)}</div>)
+            filteredItems.map((item, idx) => (
+              <div key={idx}>{renderItem(item)}</div>
+            ))
           ) : (
             <div className="text-center text-theme-muted py-8 italic">
               {t("noResults") || "No results found."}
@@ -93,6 +112,6 @@ export function DetailedListModal<T>({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

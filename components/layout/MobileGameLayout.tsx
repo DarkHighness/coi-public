@@ -1,5 +1,11 @@
 import React from "react";
-import { GameState, LanguageCode, FeedLayout, UIState, ListState } from "../../types";
+import {
+  GameState,
+  LanguageCode,
+  FeedLayout,
+  UIState,
+  ListState,
+} from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";

@@ -149,6 +149,7 @@ export const en = {
   },
   search: "Search",
   noResults: "No results found",
+  locations: "Locations",
   ambienceNames: {
     cave: "Cave",
     city: "City",

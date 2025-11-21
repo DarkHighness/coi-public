@@ -157,6 +157,7 @@ export const zh = {
   },
   search: "搜索",
   noResults: "未找到结果",
+  locations: "地点",
   ambienceNames: {
     cave: "洞穴",
     city: "城市",

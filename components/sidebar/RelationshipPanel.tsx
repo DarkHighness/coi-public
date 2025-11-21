@@ -32,12 +32,13 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  const { visibleItems, allItems, togglePin, reorderItem, isPinned } = useListManagement(
-    relationshipsWithId,
-    listState,
-    onUpdateList,
-    DISPLAY_LIMIT
-  );
+  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
+    useListManagement(
+      relationshipsWithId,
+      listState,
+      onUpdateList,
+      DISPLAY_LIMIT,
+    );
 
   const getAffinityColor = (val: number) => {
     if (val >= 80) return "bg-green-500"; // Love/Loyal
@@ -72,7 +73,11 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     setDraggedId(null);
   };
 
-  const renderRelationship = (rel: Relationship & { id: string }, idx: number, enableDrag: boolean = false) => {
+  const renderRelationship = (
+    rel: Relationship & { id: string },
+    idx: number,
+    enableDrag: boolean = false,
+  ) => {
     const isUnknown = rel.affinityKnown === false;
     const pinned = isPinned(rel.id);
     const isDragging = draggedId === rel.id;
@@ -91,79 +96,91 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         onDrop={isEditMode ? (e) => handleDrop(e, rel.id) : undefined}
       >
         <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-center mb-1">
+          <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-bold text-theme-text text-sm truncate">
-                    {rel.name}
-                </span>
+              <span className="font-bold text-theme-text text-sm truncate">
+                {rel.name}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        togglePin(rel.id);
-                    }}
-                    className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-                        pinned ? "text-theme-primary" : "text-theme-muted hover:text-theme-text opacity-0 group-hover/item:opacity-100"
-                    }`}
-                    title={pinned ? "Unpin" : "Pin to top"}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePin(rel.id);
+                }}
+                className={`p-1 rounded hover:bg-theme-bg transition-colors ${
+                  pinned
+                    ? "text-theme-primary"
+                    : "text-theme-muted hover:text-theme-text opacity-0 group-hover/item:opacity-100"
+                }`}
+                title={pinned ? "Unpin" : "Pin to top"}
+              >
+                <svg
+                  className="w-3 h-3"
+                  fill={pinned ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                    <svg
-                    className="w-3 h-3"
-                    fill={pinned ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                    ></path>
-                    </svg>
-                </button>
-                <span
-                    className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
-                    title={rel.status}
-                >
-                    {rel.status}
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  ></path>
+                </svg>
+              </button>
+              <span
+                className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
+                title={rel.status}
+              >
+                {rel.status}
+              </span>
             </div>
-            </div>
-            <p className="text-xs text-theme-muted italic mb-2 leading-snug">
+          </div>
+          <p className="text-xs text-theme-muted italic mb-2 leading-snug">
             {rel.description}
-            </p>
+          </p>
 
-            {/* Affinity Bar */}
-            <div className="flex items-center gap-2 text-[10px]">
+          {/* Affinity Bar */}
+          <div className="flex items-center gap-2 text-[10px]">
             <span className="text-theme-muted">{t("affinity")}</span>
             <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
-                {isUnknown ? (
+              {isUnknown ? (
                 <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
-                ) : (
+              ) : (
                 <div
-                    className={`h-full ${getAffinityColor(rel.affinity)} transition-all duration-500`}
-                    style={{ width: `${rel.affinity}%` }}
+                  className={`h-full ${getAffinityColor(rel.affinity)} transition-all duration-500`}
+                  style={{ width: `${rel.affinity}%` }}
                 ></div>
-                )}
+              )}
             </div>
             <span className="text-theme-text w-8 text-right font-mono">
-                {isUnknown ? t("unknown") : `${rel.affinity}%`}
+              {isUnknown ? t("unknown") : `${rel.affinity}%`}
             </span>
-            </div>
+          </div>
         </div>
         {isEditMode && (
-            <div
-                className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none"
-                title="Drag to reorder"
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, rel.id)}
+          <div
+            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none"
+            title="Drag to reorder"
+            draggable={true}
+            onDragStart={(e) => handleDragStart(e, rel.id)}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </div>
         )}
       </div>
     );
@@ -193,28 +210,48 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-            <button
-                onClick={(e) => {
-                e.stopPropagation();
-                setIsEditMode(!isEditMode);
-                }}
-                className={`text-[10px] uppercase tracking-wider font-bold border rounded px-2 py-0.5 transition-colors ${
-                isEditMode
-                    ? "bg-theme-primary text-theme-bg border-theme-primary"
-                    : "text-theme-primary border-theme-primary/50 hover:text-theme-primary-hover"
-                }`}
-                title={isEditMode ? t("done") : t("edit")}
-            >
-                {isEditMode ? (
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                ) : (
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                )}
-            </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditMode(!isEditMode);
+            }}
+            className={`text-[10px] uppercase tracking-wider font-bold border rounded px-2 py-0.5 transition-colors ${
+              isEditMode
+                ? "bg-theme-primary text-theme-bg border-theme-primary"
+                : "text-theme-primary border-theme-primary/50 hover:text-theme-primary-hover"
+            }`}
+            title={isEditMode ? t("done") : t("edit")}
+          >
+            {isEditMode ? (
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            )}
+          </button>
           {allItems.length > DISPLAY_LIMIT && (
             <button
               onClick={(e) => {
@@ -247,7 +284,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           </button>
         </div>
       </div>
-
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}
       >
@@ -260,7 +296,8 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             visibleItems.map((rel, idx) => renderRelationship(rel, idx, true))
           )}
         </div>
-      </div>      <DetailedListModal
+      </div>{" "}
+      <DetailedListModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={t("relationships")}

@@ -16,7 +16,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   const [isOpen, setIsOpen] = useState(true);
   const [expandedQuests, setExpandedQuests] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalExpandedQuests, setModalExpandedQuests] = useState<Set<string>>(new Set());
+  const [modalExpandedQuests, setModalExpandedQuests] = useState<Set<string>>(
+    new Set(),
+  );
 
   const activeQuests = quests.filter(
     (q) => q.status === "active" && q.type !== "hidden",
@@ -39,7 +41,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     });
   };
 
-  const renderQuest = (q: Quest, expandedSet: Set<string>, isModal: boolean) => (
+  const renderQuest = (
+    q: Quest,
+    expandedSet: Set<string>,
+    isModal: boolean,
+  ) => (
     <div
       key={q.id}
       className="bg-theme-surface-highlight/50 p-4 rounded border border-theme-border text-theme-text text-sm leading-relaxed border-l-4 border-l-theme-primary relative group cursor-pointer hover:bg-theme-surface-highlight/70 transition-colors mb-2"
@@ -49,9 +55,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         {q.type === "main" ? t("questPanel.main") : t("questPanel.side")}
       </div>
       <div className="flex items-center justify-between">
-        <h4 className="font-bold text-theme-primary mb-1 flex-1">
-          {q.title}
-        </h4>
+        <h4 className="font-bold text-theme-primary mb-1 flex-1">{q.title}</h4>
         <svg
           className={`w-4 h-4 text-theme-primary transition-transform duration-200 ${expandedSet.has(q.id) ? "rotate-180" : ""}`}
           fill="none"
@@ -121,15 +125,20 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       >
         <div className="space-y-4">
           {/* Main Quests */}
-          {mainQuests.slice(0, DISPLAY_LIMIT).map((q) => renderQuest(q, expandedQuests, false))}
+          {mainQuests
+            .slice(0, DISPLAY_LIMIT)
+            .map((q) => renderQuest(q, expandedQuests, false))}
 
           {/* Side Quests (only if space permits) */}
-          {mainQuests.length < DISPLAY_LIMIT && sideQuests.slice(0, DISPLAY_LIMIT - mainQuests.length).map((q) => renderQuest(q, expandedQuests, false))}
+          {mainQuests.length < DISPLAY_LIMIT &&
+            sideQuests
+              .slice(0, DISPLAY_LIMIT - mainQuests.length)
+              .map((q) => renderQuest(q, expandedQuests, false))}
 
           {allQuests.length === 0 && (
-             <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
-               {t("questPanel.empty")}
-             </p>
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
+              {t("questPanel.empty")}
+            </p>
           )}
         </div>
       </div>

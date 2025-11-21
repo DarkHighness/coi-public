@@ -86,7 +86,9 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         }
         isEditMode={isEditMode}
       />
-      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
+      <div
+        className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"}`}
+      >
         <InventoryItemDetail
           loading={false}
           details={{ description: item.description, lore: item.lore || "" }}

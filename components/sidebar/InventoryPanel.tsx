@@ -31,13 +31,8 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
   const safeInventory = Array.isArray(inventory) ? inventory : [];
   const DISPLAY_LIMIT = 5;
 
-  const {
-    visibleItems,
-    allItems,
-    togglePin,
-    reorderItem,
-    isPinned,
-  } = useListManagement(safeInventory, listState, onUpdateList, DISPLAY_LIMIT);
+  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
+    useListManagement(safeInventory, listState, onUpdateList, DISPLAY_LIMIT);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
@@ -185,8 +180,12 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 context={itemContext}
                 isPinned={isPinned(item.id)}
                 onPin={() => togglePin(item.id)}
-                onDragStart={isEditMode ? (e) => handleDragStart(e, item.id) : undefined}
-                onDragEnter={isEditMode ? (e) => handleDragEnter(e, item.id) : undefined}
+                onDragStart={
+                  isEditMode ? (e) => handleDragStart(e, item.id) : undefined
+                }
+                onDragEnter={
+                  isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
+                }
                 onDragOver={isEditMode ? handleDragOver : undefined}
                 onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
                 isEditMode={isEditMode}

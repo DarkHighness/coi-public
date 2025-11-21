@@ -28,15 +28,23 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   const { t } = useTranslation();
 
   let ambienceName = ambience ? t("ambienceNames." + ambience) : null;
-  let environmentName = environment ? t("environmentNames." + environment) : null;
+  let environmentName = environment
+    ? t("environmentNames." + environment)
+    : null;
 
   // Fallback to raw names if translation missing
   // If the translation key is the same as the input, it means no translation was found
-  if (ambience && (!ambienceName || ambienceName == "ambienceNames." + ambience)) {
+  if (
+    ambience &&
+    (!ambienceName || ambienceName == "ambienceNames." + ambience)
+  ) {
     ambienceName = ambience;
   }
 
-  if (environment && (!environmentName || environmentName == "environmentNames." + environment)) {
+  if (
+    environment &&
+    (!environmentName || environmentName == "environmentNames." + environment)
+  ) {
     environmentName = environment;
   }
 
@@ -54,7 +62,11 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
 
         {theme && (
           <div className="flex items-center space-x-2 border-l border-theme-border pl-4 opacity-70">
-            <span className="text-lg leading-none" role="img" aria-label="theme">
+            <span
+              className="text-lg leading-none"
+              role="img"
+              aria-label="theme"
+            >
               🎭
             </span>
             <span className="text-theme-text truncate text-xs md:text-sm">
@@ -86,7 +98,9 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
               <button
                 onClick={onToggleMute}
                 className={`flex items-center space-x-1 max-w-[100px] md:max-w-[150px] hover:text-theme-primary transition-colors ${isMuted ? "opacity-50 grayscale" : ""}`}
-                title={isMuted ? t("audioSettings.unmute") : t("audioSettings.mute")}
+                title={
+                  isMuted ? t("audioSettings.unmute") : t("audioSettings.mute")
+                }
               >
                 <span
                   className="text-lg leading-none"
@@ -95,7 +109,9 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                 >
                   {isMuted ? "🔇" : "🎵"}
                 </span>
-                <span className={`text-theme-text truncate text-xs md:text-sm ${isMuted ? "line-through text-theme-muted" : ""}`}>
+                <span
+                  className={`text-theme-text truncate text-xs md:text-sm ${isMuted ? "line-through text-theme-muted" : ""}`}
+                >
                   {ambienceName}
                 </span>
               </button>

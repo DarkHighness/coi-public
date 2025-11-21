@@ -150,19 +150,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="flex border-b border-theme-border bg-theme-bg">
-          {(["credentials", "models", "audio", "appearance"] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
-                activeTab === tab
-                  ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
-                  : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
-              }`}
-            >
-              {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+          {(["credentials", "models", "audio", "appearance"] as Tab[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
+                  activeTab === tab
+                    ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
+                    : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
+                }`}
+              >
+                {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ),
+          )}
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">

@@ -223,7 +223,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                           if (shouldAnimate) {
                             playedAnimations.current.add(segment.id);
                           }
-                          if (index === currentHistory.length - 1 && onTypingComplete) {
+                          if (
+                            index === currentHistory.length - 1 &&
+                            onTypingComplete
+                          ) {
                             onTypingComplete();
                           }
                         }}

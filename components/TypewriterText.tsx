@@ -13,7 +13,9 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   onComplete,
   instant = false,
 }) => {
-  const [displayedLength, setDisplayedLength] = useState(instant ? text.length : 0);
+  const [displayedLength, setDisplayedLength] = useState(
+    instant ? text.length : 0,
+  );
   const onCompleteRef = useRef(onComplete);
   const textRef = useRef(text);
 

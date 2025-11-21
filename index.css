@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  --color-theme-bg: var(--theme-bg);
+  --color-theme-surface: var(--theme-surface);
+  --color-theme-surface-highlight: var(--theme-surface-highlight);
+  --color-theme-border: var(--theme-border);
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-primary-hover: var(--theme-primary-hover);
+  --color-theme-text: var(--theme-text);
+  --color-theme-muted: var(--theme-muted);
+
+  --font-fantasy: "Cinzel", serif;
+  --font-scifi: "Orbitron", sans-serif;
+  --font-horror: "Creepster", cursive;
+  --font-cyberpunk: "Rajdhani", sans-serif;
+}
+
 html,
 body {
   height: 100%;
@@ -256,4 +272,23 @@ body {
     filter: blur(0);
     opacity: 1;
   }
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Linear fade mask for horizontal lists */
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - 24px),
+    transparent
+  );
 }

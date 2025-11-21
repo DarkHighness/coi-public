@@ -36,7 +36,9 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
           <div
             onClick={onPin}
             className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-              isPinned ? "text-theme-primary" : "text-theme-muted hover:text-theme-text"
+              isPinned
+                ? "text-theme-primary"
+                : "text-theme-muted hover:text-theme-text"
             }`}
             title={isPinned ? "Unpin" : "Pin to top"}
           >
@@ -71,8 +73,18 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
         className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded ml-1 touch-none"
         title="Drag to reorder"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
         </svg>
       </div>
     )}
