@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { SaveSlot, LanguageCode } from '../types';
-import { TRANSLATIONS, THEMES } from '../utils/constants';
+import { THEMES } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
 
 interface SaveManagerProps {
   slots: SaveSlot[];
@@ -13,21 +14,21 @@ interface SaveManagerProps {
 }
 
 export const SaveManager: React.FC<SaveManagerProps> = ({ slots, currentSlotId, onSwitch, onDelete, onClose, language }) => {
-  const t = TRANSLATIONS[language];
+  const {t} = useTranslation();
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur p-4 animate-fade-in">
        <div className="bg-theme-surface border border-theme-border rounded max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
            <div className="p-4 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
-              <h2 className="text-xl font-bold text-theme-primary">{t.saves.title}</h2>
+              <h2 className="text-xl font-bold text-theme-primary">{t('saves.title')}</h2>
               <button onClick={onClose}><svg className="w-6 h-6 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
            </div>
-           
+
            <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {slots.length === 0 && (
-                 <div className="text-center text-theme-muted py-8 italic">No chronicles found.</div>
+                 <div className="text-center text-theme-muted py-8 italic">{t('saves.empty')}</div>
               )}
-              
+
               {slots.map(slot => {
                  const themeColor = THEMES[slot.theme]?.vars['--theme-primary'] || '#ccc';
                  const isCurrent = currentSlotId === slot.id;
@@ -42,17 +43,17 @@ export const SaveManager: React.FC<SaveManagerProps> = ({ slots, currentSlotId, 
                                <span className="text-[10px] text-theme-muted opacity-50">{new Date(slot.timestamp).toLocaleDateString()}</span>
                             </div>
                         </div>
-                        
+
                         <div className="flex gap-2">
                            {!isCurrent && (
-                               <button 
+                               <button
                                  onClick={() => { onSwitch(slot.id); onClose(); }}
                                  className="px-3 py-1 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg text-xs rounded border border-theme-border transition-colors"
                                >
-                                 {t.saves.load}
+                                 {t('saves.load')}
                                </button>
                            )}
-                           <button 
+                           <button
                              onClick={() => { if(window.confirm('Delete?')) onDelete(slot.id); }}
                              className="p-1 text-theme-muted hover:text-red-500"
                            >

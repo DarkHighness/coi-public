@@ -43,6 +43,7 @@ export const zh = {
     narrativeStyle: "叙事风格",
     startThisAdventure: "开始这个冒险",
     timeline: "旅程时间轴",
+    "timeline.empty": "旅程尚未开始...",
     character: "角色状态",
     skills: "技能",
     emptySkills: "暂未习得技能。",
@@ -92,6 +93,7 @@ export const zh = {
     success: "成功",
     fail: "失败",
     critFail: "大失败！",
+    logs: "日志",
 
     tabs: {
       credentials: "密钥",
@@ -152,7 +154,8 @@ export const zh = {
       overwrite: "覆盖",
       delete: "删除",
       load: "读取",
-      current: "当前"
+      current: "当前",
+      empty: "过往空无一物"
     },
     summary: {
       divider: "历史已总结",

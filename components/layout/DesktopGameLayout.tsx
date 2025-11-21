@@ -56,8 +56,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       <div className="w-80 border-r border-theme-border bg-theme-surface/90 backdrop-blur shrink-0 relative z-20">
          <Sidebar
            gameState={gameState}
-           language={language}
-           setLanguage={setLanguage}
            isTranslating={isTranslating}
            onCloseMobile={() => {}}
            onMagicMirror={onMagicMirror}
@@ -75,7 +73,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
              <StoryFeed
                gameState={gameState}
                currentHistory={currentHistory}
-               language={language}
                layout={feedLayout}
                setLayout={setFeedLayout}
                onAnimate={onAnimate}
@@ -92,7 +89,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
                 <ActionPanel
                   gameState={gameState}
                   currentHistory={currentHistory}
-                  language={language}
                   isTranslating={isTranslating}
                   onAction={onAction}
                 />
@@ -106,7 +102,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
            <StoryTimeline
               segments={currentHistory}
               theme={gameState.theme}
-              language={language}
            />
          </Suspense>
       </div>

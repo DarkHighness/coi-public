@@ -1,6 +1,5 @@
 import React from 'react';
-import { TRANSLATIONS } from '../../utils/constants';
-import { LanguageCode } from '../../types';
+import { useTranslation } from 'react-i18next';
 import { ItemLore } from './ItemLore';
 
 interface ItemDetails {
@@ -11,14 +10,13 @@ interface ItemDetails {
 interface InventoryItemDetailProps {
   loading: boolean;
   details: ItemDetails | null;
-  language: string;
 }
 
-export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loading, details, language }) => {
-  const t = TRANSLATIONS[language as LanguageCode] || TRANSLATIONS.en;
+export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loading, details }) => {
+  const { t } = useTranslation();
 
-  const showMoreLabel = t.showMore;
-  const showLessLabel = t.showLess;
+  const showMoreLabel = t('showMore');
+  const showLessLabel = t('showLess');
 
   if (loading) {
     return (
@@ -27,7 +25,7 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loadin
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span className="text-theme-muted text-xs">{t.consultingArchives}</span>
+        <span className="text-theme-muted text-xs">{t('consultingArchives')}</span>
       </span>
     );
   }
@@ -40,7 +38,7 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({ loadin
       {details.lore && (
         <ItemLore
             lore={details.lore}
-            labelHistory={t.history}
+            labelHistory={t('history')}
             labelShowMore={showMoreLabel}
             labelShowLess={showLessLabel}
         />

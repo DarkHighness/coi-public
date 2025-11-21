@@ -1,16 +1,15 @@
 
 import React, { useState } from 'react';
-import { LanguageCode, Quest } from '../../types';
-import { TRANSLATIONS } from '../../utils/constants';
+import { useTranslation } from 'react-i18next';
+import { Quest } from '../../types';
 
 interface QuestPanelProps {
   quests: Quest[];
-  language: LanguageCode;
   themeFont: string;
 }
 
-export const QuestPanel: React.FC<QuestPanelProps> = ({ quests, language, themeFont }) => {
-  const t = TRANSLATIONS[language];
+export const QuestPanel: React.FC<QuestPanelProps> = ({ quests, themeFont }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
   const activeQuests = quests.filter(q => q.status === 'active');
@@ -25,7 +24,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ quests, language, themeF
       >
         <span className="flex items-center">
           <span className="w-2 h-2 bg-theme-primary rounded-full mr-2 animate-pulse"></span>
-          {t.quest}
+          {t('quest')}
         </span>
         <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
       </button>

@@ -1,5 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './utils/i18n';
 import './index.css';
 import App from './App';
 
@@ -23,6 +25,8 @@ if ('serviceWorker' in navigator) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );

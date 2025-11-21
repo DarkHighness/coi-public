@@ -1,26 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { THEMES } from '../utils/constants';
-import { LanguageCode } from '../types';
 
 interface ThemeSelectorProps {
   themes: typeof THEMES;
   onSelect: (theme: string) => void;
   onHover: (theme: string) => void;
-  translations: Record<string, any>;
-  randomLabel: string;
-  t: any; // Full translations object
-  language: LanguageCode;
 }
 
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   themes,
   onSelect,
-  onHover,
-  translations,
-  randomLabel,
-  t,
-  language
+  onHover
 }) => {
+  const { t } = useTranslation();
   const themeKeys = Object.keys(themes);
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
 
@@ -33,7 +26,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   };
 
   const previewData = previewTheme ? themes[previewTheme] : null;
-  const previewName = previewTheme ? t.themes[previewTheme]?.name : '';
+  const previewName = previewTheme ? t(`themes.${previewTheme}.name`) : '';
 
   return (
     <>
@@ -50,15 +43,15 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                🎲
              </div>
              <div className="relative z-10">
-               <div className="font-bold text-theme-primary uppercase tracking-wider text-lg mb-1">{randomLabel}</div>
-               <div className="text-sm text-theme-muted">{t.randomThemeDesc}</div>
+               <div className="font-bold text-theme-primary uppercase tracking-wider text-lg mb-1">{t('randomTheme')}</div>
+               <div className="text-sm text-theme-muted">{t('randomThemeDesc')}</div>
              </div>
           </button>
 
           {themeKeys.map((key) => {
             const theme = themes[key];
-            const name = t.themes[key]?.name;
-            const narrativeStyle = t.themes[key]?.narrativeStyle;
+            const name = t(`themes.${key}.name`);
+            const narrativeStyle = t(`themes.${key}.narrativeStyle`);
 
             return (
               <div
@@ -103,7 +96,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                         handlePreview(key);
                       }}
                       className="p-2 rounded-lg bg-theme-bg/50 border border-theme-border hover:border-theme-primary hover:bg-theme-surface transition-all"
-                      title={t.themePreview}
+                      title={t('themePreview')}
                     >
                       <svg className="w-4 h-4 text-theme-muted hover:text-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -116,7 +109,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                         onSelect(key);
                       }}
                       className="p-2 rounded-lg bg-theme-primary/10 border border-theme-primary hover:bg-theme-primary hover:text-theme-bg transition-all"
-                      title={t.themeStart}
+                      title={t('themeStart')}
                     >
                       <svg className="w-4 h-4 text-theme-primary group-hover:text-theme-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -154,7 +147,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 </h2>
                 <div className="mt-1 flex items-center gap-2">
                   <div className="h-px flex-1 max-w-24 bg-gradient-to-r from-theme-primary/50 to-transparent"></div>
-                  <span className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold">{t.themePreview}</span>
+                  <span className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold">{t('themePreview')}</span>
                 </div>
               </div>
               <button
@@ -170,16 +163,16 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             {/* Content */}
             <div className="relative z-10 flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
               <div>
-                <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2">{t.narrativeStyle}</h3>
+                <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2">{t('narrativeStyle')}</h3>
                 <p className="text-theme-muted italic text-base leading-relaxed">
-                  "{t.themes[previewTheme]?.narrativeStyle}"
+                  "{t(`themes.${previewTheme}.narrativeStyle`)}"
                 </p>
               </div>
 
               <div className="bg-theme-bg/50 p-6 rounded-lg border border-theme-border/50 relative">
                 <div className="absolute -top-3 -left-3 text-4xl text-theme-primary/20 font-serif">"</div>
                 <p className={`text-theme-text/90 leading-loose ${previewData.fontClass === 'font-serif' ? 'font-serif text-lg' : 'font-sans'}`}>
-                  {t.themes[previewTheme]?.example}
+                  {t(`themes.${previewTheme}.example`)}
                 </p>
                 <div className="absolute -bottom-3 -right-3 text-4xl text-theme-primary/20 font-serif rotate-180">"</div>
               </div>
@@ -194,7 +187,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 }}
                 className="w-full py-4 bg-theme-primary text-theme-bg font-bold text-xl uppercase tracking-widest hover:bg-theme-primary-hover transition-all shadow-[0_0_20px_rgba(var(--theme-primary),0.4)] hover:scale-[1.02] rounded-lg flex items-center justify-center gap-3"
               >
-                <span>{t.startThisAdventure}</span>
+                <span>{t('startThisAdventure')}</span>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                 </svg>

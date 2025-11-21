@@ -26,7 +26,7 @@ import {
   getModels as getOpenRouterModels,
   validateConnection as validateOpenRouterConnection
 } from "./providers/openRouterProvider";
-import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, TRANSLATIONS } from "../utils/constants";
+import { DEFAULTS, DEFAULT_OPENAI_BASE_URL } from "../utils/constants";
 import { gameResponseSchema, translationSchema, storyOutlineSchema, summarySchema } from "./schemas";
 import { getEnvApiKey } from "../utils/env";
 import {
@@ -41,6 +41,7 @@ import {
   getCurrentStateContext
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
+import { useTranslation } from "react-i18next";
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
@@ -211,11 +212,10 @@ export const generateStoryOutline = async (
 ): Promise<{ outline: StoryOutline, log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig('story');
 
-  const langCode = getLangCode(language);
-  const t = TRANSLATIONS[langCode];
-  const themeData = t.themes[theme] || t.themes.fantasy;
+  const { t } = useTranslation();
+  const themeDataBackgroundTemplate = t(`themes.${theme}.backgroundTemplate`);
 
-  const prompt = getOutlinePrompt(theme, language, customContext, themeData.backgroundTemplate);
+  const prompt = getOutlinePrompt(theme, language, customContext, themeDataBackgroundTemplate);
   const sys = "You are a master storyteller. Output strictly valid JSON.";
   const contents = [{ role: 'user', parts: [{ text: prompt }] }];
 
@@ -252,13 +252,9 @@ export const generateAdventureTurn = async (
 
   const { provider, modelId } = getProviderConfig('story');
 
-  const langCode = getLangCode(language);
-  const t = TRANSLATIONS[langCode];
-  const themeData = themeKey ? t.themes[themeKey] : undefined;
-
-  // Fallback or use data
-  const narrativeStyle = themeData?.narrativeStyle || "Standard adventure tone.";
-  const example = themeData?.example;
+  const {t} = useTranslation();
+  const narrativeStyle = themeKey ? t(`themes.${themeKey}.narrativeStyle`) : "Standard adventure tone.";
+  const example = themeKey ? t(`themes.${themeKey}.example`) : undefined
 
   // Split System Instruction for better KV Cache
   const coreSystemInstruction = getCoreSystemInstruction(language, narrativeStyle, example);

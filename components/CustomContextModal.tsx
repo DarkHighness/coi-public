@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
-import { LanguageCode } from '../types';
-import { TRANSLATIONS } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
 
 interface CustomContextModalProps {
   isOpen: boolean;
   onClose: () => void;
   customContext: string;
   setCustomContext: (context: string) => void;
-  language: LanguageCode;
 }
 
 export const CustomContextModal: React.FC<CustomContextModalProps> = ({
   isOpen,
   onClose,
   customContext,
-  setCustomContext,
-  language
+  setCustomContext
 }) => {
-  const t = TRANSLATIONS[language];
+  const { t } = useTranslation();
   const [localContext, setLocalContext] = useState(customContext);
 
   if (!isOpen) return null;
@@ -38,7 +35,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
         <div className="p-6 border-b border-theme-border flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-wider">
-              {t.customContext}
+              {t('customContext')}
             </h2>
             <p className="text-sm text-theme-muted mt-1">
               Add details to guide your adventure's story
@@ -59,7 +56,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
           <textarea
             value={localContext}
             onChange={(e) => setLocalContext(e.target.value)}
-            placeholder={t.customContextPlaceholder}
+            placeholder={t('customContextPlaceholder')}
             className="w-full h-64 bg-theme-surface-highlight/30 border border-theme-border rounded-lg p-4 text-theme-text focus:border-theme-primary outline-none resize-none placeholder-theme-muted"
             autoFocus
           />

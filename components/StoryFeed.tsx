@@ -1,15 +1,14 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { GameState, LanguageCode, FeedLayout, StorySegment, AISettings } from '../types';
+import { useTranslation } from 'react-i18next';
+import { GameState, FeedLayout, StorySegment, AISettings } from '../types';
 import { StoryCard } from './StoryCard';
-import { TRANSLATIONS } from '../utils/constants';
 import { FeedHeader } from './feed/FeedHeader';
 import { StackControls } from './feed/StackControls';
 
 interface StoryFeedProps {
   gameState: GameState;
   currentHistory: StorySegment[];
-  language: LanguageCode;
   layout: FeedLayout;
   setLayout: (layout: FeedLayout) => void;
   onAnimate: (imageUrl: string) => void;
@@ -24,7 +23,6 @@ interface StoryFeedProps {
 export const StoryFeed: React.FC<StoryFeedProps> = ({
   gameState,
   currentHistory,
-  language,
   layout,
   setLayout,
   onAnimate,
@@ -42,7 +40,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   // Track played animations to prevent re-typing
   const playedAnimations = useRef<Set<string>>(new Set());
 
-  const t = TRANSLATIONS[language];
+  const { t } = useTranslation();
 
   // Auto-jump to latest when history grows (new turn generated)
   useEffect(() => {
@@ -99,7 +97,6 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       <FeedHeader
-        language={language}
         layout={layout}
         setLayout={setLayout}
         activeIndex={safeActiveIndex}
@@ -133,10 +130,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                 return (
                   <React.Fragment key={segment.id}>
                      {segment.summarySnapshot && (
-                        <div className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group" title={t.summary.tooltip}>
+                        <div className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group" title="Summary">
                            <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
                            <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">
-                              {t.summary.divider}
+                              {t('summary.divider')}
                            </span>
                            <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
                         </div>
@@ -150,7 +147,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                                 onFork(segment.id);
                             }}
                             className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
-                            title={t.tree.fork}
+                            title={t('tree.fork')}
                           >
                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                           </button>
@@ -158,9 +155,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                        <StoryCard
                          segment={segment}
                          isLast={index === currentHistory.length - 1}
-                         labels={{ decided: t.decided, vision: t.vision, unavailable: t.unavailable }}
+                         labels={{ decided: t('decided'), vision: t('vision'), unavailable: t('unavailable') }}
                          onAnimate={segment.imageUrl ? onAnimate : undefined}
-                         language={language}
                          disableImages={disableImages}
                          shouldAnimate={shouldAnimate}
                          aiSettings={aiSettings}
@@ -187,7 +183,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                                 className="flex items-center gap-2 px-4 py-2 bg-theme-primary/20 hover:bg-theme-primary text-theme-primary hover:text-theme-bg border border-theme-primary rounded-full transition-all font-bold text-sm uppercase tracking-wider shadow-[0_0_15px_rgba(var(--theme-primary),0.3)] cursor-pointer pointer-events-auto"
                              >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                                {t.tree.fork}
+                                {t('tree.fork')}
                              </button>
                         </div>
                       )}
@@ -195,9 +191,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                       <StoryCard
                           segment={activeSegment}
                           isLast={safeActiveIndex === currentHistory.length - 1}
-                          labels={{ decided: t.decided, vision: t.vision, unavailable: t.unavailable }}
+                          labels={{ decided: t('decided'), vision: t('vision'), unavailable: t('unavailable') }}
                           onAnimate={activeSegment.imageUrl ? onAnimate : undefined}
-                          language={language}
                           disableImages={disableImages}
                           shouldAnimate={false} // Stack mode doesn't usually re-type
                           aiSettings={aiSettings}
@@ -212,7 +207,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
             <div className="flex justify-center py-8 animate-pulse flex-none">
                <div className="flex flex-col items-center space-y-2">
                   <div className="w-2 h-2 bg-theme-primary rounded-full animate-bounce delay-75"></div>
-                  <span className="text-theme-muted text-xs uppercase tracking-widest">{gameState.outline ? t.loading : t.outline.generating}</span>
+                  <span className="text-theme-muted text-xs uppercase tracking-widest">{gameState.outline ? t('loading') : t('outline.generating')}</span>
                </div>
             </div>
           )}
@@ -220,7 +215,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
           {gameState.error && (
             <div className="p-4 bg-red-900/20 border border-red-800 text-red-400 rounded text-center mb-8">
               {gameState.error}
-              <button onClick={onRetry} className="block mx-auto mt-2 text-sm underline hover:text-red-300">{t.tryAgain}</button>
+              <button onClick={onRetry} className="block mx-auto mt-2 text-sm underline hover:text-red-300">{t('tryAgain')}</button>
             </div>
           )}
 
@@ -238,7 +233,6 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                  onLatest={handleLatest}
                  activeIndex={safeActiveIndex}
                  totalSegments={currentHistory.length}
-                 language={language}
               />
            </div>
         </div>

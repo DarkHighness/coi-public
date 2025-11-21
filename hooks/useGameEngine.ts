@@ -1,5 +1,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AISettings, StorySegment, LanguageCode } from '../types';
 import { useGameState } from './useGameState';
 import { useGamePersistence } from './useGamePersistence';
@@ -10,7 +12,7 @@ import {
   generateStoryOutline,
   summarizeContext
 } from "../services/aiService";
-import { THEMES, LANG_MAP, DEFAULTS, TRANSLATIONS } from '../utils/constants';
+import { THEMES, LANG_MAP, DEFAULTS } from '../utils/constants';
 
 // Helper: Traverse tree
 const deriveHistory = (nodes: Record<string, StorySegment>, leafId: string | null): StorySegment[] => {
@@ -25,7 +27,17 @@ const deriveHistory = (nodes: Record<string, StorySegment>, leafId: string | nul
 
 export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
-  const [view, setView] = useState<'start' | 'initializing' | 'game'>('start');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t: i18nT, i18n } = useTranslation();
+
+  // Derive view from path
+  const view = useMemo(() => {
+    if (location.pathname === '/initializing') return 'initializing';
+    if (location.pathname === '/game') return 'game';
+    return 'start';
+  }, [location.pathname]);
+
   const { saveSlots, currentSlotId, setCurrentSlotId, createSaveSlot, loadSlot, deleteSlot, isAutoSaving } = useGamePersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -41,13 +53,14 @@ export const useGameEngine = () => {
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
 
   // Derived Language State
-  const language = aiSettings.language;
+  const language = i18n.language as LanguageCode;
 
   const setLanguage = (lang: LanguageCode) => {
       const newSettings = { ...aiSettings, language: lang };
       setAiSettings(newSettings);
       updateAIConfig(newSettings);
       localStorage.setItem('chronicles_aisettings', JSON.stringify(newSettings));
+      i18n.changeLanguage(lang);
   };
 
   const currentHistory = useMemo(() => deriveHistory(gameState.nodes, gameState.activeNodeId), [gameState.nodes, gameState.activeNodeId]);
@@ -88,6 +101,11 @@ export const useGameEngine = () => {
 
          setAiSettings(mergedSettings);
          updateAIConfig(mergedSettings);
+
+         // Sync i18n with settings
+         if (mergedSettings.language && mergedSettings.language !== i18n.language) {
+             i18n.changeLanguage(mergedSettings.language);
+         }
        } catch (e) {
          console.error("Failed to load settings", e);
          updateAIConfig(DEFAULTS);
@@ -101,6 +119,9 @@ export const useGameEngine = () => {
     setAiSettings(newSettings);
     updateAIConfig(newSettings);
     localStorage.setItem('chronicles_aisettings', JSON.stringify(newSettings));
+    if (newSettings.language !== language) {
+        i18n.changeLanguage(newSettings.language);
+    }
   };
 
   // --- Core Game Loop ---
@@ -273,7 +294,7 @@ export const useGameEngine = () => {
 
       // Determine Toast Message based on state changes
       let toastMessage = "";
-      const t = TRANSLATIONS[language];
+      const {t} = useTranslation();
       // Process Deltas
       let newInventory = [...(gameStateRef.current.inventory || [])];
       if (response.inventoryActions) {
@@ -429,11 +450,11 @@ export const useGameEngine = () => {
 
       // Determine Toast Message based on ACTIONS
       if (response.inventoryActions?.some(a => a.action === 'add')) {
-         toastMessage = t.toast.itemAdded;
+         toastMessage = t('toast.itemAdded');
       } else if (response.relationshipActions?.some(a => a.action === 'add')) {
-         toastMessage = t.toast.charMet;
+         toastMessage = t('toast.charMet');
       } else if (response.questActions?.some(a => a.action === 'add' || a.action === 'complete')) {
-         toastMessage = t.toast.questUpd;
+         toastMessage = t('toast.questUpd');
       }
 
       // Update State with Response
@@ -498,7 +519,7 @@ export const useGameEngine = () => {
     // Strict Reset
     resetState(selectedTheme);
 
-    setView('initializing');
+    navigate('/initializing');
     try {
        const { outline, log } = await generateStoryOutline(selectedTheme, LANG_MAP[language], customContext);
        setGameState(prev => ({
@@ -524,8 +545,8 @@ export const useGameEngine = () => {
           isProcessing: false,
           logs: [log, ...prev.logs],
           totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0)
-       }));
-       setView('game');
+      }));
+       navigate('/game');
 
        // Safety timeout to ensure we don't get stuck in processing state
        const safetyTimer = setTimeout(() => {
@@ -544,12 +565,12 @@ export const useGameEngine = () => {
     } catch (e) {
        console.error("Init failed", e);
        setGameState(prev => ({ ...prev, error: "Init Failed", isProcessing: false }));
-       setView('start');
+       navigate('/');
     }
   };
 
   const switchSlot = (id: string) => {
-      if (loadSlot(id)) setView('game');
+      if (loadSlot(id)) navigate('/game');
   };
 
   const navigateToNode = (nodeId: string) => {
@@ -580,7 +601,6 @@ export const useGameEngine = () => {
   };
 
   return {
-    view, setView,
     language, setLanguage,
     isTranslating,
     gameState, setGameState,

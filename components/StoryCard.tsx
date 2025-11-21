@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { StorySegment, LanguageCode, AISettings } from '../types';
-import { TRANSLATIONS } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
+import { StorySegment, AISettings } from '../types';
 import { StoryImage } from './render/StoryImage';
 import { StoryText } from './render/StoryText';
 import { UserActionCard } from './render/UserActionCard';
@@ -18,7 +18,6 @@ export interface StoryCardProps {
   isLast: boolean;
   labels: StoryCardLabels;
   onAnimate?: (imageUrl: string) => void;
-  language?: string;
   disableImages?: boolean;
   shouldAnimate?: boolean;
   onGenerateImage?: (id: string) => void;
@@ -31,13 +30,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   isLast,
   labels,
   onAnimate,
-  language = 'en',
   disableImages = false,
   shouldAnimate = true,
   onGenerateImage,
   aiSettings,
   onTypingComplete
 }) => {
+  const { t } = useTranslation();
 
   if (segment.role === 'user') {
     return <UserActionCard text={segment.text} labelDecided={labels.decided} />;
@@ -88,13 +87,12 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         <StoryText
           text={segment.text}
           isLast={isLast}
-          language={language as LanguageCode}
           shouldAnimate={shouldAnimate}
           aiSettings={aiSettings}
           onTypingComplete={onTypingComplete}
         />
         <div className="px-6">
-           <TokenStats usage={segment.usage} language={language} />
+           <TokenStats usage={segment.usage} />
         </div>
       </div>
     </div>

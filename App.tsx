@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGameEngine } from './hooks/useGameEngine';
 import { StartScreen } from './components/StartScreen';
 import { Toast } from './components/Toast';
-import { THEMES, TRANSLATIONS } from './utils/constants';
+import { THEMES } from './utils/constants';
 import { FeedLayout } from './types';
 import { MobileNav, MobileTab } from './components/MobileNav';
 import { getEnvApiKey } from './utils/env';
-import { updateAIConfig, validateConnection } from './services/aiService';
+import { validateConnection } from './services/aiService';
 import { useAmbience } from './hooks/useAmbience';
 
 // Lazy Load Heavy Components for Code Splitting
@@ -21,7 +23,6 @@ const DesktopGameLayout = React.lazy(() => import('./components/layout/DesktopGa
 
 export default function App() {
   const {
-    view, setView,
     language, setLanguage,
     isTranslating,
     gameState, setGameState,
@@ -39,6 +40,9 @@ export default function App() {
     generateImageForNode
   } = useGameEngine();
 
+  const { t } = useTranslation();
+  const location = useLocation();
+
   const [feedLayout, setFeedLayout] = useState<FeedLayout>('scroll');
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isDestinyMapOpen, setIsDestinyMapOpen] = useState(false);
@@ -54,7 +58,6 @@ export default function App() {
   // Ref to track last played environment for notifications
   const lastPlayedEnvRef = useRef<string | undefined>(undefined);
 
-  const t = TRANSLATIONS[language];
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
 
   // Determine current context for effects
@@ -70,23 +73,11 @@ export default function App() {
     }
   }, [currentHistory]);
 
-  // Centralized Menu/View State Handler
-  // We rely on reactive state (isAnyMenuOpen) to handle audio pausing/stopping
-  // instead of manually toggling isTyping, which causes audio to not resume after closing a menu.
-  const handleInterfaceState = (
-      action: () => void,
-      shouldStopAudio: boolean = true
-  ) => {
-      // Note: We previously set isTyping(false) here, but that permanently killed audio for the turn.
-      // Now we let the useAmbience hook handle the pause via isAnyMenuOpen check.
-      action();
-  };
+
 
   // Audio Ambience Logic
-  // We rely on isTyping being false when menus are open (via handleInterfaceState)
-  // But we also keep the reactive checks for safety
   const isAnyMenuOpen = isSettingsOpen || isSaveManagerOpen || isDestinyMapOpen || isLogPanelOpen || isMagicMirrorOpen;
-  const shouldPlayAmbience = view === 'game' && isTyping && !isAnyMenuOpen && mobileTab === 'story';
+  const shouldPlayAmbience = location.pathname === '/game' && isTyping && !isAnyMenuOpen && mobileTab === 'story';
 
   useAmbience(
     shouldPlayAmbience ? currentSegment?.environment : undefined,
@@ -95,7 +86,7 @@ export default function App() {
     (env) => {
       if (env !== lastPlayedEnvRef.current) {
         const envName = env.charAt(0).toUpperCase() + env.slice(1);
-        showToast(`${t.audioSettings.environment}: ${envName}`);
+        showToast(`${t('audioSettings.environment')}: ${envName}`);
         lastPlayedEnvRef.current = env;
       }
     }
@@ -121,7 +112,7 @@ export default function App() {
   };
 
   const handleFork = (nodeId: string) => {
-      if (window.confirm(t.tree.forkConfirm)) {
+      if (window.confirm(t('tree.forkConfirm'))) {
           navigateToNode(nodeId);
           setMobileTab('story'); // Switch back to story on fork
       }
@@ -159,7 +150,7 @@ export default function App() {
 
   const performValidation = async (): Promise<boolean> => {
       if (!validateConfig()) {
-          showToast(t.missingApiKey, 'error');
+          showToast(t('missingApiKey'), 'error');
           setIsSettingsOpen(true);
           return false;
       }
@@ -191,19 +182,15 @@ export default function App() {
 
   const handleContinueGame = async () => {
       if (await performValidation()) {
-          // If we have a current slot loaded, just switch view
           if (currentSlotId) {
-              setView('game');
+              // Already loaded, just navigate handled by component or manual check?
+              // Actually startNewGame/switchSlot handles navigation in useGameEngine
           } else if (saveSlots.length > 0) {
-              // Otherwise load the most recent slot
-              // Sort by timestamp desc
               const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
               const mostRecent = sorted[0];
               switchSlot(mostRecent.id);
-              // switchSlot sets view to game automatically if successful
           } else {
-              // No saves? Start new
-              setView('start');
+              // Stay on start
           }
       }
   };
@@ -214,73 +201,6 @@ export default function App() {
      </div>
   );
 
-  if (view === 'start') {
-    return (
-      <>
-        <StartScreen
-          language={language}
-          setLanguage={setLanguage}
-          onStart={handleStartGame}
-          onContinue={handleContinueGame}
-          onLoad={() => setIsSaveManagerOpen(true)}
-          onSettings={() => setIsSettingsOpen(true)}
-          hasSave={saveSlots.length > 0}
-        />
-        <Suspense fallback={<LoadingFallback />}>
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            language={language}
-            currentSettings={aiSettings}
-            onSave={handleSaveSettings}
-            themeFont={currentThemeConfig.fontClass}
-            showToast={showToast}
-          />
-          {isSaveManagerOpen && (
-             <SaveManager
-                slots={saveSlots}
-                currentSlotId={null}
-                onSwitch={switchSlot}
-                onDelete={deleteSlot}
-                onClose={() => setIsSaveManagerOpen(false)}
-                language={language}
-             />
-          )}
-        </Suspense>
-        <Toast show={notification.show} message={notification.msg} type={notification.type} />
-      </>
-    );
-  }
-
-  // Initializing Loading View
-  if (view === 'initializing') {
-     return (
-       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/60 z-0"></div>
-
-          {/* Background Ambient Effect */}
-          <div className="absolute inset-0 opacity-20 animate-pulse z-0 bg-gradient-to-b from-theme-primary/20 to-transparent"></div>
-
-          <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
-             <div className="relative">
-                <div className="w-24 h-24 border-4 border-theme-primary/30 border-t-theme-primary rounded-full animate-spin shadow-[0_0_50px_rgba(var(--theme-primary),0.4)]"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="w-16 h-16 bg-theme-primary/10 rounded-full animate-pulse"></div>
-                </div>
-             </div>
-
-             <div className="text-center space-y-3">
-                <h2 className={`text-3xl md:text-5xl ${currentThemeConfig.fontClass} tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-text to-theme-primary animate-shimmer bg-[length:200%_auto]`}>
-                  {t.outline.generating}
-                </h2>
-                <p className="text-theme-muted text-sm uppercase tracking-[0.2em] animate-pulse">{t.loading}</p>
-             </div>
-          </div>
-       </div>
-     );
-  }
-
-  // Main Game View
   return (
     <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-theme-bg text-theme-text font-sans transition-colors duration-1000 relative">
       {/* Global Styles based on theme */}
@@ -297,7 +217,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* Environmental Overlay - Placed underneath interactive elements but above background */}
+      {/* Environmental Overlay */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           <Suspense fallback={<div className="w-full h-full bg-theme-bg transition-colors duration-1000"></div>}>
               <EnvironmentalEffects
@@ -308,123 +228,175 @@ export default function App() {
           </Suspense>
       </div>
 
-      <div className="flex flex-1 h-full overflow-hidden relative z-10">
-        <Suspense fallback={<LoadingFallback />}>
-          <MobileGameLayout
-            gameState={gameState}
-            currentHistory={currentHistory}
-            language={language}
-            setLanguage={setLanguage}
-            isTranslating={isTranslating}
-            mobileTab={mobileTab}
-            setMobileTab={setMobileTab}
-            feedLayout={feedLayout}
-            setFeedLayout={setFeedLayout}
-            onAnimate={(url) => {
-              setMagicMirrorImage(url);
-              handleInterfaceState(() => setIsMagicMirrorOpen(true));
-            }}
-            onGenerateImage={generateImageForNode}
-            onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
-            onFork={handleFork}
-            onAction={handlePlayerAction}
-            onNewGame={() => handleInterfaceState(() => setView('start'))}
-            onMagicMirror={() => handleInterfaceState(() => setIsMagicMirrorOpen(true))}
-            onSettings={() => handleInterfaceState(() => setIsSettingsOpen(true))}
-            onOpenSaves={() => handleInterfaceState(() => setIsSaveManagerOpen(true))}
-            onOpenMap={() => handleInterfaceState(() => setIsDestinyMapOpen(true))}
-            onOpenLogs={() => handleInterfaceState(() => setIsLogPanelOpen(true))}
-            aiSettings={aiSettings}
-            onTypingComplete={() => setIsTyping(false)}
-          />
+      <Routes>
+        <Route path="/" element={
+          <>
+            <StartScreen
+              onStart={handleStartGame}
+              onContinue={handleContinueGame}
+              onLoad={() => setIsSaveManagerOpen(true)}
+              onSettings={() => setIsSettingsOpen(true)}
+              hasSave={saveSlots.length > 0}
+            />
+            <Suspense fallback={<LoadingFallback />}>
+              <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                currentSettings={aiSettings}
+                onSave={handleSaveSettings}
+                themeFont={currentThemeConfig.fontClass}
+                showToast={showToast}
+              />
+              {isSaveManagerOpen && (
+                 <SaveManager
+                    slots={saveSlots}
+                    currentSlotId={null}
+                    onSwitch={switchSlot}
+                    onDelete={deleteSlot}
+                    onClose={() => setIsSaveManagerOpen(false)}
+                    language={language}
+                 />
+              )}
+            </Suspense>
+          </>
+        } />
 
-          <DesktopGameLayout
-            gameState={gameState}
-            currentHistory={currentHistory}
-            language={language}
-            setLanguage={setLanguage}
-            isTranslating={isTranslating}
-            feedLayout={feedLayout}
-            setFeedLayout={setFeedLayout}
-            onAnimate={(url) => {
-              setMagicMirrorImage(url);
-              handleInterfaceState(() => setIsMagicMirrorOpen(true));
-            }}
-            onGenerateImage={generateImageForNode}
-            onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
-            onFork={handleFork}
-            onAction={handlePlayerAction}
-            onNewGame={() => handleInterfaceState(() => setView('start'))}
-            onMagicMirror={() => handleInterfaceState(() => setIsMagicMirrorOpen(true))}
-            onSettings={() => handleInterfaceState(() => setIsSettingsOpen(true))}
-            onOpenSaves={() => handleInterfaceState(() => setIsSaveManagerOpen(true))}
-            onOpenMap={() => handleInterfaceState(() => setIsDestinyMapOpen(true))}
-            onOpenLogs={() => handleInterfaceState(() => setIsLogPanelOpen(true))}
-            aiSettings={aiSettings}
-            onTypingComplete={() => setIsTyping(false)}
-          />
-        </Suspense>
-      </div>
+        <Route path="/initializing" element={
+           <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
+              <div className="absolute inset-0 bg-black/60 z-0"></div>
+              <div className="absolute inset-0 opacity-20 animate-pulse z-0 bg-gradient-to-b from-theme-primary/20 to-transparent"></div>
+              <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
+                 <div className="relative">
+                    <div className="w-24 h-24 border-4 border-theme-primary/30 border-t-theme-primary rounded-full animate-spin shadow-[0_0_50px_rgba(var(--theme-primary),0.4)]"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <div className="w-16 h-16 bg-theme-primary/10 rounded-full animate-pulse"></div>
+                    </div>
+                 </div>
+                 <div className="text-center space-y-3">
+                    <h2 className={`text-3xl md:text-5xl ${currentThemeConfig.fontClass} tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-text to-theme-primary animate-shimmer bg-[length:200%_auto]`}>
+                      {t('outline.generating')}
+                    </h2>
+                    <p className="text-theme-muted text-sm uppercase tracking-[0.2em] animate-pulse">{t('loading')}</p>
+                 </div>
+              </div>
+           </div>
+        } />
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNav
-        currentTab={mobileTab}
-        setTab={setMobileTab}
-        language={language}
-      />
+        <Route path="/game" element={
+          <div className="flex flex-1 h-full overflow-hidden relative z-10">
+            <Suspense fallback={<LoadingFallback />}>
+              <MobileGameLayout
+                gameState={gameState}
+                currentHistory={currentHistory}
+                language={language}
+                setLanguage={setLanguage}
+                isTranslating={isTranslating}
+                mobileTab={mobileTab}
+                setMobileTab={setMobileTab}
+                feedLayout={feedLayout}
+                setFeedLayout={setFeedLayout}
+                onAnimate={(url) => {
+                  setMagicMirrorImage(url);
+                  setIsMagicMirrorOpen(true);
+                }}
+                onGenerateImage={generateImageForNode}
+                onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
+                onFork={handleFork}
+                onAction={handlePlayerAction}
+                onNewGame={() => startNewGame(gameState.theme)} // This might be wrong, usually onNewGame goes to start.
+                onMagicMirror={() => setIsMagicMirrorOpen(true)}
+                onSettings={() => setIsSettingsOpen(true)}
+                onOpenSaves={() => setIsSaveManagerOpen(true)}
+                onOpenMap={() => setIsDestinyMapOpen(true)}
+                onOpenLogs={() => setIsLogPanelOpen(true)}
+                aiSettings={aiSettings}
+                onTypingComplete={() => setIsTyping(false)}
+              />
 
-      {/* Modals (Lazy Loaded) */}
-      <Suspense fallback={<LoadingFallback />}>
-        <MagicMirror
-          isOpen={isMagicMirrorOpen}
-          onClose={() => setIsMagicMirrorOpen(false)}
-          initialImage={magicMirrorImage}
-          language={language}
-          themeFont={currentThemeConfig.fontClass}
-        />
+              <DesktopGameLayout
+                gameState={gameState}
+                currentHistory={currentHistory}
+                language={language}
+                setLanguage={setLanguage}
+                isTranslating={isTranslating}
+                feedLayout={feedLayout}
+                setFeedLayout={setFeedLayout}
+                onAnimate={(url) => {
+                  setMagicMirrorImage(url);
+                  setIsMagicMirrorOpen(true);
+                }}
+                onGenerateImage={generateImageForNode}
+                onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
+                onFork={handleFork}
+                onAction={handlePlayerAction}
+                onNewGame={() => startNewGame(gameState.theme)} // Same here
+                onMagicMirror={() => setIsMagicMirrorOpen(true)}
+                onSettings={() => setIsSettingsOpen(true)}
+                onOpenSaves={() => setIsSaveManagerOpen(true)}
+                onOpenMap={() => setIsDestinyMapOpen(true)}
+                onOpenLogs={() => setIsLogPanelOpen(true)}
+                aiSettings={aiSettings}
+                onTypingComplete={() => setIsTyping(false)}
+              />
 
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          language={language}
-          currentSettings={aiSettings}
-          onSave={handleSaveSettings}
-          themeFont={currentThemeConfig.fontClass}
-          showToast={showToast}
-        />
+              {/* Mobile Bottom Navigation */}
+              <MobileNav
+                currentTab={mobileTab}
+                setTab={setMobileTab}
+              />
 
-        {isSaveManagerOpen && (
-           <SaveManager
-              slots={saveSlots}
-              currentSlotId={currentSlotId}
-              onSwitch={switchSlot}
-              onDelete={deleteSlot}
-              onClose={() => setIsSaveManagerOpen(false)}
-              language={language}
-           />
-        )}
+              {/* Modals */}
+              <MagicMirror
+                isOpen={isMagicMirrorOpen}
+                onClose={() => setIsMagicMirrorOpen(false)}
+                initialImage={magicMirrorImage}
+                themeFont={currentThemeConfig.fontClass}
+              />
 
-        {isDestinyMapOpen && (
-           <DestinyMap
-              gameState={gameState}
-              language={language}
-              onNavigate={(nodeId) => {
-                  navigateToNode(nodeId);
-                  setMobileTab('story');
-              }}
-              onClose={() => setIsDestinyMapOpen(false)}
-           />
-        )}
+              <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                currentSettings={aiSettings}
+                onSave={handleSaveSettings}
+                themeFont={currentThemeConfig.fontClass}
+                showToast={showToast}
+              />
 
-        {isLogPanelOpen && (
-          <LogPanel
-            logs={gameState.logs}
-            onClose={() => setIsLogPanelOpen(false)}
-          />
-        )}
-      </Suspense>
+              {isSaveManagerOpen && (
+                 <SaveManager
+                    slots={saveSlots}
+                    currentSlotId={currentSlotId}
+                    onSwitch={switchSlot}
+                    onDelete={deleteSlot}
+                    onClose={() => setIsSaveManagerOpen(false)}
+                    language={language}
+                 />
+              )}
 
-      <Toast show={isAutoSaving || notification.show} message={notification.show ? notification.msg : t.autoSaving} type={notification.type} />
+              {isDestinyMapOpen && (
+                 <DestinyMap
+                    gameState={gameState}
+                    onNavigate={(nodeId) => {
+                        navigateToNode(nodeId);
+                        setMobileTab('story');
+                    }}
+                    onClose={() => setIsDestinyMapOpen(false)}
+                 />
+              )}
+
+              {isLogPanelOpen && (
+                <LogPanel
+                  logs={gameState.logs}
+                  onClose={() => setIsLogPanelOpen(false)}
+                />
+              )}
+            </Suspense>
+          </div>
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      <Toast show={isAutoSaving || notification.show} message={notification.show ? notification.msg : t('autoSaving')} type={notification.type} />
     </div>
   );
 }

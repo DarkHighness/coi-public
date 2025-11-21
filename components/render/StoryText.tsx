@@ -1,23 +1,22 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { TypewriterText } from '../TypewriterText';
 import { useStoryAudio } from '../../hooks/useStoryAudio';
-import { TRANSLATIONS } from '../../utils/constants';
-import { LanguageCode, AISettings } from '../../types';
+import { AISettings } from '../../types';
 import { StoryTextHeader } from './StoryTextHeader';
 import { Toast } from '../Toast';
 
 interface StoryTextProps {
   text: string;
   isLast: boolean;
-  language: LanguageCode;
   shouldAnimate?: boolean;
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
 }
 
-export const StoryText: React.FC<StoryTextProps> = ({ text, isLast, language, shouldAnimate = true, aiSettings, onTypingComplete }) => {
-  const t = TRANSLATIONS[language];
+export const StoryText: React.FC<StoryTextProps> = ({ text, isLast, shouldAnimate = true, aiSettings, onTypingComplete }) => {
+  const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
 
   const { isPlaying, isLoadingAudio, playAudio } = useStoryAudio(
@@ -44,7 +43,7 @@ export const StoryText: React.FC<StoryTextProps> = ({ text, isLast, language, sh
         isPlaying={isPlaying}
         isLoading={isLoadingAudio}
         onPlay={playAudio}
-        label={t.readAloud}
+        label={t('readAloud')}
       />
 
       <div className="prose prose-invert prose-lg max-w-none text-theme-text leading-8 font-serif">

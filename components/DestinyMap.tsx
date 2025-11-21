@@ -1,11 +1,10 @@
 
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { StorySegment, GameState, LanguageCode } from '../types';
-import { TRANSLATIONS } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
+import { StorySegment, GameState } from '../types';
 
 interface DestinyMapProps {
   gameState: GameState;
-  language: LanguageCode;
   onNavigate: (nodeId: string) => void;
   onClose: () => void;
 }
@@ -25,8 +24,8 @@ const NODE_HEIGHT = 60;
 const LEVEL_SPACING = 250; // Horizontal distance between turns
 const BRANCH_SPACING = 100; // Vertical distance between siblings
 
-export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onNavigate, onClose }) => {
-  const t = TRANSLATIONS[language];
+export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, onNavigate, onClose }) => {
+  const { t } = useTranslation();
   const { nodes, activeNodeId, rootNodeId } = gameState;
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -232,7 +231,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({ gameState, language, onN
        {/* Header */}
        <div className="flex-none p-6 border-b border-theme-border bg-theme-surface flex justify-between items-center shadow-lg z-10">
           <div>
-            <h2 className="text-3xl font-fantasy text-theme-primary tracking-wide">{t.tree.map}</h2>
+            <h2 className="text-3xl font-fantasy text-theme-primary tracking-wide">{t('tree.map')}</h2>
             <p className="text-xs text-theme-muted mt-1">
                Timeline Browser • {Object.keys(nodes).length} Moments • Drag to Pan • Scroll to Zoom
             </p>

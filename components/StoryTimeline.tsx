@@ -1,19 +1,19 @@
 import React, { useEffect, useRef } from 'react';
-import { StorySegment, LanguageCode } from '../types';
-import { THEMES, TRANSLATIONS } from '../utils/constants';
+import { StorySegment } from '../types';
+import { THEMES } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
 
 interface StoryTimelineProps {
   segments: StorySegment[];
   theme: string;
-  language: LanguageCode;
 }
 
-export const StoryTimeline: React.FC<StoryTimelineProps> = ({ segments, theme, language }) => {
+export const StoryTimeline: React.FC<StoryTimelineProps> = ({ segments, theme }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Filter for model segments to show the narrative flow
   const narrativeSegments = segments.filter(s => s.role === 'model');
   const themeConfig = THEMES[theme] || THEMES.fantasy;
-  const t = TRANSLATIONS[language];
+  const { t } = useTranslation();
 
   // Auto-scroll to bottom when new segments are added
   useEffect(() => {
@@ -26,7 +26,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({ segments, theme, l
     <div className="h-full flex flex-col p-6 border-l border-theme-border bg-theme-surface/80 backdrop-blur-sm w-72">
       <h2 className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 text-center ${themeConfig.fontClass} flex items-center justify-center`}>
         <span className="w-8 h-[1px] bg-theme-primary/50 mr-2"></span>
-        {t.timeline}
+        {t('timeline')}
         <span className="w-8 h-[1px] bg-theme-primary/50 ml-2"></span>
       </h2>
 
@@ -64,7 +64,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({ segments, theme, l
         {narrativeSegments.length === 0 && (
            <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">
               <div className="w-1 h-16 bg-gradient-to-b from-transparent via-theme-muted/30 to-transparent"></div>
-              <p className="text-xs italic">The chronicle awaits...</p>
+              <p className="text-xs italic">{t('timeline.empty')}</p>
            </div>
         )}
       </div>

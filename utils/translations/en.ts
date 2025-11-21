@@ -43,6 +43,7 @@ export const en = {
     narrativeStyle: "Narrative Style",
     startThisAdventure: "Start This Adventure",
     timeline: "Journey Timeline",
+    "timeline.empty": "The chronicle awaits...",
     character: "Character Status",
     skills: "Skills",
     emptySkills: "No skills learned yet.",
@@ -92,6 +93,7 @@ export const en = {
     success: "Success",
     fail: "Failure",
     critFail: "Critical Failure!",
+    logs: "Logs",
     tabs: {
       credentials: "Keys",
       models: "Models",
@@ -150,7 +152,8 @@ export const en = {
       overwrite: "Overwrite",
       delete: "Delete",
       load: "Load",
-      current: "Current"
+      current: "Current",
+      empty: "No chronicles found."
     },
     summary: {
       divider: "Chronicles Summarized",

@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { LanguageCode, AISettings, ModelInfo } from '../types';
-import { TRANSLATIONS } from '../utils/constants';
-import { updateAIConfig, validateConnection, getModels, filterModels } from "../services/aiService";
+import { useTranslation } from 'react-i18next';
+import { AISettings, ModelInfo } from '../types';
+import { validateConnection, getModels, filterModels } from "../services/aiService";
 import { getEnvApiKey } from '../utils/env';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  language: LanguageCode;
   currentSettings: AISettings;
   onSave: (settings: AISettings) => void; // Now acts as onUpdate
   themeFont: string;
@@ -21,7 +20,6 @@ type FunctionKey = 'story' | 'image' | 'video' | 'audio' | 'translation' | 'lore
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  language,
   currentSettings,
   onSave,
   themeFont,
@@ -34,7 +32,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [loadingModels, setLoadingModels] = useState(false);
   const [showSaveIndicator, setShowSaveIndicator] = useState(false);
 
-  const t = TRANSLATIONS[language];
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
@@ -92,6 +90,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     updateSettings(newSettings);
   };
 
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    updateSettings({ ...currentSettings, language: lang as any });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -99,7 +102,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <div className="bg-theme-surface border border-theme-border rounded w-full max-w-2xl shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] relative overflow-hidden flex flex-col max-h-[90vh]">
 
         <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center">
-          <h2 className={`text-2xl text-theme-primary ${themeFont}`}>{t.settings}</h2>
+          <h2 className={`text-2xl text-theme-primary ${themeFont}`}>{t('settings')}</h2>
           <button onClick={onClose} className="text-theme-muted hover:text-theme-text">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
@@ -116,7 +119,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight'
                }`}
              >
-               {t.tabs[tab]}
+               {t(`tabs.${tab}`)}
              </button>
            ))}
         </div>
@@ -126,17 +129,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'credentials' && (
             <div className="space-y-8 animate-slide-in">
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
-                  <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">{t.languageLabel}</h3>
+                  <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">{t('languageLabel')}</h3>
                   <div className="flex gap-4">
                       <button
-                          onClick={() => updateSettings({ ...currentSettings, language: 'en' })}
-                          className={`flex-1 py-2 rounded border transition-colors ${currentSettings.language === 'en' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
+                          onClick={() => changeLanguage('en')}
+                          className={`flex-1 py-2 rounded border transition-colors ${i18n.language === 'en' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
                       >
                           English
                       </button>
                       <button
-                          onClick={() => updateSettings({ ...currentSettings, language: 'zh' })}
-                          className={`flex-1 py-2 rounded border transition-colors ${currentSettings.language === 'zh' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
+                          onClick={() => changeLanguage('zh')}
+                          className={`flex-1 py-2 rounded border transition-colors ${i18n.language === 'zh' ? 'bg-theme-primary text-theme-bg border-theme-primary' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-primary'}`}
                       >
                           中文 (Chinese)
                       </button>
@@ -146,22 +149,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Gemini Inputs */}
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t.creds.geminiTitle}</h3>
+                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t('creds.geminiTitle')}</h3>
                     <button
                       onClick={async () => {
                         const { isValid, error } = await validateConnection('gemini');
-                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
+                        showToast(isValid ? t('connectionSuccess') : (error || t('connectionFailed')), isValid ? 'info' : 'error');
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
-                      {t.testConnection}
+                      {t('testConnection')}
                     </button>
                  </div>
                  <input
                    type="password"
                    value={currentSettings.gemini.apiKey || ''}
                    onChange={(e) => updateCreds('gemini', 'apiKey', e.target.value)}
-                   placeholder={getEnvApiKey() ? t.loadedFromEnv : t.creds.apiKeyPlaceholder}
+                   placeholder={getEnvApiKey() ? t('loadedFromEnv') : t('creds.apiKeyPlaceholder')}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                    onBlur={() => loadModels(false)}
                  />
@@ -177,22 +180,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* OpenAI Inputs */}
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t.creds.openaiTitle}</h3>
+                    <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">{t('creds.openaiTitle')}</h3>
                     <button
                       onClick={async () => {
                         const { isValid, error } = await validateConnection('openai');
-                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
+                        showToast(isValid ? t('connectionSuccess') : (error || t('connectionFailed')), isValid ? 'info' : 'error');
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
-                      {t.testConnection}
+                      {t('testConnection')}
                     </button>
                  </div>
                  <input
                    type="password"
                    value={currentSettings.openai.apiKey || ''}
                    onChange={(e) => updateCreds('openai', 'apiKey', e.target.value)}
-                   placeholder={t.creds.apiKeyPlaceholder}
+                   placeholder={t('creds.apiKeyPlaceholder')}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                    onBlur={() => loadModels(false)}
                  />
@@ -213,18 +216,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       onClick={async () => {
                         const { isValid, error } = await validateConnection('openrouter');
-                        showToast(isValid ? t.connectionSuccess : (error || t.connectionFailed), isValid ? 'info' : 'error');
+                        showToast(isValid ? t('connectionSuccess') : (error || t('connectionFailed')), isValid ? 'info' : 'error');
                       }}
                       className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
                     >
-                      {t.testConnection}
+                      {t('testConnection')}
                     </button>
                  </div>
                  <input
                    type="password"
                    value={currentSettings.openrouter.apiKey || ''}
                    onChange={(e) => updateCreds('openrouter', 'apiKey', e.target.value)}
-                   placeholder={t.creds.apiKeyPlaceholder}
+                   placeholder={t('creds.apiKeyPlaceholder')}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
                    onBlur={() => loadModels(false)}
                  />
@@ -261,7 +264,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Context Length Slider */}
               <div className="space-y-2 pb-4 border-b border-theme-border">
                   <div className="flex justify-between">
-                    <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">{t.models.contextLen}</label>
+                    <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">{t('models.contextLen')}</label>
                     <span className="text-theme-text font-mono">{currentSettings.contextLen || 16} turns</span>
                   </div>
                   <input
@@ -273,16 +276,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => updateSettings({...currentSettings, contextLen: parseInt(e.target.value)})}
                     className="w-full accent-theme-primary"
                   />
-                  <p className="text-xs text-theme-muted italic">{t.models.contextLenHelp}</p>
+                  <p className="text-xs text-theme-muted italic">{t('models.contextLenHelp')}</p>
               </div>
 
               {([
-                { key: 'story', label: t.models.story, help: t.models.storyHelp, hasEnable: false },
-                { key: 'image', label: t.models.image, help: t.models.imageHelp, hasEnable: true },
-                { key: 'video', label: t.models.video, help: t.models.videoHelp, hasEnable: true },
-                { key: 'audio', label: t.models.audio, help: t.models.audioHelp, hasEnable: true },
-                { key: 'translation', label: t.models.translation, help: t.models.translationHelp, hasEnable: true },
-                { key: 'lore', label: t.models.lore, help: t.models.loreHelp, hasEnable: true },
+                { key: 'story', label: t('models.story'), help: t('models.storyHelp'), hasEnable: false },
+                { key: 'image', label: t('models.image'), help: t('models.imageHelp'), hasEnable: true },
+                { key: 'video', label: t('models.video'), help: t('models.videoHelp'), hasEnable: true },
+                { key: 'audio', label: t('models.audio'), help: t('models.audioHelp'), hasEnable: true },
+                { key: 'translation', label: t('models.translation'), help: t('models.translationHelp'), hasEnable: true },
+                { key: 'lore', label: t('models.lore'), help: t('models.loreHelp'), hasEnable: true },
               ] as const).map((section) => {
                 const sectionKey = section.key as FunctionKey;
                 const config = currentSettings[sectionKey];
@@ -327,7 +330,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <option key={m.id} value={m.id} className="text-black dark:text-white">{m.name || m.id}</option>
                             ))}
                          </select>
-                         {loadingModels && <div className="absolute right-2 top-2 text-theme-muted text-xs">{t.loadingGeneric}</div>}
+                         {loadingModels && <div className="absolute right-2 top-2 text-theme-muted text-xs">{t('loadingGeneric')}</div>}
                          {!isModelValid && !loadingModels && (
                              <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
                                  Model not found in list. Please select a valid model.
@@ -338,22 +341,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {sectionKey === 'image' && (
                           <div className="col-span-3 mt-1 border-t border-theme-border pt-2">
                               <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t.models.resolution}</label>
+                                <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t('models.resolution')}</label>
                                 <select
                                     value={config.resolution || '1024x1024'}
                                     onChange={(e) => updateFunction(sectionKey, 'resolution', e.target.value)}
                                     className="bg-theme-bg border border-theme-border rounded p-1 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-1/2 text-white"
                                 >
-                                    <option value="1024x1024" className="text-black dark:text-white">{t.models.resolutions.ratio11}</option>
-                                    <option value="832x1248" className="text-black dark:text-white">{t.models.resolutions.ratio23}</option>
-                                    <option value="1248x832" className="text-black dark:text-white">{t.models.resolutions.ratio32}</option>
-                                    <option value="864x1184" className="text-black dark:text-white">{t.models.resolutions.ratio34}</option>
-                                    <option value="1184x864" className="text-black dark:text-white">{t.models.resolutions.ratio43}</option>
-                                    <option value="896x1152" className="text-black dark:text-white">{t.models.resolutions.ratio45}</option>
-                                    <option value="1152x896" className="text-black dark:text-white">{t.models.resolutions.ratio54}</option>
-                                    <option value="768x1344" className="text-black dark:text-white">{t.models.resolutions.ratio916}</option>
-                                    <option value="1344x768" className="text-black dark:text-white">{t.models.resolutions.ratio169}</option>
-                                    <option value="1536x672" className="text-black dark:text-white">{t.models.resolutions.ratio219}</option>
+                                    <option value="1024x1024" className="text-black dark:text-white">{t('models.resolutions.ratio11')}</option>
+                                    <option value="832x1248" className="text-black dark:text-white">{t('models.resolutions.ratio23')}</option>
+                                    <option value="1248x832" className="text-black dark:text-white">{t('models.resolutions.ratio32')}</option>
+                                    <option value="864x1184" className="text-black dark:text-white">{t('models.resolutions.ratio34')}</option>
+                                    <option value="1184x864" className="text-black dark:text-white">{t('models.resolutions.ratio43')}</option>
+                                    <option value="896x1152" className="text-black dark:text-white">{t('models.resolutions.ratio45')}</option>
+                                    <option value="1152x896" className="text-black dark:text-white">{t('models.resolutions.ratio54')}</option>
+                                    <option value="768x1344" className="text-black dark:text-white">{t('models.resolutions.ratio916')}</option>
+                                    <option value="1344x768" className="text-black dark:text-white">{t('models.resolutions.ratio169')}</option>
+                                    <option value="1536x672" className="text-black dark:text-white">{t('models.resolutions.ratio219')}</option>
                                 </select>
                               </div>
                           </div>
@@ -369,7 +372,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                {/* Environment Audio */}
                <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t.audioSettings.environment}</h3>
+                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t('audioSettings.environment')}</h3>
                      <button
                         onClick={() => updateSettings({
                            ...currentSettings,
@@ -380,16 +383,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         })}
                         className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border transition-colors ${
                            currentSettings.audioVolume?.bgmMuted
-                              ? 'bg-red-500/20 border-red-500 text-red-500'
-                              : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
+                               ? 'bg-red-500/20 border-red-500 text-red-500'
+                               : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
                         }`}
                      >
-                        {currentSettings.audioVolume?.bgmMuted ? t.audioSettings.muted : t.audioSettings.active}
+                        {currentSettings.audioVolume?.bgmMuted ? t('audioSettings.muted') : t('audioSettings.active')}
                      </button>
                   </div>
                   <div className={`space-y-2 ${currentSettings.audioVolume?.bgmMuted ? 'opacity-50 pointer-events-none' : ''}`}>
                      <div className="flex justify-between text-xs text-theme-muted">
-                        <span>{t.audioSettings.volume}</span>
+                        <span>{t('audioSettings.volume')}</span>
                         <span>{Math.round((currentSettings.audioVolume?.bgmVolume ?? 0.5) * 100)}%</span>
                      </div>
                      <input
@@ -413,7 +416,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                {/* TTS Audio */}
                <div className="space-y-4 pt-6 border-t border-theme-border">
                   <div className="flex justify-between items-center">
-                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t.audioSettings.voice}</h3>
+                     <h3 className="text-lg font-bold text-theme-primary uppercase tracking-widest">{t('audioSettings.voice')}</h3>
                      <button
                         onClick={() => updateSettings({
                            ...currentSettings,
@@ -424,16 +427,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         })}
                         className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border transition-colors ${
                            currentSettings.audioVolume?.ttsMuted
-                              ? 'bg-red-500/20 border-red-500 text-red-500'
-                              : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
+                               ? 'bg-red-500/20 border-red-500 text-red-500'
+                               : 'bg-theme-primary/20 border-theme-primary text-theme-primary'
                         }`}
                      >
-                        {currentSettings.audioVolume?.ttsMuted ? t.audioSettings.muted : t.audioSettings.active}
+                        {currentSettings.audioVolume?.ttsMuted ? t('audioSettings.muted') : t('audioSettings.active')}
                      </button>
                   </div>
                   <div className={`space-y-2 ${currentSettings.audioVolume?.ttsMuted ? 'opacity-50 pointer-events-none' : ''}`}>
                      <div className="flex justify-between text-xs text-theme-muted">
-                        <span>{t.audioSettings.volume}</span>
+                        <span>{t('audioSettings.volume')}</span>
                         <span>{Math.round((currentSettings.audioVolume?.ttsVolume ?? 1.0) * 100)}%</span>
                      </div>
                      <input
@@ -460,10 +463,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="p-4 border-t border-theme-border bg-theme-surface/50 flex justify-between items-center">
           <div className={`text-xs text-theme-primary font-bold uppercase tracking-widest transition-opacity duration-500 ${showSaveIndicator ? 'opacity-100' : 'opacity-0'}`}>
-             {t.toast.autoSavedSettings}
+             {t('toast.autoSavedSettings')}
           </div>
           <button onClick={onClose} className="px-6 py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors font-bold text-sm">
-            {t.close}
+            {t('close')}
           </button>
         </div>
       </div>

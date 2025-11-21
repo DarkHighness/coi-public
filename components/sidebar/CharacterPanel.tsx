@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { CharacterStatus, LanguageCode, Skill } from '../../types';
-import { TRANSLATIONS } from '../../utils/constants';
+import React, {useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CharacterStatus, Skill } from '../../types';
 
 interface CharacterPanelProps {
   character: CharacterStatus;
-  language: LanguageCode;
   themeFont: string;
 }
 
@@ -143,8 +142,8 @@ const SkillItem: React.FC<{ skill: Skill }> = ({ skill }) => {
   );
 };
 
-export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, language, themeFont }) => {
-  const t = TRANSLATIONS[language];
+export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, themeFont }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
   const attributes = character.attributes || [];
@@ -160,7 +159,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
       >
         <span className="flex items-center">
           <span className="w-2 h-2 bg-theme-primary rounded-full mr-2"></span>
-          {t.character}
+          {t('character')}
         </span>
         <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
       </button>
@@ -212,7 +211,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
 
           {/* Skills Section */}
           <div className="pt-3 border-t border-theme-border/50">
-            <h4 className="text-[10px] uppercase tracking-widest text-theme-muted mb-2 font-bold">{t.skills}</h4>
+            <h4 className="text-[10px] uppercase tracking-widest text-theme-muted mb-2 font-bold">{t('skills')}</h4>
             {skills.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {skills.map((skill, idx) => (
@@ -220,13 +219,13 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, langu
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-theme-muted italic">{t.emptySkills}</p>
+              <p className="text-xs text-theme-muted italic">{t('emptySkills')}</p>
             )}
           </div>
 
           {/* Status Condition */}
           <div className="pt-2 border-t border-theme-border/50 flex items-center gap-2">
-             <span className="text-xs text-theme-muted uppercase">{t.status}:</span>
+             <span className="text-xs text-theme-muted uppercase">{t('status')}:</span>
              <span className={`text-xs px-2 py-1 rounded flex items-center gap-1.5 border ${statusConfig.style}`}>
                {statusConfig.icon}
                <span className="font-medium">{character.status}</span>

@@ -1,19 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
-import { GameState, LanguageCode, StorySegment } from '../types';
-import { TRANSLATIONS } from '../utils/constants';
+import { useTranslation } from 'react-i18next';
+import { GameState, StorySegment } from '../types';
 
 interface ActionPanelProps {
   gameState: GameState;
   currentHistory: StorySegment[];
-  language: LanguageCode;
   isTranslating: boolean;
   onAction: (action: string) => void;
 }
 
-export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHistory, language, isTranslating, onAction }) => {
+export const ActionPanel: React.FC<ActionPanelProps> = ({
+  gameState,
+  currentHistory,
+  isTranslating,
+  onAction
+}) => {
   const [customInput, setCustomInput] = useState("");
-  const t = TRANSLATIONS[language];
+  const { t } = useTranslation();
 
   const lastSegment = currentHistory.filter(s => s.role === 'model').slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
@@ -56,12 +59,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
 
   const calculateRoll = () => {
     const d20 = Math.floor(Math.random() * 20) + 1;
-    let outcome = t.fail;
+    let outcome = t('fail');
 
-    if (d20 === 1) outcome = t.critFail;
-    else if (d20 < 10) outcome = t.fail;
-    else if (d20 < 20) outcome = t.success;
-    else outcome = t.critSuccess;
+    if (d20 === 1) outcome = t('critFail');
+    else if (d20 < 10) outcome = t('fail');
+    else if (d20 < 20) outcome = t('success');
+    else outcome = t('critSuccess');
     return { d20, outcome };
   };
 
@@ -71,7 +74,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
     if (!actionText.trim()) return;
 
     const { d20, outcome } = calculateRoll();
-    const actionWithRoll = `${actionText} [${t.rollResult}: ${d20} - ${outcome}]`;
+    const actionWithRoll = `${actionText} [${t('rollResult')}: ${d20} - ${outcome}]`;
     onAction(actionWithRoll);
     if (actionText === customInput) setCustomInput("");
   };
@@ -103,7 +106,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
                     <button
                       onClick={(e) => handleRollClick(e, label)}
                       className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
-                      title={t.roll}
+                      title={t('roll')}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
                     </button>
@@ -123,7 +126,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
                   onClick={(e) => handleRollClick(e, customInput)}
                   disabled={isDisabled || !customInput.trim()}
                   className="p-2 mb-0.5 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded-lg transition-colors disabled:opacity-30 flex-none"
-                  title={t.roll}
+                  title={t('roll')}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
                 </button>
@@ -142,7 +145,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ gameState, currentHist
                       handleCustomSubmit(e);
                     }
                   }}
-                  placeholder={t.placeholder}
+                  placeholder={t('placeholder')}
                   disabled={isDisabled}
                   rows={1}
                   className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-[44px] max-h-[120px] self-center"
