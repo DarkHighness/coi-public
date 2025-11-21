@@ -3,10 +3,10 @@
  * Provides much larger storage capacity than localStorage
  */
 
-const DB_NAME = 'ChroniclesOfInfinity';
+const DB_NAME = "ChroniclesOfInfinity";
 const DB_VERSION = 1;
-const SAVES_STORE = 'saves';
-const META_STORE = 'meta';
+const SAVES_STORE = "saves";
+const META_STORE = "meta";
 
 interface DBConnection {
   db: IDBDatabase;
@@ -24,7 +24,7 @@ const openDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      console.error('Failed to open IndexedDB:', request.error);
+      console.error("Failed to open IndexedDB:", request.error);
       reject(request.error);
     };
 
@@ -37,7 +37,7 @@ const openDB = (): Promise<IDBDatabase> => {
 
       // Create saves store if it doesn't exist
       if (!db.objectStoreNames.contains(SAVES_STORE)) {
-        db.createObjectStore(SAVES_STORE, { keyPath: 'id' });
+        db.createObjectStore(SAVES_STORE, { keyPath: "id" });
       }
 
       // Create meta store if it doesn't exist
@@ -56,7 +56,7 @@ const openDB = (): Promise<IDBDatabase> => {
 export const saveGameState = async (id: string, data: any): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], 'readwrite');
+    const transaction = db.transaction([SAVES_STORE], "readwrite");
     const store = transaction.objectStore(SAVES_STORE);
     const request = store.put({ id, data, timestamp: Date.now() });
 
@@ -71,7 +71,7 @@ export const saveGameState = async (id: string, data: any): Promise<void> => {
 export const loadGameState = async (id: string): Promise<any | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], 'readonly');
+    const transaction = db.transaction([SAVES_STORE], "readonly");
     const store = transaction.objectStore(SAVES_STORE);
     const request = store.get(id);
 
@@ -89,7 +89,7 @@ export const loadGameState = async (id: string): Promise<any | null> => {
 export const deleteGameState = async (id: string): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], 'readwrite');
+    const transaction = db.transaction([SAVES_STORE], "readwrite");
     const store = transaction.objectStore(SAVES_STORE);
     const request = store.delete(id);
 
@@ -104,7 +104,7 @@ export const deleteGameState = async (id: string): Promise<void> => {
 export const getAllSaveIds = async (): Promise<string[]> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], 'readonly');
+    const transaction = db.transaction([SAVES_STORE], "readonly");
     const store = transaction.objectStore(SAVES_STORE);
     const request = store.getAllKeys();
 
@@ -119,7 +119,7 @@ export const getAllSaveIds = async (): Promise<string[]> => {
 export const saveMetadata = async (key: string, data: any): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([META_STORE], 'readwrite');
+    const transaction = db.transaction([META_STORE], "readwrite");
     const store = transaction.objectStore(META_STORE);
     const request = store.put(data, key);
 
@@ -134,7 +134,7 @@ export const saveMetadata = async (key: string, data: any): Promise<void> => {
 export const loadMetadata = async (key: string): Promise<any | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([META_STORE], 'readonly');
+    const transaction = db.transaction([META_STORE], "readonly");
     const store = transaction.objectStore(META_STORE);
     const request = store.get(key);
 
@@ -143,13 +143,14 @@ export const loadMetadata = async (key: string): Promise<any | null> => {
   });
 };
 
-
-
 /**
  * Get storage usage estimate (if available)
  */
-export const getStorageEstimate = async (): Promise<{ usage?: number; quota?: number } | null> => {
-  if ('storage' in navigator && 'estimate' in navigator.storage) {
+export const getStorageEstimate = async (): Promise<{
+  usage?: number;
+  quota?: number;
+} | null> => {
+  if ("storage" in navigator && "estimate" in navigator.storage) {
     return await navigator.storage.estimate();
   }
   return null;

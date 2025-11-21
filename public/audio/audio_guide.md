@@ -6,20 +6,20 @@ This game uses an environment-based audio system. The AI detects the current sce
 
 Place your `.mp3` or `.wav` files in the corresponding folders. The system will look for a file named `ambience.mp3` in each folder by default, or you can configure specific mappings in the code.
 
-| Environment Tag | Folder Path | Recommended Audio Style |
-| :--- | :--- | :--- |
-| `forest` | `/audio/forest/` | Birds, wind in trees, rustling leaves, nature sounds. |
-| `dungeon` | `/audio/dungeon/` | Dripping water, echoes, low rumble, chains, eerie silence. |
-| `city` | `/audio/city/` | Crowd noise, carriages/cars, distant chatter, street bustle. |
-| `tavern` | `/audio/tavern/` | Laughter, clinking glasses, fireplace crackle, bard music. |
-| `ocean` | `/audio/ocean/` | Waves crashing, seagulls, wind, ship creaking. |
-| `combat` | `/audio/combat/` | Intense music, drums, weapon clashes, fast-paced rhythm. |
-| `mystical` | `/audio/mystical/` | Chimes, ethereal pads, magical hum, soft choir. |
-| `quiet` | `/audio/quiet/` | Minimal sound, soft wind, room tone, silence. |
-| `cave` | `/audio/cave/` | Wind howling, bats, echoey drips, hollow sounds. |
-| `market` | `/audio/market/` | Haggling voices, coins jingling, animals, busy atmosphere. |
-| `rain` | `/audio/rain/` | Rain falling, thunder (distant), puddles splashing. |
-| `storm` | `/audio/storm/` | Heavy rain, loud thunder, howling wind, intense atmosphere. |
+| Environment Tag | Folder Path        | Recommended Audio Style                                      |
+| :-------------- | :----------------- | :----------------------------------------------------------- |
+| `forest`        | `/audio/forest/`   | Birds, wind in trees, rustling leaves, nature sounds.        |
+| `dungeon`       | `/audio/dungeon/`  | Dripping water, echoes, low rumble, chains, eerie silence.   |
+| `city`          | `/audio/city/`     | Crowd noise, carriages/cars, distant chatter, street bustle. |
+| `tavern`        | `/audio/tavern/`   | Laughter, clinking glasses, fireplace crackle, bard music.   |
+| `ocean`         | `/audio/ocean/`    | Waves crashing, seagulls, wind, ship creaking.               |
+| `combat`        | `/audio/combat/`   | Intense music, drums, weapon clashes, fast-paced rhythm.     |
+| `mystical`      | `/audio/mystical/` | Chimes, ethereal pads, magical hum, soft choir.              |
+| `quiet`         | `/audio/quiet/`    | Minimal sound, soft wind, room tone, silence.                |
+| `cave`          | `/audio/cave/`     | Wind howling, bats, echoey drips, hollow sounds.             |
+| `market`        | `/audio/market/`   | Haggling voices, coins jingling, animals, busy atmosphere.   |
+| `rain`          | `/audio/rain/`     | Rain falling, thunder (distant), puddles splashing.          |
+| `storm`         | `/audio/storm/`    | Heavy rain, loud thunder, howling wind, intense atmosphere.  |
 
 ## Implementation Details
 

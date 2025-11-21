@@ -1,7 +1,7 @@
-import { en } from '../translations/en';
-import { zh } from '../translations/zh';
+import { en } from "../translations/en";
+import { zh } from "../translations/zh";
 
 export const TRANSLATIONS = {
-  'en': en,
-  'zh': zh
+  en: en,
+  zh: zh,
 };

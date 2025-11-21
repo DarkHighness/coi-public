@@ -1,19 +1,18 @@
-
-import { useState, useEffect } from 'react';
-import { GameState, SaveSlot } from '../types';
+import { useState, useEffect } from "react";
+import { GameState, SaveSlot } from "../types";
 import {
   saveGameState,
   loadGameState,
   deleteGameState,
   saveMetadata,
   loadMetadata,
-  getStorageEstimate
-} from '../utils/indexedDB';
+  getStorageEstimate,
+} from "../utils/indexedDB";
 
 export const useGamePersistence = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-  view: string
+  view: string,
 ) => {
   const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
@@ -21,39 +20,46 @@ export const useGamePersistence = (
 
   // Helper to sanitize and fix state on load
   const sanitizeState = (parsed: any): GameState => {
-      // Migrations
-      if (!parsed.logs) parsed.logs = [];
-      if (!parsed.totalTokens) parsed.totalTokens = 0;
-      if (!parsed.explicitLine) parsed.explicitLine = { primary: "Survive", secondary: "Find your way." };
-      if (!parsed.implicitLine) parsed.implicitLine = { content: "Unknown forces are watching." };
+    // Migrations
+    if (!parsed.logs) parsed.logs = [];
+    if (!parsed.totalTokens) parsed.totalTokens = 0;
+    if (!parsed.explicitLine)
+      parsed.explicitLine = { primary: "Survive", secondary: "Find your way." };
+    if (!parsed.implicitLine)
+      parsed.implicitLine = { content: "Unknown forces are watching." };
 
-      // Migration: accumulatedSummary -> summaries
-      if (parsed.accumulatedSummary && (!parsed.summaries || parsed.summaries.length === 0)) {
-          parsed.summaries = [parsed.accumulatedSummary];
-          delete parsed.accumulatedSummary;
+    // Migration: accumulatedSummary -> summaries
+    if (
+      parsed.accumulatedSummary &&
+      (!parsed.summaries || parsed.summaries.length === 0)
+    ) {
+      parsed.summaries = [parsed.accumulatedSummary];
+      delete parsed.accumulatedSummary;
+    }
+    if (!parsed.summaries) parsed.summaries = [];
+
+    // Reset processing state on load to prevent stuck state
+    parsed.isProcessing = false;
+    // Always clear image generation state on load
+    // If an image was generating when saved, consider it failed
+    parsed.isImageGenerating = false;
+    parsed.error = null;
+
+    // Fix Dangling User Node (Crash/Exit during generation)
+    // If the last node is a 'user' node, it means we never got a response.
+    // Revert to parent so the user can try again.
+    if (parsed.activeNodeId && parsed.nodes[parsed.activeNodeId]) {
+      const lastNode = parsed.nodes[parsed.activeNodeId];
+      if (lastNode.role === "user") {
+        console.warn(
+          "Detected dangling user node (crash recovery). Reverting to parent.",
+        );
+        if (lastNode.parentId) {
+          parsed.activeNodeId = lastNode.parentId;
+        }
       }
-      if (!parsed.summaries) parsed.summaries = [];
-
-      // Reset processing state on load to prevent stuck state
-      parsed.isProcessing = false;
-      // Always clear image generation state on load
-      // If an image was generating when saved, consider it failed
-      parsed.isImageGenerating = false;
-      parsed.error = null;
-
-      // Fix Dangling User Node (Crash/Exit during generation)
-      // If the last node is a 'user' node, it means we never got a response.
-      // Revert to parent so the user can try again.
-      if (parsed.activeNodeId && parsed.nodes[parsed.activeNodeId]) {
-          const lastNode = parsed.nodes[parsed.activeNodeId];
-          if (lastNode.role === 'user') {
-              console.warn("Detected dangling user node (crash recovery). Reverting to parent.");
-              if (lastNode.parentId) {
-                  parsed.activeNodeId = lastNode.parentId;
-              }
-          }
-      }
-      return parsed as GameState;
+    }
+    return parsed as GameState;
   };
 
   // Load Slots and Current Game on Mount
@@ -61,13 +67,13 @@ export const useGamePersistence = (
     const loadInitialData = async () => {
       try {
         // Load save slots metadata
-        const slots = await loadMetadata('slots');
+        const slots = await loadMetadata("slots");
         if (slots && Array.isArray(slots)) {
           setSaveSlots(slots);
 
           // Try to restore last active session
-          const lastSlotId = await loadMetadata('currentSlot');
-          if (lastSlotId && typeof lastSlotId === 'string') {
+          const lastSlotId = await loadMetadata("currentSlot");
+          if (lastSlotId && typeof lastSlotId === "string") {
             const data = await loadGameState(lastSlotId);
             if (data) {
               const sanitized = sanitizeState(data);
@@ -94,58 +100,66 @@ export const useGamePersistence = (
 
   // Auto-Save Logic using IndexedDB
   useEffect(() => {
-    if (view === 'game' && currentSlotId && gameState.rootNodeId) {
+    if (view === "game" && currentSlotId && gameState.rootNodeId) {
       const performSave = async () => {
         try {
           // Save game state to IndexedDB
           await saveGameState(currentSlotId, gameState);
 
           // Update Slot Meta
-          const activeNode = gameState.activeNodeId ? gameState.nodes[gameState.activeNodeId] : null;
+          const activeNode = gameState.activeNodeId
+            ? gameState.nodes[gameState.activeNodeId]
+            : null;
           const summaryText = activeNode
-             ? activeNode.text.substring(0, 60) + "..."
-             : "In Progress";
+            ? activeNode.text.substring(0, 60) + "..."
+            : "In Progress";
 
           // Find the latest image for preview
           let previewImage: string | undefined;
           if (activeNode) {
-              let curr: typeof activeNode | null = activeNode;
-              let steps = 0;
-              // Look back up to 5 steps for an image
-              while (curr && steps < 5) {
-                  if (curr.imageUrl) {
-                      previewImage = curr.imageUrl;
-                      break;
-                  }
-                  if (curr.parentId) {
-                      curr = gameState.nodes[curr.parentId];
-                  } else {
-                      curr = null;
-                  }
-                  steps++;
+            let curr: typeof activeNode | null = activeNode;
+            let steps = 0;
+            // Look back up to 5 steps for an image
+            while (curr && steps < 5) {
+              if (curr.imageUrl) {
+                previewImage = curr.imageUrl;
+                break;
               }
+              if (curr.parentId) {
+                curr = gameState.nodes[curr.parentId];
+              } else {
+                curr = null;
+              }
+              steps++;
+            }
           }
 
-          const updatedSlots = saveSlots.map(s =>
-             s.id === currentSlotId
-             ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText, previewImage }
-             : s
+          const updatedSlots = saveSlots.map((s) =>
+            s.id === currentSlotId
+              ? {
+                  ...s,
+                  timestamp: Date.now(),
+                  theme: gameState.theme,
+                  summary: summaryText,
+                  previewImage,
+                }
+              : s,
           );
 
           // Only update if changed to avoid loops
           if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
-              setSaveSlots(updatedSlots);
-              await saveMetadata('slots', updatedSlots);
+            setSaveSlots(updatedSlots);
+            await saveMetadata("slots", updatedSlots);
           }
 
           setIsAutoSaving(true);
           const timer = setTimeout(() => setIsAutoSaving(false), 2000);
           return () => clearTimeout(timer);
         } catch (error: any) {
-          console.error('Failed to save game to IndexedDB:', error);
+          console.error("Failed to save game to IndexedDB:", error);
           // Show user-friendly error
-          if (error.name === 'QuotaExceededError') {
-            alert('QuotaExceededError');
+          if (error.name === "QuotaExceededError") {
+            alert("QuotaExceededError");
           }
         }
       };
@@ -159,12 +173,12 @@ export const useGamePersistence = (
     const saveCurrentSlot = async () => {
       try {
         if (currentSlotId) {
-          await saveMetadata('currentSlot', currentSlotId);
+          await saveMetadata("currentSlot", currentSlotId);
         } else {
-          await saveMetadata('currentSlot', null);
+          await saveMetadata("currentSlot", null);
         }
       } catch (error) {
-        console.error('Failed to save current slot:', error);
+        console.error("Failed to save current slot:", error);
       }
     };
 
@@ -172,56 +186,55 @@ export const useGamePersistence = (
   }, [currentSlotId]);
 
   const createSaveSlot = (theme: string) => {
-     const id = Date.now().toString();
-     const newSlot: SaveSlot = {
-         id,
-         name: `Chronicle ${saveSlots.length + 1}`,
-         timestamp: Date.now(),
-         theme,
-         summary: "New Game"
-     };
-     const newSlots = [...saveSlots, newSlot];
-     setSaveSlots(newSlots);
+    const id = Date.now().toString();
+    const newSlot: SaveSlot = {
+      id,
+      name: `Chronicle ${saveSlots.length + 1}`,
+      timestamp: Date.now(),
+      theme,
+      summary: "New Game",
+    };
+    const newSlots = [...saveSlots, newSlot];
+    setSaveSlots(newSlots);
 
-     // Save to IndexedDB asynchronously
-     saveMetadata('slots', newSlots).catch(err => {
-       console.error('Failed to save slots metadata:', err);
-     });
+    // Save to IndexedDB asynchronously
+    saveMetadata("slots", newSlots).catch((err) => {
+      console.error("Failed to save slots metadata:", err);
+    });
 
-     return id;
+    return id;
   };
 
   const loadSlot = async (id: string): Promise<boolean> => {
-     try {
-       const data = await loadGameState(id);
-       if (data) {
-         const sanitized = sanitizeState(data);
-         setGameState(sanitized);
-         setCurrentSlotId(id);
-         return true;
-       }
-       return false;
-     } catch (error) {
-       console.error('Failed to load slot:', error);
-       return false;
-     }
+    try {
+      const data = await loadGameState(id);
+      if (data) {
+        const sanitized = sanitizeState(data);
+        setGameState(sanitized);
+        setCurrentSlotId(id);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to load slot:", error);
+      return false;
+    }
   };
 
   const deleteSlot = (id: string) => {
-      const newSlots = saveSlots.filter(s => s.id !== id);
-      setSaveSlots(newSlots);
+    const newSlots = saveSlots.filter((s) => s.id !== id);
+    setSaveSlots(newSlots);
 
-      // Update IndexedDB asynchronously
-      Promise.all([
-        saveMetadata('slots', newSlots),
-        deleteGameState(id)
-      ]).catch(error => {
-        console.error('Failed to delete slot:', error);
-      });
+    // Update IndexedDB asynchronously
+    Promise.all([saveMetadata("slots", newSlots), deleteGameState(id)]).catch(
+      (error) => {
+        console.error("Failed to delete slot:", error);
+      },
+    );
 
-      if (currentSlotId === id) {
-          setCurrentSlotId(null);
-      }
+    if (currentSlotId === id) {
+      setCurrentSlotId(null);
+    }
   };
 
   return {
@@ -231,6 +244,6 @@ export const useGamePersistence = (
     createSaveSlot,
     loadSlot,
     deleteSlot,
-    isAutoSaving
+    isAutoSaving,
   };
 };

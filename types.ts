@@ -71,7 +71,7 @@ export interface CharacterAttribute {
   label: string;
   value: number;
   maxValue: number;
-  color: 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'gray';
+  color: "red" | "blue" | "green" | "yellow" | "purple" | "gray";
 }
 
 export interface Skill {
@@ -110,7 +110,7 @@ export interface StorySegment {
   choices: string[];
   imagePrompt: string;
   imageUrl?: string;
-  role: 'user' | 'model';
+  role: "user" | "model";
   timestamp: number;
   summarySnapshot?: string; // If this node triggered a summary, store it here
   usage?: TokenUsage;
@@ -157,12 +157,12 @@ export interface Quest {
   id: string;
   title: string;
   description: string;
-  type: 'main' | 'side' | 'hidden';
-  status: 'active' | 'completed' | 'failed';
+  type: "main" | "side" | "hidden";
+  status: "active" | "completed" | "failed";
 }
 
 export interface InventoryAction {
-  action: 'add' | 'remove' | 'update';
+  action: "add" | "remove" | "update";
   item: string;
   newItem?: string; // For 'update' name change
   // New fields for rich items
@@ -172,15 +172,15 @@ export interface InventoryAction {
 }
 
 export interface QuestAction {
-  action: 'add' | 'update' | 'complete' | 'fail';
+  action: "add" | "update" | "complete" | "fail";
   id: string;
   title?: string;
   description?: string;
-  type?: 'main' | 'side' | 'hidden';
+  type?: "main" | "side" | "hidden";
 }
 
 export interface RelationshipAction {
-  action: 'add' | 'update' | 'remove';
+  action: "add" | "update" | "remove";
   name: string;
   description?: string;
   status?: string;
@@ -192,8 +192,8 @@ export interface RelationshipAction {
 }
 
 export interface LocationAction {
-  type: 'current' | 'known';
-  action: 'update' | 'add';
+  type: "current" | "known";
+  action: "update" | "add";
   name: string;
   description?: string;
   lore?: string;
@@ -202,8 +202,15 @@ export interface LocationAction {
 }
 
 export interface CharacterAction {
-  target: 'attribute' | 'skill' | 'status' | 'appearance' | 'profession' | 'background' | 'race';
-  action: 'add' | 'remove' | 'update';
+  target:
+    | "attribute"
+    | "skill"
+    | "status"
+    | "appearance"
+    | "profession"
+    | "background"
+    | "race";
+  action: "add" | "remove" | "update";
   name: string; // Name of attribute/skill, or 'status'
   value?: any; // Generic value
   intValue?: number; // For attributes
@@ -255,9 +262,9 @@ export interface ThemeConfig {
   fontClass: string;
 }
 
-export type LanguageCode = 'en' | 'zh';
+export type LanguageCode = "en" | "zh";
 
-export type AIProvider = 'gemini' | 'openai' | 'openrouter';
+export type AIProvider = "gemini" | "openai" | "openrouter";
 
 export interface ProviderCredentials {
   apiKey?: string;
@@ -269,9 +276,9 @@ export interface FunctionConfig {
   modelId: string;
   enabled?: boolean;
   resolution?: string; // e.g. "512x512", "1024x1024"
-  thinkingLevel?: 'low' | 'medium' | 'high'; // For Gemini Thinking
-  mediaResolution?: 'low' | 'medium' | 'high'; // For Gemini Vision
-  gender?: 'male' | 'female'; // For TTS voice selection
+  thinkingLevel?: "low" | "medium" | "high"; // For Gemini Thinking
+  mediaResolution?: "low" | "medium" | "high"; // For Gemini Vision
+  gender?: "male" | "female"; // For TTS voice selection
 }
 
 export interface AISettings {
@@ -310,4 +317,4 @@ export interface ModelInfo {
   };
 }
 
-export type FeedLayout = 'scroll' | 'stack';
+export type FeedLayout = "scroll" | "stack";

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -9,13 +10,15 @@ html, body {
   overscroll-behavior: none;
 }
 body {
-  font-family: 'Lato', sans-serif;
+  font-family: "Lato", sans-serif;
   background-color: var(--theme-bg, #0f172a);
   color: var(--theme-text, #e2e8f0);
-  transition: background-color 1s ease, color 1s ease;
+  transition:
+    background-color 1s ease,
+    color 1s ease;
 }
 .story-text {
-  font-family: 'Merriweather', serif;
+  font-family: "Merriweather", serif;
 }
 
 /* Custom Scrollbar */
@@ -37,7 +40,11 @@ body {
 
 /* Rain */
 .weather-rain {
-  background-image: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.4));
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.4)
+  );
   background-size: 1px 50px;
   position: absolute;
   top: -50px;
@@ -49,8 +56,12 @@ body {
   pointer-events: none;
 }
 @keyframes rain {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 /* Snow */
@@ -66,8 +77,14 @@ body {
   filter: blur(1px);
 }
 @keyframes snow {
-  0% { transform: translateY(0) translateX(0); opacity: 0.8; }
-  100% { transform: translateY(100vh) translateX(20px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
 }
 
 /* Fog */
@@ -75,25 +92,34 @@ body {
   position: absolute;
   width: 200%;
   height: 100%;
-  background: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png') repeat-x;
+  background: url("https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png")
+    repeat-x;
   background-size: contain;
   animation: fog 60s linear infinite;
   opacity: 0.3;
   pointer-events: none;
 }
 @keyframes fog {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-50%, 0, 0); }
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 /* Flicker / Strobe */
 .weather-flicker {
   animation: flicker 0.1s infinite alternate;
-  background-color: rgba(0,0,0,0.3);
+  background-color: rgba(0, 0, 0, 0.3);
 }
 @keyframes flicker {
-  0% { opacity: 0.1; }
-  100% { opacity: 0.4; }
+  0% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 0.4;
+  }
 }
 
 /* Embers/Ash */
@@ -109,8 +135,14 @@ body {
   opacity: 0;
 }
 @keyframes ember {
-  0% { transform: translateY(0) translateX(0); opacity: 1; }
-  100% { transform: translateY(-80vh) translateX(-20px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80vh) translateX(-20px);
+    opacity: 0;
+  }
 }
 
 /* Sunny / Particles */
@@ -125,15 +157,27 @@ body {
   opacity: 0;
 }
 @keyframes particle-float {
-  0% { transform: translateY(0) translateX(0); opacity: 0; }
-  50% { opacity: 0.8; }
-  100% { transform: translateY(-20px) translateX(10px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0;
+  }
 }
 
 /* Shimmer Effect for Text */
 @keyframes shimmer {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
 }
 .animate-shimmer {
   animation: shimmer 3s linear infinite;
@@ -156,17 +200,33 @@ body {
 
 /* Butterfly Effect */
 @keyframes butterfly-float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(100px, -100px) rotate(10deg); }
-  50% { transform: translate(200px, -50px) rotate(-5deg); }
-  75% { transform: translate(300px, -150px) rotate(5deg); }
-  100% { transform: translate(400px, -200px) rotate(0deg); }
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(100px, -100px) rotate(10deg);
+  }
+  50% {
+    transform: translate(200px, -50px) rotate(-5deg);
+  }
+  75% {
+    transform: translate(300px, -150px) rotate(5deg);
+  }
+  100% {
+    transform: translate(400px, -200px) rotate(0deg);
+  }
 }
 
 @keyframes butterfly-wing {
-  0% { transform: scaleX(1); }
-  50% { transform: scaleX(0.2); }
-  100% { transform: scaleX(1); }
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.2);
+  }
+  100% {
+    transform: scaleX(1);
+  }
 }
 
 .butterfly {

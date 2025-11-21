@@ -1,12 +1,11 @@
-
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 import { generateSpeech } from "../services/aiService";
 
 export const useStoryAudio = (
   text: string,
   volume: number = 1.0,
   muted: boolean = false,
-  onWarning?: (msg: string) => void
+  onWarning?: (msg: string) => void,
 ) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
@@ -53,23 +52,24 @@ export const useStoryAudio = (
 
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        audioContextRef.current = new (window.AudioContext ||
+          (window as any).webkitAudioContext)({ sampleRate: 24000 });
         gainNodeRef.current = audioContextRef.current.createGain();
         gainNodeRef.current.connect(audioContextRef.current.destination);
       }
 
       if (gainNodeRef.current) {
-         gainNodeRef.current.gain.value = volume;
+        gainNodeRef.current.gain.value = volume;
       }
 
-      if (audioContextRef.current.state === 'suspended') {
+      if (audioContextRef.current.state === "suspended") {
         await audioContextRef.current.resume();
       }
 
       const base64Audio = await generateSpeech(text);
       const audioBuffer = await decodeAudioData(
         decode(base64Audio),
-        audioContextRef.current
+        audioContextRef.current,
       );
 
       const source = audioContextRef.current.createBufferSource();
@@ -89,7 +89,6 @@ export const useStoryAudio = (
       source.start();
       sourceNodeRef.current = source;
       setIsPlaying(true);
-
     } catch (error) {
       console.error("Failed to play audio:", error);
     } finally {
@@ -101,7 +100,7 @@ export const useStoryAudio = (
     isPlaying,
     isLoadingAudio,
     playAudio,
-    stopAudio
+    stopAudio,
   };
 };
 

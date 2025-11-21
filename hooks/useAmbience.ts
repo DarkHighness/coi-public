@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 export const useAmbience = (
   environment?: string,
   volume: number = 0.5,
   muted: boolean = false,
-  onPlay?: (env: string) => void
+  onPlay?: (env: string) => void,
 ) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentEnv, setCurrentEnv] = useState<string | undefined>(undefined);
@@ -24,28 +24,28 @@ export const useAmbience = (
   useEffect(() => {
     // If environment is undefined, fade out current track and stop
     if (!environment) {
-        if (audioRef.current) {
-            const oldAudio = audioRef.current;
-            // Clear ref immediately to prevent race conditions
-            audioRef.current = null;
+      if (audioRef.current) {
+        const oldAudio = audioRef.current;
+        // Clear ref immediately to prevent race conditions
+        audioRef.current = null;
 
-            const fadeOutInterval = setInterval(() => {
-                if (oldAudio.volume > 0.05) {
-                    oldAudio.volume -= 0.05;
-                } else {
-                    oldAudio.volume = 0;
-                    oldAudio.pause();
-                    clearInterval(fadeOutInterval);
-                }
-            }, 100);
-        }
+        const fadeOutInterval = setInterval(() => {
+          if (oldAudio.volume > 0.05) {
+            oldAudio.volume -= 0.05;
+          } else {
+            oldAudio.volume = 0;
+            oldAudio.pause();
+            clearInterval(fadeOutInterval);
+          }
+        }, 100);
+      }
 
-        // Always reset currentEnv if environment is missing, even if audioRef was null
-        if (currentEnv !== undefined) {
-            setCurrentEnv(undefined);
-        }
-        return;
-    }    // If it's the same as current, do nothing
+      // Always reset currentEnv if environment is missing, even if audioRef was null
+      if (currentEnv !== undefined) {
+        setCurrentEnv(undefined);
+      }
+      return;
+    } // If it's the same as current, do nothing
     if (environment === currentEnv) return;
 
     const playNewTrack = async () => {
@@ -76,17 +76,17 @@ export const useAmbience = (
 
         // 4. Fade in new track (only if not muted)
         if (!muted) {
-            const targetVolume = volume;
-            const fadeInInterval = setInterval(() => {
+          const targetVolume = volume;
+          const fadeInInterval = setInterval(() => {
             if (newAudio.volume < targetVolume - 0.05) {
-                newAudio.volume += 0.05;
+              newAudio.volume += 0.05;
             } else {
-                newAudio.volume = targetVolume;
-                clearInterval(fadeInInterval);
+              newAudio.volume = targetVolume;
+              clearInterval(fadeInInterval);
             }
-            }, 100);
+          }, 100);
         } else {
-            newAudio.volume = 0;
+          newAudio.volume = 0;
         }
 
         // 5. Update ref and state
@@ -95,7 +95,6 @@ export const useAmbience = (
         if (onPlayRef.current) {
           onPlayRef.current(environment);
         }
-
       } catch (error) {
         console.warn(`Failed to play ambience for ${environment}:`, error);
       }
@@ -107,17 +106,15 @@ export const useAmbience = (
     return () => {
       // We don't stop audio here because we want it to persist across re-renders unless environment changes
     };
-
   }, [environment, currentEnv]); // Removed volume/muted from dependency to avoid restarting track on volume change
-
 
   // Cleanup on full unmount
   useEffect(() => {
-      return () => {
-          if (audioRef.current) {
-              audioRef.current.pause();
-              audioRef.current = null;
-          }
-      };
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
 };

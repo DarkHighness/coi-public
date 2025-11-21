@@ -1,11 +1,10 @@
-
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { StorySegment, AISettings } from '../types';
-import { StoryImage } from './render/StoryImage';
-import { StoryText } from './render/StoryText';
-import { UserActionCard } from './render/UserActionCard';
-import { TokenStats } from './render/TokenStats';
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { StorySegment, AISettings } from "../types";
+import { StoryImage } from "./render/StoryImage";
+import { StoryText } from "./render/StoryText";
+import { UserActionCard } from "./render/UserActionCard";
+import { TokenStats } from "./render/TokenStats";
 
 interface StoryCardLabels {
   decided: string;
@@ -36,23 +35,34 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   shouldAnimate = true,
   onGenerateImage,
   aiSettings,
-  onTypingComplete
+  onTypingComplete,
 }) => {
   const { t } = useTranslation();
 
-  if (segment.role === 'user') {
+  if (segment.role === "user") {
     return <UserActionCard text={segment.text} labelDecided={labels.decided} />;
   }
 
   return (
     <div className="flex flex-col mb-16 animate-slide-in space-y-6 group/card max-w-3xl mx-auto">
-
       {/* Summary Snapshot Display */}
       {segment.summarySnapshot && (
         <div className="flex justify-center my-6 animate-fade-in">
           <div className="bg-theme-surface/40 border border-theme-border/40 rounded-lg p-6 max-w-xl text-center backdrop-blur-sm shadow-sm">
             <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-theme-primary/80 mb-3 font-semibold">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
               <span>Story So Far</span>
             </div>
             <div className="text-sm text-theme-text/90 italic font-serif leading-relaxed">
@@ -69,7 +79,11 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         labelVision={labels.vision}
         labelUnavailable={labels.unavailable}
         onAnimate={onAnimate}
-        onRegenerate={segment.imagePrompt && onGenerateImage ? () => onGenerateImage(segment.id) : undefined}
+        onRegenerate={
+          segment.imagePrompt && onGenerateImage
+            ? () => onGenerateImage(segment.id)
+            : undefined
+        }
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
         manualImageGen={aiSettings?.manualImageGen}
@@ -99,7 +113,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           onTypingComplete={onTypingComplete}
         />
         <div className="px-6">
-           <TokenStats usage={segment.usage} />
+          <TokenStats usage={segment.usage} />
         </div>
       </div>
     </div>

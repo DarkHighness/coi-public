@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
-import { GameState, StoryOutline, CharacterStatus } from '../types';
-import { DEFAULT_CHARACTER } from '../utils/constants';
+import { useState } from "react";
+import { GameState, StoryOutline, CharacterStatus } from "../types";
+import { DEFAULT_CHARACTER } from "../utils/constants";
 
 const INITIAL_STATE: GameState = {
   nodes: {},
@@ -11,7 +10,6 @@ const INITIAL_STATE: GameState = {
   relationships: [],
   quests: [],
   character: DEFAULT_CHARACTER,
-
 
   // Location System
   currentLocation: "Unknown",
@@ -24,9 +22,9 @@ const INITIAL_STATE: GameState = {
   isProcessing: false,
   isImageGenerating: false,
   error: null,
-  theme: 'fantasy',
+  theme: "fantasy",
   totalTokens: 0,
-  logs: []
+  logs: [],
 };
 
 export const useGameState = () => {
@@ -43,18 +41,18 @@ export const useGameState = () => {
       activeNodeId: null,
       outline: null,
       totalTokens: 0,
-      logs: []
+      logs: [],
     });
   };
 
   const updateCharacter = (char: CharacterStatus) => {
-      setGameState(prev => ({ ...prev, character: char }));
+    setGameState((prev) => ({ ...prev, character: char }));
   };
 
   return {
     gameState,
     setGameState,
     resetState,
-    updateCharacter
+    updateCharacter,
   };
 };

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface TypewriterTextProps {
   text: string;
@@ -8,8 +7,13 @@ interface TypewriterTextProps {
   instant?: boolean;
 }
 
-export const TypewriterText: React.FC<TypewriterTextProps> = ({ text, speed = 20, onComplete, instant = false }) => {
-  const [displayedText, setDisplayedText] = useState(instant ? text : '');
+export const TypewriterText: React.FC<TypewriterTextProps> = ({
+  text,
+  speed = 20,
+  onComplete,
+  instant = false,
+}) => {
+  const [displayedText, setDisplayedText] = useState(instant ? text : "");
 
   useEffect(() => {
     if (instant) {
@@ -18,7 +22,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({ text, speed = 20
       return;
     }
 
-    setDisplayedText('');
+    setDisplayedText("");
     let i = 0;
     const timer = setInterval(() => {
       if (i < text.length) {
@@ -33,5 +37,9 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({ text, speed = 20
     return () => clearInterval(timer);
   }, [text, speed, onComplete, instant]);
 
-  return <div className="story-text text-lg leading-relaxed text-slate-200 whitespace-pre-line">{displayedText}</div>;
+  return (
+    <div className="story-text text-lg leading-relaxed text-slate-200 whitespace-pre-line">
+      {displayedText}
+    </div>
+  );
 };

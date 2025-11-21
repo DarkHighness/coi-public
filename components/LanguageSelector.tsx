@@ -1,12 +1,14 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { LanguageCode } from '../types';
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { LanguageCode } from "../types";
 
 interface LanguageSelectorProps {
   disabled?: boolean;
 }
 
-export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ disabled }) => {
+export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
+  disabled,
+}) => {
   const { i18n } = useTranslation();
 
   return (

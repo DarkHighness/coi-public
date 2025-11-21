@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { TokenUsage } from '../../types';
+import React from "react";
+import { TokenUsage } from "../../types";
 
 interface TokenStatsProps {
   usage?: TokenUsage;
@@ -15,7 +14,9 @@ export const TokenStats: React.FC<TokenStatsProps> = ({ usage }) => {
       <span>|</span>
       <span title="Completion Tokens">Out: {usage.completionTokens}</span>
       <span>|</span>
-      <span title="Total Tokens" className="font-bold">Total: {usage.totalTokens}</span>
+      <span title="Total Tokens" className="font-bold">
+        Total: {usage.totalTokens}
+      </span>
     </div>
   );
 };

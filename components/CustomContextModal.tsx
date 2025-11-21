@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface CustomContextModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
   isOpen,
   onClose,
   customContext,
-  setCustomContext
+  setCustomContext,
 }) => {
   const { t } = useTranslation();
   const [localContext, setLocalContext] = useState(customContext);
@@ -25,7 +25,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
   };
 
   const handleClear = () => {
-    setLocalContext('');
+    setLocalContext("");
   };
 
   return (
@@ -35,7 +35,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
         <div className="p-6 border-b border-theme-border flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-wider">
-              {t('customContext')}
+              {t("customContext")}
             </h2>
             <p className="text-sm text-theme-muted mt-1">
               Add details to guide your adventure's story
@@ -45,8 +45,18 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
             onClick={onClose}
             className="p-2 text-theme-muted hover:text-theme-text transition-colors rounded-full hover:bg-theme-surface-highlight"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
             </svg>
           </button>
         </div>
@@ -56,14 +66,16 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
           <textarea
             value={localContext}
             onChange={(e) => setLocalContext(e.target.value)}
-            placeholder={t('customContextPlaceholder')}
+            placeholder={t("customContextPlaceholder")}
             className="w-full h-64 bg-theme-surface-highlight/30 border border-theme-border rounded-lg p-4 text-theme-text focus:border-theme-primary outline-none resize-none placeholder-theme-muted"
             autoFocus
           />
 
           <div className="mt-4 p-4 bg-theme-bg/50 rounded-lg border border-theme-border/50">
             <p className="text-xs text-theme-muted leading-relaxed">
-              <strong className="text-theme-primary">Tip:</strong> Describe characters, settings, plot hooks, or themes you'd like to explore. The AI will incorporate these elements into your story.
+              <strong className="text-theme-primary">Tip:</strong> Describe
+              characters, settings, plot hooks, or themes you'd like to explore.
+              The AI will incorporate these elements into your story.
             </p>
           </div>
         </div>

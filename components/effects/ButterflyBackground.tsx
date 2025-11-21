@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface Butterfly {
   id: number;
@@ -27,7 +27,7 @@ export const ButterflyBackground: React.FC = () => {
         rotation: Math.random() * 360,
         duration: 15 + Math.random() * 15, // Slower: 15-30s
         delay: Math.random() * -30,
-        color: Math.random() > 0.5 ? '#ffd700' : '#ffffff' // Gold or White
+        color: Math.random() > 0.5 ? "#ffd700" : "#ffffff", // Gold or White
       });
     }
     setButterflies(newButterflies);
@@ -48,17 +48,31 @@ export const ButterflyBackground: React.FC = () => {
           <div
             className="butterfly"
             style={{
-              position: 'relative', // Override absolute from class if needed, or just rely on wrapper
+              position: "relative", // Override absolute from class if needed, or just rely on wrapper
               animation: `butterfly-float ${b.duration}s linear infinite`,
-              animationDelay: `${b.delay}s`
+              animationDelay: `${b.delay}s`,
             }}
           >
             <div className="butterfly-wings text-theme-primary/60">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style={{ color: b.color }}>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                style={{ color: b.color }}
+              >
                 {/* Body */}
-                <path d="M12 3v18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path
+                  d="M12 3v18"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
                 {/* Wings */}
-                <path d="M12 5c-4-3-8 0-8 5s4 6 8 2c4 4 8-1 8-2s-4-8-8-5zm0 8c-3 1-6 4-5 7s5 2 5-2c0 4 6 3 5-7z" fillOpacity="0.8" />
+                <path
+                  d="M12 5c-4-3-8 0-8 5s4 6 8 2c4 4 8-1 8-2s-4-8-8-5zm0 8c-3 1-6 4-5 7s5 2 5-2c0 4 6 3 5-7z"
+                  fillOpacity="0.8"
+                />
               </svg>
             </div>
           </div>
