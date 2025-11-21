@@ -10,10 +10,9 @@ interface SaveManagerProps {
   onSwitch: (id: string) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
-  language: LanguageCode;
 }
 
-export const SaveManager: React.FC<SaveManagerProps> = ({ slots, currentSlotId, onSwitch, onDelete, onClose, language }) => {
+export const SaveManager: React.FC<SaveManagerProps> = ({ slots, currentSlotId, onSwitch, onDelete, onClose }) => {
   const {t} = useTranslation();
 
   return (
@@ -38,7 +37,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({ slots, currentSlotId, 
                         <div className="flex items-center gap-3 overflow-hidden">
                             <div className="w-2 h-12 rounded-full shrink-0" style={{ backgroundColor: themeColor }}></div>
                             <div>
-                               <h4 className="font-bold text-theme-text text-sm">{slot.name}</h4>
+                               <h4 className="font-bold text-theme-text text-sm">{t(`themes.${slot.theme}.name`)} : {slot.name}</h4>
                                <p className="text-xs text-theme-muted truncate w-40">{slot.summary}</p>
                                <span className="text-[10px] text-theme-muted opacity-50">{new Date(slot.timestamp).toLocaleDateString()}</span>
                             </div>

@@ -143,63 +143,7 @@ export const loadMetadata = async (key: string): Promise<any | null> => {
   });
 };
 
-/**
- * Migrate data from localStorage to IndexedDB (one-time migration)
- */
-export const migrateFromLocalStorage = async (): Promise<void> => {
-  try {
-    // Check if migration has already been done
-    const migrated = localStorage.getItem('chronicles_migrated_to_indexeddb');
-    if (migrated === 'true') {
-      return;
-    }
 
-    console.log('Migrating saves from localStorage to IndexedDB...');
-
-    // Migrate save slots metadata
-    const slotsStr = localStorage.getItem('chronicles_meta_slots');
-    if (slotsStr) {
-      const slots = JSON.parse(slotsStr);
-      await saveMetadata('slots', slots);
-    }
-
-    // Migrate current slot
-    const currentSlot = localStorage.getItem('chronicles_current_slot');
-    if (currentSlot) {
-      await saveMetadata('currentSlot', currentSlot);
-    }
-
-    // Migrate all saves
-    const allKeys = Object.keys(localStorage);
-    const saveKeys = allKeys.filter(k => k.startsWith('chronicles_save_'));
-
-    for (const key of saveKeys) {
-      const saveId = key.replace('chronicles_save_', '');
-      const dataStr = localStorage.getItem(key);
-      if (dataStr) {
-        try {
-          const data = JSON.parse(dataStr);
-          await saveGameState(saveId, data);
-          // Remove from localStorage after successful migration
-          localStorage.removeItem(key);
-        } catch (e) {
-          console.error(`Failed to migrate save ${saveId}:`, e);
-        }
-      }
-    }
-
-    // Clean up old localStorage keys
-    localStorage.removeItem('chronicles_meta_slots');
-    localStorage.removeItem('chronicles_current_slot');
-
-    // Mark migration as complete
-    localStorage.setItem('chronicles_migrated_to_indexeddb', 'true');
-    console.log('Migration complete!');
-  } catch (error) {
-    console.error('Migration failed:', error);
-    throw error;
-  }
-};
 
 /**
  * Get storage usage estimate (if available)

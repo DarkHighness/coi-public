@@ -12,6 +12,7 @@ const INITIAL_STATE: GameState = {
   quests: [],
   character: DEFAULT_CHARACTER,
 
+
   // Location System
   currentLocation: "Unknown",
   knownLocations: [],

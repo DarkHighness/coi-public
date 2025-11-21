@@ -44,9 +44,10 @@ export const storyOutlineSchema: Schema = {
           },
           description: "Initial skills/abilities."
         },
-        status: { type: Type.STRING, description: "Initial condition (e.g. Healthy, Amnesiac)." }
+        status: { type: Type.STRING, description: "Initial condition (e.g. Healthy, Amnesiac)." },
+        appearance: { type: Type.STRING, description: "Detailed physical appearance of the character (hair, eyes, clothing, equipment)." }
       },
-      required: ["name", "title", "attributes", "skills", "status"],
+      required: ["name", "title", "attributes", "skills", "status", "appearance"],
       description: "The initialized character profile suited for this story."
     },
     inventory: {
@@ -154,7 +155,7 @@ export const gameResponseSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          target: { type: Type.STRING, enum: ["attribute", "skill", "status"] },
+          target: { type: Type.STRING, enum: ["attribute", "skill", "status", "appearance"] },
           action: { type: Type.STRING, enum: ["add", "remove", "update"] },
           name: { type: Type.STRING, description: "Name of the attribute/skill. Use 'status' if target is status." },
           value: { type: Type.STRING, description: "New value (for status/skill level) or stringified number (for attributes)." }, // Schema limitation: mixed types hard, use string/int handling in code or separate fields. Let's use value as generic or specific fields.
@@ -187,9 +188,30 @@ export const gameResponseSchema: Schema = {
       },
       description: "Updates to quests."
     },
+    explicitLine: {
+      type: Type.OBJECT,
+      properties: {
+        action: { type: Type.STRING, enum: ["add", "update", "remove"] },
+        primary: { type: Type.STRING, description: "The main explicit storyline goal/task." },
+        secondary: { type: Type.STRING, description: "Secondary explicit storyline details." }
+      },
+      description: "Updates to the Explicit Line (visible to user)."
+    },
+    implicitLine: {
+      type: Type.OBJECT,
+      properties: {
+        action: { type: Type.STRING, enum: ["add", "update", "remove"] },
+        content: { type: Type.STRING, description: "The hidden implicit storyline development." }
+      },
+      description: "Updates to the Implicit Line (invisible to user)."
+    },
+    generateImage: {
+      type: Type.BOOLEAN,
+      description: "Set to true ONLY if this is an important scene that requires visual representation."
+    },
     imagePrompt: {
       type: Type.STRING,
-      description: "Visual description for the scene.",
+      description: "Visual description for the scene. Required if generateImage is true.",
     },
     environment: {
       type: Type.STRING,
@@ -206,7 +228,7 @@ export const gameResponseSchema: Schema = {
       description: "Update the theme ONLY if it shifts significantly.",
     }
   },
-  required: ["narrative", "choices", "inventoryActions", "relationshipActions", "locationActions", "characterActions", "questActions", "imagePrompt"],
+  required: ["narrative", "choices", "inventoryActions", "relationshipActions", "locationActions", "characterActions", "questActions"],
 };
 
 export const translationSchema: Schema = {

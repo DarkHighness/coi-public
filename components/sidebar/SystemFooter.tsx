@@ -43,14 +43,12 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
         <div className="grid grid-cols-2 gap-2">
            <button
              onClick={() => {
-                if (window.confirm(t('confirmNewGame'))) {
-                   onNewGame();
-                   onCloseMobile();
-                }
+                onNewGame();
+                onCloseMobile();
              }}
-             className="px-3 py-2 bg-theme-surface-highlight/50 hover:bg-red-900/30 border border-theme-border hover:border-red-500/50 text-theme-text text-xs rounded transition-colors"
+             className="px-3 py-2 bg-theme-surface-highlight/50 hover:bg-theme-primary/20 border border-theme-border hover:border-theme-primary text-theme-text text-xs rounded transition-colors"
            >
-             {t('newGame')}
+             {t('mainMenu')}
            </button>
            <div className="relative">
              <button

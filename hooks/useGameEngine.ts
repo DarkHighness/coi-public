@@ -479,11 +479,12 @@ export const useGameEngine = () => {
         isImageGenerating: true,
         theme: response.theme || forceTheme || prev.theme,
         logs: [log, ...prev.logs].slice(0, 50),
-        totalTokens: prev.totalTokens + usage.totalTokens
+        totalTokens: prev.totalTokens + usage.totalTokens,
+        generateImage: response.generateImage
       }));
 
       // Async Image Gen
-      if (response.imagePrompt) {
+      if (response.generateImage && response.imagePrompt) {
         generateSceneImage(response.imagePrompt).then(({ url, log }) => {
             setGameState(prev => ({
               ...prev,
@@ -544,7 +545,8 @@ export const useGameEngine = () => {
           locations: [],
           isProcessing: false,
           logs: [log, ...prev.logs],
-          totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0)
+          totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+          generateImage: false
       }));
        navigate('/game');
 

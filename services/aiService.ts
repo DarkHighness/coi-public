@@ -1,5 +1,3 @@
-
-
 import { GameResponse, StorySegment, AISettings, CharacterStatus, Relationship, StoryOutline, ModelInfo, TokenUsage, LogEntry, InventoryItem, Quest } from "../types";
 import {
   GeminiConfig,

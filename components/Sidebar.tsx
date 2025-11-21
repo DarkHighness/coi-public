@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="md:hidden flex items-center gap-2">
            <button className="text-theme-primary text-xs uppercase font-bold border border-theme-primary px-2 py-1 rounded" onClick={onNewGame}>
-              {t('newGame')}
+              {t('mainMenu')}
            </button>
            <button className="text-theme-text" onClick={onCloseMobile}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>

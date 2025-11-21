@@ -86,6 +86,7 @@ export interface CharacterStatus {
   attributes: CharacterAttribute[];
   skills: Skill[];
   status: string;
+  appearance: string;
 }
 
 export interface Relationship {
@@ -135,7 +136,7 @@ export interface Quest {
   id: string;
   title: string;
   description: string;
-  type: 'main' | 'side';
+  type: 'main' | 'side' | 'hidden';
   status: 'active' | 'completed' | 'failed';
 }
 
@@ -154,7 +155,7 @@ export interface QuestAction {
   id: string;
   title?: string;
   description?: string;
-  type?: 'main' | 'side';
+  type?: 'main' | 'side' | 'hidden';
 }
 
 export interface RelationshipAction {
@@ -175,7 +176,7 @@ export interface LocationAction {
 }
 
 export interface CharacterAction {
-  target: 'attribute' | 'skill' | 'status';
+  target: 'attribute' | 'skill' | 'status' | 'appearance';
   action: 'add' | 'remove' | 'update';
   name: string; // Name of attribute/skill, or 'status'
   value?: any; // Generic value
@@ -198,6 +199,7 @@ export interface GameResponse {
   imagePrompt: string;
   theme?: string; // Optional update
   environment?: string; // The detected environment for audio ambience
+  generateImage?: boolean;
 }
 
 export interface ItemExplanation {

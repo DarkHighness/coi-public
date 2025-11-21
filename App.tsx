@@ -161,7 +161,7 @@ export default function App() {
           return false;
       }
 
-      showToast("Validating connections...", 'info');
+      showToast(t("validate-connection"), 'info');
 
       const providersToCheck = new Set<string>();
       providersToCheck.add(aiSettings.story.provider);
@@ -245,9 +245,10 @@ export default function App() {
             <StartScreen
               onStart={handleStartGame}
               onContinue={handleContinueGame}
-              onLoad={() => setIsSaveManagerOpen(true)}
+              onLoad={(file) => setIsSaveManagerOpen(true)}
+              onOpenSaves={() => setIsSaveManagerOpen(true)}
               onSettings={() => setIsSettingsOpen(true)}
-              hasSave={saveSlots.length > 0}
+              latestSave={saveSlots.length > 0 ? [...saveSlots].sort((a, b) => b.timestamp - a.timestamp)[0] : undefined}
             />
             <Suspense fallback={<LoadingFallback />}>
               <SettingsModal
@@ -265,7 +266,6 @@ export default function App() {
                     onSwitch={switchSlot}
                     onDelete={deleteSlot}
                     onClose={() => setIsSaveManagerOpen(false)}
-                    language={language}
                  />
               )}
             </Suspense>
@@ -294,6 +294,7 @@ export default function App() {
         } />
 
         <Route path="/game" element={
+          !gameState.outline ? <Navigate to="/" replace /> : (
           <div className="flex flex-1 h-full overflow-hidden relative z-10">
             <Suspense fallback={<LoadingFallback />}>
               <MobileGameLayout
@@ -380,7 +381,6 @@ export default function App() {
                     onSwitch={switchSlot}
                     onDelete={deleteSlot}
                     onClose={() => setIsSaveManagerOpen(false)}
-                    language={language}
                  />
               )}
 
@@ -403,6 +403,7 @@ export default function App() {
               )}
             </Suspense>
           </div>
+          )
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

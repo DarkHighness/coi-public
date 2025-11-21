@@ -1,25 +1,28 @@
-
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelector } from './LanguageSelector';
 import { THEMES } from '../utils/constants';
 import { ThemeSelector } from './ThemeSelector';
 import { CustomContextModal } from './CustomContextModal';
+import { SaveSlot } from '../types';
+import { ButterflyBackground } from './effects/ButterflyBackground';
 
 interface StartScreenProps {
   onStart: (theme: string, customContext?: string) => void;
   onContinue: () => void;
   onLoad: (file: File) => void;
+  onOpenSaves: () => void;
   onSettings: () => void;
-  hasSave: boolean;
+  latestSave?: SaveSlot;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
   onStart,
   onContinue,
   onLoad,
+  onOpenSaves,
   onSettings,
-  hasSave
+  latestSave
 }) => {
   const [mode, setMode] = useState<'main' | 'theme_select'>('main');
   const [hoveredTheme, setHoveredTheme] = useState<string>('fantasy');
@@ -45,6 +48,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         style={{ background: `radial-gradient(circle at 20% 50%, ${activeThemeVar}, transparent 70%)` }}
       ></div>
       <div className="absolute inset-0 z-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 animate-pulse"></div>
+      <ButterflyBackground />
+
+      {/* Left Panel: Branding & Atmosphere */}
 
       {/* Left Panel: Branding & Atmosphere */}
       <div className="relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none">
@@ -55,8 +61,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
            <h2 className="text-3xl lg:text-6xl font-scifi uppercase tracking-[0.2em] text-theme-primary/80">
              {t('titlePart2')}
            </h2>
-           <p className="hidden lg:block text-lg text-theme-muted max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
-             "Every choice ripples through infinity. Where will your story begin?"
+            <p className="hidden lg:block text-lg text-theme-muted max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
+             "{t('startQuote')}"
            </p>
         </div>
       </div>
@@ -81,30 +87,48 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
           {mode === 'main' ? (
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full">
-              {hasSave && (
-                <button
-                  onClick={onContinue}
-                  className="w-full py-5 bg-theme-primary text-theme-bg font-bold text-xl uppercase tracking-widest hover:bg-theme-primary-hover transition-all shadow-[0_0_30px_rgba(var(--theme-primary),0.4)] hover:scale-105 transform rounded-sm border border-transparent"
-                >
-                  {t('continueGame')}
-                </button>
+              {latestSave && (
+                <div className="mb-4 group relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-theme-primary to-theme-primary-hover rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                  <button
+                    onClick={onContinue}
+                    className="relative w-full py-5 bg-theme-surface border border-theme-primary text-theme-text font-bold text-xl uppercase tracking-widest hover:bg-theme-surface-highlight transition-all shadow-2xl hover:scale-[1.02] transform rounded-lg flex flex-col items-center overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-theme-primary/5 group-hover:bg-theme-primary/10 transition-colors"></div>
+                    <span className="relative z-10 text-theme-primary">{t('continueGame')}</span>
+                    <span className="relative z-10 text-xs normal-case opacity-80 mt-2 font-normal max-w-[90%] truncate text-theme-muted">
+                       {latestSave.summary || t('continueLastAdventure')}
+                    </span>
+                    <div className="relative z-10 text-[10px] mt-2 text-theme-muted/70 uppercase tracking-wider">
+                       {new Date(latestSave.timestamp).toLocaleString()} • {t(`themes.${latestSave.theme}.name`, latestSave.theme)}
+                    </div>
+                  </button>
+                </div>
               )}
 
               <button
                 onClick={() => setMode('theme_select')}
-                className={`w-full py-4 border-2 border-theme-text/10 hover:border-theme-primary text-theme-text font-bold text-lg uppercase tracking-widest hover:bg-theme-surface-highlight transition-all rounded-sm flex items-center justify-center gap-3 group ${!hasSave ? 'bg-theme-primary text-theme-bg border-theme-primary hover:bg-theme-primary-hover hover:border-theme-primary-hover' : ''}`}
+                className={`w-full py-4 border-2 border-theme-text/10 hover:border-theme-primary text-theme-text font-bold text-lg uppercase tracking-widest hover:bg-theme-surface-highlight transition-all rounded-sm flex items-center justify-center gap-3 group ${!latestSave ? 'bg-theme-primary text-theme-bg border-theme-primary hover:bg-theme-primary-hover hover:border-theme-primary-hover' : ''}`}
               >
                 <span>{t('startTitle')}</span>
                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
               </button>
 
-              <div className="pt-6 flex justify-center">
+              <div className="pt-6 flex justify-center gap-6">
+                <button
+                   onClick={onOpenSaves}
+                   className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
+                >
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                   {t('saves.load')}
+                </button>
+
                 <button
                    onClick={() => fileInputRef.current?.click()}
                    className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                  {t('loadGame')}
+                  {t('import')}
                 </button>
               </div>
             </div>

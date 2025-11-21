@@ -31,7 +31,10 @@ export const zh = {
     confirmNewGame: "确定要开始新游戏吗？所有当前进度将会丢失。",
     loadError: "存档文件无效。",
     menu: "菜单",
+    mainMenu: "主菜单",
+    continueLastAdventure: "继续上一次的冒险",
     startTitle: "开始你的编年史",
+    startQuote: "每一个选择都在无限中激起涟漪。你的故事将从何处开始？",
     selectTheme: "选择题材",
     customContext: "自定义故事背景 (可选)",
     customContextPlaceholder: "例如：'我是1920年上海的一名侦探' 或 '重生为人的巨龙'。",
@@ -42,6 +45,7 @@ export const zh = {
     themeStart: "开始",
     narrativeStyle: "叙事风格",
     startThisAdventure: "开始这个冒险",
+    "validate-connection": "正在尝试与世界连接...",
     timeline: "旅程时间轴",
     "timeline.empty": "旅程尚未开始...",
     character: "角色状态",
@@ -94,7 +98,7 @@ export const zh = {
     fail: "失败",
     critFail: "大失败！",
     logs: "日志",
-
+    import: "导入",
     tabs: {
       credentials: "密钥",
       models: "模型",

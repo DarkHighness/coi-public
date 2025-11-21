@@ -8,7 +8,8 @@ export const DEFAULT_CHARACTER: CharacterStatus = {
   title: "Loading...",
   attributes: [],
   skills: [],
-  status: "Pending"
+  status: "Pending",
+  appearance: "Loading..."
 };
 
 export const LANG_MAP: Record<LanguageCode, string> = {

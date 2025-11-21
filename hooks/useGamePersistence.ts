@@ -7,7 +7,6 @@ import {
   deleteGameState,
   saveMetadata,
   loadMetadata,
-  migrateFromLocalStorage,
   getStorageEstimate
 } from '../utils/indexedDB';
 
@@ -19,13 +18,14 @@ export const useGamePersistence = (
   const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [migrationComplete, setMigrationComplete] = useState(false);
 
   // Helper to sanitize and fix state on load
   const sanitizeState = (parsed: any): GameState => {
       // Migrations
       if (!parsed.logs) parsed.logs = [];
       if (!parsed.totalTokens) parsed.totalTokens = 0;
+      if (!parsed.explicitLine) parsed.explicitLine = { primary: "Survive", secondary: "Find your way." };
+      if (!parsed.implicitLine) parsed.implicitLine = { content: "Unknown forces are watching." };
 
       // Reset processing state on load to prevent stuck state
       parsed.isProcessing = false;
@@ -47,24 +47,8 @@ export const useGamePersistence = (
       return parsed as GameState;
   };
 
-  // Migrate from localStorage to IndexedDB on mount
+  // Load Slots and Current Game on Mount
   useEffect(() => {
-    const performMigration = async () => {
-      try {
-        await migrateFromLocalStorage();
-        setMigrationComplete(true);
-      } catch (error) {
-        console.error('Migration error:', error);
-        setMigrationComplete(true); // Continue anyway
-      }
-    };
-    performMigration();
-  }, []);
-
-  // Load Slots and Current Game on Mount (after migration)
-  useEffect(() => {
-    if (!migrationComplete) return;
-
     const loadInitialData = async () => {
       try {
         // Load save slots metadata
@@ -97,11 +81,10 @@ export const useGamePersistence = (
     };
 
     loadInitialData();
-  }, [migrationComplete]);
+  }, []);
 
   // Auto-Save Logic using IndexedDB
   useEffect(() => {
-    if (!migrationComplete) return;
     if (view === 'game' && currentSlotId && gameState.rootNodeId) {
       const performSave = async () => {
         try {
@@ -139,12 +122,10 @@ export const useGamePersistence = (
 
       performSave();
     }
-  }, [gameState, currentSlotId, view, migrationComplete]);
+  }, [gameState, currentSlotId, view]);
 
   // Persist Current Slot ID to IndexedDB
   useEffect(() => {
-    if (!migrationComplete) return;
-
     const saveCurrentSlot = async () => {
       try {
         if (currentSlotId) {
@@ -158,7 +139,7 @@ export const useGamePersistence = (
     };
 
     saveCurrentSlot();
-  }, [currentSlotId, migrationComplete]);
+  }, [currentSlotId]);
 
   const createSaveSlot = (theme: string) => {
      const id = Date.now().toString();

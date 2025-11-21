@@ -12,7 +12,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({ quests, themeFont }) => 
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const activeQuests = quests.filter(q => q.status === 'active');
+  const activeQuests = quests.filter(q => q.status === 'active' && q.type !== 'hidden');
   const mainQuests = activeQuests.filter(q => q.type === 'main');
   const sideQuests = activeQuests.filter(q => q.type === 'side');
 
