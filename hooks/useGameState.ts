@@ -16,6 +16,12 @@ const INITIAL_STATE: GameState = {
   knownLocations: [],
   locations: [],
 
+  uiState: {
+    inventory: { pinnedIds: [], customOrder: [] },
+    locations: { pinnedIds: [], customOrder: [] },
+    relationships: { pinnedIds: [], customOrder: [] },
+  },
+
   outline: null,
   summaries: [],
   lastSummarizedIndex: 0,

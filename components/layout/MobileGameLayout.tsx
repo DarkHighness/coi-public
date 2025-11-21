@@ -1,5 +1,5 @@
 import React from "react";
-import { GameState, LanguageCode, FeedLayout } from "../../types";
+import { GameState, LanguageCode, FeedLayout, UIState, ListState } from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
@@ -31,6 +31,8 @@ interface MobileGameLayoutProps {
   aiSettings: any;
   onTypingComplete?: () => void;
   currentAmbience?: string;
+  onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
+  onToggleMute?: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -57,6 +59,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   aiSettings,
   onTypingComplete,
   currentAmbience,
+  onUpdateUIState,
+  onToggleMute,
 }) => {
   const { t } = useTranslation();
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
@@ -80,6 +84,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           aiSettings={aiSettings}
           onTypingComplete={onTypingComplete}
           currentAmbience={currentAmbience}
+          onToggleMute={onToggleMute}
         />
 
         {/* Action Panel fixed at bottom of feed */}
@@ -108,6 +113,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onOpenMap={onOpenMap}
           onOpenLogs={onOpenLogs}
           currentAmbience={currentAmbience}
+          onUpdateUIState={onUpdateUIState}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

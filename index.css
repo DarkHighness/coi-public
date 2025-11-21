@@ -43,7 +43,7 @@ body {
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.4)
+    rgba(255, 255, 255, 0.3)
   );
   background-size: 1px 50px;
   position: absolute;
@@ -52,7 +52,7 @@ body {
   width: 100%;
   height: 100%;
   animation: rain 0.6s linear infinite;
-  opacity: 0.3;
+  opacity: 0.15;
   pointer-events: none;
 }
 @keyframes rain {
@@ -72,14 +72,14 @@ body {
   height: 6px;
   background: white;
   border-radius: 50%;
-  opacity: 0.8;
+  opacity: 0.5;
   animation: snow 5s linear infinite;
   filter: blur(1px);
 }
 @keyframes snow {
   0% {
     transform: translateY(0) translateX(0);
-    opacity: 0.8;
+    opacity: 0.5;
   }
   100% {
     transform: translateY(100vh) translateX(20px);
@@ -96,7 +96,7 @@ body {
     repeat-x;
   background-size: contain;
   animation: fog 60s linear infinite;
-  opacity: 0.3;
+  opacity: 0.15;
   pointer-events: none;
 }
 @keyframes fog {
@@ -111,14 +111,14 @@ body {
 /* Flicker / Strobe */
 .weather-flicker {
   animation: flicker 0.1s infinite alternate;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.15);
 }
 @keyframes flicker {
   0% {
-    opacity: 0.1;
+    opacity: 0.05;
   }
   100% {
-    opacity: 0.4;
+    opacity: 0.2;
   }
 }
 

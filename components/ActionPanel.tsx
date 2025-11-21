@@ -146,7 +146,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
                 {/* Choices List */}
                 <div
-                  className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
+                  className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
                 >
                   {availableChoices.map((rawChoice, idx) => {
                     const label = getChoiceLabel(rawChoice);

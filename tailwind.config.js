@@ -12,14 +12,14 @@ export default {
     extend: {
       colors: {
         theme: {
-          bg: "var(--theme-bg)",
-          surface: "var(--theme-surface)",
-          "surface-highlight": "var(--theme-surface-highlight)",
-          border: "var(--theme-border)",
-          primary: "var(--theme-primary)",
-          "primary-hover": "var(--theme-primary-hover)",
-          text: "var(--theme-text)",
-          muted: "var(--theme-muted)",
+          bg: "rgb(var(--theme-bg-rgb) / <alpha-value>)",
+          surface: "rgb(var(--theme-surface-rgb) / <alpha-value>)",
+          "surface-highlight": "rgb(var(--theme-surface-highlight-rgb) / <alpha-value>)",
+          border: "rgb(var(--theme-border-rgb) / <alpha-value>)",
+          primary: "rgb(var(--theme-primary-rgb) / <alpha-value>)",
+          "primary-hover": "rgb(var(--theme-primary-hover-rgb) / <alpha-value>)",
+          text: "rgb(var(--theme-text-rgb) / <alpha-value>)",
+          muted: "rgb(var(--theme-muted-rgb) / <alpha-value>)",
         },
       },
       fontFamily: {

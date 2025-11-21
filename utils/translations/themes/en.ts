@@ -79,6 +79,96 @@ export const themes: Record<
     example:
       "The rain pours relentlessly, washing the blood from your blade. The inn is silent, save for the groans of the defeated bandits. You sheathe your sword, the 'Azure Dragon', with a sharp click. 'Tell your master,' you say to the trembling survivor, 'that the debt of the Iron Fist Clan is due.' You toss a silver tael on the table and walk out into the storm, your bamboo hat pulled low.",
   },
+  demonic_cultivation: {
+    name: "Demonic Cultivation",
+    narrativeStyle:
+      "Eerie, tragic, and ensemble-focused. Emphasizes the blurred line between good and evil, prejudice, and the fickleness of fate. Describes resentment, walking corpses, and unorthodox arts.",
+    backgroundTemplate:
+      "In your past life, you were the reviled [Grandmaster of Demonic Cultivation], commanding thousands of corpses, eventually killed by a backlash/siege. Thirteen years later, you are summoned back/reincarnated into a new body. Old friends are now sect leaders; old enemies are still at large. You wanted to lay low, but are dragged into strange murder cases. As the truth unravels, you discover a massive conspiracy behind your death.",
+    example:
+      "The flute wails, sounding like sobbing. Pale ghostly hands erupt from the ground, grabbing the enemy's ankles. You stand on the treetop, black robes flapping in the night wind, twirling the Chenqing flute. 'Since you call me a heretic,' you smirk, red light flowing in your eyes, 'then let me show you true hell.' Thousands of walking corpses roar to the sky at your command.",
+  },
+  rough_guy: {
+    name: "Rough Guy Romance",
+    narrativeStyle:
+      "Rugged, masculine, and protective. Focus on a blue-collar or tough male lead (truck driver, bodyguard) and a delicate female lead. High testosterone, strong sense of security.",
+    backgroundTemplate:
+      "You are a [Delicate Profession] who accidentally provoked the [Rough Guy Role] next door. He is fierce, tattooed, and everyone is afraid of him. But when you are in trouble, he is always the first to stand in front of you. He doesn't know how to say sweet words, but he gives you his everything.",
+    example:
+      "He kicks open the door, his face covered in dust and sweat. Seeing you cornered by thugs, his eyes turn murderous. 'I told you,' he growls, cracking his knuckles, 'she is my woman.' He pulls you behind his broad back, a wall of muscle and safety. 'Close your eyes,' he says roughly. 'It's going to get messy.'",
+  },
+  wife_chasing: {
+    name: "Wife Chasing Crematorium",
+    narrativeStyle:
+      "Regret, groveling, and redemption. The male lead treats the female lead badly, she leaves, and he realizes his mistake and pursues her desperately.",
+    backgroundTemplate:
+      "You loved him for years, but he treated you like air. On your wedding anniversary, he was with his first love. You finally woke up and left the divorce papers. He thought you were throwing a tantrum. But when he saw you shining on stage/with another man, he panicked. Now, the high-and-mighty CEO is standing in the rain, begging for a second chance.",
+    example:
+      "He stands in the pouring rain, soaking wet. You hold an umbrella, looking at him calmly. 'Go back,' you say. 'We are done.' He grabs your hand, his eyes red. 'I was wrong,' he chokes out, his voice trembling. 'Punish me however you want, just don't leave me.' You pull your hand away. 'The person who loved you is dead.'",
+  },
+  special_forces: {
+    name: "Special Forces",
+    narrativeStyle:
+      "Military, tactical, and disciplined. Focus on special operations, brotherhood, and dangerous missions. High stakes combat and military romance.",
+    backgroundTemplate:
+      "He is the captain of the [Special Unit], a legend in the military. You are a [Doctor/Reporter] who meets him during a mission. He is cold and disciplined, but his blood burns hot. Amidst gunfire and explosions, he protects you with his life. 'I belong to the country,' he says, 'but my heart belongs to you.'",
+    example:
+      "The jungle is silent. He signals 'halt'. You hold your breath, heart pounding. Suddenly, he tackles you to the ground. A bullet whizzes past where your head was. He shields you with his body, returning fire with precision. 'Stay down!' he orders. Even in the chaos, his presence makes you feel invincible.",
+  },
+  zombie: {
+    name: "Zombie Apocalypse",
+    narrativeStyle:
+      "Horror, survival, and gore. Focus on the outbreak, escaping hordes, and the collapse of civilization. More action-oriented than general survival.",
+    backgroundTemplate:
+      "The virus broke out in the city center. You were trapped in [Location]. The streets are filled with walking dead. You grab a [Weapon] and fight your way out. You must find a safe zone, but the zombies are evolving, and humans are becoming more dangerous than the monsters.",
+    example:
+      "The door is buckling under the weight of the horde. Groans and scratching sounds fill the air. You check your magazine—last clip. 'Ready?' you ask your companion. He nods, gripping his axe. You kick the door open. 'Let's kill them all!' You fire into the rotting mass, black blood spraying everywhere.",
+  },
+  body_swap: {
+    name: "Body Swap",
+    narrativeStyle:
+      "Comedic, chaotic, and empathetic. Two characters switch bodies and must live each other's lives. Focus on understanding and gender/role confusion.",
+    backgroundTemplate:
+      "You are a [Role A] and he is a [Role B]. You hate each other. But after a lightning strike/accident, you wake up in his body. You have to deal with his job, his family, and his body. Chaos ensues. But as you live his life, you begin to understand his struggles. And he, in your body, starts to protect you.",
+    example:
+      "You look in the mirror and scream. A man's face screams back. 'Shut up!' he (in your body) yells. 'You're making me look hysterical!' You stare at each other in horror. 'This can't be happening,' you say in his deep voice. 'I have a meeting in an hour!' he wails in your voice. 'And I have my period!' you retort. Silence.",
+  },
+  industry_elite: {
+    name: "Industry Elite",
+    narrativeStyle:
+      "Professional, competent, and high-powered. Focus on workplace battles, negotiations, and competence porn. Two strong individuals clashing and collaborating.",
+    backgroundTemplate:
+      "You are the top [Profession] in the industry. He is your rival/partner. You clash in the boardroom, sparking intellectual fireworks. No damsels in distress here; just two alphas conquering the world together. 'I don't need a knight,' you say. 'I need a king who can keep up with me.'",
+    example:
+      "You slide the contract across the table. '30 percent,' you state. 'Take it or leave it.' He looks at you, impressed. 'You're ruthless,' he smiles, signing his name. 'I like it.' He leans forward. 'Now that business is done, how about dinner?' You smirk. 'If you can afford me.'",
+  },
+  mutual_redemption: {
+    name: "Mutual Redemption",
+    narrativeStyle:
+      "Healing, emotional, and supportive. Both protagonists have dark pasts or traumas. They find light and hope in each other.",
+    backgroundTemplate:
+      "You live in the shadows, carrying the scars of [Trauma]. He is a [Role] who seems sunny but hides a broken heart. You meet at your lowest points. Slowly, you become each other's lifeline. 'The world is dark,' he whispers, holding you close, 'but you are my only light.'",
+    example:
+      "You wake up from a nightmare, trembling. He is there instantly, pulling you into a warm embrace. 'I'm here,' he soothes, rubbing your back. 'I'm not going anywhere.' You bury your face in his chest, listening to his steady heartbeat. The ghosts of the past fade away. With him, you are safe.",
+  },
+  sweet_pet: {
+    name: "Sweet Pet / Fluff",
+    narrativeStyle:
+      "Fluffy, sugary, and low-conflict. Focus on pampering, spoiling, and unconditional love. No misunderstandings, just pure happiness.",
+    backgroundTemplate:
+      "You are the apple of his eye. He is a [Role] who is cold to everyone but you. He remembers your favorite food, ties your shoelaces, and carries you when you're tired. Your life is a fairytale. The biggest conflict is what to eat for dinner.",
+    example:
+      "'Open wide,' he says, feeding you a strawberry. You chew happily. 'Is it sweet?' he asks. 'Not as sweet as you,' you giggle. He chuckles and kisses your nose. 'Silly girl.' He pulls you onto his lap. 'I bought that bag you wanted.' You squeal and hug him. 'Best boyfriend ever!'",
+  },
+  wild_youth: {
+    name: "Wild / Rebellious Youth",
+    narrativeStyle:
+      "Youthful, rebellious, and raw. Focus on breaking chains, finding oneself, and the intensity of young love/friendship amidst difficult circumstances.",
+    backgroundTemplate:
+      "You are a 'problem student' in the eyes of teachers. He is the [School Bully/Genius]. You meet in the [Place]. You fight, you run, you shout at the world. In this suffocating city, you are each other's freedom. 'I want to run wild in your eyes.'",
+    example:
+      "The wind rushes past your ears as the motorcycle speeds down the highway. You spread your arms, screaming into the night. He laughs, accelerating. The city lights blur into lines of color. 'Where are we going?' you shout. 'Anywhere!' he yells back. 'As long as we're together!'",
+  },
   xianxia: {
     name: "Xianxia (Cultivation)",
     narrativeStyle:

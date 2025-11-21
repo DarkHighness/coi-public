@@ -14,6 +14,9 @@ export interface GameState {
   knownLocations: string[];
   locations: Location[];
 
+  // UI State (Persisted)
+  uiState: UIState;
+
   // Meta
   outline: StoryOutline | null;
   summaries: string[]; // Array of summaries, where the last one is the most current
@@ -90,6 +93,17 @@ export interface CharacterStatus {
   profession?: string;
   background?: string;
   race?: string;
+}
+
+export interface ListState {
+  pinnedIds: string[];
+  customOrder: string[];
+}
+
+export interface UIState {
+  inventory: ListState;
+  locations: ListState;
+  relationships: ListState;
 }
 
 export interface Relationship {
@@ -258,7 +272,8 @@ export interface ItemExplanation {
 }
 
 export interface ThemeConfig {
-  vars: Record<string, string>;
+  vars: Record<string, string>; // Default (Night)
+  dayVars?: Record<string, string>; // Optional Day Mode overrides
   fontClass: string;
 }
 

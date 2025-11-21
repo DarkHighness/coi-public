@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { GameState, LanguageCode, FeedLayout } from "../../types";
+import { GameState, LanguageCode, FeedLayout, UIState, ListState } from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
@@ -27,6 +27,8 @@ interface DesktopGameLayoutProps {
   aiSettings: any;
   onTypingComplete?: () => void;
   currentAmbience?: string;
+  onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
+  onToggleMute?: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -51,6 +53,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   aiSettings,
   onTypingComplete,
   currentAmbience,
+  onUpdateUIState,
+  onToggleMute,
 }) => {
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
@@ -67,6 +71,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           onOpenMap={onOpenMap}
           onOpenLogs={onOpenLogs}
           currentAmbience={currentAmbience}
+          onUpdateUIState={onUpdateUIState}
         />
       </div>
 
@@ -86,6 +91,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             aiSettings={aiSettings}
             onTypingComplete={onTypingComplete}
             currentAmbience={currentAmbience}
+            onToggleMute={onToggleMute}
           />
 
           {/* Action Panel */}

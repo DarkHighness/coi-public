@@ -119,15 +119,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Menu Content */}
-        <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-y-auto">
+        <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-hidden">
           {mode === "main" ? (
-            <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full">
+            <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full overflow-y-auto custom-scrollbar px-2">
               {latestSave && (
                 <div className="mb-4 group relative">
                   <div className="absolute -inset-0.5 bg-linear-to-r from-theme-primary to-theme-primary-hover rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
                   <button
                     onClick={onContinue}
-                    className="relative w-full py-5 bg-theme-surface border border-theme-primary text-theme-text font-bold text-xl uppercase tracking-widest hover:bg-theme-surface-highlight transition-all shadow-2xl hover:scale-[1.02] transform rounded-lg flex flex-col items-center overflow-hidden"
+                    className="relative w-full py-5 bg-theme-surface border border-theme-primary text-theme-text font-bold text-xl uppercase tracking-widest hover:bg-theme-surface-highlight transition-all shadow-xl hover:scale-[1.02] transform rounded-lg flex flex-col items-center overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-theme-primary/5 group-hover:bg-theme-primary/10 transition-colors"></div>
                     <span className="relative z-10 text-theme-primary">
@@ -207,8 +207,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-6 animate-slide-in pb-8">
-              <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col h-full animate-slide-in">
+              <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setMode("main")}

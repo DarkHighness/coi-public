@@ -15,9 +15,11 @@ interface SettingsModalProps {
   onSave: (settings: AISettings) => void; // Now acts as onUpdate
   themeFont: string;
   showToast: (msg: string, type?: "info" | "error") => void;
+  themeMode?: "day" | "night" | "system";
+  onSetThemeMode?: (mode: "day" | "night" | "system") => void;
 }
 
-type Tab = "credentials" | "models" | "audio";
+type Tab = "credentials" | "models" | "audio" | "appearance";
 type FunctionKey =
   | "story"
   | "image"
@@ -33,6 +35,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSave,
   themeFont,
   showToast,
+  themeMode,
+  onSetThemeMode,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>("credentials");
   const [geminiModels, setGeminiModels] = useState<ModelInfo[]>([]);
@@ -119,7 +123,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded w-full max-w-2xl shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] relative overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center">
           <h2 className={`text-2xl text-theme-primary ${themeFont}`}>
@@ -146,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="flex border-b border-theme-border bg-theme-bg">
-          {(["credentials", "models", "audio"] as Tab[]).map((tab) => (
+          {(["credentials", "models", "audio", "appearance"] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -156,12 +160,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
               }`}
             >
-              {t(`tabs.${tab}`)}
+              {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          {activeTab === "appearance" && (
+            <div className="space-y-8 animate-slide-in">
+              <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+                <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">
+                  {t("themeMode")}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(["day", "night", "system"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => onSetThemeMode && onSetThemeMode(mode)}
+                      className={`p-4 rounded border transition-all flex flex-col items-center gap-2 ${
+                        themeMode === mode
+                          ? "bg-theme-primary/10 border-theme-primary"
+                          : "bg-theme-bg border-theme-border hover:border-theme-primary/50"
+                      }`}
+                    >
+                      <span className="text-2xl">
+                        {mode === "day" ? "☀️" : mode === "night" ? "🌙" : "💻"}
+                      </span>
+                      <div className="text-center">
+                        <div
+                          className={`font-bold uppercase tracking-wider text-sm ${themeMode === mode ? "text-theme-primary" : "text-theme-text"}`}
+                        >
+                          {t(`modes.${mode}`)}
+                        </div>
+                        <div className="text-xs text-theme-muted mt-1">
+                          {t(`modes.desc.${mode}`)}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "credentials" && (
             <div className="space-y-8 animate-slide-in">
               <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">

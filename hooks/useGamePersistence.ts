@@ -38,6 +38,11 @@ export const useGamePersistence = (
     }
     if (!parsed.summaries) parsed.summaries = [];
 
+    // Ensure theme exists
+    if (!parsed.theme) {
+      parsed.theme = "fantasy";
+    }
+
     // Reset processing state on load to prevent stuck state
     parsed.isProcessing = false;
     // Always clear image generation state on load

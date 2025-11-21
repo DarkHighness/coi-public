@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState } from "../types";
+import { GameState, UIState, ListState } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES } from "../utils/constants";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
@@ -21,6 +21,7 @@ interface SidebarProps {
   onOpenMap: () => void;
   onOpenLogs: () => void;
   currentAmbience?: string;
+  onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenMap,
   onOpenLogs,
   currentAmbience,
+  onUpdateUIState,
 }) => {
   const { t } = useTranslation();
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
@@ -97,6 +99,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           locations={gameState.locations || []}
           themeFont={currentThemeConfig.fontClass}
           itemContext={itemContext}
+          listState={gameState.uiState?.locations}
+          onUpdateList={(newState) => onUpdateUIState("locations", newState)}
         />
         <QuestPanel
           quests={gameState.quests || []}
@@ -105,11 +109,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <RelationshipPanel
           relationships={gameState.relationships || []}
           themeFont={currentThemeConfig.fontClass}
+          listState={gameState.uiState?.relationships}
+          onUpdateList={(newState) => onUpdateUIState("relationships", newState)}
         />
         <InventoryPanel
           inventory={gameState.inventory || []}
           themeFont={currentThemeConfig.fontClass}
           itemContext={itemContext}
+          listState={gameState.uiState?.inventory}
+          onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
         />
       </div>
 
@@ -121,13 +129,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setShowSystemFooter(!showSystemFooter)}
             className="hover:text-theme-primary underline"
           >
-            {showSystemFooter ? "Hide System" : "Show System"}
+            {showSystemFooter ? t("hideSystem") : t("showSystem")}
           </button>
           <button
             onClick={onOpenLogs}
             className="hover:text-theme-primary underline"
           >
-            View Logs
+            {t("viewLogs")}
           </button>
         </div>
       </div>

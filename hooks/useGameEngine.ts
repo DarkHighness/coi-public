@@ -61,6 +61,7 @@ export const useGameEngine = () => {
   const [aiSettings, setAiSettings] = useState<AISettings>(DEFAULTS);
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
+  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">("system");
 
   // Derived Language State
   const language = i18n.language as LanguageCode;
@@ -82,10 +83,39 @@ export const useGameEngine = () => {
   useEffect(() => {
     const root = document.documentElement;
     const themeConfig = THEMES[gameState.theme] || THEMES.fantasy;
-    Object.entries(themeConfig.vars).forEach(([key, value]) => {
+
+    // Determine active mode
+    let activeMode = themeMode;
+    if (themeMode === "system") {
+      activeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+    }
+
+    // Select variables based on mode
+    // Default to 'vars' (Night) if dayVars is missing or mode is night
+    const targetVars = (activeMode === "day" && themeConfig.dayVars)
+      ? themeConfig.dayVars
+      : themeConfig.vars;
+
+    // Apply Colors
+    Object.entries(targetVars).forEach(([key, value]) => {
+      // Set the raw color value (for standard CSS usage)
       root.style.setProperty(key, value);
+
+      // Convert Hex to RGB channels for Tailwind opacity support
+      if (value.startsWith("#")) {
+        const hex = value.replace("#", "");
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        // Set a separate variable with -rgb suffix
+        root.style.setProperty(`${key}-rgb`, `${r} ${g} ${b}`);
+      }
     });
-  }, [gameState.theme]);
+
+    // Clean up alpha override (we don't use it anymore since we have proper palettes)
+    root.style.removeProperty("--theme-alpha-override");
+
+  }, [gameState.theme, themeMode]);
 
   // Init Settings
   useEffect(() => {
@@ -135,6 +165,12 @@ export const useGameEngine = () => {
     } else {
       updateAIConfig(DEFAULTS);
     }
+
+    // Load Theme Mode
+    const savedMode = localStorage.getItem("chronicles_theme_mode");
+    if (savedMode === "night" || savedMode === "day" || savedMode === "system") {
+      setThemeMode(savedMode as any);
+    }
   }, []);
 
   const handleSaveSettings = (newSettings: AISettings) => {
@@ -144,6 +180,19 @@ export const useGameEngine = () => {
     if (newSettings.language !== language) {
       i18n.changeLanguage(newSettings.language);
     }
+  };
+
+  const toggleThemeMode = () => {
+    const modes: ("day" | "night" | "system")[] = ["day", "night", "system"];
+    const nextIndex = (modes.indexOf(themeMode) + 1) % modes.length;
+    const newMode = modes[nextIndex];
+    setThemeMode(newMode);
+    localStorage.setItem("chronicles_theme_mode", newMode);
+  };
+
+  const setThemeModeValue = (mode: "day" | "night" | "system") => {
+    setThemeMode(mode);
+    localStorage.setItem("chronicles_theme_mode", mode);
   };
 
   // --- Core Game Loop ---
@@ -721,7 +770,10 @@ export const useGameEngine = () => {
         generateImage: false,
         summaries: [],
       }));
-      navigate("/game");
+
+      // Use setTimeout to allow state update to propagate before navigation
+      // This prevents the "flashback" issue where the route guard sees old state
+      setTimeout(() => navigate("/game"), 0);
 
       // Safety timeout to ensure we don't get stuck in processing state
       const safetyTimer = setTimeout(() => {
@@ -756,7 +808,10 @@ export const useGameEngine = () => {
   };
 
   const switchSlot = async (id: string) => {
-    if (await loadSlot(id)) navigate("/game");
+    if (await loadSlot(id)) {
+      // Allow state to propagate
+      setTimeout(() => navigate("/game"), 0);
+    }
   };
 
   const navigateToNode = (nodeId: string) => {
@@ -873,5 +928,8 @@ export const useGameEngine = () => {
     currentSlotId,
     navigateToNode,
     generateImageForNode,
+    themeMode,
+    toggleThemeMode,
+    setThemeMode: setThemeModeValue,
   };
 };

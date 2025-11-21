@@ -7,12 +7,28 @@ interface InventoryItemProps {
   item: InventoryItemType;
   language: string;
   context: string;
+  isPinned?: boolean;
+  onPin?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isEditMode?: boolean;
+  isDragging?: boolean;
 }
 
 export const InventoryItem: React.FC<InventoryItemProps> = ({
   item,
   language,
   context,
+  isPinned,
+  onPin,
+  onDragStart,
+  onDragEnter,
+  onDragOver,
+  onDrop,
+  isEditMode,
+  isDragging,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -34,34 +50,47 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
   }, []);
 
   const handleClick = () => {
-    setIsOpen(!isOpen);
+    if (!isEditMode) {
+      setIsOpen(!isOpen);
+    }
   };
 
   return (
     <div
-      className={`mb-2 transform transition-all duration-500 ease-out ${
+      className={`mb-2 transform transition-all duration-300 ease-in-out ${
         isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
-      }`}
+      } ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}
+      onDragOver={onDragOver}
+      onDragEnter={onDragEnter}
+      onDrop={onDrop}
     >
       <InventoryItemHeader
         name={item.name}
         isOpen={isOpen}
         isHighlight={isHighlight}
         onClick={handleClick}
+        isPinned={isPinned}
+        onPin={(e) => {
+          e.stopPropagation();
+          onPin?.();
+        }}
+        dragHandleProps={
+          onDragStart
+            ? {
+                draggable: true,
+                onDragStart: (e: React.DragEvent) => {
+                  onDragStart(e);
+                },
+              }
+            : undefined
+        }
+        isEditMode={isEditMode}
       />
-
-      <div
-        className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen ? "max-h-[800px] opacity-100 mt-1" : "max-h-0 opacity-0 mt-0"
-        }`}
-      >
-        <div className="p-3 bg-theme-bg/50 text-sm text-theme-text rounded border-l-2 border-theme-primary overflow-y-auto max-h-[800px]">
-          <InventoryItemDetail
-            loading={false}
-            details={{ description: item.description, lore: item.lore || "" }}
-            language={language}
-          />
-        </div>
+      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
+        <InventoryItemDetail
+          loading={false}
+          details={{ description: item.description, lore: item.lore || "" }}
+        />
       </div>
     </div>
   );

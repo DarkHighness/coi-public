@@ -12,6 +12,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#e2e8f0",
       "--theme-muted": "#94a3b8",
     },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#cbd5e1",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
     fontClass: "font-fantasy",
   },
   scifi: {
@@ -24,6 +34,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#0891b2",
       "--theme-text": "#e4e4e7",
       "--theme-muted": "#a1a1aa",
+    },
+    dayVars: {
+      "--theme-bg": "#f0f9ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e0f2fe",
+      "--theme-border": "#bae6fd",
+      "--theme-primary": "#0891b2",
+      "--theme-primary-hover": "#0e7490",
+      "--theme-text": "#0c4a6e",
+      "--theme-muted": "#0369a1",
     },
     fontClass: "font-scifi",
   },
@@ -38,6 +58,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#fdf4ff",
       "--theme-muted": "#e879f9",
     },
+    dayVars: {
+      "--theme-bg": "#fdf4ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fae8ff",
+      "--theme-border": "#f0abfc",
+      "--theme-primary": "#c026d3",
+      "--theme-primary-hover": "#a21caf",
+      "--theme-text": "#4a044e",
+      "--theme-muted": "#86198f",
+    },
     fontClass: "font-cyberpunk",
   },
   horror: {
@@ -50,6 +80,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#dc2626",
       "--theme-text": "#e7e5e4",
       "--theme-muted": "#a8a29e",
+    },
+    dayVars: {
+      "--theme-bg": "#fff1f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffe4e6",
+      "--theme-border": "#fecdd3",
+      "--theme-primary": "#dc2626",
+      "--theme-primary-hover": "#b91c1c",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#9f1239",
     },
     fontClass: "font-horror",
   },
@@ -64,6 +104,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#d4d4d4",
       "--theme-muted": "#737373",
     },
+    dayVars: {
+      "--theme-bg": "#fafafa",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f5f5f5",
+      "--theme-border": "#d4d4d4",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#171717",
+      "--theme-muted": "#525252",
+    },
     fontClass: "font-serif",
   },
   modern_romance: {
@@ -77,6 +127,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#fce7f3",
       "--theme-muted": "#db2777",
     },
+    dayVars: {
+      "--theme-bg": "#fff1f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffe4e6",
+      "--theme-border": "#fbcfe8",
+      "--theme-primary": "#db2777",
+      "--theme-primary-hover": "#be185d",
+      "--theme-text": "#831843",
+      "--theme-muted": "#9d174d",
+    },
     fontClass: "font-sans",
   },
   palace_drama: {
@@ -88,6 +148,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary": "#fbbf24",
       "--theme-primary-hover": "#d97706",
       "--theme-text": "#fffbeb",
+      "--theme-muted": "#92400e",
+    },
+    dayVars: {
+      "--theme-bg": "#fffbeb",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fef3c7",
+      "--theme-border": "#fde68a",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#451a03",
       "--theme-muted": "#92400e",
     },
     fontClass: "font-fantasy",
@@ -103,6 +173,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f5f5f4",
       "--theme-muted": "#a8a29e",
     },
+    dayVars: {
+      "--theme-bg": "#f5f5f4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e7e5e4",
+      "--theme-border": "#d6d3d1",
+      "--theme-primary": "#b91c1c",
+      "--theme-primary-hover": "#991b1b",
+      "--theme-text": "#1c1917",
+      "--theme-muted": "#57534e",
+    },
     fontClass: "font-serif",
   },
   demonic_cultivation: {
@@ -114,6 +194,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary": "#ef4444", // Red
       "--theme-primary-hover": "#dc2626",
       "--theme-text": "#fef2f2",
+      "--theme-muted": "#991b1b",
+    },
+    dayVars: {
+      "--theme-bg": "#fef2f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fee2e2",
+      "--theme-border": "#fecaca",
+      "--theme-primary": "#dc2626",
+      "--theme-primary-hover": "#b91c1c",
+      "--theme-text": "#450a0a",
       "--theme-muted": "#991b1b",
     },
     fontClass: "font-serif",
@@ -129,6 +219,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f0f9ff",
       "--theme-muted": "#94a3b8",
     },
+    dayVars: {
+      "--theme-bg": "#f0f9ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e0f2fe",
+      "--theme-border": "#bae6fd",
+      "--theme-primary": "#0284c7",
+      "--theme-primary-hover": "#0369a1",
+      "--theme-text": "#0c4a6e",
+      "--theme-muted": "#075985",
+    },
     fontClass: "font-serif",
   },
   ceo: {
@@ -141,6 +241,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#4f46e5",
       "--theme-text": "#f9fafb",
       "--theme-muted": "#9ca3af",
+    },
+    dayVars: {
+      "--theme-bg": "#f9fafb",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f3f4f6",
+      "--theme-border": "#d1d5db",
+      "--theme-primary": "#4f46e5",
+      "--theme-primary-hover": "#4338ca",
+      "--theme-text": "#111827",
+      "--theme-muted": "#6b7280",
     },
     fontClass: "font-sans",
   },
@@ -155,6 +265,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#ffffff",
       "--theme-muted": "#bfbfbf",
     },
+    dayVars: {
+      "--theme-bg": "#ffffff",
+      "--theme-surface": "#fefce8",
+      "--theme-surface-highlight": "#fef9c3",
+      "--theme-border": "#eab308",
+      "--theme-primary": "#eab308",
+      "--theme-primary-hover": "#ca8a04",
+      "--theme-text": "#000000",
+      "--theme-muted": "#854d0e",
+    },
     fontClass: "font-serif",
   },
   villain_op: {
@@ -167,6 +287,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#7e22ce",
       "--theme-text": "#f3e8ff",
       "--theme-muted": "#a855f7",
+    },
+    dayVars: {
+      "--theme-bg": "#faf5ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f3e8ff",
+      "--theme-border": "#d8b4fe",
+      "--theme-primary": "#9333ea",
+      "--theme-primary-hover": "#7e22ce",
+      "--theme-text": "#3b0764",
+      "--theme-muted": "#7e22ce",
     },
     fontClass: "font-fantasy",
   },
@@ -181,6 +311,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f5f0e6",
       "--theme-muted": "#a89f91",
     },
+    dayVars: {
+      "--theme-bg": "#f5f5f4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e7e5e4",
+      "--theme-border": "#d6d3d1",
+      "--theme-primary": "#a18e72",
+      "--theme-primary-hover": "#8c7b62",
+      "--theme-text": "#292524",
+      "--theme-muted": "#78716c",
+    },
     fontClass: "font-serif",
   },
   female_growth: {
@@ -193,6 +333,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#f43f5e",
       "--theme-text": "#fff1f2",
       "--theme-muted": "#fda4af",
+    },
+    dayVars: {
+      "--theme-bg": "#fff1f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffe4e6",
+      "--theme-border": "#fda4af",
+      "--theme-primary": "#e11d48",
+      "--theme-primary-hover": "#be123c",
+      "--theme-text": "#881337",
+      "--theme-muted": "#be123c",
     },
     fontClass: "font-serif",
   },
@@ -207,6 +357,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f5f5f5",
       "--theme-muted": "#737373",
     },
+    dayVars: {
+      "--theme-bg": "#fef2f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fee2e2",
+      "--theme-border": "#fca5a5",
+      "--theme-primary": "#ef4444",
+      "--theme-primary-hover": "#dc2626",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#991b1b",
+    },
     fontClass: "font-fantasy",
   },
   ancient_romance: {
@@ -219,6 +379,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#fb923c",
       "--theme-text": "#fafaf9",
       "--theme-muted": "#a8a29e",
+    },
+    dayVars: {
+      "--theme-bg": "#fff7ed",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffedd5",
+      "--theme-border": "#fed7aa",
+      "--theme-primary": "#f97316",
+      "--theme-primary-hover": "#ea580c",
+      "--theme-text": "#431407",
+      "--theme-muted": "#9a3412",
     },
     fontClass: "font-serif",
   },
@@ -233,6 +403,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#fce7f3",
       "--theme-muted": "#fbcfe8",
     },
+    dayVars: {
+      "--theme-bg": "#fdf2f8",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fce7f3",
+      "--theme-border": "#f9a8d4",
+      "--theme-primary": "#ec4899",
+      "--theme-primary-hover": "#db2777",
+      "--theme-text": "#831843",
+      "--theme-muted": "#be185d",
+    },
     fontClass: "font-sans",
   },
   angst: {
@@ -245,6 +425,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#0ea5e9",
       "--theme-text": "#f1f5f9",
       "--theme-muted": "#64748b",
+    },
+    dayVars: {
+      "--theme-bg": "#f0f9ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e0f2fe",
+      "--theme-border": "#7dd3fc",
+      "--theme-primary": "#0ea5e9",
+      "--theme-primary-hover": "#0284c7",
+      "--theme-text": "#0c4a6e",
+      "--theme-muted": "#0369a1",
     },
     fontClass: "font-serif",
   },
@@ -259,6 +449,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f4f4f5",
       "--theme-muted": "#71717a",
     },
+    dayVars: {
+      "--theme-bg": "#f5f3ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ede9fe",
+      "--theme-border": "#c4b5fd",
+      "--theme-primary": "#8b5cf6",
+      "--theme-primary-hover": "#7c3aed",
+      "--theme-text": "#4c1d95",
+      "--theme-muted": "#6d28d9",
+    },
     fontClass: "font-serif",
   },
   return_strong: {
@@ -271,6 +471,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#eab308",
       "--theme-text": "#ffffff",
       "--theme-muted": "#a3a3a3",
+    },
+    dayVars: {
+      "--theme-bg": "#ffffff",
+      "--theme-surface": "#fefce8",
+      "--theme-surface-highlight": "#fef9c3",
+      "--theme-border": "#eab308",
+      "--theme-primary": "#eab308",
+      "--theme-primary-hover": "#ca8a04",
+      "--theme-text": "#000000",
+      "--theme-muted": "#854d0e",
     },
     fontClass: "font-fantasy",
   },
@@ -285,6 +495,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f0fdf4",
       "--theme-muted": "#86efac",
     },
+    dayVars: {
+      "--theme-bg": "#f0fdf4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#dcfce7",
+      "--theme-border": "#86efac",
+      "--theme-primary": "#22c55e",
+      "--theme-primary-hover": "#16a34a",
+      "--theme-text": "#14532d",
+      "--theme-muted": "#15803d",
+    },
     fontClass: "font-sans",
   },
   republican: {
@@ -297,6 +517,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#0d9488",
       "--theme-text": "#f5f5f4",
       "--theme-muted": "#a8a29e",
+    },
+    dayVars: {
+      "--theme-bg": "#f5f5f4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e7e5e4",
+      "--theme-border": "#d4af37",
+      "--theme-primary": "#0d9488",
+      "--theme-primary-hover": "#0f766e",
+      "--theme-text": "#292524",
+      "--theme-muted": "#57534e",
     },
     fontClass: "font-serif",
   },
@@ -311,6 +541,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#fef2f2",
       "--theme-muted": "#fca5a5",
     },
+    dayVars: {
+      "--theme-bg": "#fef2f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fee2e2",
+      "--theme-border": "#fca5a5",
+      "--theme-primary": "#ef4444",
+      "--theme-primary-hover": "#dc2626",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#991b1b",
+    },
     fontClass: "font-serif",
   },
   survival: {
@@ -323,6 +563,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#ea580c",
       "--theme-text": "#fff7ed",
       "--theme-muted": "#fdba74",
+    },
+    dayVars: {
+      "--theme-bg": "#fff7ed",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffedd5",
+      "--theme-border": "#fdba74",
+      "--theme-primary": "#ea580c",
+      "--theme-primary-hover": "#c2410c",
+      "--theme-text": "#431407",
+      "--theme-muted": "#9a3412",
     },
     fontClass: "font-scifi",
   },
@@ -337,6 +587,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#eef2ff",
       "--theme-muted": "#a5b4fc",
     },
+    dayVars: {
+      "--theme-bg": "#eef2ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e0e7ff",
+      "--theme-border": "#ef4444",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#1e1b4b",
+      "--theme-muted": "#4338ca",
+    },
     fontClass: "font-serif",
   },
   son_in_law: {
@@ -349,6 +609,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#06b6d4",
       "--theme-text": "#f9fafb",
       "--theme-muted": "#9ca3af",
+    },
+    dayVars: {
+      "--theme-bg": "#f9fafb",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f3f4f6",
+      "--theme-border": "#9ca3af",
+      "--theme-primary": "#06b6d4",
+      "--theme-primary-hover": "#0891b2",
+      "--theme-text": "#111827",
+      "--theme-muted": "#4b5563",
     },
     fontClass: "font-sans",
   },
@@ -363,6 +633,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#f8fafc",
       "--theme-muted": "#94a3b8",
     },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#cbd5e1",
+      "--theme-primary": "#64748b",
+      "--theme-primary-hover": "#475569",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
     fontClass: "font-serif",
   },
   yandere: {
@@ -375,6 +655,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#cc0000",
       "--theme-text": "#ffe4e6",
       "--theme-muted": "#fda4af",
+    },
+    dayVars: {
+      "--theme-bg": "#fff1f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#ffe4e6",
+      "--theme-border": "#ff0000",
+      "--theme-primary": "#dc2626",
+      "--theme-primary-hover": "#b91c1c",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#991b1b",
     },
     fontClass: "font-horror",
   },
@@ -389,6 +679,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#ecfdf5", // emerald-50
       "--theme-muted": "#6ee7b7", // emerald-300
     },
+    dayVars: {
+      "--theme-bg": "#ecfdf5",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#d1fae5",
+      "--theme-border": "#34d399",
+      "--theme-primary": "#059669",
+      "--theme-primary-hover": "#047857",
+      "--theme-text": "#064e3b",
+      "--theme-muted": "#10b981",
+    },
     fontClass: "font-sans", // Standard modern font fits CS best
   },
   infinite_flow: {
@@ -401,6 +701,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#e11d48",
       "--theme-text": "#e4e4e7",
       "--theme-muted": "#a1a1aa",
+    },
+    dayVars: {
+      "--theme-bg": "#f4f4f5",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e4e4e7",
+      "--theme-border": "#d4d4d8",
+      "--theme-primary": "#e11d48",
+      "--theme-primary-hover": "#be123c",
+      "--theme-text": "#18181b",
+      "--theme-muted": "#71717a",
     },
     fontClass: "font-scifi",
   },
@@ -415,6 +725,16 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#fdf2f8",
       "--theme-muted": "#fbcfe8",
     },
+    dayVars: {
+      "--theme-bg": "#fdf2f8",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fce7f3",
+      "--theme-border": "#f472b6",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#831843",
+      "--theme-muted": "#db2777",
+    },
     fontClass: "font-sans",
   },
   esports: {
@@ -427,6 +747,223 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-primary-hover": "#16a34a",
       "--theme-text": "#f8fafc",
       "--theme-muted": "#94a3b8",
+    },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#3b82f6",
+      "--theme-primary": "#16a34a",
+      "--theme-primary-hover": "#15803d",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
+    fontClass: "font-sans",
+  },
+  rough_guy: {
+    vars: {
+      "--theme-bg": "#1c1917", // stone-900
+      "--theme-surface": "#292524", // stone-800
+      "--theme-surface-highlight": "#44403c", // stone-700
+      "--theme-border": "#78716c", // stone-500
+      "--theme-primary": "#d97706", // amber-600
+      "--theme-primary-hover": "#b45309", // amber-700
+      "--theme-text": "#f5f5f4", // stone-100
+      "--theme-muted": "#a8a29e", // stone-400
+    },
+    dayVars: {
+      "--theme-bg": "#f5f5f4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e7e5e4",
+      "--theme-border": "#a8a29e",
+      "--theme-primary": "#b45309",
+      "--theme-primary-hover": "#92400e",
+      "--theme-text": "#1c1917",
+      "--theme-muted": "#78716c",
+    },
+    fontClass: "font-sans",
+  },
+  wife_chasing: {
+    vars: {
+      "--theme-bg": "#0f172a", // slate-900
+      "--theme-surface": "#1e293b", // slate-800
+      "--theme-surface-highlight": "#334155", // slate-700
+      "--theme-border": "#94a3b8", // slate-400
+      "--theme-primary": "#f43f5e", // rose-500 (Heartbreak/Love)
+      "--theme-primary-hover": "#e11d48", // rose-600
+      "--theme-text": "#f1f5f9", // slate-100
+      "--theme-muted": "#64748b", // slate-500
+    },
+    dayVars: {
+      "--theme-bg": "#f1f5f9",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e2e8f0",
+      "--theme-border": "#cbd5e1",
+      "--theme-primary": "#e11d48",
+      "--theme-primary-hover": "#be123c",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
+    fontClass: "font-serif",
+  },
+  special_forces: {
+    vars: {
+      "--theme-bg": "#141e16", // Custom dark camo green
+      "--theme-surface": "#1a2e1f",
+      "--theme-surface-highlight": "#25402b",
+      "--theme-border": "#4d7c55",
+      "--theme-primary": "#84cc16", // lime-500
+      "--theme-primary-hover": "#65a30d", // lime-600
+      "--theme-text": "#ecfccb", // lime-100
+      "--theme-muted": "#84a588",
+    },
+    dayVars: {
+      "--theme-bg": "#ecfccb",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#d9f99d",
+      "--theme-border": "#84cc16",
+      "--theme-primary": "#4d7c0f",
+      "--theme-primary-hover": "#3f6212",
+      "--theme-text": "#14532d",
+      "--theme-muted": "#65a30d",
+    },
+    fontClass: "font-sans",
+  },
+  zombie: {
+    vars: {
+      "--theme-bg": "#1a0505", // Dark red/black
+      "--theme-surface": "#2b0a0a",
+      "--theme-surface-highlight": "#3f1010",
+      "--theme-border": "#7f1d1d", // red-900
+      "--theme-primary": "#65a30d", // lime-600 (Toxic/Zombie green)
+      "--theme-primary-hover": "#4d7c0f", // lime-700
+      "--theme-text": "#fecaca", // red-200
+      "--theme-muted": "#991b1b", // red-800
+    },
+    dayVars: {
+      "--theme-bg": "#fef2f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fee2e2",
+      "--theme-border": "#f87171",
+      "--theme-primary": "#4d7c0f",
+      "--theme-primary-hover": "#3f6212",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#991b1b",
+    },
+    fontClass: "font-horror",
+  },
+  body_swap: {
+    vars: {
+      "--theme-bg": "#0f172a", // slate-900
+      "--theme-surface": "#1e293b", // slate-800
+      "--theme-surface-highlight": "#334155", // slate-700
+      "--theme-border": "#8b5cf6", // violet-500
+      "--theme-primary": "#f59e0b", // amber-500 (Contrast)
+      "--theme-primary-hover": "#d97706", // amber-600
+      "--theme-text": "#f8fafc", // slate-50
+      "--theme-muted": "#94a3b8", // slate-400
+    },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#8b5cf6",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
+    fontClass: "font-sans",
+  },
+  industry_elite: {
+    vars: {
+      "--theme-bg": "#020617", // slate-950
+      "--theme-surface": "#0f172a", // slate-900
+      "--theme-surface-highlight": "#1e293b", // slate-800
+      "--theme-border": "#cbd5e1", // slate-300 (Sharp/Clean)
+      "--theme-primary": "#0ea5e9", // sky-500
+      "--theme-primary-hover": "#0284c7", // sky-600
+      "--theme-text": "#f8fafc", // slate-50
+      "--theme-muted": "#64748b", // slate-500
+    },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#94a3b8",
+      "--theme-primary": "#0284c7",
+      "--theme-primary-hover": "#0369a1",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+    },
+    fontClass: "font-sans",
+  },
+  mutual_redemption: {
+    vars: {
+      "--theme-bg": "#1c1917", // stone-900
+      "--theme-surface": "#292524", // stone-800
+      "--theme-surface-highlight": "#44403c", // stone-700
+      "--theme-border": "#a8a29e", // stone-400
+      "--theme-primary": "#fb923c", // orange-400 (Warmth)
+      "--theme-primary-hover": "#f97316", // orange-500
+      "--theme-text": "#fafaf9", // stone-50
+      "--theme-muted": "#78716c", // stone-500
+    },
+    dayVars: {
+      "--theme-bg": "#fafaf9",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f5f5f4",
+      "--theme-border": "#d6d3d1",
+      "--theme-primary": "#f97316",
+      "--theme-primary-hover": "#ea580c",
+      "--theme-text": "#1c1917",
+      "--theme-muted": "#78716c",
+    },
+    fontClass: "font-serif",
+  },
+  sweet_pet: {
+    vars: {
+      "--theme-bg": "#1f1016", // pink-950 (darkened)
+      "--theme-surface": "#381a26", // pink-900 (darkened)
+      "--theme-surface-highlight": "#5e2a3e", // pink-800
+      "--theme-border": "#f9a8d4", // pink-300
+      "--theme-primary": "#f472b6", // pink-400
+      "--theme-primary-hover": "#ec4899", // pink-500
+      "--theme-text": "#fdf2f8", // pink-50
+      "--theme-muted": "#fbcfe8", // pink-200
+    },
+    dayVars: {
+      "--theme-bg": "#fdf2f8",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fce7f3",
+      "--theme-border": "#f9a8d4",
+      "--theme-primary": "#ec4899",
+      "--theme-primary-hover": "#db2777",
+      "--theme-text": "#831843",
+      "--theme-muted": "#fbcfe8",
+    },
+    fontClass: "font-sans",
+  },
+  wild_youth: {
+    vars: {
+      "--theme-bg": "#111827", // gray-900
+      "--theme-surface": "#1f2937", // gray-800
+      "--theme-surface-highlight": "#374151", // gray-700
+      "--theme-border": "#facc15", // yellow-400 (Bright/Energetic)
+      "--theme-primary": "#facc15", // yellow-400
+      "--theme-primary-hover": "#eab308", // yellow-500
+      "--theme-text": "#f9fafb", // gray-50
+      "--theme-muted": "#9ca3af", // gray-400
+    },
+    dayVars: {
+      "--theme-bg": "#f9fafb",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f3f4f6",
+      "--theme-border": "#eab308",
+      "--theme-primary": "#eab308",
+      "--theme-primary-hover": "#ca8a04",
+      "--theme-text": "#111827",
+      "--theme-muted": "#9ca3af",
     },
     fontClass: "font-sans",
   },

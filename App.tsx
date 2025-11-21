@@ -11,7 +11,7 @@ import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
 import { Toast } from "./components/Toast";
 import { THEMES } from "./utils/constants";
-import { FeedLayout } from "./types";
+import { FeedLayout, UIState, ListState } from "./types";
 import { MobileNav, MobileTab } from "./components/MobileNav";
 import { getEnvApiKey } from "./utils/env";
 import { validateConnection } from "./services/aiService";
@@ -89,6 +89,9 @@ export default function App() {
     currentSlotId,
     navigateToNode,
     generateImageForNode,
+    themeMode,
+    toggleThemeMode,
+    setThemeMode,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -154,8 +157,8 @@ export default function App() {
     (env) => {
       setCurrentAmbience(env);
       if (env !== lastPlayedEnvRef.current) {
-        const envName = env.charAt(0).toUpperCase() + env.slice(1);
-        showToast(`${t("audioSettings.environment")}: ${envName}`);
+        const envNameKey = "ambienceNames." + env;
+        showToast(`${t("audioSettings.environment")}: ${t(envNameKey)}`);
         lastPlayedEnvRef.current = env;
       }
     },
@@ -188,6 +191,33 @@ export default function App() {
       navigateToNode(nodeId);
       setMobileTab("story"); // Switch back to story on fork
     }
+  };
+
+  const handleUpdateUIState = (section: keyof UIState, newState: ListState) => {
+    setGameState((prev) => ({
+      ...prev,
+      uiState: {
+        ...prev.uiState,
+        [section]: newState,
+      },
+    }));
+  };
+
+  const handleToggleMute = () => {
+    const newMuted = !aiSettings.audioVolume?.bgmMuted;
+    const newSettings = {
+      ...aiSettings,
+      audioVolume: {
+        ...aiSettings.audioVolume,
+        bgmMuted: newMuted,
+      },
+    };
+    handleSaveSettings(newSettings);
+
+    showToast(
+      newMuted ? t("audioSettings.muted") || "Muted" : t("audioSettings.unmuted") || "Unmuted",
+      "info"
+    );
   };
 
   const handlePlayerAction = async (action: string) => {
@@ -375,6 +405,8 @@ export default function App() {
                   onSave={handleSaveSettings}
                   themeFont={currentThemeConfig.fontClass}
                   showToast={showToast}
+                  themeMode={themeMode}
+                  onSetThemeMode={setThemeMode}
                 />
                 {isSaveManagerOpen && (
                   <SaveManager
@@ -458,6 +490,8 @@ export default function App() {
                     aiSettings={aiSettings}
                     onTypingComplete={() => setIsTyping(false)}
                     currentAmbience={currentAmbience}
+                    onUpdateUIState={handleUpdateUIState}
+                    onToggleMute={handleToggleMute}
                   />
 
                   <DesktopGameLayout
@@ -490,6 +524,8 @@ export default function App() {
                     aiSettings={aiSettings}
                     onTypingComplete={() => setIsTyping(false)}
                     currentAmbience={currentAmbience}
+                    onUpdateUIState={handleUpdateUIState}
+                    onToggleMute={handleToggleMute}
                   />
 
                   {/* Mobile Bottom Navigation */}
@@ -510,6 +546,8 @@ export default function App() {
                     onSave={handleSaveSettings}
                     themeFont={currentThemeConfig.fontClass}
                     showToast={showToast}
+                    themeMode={themeMode}
+                    onSetThemeMode={setThemeMode}
                   />
 
                   {isSaveManagerOpen && (

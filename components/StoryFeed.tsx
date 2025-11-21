@@ -18,6 +18,7 @@ interface StoryFeedProps {
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
   currentAmbience?: string;
+  onToggleMute?: () => void;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -33,6 +34,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   aiSettings,
   onTypingComplete,
   currentAmbience,
+  onToggleMute,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,15 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   const playedAnimations = useRef<Set<string>>(new Set());
 
   const { t } = useTranslation();
+
+  // Prevent animation replay on game load/restore
+  useEffect(() => {
+    if (!gameState.isProcessing && currentHistory.length > 0) {
+      currentHistory.forEach((segment) => {
+        playedAnimations.current.add(segment.id);
+      });
+    }
+  }, [gameState.isProcessing, currentHistory]);
 
   // Auto-jump to latest when history grows (new turn generated)
   useEffect(() => {
@@ -114,10 +125,13 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
       <FeedHeader
         layout={layout}
         setLayout={setLayout}
-        activeIndex={safeActiveIndex}
+        activeIndex={activeIndex}
         totalSegments={currentHistory.length}
-        environment={activeSegment?.environment}
+        environment={currentHistory[activeIndex]?.environment}
         ambience={currentAmbience}
+        theme={gameState.theme}
+        isMuted={aiSettings?.audioVolume?.bgmMuted}
+        onToggleMute={onToggleMute}
       />
 
       <div
@@ -145,12 +159,6 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                   segment.id,
                 );
                 const shouldAnimate = !isAlreadyPlayed;
-
-                // Mark as played immediately to avoid flash
-                if (shouldAnimate) {
-                  // Use a small timeout to allow render pass
-                  setTimeout(() => playedAnimations.current.add(segment.id), 0);
-                }
 
                 return (
                   <React.Fragment key={segment.id}>
@@ -211,11 +219,14 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                         disableImages={disableImages}
                         shouldAnimate={shouldAnimate}
                         aiSettings={aiSettings}
-                        onTypingComplete={
-                          index === currentHistory.length - 1
-                            ? onTypingComplete
-                            : undefined
-                        }
+                        onTypingComplete={() => {
+                          if (shouldAnimate) {
+                            playedAnimations.current.add(segment.id);
+                          }
+                          if (index === currentHistory.length - 1 && onTypingComplete) {
+                            onTypingComplete();
+                          }
+                        }}
                       />
                     </div>
                   </React.Fragment>

@@ -234,7 +234,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur flex flex-col animate-fade-in text-theme-text">
+    <div className="fixed inset-0 z-[70] bg-black/35 backdrop-blur flex flex-col animate-fade-in text-theme-text">
       {/* Header */}
       <div className="flex-none p-6 border-b border-theme-border bg-theme-surface flex justify-between items-center shadow-lg z-10">
         <div>
@@ -378,7 +378,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                     <span
                       className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isCurrent ? "text-theme-primary" : "text-theme-muted"}`}
                     >
-                      {isModel ? "Narrator" : "You"}
+                      {isModel ? t("narrator") : t("you")}
                     </span>
                     <p className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80">
                       {node.segment.text}

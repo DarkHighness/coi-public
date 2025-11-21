@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface TypewriterTextProps {
   text: string;
@@ -13,33 +13,61 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   onComplete,
   instant = false,
 }) => {
-  const [displayedText, setDisplayedText] = useState(instant ? text : "");
+  const [displayedLength, setDisplayedLength] = useState(instant ? text.length : 0);
+  const onCompleteRef = useRef(onComplete);
+  const textRef = useRef(text);
+
+  // Keep ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
-    if (instant) {
-      setDisplayedText(text);
-      if (onComplete) onComplete();
-      return;
-    }
+    textRef.current = text;
+  }, [text]);
 
-    setDisplayedText("");
-    let i = 0;
+  // Handle instant mode changes
+  useEffect(() => {
+    if (instant) {
+      setDisplayedLength(text.length);
+    }
+  }, [instant, text.length]);
+
+  // Typing animation
+  useEffect(() => {
+    if (instant) return;
+
     const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-        if (onComplete) onComplete();
-      }
+      setDisplayedLength((prev) => {
+        const currentTextLength = textRef.current.length;
+        if (prev < currentTextLength) {
+          return prev + 1;
+        }
+        return prev;
+      });
     }, speed);
 
     return () => clearInterval(timer);
-  }, [text, speed, onComplete, instant]);
+  }, [speed, instant]);
+
+  // Completion check with debounce
+  // Only trigger onComplete if we've been at the end of the text for a moment
+  // This prevents marking as "read" prematurely during streaming
+  useEffect(() => {
+    if (displayedLength >= text.length && !instant) {
+      const timeout = setTimeout(() => {
+        onCompleteRef.current?.();
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [displayedLength, text.length, instant]);
 
   return (
-    <div className="story-text text-lg leading-relaxed text-slate-200 whitespace-pre-line">
-      {displayedText}
+    <div className="story-text text-lg leading-relaxed text-theme-text whitespace-pre-line">
+      {text.slice(0, displayedLength)}
+      {!instant && displayedLength < text.length && (
+        <span className="inline-block w-1.5 h-5 ml-0.5 align-middle bg-theme-primary animate-pulse"></span>
+      )}
     </div>
   );
 };
