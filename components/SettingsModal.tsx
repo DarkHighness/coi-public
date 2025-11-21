@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { LanguageCode, AISettings, ModelInfo } from '../types';
 import { TRANSLATIONS } from '../utils/constants';
-import { getModels, validateConnection } from '../services/geminiService';
+import { updateAIConfig, validateConnection, getModels, filterModels } from "../services/aiService";
 import { getEnvApiKey } from '../utils/env';
 
 interface SettingsModalProps {
@@ -42,36 +43,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen]);
 
-  const loadModels = async () => {
+  const loadModels = async (force: boolean = false) => {
       setLoadingModels(true);
-      const [g, o, or] = await Promise.all([
-          getModels('gemini'),
-          getModels('openai'),
-          getModels('openrouter')
-      ]);
-      setGeminiModels(g);
-      setOpenaiModels(o);
-      setOpenrouterModels(or);
-      setLoadingModels(false);
+      try {
+        const [g, o, or] = await Promise.all([
+            getModels('gemini', force),
+            getModels('openai', force),
+            getModels('openrouter', force)
+        ]);
+        setGeminiModels(g);
+        setOpenaiModels(o);
+        setOpenrouterModels(or);
+      } catch (e) {
+        console.error("Failed to load models", e);
+        showToast("Failed to load some models", "error");
+      } finally {
+        setLoadingModels(false);
+      }
   };
 
   // Filter and Sort Models
   const getFilteredModels = (provider: 'gemini' | 'openai' | 'openrouter', type: FunctionKey) => {
       const list = provider === 'gemini' ? geminiModels : (provider === 'openai' ? openaiModels : openrouterModels);
-      let filtered = list;
-
-      if (type === 'image') {
-          filtered = list.filter(m => m.capabilities?.image ?? (m.id.includes('imagen') || m.id.includes('dall-e') || m.id.includes('vision')));
-      } else if (type === 'video') {
-          filtered = list.filter(m => m.capabilities?.video ?? (m.id.includes('veo') || m.id.includes('sora')));
-      } else if (type === 'audio') {
-          filtered = list.filter(m => m.capabilities?.audio ?? (m.id.includes('gemini') || m.id.includes('tts') || m.id.includes('audio')));
-      } else {
-          // Text/Story/Lore/Translation
-          filtered = list.filter(m => m.capabilities?.text ?? (!m.id.includes('dall-e') && !m.id.includes('tts') && !m.id.includes('veo')));
-      }
-
-      return filtered.sort((a, b) => a.name.localeCompare(b.name));
+      return filterModels(list, type);
   };
 
   // Instant Update Handler
@@ -169,7 +163,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('gemini', 'apiKey', e.target.value)}
                    placeholder={getEnvApiKey() ? t.loadedFromEnv : t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
                  <input
                    type="text"
@@ -177,7 +171,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('gemini', 'baseUrl', e.target.value)}
                    placeholder="Base URL (Optional)"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
               </div>
               {/* OpenAI Inputs */}
@@ -200,7 +194,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openai', 'apiKey', e.target.value)}
                    placeholder={t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
                  <input
                    type="text"
@@ -208,7 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openai', 'baseUrl', e.target.value)}
                    placeholder="https://api.openai.com/v1"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
               </div>
 
@@ -232,7 +226,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openrouter', 'apiKey', e.target.value)}
                    placeholder={t.creds.apiKeyPlaceholder}
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
                  <input
                    type="text"
@@ -240,7 +234,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                    onChange={(e) => updateCreds('openrouter', 'baseUrl', e.target.value)}
                    placeholder="https://openrouter.ai/api/v1"
                    className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
-                   onBlur={loadModels}
+                   onBlur={() => loadModels(false)}
                  />
               </div>
             </div>
@@ -248,6 +242,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {activeTab === 'models' && (
             <div className="space-y-6 animate-slide-in">
+
+              <div className="flex justify-end">
+                  <button
+                      onClick={() => loadModels(true)}
+                      disabled={loadingModels}
+                      className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2"
+                  >
+                      {loadingModels ? (
+                          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                      )}
+                      Refresh Models
+                  </button>
+              </div>
 
               {/* Context Length Slider */}
               <div className="space-y-2 pb-4 border-b border-theme-border">
@@ -299,7 +308,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <select
                         value={config.provider}
                         onChange={(e) => updateFunction(sectionKey, 'provider', e.target.value)}
-                        className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
+                        className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-full"
                       >
                         <option value="gemini" className="text-black dark:text-white">Gemini</option>
                         <option value="openai" className="text-black dark:text-white">OpenAI</option>

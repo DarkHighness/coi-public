@@ -9,7 +9,7 @@ import {
   updateAIConfig,
   generateStoryOutline,
   summarizeContext
-} from '../services/geminiService';
+} from "../services/aiService";
 import { THEMES, LANG_MAP, DEFAULTS, TRANSLATIONS } from '../utils/constants';
 
 // Helper: Traverse tree

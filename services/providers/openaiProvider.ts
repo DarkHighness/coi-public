@@ -1,6 +1,7 @@
 
 import OpenAI from 'openai';
 import { ModelInfo } from "../../types";
+import { parseModelCapabilities } from "../modelUtils";
 
 export interface OpenAIConfig {
   apiKey: string;
@@ -16,7 +17,7 @@ const getClient = (config: OpenAIConfig) => {
   });
 };
 
-export const validateOpenAIConnection = async (config: OpenAIConfig): Promise<void> => {
+export const validateConnection = async (config: OpenAIConfig): Promise<void> => {
   try {
     const client = getClient(config);
     await client.models.list();
@@ -25,7 +26,7 @@ export const validateOpenAIConnection = async (config: OpenAIConfig): Promise<vo
   }
 };
 
-export const fetchOpenAIModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
+export const getModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
   try {
     const client = getClient(config);
     const list = await client.models.list();
@@ -39,20 +40,11 @@ export const fetchOpenAIModels = async (config: OpenAIConfig): Promise<ModelInfo
       };
 
       // 1. Try to detect from OpenRouter-style 'architecture' fields
-      if (m.architecture) {
-          const { modality, output_modalities } = m.architecture;
-          if (output_modalities) {
-              if (output_modalities.includes('text')) capabilities.text = true;
-              if (output_modalities.includes('image')) capabilities.image = true;
-              if (output_modalities.includes('audio')) capabilities.audio = true;
-              if (output_modalities.includes('video')) capabilities.video = true;
-          } else if (modality) {
-             if (modality.includes('->text')) capabilities.text = true;
-             if (modality.includes('->image')) capabilities.image = true;
-             if (modality.includes('->audio')) capabilities.audio = true;
-             if (modality.includes('->video')) capabilities.video = true;
-          }
-      }
+      const parsedCaps = parseModelCapabilities(m.architecture);
+      if (parsedCaps.text) capabilities.text = true;
+      if (parsedCaps.image) capabilities.image = true;
+      if (parsedCaps.audio) capabilities.audio = true;
+      if (parsedCaps.video) capabilities.video = true;
 
       // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
       const hasExplicitInfo = capabilities.text || capabilities.image || capabilities.video || capabilities.audio;
@@ -100,30 +92,51 @@ export const fetchOpenAIModels = async (config: OpenAIConfig): Promise<ModelInfo
   }
 };
 
-export const fetchOpenAICompletion = async (
+export const generateContent = async (
   config: OpenAIConfig,
-  systemPrompt: string,
-  messages: { role: string; content: string }[],
-  schema?: any // Strict JSON Schema
-): Promise<any> => {
+  model: string,
+  systemInstruction: string,
+  contents: any[],
+  schema?: any,
+  options?: { thinkingLevel?: 'low' | 'medium' | 'high', mediaResolution?: 'low' | 'medium' | 'high' }
+): Promise<{ result: any, usage: any, raw: any }> => {
   const client = getClient(config);
 
   // Format messages for OpenAI SDK
-  // We allow 'system' roles in the messages array to support dynamic context injection
-  const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    ...messages.map(m => ({ role: m.role as any, content: m.content }))
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemInstruction },
+    ...contents.map((c: any) => {
+        if (c.role && c.content) return c; // Already OpenAI format
+        if (c.role && c.parts) {
+            // Map Gemini format to OpenAI
+            return {
+                role: c.role === 'model' ? 'assistant' : c.role,
+                content: c.parts.map((p: any) => p.text).join('\n')
+            };
+        }
+        return c;
+    })
   ];
 
   const response = await client.chat.completions.create({
-    model: config.modelId,
-    messages: chatMessages,
+    model: model,
+    messages: messages,
     response_format: schema ? { type: 'json_schema', json_schema: schema } : { type: 'json_object' },
     temperature: 0.8,
   });
 
-  const content = response.choices[0]?.message?.content;
+  const choice = response.choices[0];
+  const content = choice?.message?.content;
+
   if (!content) throw new Error("No content returned from OpenAI");
+
+  if (choice.finish_reason === 'content_filter') {
+      throw new Error("OpenAI content generation failed: Content filter triggered.");
+  }
+
+  if (choice.finish_reason === 'length') {
+      console.warn("OpenAI content generation truncated due to length.");
+  }
 
   const result = JSON.parse(content);
 
@@ -137,8 +150,9 @@ export const fetchOpenAICompletion = async (
   return { result, usage, raw: response };
 };
 
-export const generateOpenAIImage = async (
+export const generateImage = async (
   config: OpenAIConfig,
+  model: string,
   prompt: string,
   resolution: string = "1024x1024"
 ): Promise<{ url: string | null, usage?: any, raw?: any }> => {
@@ -147,7 +161,7 @@ export const generateOpenAIImage = async (
   let size: any = resolution;
 
   // DALL-E 3 requires specific sizes
-  if (config.modelId?.includes('dall-e-3')) {
+  if (model?.includes('dall-e-3')) {
       // Map new resolutions to DALL-E 3 supported sizes
       // Portrait: 2:3, 3:4, 4:5, 9:16 -> 1024x1792
       if (["832x1248", "864x1184", "896x1152", "768x1344"].includes(resolution)) {
@@ -168,7 +182,7 @@ export const generateOpenAIImage = async (
   }
 
   const response = await client.images.generate({
-    model: config.modelId || 'dall-e-3',
+    model: model || 'dall-e-3',
     prompt: prompt,
     n: 1,
     size: size,
@@ -182,16 +196,51 @@ export const generateOpenAIImage = async (
   return { url, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, raw: response };
 };
 
-export const generateOpenAISpeech = async (
+export const generateVideo = async (
   config: OpenAIConfig,
-  text: string
+  model: string,
+  imageBase64: string,
+  prompt: string
+): Promise<{ url: string, usage?: any, raw?: any }> => {
+    throw new Error("Video generation is not supported by OpenAI provider yet.");
+};
+
+export const generateSpeech = async (
+  config: OpenAIConfig,
+  model: string,
+  text: string,
+  voiceName: string = 'alloy',
+  options?: { gender?: 'male' | 'female' }
 ): Promise<{ audio: string, usage?: any, raw?: any }> => {
   const client = getClient(config);
+
+  let selectedVoice = voiceName;
+
+  // If voiceName is generic or default, and gender is specified, pick a suitable voice
+  if (options?.gender) {
+      const maleVoices = ['alloy', 'echo', 'onyx'];
+      const femaleVoices = ['nova', 'shimmer', 'fable']; // Fable is arguably neutral/male, but let's use these for now. Actually Fable is British male-ish.
+      // Let's refine:
+      // Male: alloy (neutral), echo (male), onyx (male), fable (male)
+      // Female: nova (female), shimmer (female)
+      // Alloy is described as "versatile and neutral".
+      // Let's stick to:
+      // Male: echo, onyx
+      // Female: nova, shimmer
+      // Neutral/Default: alloy, fable
+
+      if (options.gender === 'male') {
+          if (!maleVoices.includes(voiceName)) selectedVoice = 'onyx';
+      } else if (options.gender === 'female') {
+          if (!femaleVoices.includes(voiceName)) selectedVoice = 'nova';
+      }
+  }
+
   const response = await client.audio.speech.create({
-    model: config.modelId || 'tts-1',
+    model: model || 'tts-1',
     input: text,
-    voice: 'alloy',
-    response_format: 'mp3' // or 'pcm' if supported in future, 'mp3' acts as binary
+    voice: selectedVoice as any,
+    response_format: 'mp3'
   });
 
   const buffer = await response.arrayBuffer();

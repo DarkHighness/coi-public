@@ -42,7 +42,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { character } = gameState;
   const [showSystemFooter, setShowSystemFooter] = useState(true);
 
-  const itemContext = `Theme: ${gameState.theme}. Quest: ${gameState.currentQuest}. Location: ${gameState.currentLocation}.`;
+  const activeQuest = gameState.quests?.find(q => q.status === 'active');
+  const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || 'None'}. Location: ${gameState.currentLocation}.`;
 
   return (
     <div className="flex flex-col h-full relative">

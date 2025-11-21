@@ -225,6 +225,9 @@ export interface FunctionConfig {
   modelId: string;
   enabled?: boolean;
   resolution?: string; // e.g. "512x512", "1024x1024"
+  thinkingLevel?: 'low' | 'medium' | 'high'; // For Gemini Thinking
+  mediaResolution?: 'low' | 'medium' | 'high'; // For Gemini Vision
+  gender?: 'male' | 'female'; // For TTS voice selection
 }
 
 export interface AISettings {

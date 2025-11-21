@@ -1,13 +1,14 @@
 import { OpenRouter } from '@openrouter/sdk';
+import { parseModelCapabilities } from "../modelUtils";
 import { ModelInfo } from "../../types";
-import { fetchOpenAICompletion, generateOpenAIImage, generateOpenAISpeech } from "./openaiProvider";
+import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
 
 export interface OpenRouterConfig {
   apiKey: string;
   baseUrl?: string;
 }
 
-export const validateOpenRouterConnection = async (config: OpenRouterConfig): Promise<void> => {
+export const validateConnection = async (config: OpenRouterConfig): Promise<void> => {
   try {
     const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/models`, {
       method: 'GET',
@@ -25,7 +26,7 @@ export const validateOpenRouterConnection = async (config: OpenRouterConfig): Pr
   }
 };
 
-export const fetchOpenRouterModels = async (config: OpenRouterConfig): Promise<ModelInfo[]> => {
+export const getModels = async (config: OpenRouterConfig): Promise<ModelInfo[]> => {
   try {
     const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/models`, {
       method: 'GET',
@@ -50,22 +51,12 @@ export const fetchOpenRouterModels = async (config: OpenRouterConfig): Promise<M
       };
 
       // Parse architecture
-      if (m.architecture) {
-          const { modality, output_modalities } = m.architecture;
-
-          if (output_modalities) {
-              if (output_modalities.includes('text')) capabilities.text = true;
-              if (output_modalities.includes('image')) capabilities.image = true;
-              if (output_modalities.includes('audio')) capabilities.audio = true;
-              if (output_modalities.includes('video')) capabilities.video = true;
-          } else if (modality) {
-             // Fallback if output_modalities is missing but modality string exists
-             if (modality.includes('->text')) capabilities.text = true;
-             if (modality.includes('->image')) capabilities.image = true;
-             if (modality.includes('->audio')) capabilities.audio = true;
-             if (modality.includes('->video')) capabilities.video = true;
-          }
-      } else {
+      const parsedCaps = parseModelCapabilities(m.architecture);
+      if (parsedCaps.text) capabilities.text = true;
+      if (parsedCaps.image) capabilities.image = true;
+      if (parsedCaps.audio) capabilities.audio = true;
+      if (parsedCaps.video) capabilities.video = true;
+      else {
           // Fallback to ID heuristics if architecture is missing
           const id = m.id.toLowerCase();
           if (id.includes('dall-e') || id.includes('stable-diffusion') || id.includes('flux') || id.includes('midjourney')) capabilities.image = true;
@@ -89,26 +80,58 @@ export const fetchOpenRouterModels = async (config: OpenRouterConfig): Promise<M
   }
 };
 
-export const generateOpenRouterCompletion = async (
+export const generateContent = async (
     config: OpenRouterConfig,
-    modelId: string,
-    messages: any[],
-    schema?: any
-): Promise<{ result: any }> => {
+    model: string,
+    systemInstruction: string,
+    contents: any[],
+    schema?: any,
+    options?: { thinkingLevel?: 'low' | 'medium' | 'high', mediaResolution?: 'low' | 'medium' | 'high' }
+): Promise<{ result: any, usage: any, raw: any }> => {
+
+    // Map contents to messages
+    const messages = [
+        { role: 'system', content: systemInstruction },
+        ...contents.map((c: any) => {
+            if (c.role && c.content) return c; // Already OpenAI format
+            if (c.role && c.parts) {
+                // Map Gemini format to OpenAI
+                return {
+                    role: c.role === 'model' ? 'assistant' : c.role,
+                    content: c.parts.map((p: any) => p.text).join('\n')
+                };
+            }
+            return c;
+        })
+    ];
+
     const body: any = {
-        model: modelId,
+        model: model,
         messages: messages,
     };
 
     if (schema) {
-        body.response_format = {
-            type: 'json_schema',
-            json_schema: {
-                name: 'response',
-                strict: true,
-                schema: schema
-            }
-        };
+        // Check if schema is already in OpenAI format (has 'schema' property but no 'type' at top level, or specific structure)
+        // The toOpenAIStrictSchema returns { name: 'response', strict: true, schema: { ... } }
+        // Standard JSON Schema has 'type'.
+
+        if (!schema.type && schema.schema) {
+             // It's likely already wrapped
+             body.response_format = {
+                type: 'json_schema',
+                json_schema: schema
+            };
+        } else {
+            // It's a raw schema, wrap it
+            body.response_format = {
+                type: 'json_schema',
+                json_schema: {
+                    name: 'response',
+                    strict: true,
+                    schema: schema
+                }
+            };
+        }
     }
 
     try {
@@ -129,7 +152,19 @@ export const generateOpenRouterCompletion = async (
         }
 
         const result = await response.json();
-        let content = result.choices[0]?.message?.content || "";
+        const choice = result.choices[0];
+        let content = choice?.message?.content || "";
+
+        if (choice?.finish_reason === 'content_filter') {
+            throw new Error("OpenRouter content generation failed: Content filter triggered.");
+        }
+
+        // Extract Usage
+        const usage = {
+            promptTokens: result.usage?.prompt_tokens || 0,
+            completionTokens: result.usage?.completion_tokens || 0,
+            totalTokens: result.usage?.total_tokens || 0
+        };
 
         if (schema) {
             try {
@@ -138,42 +173,26 @@ export const generateOpenRouterCompletion = async (
                 if (jsonMatch) {
                     content = jsonMatch[0];
                 }
-                return { result: JSON.parse(content) };
+                return { result: JSON.parse(content), usage, raw: result };
             } catch (e) {
                 console.error("Failed to parse OpenRouter JSON", content);
-                return { result: {} };
+                return { result: {}, usage, raw: result };
             }
         }
 
-        return { result: content };
+        return { result: content, usage, raw: result };
     } catch (e: any) {
         console.error("OpenRouter generation failed", e);
         throw new Error(e.message || "OpenRouter generation failed");
     }
 }
 
-// Legacy wrappers if needed, or we can update geminiService to use generateOpenRouterCompletion directly
-export const generateOpenRouterJson = async (
-  config: OpenRouterConfig,
-  model: string,
-  systemPrompt: string,
-  messages: { role: string; content: string }[],
-  schema?: any
-) => {
-    // Convert system prompt to message if needed
-    const allMessages = [
-        { role: 'system', content: systemPrompt },
-        ...messages
-    ];
-    return generateOpenRouterCompletion(config, model, allMessages, schema);
-};
-
-export const generateOpenRouterImage = async (
+export const generateImage = async (
   config: OpenRouterConfig,
   model: string,
   prompt: string,
   resolution: string = "1024x1024"
-) => {
+): Promise<{ url: string | null, usage?: any, raw?: any }> => {
   // Determine Aspect Ratio / Size based on resolution string
   let size = resolution;
   let aspectRatio = "1:1";
@@ -200,146 +219,109 @@ export const generateOpenRouterImage = async (
         content: prompt,
       },
     ],
-    // @ts-ignore
-    // OpenRouter specific: some models support 'modalities' param, others infer from model ID
-    // But for image generation via chat/completions (which OpenRouter often uses for unified interface),
-    // we might need to check if it's a direct image endpoint or chat.
-    // However, OpenRouter documentation suggests using standard OpenAI image endpoint structure for image models?
-    // Actually, OpenRouter unifies everything under chat/completions for some models, but for DALL-E it might proxy to OpenAI's image endpoint.
-    // Let's try the standard OpenAI Image Generation endpoint structure first, but sent to OpenRouter.
   };
 
   // Provider-specific handling
   if (model.toLowerCase().includes('gemini')) {
-      // Gemini via OpenRouter uses image_config.aspect_ratio
-      // And it uses chat/completions endpoint usually?
-      // Let's assume we use chat/completions for Gemini Image Gen on OpenRouter
-      // as per their docs for some models.
-      // Wait, if we use the /images/generations endpoint, we should follow OpenAI format.
-      // If we use /chat/completions, we follow chat format.
+       const chatBody = {
+           model: model,
+           messages: [{ role: 'user', content: prompt }],
+           // @ts-ignore
+           image_config: { aspect_ratio: aspectRatio }
+       };
 
-      // Let's try /chat/completions for everything first as OpenRouter is "Unified".
-      // But wait, the error user saw was for `https://openrouter.ai/api/v1/images/generations`.
-      // So the previous code WAS using the image endpoint (via OpenAI SDK or OpenRouter SDK).
+       const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${config.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Chronicles of Infinity'
+            },
+            body: JSON.stringify(chatBody)
+       });
 
-      // If we want to fix CORS, we must use fetch.
-      // And we should probably use the /chat/completions endpoint if the model supports it for images (like Gemini),
-      // OR use /images/generations if it's a DALL-E like model.
+       if (!response.ok) throw new Error(`OpenRouter API Error: ${response.status}`);
+       const result = await response.json();
 
-      // However, OpenRouter docs say: "For image generation models... use the /images/generations endpoint".
+       if (result.choices && result.choices[0].message.images && result.choices[0].message.images.length > 0) {
+            return {
+                url: result.choices[0].message.images[0].image_url.url,
+                raw: result,
+                usage: result.usage
+            };
+       }
+       // Fallback if it returns text url
+       const content = result.choices[0]?.message?.content;
+       const urlMatch = content?.match(/https?:\/\/[^\s)]+/);
+       if (urlMatch) return { url: urlMatch[0], raw: result, usage: result.usage };
 
-      // Let's construct the body for /images/generations
+       throw new Error("No image generated");
+
+  } else {
+      // Standard OpenAI/Other uses size
+      if (model.toLowerCase().includes('dall-e-3')) {
+          if (aspectRatio === "1:1") size = "1024x1024";
+          else if (["2:3", "3:4", "4:5", "9:16"].includes(aspectRatio)) size = "1024x1792";
+          else if (["3:2", "4:3", "5:4", "16:9", "21:9"].includes(aspectRatio)) size = "1792x1024";
+          else size = "1024x1024";
+      }
+
       const imageBody: any = {
           model: model,
           prompt: prompt,
           n: 1,
+          size: size,
+          // response_format: "b64_json" // OpenRouter might not support b64_json for all models
       };
 
-      if (model.toLowerCase().includes('gemini')) {
-           // Gemini on OpenRouter might need special handling or might not be supported via /images/generations?
-           // Actually, OpenRouter supports Gemini via chat completions for text, but for images?
-           // Let's assume standard OpenAI image body for now, but with mapped size.
-           // Gemini doesn't support 'size' param in OpenAI format usually, it supports aspect ratio.
-           // But OpenRouter might map it.
-           // Let's stick to the previous logic but use fetch.
+      const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/images/generations`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${config.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Chronicles of Infinity'
+            },
+            body: JSON.stringify(imageBody)
+       });
 
-           // Previous logic for Gemini:
-           // body.image_config = { aspect_ratio: aspectRatio }
-           // This looks like a chat completion body extension?
-           // If so, we should hit /chat/completions.
+       if (!response.ok) {
+           const err = await response.json().catch(() => ({}));
+           throw new Error(err.error?.message || `OpenRouter Image API Error: ${response.status}`);
+       }
 
-           // Let's try hitting /chat/completions for Gemini models, and /images/generations for others.
-
-           const chatBody = {
-               model: model,
-               messages: [{ role: 'user', content: prompt }],
-               // @ts-ignore
-               image_config: { aspect_ratio: aspectRatio }
-           };
-
-           const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${config.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Chronicles of Infinity'
-                },
-                body: JSON.stringify(chatBody)
-           });
-
-           if (!response.ok) throw new Error(`OpenRouter API Error: ${response.status}`);
-           const result = await response.json();
-           // Gemini via OpenRouter chat completion returns image in content or as a separate field?
-           // Usually it returns a markdown link or similar.
-           // Let's assume it returns standard chat completion with image url in content or attachment.
-           // Actually, the previous code: result.choices[0].message.images[0].image_url.url
-           // This implies a specific response format.
-
-           if (result.choices && result.choices[0].message.images && result.choices[0].message.images.length > 0) {
-                return {
-                    url: result.choices[0].message.images[0].image_url.url,
-                    raw: result,
-                    usage: result.usage
-                };
-           }
-           // Fallback if it returns text url
-           const content = result.choices[0]?.message?.content;
-           const urlMatch = content?.match(/https?:\/\/[^\s)]+/);
-           if (urlMatch) return { url: urlMatch[0], raw: result, usage: result.usage };
-
-           throw new Error("No image generated");
-
-      } else {
-          // Standard OpenAI/Other uses size
-          if (model.toLowerCase().includes('dall-e-3')) {
-              if (aspectRatio === "1:1") size = "1024x1024";
-              else if (["2:3", "3:4", "4:5", "9:16"].includes(aspectRatio)) size = "1024x1792";
-              else if (["3:2", "4:3", "5:4", "16:9", "21:9"].includes(aspectRatio)) size = "1792x1024";
-              else size = "1024x1024";
-          }
-
-          imageBody.size = size;
-          imageBody.response_format = "b64_json"; // Prefer base64 to avoid hotlinking issues if possible, or url.
-          // OpenRouter might not support b64_json for all models. Let's use url default.
-          delete imageBody.response_format;
-
-          const response = await fetch(`${config.baseUrl || 'https://openrouter.ai/api/v1'}/images/generations`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${config.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Chronicles of Infinity'
-                },
-                body: JSON.stringify(imageBody)
-           });
-
-           if (!response.ok) {
-               const err = await response.json().catch(() => ({}));
-               throw new Error(err.error?.message || `OpenRouter Image API Error: ${response.status}`);
-           }
-
-           const result = await response.json();
-           return {
-               url: result.data[0].url,
-               raw: result,
-               usage: undefined
-           };
-      }
+       const result = await response.json();
+       return {
+           url: result.data[0].url,
+           raw: result,
+           usage: undefined
+       };
   }
-
-  return { url: null }; // Should not reach here
 };
 
-export const generateOpenRouterSpeech = async (
+export const generateVideo = async (
   config: OpenRouterConfig,
   model: string,
-  text: string
-) => {
+  imageBase64: string,
+  prompt: string
+): Promise<{ url: string, usage?: any, raw?: any }> => {
+    throw new Error("Video generation is not supported by OpenRouter provider yet.");
+};
+
+export const generateSpeech = async (
+  config: OpenRouterConfig,
+  model: string,
+  text: string,
+  voiceName: string = 'alloy',
+  options?: { gender?: 'male' | 'female' }
+): Promise<{ audio: string, usage?: any, raw?: any }> => {
   // SDK doesn't seem to support audio yet, fallback to OpenAI provider
   return generateOpenAISpeech(
     { apiKey: config.apiKey, baseUrl: config.baseUrl || 'https://openrouter.ai/api/v1', modelId: model },
-    text
+    model,
+    text,
+    voiceName,
+    options
   );
 };

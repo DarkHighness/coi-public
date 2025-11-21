@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { generateVeoVideo } from '../services/geminiService';
+import { generateVeoVideo } from "../services/aiService";
 import { TRANSLATIONS } from '../utils/constants';
 import { LanguageCode } from '../types';
 
@@ -27,7 +27,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = TRANSLATIONS[language as LanguageCode] || TRANSLATIONS.en;
 
@@ -80,10 +80,10 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
 
   const handleGenerate = async () => {
     if (!image) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const url = await generateVeoVideo(image, prompt);
       setVideoUrl(url);
@@ -105,7 +105,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(var(--theme-primary),0.15)] flex flex-col relative transition-colors duration-500">
-        
+
         {/* Decorative Corners - Themed */}
         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-theme-primary/60"></div>
         <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-theme-primary/60"></div>
@@ -120,7 +120,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
             </h2>
             <p className="text-theme-muted text-sm mt-1 italic">{t.animatorSubtitle}</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-theme-muted hover:text-theme-primary transition-colors"
             title={t.close}
@@ -133,21 +133,21 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
         <div className="p-6 space-y-6 flex-1 bg-theme-surface relative overflow-hidden">
           {/* Background Texture Effect */}
           <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-theme-primary/20 via-transparent to-transparent"></div>
-          
+
           {/* Preview Area */}
           <div className="relative aspect-video bg-black/40 rounded border border-theme-border flex items-center justify-center overflow-hidden group shadow-inner">
             {videoUrl ? (
-              <video 
-                src={videoUrl} 
-                controls 
-                autoPlay 
-                loop 
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                loop
                 className="w-full h-full object-contain"
               />
             ) : image ? (
-              <img 
-                src={image} 
-                alt="Artifact" 
+              <img
+                src={image}
+                alt="Artifact"
                 className="w-full h-full object-contain"
               />
             ) : (
@@ -160,18 +160,18 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
             {/* Upload Overlay */}
             {!videoUrl && !loading && (
               <div className={`absolute inset-0 bg-black/70 flex items-center justify-center transition-opacity duration-500 ${image ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-                <button 
+                <button
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-theme-surface/80 hover:bg-theme-surface-highlight text-theme-text px-6 py-3 border border-theme-border flex items-center gap-3 shadow-lg hover:shadow-[0_0_25px_rgba(var(--theme-primary),0.3)] transition-all font-bold uppercase text-sm"
                 >
                   <svg className="w-5 h-5 text-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                   {t.uploadImage}
                 </button>
-                <input 
+                <input
                   ref={fileInputRef}
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
                   onChange={handleFileChange}
                 />
               </div>
@@ -191,8 +191,8 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
                     key={tmpl.id}
                     onClick={() => setPrompt(tmpl.prompt)}
                     className={`px-3 py-2 border rounded text-xs font-medium transition-all flex items-center gap-2
-                      ${prompt === tmpl.prompt 
-                         ? 'bg-theme-primary text-theme-bg border-theme-primary shadow-md' 
+                      ${prompt === tmpl.prompt
+                         ? 'bg-theme-primary text-theme-bg border-theme-primary shadow-md'
                          : 'bg-theme-surface-highlight border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-primary/50'
                       }`}
                   >
@@ -210,7 +210,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
               Prompt
               <span className="w-1 h-1 bg-theme-primary rounded-full"></span>
             </label>
-            <textarea 
+            <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={t.promptPlaceholder}
@@ -224,7 +224,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
             {!hasKey ? (
               <div className="bg-theme-surface-highlight border border-theme-border p-5 text-center">
                 <p className="text-theme-muted text-sm mb-4">{t.apiKeyRequired}</p>
-                <button 
+                <button
                   onClick={handleSelectKey}
                   className="w-full bg-theme-surface hover:bg-theme-surface-highlight text-theme-primary py-3 font-bold tracking-wider uppercase border border-theme-primary transition-colors shadow-lg"
                 >
@@ -235,17 +235,17 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
                 </div>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={handleGenerate}
                 disabled={!image || loading}
                 className={`w-full py-4 font-bold transition-all flex items-center justify-center gap-3 relative overflow-hidden group border ${
-                  !image || loading 
-                    ? 'bg-theme-surface border-theme-border text-theme-muted cursor-not-allowed' 
+                  !image || loading
+                    ? 'bg-theme-surface border-theme-border text-theme-muted cursor-not-allowed'
                     : 'bg-theme-primary hover:bg-theme-primary-hover border-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.2)] hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.4)]'
                 }`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] transition-transform duration-1000 ${!loading && image ? 'group-hover:translate-x-[100%]' : ''}`}></div>
-                
+
                 {loading ? (
                   <>
                     <svg className="animate-spin h-5 w-5 text-theme-bg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -262,7 +262,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({ isOpen, onClose, initi
                 )}
               </button>
             )}
-            
+
             {error && (
               <div className="text-red-400 text-sm text-center animate-pulse italic border border-red-900/30 p-2 bg-red-900/10">
                 {error}

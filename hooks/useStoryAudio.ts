@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { generateSpeech } from '../services/geminiService';
+import { generateSpeech } from "../services/aiService";
 
 export const useStoryAudio = (
   text: string,

@@ -6,7 +6,7 @@ import { THEMES, TRANSLATIONS } from './utils/constants';
 import { FeedLayout } from './types';
 import { MobileNav, MobileTab } from './components/MobileNav';
 import { getEnvApiKey } from './utils/env';
-import { validateConnection } from './services/geminiService';
+import { updateAIConfig, validateConnection } from './services/aiService';
 import { useAmbience } from './hooks/useAmbience';
 
 // Lazy Load Heavy Components for Code Splitting

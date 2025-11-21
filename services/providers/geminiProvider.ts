@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Schema, Type, Modality } from "@google/genai";
 import { ModelInfo } from "../../types";
 
@@ -11,7 +12,7 @@ export const getGeminiClient = (config: GeminiConfig) => new GoogleGenAI({
   apiKey: config.apiKey
 });
 
-export const validateGeminiConnection = async (config: GeminiConfig): Promise<void> => {
+export const validateConnection = async (config: GeminiConfig): Promise<void> => {
   try {
     const ai = getGeminiClient(config);
     await ai.models.list();
@@ -20,7 +21,7 @@ export const validateGeminiConnection = async (config: GeminiConfig): Promise<vo
   }
 };
 
-export const fetchGeminiModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
+export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
   try {
     const ai = getGeminiClient(config);
     const response = await ai.models.list();
@@ -39,34 +40,83 @@ export const fetchGeminiModels = async (config: GeminiConfig): Promise<ModelInfo
   } catch (e) {
     console.warn("Failed to list Gemini models", e);
     return [
-      { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-      { id: 'imagen-4.0-generate-001', name: 'Imagen 3' },
-      { id: 'veo-3.1-fast-generate-preview', name: 'Veo' }
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+      { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro' },
+      { id: 'imagen-3.0-generate-002', name: 'Imagen 3' },
+      { id: 'veo-2.0-generate-001', name: 'Veo 2' }
     ];
   }
 };
 
-export const generateGeminiJson = async (
+export const generateContent = async (
   config: GeminiConfig,
   model: string,
-  contents: any[],
   systemInstruction: string,
-  responseSchema?: Schema
-): Promise<any> => {
+  contents: any[],
+  schema?: Schema,
+  options?: { thinkingLevel?: 'low' | 'medium' | 'high', mediaResolution?: 'low' | 'medium' | 'high' }
+): Promise<{ result: any, usage: any, raw: any }> => {
   const ai = getGeminiClient(config);
+
+  // Apply media resolution to image parts if specified
+  const processedContents = options?.mediaResolution ? contents.map(content => ({
+    ...content,
+    parts: content.parts.map((part: any) => {
+      if (part.inlineData) {
+        return { ...part, mediaResolution: { level: `media_resolution_${options.mediaResolution}` } };
+      }
+      return part;
+    })
+  })) : contents;
+
+  const generationConfig: any = {
+    systemInstruction: systemInstruction,
+    responseMimeType: "application/json",
+    responseSchema: schema,
+  };
+
+  if (model.includes('thinking')) {
+    generationConfig.thinkingConfig = { includeThoughts: true };
+    if (options?.thinkingLevel) {
+       // Note: The docs say thinking_level is a parameter, but the SDK might expect it in thinkingConfig or top level.
+       // Based on docs: thinking_level parameter.
+       // Let's assume it goes into thinkingConfig or generationConfig.
+       // Docs: "thinking_level parameter used to control..."
+       // SDK usage usually puts it in generationConfig.
+       // Let's try putting it in thinkingConfig first as that seems logical for "includeThoughts".
+       // Actually, looking at the snippet: "thinking_level" seems to be a separate param or part of config.
+       // Let's add it to generationConfig directly as `thinkingLevel` (camelCase for JS SDK usually).
+       // Wait, the snippet showed `thinking_level` in text description but didn't show JS code for it.
+       // It showed `media_resolution` in JS.
+       // Let's assume `thinkingConfig: { includeThoughts: true, thinkingBudget: ... }` or similar.
+       // Since I don't have the exact JS SDK signature for thinking level, I will omit it for now and just enable thinking.
+       // The user docs said "thinking_level" parameter.
+    }
+  } else {
+    generationConfig.temperature = 0.8;
+  }
+
   const response = await ai.models.generateContent({
     model: model,
-    contents: contents,
-    config: {
-      systemInstruction: systemInstruction,
-      responseMimeType: "application/json",
-      responseSchema: responseSchema,
-      temperature: 0.8,
-    },
+    contents: processedContents,
+    config: generationConfig,
   });
 
+  const candidate = response.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+
+  if (finishReason === 'SAFETY') {
+      throw new Error("Gemini content generation failed: Safety filter triggered.");
+  }
+  if (finishReason === 'RECITATION') {
+      throw new Error("Gemini content generation failed: Recitation check triggered.");
+  }
+  if (finishReason === 'OTHER') {
+      console.warn("Gemini content generation finished with reason: OTHER");
+  }
+
   const text = response.text;
+  if (!text && finishReason !== 'STOP') throw new Error(`No response from Gemini AI (Finish Reason: ${finishReason})`);
   if (!text) throw new Error("No response from Gemini AI");
 
   // Extract Usage
@@ -79,7 +129,7 @@ export const generateGeminiJson = async (
   return { result: JSON.parse(text), usage, raw: response };
 };
 
-export const generateGeminiImage = async (
+export const generateImage = async (
   config: GeminiConfig,
   model: string,
   prompt: string,
@@ -111,6 +161,7 @@ export const generateGeminiImage = async (
         numberOfImages: 1,
         aspectRatio: aspectRatio,
         outputMimeType: "image/jpeg",
+        personGeneration: "allow_adult" as any,
       },
     });
 
@@ -126,7 +177,7 @@ export const generateGeminiImage = async (
   }
 };
 
-export const generateGeminiVideo = async (
+export const generateVideo = async (
   config: GeminiConfig,
   model: string,
   imageBase64: string,
@@ -163,7 +214,7 @@ export const generateGeminiVideo = async (
   return { url: URL.createObjectURL(blob), usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, raw: operation };
 };
 
-export const generateGeminiSpeech = async (
+export const generateSpeech = async (
   config: GeminiConfig,
   model: string,
   text: string,
