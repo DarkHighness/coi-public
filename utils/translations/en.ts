@@ -13,6 +13,7 @@ export const en = {
     environment: "Environment",
     appearance: "Appearance",
     profession: "Profession",
+    race: "Race",
     background: "Background",
     details: "Details",
     emptyInventory: "Your inventory is empty.",

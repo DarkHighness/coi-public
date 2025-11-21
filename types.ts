@@ -89,6 +89,7 @@ export interface CharacterStatus {
   appearance: string;
   profession?: string;
   background?: string;
+  race?: string;
 }
 
 export interface Relationship {
@@ -119,6 +120,18 @@ export interface StorySegment {
   summarizedIndex?: number; // The index in the history chain where the summary ends
   environment?: string; // The environment ambience for this segment
   imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
+  stateSnapshot?: GameStateSnapshot; // Snapshot of the game state at this point
+}
+
+export interface GameStateSnapshot {
+  inventory: InventoryItem[];
+  relationships: Relationship[];
+  quests: Quest[];
+  character: CharacterStatus;
+  currentLocation: string;
+  knownLocations: string[];
+  locations: Location[];
+  currentQuest?: string;
 }
 
 export interface Location {
@@ -189,7 +202,7 @@ export interface LocationAction {
 }
 
 export interface CharacterAction {
-  target: 'attribute' | 'skill' | 'status' | 'appearance';
+  target: 'attribute' | 'skill' | 'status' | 'appearance' | 'profession' | 'background' | 'race';
   action: 'add' | 'remove' | 'update';
   name: string; // Name of attribute/skill, or 'status'
   value?: any; // Generic value

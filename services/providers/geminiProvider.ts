@@ -126,7 +126,14 @@ export const generateContent = async (
     totalTokens: response.usageMetadata?.totalTokenCount || 0
   };
 
-  return { result: JSON.parse(text), usage, raw: response };
+  try {
+    // Clean JSON before parsing (remove markdown code blocks if present)
+    const cleanedText = text.replace(/```json\n?|```/g, '').trim();
+    return { result: JSON.parse(cleanedText), usage, raw: response };
+  } catch (e) {
+    console.error("JSON Parse Error", e, "Text:", text);
+    throw new Error("Failed to parse AI response as JSON.");
+  }
 };
 
 export const generateImage = async (

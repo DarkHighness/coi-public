@@ -105,6 +105,19 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: 'font-serif',
   },
+  demonic_cultivation: {
+    vars: {
+      '--theme-bg': '#0f0505', // Very dark red/black
+      '--theme-surface': '#1a0a0a',
+      '--theme-surface-highlight': '#2b1111',
+      '--theme-border': '#7f1d1d', // Dark red
+      '--theme-primary': '#ef4444', // Red
+      '--theme-primary-hover': '#dc2626',
+      '--theme-text': '#fef2f2',
+      '--theme-muted': '#991b1b',
+    },
+    fontClass: 'font-serif',
+  },
   xianxia: {
     vars: {
       '--theme-bg': '#0f1c2e',

@@ -185,18 +185,26 @@ const generateContentUnified = async (
     mediaResolution: storyConfig.mediaResolution
   };
 
-  if (provider === 'gemini') {
-    ({ result, usage, raw } = await generateGeminiContent(geminiConfig, modelId, systemInstruction, contents, schema, options));
-  } else {
-    // Convert schema for OpenAI/OpenRouter
-    const openAISchema = schema ? toOpenAIStrictSchema(schema) : undefined;
-    const config = provider === 'openai' ? { ...openaiConfig, modelId } : openRouterConfig;
-
-    if (provider === 'openai') {
-      ({ result, usage, raw } = await generateOpenAIContent(config as OpenAIConfig, modelId, systemInstruction, contents, openAISchema, options));
+  try {
+    if (provider === 'gemini') {
+      ({ result, usage, raw } = await generateGeminiContent(geminiConfig, modelId, systemInstruction, contents, schema, options));
     } else {
-      ({ result, usage, raw } = await generateOpenRouterContent(config as OpenRouterConfig, modelId, systemInstruction, contents, openAISchema, options));
+      // Convert schema for OpenAI/OpenRouter
+      const openAISchema = schema ? toOpenAIStrictSchema(schema) : undefined;
+      const config = provider === 'openai' ? { ...openaiConfig, modelId } : openRouterConfig;
+
+      if (provider === 'openai') {
+        ({ result, usage, raw } = await generateOpenAIContent(config as OpenAIConfig, modelId, systemInstruction, contents, openAISchema, options));
+      } else {
+        ({ result, usage, raw } = await generateOpenRouterContent(config as OpenRouterConfig, modelId, systemInstruction, contents, openAISchema, options));
+      }
     }
+  } catch (e: any) {
+    console.error("Generation failed", e);
+    if (e instanceof SyntaxError || e.message.includes('JSON')) {
+       throw new Error("The AI narrator stumbled over their words (Invalid JSON). Please try again.");
+    }
+    throw e;
   }
 
   const log = createLogEntry(provider, modelId, 'generateContent', { systemInstruction, contents }, raw, usage);

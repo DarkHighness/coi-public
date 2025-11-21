@@ -184,6 +184,12 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, theme
           {/* Collapsible Details Section */}
           <div className={`overflow-hidden transition-all duration-300 ${isDetailsOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
              <div className="space-y-2 pt-2 text-xs text-theme-muted/80">
+                {character.race && (
+                  <div>
+                    <span className="text-theme-primary/70 font-bold block mb-0.5">{t('race')}</span>
+                    <p>{character.race}</p>
+                  </div>
+                )}
                 {character.appearance && (
                   <div>
                     <span className="text-theme-primary/70 font-bold block mb-0.5">{t('appearance')}</span>

@@ -168,15 +168,12 @@ export const generateContent = async (
 
         if (schema) {
             try {
-                // Attempt to find JSON block if wrapped in markdown
-                const jsonMatch = content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    content = jsonMatch[0];
-                }
-                return { result: JSON.parse(content), usage, raw: result };
+                // Clean JSON before parsing (remove markdown code blocks if present)
+                const cleanedContent = content.replace(/```json\n?|```/g, '').trim();
+                return { result: JSON.parse(cleanedContent), usage, raw: result };
             } catch (e) {
                 console.error("Failed to parse OpenRouter JSON", content);
-                return { result: {}, usage, raw: result };
+                throw new Error("Failed to parse AI response as JSON.");
             }
         }
 

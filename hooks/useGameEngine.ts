@@ -278,22 +278,7 @@ export const useGameEngine = () => {
           : [];
 
       const modelNodeId = `model-${newSegmentId}`;
-      const modelNode: StorySegment = {
-        id: modelNodeId,
-        parentId: isInit ? null : userNodeId,
-        text: response.narrative || "...",
-        choices: sanitizedChoices,
-        imagePrompt: response.imagePrompt || "",
-        role: "model",
-        timestamp: Date.now(),
-        summarySnapshot: summarySnapshot || undefined,
-        usage: usage,
-        // Inherit summary state from the user node (which was just updated)
-        summaries: effectiveSummaries,
-        summarizedIndex: lastIndex,
-        environment: response.environment,
-        imageSkipped: !response.generateImage // Mark if image was intentionally skipped
-      };
+
 
       // Determine Toast Message based on state changes
       let toastMessage = "";
@@ -422,6 +407,18 @@ export const useGameEngine = () => {
               if (act.target === 'status' && act.action === 'update') {
                    newCharacter.status = (act.value as string) || (act.strValue as string) || newCharacter.status;
               }
+              if (act.target === 'appearance' && act.action === 'update') {
+                   newCharacter.appearance = (act.value as string) || (act.strValue as string) || newCharacter.appearance;
+              }
+              if (act.target === 'profession' && act.action === 'update') {
+                   newCharacter.profession = (act.value as string) || (act.strValue as string) || newCharacter.profession;
+              }
+              if (act.target === 'background' && act.action === 'update') {
+                   newCharacter.background = (act.value as string) || (act.strValue as string) || newCharacter.background;
+              }
+              if (act.target === 'race' && act.action === 'update') {
+                   newCharacter.race = (act.value as string) || (act.strValue as string) || newCharacter.race;
+              }
               if (act.target === 'attribute') {
                   const idx = newCharacter.attributes.findIndex(a => a.label === act.name);
                   if (act.action === 'add' && idx === -1) {
@@ -459,6 +456,33 @@ export const useGameEngine = () => {
       }
 
 
+
+      const modelNode: StorySegment = {
+        id: modelNodeId,
+        parentId: isInit ? null : userNodeId,
+        text: response.narrative || "...",
+        choices: sanitizedChoices,
+        imagePrompt: response.imagePrompt || "",
+        role: "model",
+        timestamp: Date.now(),
+        summarySnapshot: summarySnapshot || undefined,
+        usage: usage,
+        // Inherit summary state from the user node (which was just updated)
+        summaries: effectiveSummaries,
+        summarizedIndex: lastIndex,
+        environment: response.environment,
+        imageSkipped: !response.generateImage, // Mark if image was intentionally skipped
+        stateSnapshot: {
+            inventory: newInventory,
+            relationships: newRels,
+            quests: newQuests,
+            character: newCharacter,
+            currentLocation: newCurrentLocation,
+            knownLocations: newKnownLocations,
+            locations: newLocations,
+            currentQuest: newQuests.find(q => q.status === 'active' && q.type === 'main')?.title
+        }
+      };
 
       // Determine Toast Message based on ACTIONS
       if (response.inventoryActions?.some(a => a.action === 'add')) {
@@ -608,7 +632,25 @@ export const useGameEngine = () => {
   };
 
   const navigateToNode = (nodeId: string) => {
-      setGameState(prev => ({ ...prev, activeNodeId: nodeId }));
+      setGameState(prev => {
+          const targetNode = prev.nodes[nodeId];
+          let newState = { ...prev, activeNodeId: nodeId };
+
+          if (targetNode && targetNode.stateSnapshot) {
+              // Restore state from snapshot
+              newState = {
+                  ...newState,
+                  inventory: targetNode.stateSnapshot.inventory,
+                  relationships: targetNode.stateSnapshot.relationships,
+                  quests: targetNode.stateSnapshot.quests,
+                  character: targetNode.stateSnapshot.character,
+                  currentLocation: targetNode.stateSnapshot.currentLocation,
+                  knownLocations: targetNode.stateSnapshot.knownLocations,
+                  locations: targetNode.stateSnapshot.locations
+              };
+          }
+          return newState;
+      });
   };
 
   const generateImageForNode = async (nodeId: string) => {

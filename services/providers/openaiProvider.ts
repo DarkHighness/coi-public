@@ -138,8 +138,6 @@ export const generateContent = async (
       console.warn("OpenAI content generation truncated due to length.");
   }
 
-  const result = JSON.parse(content);
-
   // Normalize Usage
   const usage = {
     promptTokens: response.usage?.prompt_tokens || 0,
@@ -147,7 +145,15 @@ export const generateContent = async (
     totalTokens: response.usage?.total_tokens || 0
   };
 
-  return { result, usage, raw: response };
+  try {
+    // Clean JSON before parsing (remove markdown code blocks if present)
+    const cleanedContent = content.replace(/```json\n?|```/g, '').trim();
+    const result = JSON.parse(cleanedContent);
+    return { result, usage, raw: response };
+  } catch (e) {
+    console.error("JSON Parse Error", e, "Content:", content);
+    throw new Error("Failed to parse AI response as JSON.");
+  }
 };
 
 export const generateImage = async (

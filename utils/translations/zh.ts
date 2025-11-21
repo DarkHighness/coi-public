@@ -13,6 +13,7 @@ export const zh = {
     ambience: "氛围",
     appearance: "外貌",
     profession: "职业",
+    race: "种族",
     background: "背景",
     details: "详情",
     inventory: "物品栏",
