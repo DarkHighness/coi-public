@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGameEngine } from './hooks/useGameEngine';
 import { StartScreen } from './components/StartScreen';
@@ -10,6 +10,11 @@ import { MobileNav, MobileTab } from './components/MobileNav';
 import { getEnvApiKey } from './utils/env';
 import { validateConnection } from './services/aiService';
 import { useAmbience } from './hooks/useAmbience';
+
+// Load storage utilities in development
+if (import.meta.env.DEV) {
+  import('./utils/storageUtils');
+}
 
 // Lazy Load Heavy Components for Code Splitting
 const MagicMirror = React.lazy(() => import('./components/MagicMirror').then(module => ({ default: module.MagicMirror })));
@@ -42,6 +47,7 @@ export default function App() {
 
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [feedLayout, setFeedLayout] = useState<FeedLayout>('scroll');
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
@@ -195,6 +201,11 @@ export default function App() {
       }
   };
 
+  const handleNewGameClick = () => {
+    // Navigate to start screen for new game selection
+    navigate('/');
+  };
+
   const LoadingFallback = () => (
      <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/50 backdrop-blur pointer-events-none">
         <div className="w-10 h-10 border-4 border-theme-primary border-t-transparent rounded-full animate-spin"></div>
@@ -303,7 +314,7 @@ export default function App() {
                 onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
                 onFork={handleFork}
                 onAction={handlePlayerAction}
-                onNewGame={() => startNewGame(gameState.theme)} // This might be wrong, usually onNewGame goes to start.
+                onNewGame={handleNewGameClick}
                 onMagicMirror={() => setIsMagicMirrorOpen(true)}
                 onSettings={() => setIsSettingsOpen(true)}
                 onOpenSaves={() => setIsSaveManagerOpen(true)}
@@ -329,7 +340,7 @@ export default function App() {
                 onRetry={() => handleAction(currentHistory[currentHistory.length - 1]?.text || 'Retry')}
                 onFork={handleFork}
                 onAction={handlePlayerAction}
-                onNewGame={() => startNewGame(gameState.theme)} // Same here
+                onNewGame={handleNewGameClick}
                 onMagicMirror={() => setIsMagicMirrorOpen(true)}
                 onSettings={() => setIsSettingsOpen(true)}
                 onOpenSaves={() => setIsSaveManagerOpen(true)}

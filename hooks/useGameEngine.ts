@@ -29,7 +29,7 @@ export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t: i18nT, i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Derive view from path
   const view = useMemo(() => {
@@ -262,7 +262,8 @@ export const useGameEngine = () => {
           gameStateRef.current.quests,
           action,
           LANG_MAP[language],
-          gameStateRef.current.theme // Pass the theme key
+          gameStateRef.current.theme, // Pass the theme key
+          t // Pass translation function
       );
 
       // Sanitize choices to ensure strict string array
@@ -294,7 +295,6 @@ export const useGameEngine = () => {
 
       // Determine Toast Message based on state changes
       let toastMessage = "";
-      const {t} = useTranslation();
       // Process Deltas
       let newInventory = [...(gameStateRef.current.inventory || [])];
       if (response.inventoryActions) {
@@ -521,7 +521,7 @@ export const useGameEngine = () => {
 
     navigate('/initializing');
     try {
-       const { outline, log } = await generateStoryOutline(selectedTheme, LANG_MAP[language], customContext);
+       const { outline, log } = await generateStoryOutline(selectedTheme, LANG_MAP[language], customContext, t);
        setGameState(prev => ({
           ...prev,
           outline,

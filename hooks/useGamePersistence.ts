@@ -1,6 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { GameState, SaveSlot } from '../types';
+import {
+  saveGameState,
+  loadGameState,
+  deleteGameState,
+  saveMetadata,
+  loadMetadata,
+  migrateFromLocalStorage,
+  getStorageEstimate
+} from '../utils/indexedDB';
 
 export const useGamePersistence = (
   gameState: GameState,
@@ -10,6 +19,7 @@ export const useGamePersistence = (
   const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [migrationComplete, setMigrationComplete] = useState(false);
 
   // Helper to sanitize and fix state on load
   const sanitizeState = (parsed: any): GameState => {
@@ -37,69 +47,118 @@ export const useGamePersistence = (
       return parsed as GameState;
   };
 
-  // Load Slots and Current Game on Mount
+  // Migrate from localStorage to IndexedDB on mount
   useEffect(() => {
-    const slotsStr = localStorage.getItem('chronicles_meta_slots');
-    if (slotsStr) {
+    const performMigration = async () => {
       try {
-        const parsedSlots = JSON.parse(slotsStr);
-        setSaveSlots(parsedSlots);
-
-        // Try to restore last active session
-        const lastSlotId = localStorage.getItem('chronicles_current_slot');
-        if (lastSlotId) {
-             const data = localStorage.getItem(`chronicles_save_${lastSlotId}`);
-             if (data) {
-                 const parsed = JSON.parse(data);
-                 const sanitized = sanitizeState(parsed);
-                 setGameState(sanitized);
-                 setCurrentSlotId(lastSlotId);
-             }
-        }
-      } catch(e) {
-          console.error("Failed to load saves", e);
+        await migrateFromLocalStorage();
+        setMigrationComplete(true);
+      } catch (error) {
+        console.error('Migration error:', error);
+        setMigrationComplete(true); // Continue anyway
       }
-    }
+    };
+    performMigration();
   }, []);
 
-
-  // Auto-Save Logic
+  // Load Slots and Current Game on Mount (after migration)
   useEffect(() => {
+    if (!migrationComplete) return;
+
+    const loadInitialData = async () => {
+      try {
+        // Load save slots metadata
+        const slots = await loadMetadata('slots');
+        if (slots && Array.isArray(slots)) {
+          setSaveSlots(slots);
+
+          // Try to restore last active session
+          const lastSlotId = await loadMetadata('currentSlot');
+          if (lastSlotId && typeof lastSlotId === 'string') {
+            const data = await loadGameState(lastSlotId);
+            if (data) {
+              const sanitized = sanitizeState(data);
+              setGameState(sanitized);
+              setCurrentSlotId(lastSlotId);
+            }
+          }
+        }
+
+        // Log storage usage
+        const estimate = await getStorageEstimate();
+        if (estimate && estimate.usage && estimate.quota) {
+          const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+          const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+          console.log(`Storage: ${usageMB} MB / ${quotaMB} MB`);
+        }
+      } catch (error) {
+        console.error("Failed to load saves from IndexedDB", error);
+      }
+    };
+
+    loadInitialData();
+  }, [migrationComplete]);
+
+  // Auto-Save Logic using IndexedDB
+  useEffect(() => {
+    if (!migrationComplete) return;
     if (view === 'game' && currentSlotId && gameState.rootNodeId) {
-      // Debounce could be added here, but for now simple effect
-      localStorage.setItem(`chronicles_save_${currentSlotId}`, JSON.stringify(gameState));
+      const performSave = async () => {
+        try {
+          // Save game state to IndexedDB
+          await saveGameState(currentSlotId, gameState);
 
-      // Update Slot Meta
-      const summaryText = gameState.activeNodeId && gameState.nodes[gameState.activeNodeId]
-         ? gameState.nodes[gameState.activeNodeId].text.substring(0, 60) + "..."
-         : "In Progress";
+          // Update Slot Meta
+          const summaryText = gameState.activeNodeId && gameState.nodes[gameState.activeNodeId]
+             ? gameState.nodes[gameState.activeNodeId].text.substring(0, 60) + "..."
+             : "In Progress";
 
-      const updatedSlots = saveSlots.map(s =>
-         s.id === currentSlotId
-         ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText }
-         : s
-      );
+          const updatedSlots = saveSlots.map(s =>
+             s.id === currentSlotId
+             ? { ...s, timestamp: Date.now(), theme: gameState.theme, summary: summaryText }
+             : s
+          );
 
-      // Only update if changed to avoid loops
-      if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
-          setSaveSlots(updatedSlots);
-          localStorage.setItem('chronicles_meta_slots', JSON.stringify(updatedSlots));
-      }
+          // Only update if changed to avoid loops
+          if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
+              setSaveSlots(updatedSlots);
+              await saveMetadata('slots', updatedSlots);
+          }
 
-      setIsAutoSaving(true);
-      const timer = setTimeout(() => setIsAutoSaving(false), 2000);
-      return () => clearTimeout(timer);
+          setIsAutoSaving(true);
+          const timer = setTimeout(() => setIsAutoSaving(false), 2000);
+          return () => clearTimeout(timer);
+        } catch (error: any) {
+          console.error('Failed to save game to IndexedDB:', error);
+          // Show user-friendly error
+          if (error.name === 'QuotaExceededError') {
+            alert('QuotaExceededError');
+          }
+        }
+      };
+
+      performSave();
     }
-  }, [gameState, currentSlotId, view]);
+  }, [gameState, currentSlotId, view, migrationComplete]);
 
-  // Persist Current Slot ID
+  // Persist Current Slot ID to IndexedDB
   useEffect(() => {
-      if (currentSlotId) {
-          localStorage.setItem('chronicles_current_slot', currentSlotId);
-      } else {
-          localStorage.removeItem('chronicles_current_slot');
+    if (!migrationComplete) return;
+
+    const saveCurrentSlot = async () => {
+      try {
+        if (currentSlotId) {
+          await saveMetadata('currentSlot', currentSlotId);
+        } else {
+          await saveMetadata('currentSlot', null);
+        }
+      } catch (error) {
+        console.error('Failed to save current slot:', error);
       }
-  }, [currentSlotId]);
+    };
+
+    saveCurrentSlot();
+  }, [currentSlotId, migrationComplete]);
 
   const createSaveSlot = (theme: string) => {
      const id = Date.now().toString();
@@ -112,27 +171,45 @@ export const useGamePersistence = (
      };
      const newSlots = [...saveSlots, newSlot];
      setSaveSlots(newSlots);
-     localStorage.setItem('chronicles_meta_slots', JSON.stringify(newSlots));
+
+     // Save to IndexedDB asynchronously
+     saveMetadata('slots', newSlots).catch(err => {
+       console.error('Failed to save slots metadata:', err);
+     });
+
      return id;
   };
 
   const loadSlot = (id: string) => {
-     const data = localStorage.getItem(`chronicles_save_${id}`);
-     if (data) {
-         const parsed = JSON.parse(data);
-         const sanitized = sanitizeState(parsed);
+     loadGameState(id).then(data => {
+       if (data) {
+         const sanitized = sanitizeState(data);
          setGameState(sanitized);
          setCurrentSlotId(id);
          return true;
-     }
-     return false;
+       }
+       return false;
+     }).catch(error => {
+       console.error('Failed to load slot:', error);
+       return false;
+     });
+
+     // Return true optimistically; the actual load is async
+     return true;
   };
 
   const deleteSlot = (id: string) => {
       const newSlots = saveSlots.filter(s => s.id !== id);
       setSaveSlots(newSlots);
-      localStorage.setItem('chronicles_meta_slots', JSON.stringify(newSlots));
-      localStorage.removeItem(`chronicles_save_${id}`);
+
+      // Update IndexedDB asynchronously
+      Promise.all([
+        saveMetadata('slots', newSlots),
+        deleteGameState(id)
+      ]).catch(error => {
+        console.error('Failed to delete slot:', error);
+      });
+
       if (currentSlotId === id) {
           setCurrentSlotId(null);
       }

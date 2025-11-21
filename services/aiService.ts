@@ -27,6 +27,7 @@ import {
   validateConnection as validateOpenRouterConnection
 } from "./providers/openRouterProvider";
 import { DEFAULTS, DEFAULT_OPENAI_BASE_URL } from "../utils/constants";
+import { TRANSLATIONS } from "../utils/constants/translations";
 import { gameResponseSchema, translationSchema, storyOutlineSchema, summarySchema } from "./schemas";
 import { getEnvApiKey } from "../utils/env";
 import {
@@ -41,7 +42,6 @@ import {
   getCurrentStateContext
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
-import { useTranslation } from "react-i18next";
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
@@ -208,12 +208,22 @@ const generateContentUnified = async (
 export const generateStoryOutline = async (
   theme: string,
   language: string,
-  customContext?: string
+  customContext?: string,
+  tFunc?: (key: string) => any
 ): Promise<{ outline: StoryOutline, log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig('story');
 
-  const { t } = useTranslation();
-  const themeDataBackgroundTemplate = t(`themes.${theme}.backgroundTemplate`);
+  let themeDataBackgroundTemplate: string;
+
+  if (tFunc) {
+    // Use dynamic translation function from React component
+    themeDataBackgroundTemplate = tFunc(`themes.${theme}.backgroundTemplate`) || tFunc(`themes.fantasy.backgroundTemplate`);
+  } else {
+    // Fallback to static translations
+    const langCode = getLangCode(language);
+    const t = TRANSLATIONS[langCode];
+    themeDataBackgroundTemplate = t.themes[theme]?.backgroundTemplate || t.themes.fantasy.backgroundTemplate;
+  }
 
   const prompt = getOutlinePrompt(theme, language, customContext, themeDataBackgroundTemplate);
   const sys = "You are a master storyteller. Output strictly valid JSON.";
@@ -247,14 +257,29 @@ export const generateAdventureTurn = async (
   quests: Quest[],
   userAction: string,
   language: string = 'English',
-  themeKey?: string
+  themeKey?: string,
+  tFunc?: (key: string) => any
 ): Promise<{ response: GameResponse, log: LogEntry, usage: TokenUsage }> => {
 
   const { provider, modelId } = getProviderConfig('story');
 
-  const {t} = useTranslation();
-  const narrativeStyle = themeKey ? t(`themes.${themeKey}.narrativeStyle`) : "Standard adventure tone.";
-  const example = themeKey ? t(`themes.${themeKey}.example`) : undefined
+  let narrativeStyle: string;
+  let example: string | undefined;
+
+  if (tFunc && themeKey) {
+    // Use dynamic translation function from React component
+    narrativeStyle = tFunc(`themes.${themeKey}.narrativeStyle`) || "Standard adventure tone.";
+    example = tFunc(`themes.${themeKey}.example`);
+  } else if (themeKey) {
+    // Fallback to static translations
+    const langCode = getLangCode(language);
+    const t = TRANSLATIONS[langCode];
+    narrativeStyle = t.themes[themeKey]?.narrativeStyle || "Standard adventure tone.";
+    example = t.themes[themeKey]?.example;
+  } else {
+    narrativeStyle = "Standard adventure tone.";
+    example = undefined;
+  }
 
   // Split System Instruction for better KV Cache
   const coreSystemInstruction = getCoreSystemInstruction(language, narrativeStyle, example);
