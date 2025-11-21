@@ -7,13 +7,13 @@ export const themes : Record<string, {
   fantasy: {
     name: "Fantasy",
     narrativeStyle: "Epic, high-fantasy tone. Use archaic but accessible language. Focus on magic, destiny, and grand landscapes. Describe combat with flair.",
-    backgroundTemplate: "In the realm of [World Name], the ancient balance between [Force A] and [Force B] has been shattered. You are a [Class/Role] from [Location], bearing the mark of the [Prophecy/Curse]. As the [Antagonist Force] rises to consume the lands, you must gather allies, master the arcane arts, and restore order before the [Cataclysm Event].",
+    backgroundTemplate: "In the realm of [World Name], the ancient balance between [Force A] and [Force B] has been shattered. You are a [Class/Role] from [Location], bearing the mark of the [Prophecy/Curse]. As the [Antagonist Force] rises to consume the lands, you must gather allies, master the arcane arts, and restore order before the [Cataclysm Event]. The world is filled with ancient ruins, forgotten gods, and mythical beasts waiting to be discovered.",
     example: "You stand at the precipice of the Howling Chasm, the wind whipping your cloak around you. Below, the violet mists swirl, hiding the ruins of the Old Kingdom. 'So, the legends were true,' you murmur, gripping the hilt of your runeblade. The stone beneath your boots hums with a faint, rhythmic vibration—the heartbeat of the sleeping titan. You have come this far; there is no turning back now."
   },
   scifi: {
     name: "Sci-Fi",
     narrativeStyle: "Technical, sleek, and analytical. Use terminology related to space, physics, and advanced tech. Emphasize the cold vastness of space and the hum of machinery.",
-    backgroundTemplate: "The year is [Year]. Humanity has expanded to the [Star System], governed by the [Corporation/Government]. You are a [Role] aboard the [Ship Name], tasked with investigating a distress signal from [Location]. What you find there challenges the very understanding of [Science/Life], and you find yourself caught in a conspiracy that spans the galaxy.",
+    backgroundTemplate: "The year is [Year]. Humanity has expanded to the [Star System], governed by the [Corporation/Government]. You are a [Role] aboard the [Ship Name], tasked with investigating a distress signal from [Location]. What you find there challenges the very understanding of [Science/Life], and you find yourself caught in a conspiracy that spans the galaxy. AI uprisings, alien artifacts, and corporate espionage are commonplace.",
     example: "The airlock cycles with a hiss, equalizing the pressure. You step onto the derelict station, your mag-boots clanking against the cold metal floor. The HUD in your helmet flickers, displaying a warning: 'Atmospheric toxicity detected.' You activate your rebreather, the rhythmic sound of your own breathing filling your ears. Ahead, the corridor stretches into darkness, illuminated only by the intermittent spark of a severed power conduit."
   },
   cyberpunk: {

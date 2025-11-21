@@ -16,6 +16,7 @@ interface StoryCardLabels {
 export interface StoryCardProps {
   segment: StorySegment;
   isLast: boolean;
+  isGenerating?: boolean;
   labels: StoryCardLabels;
   onAnimate?: (imageUrl: string) => void;
   disableImages?: boolean;
@@ -28,6 +29,7 @@ export interface StoryCardProps {
 export const StoryCard: React.FC<StoryCardProps> = ({
   segment,
   isLast,
+  isGenerating,
   labels,
   onAnimate,
   disableImages = false,
@@ -62,15 +64,19 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
       <StoryImage
         imageUrl={segment.imageUrl}
-        isLast={isLast}
+        imagePrompt={segment.imagePrompt}
+        isGenerating={isGenerating}
         labelVision={labels.vision}
         labelUnavailable={labels.unavailable}
         onAnimate={onAnimate}
+        onRegenerate={segment.imagePrompt && onGenerateImage ? () => onGenerateImage(segment.id) : undefined}
         disableImages={disableImages}
+        imageGenerationEnabled={aiSettings?.image?.enabled !== false}
+        manualImageGen={aiSettings?.manualImageGen}
       />
 
       {/* Manual Image Generation Button */}
-      {!segment.imageUrl && segment.imagePrompt && onGenerateImage && !disableImages && (
+      {/* {!segment.imageUrl && segment.imagePrompt && onGenerateImage && !disableImages && (
           <div className="flex justify-center -mt-4 mb-4 relative z-10">
              <button
                onClick={() => onGenerateImage(segment.id)}
@@ -81,7 +87,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
                 Paint Scene
              </button>
           </div>
-      )}
+      )} */}
 
       <div className="flex flex-col">
         <StoryText

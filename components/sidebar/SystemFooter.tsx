@@ -9,6 +9,7 @@ interface SystemFooterProps {
   onSave: () => void;
   onSettings: () => void;
   onCloseMobile: () => void;
+  currentAmbience?: string;
 }
 
 export const SystemFooter: React.FC<SystemFooterProps> = ({
@@ -17,7 +18,8 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   onNewGame,
   onSave,
   onSettings,
-  onCloseMobile
+  onCloseMobile,
+  currentAmbience
 }) => {
   const { t } = useTranslation();
 
@@ -33,6 +35,14 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
            {t('magicMirror')}
         </button>
       </div>
+
+      {/* Ambience Indicator */}
+      {currentAmbience && (
+        <div className="flex items-center justify-center gap-2 text-xs text-theme-muted animate-pulse">
+           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+           <span className="uppercase tracking-widest">{currentAmbience}</span>
+        </div>
+      )}
 
       {/* System Panel */}
       <div>

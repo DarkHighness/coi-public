@@ -30,6 +30,7 @@ interface MobileGameLayoutProps {
   onOpenLogs: () => void;
   aiSettings: any;
   onTypingComplete?: () => void;
+  currentAmbience?: string;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -54,7 +55,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenMap,
   onOpenLogs,
   aiSettings,
-  onTypingComplete
+  onTypingComplete,
+  currentAmbience
 }) => {
   const {t} = useTranslation();
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
@@ -100,6 +102,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
              onOpenSaves={onOpenSaves}
              onOpenMap={onOpenMap}
              onOpenLogs={onOpenLogs}
+             currentAmbience={currentAmbience}
           />
           <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
           <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

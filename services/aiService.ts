@@ -1,4 +1,4 @@
-import { GameResponse, StorySegment, AISettings, CharacterStatus, Relationship, StoryOutline, ModelInfo, TokenUsage, LogEntry, InventoryItem, Quest } from "../types";
+import { GameResponse, StorySegment, AISettings, CharacterStatus, Relationship, StoryOutline, ModelInfo, TokenUsage, LogEntry, InventoryItem, Quest, AdventureTurnInput } from "../types";
 import {
   GeminiConfig,
   generateContent as generateGeminiContent,
@@ -247,17 +247,21 @@ export const summarizeContext = async (textToSummarize: string, language: string
 };
 
 export const generateAdventureTurn = async (
-  recentHistory: StorySegment[],
-  accumulatedSummary: string,
-  outline: StoryOutline | null,
-  inventory: InventoryItem[],
-  relationships: Relationship[],
-  quests: Quest[],
-  userAction: string,
-  language: string = 'English',
-  themeKey?: string,
-  tFunc?: (key: string) => any
+  input: AdventureTurnInput
 ): Promise<{ response: GameResponse, log: LogEntry, usage: TokenUsage }> => {
+  const {
+    recentHistory,
+    accumulatedSummary,
+    outline,
+    inventory,
+    relationships,
+    quests,
+    character,
+    userAction,
+    language = 'English',
+    themeKey,
+    tFunc
+  } = input;
 
   const { provider, modelId } = getProviderConfig('story');
 
@@ -283,7 +287,7 @@ export const generateAdventureTurn = async (
   const coreSystemInstruction = getCoreSystemInstruction(language, narrativeStyle, example);
   const staticWorldContext = getStaticWorldContext(outline);
   const dynamicStoryContext = getDynamicStoryContext(accumulatedSummary);
-  const currentStateContext = getCurrentStateContext(inventory, relationships, quests);
+  const currentStateContext = getCurrentStateContext(inventory, relationships, quests, character);
 
   // Combine system instructions
   const fullSystemInstruction = `${coreSystemInstruction}\n\n${staticWorldContext}`;

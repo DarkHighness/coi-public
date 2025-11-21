@@ -150,6 +150,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, theme
   // Handle optional skills array (for backward compatibility)
   const skills = character.skills || [];
   const statusConfig = getStatusConfig(character.status);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   return (
     <div className="animate-fade-in mb-6">
@@ -164,11 +165,44 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, theme
         <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
       </button>
 
-      <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border space-y-3">
           <div className="flex justify-between items-baseline">
              <span className="font-bold text-lg text-theme-text tracking-wide">{character.name}</span>
              <span className="text-xs text-theme-muted uppercase tracking-wider">{character.title}</span>
+          </div>
+
+          {/* Details Toggle */}
+          <button
+            onClick={() => setIsDetailsOpen(!isDetailsOpen)}
+            className="w-full text-left text-[10px] uppercase tracking-widest text-theme-muted hover:text-theme-primary transition-colors flex items-center justify-between border-b border-theme-border/30 pb-1"
+          >
+            <span>{t('details')}</span>
+            <svg className={`w-3 h-3 transition-transform duration-300 ${isDetailsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+
+          {/* Collapsible Details Section */}
+          <div className={`overflow-hidden transition-all duration-300 ${isDetailsOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
+             <div className="space-y-2 pt-2 text-xs text-theme-muted/80">
+                {character.appearance && (
+                  <div>
+                    <span className="text-theme-primary/70 font-bold block mb-0.5">{t('appearance')}</span>
+                    <p className="italic leading-relaxed">{character.appearance}</p>
+                  </div>
+                )}
+                {character.profession && (
+                  <div>
+                    <span className="text-theme-primary/70 font-bold block mb-0.5">{t('profession')}</span>
+                    <p>{character.profession}</p>
+                  </div>
+                )}
+                {character.background && (
+                  <div>
+                    <span className="text-theme-primary/70 font-bold block mb-0.5">{t('background')}</span>
+                    <p className="italic leading-relaxed">{character.background}</p>
+                  </div>
+                )}
+             </div>
           </div>
 
           {/* Dynamic Attributes */}

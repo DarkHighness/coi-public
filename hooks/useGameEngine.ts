@@ -253,18 +253,19 @@ export const useGameEngine = () => {
       let segmentsToSend = contextNodes.slice(lastIndex);
 
       // Generate Turn
-      const { response, log, usage } = await generateAdventureTurn(
-          segmentsToSend,
-          effectiveSummary,
-          gameStateRef.current.outline,
-          gameStateRef.current.inventory,
-          gameStateRef.current.relationships,
-          gameStateRef.current.quests,
-          action,
-          LANG_MAP[language],
-          gameStateRef.current.theme, // Pass the theme key
-          t // Pass translation function
-      );
+      const { response, log, usage } = await generateAdventureTurn({
+          recentHistory: segmentsToSend,
+          accumulatedSummary: effectiveSummary,
+          outline: gameStateRef.current.outline,
+          inventory: gameStateRef.current.inventory,
+          relationships: gameStateRef.current.relationships,
+          quests: gameStateRef.current.quests,
+          character: gameStateRef.current.character,
+          userAction: action,
+          language: LANG_MAP[language],
+          themeKey: gameStateRef.current.theme, // Pass the theme key
+          tFunc: t // Pass translation function
+      });
 
       // Sanitize choices to ensure strict string array
       const sanitizedChoices = Array.isArray(response.choices)
@@ -483,9 +484,23 @@ export const useGameEngine = () => {
         generateImage: response.generateImage
       }));
 
-      // Async Image Gen
-      if (response.generateImage && response.imagePrompt) {
-        generateSceneImage(response.imagePrompt).then(({ url, log }) => {
+
+
+      // Async Image Gen with Timeout
+      if (response.generateImage && response.imagePrompt && !aiSettings.manualImageGen) {
+        const imageTimeout = setTimeout(() => {
+          setGameState(prev => {
+            if (prev.isImageGenerating) {
+              console.warn('Image generation timeout');
+              return { ...prev, isImageGenerating: false };
+            }
+            return prev;
+          });
+        }, (aiSettings.imageTimeout || 60) * 1000);
+
+        generateSceneImage(response.imagePrompt)
+          .then(({ url, log }) => {
+            clearTimeout(imageTimeout);
             setGameState(prev => ({
               ...prev,
               isImageGenerating: false,
@@ -493,7 +508,12 @@ export const useGameEngine = () => {
               totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
               nodes: url ? { ...prev.nodes, [modelNodeId]: { ...prev.nodes[modelNodeId], imageUrl: url } } : prev.nodes
             }));
-        });
+          })
+          .catch((error) => {
+            clearTimeout(imageTimeout);
+            console.error('Image generation failed:', error);
+            setGameState(prev => ({ ...prev, isImageGenerating: false }));
+          });
       } else {
          setGameState(prev => ({ ...prev, isImageGenerating: false }));
       }
@@ -571,8 +591,8 @@ export const useGameEngine = () => {
     }
   };
 
-  const switchSlot = (id: string) => {
-      if (loadSlot(id)) navigate('/game');
+  const switchSlot = async (id: string) => {
+      if (await loadSlot(id)) navigate('/game');
   };
 
   const navigateToNode = (nodeId: string) => {
@@ -581,23 +601,52 @@ export const useGameEngine = () => {
 
   const generateImageForNode = async (nodeId: string) => {
       const node = gameStateRef.current.nodes[nodeId];
-      if (!node || !node.imagePrompt) return;
+      if (!node || !node.imagePrompt) {
+        console.warn('Cannot generate image: missing node or imagePrompt for nodeId:', nodeId);
+        return;
+      }
 
+      console.log('Starting image generation for node:', nodeId, 'with prompt:', node.imagePrompt.substring(0, 50) + '...');
       setGameState(prev => ({ ...prev, isImageGenerating: true }));
+
+      const imageTimeout = setTimeout(() => {
+        setGameState(prev => {
+          if (prev.isImageGenerating) {
+            console.warn('Image generation timeout for node:', nodeId);
+            return { ...prev, isImageGenerating: false };
+          }
+          return prev;
+        });
+      }, (aiSettings.imageTimeout || 60) * 1000);
+
       try {
           const { url, log } = await generateSceneImage(node.imagePrompt);
-          setGameState(prev => ({
+          clearTimeout(imageTimeout);
+
+          if (url && url.trim()) {
+            console.log('Image generated successfully for node:', nodeId, 'URL:', url.substring(0, 50) + '...');
+            setGameState(prev => ({
+                ...prev,
+                isImageGenerating: false,
+                logs: [log, ...prev.logs].slice(0, 50),
+                totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+                nodes: {
+                    ...prev.nodes,
+                    [nodeId]: { ...prev.nodes[nodeId], imageUrl: url }
+                }
+            }));
+          } else {
+            console.warn('Image generation returned empty URL for node:', nodeId);
+            setGameState(prev => ({
               ...prev,
               isImageGenerating: false,
               logs: [log, ...prev.logs].slice(0, 50),
-              totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
-              nodes: {
-                  ...prev.nodes,
-                  [nodeId]: { ...prev.nodes[nodeId], imageUrl: url }
-              }
-          }));
+              totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0)
+            }));
+          }
       } catch (e) {
-          console.error("Failed to generate image", e);
+          clearTimeout(imageTimeout);
+          console.error("Failed to generate image for node:", nodeId, "Error:", e);
           setGameState(prev => ({ ...prev, isImageGenerating: false }));
       }
   };

@@ -36,11 +36,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     if (file) onLoad(file);
   };
 
+  const [isZooming, setIsZooming] = useState(false);
+
+  const handleStart = (theme: string, customContext?: string) => {
+    setIsZooming(true);
+    setTimeout(() => {
+      onStart(theme, customContext);
+    }, 1500); // Match animation duration
+  };
+
   // Dynamic background style based on hovered theme
   const activeThemeVar = THEMES[hoveredTheme]?.vars['--theme-primary'] || '#f59e0b';
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden flex flex-col lg:flex-row bg-theme-bg text-theme-text font-sans transition-colors duration-1000">
+    <div className={`relative h-dvh w-full overflow-hidden flex flex-col lg:flex-row bg-theme-bg text-theme-text font-sans transition-all duration-1000 ${isZooming ? 'scale-[3] opacity-0 filter blur-sm' : 'scale-100 opacity-100'}`}>
 
       {/* Global Background Effect */}
       <div
@@ -55,7 +64,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       {/* Left Panel: Branding & Atmosphere */}
       <div className="relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none">
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
-           <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-theme-text to-theme-muted drop-shadow-lg">
+           <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg">
              {t('titlePart1')}
            </h1>
            <h2 className="text-3xl lg:text-6xl font-scifi uppercase tracking-[0.2em] text-theme-primary/80">
@@ -89,7 +98,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full">
               {latestSave && (
                 <div className="mb-4 group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-theme-primary to-theme-primary-hover rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-theme-primary to-theme-primary-hover rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
                   <button
                     onClick={onContinue}
                     className="relative w-full py-5 bg-theme-surface border border-theme-primary text-theme-text font-bold text-xl uppercase tracking-widest hover:bg-theme-surface-highlight transition-all shadow-2xl hover:scale-[1.02] transform rounded-lg flex flex-col items-center overflow-hidden"
@@ -158,7 +167,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               <div className="flex-1 relative min-h-0">
                   <ThemeSelector
                     themes={THEMES}
-                    onSelect={(theme) => onStart(theme, customContext)}
+                    onSelect={(theme) => handleStart(theme, customContext)}
                     onHover={setHoveredTheme}
                   />
               </div>

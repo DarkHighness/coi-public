@@ -45,7 +45,9 @@ export const storyOutlineSchema: Schema = {
           description: "Initial skills/abilities."
         },
         status: { type: Type.STRING, description: "Initial condition (e.g. Healthy, Amnesiac)." },
-        appearance: { type: Type.STRING, description: "Detailed physical appearance of the character (hair, eyes, clothing, equipment)." }
+        appearance: { type: Type.STRING, description: "Detailed physical appearance of the character (hair, eyes, clothing, equipment)." },
+        profession: { type: Type.STRING, description: "Character's occupation, class, or role in the world (e.g. Blacksmith, Mercenary, Scholar)." },
+        background: { type: Type.STRING, description: "Brief life story and background of the character (origins, past experiences, motivations)." }
       },
       required: ["name", "title", "attributes", "skills", "status", "appearance"],
       description: "The initialized character profile suited for this story."
@@ -155,9 +157,9 @@ export const gameResponseSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          target: { type: Type.STRING, enum: ["attribute", "skill", "status", "appearance"] },
+          target: { type: Type.STRING, enum: ["attribute", "skill", "status", "appearance", "profession", "background"] },
           action: { type: Type.STRING, enum: ["add", "remove", "update"] },
-          name: { type: Type.STRING, description: "Name of the attribute/skill. Use 'status' if target is status." },
+          name: { type: Type.STRING, description: "Name of the attribute/skill. Use 'status'/'appearance'/'profession'/'background' if target matches." },
           value: { type: Type.STRING, description: "New value (for status/skill level) or stringified number (for attributes)." }, // Schema limitation: mixed types hard, use string/int handling in code or separate fields. Let's use value as generic or specific fields.
           // To keep it simple for the AI, let's define specific value fields or just use 'value' as integer for attributes?
           // Actually, for attributes it's an integer. For status/skill it's a string.

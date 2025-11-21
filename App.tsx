@@ -61,6 +61,9 @@ export default function App() {
   // Typing State for Audio Control
   const [isTyping, setIsTyping] = useState(false);
 
+  // Ambient Audio State
+  const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(undefined);
+
   // Ref to track last played environment for notifications
   const lastPlayedEnvRef = useRef<string | undefined>(undefined);
 
@@ -90,6 +93,7 @@ export default function App() {
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
     aiSettings.audioVolume?.bgmMuted ?? false,
     (env) => {
+      setCurrentAmbience(env);
       if (env !== lastPlayedEnvRef.current) {
         const envName = env.charAt(0).toUpperCase() + env.slice(1);
         showToast(`${t('audioSettings.environment')}: ${envName}`);
@@ -163,20 +167,32 @@ export default function App() {
 
       showToast(t("validate-connection"), 'info');
 
-      const providersToCheck = new Set<string>();
-      providersToCheck.add(aiSettings.story.provider);
-      if (aiSettings.image.enabled) providersToCheck.add(aiSettings.image.provider);
-      if (aiSettings.audio.enabled) providersToCheck.add(aiSettings.audio.provider);
-      if (aiSettings.video.enabled) providersToCheck.add(aiSettings.video.provider);
+      // Story provider is REQUIRED - block if it fails
+      const storyProvider = aiSettings.story.provider;
+      const { isValid: storyValid, error: storyError } = await validateConnection(storyProvider as any);
+      if (!storyValid) {
+          showToast(`${storyProvider}: ${storyError || "Connection Failed"} - Story generation is required`, 'error');
+          setIsSettingsOpen(true);
+          return false;
+      }
 
-      for (const provider of Array.from(providersToCheck)) {
-          const { isValid, error } = await validateConnection(provider as any);
-          if (!isValid) {
-              showToast(`${provider}: ${error || "Connection Failed"}`, 'error');
-              setIsSettingsOpen(true);
-              return false;
+      // Optional providers (image, audio, video) - just warn, don't block
+      const optionalProviders: Array<{ name: string, provider: string, enabled: boolean }> = [
+          { name: 'Image', provider: aiSettings.image.provider, enabled: aiSettings.image.enabled !== false },
+          { name: 'Audio', provider: aiSettings.audio.provider, enabled: aiSettings.audio.enabled !== false },
+          { name: 'Video', provider: aiSettings.video.provider, enabled: aiSettings.video.enabled !== false }
+      ];
+
+      for (const { name, provider, enabled } of optionalProviders) {
+          if (enabled && provider !== storyProvider) { // Skip if same as story provider (already checked)
+              const { isValid, error } = await validateConnection(provider as any);
+              if (!isValid) {
+                  console.warn(`${name} provider validation failed:`, error);
+                  showToast(`Warning: ${name} (${provider}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`, 'error');
+              }
           }
       }
+
       return true;
   };
 
@@ -189,14 +205,11 @@ export default function App() {
   const handleContinueGame = async () => {
       if (await performValidation()) {
           if (currentSlotId) {
-              // Already loaded, just navigate handled by component or manual check?
-              // Actually startNewGame/switchSlot handles navigation in useGameEngine
+              navigate('/game');
           } else if (saveSlots.length > 0) {
               const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
               const mostRecent = sorted[0];
-              switchSlot(mostRecent.id);
-          } else {
-              // Stay on start
+              await switchSlot(mostRecent.id);
           }
       }
   };
@@ -323,6 +336,7 @@ export default function App() {
                 onOpenLogs={() => setIsLogPanelOpen(true)}
                 aiSettings={aiSettings}
                 onTypingComplete={() => setIsTyping(false)}
+                currentAmbience={currentAmbience}
               />
 
               <DesktopGameLayout
@@ -349,6 +363,7 @@ export default function App() {
                 onOpenLogs={() => setIsLogPanelOpen(true)}
                 aiSettings={aiSettings}
                 onTypingComplete={() => setIsTyping(false)}
+                currentAmbience={currentAmbience}
               />
 
               {/* Mobile Bottom Navigation */}

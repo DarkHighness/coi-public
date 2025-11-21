@@ -87,6 +87,8 @@ export interface CharacterStatus {
   skills: Skill[];
   status: string;
   appearance: string;
+  profession?: string;
+  background?: string;
 }
 
 export interface Relationship {
@@ -187,6 +189,20 @@ export interface CharacterAction {
   description?: string;
 }
 
+export interface AdventureTurnInput {
+  recentHistory: StorySegment[];
+  accumulatedSummary: string;
+  outline: StoryOutline | null;
+  inventory: InventoryItem[];
+  relationships: Relationship[];
+  quests: Quest[];
+  character: CharacterStatus;
+  userAction: string;
+  language: string;
+  themeKey?: string;
+  tFunc?: (key: string) => any;
+}
+
 export interface GameResponse {
   narrative: string;
   choices: string[];
@@ -251,6 +267,10 @@ export interface AISettings {
   translation: FunctionConfig;
   lore: FunctionConfig;
   language: LanguageCode;
+
+  // Image Generation Settings
+  imageTimeout: number; // Timeout in seconds
+  manualImageGen: boolean; // Require manual click to generate
 }
 
 export interface ModelInfo {

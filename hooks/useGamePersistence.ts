@@ -29,6 +29,8 @@ export const useGamePersistence = (
 
       // Reset processing state on load to prevent stuck state
       parsed.isProcessing = false;
+      // Always clear image generation state on load
+      // If an image was generating when saved, consider it failed
       parsed.isImageGenerating = false;
       parsed.error = null;
 
@@ -161,8 +163,9 @@ export const useGamePersistence = (
      return id;
   };
 
-  const loadSlot = (id: string) => {
-     loadGameState(id).then(data => {
+  const loadSlot = async (id: string): Promise<boolean> => {
+     try {
+       const data = await loadGameState(id);
        if (data) {
          const sanitized = sanitizeState(data);
          setGameState(sanitized);
@@ -170,13 +173,10 @@ export const useGamePersistence = (
          return true;
        }
        return false;
-     }).catch(error => {
+     } catch (error) {
        console.error('Failed to load slot:', error);
        return false;
-     });
-
-     // Return true optimistically; the actual load is async
-     return true;
+     }
   };
 
   const deleteSlot = (id: string) => {

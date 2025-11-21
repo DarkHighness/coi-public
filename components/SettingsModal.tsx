@@ -339,7 +339,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
 
                       {sectionKey === 'image' && (
-                          <div className="col-span-3 mt-1 border-t border-theme-border pt-2">
+                          <div className="col-span-3 mt-1 border-t border-theme-border pt-2 space-y-3">
+                              {/* Resolution */}
                               <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t('models.resolution')}</label>
                                 <select
@@ -358,6 +359,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <option value="1344x768" className="text-black dark:text-white">{t('models.resolutions.ratio169')}</option>
                                     <option value="1536x672" className="text-black dark:text-white">{t('models.resolutions.ratio219')}</option>
                                 </select>
+                              </div>
+
+                              {/* Timeout Setting */}
+                              <div className="space-y-1">
+                                  <div className="flex justify-between items-center">
+                                    <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t('models.imageTimeout')}</label>
+                                    <span className="text-xs text-theme-text font-mono">{currentSettings.imageTimeout || 60}s</span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min="10"
+                                    max="180"
+                                    step="10"
+                                    value={currentSettings.imageTimeout || 60}
+                                    onChange={(e) => updateSettings({...currentSettings, imageTimeout: parseInt(e.target.value)})}
+                                    className="w-full accent-theme-primary"
+                                  />
+                                  <p className="text-[10px] text-theme-muted italic">{t('models.imageTimeoutHelp')}</p>
+                              </div>
+
+                              {/* Manual Generation Toggle */}
+                              <div className="flex items-center justify-between pt-2">
+                                  <div className="flex-1">
+                                      <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">{t('models.manualImageGen')}</label>
+                                      <p className="text-[10px] text-theme-muted italic mt-1">{t('models.manualImageGenHelp')}</p>
+                                  </div>
+                                  <button
+                                     onClick={() => updateSettings({...currentSettings, manualImageGen: !currentSettings.manualImageGen})}
+                                     className={`w-8 h-4 rounded-full relative transition-colors ${currentSettings.manualImageGen ? 'bg-green-500' : 'bg-theme-border'}`}
+                                  >
+                                     <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${currentSettings.manualImageGen ? 'translate-x-4' : ''}`}></span>
+                                  </button>
                               </div>
                           </div>
                       )}

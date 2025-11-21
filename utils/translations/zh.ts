@@ -3,7 +3,12 @@ import { themes } from "./themes/zh.ts";
 export const zh = {
     titlePart1: "无尽",
     titlePart2: "编年史",
-    quest: "当前任务",
+    questPanel: {
+      title: "当前任务",
+      main: "主线",
+      side: "支线任务",
+      empty: "暂无进行中的任务。"
+    },
     inventory: "物品栏",
     emptyInventory: "你的物品栏是空的。",
     relationships: "人际关系",
@@ -15,7 +20,9 @@ export const zh = {
     act: "行动",
     loading: "故事正在展开...",
     vision: "正在构想画面...",
+    clickToGenerate: "点击生成",
     unavailable: "图像不可用",
+    generationFailed: "生成失败 - 点击重试",
     tryAgain: "重试",
     error: "与宇宙的连接中断了... (API 错误，请重试)",
     builtWith: "由 Gemini 3 Pro & Imagen 4 & Veo 驱动",
@@ -49,6 +56,8 @@ export const zh = {
     timeline: "旅程时间轴",
     "timeline.empty": "旅程尚未开始...",
     character: "角色状态",
+    showChoices: "显示选项",
+    hideChoices: "隐藏选项",
     skills: "技能",
     emptySkills: "暂未习得技能。",
     status: "状态",
@@ -137,7 +146,11 @@ export const zh = {
           ratio916: "9:16 手机 (768x1344)",
           ratio169: "16:9 桌面 (1344x768)",
           ratio219: "21:9 电影 (1536x672)"
-      }
+      },
+      imageTimeout: "图片生成超时",
+      imageTimeoutHelp: "图片生成的最长等待时间（秒）",
+      manualImageGen: "手动生成图片",
+      manualImageGenHelp: "需要手动点击才生成图片，而不是自动生成"
     },
     outline: {
        title: "故事大纲",

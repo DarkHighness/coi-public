@@ -155,8 +155,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                        <StoryCard
                          segment={segment}
                          isLast={index === currentHistory.length - 1}
+                         isGenerating={index === currentHistory.length - 1 && gameState.isImageGenerating}
                          labels={{ decided: t('decided'), vision: t('vision'), unavailable: t('unavailable') }}
                          onAnimate={segment.imageUrl ? onAnimate : undefined}
+                         onGenerateImage={onGenerateImage}
                          disableImages={disableImages}
                          shouldAnimate={shouldAnimate}
                          aiSettings={aiSettings}
@@ -191,8 +193,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                       <StoryCard
                           segment={activeSegment}
                           isLast={safeActiveIndex === currentHistory.length - 1}
+                          isGenerating={safeActiveIndex === currentHistory.length - 1 && gameState.isImageGenerating}
                           labels={{ decided: t('decided'), vision: t('vision'), unavailable: t('unavailable') }}
                           onAnimate={activeSegment.imageUrl ? onAnimate : undefined}
+                          onGenerateImage={onGenerateImage}
                           disableImages={disableImages}
                           shouldAnimate={false} // Stack mode doesn't usually re-type
                           aiSettings={aiSettings}

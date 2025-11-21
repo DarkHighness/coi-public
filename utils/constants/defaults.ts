@@ -70,5 +70,7 @@ export const DEFAULTS: AISettings = {
     modelId: 'gemini-2.5-flash',
     enabled: true
   },
-  language: 'en'
+  language: 'en',
+  imageTimeout: 60, // 60 seconds
+  manualImageGen: false // Auto-generate by default
 };

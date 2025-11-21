@@ -163,3 +163,19 @@ body {
   animation: butterfly-wing 0.2s infinite ease-in-out;
   transform-origin: center;
 }
+
+/* Image blur-in animation */
+@keyframes blur-in {
+  0% {
+    filter: blur(20px);
+    opacity: 0;
+  }
+  50% {
+    filter: blur(10px);
+    opacity: 0.5;
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+  }
+}

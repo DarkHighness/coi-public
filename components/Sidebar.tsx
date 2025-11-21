@@ -21,6 +21,7 @@ interface SidebarProps {
   onOpenSaves: () => void;
   onOpenMap: () => void;
   onOpenLogs: () => void;
+  currentAmbience?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -32,7 +33,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSettings,
   onOpenSaves,
   onOpenMap,
-  onOpenLogs
+  onOpenLogs,
+  currentAmbience
 }) => {
   const { t } = useTranslation();
   const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
@@ -121,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
            onSave={onOpenSaves}
            onSettings={onSettings}
            onCloseMobile={onCloseMobile}
+           currentAmbience={currentAmbience}
          />
          </div>
        )}

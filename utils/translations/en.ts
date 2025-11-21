@@ -3,7 +3,12 @@ import {themes} from "./themes/en.ts";
 export const en = {
     titlePart1: "Chronicles",
     titlePart2: "of Infinity",
-    quest: "Current Objective",
+    questPanel: {
+      title: "Current Objective",
+      main: "Main",
+      side: "Side Quests",
+      empty: "No active quests."
+    },
     inventory: "Inventory",
     emptyInventory: "Your inventory is empty.",
     relationships: "Relationships",
@@ -13,9 +18,11 @@ export const en = {
     decided: "You decided to:",
     placeholder: "Or write your own path...",
     act: "Act",
-    loading: "The story unfolds...",
-    vision: "Visualizing...",
-    unavailable: "Image unavailable",
+    loading: "Story is unfolding...",
+    vision: "Envisioning imagery...",
+    clickToGenerate: "Click to Generate",
+    unavailable: "Image Unavailable",
+    generationFailed: "Generation Failed - Click to Retry",
     tryAgain: "Try Again",
     error: "The connection to the universe was interrupted... (API Error, please try again)",
     builtWith: "Built with Gemini 3 Pro & Imagen 4 & Veo",
@@ -89,6 +96,8 @@ export const en = {
     scroll: "Scroll",
     turn: "Turn",
     previous: "Previous",
+    showChoices: "Show Choices",
+    hideChoices: "Hide Choices",
     next: "Next",
     latest: "Latest",
     themes: themes,
@@ -136,14 +145,18 @@ export const en = {
           ratio916: "9:16 Mobile (768x1344)",
           ratio169: "16:9 Desktop (1344x768)",
           ratio219: "21:9 Cinematic (1536x672)"
-      }
+      },
+      imageTimeout: "Image Generation Timeout",
+      imageTimeoutHelp: "Maximum wait time for image generation (in seconds)",
+      manualImageGen: "Manual Image Generation",
+      manualImageGenHelp: "Require manual click to generate images instead of auto-generation"
     },
     outline: {
        title: "Story Outline",
        premise: "Premise",
        goal: "Goal",
        world: "World",
-       generating: "Generating Saga Outline..."
+       generating: "Weaving an epic tale..."
     },
     tree: {
       map: "Destiny Map",

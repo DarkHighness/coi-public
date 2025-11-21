@@ -26,6 +26,7 @@ interface DesktopGameLayoutProps {
   onOpenLogs: () => void;
   aiSettings: any;
   onTypingComplete?: () => void;
+  currentAmbience?: string;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -48,7 +49,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenMap,
   onOpenLogs,
   aiSettings,
-  onTypingComplete
+  onTypingComplete,
+  currentAmbience
 }) => {
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
@@ -64,6 +66,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
            onOpenSaves={onOpenSaves}
            onOpenMap={onOpenMap}
            onOpenLogs={onOpenLogs}
+           currentAmbience={currentAmbience}
          />
       </div>
 
