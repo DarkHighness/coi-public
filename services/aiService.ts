@@ -432,6 +432,7 @@ export const generateAdventureTurn = async (
     language = "English",
     themeKey,
     tFunc,
+    knowledge, // Extract knowledge from input
   } = input;
 
   const { provider, modelId } = getProviderConfig("story");
@@ -471,6 +472,7 @@ export const generateAdventureTurn = async (
     locations,
     currentLocationId,
     character,
+    knowledge, // Pass knowledge to context
   );
 
   // Combine system instructions

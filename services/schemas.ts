@@ -334,6 +334,59 @@ export const gameResponseSchema: Schema = {
       },
       description: "Updates to the Implicit Line (invisible to user).",
     },
+    knowledgeActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          action: {
+            type: Type.STRING,
+            enum: ["add", "update"],
+            description: "Add new knowledge or update existing. No remove action.",
+          },
+          title: {
+            type: Type.STRING,
+            description:
+              "Title/name of the knowledge entry (e.g., 'Ancient Ruins', 'The Great War').",
+          },
+          category: {
+            type: Type.STRING,
+            enum: [
+              "landscape",
+              "history",
+              "item",
+              "legend",
+              "faction",
+              "culture",
+              "magic",
+              "technology",
+              "other",
+            ],
+            description: "Category of knowledge.",
+          },
+          description: {
+            type: Type.STRING,
+            description: "What the player now knows about this topic.",
+          },
+          details: {
+            type: Type.STRING,
+            description: "Additional deeper understanding or context.",
+          },
+          discoveredAt: {
+            type: Type.STRING,
+            description: "Where/when this knowledge was learned.",
+          },
+          relatedTo: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "IDs or names of related knowledge, items, or locations.",
+          },
+        },
+        required: ["action", "title", "category", "description"],
+      },
+      description:
+        "Changes to player's accumulated knowledge. Use when the player learns something significant about the world, history, factions, magic systems, etc. Knowledge can only be added or updated, never removed.",
+    },
     generateImage: {
       type: Type.BOOLEAN,
       description:

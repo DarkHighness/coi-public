@@ -8,6 +8,7 @@ export interface GameState {
   relationships: Relationship[];
   quests: Quest[];
   character: CharacterStatus;
+  knowledge: KnowledgeEntry[]; // Player's accumulated knowledge about the world
 
   // Location System
   currentLocation: string;
@@ -109,6 +110,7 @@ export interface UIState {
   inventory: ListState;
   locations: ListState;
   relationships: ListState;
+  knowledge: ListState; // UI state for knowledge panel
 }
 
 export interface Relationship {
@@ -150,6 +152,7 @@ export interface GameStateSnapshot {
   relationships: Relationship[];
   quests: Quest[];
   character: CharacterStatus;
+  knowledge: KnowledgeEntry[]; // Player's accumulated knowledge
   currentLocation: string;
   knownLocations: string[];
   locations: Location[];
@@ -173,6 +176,16 @@ export interface Location {
   isVisited?: boolean;
   environment?: string;
   notes?: string;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string; // Name of the knowledge (e.g., "Ancient Ruins", "Great War")
+  category: "landscape" | "history" | "item" | "legend" | "faction" | "culture" | "magic" | "technology" | "other";
+  description: string; // What the player knows
+  details?: string; // Additional details or deeper understanding
+  discoveredAt?: string; // Where/when this was learned
+  relatedTo?: string[]; // IDs of related knowledge, items, or locations
 }
 
 export interface InventoryItem {
@@ -232,6 +245,25 @@ export interface LocationAction {
   notes?: string;
 }
 
+export interface KnowledgeAction {
+  action: "add" | "update"; // No remove action for knowledge
+  title: string;
+  category:
+    | "landscape"
+    | "history"
+    | "item"
+    | "legend"
+    | "faction"
+    | "culture"
+    | "magic"
+    | "technology"
+    | "other";
+  description: string;
+  details?: string;
+  discoveredAt?: string;
+  relatedTo?: string[];
+}
+
 export interface CharacterAction {
   target:
     | "attribute"
@@ -261,6 +293,7 @@ export interface AdventureTurnInput {
   locations: Location[];
   currentLocationId: string;
   character: CharacterStatus;
+  knowledge?: KnowledgeEntry[]; // Player's accumulated knowledge
   userAction: string;
   language: string;
   themeKey?: string;
@@ -270,13 +303,14 @@ export interface AdventureTurnInput {
 export interface GameResponse {
   narrative: string;
   choices: string[];
-  inventoryActions: InventoryAction[];
-  relationshipActions: RelationshipAction[];
-  locationActions: LocationAction[];
-  characterActions: CharacterAction[];
-  questActions: QuestAction[];
+  inventoryActions?: InventoryAction[];
+  relationshipActions?: RelationshipAction[];
+  locationActions?: LocationAction[];
+  characterActions?: CharacterAction[];
+  questActions?: QuestAction[];
+  knowledgeActions?: KnowledgeAction[]; // Player's accumulated knowledge
   currentQuest?: string; // Legacy support
-  imagePrompt: string;
+  imagePrompt?: string;
   envTheme?: string; // Optional update for atmosphere
   theme?: string; // Optional update for static theme (rarely used but kept for compatibility)
   environment?: string; // The detected environment for audio ambience

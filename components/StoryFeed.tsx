@@ -46,17 +46,20 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
 
   // Track played animations to prevent re-typing
   const playedAnimations = useRef<Set<string>>(new Set());
+  const isInitialMount = useRef(true);
 
   const { t } = useTranslation();
 
-  // Prevent animation replay on game load/restore
+  // Mark all existing segments as played on initial load (prevent re-typing on game load/restore)
+  // But only do this ONCE on mount, not on every re-render
   useEffect(() => {
-    if (!gameState.isProcessing && currentHistory.length > 0) {
+    if (isInitialMount.current && currentHistory.length > 0) {
       currentHistory.forEach((segment) => {
         playedAnimations.current.add(segment.id);
       });
+      isInitialMount.current = false;
     }
-  }, [gameState.isProcessing, currentHistory]);
+  }, []); // Empty deps - run only once on mount
 
   // Auto-jump to latest when history grows (new turn generated)
   useEffect(() => {

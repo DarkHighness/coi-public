@@ -10,6 +10,7 @@ const INITIAL_STATE: GameState = {
   relationships: [],
   quests: [],
   character: DEFAULT_CHARACTER,
+  knowledge: [], // Player's accumulated knowledge
 
   // Location System
   currentLocation: "Unknown",
@@ -20,6 +21,7 @@ const INITIAL_STATE: GameState = {
     inventory: { pinnedIds: [], customOrder: [] },
     locations: { pinnedIds: [], customOrder: [] },
     relationships: { pinnedIds: [], customOrder: [] },
+    knowledge: { pinnedIds: [], customOrder: [] },
   },
 
   outline: null,

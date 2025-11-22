@@ -370,6 +370,7 @@ export const useGameEngine = () => {
         locations: gameStateRef.current.locations,
         currentLocationId: gameStateRef.current.currentLocation,
         character: gameStateRef.current.character,
+        knowledge: gameStateRef.current.knowledge, // Pass knowledge to AI
         userAction: action,
         language: LANG_MAP[language],
         themeKey: gameStateRef.current.theme, // Pass the static theme key
@@ -426,6 +427,8 @@ export const useGameEngine = () => {
               if (act.lore) newInventory[idx].lore = act.lore;
               if (act.isMystery !== undefined)
                 newInventory[idx].isMystery = act.isMystery;
+            } else {
+              console.warn(`[handleAction] Inventory update failed: item "${act.item}" not found`);
             }
           }
         });
@@ -462,6 +465,8 @@ export const useGameEngine = () => {
             if (act.appearance) newRels[idx].appearance = act.appearance;
             if (act.personality) newRels[idx].personality = act.personality;
             if (act.notes) newRels[idx].notes = act.notes;
+          } else if (act.action === "update" && idx === -1) {
+            console.warn(`[handleAction] Relationship update failed: "${act.name}" not found`);
           }
         });
       }
@@ -487,6 +492,8 @@ export const useGameEngine = () => {
             } else if (act.action === "fail") {
               newQuests[idx].status = "failed";
             }
+          } else if (act.action !== "add") {
+            console.warn(`[handleAction] Quest action "${act.action}" failed: quest "${act.id}" not found`);
           }
         });
       }
@@ -551,21 +558,14 @@ export const useGameEngine = () => {
           }
           if (act.target === "profession" && act.action === "update") {
             newCharacter.profession =
-              (act.value as string) ||
-              (act.strValue as string) ||
-              newCharacter.profession;
+              (act.value as string) || (act.strValue as string);
           }
           if (act.target === "background" && act.action === "update") {
             newCharacter.background =
-              (act.value as string) ||
-              (act.strValue as string) ||
-              newCharacter.background;
+              (act.value as string) || (act.strValue as string);
           }
           if (act.target === "race" && act.action === "update") {
-            newCharacter.race =
-              (act.value as string) ||
-              (act.strValue as string) ||
-              newCharacter.race;
+            newCharacter.race = (act.value as string) || (act.strValue as string);
           }
           if (act.target === "attribute") {
             const idx = newCharacter.attributes.findIndex(
@@ -611,6 +611,40 @@ export const useGameEngine = () => {
         });
       }
 
+      // Process Knowledge Actions (add/update only, no remove)
+      let newKnowledge = [...(gameStateRef.current.knowledge || [])];
+      if (response.knowledgeActions) {
+        response.knowledgeActions.forEach((act) => {
+          const idx = newKnowledge.findIndex((k) => k.title === act.title);
+          if (act.action === "add" && idx === -1) {
+            newKnowledge.push({
+              id:
+                Date.now().toString() +
+                Math.random().toString(36).substr(2, 5),
+              title: act.title,
+              category: act.category || "other",
+              description: act.description || "",
+              details: act.details,
+              discoveredAt: act.discoveredAt,
+              relatedTo: act.relatedTo,
+            });
+          } else if (act.action === "update" && idx !== -1) {
+            // Update existing knowledge
+            if (act.description)
+              newKnowledge[idx].description = act.description;
+            if (act.details) newKnowledge[idx].details = act.details;
+            if (act.category) newKnowledge[idx].category = act.category;
+            if (act.discoveredAt)
+              newKnowledge[idx].discoveredAt = act.discoveredAt;
+            if (act.relatedTo) newKnowledge[idx].relatedTo = act.relatedTo;
+          } else if (act.action === "update" && idx === -1) {
+            console.warn(`[handleAction] Knowledge update failed: "${act.title}" not found`);
+          } else {
+            console.warn(`[handleAction] Invalid knowledge action: "${act.action}" for "${act.title}"`);
+          }
+        });
+      }
+
       const modelNode: StorySegment = {
         id: modelNodeId,
         parentId: isInit ? null : userNodeId,
@@ -633,6 +667,7 @@ export const useGameEngine = () => {
           relationships: newRels,
           quests: newQuests,
           character: newCharacter,
+          knowledge: newKnowledge, // Preserve accumulated knowledge
           currentLocation: newCurrentLocation,
           knownLocations: newKnownLocations,
           locations: newLocations,
@@ -680,6 +715,7 @@ export const useGameEngine = () => {
         knownLocations: newKnownLocations,
         locations: newLocations,
         character: newCharacter,
+        knowledge: newKnowledge, // Update knowledge state
         summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
@@ -886,6 +922,7 @@ export const useGameEngine = () => {
           relationships: targetNode.stateSnapshot.relationships,
           quests: targetNode.stateSnapshot.quests,
           character: targetNode.stateSnapshot.character,
+          knowledge: targetNode.stateSnapshot.knowledge, // Restore accumulated knowledge
           currentLocation: targetNode.stateSnapshot.currentLocation,
           knownLocations: targetNode.stateSnapshot.knownLocations,
           locations: targetNode.stateSnapshot.locations,
@@ -915,7 +952,11 @@ export const useGameEngine = () => {
       "with prompt:",
       node.imagePrompt.substring(0, 50) + "...",
     );
-    setGameState((prev) => ({ ...prev, isImageGenerating: true }));
+    setGameState((prev) => ({
+      ...prev,
+      isImageGenerating: true,
+      generatingNodeId: nodeId, // Set the node ID so UI knows which image is generating
+    }));
 
     const imageTimeout = setTimeout(
       () => {

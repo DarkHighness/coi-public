@@ -65,7 +65,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 ></path>
               </svg>
-              <span>Story So Far</span>
+              <span>{t("summarySnapshot")}</span>
             </div>
             <div className="text-sm text-theme-text/90 italic font-serif leading-relaxed">
               {segment.summarySnapshot}

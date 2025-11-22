@@ -8,6 +8,7 @@ import { QuestPanel } from "./sidebar/QuestPanel";
 import { InventoryPanel } from "./sidebar/InventoryPanel";
 import { RelationshipPanel } from "./sidebar/RelationshipPanel";
 import { LocationPanel } from "./sidebar/LocationPanel";
+import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { SystemFooter } from "./sidebar/SystemFooter";
 
 interface SidebarProps {
@@ -126,6 +127,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           itemContext={itemContext}
           listState={gameState.uiState?.inventory}
           onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
+        />
+        <KnowledgePanel
+          knowledge={gameState.knowledge || []}
+          themeFont={currentThemeConfig.fontClass}
         />
       </div>
 

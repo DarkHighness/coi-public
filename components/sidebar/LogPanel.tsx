@@ -96,7 +96,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   <label className="text-[10px] uppercase tracking-widest text-green-500 font-bold block">
                     Request Payload
                   </label>
-                  <div className="bg-black/40 rounded border border-theme-border/30 p-3 overflow-auto max-h-[300px]">
+                  <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[300px]">
                     <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap break-words">
                       {typeof log.request === "string"
                         ? log.request
@@ -111,7 +111,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   >
                     {isError ? "Error Response" : "Response Data"}
                   </label>
-                  <div className="bg-black/40 rounded border border-theme-border/30 p-3 overflow-auto max-h-[300px]">
+                  <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[300px]">
                     <pre
                       className={`text-xs whitespace-pre-wrap break-words ${isError ? "text-red-400" : "text-theme-muted/80"}`}
                     >
@@ -125,7 +125,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
               {/* Log Footer (Usage) */}
               {log.usage && (
-                <div className="px-4 py-2 bg-theme-surface-highlight/10 border-t border-theme-border/30 flex justify-end gap-6 text-xs text-yellow-500/80">
+                <div className="px-4 py-2 bg-theme-surface-highlight/10 border-t border-theme-border/30 flex justify-end gap-6 text-xs text-yellow-500/80 items-center">
                   <span>
                     <strong className="text-yellow-500">Prompt:</strong>{" "}
                     {log.usage.promptTokens}
@@ -134,7 +134,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                     <strong className="text-yellow-500">Completion:</strong>{" "}
                     {log.usage.completionTokens}
                   </span>
-                  <span className="px-2 py-0.5 bg-yellow-900/20 border border-yellow-700/30 rounded">
+                  <span className="px-2 py-0.5 bg-yellow-900/10 border border-yellow-700/30 rounded">
                     <strong className="text-yellow-500">Total:</strong>{" "}
                     {log.usage.totalTokens}
                   </span>
