@@ -1,6 +1,6 @@
 import React from "react";
 import { SaveSlot, LanguageCode } from "../types";
-import { THEMES } from "../utils/constants";
+import { THEMES, ENV_THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
 
 interface SaveManagerProps {
@@ -52,8 +52,11 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
           )}
 
           {slots.map((slot) => {
+            const themeConfig = THEMES[slot.theme];
+            const envTheme = themeConfig?.defaultEnvTheme;
             const themeColor =
-              THEMES[slot.theme]?.vars["--theme-primary"] || "#ccc";
+              (envTheme && ENV_THEMES[envTheme]?.vars["--theme-primary"]) ||
+              "#ccc";
             const isCurrent = currentSlotId === slot.id;
 
             return (
