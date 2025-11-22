@@ -23,6 +23,7 @@ export interface StoryCardProps {
   onGenerateImage?: (id: string) => void;
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
+  onAudioGenerated?: (id: string, key: string) => void;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -36,6 +37,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   onGenerateImage,
   aiSettings,
   onTypingComplete,
+  onAudioGenerated,
 }) => {
   const { t } = useTranslation();
 
@@ -111,6 +113,10 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           shouldAnimate={shouldAnimate}
           aiSettings={aiSettings}
           onTypingComplete={onTypingComplete}
+          narrativeTone={segment.narrativeTone}
+          segmentId={segment.id}
+          audioKey={segment.audioKey}
+          onAudioGenerated={(key) => onAudioGenerated?.(segment.id, key)}
         />
         <div className="px-6">
           <TokenStats usage={segment.usage} />

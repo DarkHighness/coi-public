@@ -258,48 +258,36 @@ export const generateSpeech = async (
   model: string,
   text: string,
   voiceName: string = "alloy",
-  options?: { gender?: "male" | "female" },
-): Promise<{ audio: string; usage?: any; raw?: any }> => {
+  options?: {
+    speed?: number;
+    format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
+    instructions?: string; // For gpt-4o-mini-tts
+  },
+): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
   const client = getClient(config);
 
-  let selectedVoice = voiceName;
-
-  // If voiceName is generic or default, and gender is specified, pick a suitable voice
-  if (options?.gender) {
-    const maleVoices = ["alloy", "echo", "onyx"];
-    const femaleVoices = ["nova", "shimmer", "fable"]; // Fable is arguably neutral/male, but let's use these for now. Actually Fable is British male-ish.
-    // Let's refine:
-    // Male: alloy (neutral), echo (male), onyx (male), fable (male)
-    // Female: nova (female), shimmer (female)
-    // Alloy is described as "versatile and neutral".
-    // Let's stick to:
-    // Male: echo, onyx
-    // Female: nova, shimmer
-    // Neutral/Default: alloy, fable
-
-    if (options.gender === "male") {
-      if (!maleVoices.includes(voiceName)) selectedVoice = "onyx";
-    } else if (options.gender === "female") {
-      if (!femaleVoices.includes(voiceName)) selectedVoice = "nova";
-    }
-  }
-
-  const response = await client.audio.speech.create({
+  const requestBody: any = {
     model: model || "tts-1",
     input: text,
-    voice: selectedVoice as any,
-    response_format: "mp3",
-  });
+    voice: voiceName as any,
+    response_format: options?.format || "mp3",
+    speed: options?.speed || 1.0,
+  };
 
-  const buffer = await response.arrayBuffer();
-  let binary = "";
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Add instructions if supported (gpt-4o-mini-tts)
+  if (model === "gpt-4o-mini-tts" && options?.instructions) {
+    // Note: The SDK might not fully support 'instructions' yet if it's very new,
+    // but we can try passing it. If strict typing fails, we might need to cast or use raw fetch.
+    // Based on docs, it's a top-level param.
+    // Checking OpenAI Node SDK types might be needed, but let's assume we can pass extra props or cast.
+    (requestBody as any).instructions = options.instructions;
   }
 
+  const response = await client.audio.speech.create(requestBody);
+
+  const buffer = await response.arrayBuffer();
   return {
-    audio: btoa(binary),
+    audio: buffer,
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
   };
 };

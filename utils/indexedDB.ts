@@ -4,9 +4,10 @@
  */
 
 const DB_NAME = "ChroniclesOfInfinity";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const SAVES_STORE = "saves";
 const META_STORE = "meta";
+const AUDIO_STORE = "audio";
 
 interface DBConnection {
   db: IDBDatabase;
@@ -43,6 +44,11 @@ const openDB = (): Promise<IDBDatabase> => {
       // Create meta store if it doesn't exist
       if (!db.objectStoreNames.contains(META_STORE)) {
         db.createObjectStore(META_STORE);
+      }
+
+      // Create audio store if it doesn't exist
+      if (!db.objectStoreNames.contains(AUDIO_STORE)) {
+        db.createObjectStore(AUDIO_STORE);
       }
     };
   });
@@ -136,6 +142,36 @@ export const loadMetadata = async (key: string): Promise<any | null> => {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([META_STORE], "readonly");
     const store = transaction.objectStore(META_STORE);
+    const request = store.get(key);
+
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Save audio blob
+ */
+export const saveAudio = async (key: string, data: Blob): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([AUDIO_STORE], "readwrite");
+    const store = transaction.objectStore(AUDIO_STORE);
+    const request = store.put(data, key);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Load audio blob
+ */
+export const loadAudio = async (key: string): Promise<Blob | null> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([AUDIO_STORE], "readonly");
+    const store = transaction.objectStore(AUDIO_STORE);
     const request = store.get(key);
 
     request.onsuccess = () => resolve(request.result || null);

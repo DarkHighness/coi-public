@@ -1,6 +1,8 @@
-import { ThemeConfig } from "../../types";
+import { ThemeConfig, StoryThemeConfig } from "../../types";
 
-export const THEMES: Record<string, ThemeConfig> = {
+// Visual/Atmospheric Themes (Dynamic)
+export const ENV_THEMES: Record<string, ThemeConfig> = {
+  // Standard Fantasy / Mystic
   fantasy: {
     vars: {
       "--theme-bg": "#020617",
@@ -24,6 +26,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-fantasy",
   },
+  // Sci-Fi / Tech
   scifi: {
     vars: {
       "--theme-bg": "#000000",
@@ -47,6 +50,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-scifi",
   },
+  // Cyberpunk / Neon
   cyberpunk: {
     vars: {
       "--theme-bg": "#1a0b2e",
@@ -70,6 +74,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-cyberpunk",
   },
+  // Horror / Dark
   horror: {
     vars: {
       "--theme-bg": "#1c1917",
@@ -93,6 +98,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-horror",
   },
+  // Mystery / Noir
   mystery: {
     vars: {
       "--theme-bg": "#0a0a0a",
@@ -116,7 +122,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  modern_romance: {
+  // Romance / Pink
+  romance: {
     vars: {
       "--theme-bg": "#1a1018",
       "--theme-surface": "#291521",
@@ -139,7 +146,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  palace_drama: {
+  // Palace / Royal
+  royal: {
     vars: {
       "--theme-bg": "#220505",
       "--theme-surface": "#450a0a",
@@ -162,6 +170,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-fantasy",
   },
+  // Wuxia / Ink
   wuxia: {
     vars: {
       "--theme-bg": "#1c1c1c",
@@ -185,7 +194,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  demonic_cultivation: {
+  // Demonic / Dark Red
+  demonic: {
     vars: {
       "--theme-bg": "#0f0505", // Very dark red/black
       "--theme-surface": "#1a0a0a",
@@ -208,7 +218,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  xianxia: {
+  // Xianxia / Ethereal Blue
+  ethereal: {
     vars: {
       "--theme-bg": "#0f1c2e",
       "--theme-surface": "#1e293b",
@@ -231,7 +242,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  ceo: {
+  // CEO / Modern Dark
+  modern: {
     vars: {
       "--theme-bg": "#111827",
       "--theme-surface": "#1f2937",
@@ -254,7 +266,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  long_aotian: {
+  // Gold / Opulent
+  gold: {
     vars: {
       "--theme-bg": "#000000",
       "--theme-surface": "#1a1a1a",
@@ -277,7 +290,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  villain_op: {
+  // Villain / Purple
+  villain: {
     vars: {
       "--theme-bg": "#0f0505",
       "--theme-surface": "#2b0b0b",
@@ -300,7 +314,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-fantasy",
   },
-  period_drama: {
+  // Period / Sepia
+  sepia: {
     vars: {
       "--theme-bg": "#2c241b", // Dark Sepia/Brown
       "--theme-surface": "#433629",
@@ -323,7 +338,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  female_growth: {
+  // Female Growth / Rose
+  rose: {
     vars: {
       "--theme-bg": "#1a0505",
       "--theme-surface": "#2b0a0a",
@@ -346,7 +362,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  war_god: {
+  // War / Blood
+  war: {
     vars: {
       "--theme-bg": "#0a0a0a",
       "--theme-surface": "#171717",
@@ -369,7 +386,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-fantasy",
   },
-  ancient_romance: {
+  // Ancient Romance / Orange
+  sunset: {
     vars: {
       "--theme-bg": "#1c1917",
       "--theme-surface": "#292524",
@@ -392,30 +410,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  love_after_marriage: {
-    vars: {
-      "--theme-bg": "#1f1016",
-      "--theme-surface": "#381a26",
-      "--theme-surface-highlight": "#5e2a3e",
-      "--theme-border": "#db2777",
-      "--theme-primary": "#f472b6",
-      "--theme-primary-hover": "#ec4899",
-      "--theme-text": "#fce7f3",
-      "--theme-muted": "#fbcfe8",
-    },
-    dayVars: {
-      "--theme-bg": "#fdf2f8",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#fce7f3",
-      "--theme-border": "#f9a8d4",
-      "--theme-primary": "#ec4899",
-      "--theme-primary-hover": "#db2777",
-      "--theme-text": "#831843",
-      "--theme-muted": "#be185d",
-    },
-    fontClass: "font-sans",
-  },
-  angst: {
+  // Angst / Cold Blue
+  cold: {
     vars: {
       "--theme-bg": "#0f172a",
       "--theme-surface": "#1e293b",
@@ -438,7 +434,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  reunion: {
+  // Reunion / Violet
+  violet: {
     vars: {
       "--theme-bg": "#18181b",
       "--theme-surface": "#27272a",
@@ -461,30 +458,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  return_strong: {
-    vars: {
-      "--theme-bg": "#000000",
-      "--theme-surface": "#111111",
-      "--theme-surface-highlight": "#222222",
-      "--theme-border": "#eab308", // Gold
-      "--theme-primary": "#facc15",
-      "--theme-primary-hover": "#eab308",
-      "--theme-text": "#ffffff",
-      "--theme-muted": "#a3a3a3",
-    },
-    dayVars: {
-      "--theme-bg": "#ffffff",
-      "--theme-surface": "#fefce8",
-      "--theme-surface-highlight": "#fef9c3",
-      "--theme-border": "#eab308",
-      "--theme-primary": "#eab308",
-      "--theme-primary-hover": "#ca8a04",
-      "--theme-text": "#000000",
-      "--theme-muted": "#854d0e",
-    },
-    fontClass: "font-fantasy",
-  },
-  farming: {
+  // Farming / Green
+  nature: {
     vars: {
       "--theme-bg": "#14281d", // Dark Green
       "--theme-surface": "#1d3b2a",
@@ -507,7 +482,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  republican: {
+  // Republican / Art Deco
+  artdeco: {
     vars: {
       "--theme-bg": "#1a1614",
       "--theme-surface": "#2b2420",
@@ -530,6 +506,7 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
+  // Intrigue / Blood Red
   intrigue: {
     vars: {
       "--theme-bg": "#190808",
@@ -553,7 +530,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  survival: {
+  // Survival / Rust
+  wasteland: {
     vars: {
       "--theme-bg": "#1a120b",
       "--theme-surface": "#2e1f12",
@@ -576,7 +554,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-scifi",
   },
-  patriotism: {
+  // Patriotism / Blue Gold
+  patriotic: {
     vars: {
       "--theme-bg": "#1e1b4b", // Dark Blue
       "--theme-surface": "#312e81",
@@ -599,7 +578,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  son_in_law: {
+  // Son in Law / Cyan
+  cyan: {
     vars: {
       "--theme-bg": "#111827",
       "--theme-surface": "#1f2937",
@@ -622,7 +602,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  white_moonlight: {
+  // White Moonlight / Silver
+  silver: {
     vars: {
       "--theme-bg": "#0f172a",
       "--theme-surface": "#1e293b",
@@ -645,7 +626,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-serif",
   },
-  yandere: {
+  // Yandere / Blood Red
+  obsessive: {
     vars: {
       "--theme-bg": "#000000",
       "--theme-surface": "#1a0505",
@@ -668,7 +650,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-horror",
   },
-  cs_student: {
+  // CS Student / Emerald
+  emerald: {
     vars: {
       "--theme-bg": "#022c22", // teal-950
       "--theme-surface": "#064e3b", // emerald-900
@@ -689,9 +672,10 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-text": "#064e3b",
       "--theme-muted": "#10b981",
     },
-    fontClass: "font-sans", // Standard modern font fits CS best
+    fontClass: "font-sans",
   },
-  infinite_flow: {
+  // Infinite Flow / Danger
+  danger: {
     vars: {
       "--theme-bg": "#09090b",
       "--theme-surface": "#18181b",
@@ -714,7 +698,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-scifi",
   },
-  entertainment: {
+  // Entertainment / Glamour
+  glamour: {
     vars: {
       "--theme-bg": "#1a1018",
       "--theme-surface": "#291521",
@@ -737,7 +722,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  esports: {
+  // Esports / RGB
+  rgb: {
     vars: {
       "--theme-bg": "#020617",
       "--theme-surface": "#0f172a",
@@ -760,7 +746,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  rough_guy: {
+  // Rough Guy / Stone
+  stone: {
     vars: {
       "--theme-bg": "#1c1917", // stone-900
       "--theme-surface": "#292524", // stone-800
@@ -783,7 +770,8 @@ export const THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
-  wife_chasing: {
+  // Wife Chasing / Heartbreak
+  heartbreak: {
     vars: {
       "--theme-bg": "#0f172a", // slate-900
       "--theme-surface": "#1e293b", // slate-800
@@ -798,173 +786,58 @@ export const THEMES: Record<string, ThemeConfig> = {
       "--theme-bg": "#f1f5f9",
       "--theme-surface": "#ffffff",
       "--theme-surface-highlight": "#e2e8f0",
-      "--theme-border": "#cbd5e1",
+      "--theme-border": "#f43f5e",
       "--theme-primary": "#e11d48",
       "--theme-primary-hover": "#be123c",
       "--theme-text": "#0f172a",
       "--theme-muted": "#64748b",
     },
-    fontClass: "font-serif",
-  },
-  special_forces: {
-    vars: {
-      "--theme-bg": "#141e16", // Custom dark camo green
-      "--theme-surface": "#1a2e1f",
-      "--theme-surface-highlight": "#25402b",
-      "--theme-border": "#4d7c55",
-      "--theme-primary": "#84cc16", // lime-500
-      "--theme-primary-hover": "#65a30d", // lime-600
-      "--theme-text": "#ecfccb", // lime-100
-      "--theme-muted": "#84a588",
-    },
-    dayVars: {
-      "--theme-bg": "#ecfccb",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#d9f99d",
-      "--theme-border": "#84cc16",
-      "--theme-primary": "#4d7c0f",
-      "--theme-primary-hover": "#3f6212",
-      "--theme-text": "#14532d",
-      "--theme-muted": "#65a30d",
-    },
     fontClass: "font-sans",
   },
-  zombie: {
-    vars: {
-      "--theme-bg": "#1a0505", // Dark red/black
-      "--theme-surface": "#2b0a0a",
-      "--theme-surface-highlight": "#3f1010",
-      "--theme-border": "#7f1d1d", // red-900
-      "--theme-primary": "#65a30d", // lime-600 (Toxic/Zombie green)
-      "--theme-primary-hover": "#4d7c0f", // lime-700
-      "--theme-text": "#fecaca", // red-200
-      "--theme-muted": "#991b1b", // red-800
-    },
-    dayVars: {
-      "--theme-bg": "#fef2f2",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#fee2e2",
-      "--theme-border": "#f87171",
-      "--theme-primary": "#4d7c0f",
-      "--theme-primary-hover": "#3f6212",
-      "--theme-text": "#450a0a",
-      "--theme-muted": "#991b1b",
-    },
-    fontClass: "font-horror",
-  },
-  body_swap: {
-    vars: {
-      "--theme-bg": "#0f172a", // slate-900
-      "--theme-surface": "#1e293b", // slate-800
-      "--theme-surface-highlight": "#334155", // slate-700
-      "--theme-border": "#8b5cf6", // violet-500
-      "--theme-primary": "#f59e0b", // amber-500 (Contrast)
-      "--theme-primary-hover": "#d97706", // amber-600
-      "--theme-text": "#f8fafc", // slate-50
-      "--theme-muted": "#94a3b8", // slate-400
-    },
-    dayVars: {
-      "--theme-bg": "#f8fafc",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#f1f5f9",
-      "--theme-border": "#8b5cf6",
-      "--theme-primary": "#d97706",
-      "--theme-primary-hover": "#b45309",
-      "--theme-text": "#0f172a",
-      "--theme-muted": "#64748b",
-    },
-    fontClass: "font-sans",
-  },
-  industry_elite: {
-    vars: {
-      "--theme-bg": "#020617", // slate-950
-      "--theme-surface": "#0f172a", // slate-900
-      "--theme-surface-highlight": "#1e293b", // slate-800
-      "--theme-border": "#cbd5e1", // slate-300 (Sharp/Clean)
-      "--theme-primary": "#0ea5e9", // sky-500
-      "--theme-primary-hover": "#0284c7", // sky-600
-      "--theme-text": "#f8fafc", // slate-50
-      "--theme-muted": "#64748b", // slate-500
-    },
-    dayVars: {
-      "--theme-bg": "#f8fafc",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#f1f5f9",
-      "--theme-border": "#94a3b8",
-      "--theme-primary": "#0284c7",
-      "--theme-primary-hover": "#0369a1",
-      "--theme-text": "#0f172a",
-      "--theme-muted": "#64748b",
-    },
-    fontClass: "font-sans",
-  },
-  mutual_redemption: {
-    vars: {
-      "--theme-bg": "#1c1917", // stone-900
-      "--theme-surface": "#292524", // stone-800
-      "--theme-surface-highlight": "#44403c", // stone-700
-      "--theme-border": "#a8a29e", // stone-400
-      "--theme-primary": "#fb923c", // orange-400 (Warmth)
-      "--theme-primary-hover": "#f97316", // orange-500
-      "--theme-text": "#fafaf9", // stone-50
-      "--theme-muted": "#78716c", // stone-500
-    },
-    dayVars: {
-      "--theme-bg": "#fafaf9",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#f5f5f4",
-      "--theme-border": "#d6d3d1",
-      "--theme-primary": "#f97316",
-      "--theme-primary-hover": "#ea580c",
-      "--theme-text": "#1c1917",
-      "--theme-muted": "#78716c",
-    },
-    fontClass: "font-serif",
-  },
-  sweet_pet: {
-    vars: {
-      "--theme-bg": "#1f1016", // pink-950 (darkened)
-      "--theme-surface": "#381a26", // pink-900 (darkened)
-      "--theme-surface-highlight": "#5e2a3e", // pink-800
-      "--theme-border": "#f9a8d4", // pink-300
-      "--theme-primary": "#f472b6", // pink-400
-      "--theme-primary-hover": "#ec4899", // pink-500
-      "--theme-text": "#fdf2f8", // pink-50
-      "--theme-muted": "#fbcfe8", // pink-200
-    },
-    dayVars: {
-      "--theme-bg": "#fdf2f8",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#fce7f3",
-      "--theme-border": "#f9a8d4",
-      "--theme-primary": "#ec4899",
-      "--theme-primary-hover": "#db2777",
-      "--theme-text": "#831843",
-      "--theme-muted": "#fbcfe8",
-    },
-    fontClass: "font-sans",
-  },
-  wild_youth: {
-    vars: {
-      "--theme-bg": "#111827", // gray-900
-      "--theme-surface": "#1f2937", // gray-800
-      "--theme-surface-highlight": "#374151", // gray-700
-      "--theme-border": "#facc15", // yellow-400 (Bright/Energetic)
-      "--theme-primary": "#facc15", // yellow-400
-      "--theme-primary-hover": "#eab308", // yellow-500
-      "--theme-text": "#f9fafb", // gray-50
-      "--theme-muted": "#9ca3af", // gray-400
-    },
-    dayVars: {
-      "--theme-bg": "#f9fafb",
-      "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#f3f4f6",
-      "--theme-border": "#eab308",
-      "--theme-primary": "#eab308",
-      "--theme-primary-hover": "#ca8a04",
-      "--theme-text": "#111827",
-      "--theme-muted": "#9ca3af",
-    },
-    fontClass: "font-sans",
-  },
+};
+
+// Story Themes (Static Genres)
+export const THEMES: Record<string, StoryThemeConfig> = {
+  fantasy: { defaultEnvTheme: "fantasy" },
+  scifi: { defaultEnvTheme: "scifi" },
+  cyberpunk: { defaultEnvTheme: "cyberpunk" },
+  horror: { defaultEnvTheme: "horror" },
+  mystery: { defaultEnvTheme: "mystery" },
+  modern_romance: { defaultEnvTheme: "romance" },
+  palace_drama: { defaultEnvTheme: "royal" },
+  wuxia: { defaultEnvTheme: "wuxia" },
+  demonic_cultivation: { defaultEnvTheme: "demonic" },
+  xianxia: { defaultEnvTheme: "ethereal" },
+  ceo: { defaultEnvTheme: "modern" },
+  long_aotian: { defaultEnvTheme: "gold" },
+  villain_op: { defaultEnvTheme: "villain" },
+  period_drama: { defaultEnvTheme: "sepia" },
+  female_growth: { defaultEnvTheme: "rose" },
+  war_god: { defaultEnvTheme: "war" },
+  ancient_romance: { defaultEnvTheme: "sunset" },
+  love_after_marriage: { defaultEnvTheme: "romance" },
+  angst: { defaultEnvTheme: "cold" },
+  reunion: { defaultEnvTheme: "violet" },
+  return_strong: { defaultEnvTheme: "gold" },
+  farming: { defaultEnvTheme: "nature" },
+  republican: { defaultEnvTheme: "artdeco" },
+  intrigue: { defaultEnvTheme: "intrigue" },
+  survival: { defaultEnvTheme: "wasteland" },
+  patriotism: { defaultEnvTheme: "patriotic" },
+  son_in_law: { defaultEnvTheme: "cyan" },
+  white_moonlight: { defaultEnvTheme: "silver" },
+  yandere: { defaultEnvTheme: "obsessive" },
+  cs_student: { defaultEnvTheme: "emerald" },
+  infinite_flow: { defaultEnvTheme: "danger" },
+  entertainment: { defaultEnvTheme: "glamour" },
+  esports: { defaultEnvTheme: "rgb" },
+  rough_guy: { defaultEnvTheme: "stone" },
+  wife_chasing: { defaultEnvTheme: "heartbreak" },
+  special_forces: { defaultEnvTheme: "patriotic" },
+  zombie: { defaultEnvTheme: "wasteland" },
+  body_swap: { defaultEnvTheme: "romance" },
+  industry_elite: { defaultEnvTheme: "modern" },
+  mutual_redemption: { defaultEnvTheme: "violet" },
+  sweet_pet: { defaultEnvTheme: "romance" },
+  wild_youth: { defaultEnvTheme: "modern" },
 };

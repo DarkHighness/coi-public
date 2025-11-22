@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
 import { Toast } from "./components/Toast";
-import { THEMES } from "./utils/constants";
+import { THEMES, ENV_THEMES } from "./utils/constants";
 import { FeedLayout, UIState, ListState } from "./types";
 import { MobileNav, MobileTab } from "./components/MobileNav";
 import { getEnvApiKey } from "./utils/env";
@@ -31,6 +31,11 @@ const MagicMirror = React.lazy(() =>
 const SettingsModal = React.lazy(() =>
   import("./components/SettingsModal").then((module) => ({
     default: module.SettingsModal,
+  })),
+);
+const VeoScriptModal = React.lazy(() =>
+  import("./components/VeoScriptModal").then((module) => ({
+    default: module.VeoScriptModal,
   })),
 );
 const SaveManager = React.lazy(() =>
@@ -78,6 +83,8 @@ export default function App() {
     setIsMagicMirrorOpen,
     magicMirrorImage,
     setMagicMirrorImage,
+    isVeoScriptOpen,
+    setIsVeoScriptOpen,
     isSettingsOpen,
     setIsSettingsOpen,
     aiSettings,
@@ -119,10 +126,38 @@ export default function App() {
     undefined,
   );
 
+  // Track currently viewed segment for dynamic theme/background
+  const [viewedSegment, setViewedSegment] = useState<any | null>(null);
+
+  // Track preview theme from StartScreen
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null);
+
+  // Reset viewed segment to latest when history updates (new turn)
+  useEffect(() => {
+    if (currentHistory.length > 0) {
+      setViewedSegment(currentHistory[currentHistory.length - 1]);
+    }
+  }, [currentHistory.length]);
+
   // Ref to track last played environment for notifications
   const lastPlayedEnvRef = useRef<string | undefined>(undefined);
 
-  const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
+  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
+
+  // Use viewed segment's envTheme if available, otherwise fall back to current game state
+  // Priority: Preview Theme (StartScreen) > Viewed Segment (History Scroll) > Current Game State
+  const targetSegment = viewedSegment || currentHistory[currentHistory.length - 1];
+
+  let currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+
+  if (previewTheme) {
+    const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
+    currentEnvThemeKey = previewStoryTheme.defaultEnvTheme;
+  } else if (targetSegment?.envTheme) {
+    currentEnvThemeKey = targetSegment.envTheme;
+  }
+
+  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   // Determine current context for effects
   const currentSegment = currentHistory[currentHistory.length - 1];
@@ -375,7 +410,7 @@ export default function App() {
             currentText={effectText}
             imagePrompt={effectPrompt}
             theme={gameState.theme}
-            backgroundImage={currentSegment?.imageUrl}
+            backgroundImage={targetSegment?.imageUrl}
           />
         </Suspense>
       </div>
@@ -398,6 +433,7 @@ export default function App() {
                       )[0]
                     : undefined
                 }
+                onThemePreview={setPreviewTheme}
               />
               <Suspense fallback={<LoadingFallback />}>
                 <SettingsModal
@@ -428,24 +464,38 @@ export default function App() {
           path="/initializing"
           element={
             <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
-              <div className="absolute inset-0 bg-black/60 z-0"></div>
-              <div className="absolute inset-0 opacity-20 animate-pulse z-0 bg-gradient-to-b from-theme-primary/20 to-transparent"></div>
-              <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
-                <div className="relative">
-                  <div className="w-24 h-24 border-4 border-theme-primary/30 border-t-theme-primary rounded-full animate-spin shadow-[0_0_50px_rgba(var(--theme-primary),0.4)]"></div>
+              {/* Cinematic Background */}
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse z-0"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 z-0"></div>
+
+              {/* Central Loader */}
+              <div className="relative z-10 flex flex-col items-center gap-12 animate-fade-in">
+                <div className="relative group">
+                  {/* Outer Ring */}
+                  <div className="w-32 h-32 border-[1px] border-theme-primary/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                  {/* Middle Ring */}
+                  <div className="absolute inset-2 border-[2px] border-t-theme-primary border-r-transparent border-b-theme-primary/50 border-l-transparent rounded-full animate-[spin_3s_linear_infinite]"></div>
+                  {/* Inner Ring */}
+                  <div className="absolute inset-6 border-[1px] border-theme-primary/80 rounded-full animate-pulse shadow-[0_0_30px_rgba(var(--theme-primary),0.5)]"></div>
+
+                  {/* Center Core */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-theme-primary/10 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-theme-primary rounded-full animate-ping"></div>
                   </div>
                 </div>
-                <div className="text-center space-y-3">
+
+                {/* Text Content */}
+                <div className="text-center space-y-4">
                   <h2
-                    className={`text-3xl md:text-5xl ${currentThemeConfig.fontClass} tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-theme-primary via-theme-text to-theme-primary animate-shimmer bg-[length:200%_auto]`}
+                    className={`text-4xl md:text-6xl ${currentThemeConfig.fontClass} tracking-[0.2em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-theme-muted via-theme-primary to-theme-muted animate-shimmer bg-[length:200%_auto] font-bold`}
                   >
                     {t("outline.generating")}
                   </h2>
-                  <p className="text-theme-muted text-sm uppercase tracking-[0.2em] animate-pulse">
-                    {t("loading")}
-                  </p>
+                  <div className="flex items-center justify-center gap-2 text-theme-muted/80 text-xs md:text-sm uppercase tracking-[0.3em]">
+                    <span className="w-8 h-[1px] bg-theme-primary/50"></span>
+                    <span>{t("loading")}</span>
+                    <span className="w-8 h-[1px] bg-theme-primary/50"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -494,6 +544,7 @@ export default function App() {
                     currentAmbience={currentAmbience}
                     onUpdateUIState={handleUpdateUIState}
                     onToggleMute={handleToggleMute}
+                    onVeoScript={() => setIsVeoScriptOpen(true)}
                   />
 
                   <DesktopGameLayout
@@ -528,6 +579,7 @@ export default function App() {
                     currentAmbience={currentAmbience}
                     onUpdateUIState={handleUpdateUIState}
                     onToggleMute={handleToggleMute}
+                    onVeoScript={() => setIsVeoScriptOpen(true)}
                   />
 
                   {/* Mobile Bottom Navigation */}
@@ -538,6 +590,14 @@ export default function App() {
                     isOpen={isMagicMirrorOpen}
                     onClose={() => setIsMagicMirrorOpen(false)}
                     initialImage={magicMirrorImage}
+                    themeFont={currentThemeConfig.fontClass}
+                  />
+
+                  <VeoScriptModal
+                    isOpen={isVeoScriptOpen}
+                    onClose={() => setIsVeoScriptOpen(false)}
+                    gameState={gameState}
+                    currentHistory={currentHistory}
                     themeFont={currentThemeConfig.fontClass}
                   />
 

@@ -381,8 +381,12 @@ export const generateSpeech = async (
   model: string,
   text: string,
   voiceName: string = "alloy",
-  options?: { gender?: "male" | "female" },
-): Promise<{ audio: string; usage?: any; raw?: any }> => {
+  options?: {
+    speed?: number;
+    format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
+    instructions?: string;
+  },
+): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
   // SDK doesn't seem to support audio yet, fallback to OpenAI provider
   return generateOpenAISpeech(
     {

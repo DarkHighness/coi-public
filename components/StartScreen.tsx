@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
-import { THEMES } from "../utils/constants";
+import { THEMES, ENV_THEMES } from "../utils/constants";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomContextModal } from "./CustomContextModal";
 import { SaveSlot } from "../types";
@@ -14,6 +14,7 @@ interface StartScreenProps {
   onOpenSaves: () => void;
   onSettings: () => void;
   latestSave?: SaveSlot;
+  onThemePreview?: (theme: string | null) => void;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -23,6 +24,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   onOpenSaves,
   onSettings,
   latestSave,
+  onThemePreview,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [hoveredTheme, setHoveredTheme] = useState<string>("fantasy");
@@ -38,6 +40,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
   const [isZooming, setIsZooming] = useState(false);
 
+  // Notify parent of theme hover for global style preview
+  React.useEffect(() => {
+    if (onThemePreview && mode === "theme_select") {
+      onThemePreview(hoveredTheme);
+    } else if (onThemePreview) {
+      onThemePreview(null);
+    }
+  }, [hoveredTheme, mode, onThemePreview]);
+
   const handleStart = (theme: string, customContext?: string) => {
     setIsZooming(true);
     setTimeout(() => {
@@ -47,7 +58,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
   // Dynamic background style based on hovered theme
   const activeThemeVar =
-    THEMES[hoveredTheme]?.vars["--theme-primary"] || "#f59e0b";
+    ENV_THEMES[THEMES[hoveredTheme]?.defaultEnvTheme]?.vars["--theme-primary"] || "#f59e0b";
 
   return (
     <div
@@ -63,8 +74,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       <div className="absolute inset-0 z-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 animate-pulse"></div>
       <ButterflyBackground />
 
-      {/* Left Panel: Branding & Atmosphere */}
-      <div className="relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none">
+      {/* Left Panel: Branding & Atmosphere - Hidden on mobile when in theme select mode to give space */}
+      <div className={`relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none ${mode === 'theme_select' ? 'hidden lg:flex' : 'flex'}`}>
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
           <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg">
             {t("titlePart1")}
@@ -79,7 +90,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </div>
 
       {/* Right Panel: Interaction */}
-      <div className="relative z-20 lg:w-6/12 h-2/3 lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden">
+      <div className={`relative z-20 lg:w-6/12 ${mode === 'theme_select' ? 'h-full w-full' : 'h-2/3'} lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden transition-all duration-500`}>
         {/* Save Preview Background */}
         {latestSave?.previewImage && (
           <div

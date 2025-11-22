@@ -9,6 +9,7 @@ interface SystemFooterProps {
   onSettings: () => void;
   onCloseMobile: () => void;
   currentAmbience?: string;
+  onVeoScript: () => void;
 }
 
 export const SystemFooter: React.FC<SystemFooterProps> = ({
@@ -19,6 +20,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   onSettings,
   onCloseMobile,
   currentAmbience,
+  onVeoScript,
 }) => {
   const { t } = useTranslation();
 
@@ -26,28 +28,53 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
     <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-6 mt-auto">
       {/* Tools Panel */}
       <div>
-        <button
-          onClick={() => {
-            onMagicMirror();
-            onCloseMobile();
-          }}
-          className="w-full py-3 px-4 bg-theme-surface-highlight border border-theme-border rounded hover:border-theme-primary transition-all group flex items-center justify-center text-theme-text"
-        >
-          <svg
-            className="w-5 h-5 mr-2 text-theme-primary group-hover:scale-110 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="flex rounded-md overflow-hidden border border-theme-border hover:border-theme-primary transition-colors group">
+          <button
+            onClick={() => {
+              onMagicMirror();
+              onCloseMobile();
+            }}
+            className="flex-1 py-3 px-4 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative border-r border-theme-border"
+            title={t("magicMirror")}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-            ></path>
-          </svg>
-          {t("magicMirror")}
-        </button>
+            <svg
+              className="w-5 h-5 mr-2 text-theme-primary group-hover:scale-110 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+              ></path>
+            </svg>
+            <span className="text-sm font-medium">{t("magicMirror")}</span>
+          </button>
+          <button
+            onClick={() => {
+              onVeoScript();
+              onCloseMobile();
+            }}
+            className="w-12 py-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative"
+            title={t("veoScript.title")}
+          >
+            <svg
+              className="w-5 h-5 text-theme-muted hover:text-theme-primary transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* System Panel */}

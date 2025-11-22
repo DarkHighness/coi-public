@@ -284,11 +284,30 @@ export const generateSpeech = async (
   model: string,
   text: string,
   voiceName: string = "Kore",
-): Promise<{ audio: string; usage?: any; raw?: any }> => {
+  options?: {
+    speed?: number;
+    format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
+    instructions?: string; // Used for narrative tone
+  },
+): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
   const ai = getGeminiClient(config);
+
+  // Gemini TTS Control via Prompting
+  // Docs: "Say in an spooky whisper: ..."
+  let processedText = text;
+  if (options?.instructions) {
+    // If instructions (tone) are provided, prepend them
+    // Clean up instructions to ensure it fits the pattern "Say in a [tone] tone:" or similar
+    // The user passes "cheerful", "sad", etc.
+    processedText = `Say in a ${options.instructions} tone: "${text}"`;
+  }
+
+  // Use the specific TTS model if the generic one is passed, or respect the passed model if it's already a TTS model
+  const ttsModel = model.includes("tts") ? model : "gemini-2.5-flash-preview-tts";
+
   const response = await ai.models.generateContent({
-    model: model,
-    contents: [{ parts: [{ text }] }],
+    model: ttsModel,
+    contents: [{ parts: [{ text: processedText }] }],
     config: {
       responseModalities: [Modality.AUDIO],
       speechConfig: {
@@ -309,5 +328,75 @@ export const generateSpeech = async (
     totalTokens: response.usageMetadata?.totalTokenCount || 0,
   };
 
-  return { audio: base64Audio, usage, raw: response };
+  // Convert base64 to Uint8Array
+  const binaryString = atob(base64Audio);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Check for WAV or MP3 header
+  // WAV: RIFF (52 49 46 46)
+  // MP3: ID3 (49 44 33) or Sync Word (FF FB / FF F3 etc)
+  const isWav =
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46;
+  const isMp3 =
+    (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) || // ID3
+    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0); // Sync word
+
+  if (isWav || isMp3) {
+    return { audio: bytes.buffer, usage, raw: response };
+  }
+
+  // If raw PCM, wrap in WAV header
+  // Default Gemini PCM is 24kHz, 1 channel, 16-bit
+  const wavHeader = new ArrayBuffer(44);
+  const view = new DataView(wavHeader);
+
+  const sampleRate = 24000;
+  const numChannels = 1;
+  const bitsPerSample = 16;
+
+  /* RIFF identifier */
+  writeString(view, 0, "RIFF");
+  /* file length */
+  view.setUint32(4, 36 + bytes.length, true);
+  /* RIFF type */
+  writeString(view, 8, "WAVE");
+  /* format chunk identifier */
+  writeString(view, 12, "fmt ");
+  /* format chunk length */
+  view.setUint32(16, 16, true);
+  /* sample format (raw) */
+  view.setUint16(20, 1, true);
+  /* channel count */
+  view.setUint16(22, numChannels, true);
+  /* sample rate */
+  view.setUint32(24, sampleRate, true);
+  /* byte rate (sample rate * block align) */
+  view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
+  /* block align (channel count * bytes per sample) */
+  view.setUint16(32, numChannels * (bitsPerSample / 8), true);
+  /* bits per sample */
+  view.setUint16(34, bitsPerSample, true);
+  /* data chunk identifier */
+  writeString(view, 36, "data");
+  /* data chunk length */
+  view.setUint32(40, bytes.length, true);
+
+  const wavBytes = new Uint8Array(wavHeader.byteLength + bytes.byteLength);
+  wavBytes.set(new Uint8Array(wavHeader), 0);
+  wavBytes.set(bytes, wavHeader.byteLength);
+
+  return { audio: wavBytes.buffer, usage, raw: response };
 };
+
+function writeString(view: DataView, offset: number, string: string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}

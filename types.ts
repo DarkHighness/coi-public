@@ -24,8 +24,10 @@ export interface GameState {
 
   isProcessing: boolean;
   isImageGenerating: boolean;
+  generatingNodeId: string | null; // Track specifically which node is generating an image
   error: string | null;
-  theme: string;
+  envTheme: string; // Dynamic atmosphere (e.g. "Dark", "Tense")
+  theme: string; // Static game genre (e.g. "Cyberpunk", "Wuxia")
 
   // Stats & Logs
   totalTokens: number;
@@ -124,6 +126,7 @@ export interface StorySegment {
   choices: string[];
   imagePrompt: string;
   imageUrl?: string;
+  audioKey?: string; // Key for cached TTS audio in IndexedDB
   role: "user" | "model";
   timestamp: number;
   summarySnapshot?: string; // If this node triggered a summary, store it here
@@ -133,6 +136,8 @@ export interface StorySegment {
   summaries?: string[]; // The total summary of the story up to this node
   summarizedIndex?: number; // The index in the history chain where the summary ends
   environment?: string; // The environment ambience for this segment
+  envTheme?: string; // The visual theme for this segment
+  narrativeTone?: string; // The tone of the narrative (e.g. "suspenseful", "cheerful")
   imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
   stateSnapshot?: GameStateSnapshot; // Snapshot of the game state at this point
 }
@@ -260,8 +265,10 @@ export interface GameResponse {
   questActions: QuestAction[];
   currentQuest?: string; // Legacy support
   imagePrompt: string;
-  theme?: string; // Optional update
+  envTheme?: string; // Optional update for atmosphere
+  theme?: string; // Optional update for static theme (rarely used but kept for compatibility)
   environment?: string; // The detected environment for audio ambience
+  narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
 }
 
@@ -275,6 +282,10 @@ export interface ThemeConfig {
   vars: Record<string, string>; // Default (Night)
   dayVars?: Record<string, string>; // Optional Day Mode overrides
   fontClass: string;
+}
+
+export interface StoryThemeConfig {
+  defaultEnvTheme: string;
 }
 
 export type LanguageCode = "en" | "zh";
@@ -293,7 +304,11 @@ export interface FunctionConfig {
   resolution?: string; // e.g. "512x512", "1024x1024"
   thinkingLevel?: "low" | "medium" | "high"; // For Gemini Thinking
   mediaResolution?: "low" | "medium" | "high"; // For Gemini Vision
-  gender?: "male" | "female"; // For TTS voice selection
+
+  gender?: "male" | "female"; // For TTS voice selection (Legacy)
+  voice?: string; // Specific voice ID (e.g. "alloy", "coral")
+  speed?: number; // 0.25 to 4.0
+  format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
 }
 
 export interface AISettings {
@@ -303,6 +318,7 @@ export interface AISettings {
   contextLen: number; // Max conversation turns before summarization
 
   story: FunctionConfig;
+  script: FunctionConfig;
   image: FunctionConfig;
   video: FunctionConfig;
   audio: FunctionConfig;

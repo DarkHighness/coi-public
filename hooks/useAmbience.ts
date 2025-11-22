@@ -58,7 +58,14 @@ export const useAmbience = (
         // 2. Start playing
         // If muted, we still play but at 0 volume so it's ready when unmuted?
         // Or we just don't play? Let's play at 0 volume to keep logic simple.
-        await newAudio.play();
+        // 2. Start playing
+        try {
+          await newAudio.play();
+        } catch (e) {
+          console.warn("Audio autoplay blocked or failed:", e);
+          // If autoplay blocked, we might need user interaction.
+          // But usually in a game loop, interaction has happened.
+        }
 
         // 3. Fade out old track if it exists
         if (audioRef.current) {

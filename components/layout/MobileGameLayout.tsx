@@ -10,7 +10,7 @@ import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { MobileNav, MobileTab } from "../MobileNav";
-import { THEMES } from "../../utils/constants";
+import { THEMES, ENV_THEMES } from "../../utils/constants";
 import { useTranslation } from "react-i18next";
 
 interface MobileGameLayoutProps {
@@ -39,6 +39,9 @@ interface MobileGameLayoutProps {
   currentAmbience?: string;
   onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
   onToggleMute?: () => void;
+  onViewedSegmentChange?: (segment: any) => void;
+  onAudioGenerated?: (id: string, key: string) => void;
+  onVeoScript: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -67,9 +70,14 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   currentAmbience,
   onUpdateUIState,
   onToggleMute,
+  onViewedSegmentChange,
+  onAudioGenerated,
+  onVeoScript,
 }) => {
   const { t } = useTranslation();
-  const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
+  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
+  const currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
@@ -91,6 +99,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onTypingComplete={onTypingComplete}
           currentAmbience={currentAmbience}
           onToggleMute={onToggleMute}
+          onViewedSegmentChange={onViewedSegmentChange}
+          onAudioGenerated={onAudioGenerated}
         />
 
         {/* Action Panel fixed at bottom of feed */}
@@ -120,6 +130,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onOpenLogs={onOpenLogs}
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
+          onVeoScript={onVeoScript}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

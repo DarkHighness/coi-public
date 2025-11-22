@@ -35,6 +35,9 @@ interface DesktopGameLayoutProps {
   currentAmbience?: string;
   onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
   onToggleMute?: () => void;
+  onViewedSegmentChange?: (segment: any) => void;
+  onAudioGenerated?: (id: string, key: string) => void;
+  onVeoScript: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -61,6 +64,9 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   currentAmbience,
   onUpdateUIState,
   onToggleMute,
+  onViewedSegmentChange,
+  onAudioGenerated,
+  onVeoScript,
 }) => {
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
@@ -78,6 +84,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           onOpenLogs={onOpenLogs}
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
+          onVeoScript={onVeoScript}
         />
       </div>
 
@@ -98,6 +105,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onTypingComplete={onTypingComplete}
             currentAmbience={currentAmbience}
             onToggleMute={onToggleMute}
+            onViewedSegmentChange={onViewedSegmentChange}
+            onAudioGenerated={onAudioGenerated}
           />
 
           {/* Action Panel */}
@@ -119,7 +128,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             <div className="w-72 bg-theme-surface/30 animate-pulse"></div>
           }
         >
-          <StoryTimeline segments={currentHistory} theme={gameState.theme} />
+          <StoryTimeline segments={currentHistory} theme={gameState.theme} envTheme={gameState.envTheme} />
         </Suspense>
       </div>
     </div>

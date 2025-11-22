@@ -19,6 +19,8 @@ interface StoryFeedProps {
   onTypingComplete?: () => void;
   currentAmbience?: string;
   onToggleMute?: () => void;
+  onViewedSegmentChange?: (segment: StorySegment) => void;
+  onAudioGenerated?: (id: string, key: string) => void;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -35,6 +37,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onTypingComplete,
   currentAmbience,
   onToggleMute,
+  onViewedSegmentChange,
+  onAudioGenerated,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -90,6 +94,51 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
     }
   }, [layout]);
 
+  // Intersection Observer for Scroll Layout to track viewed segment
+  useEffect(() => {
+    if (layout !== "scroll" || !onViewedSegmentChange) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry that is most visible
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length > 0) {
+          // Sort by intersection ratio (descending)
+          visibleEntries.sort(
+            (a, b) => b.intersectionRatio - a.intersectionRatio,
+          );
+          const mostVisible = visibleEntries[0];
+          const segmentId = mostVisible.target.getAttribute("data-segment-id");
+          if (segmentId) {
+            const segment = currentHistory.find((s) => s.id === segmentId);
+            if (segment) {
+              onViewedSegmentChange(segment);
+            }
+          }
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: [0.1, 0.5, 0.9], // Multiple thresholds for better accuracy
+      },
+    );
+
+    const elements = document.querySelectorAll(".story-card-wrapper");
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [layout, currentHistory, onViewedSegmentChange]);
+
+  // Notify for Stack Layout
+  useEffect(() => {
+    if (layout === "stack" && onViewedSegmentChange) {
+      const segment = currentHistory[activeIndex];
+      if (segment) {
+        onViewedSegmentChange(segment);
+      }
+    }
+  }, [layout, activeIndex, currentHistory, onViewedSegmentChange]);
+
   const handlePrev = () => {
     setActiveIndex((prev) => Math.max(0, prev - 1));
   };
@@ -129,7 +178,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
         totalSegments={currentHistory.length}
         environment={currentHistory[activeIndex]?.environment}
         ambience={currentAmbience}
-        theme={gameState.theme}
+        theme={gameState.envTheme || gameState.theme}
         isMuted={aiSettings?.audioVolume?.bgmMuted}
         onToggleMute={onToggleMute}
       />
@@ -174,7 +223,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                         <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
                       </div>
                     )}
-                    <div className="relative group/wrapper">
+                    <div
+                      className="relative group/wrapper story-card-wrapper"
+                      data-segment-id={segment.id}
+                    >
                       {/* Fork Button visible on hover for past segments - Fixed Accessibility */}
                       {index < currentHistory.length - 1 &&
                         onFork &&
@@ -206,8 +258,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                         segment={segment}
                         isLast={index === currentHistory.length - 1}
                         isGenerating={
-                          index === currentHistory.length - 1 &&
-                          gameState.isImageGenerating
+                          gameState.isImageGenerating &&
+                          gameState.generatingNodeId === segment.id
                         }
                         labels={{
                           decided: t("decided"),
@@ -230,6 +282,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                             onTypingComplete();
                           }
                         }}
+                        onAudioGenerated={onAudioGenerated}
                       />
                     </div>
                   </React.Fragment>
@@ -276,8 +329,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     segment={activeSegment}
                     isLast={safeActiveIndex === currentHistory.length - 1}
                     isGenerating={
-                      safeActiveIndex === currentHistory.length - 1 &&
-                      gameState.isImageGenerating
+                      gameState.isImageGenerating &&
+                      gameState.generatingNodeId === activeSegment.id
                     }
                     labels={{
                       decided: t("decided"),
@@ -290,6 +343,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     shouldAnimate={false} // Stack mode doesn't usually re-type
                     aiSettings={aiSettings}
                     onTypingComplete={undefined} // Stack mode doesn't animate typing usually
+                    onAudioGenerated={onAudioGenerated}
                   />
                 </div>
               )}

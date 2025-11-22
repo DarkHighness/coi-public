@@ -29,6 +29,8 @@ const INITIAL_STATE: GameState = {
   isImageGenerating: false,
   error: null,
   theme: "fantasy",
+  envTheme: "fantasy",
+  generatingNodeId: null,
   totalTokens: 0,
   logs: [],
 };
@@ -40,6 +42,7 @@ export const useGameState = () => {
     setGameState({
       ...INITIAL_STATE,
       theme: theme,
+      envTheme: theme,
       // Ensure explicit reset of all accumulation fields
       summaries: [],
       nodes: {},

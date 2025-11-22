@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, UIState, ListState } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
-import { THEMES } from "../utils/constants";
+import { ENV_THEMES, THEMES } from "../utils/constants";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
 import { QuestPanel } from "./sidebar/QuestPanel";
 import { InventoryPanel } from "./sidebar/InventoryPanel";
@@ -22,6 +22,7 @@ interface SidebarProps {
   onOpenLogs: () => void;
   currentAmbience?: string;
   onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
+  onVeoScript: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,9 +37,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenLogs,
   currentAmbience,
   onUpdateUIState,
+  onVeoScript,
 }) => {
   const { t } = useTranslation();
-  const currentThemeConfig = THEMES[gameState.theme] || THEMES.fantasy;
+  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
+  const currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { character } = gameState;
   const [showSystemFooter, setShowSystemFooter] = useState(true);
 
@@ -173,6 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onSettings={onSettings}
               onCloseMobile={onCloseMobile}
               currentAmbience={currentAmbience}
+              onVeoScript={onVeoScript}
             />
           </div>
         )}

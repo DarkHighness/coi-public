@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { THEMES } from "../utils/constants";
+import { THEMES, ENV_THEMES } from "../utils/constants";
+import { StoryThemeConfig } from "../types";
 
 interface ThemeSelectorProps {
-  themes: typeof THEMES;
+  themes: Record<string, StoryThemeConfig>;
   onSelect: (theme: string) => void;
   onHover: (theme: string) => void;
 }
@@ -64,6 +65,55 @@ const CATEGORY_MAP: Record<Exclude<CategoryKey, "all">, string[]> = {
   ],
 };
 
+// Placeholder for getThemeIcon - replace with actual implementation if available
+const getThemeIcon = (key: string) => {
+  switch (key) {
+    case "wuxia": return "⚔️";
+    case "xianxia": return "✨";
+    case "demonic_cultivation": return "😈";
+    case "palace_drama": return "👑";
+    case "ancient_romance": return "💖";
+    case "modern_romance": return "❤️";
+    case "ceo": return "💼";
+    case "entertainment": return "🎬";
+    case "esports": return "🎮";
+    case "cs_student": return "💻";
+    case "fantasy": return "🐉";
+    case "scifi": return "🚀";
+    case "cyberpunk": return "🌃";
+    case "horror": return "👻";
+    case "mystery": return "🔍";
+    case "survival": return "🏕️";
+    case "zombie": return "🧟";
+    case "yandere": return "🔪";
+    case "villain_op": return "🦹";
+    case "angst": return "💔";
+    case "long_aotian": return "💪";
+    case "war_god": return "🛡️";
+    case "return_strong": return "🔥";
+    case "female_growth": return "🌸";
+    case "infinite_flow": return "♾️";
+    case "farming": return "🌾";
+    case "period_drama": return "🎭";
+    case "republican": return "🎩";
+    case "intrigue": return "🤫";
+    case "industry_elite": return "🏢";
+    case "rough_guy": return "👊";
+    case "sweet_pet": return "🍬";
+    case "wild_youth": return "🎸";
+    case "love_after_marriage": return "💍";
+    case "reunion": return "🤝";
+    case "wife_chasing": return "🏃‍♀️";
+    case "son_in_law": return "👨‍👩‍👧";
+    case "white_moonlight": return "🌕";
+    case "patriotism": return "🇨🇳";
+    case "body_swap": return "👯";
+    case "special_forces": return "🎖️";
+    case "mutual_redemption": return "💞";
+    default: return "📖";
+  }
+};
+
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   themes,
   onSelect,
@@ -77,6 +127,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
   const handlePreview = (key: string) => {
     setPreviewTheme(key);
+    onHover(key); // Update global theme to match preview
   };
 
   const closePreview = () => {
@@ -103,7 +154,37 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     }
 
     return keys;
+    return keys;
   }, [themes, searchQuery, selectedCategory, t]);
+
+  // Scroll Tracking for Mobile/Global Theme Update
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length > 0) {
+          // Sort by intersection ratio to find the most visible one
+          visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          const mostVisible = visibleEntries[0];
+          const themeKey = mostVisible.target.getAttribute("data-theme-key");
+
+          // Only update if we are not in preview mode (modal open)
+          if (themeKey && !previewTheme) {
+            onHover(themeKey);
+          }
+        }
+      },
+      {
+        threshold: 0.6, // Trigger when 60% visible
+        rootMargin: "-10% 0px -10% 0px", // Focus on center area
+      }
+    );
+
+    const cards = document.querySelectorAll(".theme-card");
+    cards.forEach((card) => observer.observe(card));
+
+    return () => observer.disconnect();
+  }, [filteredThemes, previewTheme, onHover]);
 
   const previewData = previewTheme ? themes[previewTheme] : null;
   const previewName = previewTheme ? t(`themes.${previewTheme}.name`) : "";
@@ -193,7 +274,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       </div>
 
       {/* Theme List */}
-      <div className="px-4 pb-20 md:pb-8">
+      <div className="px-4 pb-32 md:pb-8">
         <div className="max-w-5xl mx-auto w-full flex flex-col gap-3">
           {/* Random Option */}
           {selectedCategory === "all" && !searchQuery && (
@@ -220,102 +301,77 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           )}
 
           {filteredThemes.map((key) => {
-            const theme = themes[key];
-            const name = t(`themes.${key}.name`);
-            const narrativeStyle = t(`themes.${key}.narrativeStyle`);
+            const themeConfig = themes[key];
+            const envTheme = ENV_THEMES[themeConfig.defaultEnvTheme];
+            const primaryColor = envTheme?.vars["--theme-primary"] || "#f59e0b";
+            const surfaceColor = envTheme?.vars["--theme-surface"] || "#0f172a";
 
             return (
-              <div
+              <button
                 key={key}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect(key)}
+                onClick={() => handlePreview(key)}
                 onMouseEnter={() => onHover(key)}
-                className="relative w-full p-4 rounded-xl border border-theme-border hover:border-theme-primary transition-all text-left group overflow-hidden bg-theme-surface-highlight/10 hover:bg-theme-surface-highlight/30 cursor-pointer flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
+                className="group relative w-full text-left transition-all duration-300 hover:scale-[1.01] theme-card"
+                data-theme-key={key}
               >
-                {/* Background Gradient */}
+                {/* Card Background with Gradient Border */}
                 <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none"
+                  className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"
                   style={{
-                    background: `linear-gradient(90deg, ${theme.vars["--theme-primary"]}, transparent)`,
+                    background: `linear-gradient(45deg, ${primaryColor}, transparent 60%)`,
                   }}
                 ></div>
 
-                {/* Header/Title Section */}
-                <div className="flex items-center gap-3 sm:w-48 shrink-0 relative z-10">
+                <div
+                  className="relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden"
+                  style={
+                    {
+                      "--theme-primary": primaryColor,
+                    } as React.CSSProperties
+                  }
+                >
+                  {/* Hover Glow Effect */}
                   <div
-                    className="w-2 h-2 rounded-full shrink-0 transition-all group-hover:scale-125 group-hover:shadow-[0_0_8px_currentColor]"
+                    className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
                     style={{
-                      backgroundColor: theme.vars["--theme-primary"],
-                      color: theme.vars["--theme-primary"],
+                      background: `radial-gradient(circle at top right, ${primaryColor}15, transparent 70%)`,
                     }}
                   ></div>
-                  <h4
-                    className={`font-bold uppercase tracking-wide text-sm leading-tight text-theme-text group-hover:text-theme-primary transition-colors truncate ${theme.fontClass}`}
-                  >
-                    {name}
-                  </h4>
-                </div>
 
-                {/* Description */}
-                <p className="text-xs text-theme-muted line-clamp-2 sm:line-clamp-1 flex-1 relative z-10 group-hover:text-theme-text/80 transition-colors">
-                  {narrativeStyle?.split(".")[0]}
-                </p>
+                  <div className="flex items-start justify-between gap-4 relative z-10">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg">
+                          {getThemeIcon(key)}
+                        </span>
+                        <h3 className="text-lg md:text-xl font-bold text-theme-text group-hover:text-theme-primary transition-colors truncate">
+                          {t(`themes.${key}.name`)}
+                        </h3>
+                      </div>
+                      <p className="text-xs md:text-sm text-theme-muted line-clamp-2 group-hover:text-theme-text/80 transition-colors">
+                        {t(`themes.${key}.narrativeStyle`)}
+                      </p>
+                    </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 relative z-10 self-end sm:self-auto shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePreview(key);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-theme-text bg-theme-surface-highlight/10 border border-theme-border hover:bg-theme-surface-highlight/30 hover:border-theme-primary/50 transition-all flex items-center gap-1.5 whitespace-nowrap"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    {t("preview")}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect(key);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-theme-primary text-theme-bg border border-theme-primary hover:bg-theme-primary-hover hover:scale-105 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-md"
-                  >
-                    <span>{t("start")}</span>
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </button>
+                    {/* Arrow Icon */}
+                    <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-theme-primary">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -335,7 +391,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             <div
               className="absolute inset-0 opacity-10 pointer-events-none"
               style={{
-                background: `linear-gradient(135deg, ${previewData.vars["--theme-primary"]}, transparent)`,
+                background: `linear-gradient(135deg, ${ENV_THEMES[previewData.defaultEnvTheme]?.vars["--theme-primary"] || "#f59e0b"}, transparent)`,
               }}
             ></div>
 
@@ -343,7 +399,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             <div className="relative z-10 p-5 border-b border-theme-border flex items-center justify-between bg-theme-surface/50 backdrop-blur-sm">
               <div>
                 <h2
-                  className={`text-2xl font-bold uppercase tracking-tighter text-white bg-clip-text bg-linear-to-r from-theme-text to-theme-muted ${previewData.fontClass}`}
+                  className={`text-2xl font-bold uppercase tracking-tighter text-theme-text bg-clip-text bg-linear-to-r from-theme-text to-theme-muted ${ENV_THEMES[previewData.defaultEnvTheme]?.fontClass || "font-sans"}`}
                 >
                   {previewName}
                 </h2>
@@ -385,7 +441,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 </div>
                 <p
                   className={`text-theme-text/90 leading-loose ${
-                    previewData.fontClass === "font-serif"
+                    (ENV_THEMES[previewData.defaultEnvTheme]?.fontClass || "font-sans") === "font-serif"
                       ? "font-serif text-base"
                       : "font-sans text-sm"
                   }`}

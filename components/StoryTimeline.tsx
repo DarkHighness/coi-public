@@ -1,21 +1,25 @@
 import React, { useEffect, useRef } from "react";
 import { StorySegment } from "../types";
-import { THEMES } from "../utils/constants";
+import { ENV_THEMES, THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
 
 interface StoryTimelineProps {
   segments: StorySegment[];
   theme: string;
+  envTheme?: string;
 }
 
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   segments,
   theme,
+  envTheme,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   // Filter for model segments to show the narrative flow
   const narrativeSegments = segments.filter((s) => s.role === "model");
-  const themeConfig = THEMES[theme] || THEMES.fantasy;
+  const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
+  const currentEnvThemeKey = envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { t } = useTranslation();
 
   // Auto-scroll to bottom when new segments are added
@@ -28,7 +32,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   return (
     <div className="h-full flex flex-col p-6 border-l border-theme-border bg-theme-surface/80 backdrop-blur-sm w-72">
       <h2
-        className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 text-center ${themeConfig.fontClass} flex items-center justify-center`}
+        className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 text-center ${currentThemeConfig.fontClass} flex items-center justify-center`}
       >
         <span className="w-8 h-[1px] bg-theme-primary/50 mr-2"></span>
         {t("timeline")}

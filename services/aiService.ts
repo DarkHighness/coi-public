@@ -11,6 +11,7 @@ import {
   InventoryItem,
   Quest,
   AdventureTurnInput,
+  GameState,
 } from "../types";
 import {
   GeminiConfig,
@@ -45,17 +46,18 @@ import {
   storyOutlineSchema,
   summarySchema,
 } from "./schemas";
+
 import { getEnvApiKey } from "../utils/env";
 import {
   getCoreSystemInstruction,
   getStaticWorldContext,
   getDynamicStoryContext,
   getSceneImagePrompt,
-  getItemDescriptionPrompt,
   getTranslationPrompt,
   getOutlinePrompt,
   getSummaryPrompt,
   getCurrentStateContext,
+  getVeoScriptPrompt,
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
 
@@ -93,7 +95,14 @@ export const updateAIConfig = (settings: AISettings) => {
 };
 
 const getProviderConfig = (
-  func: "story" | "image" | "video" | "audio" | "translation" | "lore",
+  func:
+    | "story"
+    | "image"
+    | "video"
+    | "audio"
+    | "translation"
+    | "lore"
+    | "script",
 ) => {
   const config = currentSettings[func];
   return {
@@ -548,36 +557,6 @@ export const generateSceneImage = async (
   return { url, log };
 };
 
-export const getItemDescription = async (
-  item: string,
-  context: string,
-  language: string,
-): Promise<{ description: string; lore: string }> => {
-  const { provider, modelId } = getProviderConfig("lore");
-  const prompt = getItemDescriptionPrompt(item, context, language);
-  const sys = "You are a creative game writer. Output valid JSON.";
-  const contents = [{ role: "user", parts: [{ text: prompt }] }];
-
-  try {
-    // Note: No schema passed here in original code, but we expect JSON.
-    // The prompt likely asks for JSON.
-    // We can try to pass a schema if we had one, but for now let's rely on the prompt + JSON mode if available.
-    // Or we can define a simple schema for item description.
-    // For now, let's pass undefined schema and hope the provider returns JSON (Gemini does via responseMimeType, OpenAI via json_object).
-    // Actually, generateContentUnified handles schema conversion. If no schema, it defaults to json_object for OpenAI.
-
-    const { result } = await generateContentUnified(
-      provider,
-      modelId,
-      sys,
-      contents,
-    );
-    return result;
-  } catch (e) {
-    return { description: "A mysterious object.", lore: "Origins unknown." };
-  }
-};
-
 export const translateGameContent = async (
   segments: StorySegment[],
   inventory: string[],
@@ -645,39 +624,112 @@ export const generateVeoVideo = async (
 
 export const generateSpeech = async (
   text: string,
-  voiceName: string = "Kore",
-): Promise<string> => {
+  voiceName?: string,
+  narrativeTone?: string,
+): Promise<ArrayBuffer | null> => {
   const { provider, modelId, enabled } = getProviderConfig("audio");
-  const audioConfig = currentSettings.audio; // Access full config for gender
+  const audioConfig = currentSettings.audio;
+
   if (!enabled) throw new Error("Disabled");
 
-  const options = { gender: audioConfig.gender };
+  // Default options from settings
+  const options: any = {
+    speed: audioConfig.speed || 1.0,
+    format: audioConfig.format || "mp3",
+  };
 
-  if (provider === "openai") {
-    const { audio } = await generateOpenAISpeech(
-      { ...openaiConfig, modelId },
+  // Determine target voice
+  let targetVoice = voiceName || audioConfig.voice || "alloy";
+
+  // Dynamic Voice Selection based on Tone (if provided and no specific voice forced)
+  // Only override if voiceName wasn't explicitly passed (e.g. from a character)
+  // If voiceName IS passed, we respect it.
+  // If voiceName is NOT passed, we use settings.voice OR dynamic tone.
+  if (!voiceName) {
+    if (narrativeTone && (provider === "openai" || provider === "openrouter")) {
+       const tone = narrativeTone.toLowerCase();
+       if (tone.includes("suspense") || tone.includes("tense") || tone.includes("danger")) targetVoice = "onyx";
+       else if (tone.includes("cheerful") || tone.includes("happy") || tone.includes("energetic")) targetVoice = "nova";
+       else if (tone.includes("melancholy") || tone.includes("sad") || tone.includes("quiet")) targetVoice = "shimmer";
+       else if (tone.includes("calm") || tone.includes("peaceful") || tone.includes("mystical")) targetVoice = "alloy";
+       else if (tone.includes("royal") || tone.includes("authoritative")) targetVoice = "fable";
+    }
+  }
+
+  // Model-specific handling
+  if (modelId === "gpt-4o-mini-tts") {
+    // Use instructions for tone
+    if (narrativeTone) {
+      options.instructions = `Speak in a ${narrativeTone} tone.`;
+    }
+  }
+
+  try {
+    if (provider === "openai") {
+      const { audio } = await generateOpenAISpeech(
+        { ...openaiConfig, modelId },
+        modelId,
+        text,
+        targetVoice,
+        options,
+      );
+      return audio;
+    } else if (provider === "openrouter") {
+      const { audio } = await generateOpenRouterSpeech(
+        openRouterConfig,
+        modelId,
+        text,
+        targetVoice,
+        options,
+      );
+      return audio;
+    } else {
+      // Gemini
+      // Gemini doesn't support speed/format in the same way yet via this provider wrapper,
+      // but we pass what we can.
+      // We pass narrativeTone as instructions for Gemini's prompt engineering
+      const geminiOptions = {
+        ...options,
+        instructions: narrativeTone // Pass tone directly
+      };
+
+      const { audio } = await generateGeminiSpeech(
+        geminiConfig,
+        modelId, // This might be "gemini-1.5-flash" from settings, provider will override to TTS model if needed
+        text,
+        targetVoice,
+        geminiOptions
+      );
+      return audio;
+    }
+  } catch (error) {
+    console.error("Speech generation failed", error);
+    return null;
+  }
+};
+
+export const generateVeoScript = async (
+  gameState: GameState,
+  history: any[],
+  language: string = "English",
+): Promise<string> => {
+  const prompt = getVeoScriptPrompt(gameState, history);
+
+  const { provider, modelId } = getProviderConfig("script");
+  const sys = "You are a professional scriptwriter. Output the script directly.";
+  const contents = [{ role: "user", parts: [{ text: prompt }] }];
+
+  try {
+    const { result, log } = await generateContentUnified(
+      provider,
       modelId,
-      text,
-      voiceName,
-      options,
+      sys,
+      contents,
     );
-    return audio;
-  } else if (provider === "openrouter") {
-    const { audio } = await generateOpenRouterSpeech(
-      openRouterConfig,
-      modelId,
-      text,
-      voiceName,
-      options,
-    );
-    return audio;
-  } else {
-    const { audio } = await generateGeminiSpeech(
-      geminiConfig,
-      modelId,
-      text,
-      voiceName,
-    );
-    return audio;
+    // result should be the text string since no schema was provided
+    return typeof result === "string" ? result : JSON.stringify(result);
+  } catch (e: any) {
+    console.error("Veo script generation failed", e);
+    return "Failed to generate script.";
   }
 };

@@ -362,6 +362,11 @@ export const gameResponseSchema: Schema = {
       ],
       description: "The current environmental ambience.",
     },
+    narrativeTone: {
+      type: Type.STRING,
+      description:
+        "The tone of the narrative (e.g. 'suspenseful', 'cheerful', 'melancholy', 'energetic', 'calm').",
+    },
     theme: {
       type: Type.STRING,
       enum: [

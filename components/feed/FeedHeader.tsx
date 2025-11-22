@@ -50,9 +50,9 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
 
   return (
     <div className="flex-none p-2 flex justify-between items-center border-b border-theme-border bg-theme-surface/50 backdrop-blur-sm z-10">
-      <div className="flex items-center space-x-4 text-xs font-bold uppercase tracking-widest">
-        <div className="flex items-center space-x-2">
-          <span className="text-theme-muted">{t("turn")}:</span>
+      <div className="flex items-center space-x-2 md:space-x-4 text-xs font-bold uppercase tracking-widest flex-1 min-w-0 overflow-hidden">
+        <div className="flex items-center space-x-2 shrink-0">
+          <span className="text-theme-muted hidden sm:inline">{t("turn")}:</span>
           <span className="text-theme-primary">
             {layout === "stack"
               ? `${activeIndex + 1} / ${totalSegments}`
@@ -61,29 +61,29 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
         </div>
 
         {theme && (
-          <div className="flex items-center space-x-2 border-l border-theme-border pl-4 opacity-70">
+          <div className="flex items-center space-x-1 md:space-x-2 border-l border-theme-border pl-2 md:pl-4 opacity-70 shrink-0">
             <span
-              className="text-lg leading-none"
+              className="text-base md:text-lg leading-none"
               role="img"
               aria-label="theme"
             >
               🎭
             </span>
-            <span className="text-theme-text truncate text-xs md:text-sm">
-              {t(`themes.${theme}.name`)}
+            <span className="text-theme-text truncate text-xs md:text-sm max-w-[60px] sm:max-w-[100px] md:max-w-none">
+              {t(`themes.${theme}.name`) || theme}
             </span>
           </div>
         )}
 
         {(environment || ambience) && (
-          <div className="flex items-center space-x-2 md:space-x-3 border-l border-theme-border pl-2 md:pl-4 opacity-70 overflow-hidden">
+          <div className="flex items-center space-x-2 md:space-x-3 border-l border-theme-border pl-2 md:pl-4 opacity-70 overflow-hidden flex-1 min-w-0">
             {environment && (
               <div
-                className="flex items-center space-x-1 max-w-[100px] md:max-w-[150px]"
+                className="flex items-center space-x-1 min-w-0"
                 title={t("environment")}
               >
                 <span
-                  className="text-lg leading-none"
+                  className="text-base md:text-lg leading-none shrink-0"
                   role="img"
                   aria-label="location"
                 >
@@ -97,13 +97,13 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             {ambience && (
               <button
                 onClick={onToggleMute}
-                className={`flex items-center space-x-1 max-w-[100px] md:max-w-[150px] hover:text-theme-primary transition-colors ${isMuted ? "opacity-50 grayscale" : ""}`}
+                className={`flex items-center space-x-1 min-w-0 hover:text-theme-primary transition-colors ${isMuted ? "opacity-50 grayscale" : ""}`}
                 title={
                   isMuted ? t("audioSettings.unmute") : t("audioSettings.mute")
                 }
               >
                 <span
-                  className="text-lg leading-none"
+                  className="text-base md:text-lg leading-none shrink-0"
                   role="img"
                   aria-label="music"
                 >

@@ -12,6 +12,10 @@ interface StoryTextProps {
   shouldAnimate?: boolean;
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
+  narrativeTone?: string;
+  segmentId?: string;
+  audioKey?: string;
+  onAudioGenerated?: (key: string) => void;
 }
 
 export const StoryText: React.FC<StoryTextProps> = ({
@@ -20,6 +24,10 @@ export const StoryText: React.FC<StoryTextProps> = ({
   shouldAnimate = true,
   aiSettings,
   onTypingComplete,
+  narrativeTone,
+  segmentId,
+  audioKey,
+  onAudioGenerated,
 }) => {
   const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
@@ -29,6 +37,10 @@ export const StoryText: React.FC<StoryTextProps> = ({
     aiSettings?.audioVolume?.ttsVolume ?? 1.0,
     aiSettings?.audioVolume?.ttsMuted ?? false,
     (msg) => setWarning(msg),
+    narrativeTone,
+    segmentId,
+    audioKey,
+    onAudioGenerated,
   );
 
   return (

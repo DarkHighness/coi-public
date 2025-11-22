@@ -11,7 +11,7 @@ import {
   generateStoryOutline,
   summarizeContext,
 } from "../services/aiService";
-import { THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
+import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
 
 // Helper: Traverse tree
 const deriveHistory = (
@@ -58,12 +58,41 @@ export const useGameEngine = () => {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [aiSettings, setAiSettings] = useState<AISettings>(DEFAULTS);
+
+  // Initialize settings from localStorage to avoid flash
+  const [aiSettings, setAiSettings] = useState<AISettings>(() => {
+    const saved = localStorage.getItem("chronicles_aisettings");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULTS,
+          ...parsed,
+          gemini: { ...DEFAULTS.gemini, ...(parsed.gemini || {}) },
+          openai: { ...DEFAULTS.openai, ...(parsed.openai || {}) },
+          story: { ...DEFAULTS.story, ...(parsed.story || {}) },
+          image: { ...DEFAULTS.image, ...(parsed.image || {}) },
+          video: { ...DEFAULTS.video, ...(parsed.video || {}) },
+          audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
+          audioVolume: { ...DEFAULTS.audioVolume, ...(parsed.audioVolume || {}) },
+          translation: { ...DEFAULTS.translation, ...(parsed.translation || {}) },
+          lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
+        };
+      } catch (e) {
+        console.error("Failed to parse settings", e);
+        return DEFAULTS;
+      }
+    }
+    return DEFAULTS;
+  });
+
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
+  const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">(
-    "system",
-  );
+  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">(() => {
+    const saved = localStorage.getItem("chronicles_theme_mode");
+    return (saved === "day" || saved === "night" || saved === "system") ? saved : "system";
+  });
 
   // Derived Language State
   const language = i18n.language as LanguageCode;
@@ -84,7 +113,9 @@ export const useGameEngine = () => {
   // Theme Application
   useEffect(() => {
     const root = document.documentElement;
-    const themeConfig = THEMES[gameState.theme] || THEMES.fantasy;
+    const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
+    const envThemeKey = gameState.envTheme || storyTheme.defaultEnvTheme;
+    const themeConfig = ENV_THEMES[envThemeKey] || ENV_THEMES.fantasy;
 
     // Determine active mode
     let activeMode = themeMode;
@@ -121,64 +152,27 @@ export const useGameEngine = () => {
     root.style.removeProperty("--theme-alpha-override");
   }, [gameState.theme, themeMode]);
 
-  // Init Settings
+  // Dynamic Title Update
   useEffect(() => {
-    const savedSettingsStr = localStorage.getItem("chronicles_aisettings");
-    if (savedSettingsStr) {
-      try {
-        const parsed = JSON.parse(savedSettingsStr);
-
-        // Deep merge with DEFAULTS to ensure new keys (like 'translation', 'lore') exist
-        const mergedSettings: AISettings = {
-          ...DEFAULTS,
-          ...parsed,
-          gemini: { ...DEFAULTS.gemini, ...(parsed.gemini || {}) },
-          openai: { ...DEFAULTS.openai, ...(parsed.openai || {}) },
-          story: { ...DEFAULTS.story, ...(parsed.story || {}) },
-          image: { ...DEFAULTS.image, ...(parsed.image || {}) },
-          video: { ...DEFAULTS.video, ...(parsed.video || {}) },
-          audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
-          audioVolume: {
-            ...DEFAULTS.audioVolume,
-            ...(parsed.audioVolume || {}),
-          },
-          translation: {
-            ...DEFAULTS.translation,
-            ...(parsed.translation || {}),
-          },
-          lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
-        };
-
-        if (!mergedSettings.contextLen) mergedSettings.contextLen = 16;
-        if (!mergedSettings.language) mergedSettings.language = "en";
-
-        setAiSettings(mergedSettings);
-        updateAIConfig(mergedSettings);
-
-        // Sync i18n with settings
-        if (
-          mergedSettings.language &&
-          mergedSettings.language !== i18n.language
-        ) {
-          i18n.changeLanguage(mergedSettings.language);
-        }
-      } catch (e) {
-        console.error("Failed to load settings", e);
-        updateAIConfig(DEFAULTS);
+    if (view === "start" || view === "initializing") {
+      document.title = "Chronicles of Infinity";
+    } else if (view === "game" && gameState.activeNodeId) {
+      const activeNode = gameState.nodes[gameState.activeNodeId];
+      if (activeNode && activeNode.text) {
+        // Truncate text to ~60 chars
+        const text = activeNode.text.replace(/\s+/g, " ").trim();
+        const truncated = text.length > 60 ? text.substring(0, 60) + "..." : text;
+        document.title = `${truncated} - Chronicles`;
       }
-    } else {
-      updateAIConfig(DEFAULTS);
     }
+  }, [view, gameState.activeNodeId, gameState.nodes]);
 
-    // Load Theme Mode
-    const savedMode = localStorage.getItem("chronicles_theme_mode");
-    if (
-      savedMode === "night" ||
-      savedMode === "day" ||
-      savedMode === "system"
-    ) {
-      setThemeMode(savedMode as any);
+  useEffect(() => {
+    // Sync i18n with settings on mount if different
+    if (aiSettings.language && aiSettings.language !== i18n.language) {
+      i18n.changeLanguage(aiSettings.language);
     }
+    updateAIConfig(aiSettings);
   }, []);
 
   const handleSaveSettings = (newSettings: AISettings) => {
@@ -210,7 +204,7 @@ export const useGameEngine = () => {
     isInit: boolean = false,
     forceTheme?: string,
   ) => {
-    if (gameStateRef.current.isProcessing || isTranslating) return null; // Return null instead of void for toast handling
+    if ((gameStateRef.current.isProcessing && !isInit) || isTranslating) return null; // Return null instead of void for toast handling
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
@@ -356,7 +350,7 @@ export const useGameEngine = () => {
         character: gameStateRef.current.character,
         userAction: action,
         language: LANG_MAP[language],
-        themeKey: gameStateRef.current.theme, // Pass the theme key
+        themeKey: gameStateRef.current.theme, // Pass the static theme key
         tFunc: t, // Pass translation function
       });
 
@@ -609,8 +603,10 @@ export const useGameEngine = () => {
         summaries: effectiveSummaries,
         summarizedIndex: lastIndex,
         environment: response.environment,
+        narrativeTone: response.narrativeTone, // Save narrative tone
         imageSkipped: !response.generateImage, // Mark if image was intentionally skipped
-        stateSnapshot: {
+        envTheme: gameState.envTheme, // Save current envTheme to the node
+      stateSnapshot: {
           inventory: newInventory,
           relationships: newRels,
           quests: newQuests,
@@ -661,7 +657,9 @@ export const useGameEngine = () => {
         summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
-        theme: response.theme || forceTheme || prev.theme,
+        generatingNodeId: modelNodeId,
+        envTheme: response.envTheme || forceTheme || prev.envTheme,
+        theme: prev.theme, // Keep static theme
         logs: [log, ...prev.logs].slice(0, 50),
         totalTokens: prev.totalTokens + usage.totalTokens,
         generateImage: response.generateImage,
@@ -678,7 +676,7 @@ export const useGameEngine = () => {
             setGameState((prev) => {
               if (prev.isImageGenerating) {
                 console.warn("Image generation timeout");
-                return { ...prev, isImageGenerating: false };
+                return { ...prev, isImageGenerating: false, generatingNodeId: null };
               }
               return prev;
             });
@@ -692,6 +690,7 @@ export const useGameEngine = () => {
             setGameState((prev) => ({
               ...prev,
               isImageGenerating: false,
+              generatingNodeId: null,
               logs: [log, ...prev.logs].slice(0, 50),
               totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
               nodes: url
@@ -708,10 +707,10 @@ export const useGameEngine = () => {
           .catch((error) => {
             clearTimeout(imageTimeout);
             console.error("Image generation failed:", error);
-            setGameState((prev) => ({ ...prev, isImageGenerating: false }));
+            setGameState((prev) => ({ ...prev, isImageGenerating: false, generatingNodeId: null }));
           });
       } else {
-        setGameState((prev) => ({ ...prev, isImageGenerating: false }));
+        setGameState((prev) => ({ ...prev, isImageGenerating: false, generatingNodeId: null }));
       }
 
       return toastMessage;
@@ -772,16 +771,17 @@ export const useGameEngine = () => {
         currentLocation: outline.locations?.[0] || "Unknown",
         knownLocations: outline.locations || [],
         locations: [],
-        isProcessing: false,
+        isProcessing: true, // Keep processing true while generating first turn
         logs: [log, ...prev.logs],
         totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
         generateImage: false,
         summaries: [],
+        theme: selectedTheme, // Static Theme
+        envTheme: selectedTheme, // Initial Env Theme
       }));
 
-      // Use setTimeout to allow state update to propagate before navigation
-      // This prevents the "flashback" issue where the route guard sees old state
-      setTimeout(() => navigate("/game"), 0);
+      // Use setTimeout to allow state update to propagate before generating first turn
+      // We navigate to /game ONLY after the first turn is ready to prevent empty state redirects
 
       // Safety timeout to ensure we don't get stuck in processing state
       const safetyTimer = setTimeout(() => {
@@ -797,12 +797,20 @@ export const useGameEngine = () => {
         });
       }, 20000); // 20s timeout
 
-      setTimeout(() => {
-        handleAction(
+      setTimeout(async () => {
+        const result = await handleAction(
           `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`,
           true,
           selectedTheme,
-        ).finally(() => clearTimeout(safetyTimer));
+        );
+        clearTimeout(safetyTimer);
+
+        // Only navigate if successful (no error returned)
+        if (!result?.startsWith("Error:")) {
+          navigate("/game");
+        } else {
+          navigate("/");
+        }
       }, 100);
     } catch (e) {
       console.error("Init failed", e);
@@ -912,6 +920,16 @@ export const useGameEngine = () => {
     }
   };
 
+  const updateNodeAudio = (nodeId: string, audioKey: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      nodes: {
+        ...prev.nodes,
+        [nodeId]: { ...prev.nodes[nodeId], audioKey },
+      },
+    }));
+  };
+
   return {
     language,
     setLanguage,
@@ -925,6 +943,8 @@ export const useGameEngine = () => {
     setIsMagicMirrorOpen,
     magicMirrorImage,
     setMagicMirrorImage,
+    isVeoScriptOpen,
+    setIsVeoScriptOpen,
     isSettingsOpen,
     setIsSettingsOpen,
     aiSettings,
@@ -936,6 +956,7 @@ export const useGameEngine = () => {
     currentSlotId,
     navigateToNode,
     generateImageForNode,
+    updateNodeAudio,
     themeMode,
     toggleThemeMode,
     setThemeMode: setThemeModeValue,
