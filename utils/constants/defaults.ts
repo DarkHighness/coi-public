@@ -38,6 +38,11 @@ export const DEFAULTS: AISettings = {
     provider: "gemini",
     modelId: "gemini-3-pro-preview",
   },
+  script: {
+    provider: "gemini",
+    modelId: "gemini-3-pro-preview",
+    enabled: true,
+  },
   image: {
     provider: "gemini",
     modelId: "imagen-4.0-generate-001",

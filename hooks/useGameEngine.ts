@@ -71,6 +71,7 @@ export const useGameEngine = () => {
           gemini: { ...DEFAULTS.gemini, ...(parsed.gemini || {}) },
           openai: { ...DEFAULTS.openai, ...(parsed.openai || {}) },
           story: { ...DEFAULTS.story, ...(parsed.story || {}) },
+          script: { ...DEFAULTS.script, ...(parsed.script || {}) },
           image: { ...DEFAULTS.image, ...(parsed.image || {}) },
           video: { ...DEFAULTS.video, ...(parsed.video || {}) },
           audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
