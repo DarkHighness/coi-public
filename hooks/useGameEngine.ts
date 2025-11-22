@@ -378,6 +378,7 @@ export const useGameEngine = () => {
         language: LANG_MAP[language],
         themeKey: gameStateRef.current.theme, // Pass the static theme key
         tFunc: t, // Pass translation function
+        time: gameStateRef.current.time, // Pass current time
       });
 
       // Sanitize choices to ensure strict string array
@@ -658,6 +659,9 @@ export const useGameEngine = () => {
         });
       }
 
+      // Update Time
+      const newTime = response.timeUpdate || gameStateRef.current.time || "unknown";
+
       const modelNode: StorySegment = {
         id: modelNodeId,
         parentId: isInit ? null : userNodeId,
@@ -691,6 +695,7 @@ export const useGameEngine = () => {
           uiState: gameStateRef.current.uiState, // Preserve UI customizations
           envTheme:
             response.envTheme || forceTheme || gameStateRef.current.envTheme, // Save dynamic theme
+          time: newTime, // Save time in snapshot
           // Note: outline is NOT saved as it's immutable for the entire game
         },
       };
@@ -739,6 +744,7 @@ export const useGameEngine = () => {
         logs: [log, ...prev.logs].slice(0, 50),
         totalTokens: prev.totalTokens + usage.totalTokens,
         generateImage: response.generateImage,
+        time: newTime, // Update global time
       }));
 
       // Async Image Gen with Timeout

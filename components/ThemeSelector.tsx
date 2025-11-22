@@ -1,11 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../types";
-import {
-  ThemeFilters,
-  CATEGORY_MAP,
-  CategoryKey,
-} from "./themes/ThemeFilters";
+import { CategoryKey } from "../utils/constants/themes";
+import { ThemeFilters } from "./themes/ThemeFilters";
 import { ThemeCard } from "./themes/ThemeCard";
 import { ThemePreviewModal } from "./themes/ThemePreviewModal";
 
@@ -40,8 +37,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
     // Filter by Category
     if (selectedCategory !== "all") {
-      const allowedKeys = CATEGORY_MAP[selectedCategory] || [];
-      keys = keys.filter((key) => allowedKeys.includes(key));
+      keys = keys.filter((key) =>
+        themes[key].categories?.includes(selectedCategory)
+      );
     }
 
     // Filter by Search

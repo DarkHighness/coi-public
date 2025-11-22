@@ -94,6 +94,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 pb-32 md:pb-6 space-y-8 scroll-smooth">
+        {/* Time Display */}
+        <div className="flex justify-center mb-4">
+          <div className="bg-theme-surface-highlight/30 border border-theme-border px-4 py-1.5 rounded-full text-xs font-mono text-theme-text-secondary shadow-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-theme-primary animate-pulse"></span>
+            {gameState.time || "unknown"}
+          </div>
+        </div>
+
         {character && (
           <CharacterPanel
             character={character}

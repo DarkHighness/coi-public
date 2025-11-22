@@ -385,4 +385,85 @@ export const themes: Record<
     example:
       "Watching the scrolling messages of 'Show me yours' and 'LMAO', you push up your glasses, a cold sneer curling your lips. 'Such primitive provocation,' you type rapidly on your mechanical keyboard, the switches clicking crisply. 'It's as laughable as using bubble sort on a dataset of billions.' You hit Enter, sending a carefully constructed logical trap, and wait silently for their mental breakdown.",
   },
+  rebirth_revenge: {
+    name: "Rebirth & Revenge",
+    narrativeStyle:
+      "Satisfying, vindictive, and calculated. The protagonist returns with future knowledge to destroy enemies. Focus on karma, face-slapping, and the thrill of retribution.",
+    backgroundTemplate:
+      "In your past life, you were betrayed by your [Lover/Sibling] and died miserably. You wake up on the day before the tragedy began. Looking at their hypocritical faces, you smile coldly. This time, you will tear off their masks and take back everything that belongs to you. You will show them that hell has no fury like a protagonist scorned.",
+    example:
+      "You are reborn on the day you were recognized by your wealthy family. Looking at your hypocritical adoptive parents and the calculating real daughter, you sneer. In your previous life, they sucked your blood dry and you died miserably on the streets. In this life, you will take back everything that belongs to you! 'Since you are heartless, don't blame me for being unjust!' You swear secretly and turn to walk towards that powerful man...",
+  },
+  cs_grad_journey: {
+    name: "CS Grad Journey",
+    narrativeStyle:
+      "A dark humor style weaving realism with internet memes. The narrative should heavily use slang from the Chinese mainland CS/academic circles (e.g., 985/211, double-non, four-non, Green Group, CCF-A, Distinguished Youth, water papers, horizontal projects, mentor PUA, etc.). The atmosphere is oppressive yet absurd, emphasizing the protagonist's inferiority complex and struggle as a 'four-non' student, and interactions with various characters in the 'Green Group' (big shots, fake weaklings, trolls). Psychological descriptions should be nuanced, reflecting anxiety, confusion, and deep-seated unwillingness to yield. The ending should reflect the theme of 'reconciling with oneself'.",
+    backgroundTemplate:
+      "You are [Name], born in a province with 'hell mode' college entrance exams (like Henan or Sichuan). Your family is not wealthy, and you attended a county high school. Although you were first in science in your high school, you could only attend a 'four-non' university for CS. You have strong programming skills (Mod/plugin dev in HS) and worked hard in college, earning a recommendation for grad school. To get info, you joined the 'CS Grad Recommendation Group' (Green Group). The group is full of students from top universities with top-tier papers and famous mentors. You feel inferior and dare not speak.\n\n【Key Characters】:\n[Good]:\n- Brother Qian: 'Eight-pack' big brother, friendly, LoL buddy.\n- Elder Zhao: Hardware expert, deep tech knowledge, chats turn into lectures, LoL buddy.\n- Watermelon: 'Four-non' background like you, hardworking/talented, publishes high-quality papers in 2nd year.\n- Lai-chu: Mentored by a big shot, complains a lot, LoL buddy.\n- Run-chu: 'Beijing Lord', likes cooking/photography, honest, bad at LoL.\n[Neutral]:\n- Wild Boar: Top uni success, anti-feminist.\n- Nanfeng: Top uni success, likes badminton, shares love life.\n- Brother Melon: 'Four-non' background, quits in 2nd year due to bad mentor.\n[Bad]:\n- X: Top uni success, looks down on non-elites, publishes many top papers.\n- Y: Top uni success, mocks your low salary.\n\n【Storyline】: From Sept 28 (grad recommendation season) to Master's graduation. Experiences: mentor exploitation (writing grants, commercial projects, bad guidance), peer conflict, Green Group chatting. Explicit Goal: Graduate successfully. Implicit Goal: Reconcile with yourself, break the 'four-non' shackles, live your own life.",
+    example:
+      "Looking at the CCF-A acceptance notification posted by [X] in the group, you silently close the QQ window. On the screen, your mentor's WeChat message is still flashing: 'Is that commercial project document done? Send it to me tomorrow morning.' You sigh, looking out at the dark night sky. In this non-elite campus, your efforts seem so pale. Opening Minecraft, looking at the code you once wrote, you fall into deep thought...",
+  },
+  flash_marriage: {
+    name: "Flash Marriage",
+    narrativeStyle:
+      "Romantic, serendipitous, and sweet. Strangers marry quickly and fall in love later. Focus on domestic fluff and the surprise of discovering your partner's true identity.",
+    backgroundTemplate:
+      "To deal with family pressure/inheritance, you grabbed a random man at the Civil Affairs Bureau to marry. You thought he was a regular worker, but he turns out to be a [Billionaire CEO/Secret Boss]. After marriage, he spoils you rotten. When you find out who he really is, he pins you against the wall. 'Want a refund, wifey? Too late.'",
+    example:
+      "'Marry me,' the handsome stranger proposes. You nod, dazed. After getting the certificate, he hands you a key. 'Our home.' You expect a rental, but it's a penthouse in the city center. 'What... do you do for a living?' you stammer. He loosens his tie, smirking. 'I make money to support you.'",
+  },
+  family_ethics: {
+    name: "Family Drama",
+    narrativeStyle:
+      "Realistic, dramatic, and intense. Focus on in-law conflicts, infidelity, and property disputes. High emotional stakes and messy relationships.",
+    backgroundTemplate:
+      "You gave up your career to be a housewife. Your mother-in-law bullies you, your husband is cold, and your sister-in-law is a brat. Then you find out your husband is cheating and hiding assets. You finally snap. You collect evidence, confront the mistress, and make the scumbag leave with nothing. You will reclaim your dignity.",
+    example:
+      "Your mother-in-law dumps leftovers in your bowl. 'Don't waste it, you don't earn money.' Your husband plays on his phone, ignoring you. You take a deep breath and flip the table. 'I'm done!' You throw the divorce papers in his face. 'The house is mine, the kids are mine, you get out!' Watching them stunned, you feel incredibly free.",
+  },
+  divine_doctor: {
+    name: "Divine Doctor",
+    narrativeStyle:
+      "Showy, miraculous, and face-slapping. The protagonist has god-like medical skills. Focus on curing the incurable and being courted by the powerful.",
+    backgroundTemplate:
+      "You studied medicine for ten years on the mountain. You come down to the city to fulfill a marriage contract. You are mocked and rejected. But you casually save a [Billionaire/General] who was declared dead. Suddenly, powerful figures beg for your help, and beautiful CEOs fall for you. With one hand you save lives, with the other you crush your enemies.",
+    example:
+      "'He's gone, prepare the funeral,' the famous doctor says. 'Wait,' you step forward. 'I can save him.' The crowd laughs. You take out your silver needles. Three needles later, the 'dead' man coughs and sits up. The room goes silent. You pack your needles. 'Yama wants him at midnight, I keep him till dawn.'",
+  },
+  cute_pet: {
+    name: "Cute Pet Romance",
+    narrativeStyle:
+      "Wholesome, healing, and fairytale-like. Animals have high intelligence or can transform. Focus on the bond between human and creature.",
+    backgroundTemplate:
+      "You pick up an injured [Cat/Dog/Fox]. Turns out it's a [Demon Prince/Alien/CEO in disguise]. It's arrogant, picky, and hogs your bed. But when you are in danger, it transforms to protect you. Gradually, you realize you can't live without this fluffy trouble.",
+    example:
+      "You are working late. The stray cat jumps on your desk and paws your mouse. 'Stop it,' you say. It meows unhappily and suddenly speaks. 'Stupid woman, you can't even do a simple spreadsheet?' You fall off your chair. It licks its paw elegantly. 'Watch closely, I'll only teach you once.'",
+  },
+  hidden_identity: {
+    name: "Hidden Identity",
+    narrativeStyle:
+      "Mysterious, contrasting, and shocking. The protagonist has multiple secret identities (Hacker K, Doctor Y). The thrill comes from the reveal.",
+    backgroundTemplate:
+      "Everyone thinks you are a [Useless Nobody]. In reality, you are the world's top hacker, a mysterious composer, and a legendary designer. You just want a quiet life, but people keep provoking you. You have no choice but to reveal your identities one by one to slap their faces. The whole world goes crazy for you.",
+    example:
+      "'Designer Y is a mystery,' the socialites gossip. Someone sneers at you, 'A bumpkin like you wouldn't know.' Suddenly, the organizer rushes over and shakes your hand. 'Master Y! You finally came!' The room goes dead silent. You sigh. 'I just wanted to be normal...'",
+  },
+  system_stream: {
+    name: "System Stream",
+    narrativeStyle:
+      "Gamified, reward-driven, and progressive. The protagonist has a 'System' that gives tasks and rewards. Focus on leveling up and getting rich/strong.",
+    backgroundTemplate:
+      "You are an ordinary person until you bind with the [Godly Tycoon/Choice/Sign-in] System. 'Ding! Sign-in successful, rewarded with a Lamborghini.' 'Ding! Task complete, rewarded with 100 million.' Your life is on easy mode. As long as you complete the System's weird tasks, you get everything you want.",
+    example:
+      "A mechanical voice rings in your head: 'Host humiliated. Trigger task: Slap the villain. Reward: Grandmaster Fighting Skills.' You look at the arrogant thug and smirk. 'Task accepted.' Warmth flows through your body. You punch him, sending him flying ten meters. 'Ding! Task complete. Reward issued.'",
+  },
+  wealthy_family: {
+    name: "Wealthy Family",
+    narrativeStyle:
+      "Luxurious, treacherous, and dramatic. Focus on the internal struggles of top-tier families, inheritance wars, and secrets. Money vs. Humanity.",
+    backgroundTemplate:
+      "You married into a top wealthy family. It looked like a fairytale, but it was a nightmare. The mother-in-law despises you, the husband cheats, and illegitimate children appear. You endure in silence, gathering strength. When the patriarch falls ill and the will is read, you reveal your claws. You are the final winner.",
+    example:
+      "On the luxury yacht, the champagne tower crashes. You stand in your evening gown, holding a DNA test. 'Quiet everyone,' you smile at the arrogant 'Eldest Son'. 'Actually, you aren't the old man's biological son.' The crowd gasps. You look at his pale face and toast. 'Get out of my house.'",
+  },
 };

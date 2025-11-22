@@ -29,6 +29,7 @@ export interface GameState {
   error: string | null;
   envTheme: string; // Dynamic atmosphere (e.g. "Dark", "Tense")
   theme: string; // Static game genre (e.g. "Cyberpunk", "Wuxia")
+  time: string; // In-game time tracking
 
   // Stats & Logs
   totalTokens: number;
@@ -158,6 +159,7 @@ export interface GameStateSnapshot {
   locations: Location[];
   currentQuest?: string;
   veoScript?: string; // Cached Veo script for this story state
+  time?: string; // In-game time
 
   // UI State - preserve user's customizations
   uiState: UIState;
@@ -307,8 +309,8 @@ export interface AdventureTurnInput {
   language: string;
   themeKey?: string;
   tFunc?: (key: string) => any;
+  time?: string;
 }
-
 export interface GameResponse {
   narrative: string;
   choices: string[];
@@ -325,6 +327,7 @@ export interface GameResponse {
   environment?: string; // The detected environment for audio ambience
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
+  timeUpdate?: string; // Update in-game time
 }
 
 export interface ItemExplanation {
@@ -341,6 +344,9 @@ export interface ThemeConfig {
 
 export interface StoryThemeConfig {
   defaultEnvTheme: string;
+  icon?: string;
+  categories?: string[];
+  restricted?: boolean;
 }
 
 export type LanguageCode = "en" | "zh";

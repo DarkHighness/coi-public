@@ -361,4 +361,9 @@ export const en = {
     storageUsage: "Storage Usage",
     storageUnavailable: "Storage information unavailable",
   },
+  customTips: "Add details to guide your adventure's story",
+  tip: "Tips",
+  customWritingTips: "Describe characters, settings, plot hooks, or themes you'd like to explore. The AI will incorporate these elements into your story.",
+  clear: "Clear",
+  saveApply: "Save & Apply"
 };

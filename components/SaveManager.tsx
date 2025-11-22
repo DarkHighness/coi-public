@@ -21,7 +21,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
         <div className="p-4 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
           <h2 className="text-xl font-bold text-theme-primary">

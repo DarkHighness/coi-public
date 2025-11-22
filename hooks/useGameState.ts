@@ -35,6 +35,7 @@ const INITIAL_STATE: GameState = {
   generatingNodeId: null,
   totalTokens: 0,
   logs: [],
+  time: "",
 };
 
 export const useGameState = () => {

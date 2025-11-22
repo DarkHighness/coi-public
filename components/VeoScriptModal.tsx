@@ -67,7 +67,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded-sm max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative">
         {/* Header */}
         <div className="p-6 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">

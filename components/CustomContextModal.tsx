@@ -38,7 +38,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
               {t("customContext")}
             </h2>
             <p className="text-sm text-theme-muted mt-1">
-              Add details to guide your adventure's story
+              {t("customTips")}
             </p>
           </div>
           <button
@@ -73,9 +73,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
 
           <div className="mt-4 p-4 bg-theme-bg/50 rounded-lg border border-theme-border/50">
             <p className="text-xs text-theme-muted leading-relaxed">
-              <strong className="text-theme-primary">Tip:</strong> Describe
-              characters, settings, plot hooks, or themes you'd like to explore.
-              The AI will incorporate these elements into your story.
+              <strong className="text-theme-primary">{t("tip")}:</strong> {t("customWritingTips")}
             </p>
           </div>
         </div>
@@ -86,19 +84,19 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
             onClick={handleClear}
             className="px-4 py-2 border border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-muted transition-all rounded-lg"
           >
-            Clear
+            {t("clear")}
           </button>
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={handleSave}
             className="flex-1 px-4 py-3 bg-theme-primary text-theme-bg font-bold hover:bg-theme-primary-hover transition-all rounded-lg shadow-lg"
           >
-            Save & Apply
+            {t("saveApply")}
           </button>
         </div>
       </div>

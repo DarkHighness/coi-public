@@ -22,7 +22,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-200 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4"
+      className="fixed inset-0 z-200 flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in p-4"
       onClick={onClose}
     >
       <div

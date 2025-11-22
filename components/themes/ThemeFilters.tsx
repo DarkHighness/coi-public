@@ -1,61 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themes";
 
-export const CATEGORY_KEYS = [
-  "all",
-  "ancient",
-  "modern",
-  "fantasy",
-  "suspense",
-] as const;
-export type CategoryKey = (typeof CATEGORY_KEYS)[number];
-
-export const CATEGORY_MAP: Record<Exclude<CategoryKey, "all">, string[]> = {
-  ancient: [
-    "wuxia",
-    "xianxia",
-    "demonic_cultivation",
-    "palace_drama",
-    "ancient_romance",
-    "period_drama",
-    "republican",
-    "intrigue",
-  ],
-  modern: [
-    "modern_romance",
-    "ceo",
-    "entertainment",
-    "esports",
-    "cs_student",
-    "industry_elite",
-    "rough_guy",
-    "sweet_pet",
-    "wild_youth",
-    "love_after_marriage",
-    "reunion",
-    "wife_chasing",
-    "son_in_law",
-    "white_moonlight",
-    "patriotism",
-    "body_swap",
-    "special_forces",
-    "mutual_redemption",
-  ],
-  fantasy: ["fantasy", "scifi", "cyberpunk", "infinite_flow", "farming"],
-  suspense: [
-    "horror",
-    "mystery",
-    "survival",
-    "zombie",
-    "yandere",
-    "villain_op",
-    "angst",
-    "long_aotian",
-    "war_god",
-    "return_strong",
-    "female_growth",
-  ],
-};
 
 interface ThemeFiltersProps {
   searchQuery: string;

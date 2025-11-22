@@ -442,18 +442,24 @@ export const generateAdventureTurn = async (
     themeKey,
     tFunc,
     knowledge, // Extract knowledge from input
+    time, // Extract time from input
   } = input;
 
   const { provider, modelId } = getProviderConfig("story");
 
   let narrativeStyle: string;
   let example: string | undefined;
+  let isRestricted: boolean = false;
 
   if (tFunc && themeKey) {
     // Use dynamic translation function from React component
     narrativeStyle =
       tFunc(`themes.${themeKey}.narrativeStyle`) || "Standard adventure tone.";
     example = tFunc(`themes.${themeKey}.example`);
+    // Check for restricted flag in THEMES constant (imported or passed)
+    // Since we don't have direct access to THEMES here without import, we rely on the fact that we can import it.
+    // However, to avoid circular deps or complex imports if not already there, let's check imports.
+    // aiService imports DEFAULTS, etc. Let's import THEMES from constants.
   } else if (themeKey) {
     // Fallback to static translations
     const langCode = getLangCode(language);
@@ -466,11 +472,25 @@ export const generateAdventureTurn = async (
     example = undefined;
   }
 
+  // We need to import THEMES to check for restricted status
+  // Since we can't easily change imports in this block, we will assume THEMES is available or we need to add the import.
+  // Looking at file content, THEMES is NOT imported in aiService.ts.
+  // We should add `import { THEMES } from "../utils/constants";` at the top.
+  // But for now, let's use a dynamic require or just add the logic if I can edit imports.
+  // Wait, I can edit the whole file or use replace. I'll add the import in a separate step or just use what I have.
+  // Actually, `generateAdventureTurn` is in `aiService.ts`. `aiService.ts` imports `DEFAULTS` from `../utils/constants`.
+  // I can update the import to include `THEMES`.
+
+  // For this specific block:
+  const themeConfig = (await import("../utils/constants")).THEMES[themeKey || "fantasy"];
+  isRestricted = themeConfig?.restricted || false;
+
   // Split System Instruction for better KV Cache
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
     example,
+    isRestricted
   );
   const staticWorldContext = getStaticWorldContext(outline);
   const dynamicStoryContext = getDynamicStoryContext(summaries);
@@ -482,6 +502,7 @@ export const generateAdventureTurn = async (
     currentLocationId,
     character,
     knowledge, // Pass knowledge to context
+    time, // Pass time to context
   );
 
   // Combine system instructions

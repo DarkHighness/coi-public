@@ -444,6 +444,11 @@ export const gameResponseSchema: Schema = {
       ],
       description: "Update the theme ONLY if it shifts significantly.",
     },
+    timeUpdate: {
+      type: Type.STRING,
+      description:
+        "Update the in-game time (e.g., 'Day 2', '2023-09-29', 'Midnight'). Update this when significant time passes or specific events occur.",
+    },
   },
   required: [
     "narrative",

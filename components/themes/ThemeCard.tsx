@@ -10,98 +10,6 @@ interface ThemeCardProps {
   onHover: (key: string) => void;
 }
 
-// Helper for theme icons
-const getThemeIcon = (key: string) => {
-  switch (key) {
-    case "wuxia":
-      return "⚔️";
-    case "xianxia":
-      return "✨";
-    case "demonic_cultivation":
-      return "😈";
-    case "palace_drama":
-      return "👑";
-    case "ancient_romance":
-      return "💖";
-    case "modern_romance":
-      return "❤️";
-    case "ceo":
-      return "💼";
-    case "entertainment":
-      return "🎬";
-    case "esports":
-      return "🎮";
-    case "cs_student":
-      return "💻";
-    case "fantasy":
-      return "🐉";
-    case "scifi":
-      return "🚀";
-    case "cyberpunk":
-      return "🌃";
-    case "horror":
-      return "👻";
-    case "mystery":
-      return "🔍";
-    case "survival":
-      return "🏕️";
-    case "zombie":
-      return "🧟";
-    case "yandere":
-      return "🔪";
-    case "villain_op":
-      return "🦹";
-    case "angst":
-      return "💔";
-    case "long_aotian":
-      return "💪";
-    case "war_god":
-      return "🛡️";
-    case "return_strong":
-      return "🔥";
-    case "female_growth":
-      return "🌸";
-    case "infinite_flow":
-      return "♾️";
-    case "farming":
-      return "🌾";
-    case "period_drama":
-      return "🎭";
-    case "republican":
-      return "🎩";
-    case "intrigue":
-      return "🤫";
-    case "industry_elite":
-      return "🏢";
-    case "rough_guy":
-      return "👊";
-    case "sweet_pet":
-      return "🍬";
-    case "wild_youth":
-      return "🎸";
-    case "love_after_marriage":
-      return "💍";
-    case "reunion":
-      return "🤝";
-    case "wife_chasing":
-      return "🏃‍♀️";
-    case "son_in_law":
-      return "👨‍👩‍👧";
-    case "white_moonlight":
-      return "🌕";
-    case "patriotism":
-      return "🇨🇳";
-    case "body_swap":
-      return "👯";
-    case "special_forces":
-      return "🎖️";
-    case "mutual_redemption":
-      return "💞";
-    default:
-      return "📖";
-  }
-};
-
 export const ThemeCard: React.FC<ThemeCardProps> = ({
   themeKey,
   themeConfig,
@@ -147,7 +55,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg">
-                {getThemeIcon(themeKey)}
+                {themeConfig.icon || "📖"}
               </span>
               <h3 className="text-lg md:text-xl font-bold text-theme-text group-hover:text-theme-primary transition-colors truncate">
                 {t(`themes.${themeKey}.name`)}
