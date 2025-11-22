@@ -32,8 +32,8 @@ export const useAmbience = (
   }, [volume, muted, currentEnv]);
 
   useEffect(() => {
-    // If environment is undefined, fade out current track and stop
-    if (!environment) {
+    // If environment is undefined or "Unknown", fade out current track and stop
+    if (!environment || environment === "Unknown") {
       if (audioRef.current) {
         const oldAudio = audioRef.current;
         // Clear ref immediately to prevent race conditions

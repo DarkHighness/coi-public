@@ -199,6 +199,9 @@ export const zh = {
     rain: "雨",
     storm: "风暴",
     tavern: "酒馆",
+    snow: "雪地",
+    desert: "沙漠",
+    Unknown: "未知",
   },
   environmentNames: {
     combat: "战斗",

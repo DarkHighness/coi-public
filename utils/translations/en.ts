@@ -188,6 +188,9 @@ export const en = {
     rain: "Rain",
     storm: "Storm",
     tavern: "Tavern",
+    snow: "Snow",
+    desert: "Desert",
+    Unknown: "Unknown",
   },
   environmentNames: {
     combat: "Combat",
