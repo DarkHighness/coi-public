@@ -79,6 +79,20 @@ Unlike traditional text adventures with pre-written paths, Chronicles of Infinit
 5.  **Open in Browser**
     Visit `http://localhost:5173` to start your adventure.
 
+## 🚀 Deployment
+
+This project is configured to support both **GitHub Pages** and **Cloudflare Pages**.
+
+### GitHub Pages
+1.  Push your changes to the `main` branch.
+2.  A GitHub Action will automatically build and deploy the site to `https://<your-username>.github.io/coi/`.
+3.  Ensure "GitHub Actions" is selected as the source in your repository's Pages settings.
+
+### Cloudflare Pages
+1.  Connect your GitHub repository to Cloudflare Pages.
+2.  Use the default build settings (`npm run build`).
+3.  The site will be deployed to your Cloudflare Pages URL (e.g., `https://<project-name>.pages.dev/`).
+
 ## 🎮 How to Play
 
 1.  **Select a Theme**: Choose a genre (e.g., Fantasy, Cyberpunk).

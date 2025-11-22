@@ -13,7 +13,7 @@ if (!rootElement) {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register(import.meta.env.BASE_URL + "sw.js")
       .then((registration) => {
         console.log("SW registered: ", registration);
       })
@@ -26,7 +26,7 @@ if ("serviceWorker" in navigator) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <App />
     </BrowserRouter>
   </React.StrictMode>,

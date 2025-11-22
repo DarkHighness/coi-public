@@ -79,6 +79,20 @@
 5.  **开始游戏**
     在浏览器中访问 `http://localhost:5173` 即可开始你的冒险。
 
+## 🚀 部署 (Deployment)
+
+本项目已配置为同时支持 **GitHub Pages** 和 **Cloudflare Pages**。
+
+### GitHub Pages
+1.  将代码推送到 `main` 分支。
+2.  GitHub Action 将自动构建并将站点部署到 `https://<your-username>.github.io/coi/`。
+3.  请确保在仓库的 Pages 设置中选择 "GitHub Actions" 作为源。
+
+### Cloudflare Pages
+1.  将你的 GitHub 仓库连接到 Cloudflare Pages。
+2.  使用默认构建设置 (`npm run build`)。
+3.  站点将被部署到你的 Cloudflare Pages URL (例如 `https://<project-name>.pages.dev/`)。
+
 ## 🎮 玩法说明
 
 1.  **选择题材**: 选择一个你喜欢的流派（如：奇幻、赛博朋克）。
