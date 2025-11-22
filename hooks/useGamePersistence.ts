@@ -242,6 +242,28 @@ export const useGamePersistence = (
     }
   };
 
+  const clearAllSaves = async () => {
+    try {
+      // Clear all save data from IndexedDB
+      for (const slot of saveSlots) {
+        await deleteGameState(slot.id);
+      }
+
+      // Clear metadata
+      await saveMetadata("slots", []);
+      await saveMetadata("currentSlot", null);
+
+      // Update state
+      setSaveSlots([]);
+      setCurrentSlotId(null);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to clear all saves:", error);
+      return false;
+    }
+  };
+
   return {
     saveSlots,
     currentSlotId,
@@ -249,6 +271,7 @@ export const useGamePersistence = (
     createSaveSlot,
     loadSlot,
     deleteSlot,
+    clearAllSaves,
     isAutoSaving,
   };
 };

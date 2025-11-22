@@ -81,10 +81,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         className={`relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none ${mode === "theme_select" ? "hidden lg:flex" : "flex"}`}
       >
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
-          <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg transition-all duration-300">
             {t("titlePart1")}
           </h1>
-          <h2 className="text-3xl lg:text-6xl font-scifi uppercase tracking-[0.2em] text-theme-primary/80">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl xl:text-6xl font-scifi uppercase tracking-[0.2em] text-theme-primary/80 transition-all duration-300">
             {t("titlePart2")}
           </h2>
           <p className="hidden lg:block text-lg text-theme-muted max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
@@ -268,7 +268,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     ></path>
                   </svg>
-                  <span>Customize</span>
+                  <span>{t("customize")}</span>
                   {customContext && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-theme-primary rounded-full animate-pulse"></span>
                   )}

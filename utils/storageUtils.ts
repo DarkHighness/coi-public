@@ -133,19 +133,29 @@ export const listAllSaves = async (): Promise<void> => {
   }
 };
 
-// Make functions globally accessible in development
-if (typeof window !== "undefined") {
-  (window as any).chroniclesStorage = {
-    clearAllSaves,
-    getStorageInfo,
-    exportAllSaves,
-    listAllSaves,
-  };
+/**
+ * Initialize storage utilities and make them globally accessible
+ * Call this manually from the application if you want console access
+ */
+export const initStorageUtilities = (): void => {
+  if (typeof window !== "undefined") {
+    (window as any).chroniclesStorage = {
+      clearAllSaves,
+      getStorageInfo,
+      exportAllSaves,
+      listAllSaves,
+    };
 
-  console.log("📦 Chronicles Storage Utilities loaded!");
-  console.log("   Available commands:");
-  console.log("   - chroniclesStorage.getStorageInfo()");
-  console.log("   - chroniclesStorage.listAllSaves()");
-  console.log("   - chroniclesStorage.exportAllSaves()");
-  console.log("   - chroniclesStorage.clearAllSaves()");
+    console.log("📦 Chronicles Storage Utilities loaded!");
+    console.log("   Available commands:");
+    console.log("   - chroniclesStorage.getStorageInfo()");
+    console.log("   - chroniclesStorage.listAllSaves()");
+    console.log("   - chroniclesStorage.exportAllSaves()");
+    console.log("   - chroniclesStorage.clearAllSaves()");
+  }
+};
+
+// Auto-initialize in development for convenience
+if (typeof window !== "undefined" && import.meta.env.DEV) {
+  initStorageUtilities();
 }

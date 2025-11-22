@@ -165,6 +165,12 @@ export const getModels = async (
   else
     config = { ...openaiConfig, apiKey: currentSettings.openai.apiKey || "" };
 
+  // Skip API request if API key is missing or empty
+  if (!config.apiKey || config.apiKey.trim() === "") {
+    console.warn(`Skipping model fetch for ${provider}: API key not configured`);
+    return [];
+  }
+
   const configHash = JSON.stringify(config);
   const cacheKey = provider;
 
@@ -216,7 +222,7 @@ export const validateConnection = async (
 
 export const filterModels = (
   models: ModelInfo[],
-  type: "story" | "image" | "video" | "audio" | "translation" | "lore",
+  type: "story" | "image" | "video" | "audio" | "translation" | "lore" | "script",
 ): ModelInfo[] => {
   let filtered = models;
 

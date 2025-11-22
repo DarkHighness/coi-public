@@ -17,10 +17,6 @@ import { getEnvApiKey } from "./utils/env";
 import { validateConnection } from "./services/aiService";
 import { useAmbience } from "./hooks/useAmbience";
 
-// Load storage utilities in development
-if (import.meta.env.DEV) {
-  import("./utils/storageUtils");
-}
 
 // Lazy Load Heavy Components for Code Splitting
 const MagicMirror = React.lazy(() =>
@@ -99,6 +95,8 @@ export default function App() {
     themeMode,
     toggleThemeMode,
     setThemeMode,
+    resetSettings,
+    clearAllSaves,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -448,6 +446,9 @@ export default function App() {
                   showToast={showToast}
                   themeMode={themeMode}
                   onSetThemeMode={setThemeMode}
+                  onResetSettings={resetSettings}
+                  onClearAllSaves={clearAllSaves}
+                  saveCount={saveSlots.length}
                 />
                 {isSaveManagerOpen && (
                   <SaveManager
@@ -528,12 +529,13 @@ export default function App() {
                       setIsMagicMirrorOpen(true);
                     }}
                     onGenerateImage={generateImageForNode}
-                    onRetry={() =>
-                      handleAction(
-                        currentHistory[currentHistory.length - 1]?.text ||
-                          "Retry",
-                      )
-                    }
+                    onRetry={() => {
+                      // Find the last user action from history
+                      const lastUserAction = [...currentHistory]
+                        .reverse()
+                        .find((seg) => seg.role === "user");
+                      handleAction(lastUserAction?.text || "Continue the story");
+                    }}
                     onFork={handleFork}
                     onAction={handlePlayerAction}
                     onNewGame={handleNewGameClick}
@@ -563,12 +565,13 @@ export default function App() {
                       setIsMagicMirrorOpen(true);
                     }}
                     onGenerateImage={generateImageForNode}
-                    onRetry={() =>
-                      handleAction(
-                        currentHistory[currentHistory.length - 1]?.text ||
-                          "Retry",
-                      )
-                    }
+                    onRetry={() => {
+                      // Find the last user action from history
+                      const lastUserAction = [...currentHistory]
+                        .reverse()
+                        .find((seg) => seg.role === "user");
+                      handleAction(lastUserAction?.text || "Continue the story");
+                    }}
                     onFork={handleFork}
                     onAction={handlePlayerAction}
                     onNewGame={handleNewGameClick}
@@ -613,6 +616,9 @@ export default function App() {
                     showToast={showToast}
                     themeMode={themeMode}
                     onSetThemeMode={setThemeMode}
+                    onResetSettings={resetSettings}
+                    onClearAllSaves={clearAllSaves}
+                    saveCount={saveSlots.length}
                   />
 
                   {isSaveManagerOpen && (

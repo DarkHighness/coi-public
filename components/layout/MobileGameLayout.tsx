@@ -259,6 +259,27 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
               </span>
             </button>
             <button
+              onClick={onVeoScript}
+              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
+            >
+              <svg
+                className="w-8 h-8 text-theme-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+                ></path>
+              </svg>
+              <span className="text-sm font-bold uppercase">
+                {t("veoScript.title")}
+              </span>
+            </button>
+            <button
               onClick={() => {
                 if (window.confirm(t("confirmNewGame"))) onNewGame();
               }}

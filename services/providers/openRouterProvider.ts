@@ -167,8 +167,7 @@ export const generateContent = async (
         headers: {
           Authorization: `Bearer ${config.apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin, // Optional: To identify your app
-          "X-Title": "Chronicles of Infinity", // Optional: To identify your app
+          "HTTP-Referer": window.location.origin,
         },
         body: JSON.stringify(body),
       },
@@ -289,7 +288,6 @@ export const generateImage = async (
           Authorization: `Bearer ${config.apiKey}`,
           "Content-Type": "application/json",
           "HTTP-Referer": window.location.origin,
-          "X-Title": "Chronicles of Infinity",
         },
         body: JSON.stringify(chatBody),
       },
@@ -343,7 +341,6 @@ export const generateImage = async (
           Authorization: `Bearer ${config.apiKey}`,
           "Content-Type": "application/json",
           "HTTP-Referer": window.location.origin,
-          "X-Title": "Chronicles of Infinity",
         },
         body: JSON.stringify(imageBody),
       },

@@ -47,6 +47,7 @@ export const useGameEngine = () => {
     createSaveSlot,
     loadSlot,
     deleteSlot,
+    clearAllSaves,
     isAutoSaving,
   } = useGamePersistence(gameState, setGameState, view);
 
@@ -205,6 +206,16 @@ export const useGameEngine = () => {
   const setThemeModeValue = (mode: "day" | "night" | "system") => {
     setThemeMode(mode);
     localStorage.setItem("chronicles_theme_mode", mode);
+  };
+
+  const resetSettings = () => {
+    // Reset to default settings
+    const defaultSettings = DEFAULTS;
+    setAiSettings(defaultSettings);
+    updateAIConfig(defaultSettings);
+    localStorage.setItem("chronicles_aisettings", JSON.stringify(defaultSettings));
+    // Reset language to default
+    i18n.changeLanguage(defaultSettings.language);
   };
 
   // --- Core Game Loop ---
@@ -821,22 +832,38 @@ export const useGameEngine = () => {
       }, 20000); // 20s timeout
 
       setTimeout(async () => {
-        const result = await handleAction(
-          `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`,
-          true,
-          selectedTheme,
-        );
-        clearTimeout(safetyTimer);
+        try {
+          const result = await handleAction(
+            `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`,
+            true,
+            selectedTheme,
+          );
+          clearTimeout(safetyTimer);
 
-        // Only navigate if successful (no error returned)
-        if (!result?.startsWith("Error:")) {
-          navigate("/game");
-        } else {
+          // handleAction returns null on success, or "Error: ..." string on failure
+          if (result === null || !result || !result.startsWith("Error:")) {
+            navigate("/game");
+          } else {
+            // First turn generation failed - clean up the save slot
+            console.warn("First turn generation failed, cleaning up save slot");
+            deleteSlot(slotId);
+            setCurrentSlotId(null);
+            navigate("/");
+          }
+        } catch (error) {
+          // Unexpected error during first turn - clean up
+          console.error("Unexpected error during first turn", error);
+          clearTimeout(safetyTimer);
+          deleteSlot(slotId);
+          setCurrentSlotId(null);
           navigate("/");
         }
       }, 100);
     } catch (e) {
       console.error("Init failed", e);
+      // Outline generation failed - clean up the save slot
+      deleteSlot(slotId);
+      setCurrentSlotId(null);
       setGameState((prev) => ({
         ...prev,
         error: "Init Failed",
@@ -983,5 +1010,7 @@ export const useGameEngine = () => {
     themeMode,
     toggleThemeMode,
     setThemeMode: setThemeModeValue,
+    resetSettings,
+    clearAllSaves,
   };
 };

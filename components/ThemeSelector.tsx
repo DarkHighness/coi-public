@@ -340,7 +340,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 </div>
               </div>
               <div className="px-4 py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-xs font-bold uppercase tracking-wider group-hover:bg-theme-primary group-hover:text-theme-bg transition-all shrink-0">
-                Surprise Me
+                {t("surpriseMe")}
               </div>
             </button>
           )}
