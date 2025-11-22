@@ -1,0 +1,5 @@
+{
+  "name": "Chronicles of Infinity",
+  "description": "An infinite, AI-driven choose-your-own-adventure engine with real-time image generation and dynamic inventory tracking.",
+  "requestFramePermissions": []
+}

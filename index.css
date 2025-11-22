@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+@theme {
+  --color-theme-bg: var(--theme-bg);
+  --color-theme-surface: var(--theme-surface);
+  --color-theme-surface-highlight: var(--theme-surface-highlight);
+  --color-theme-border: var(--theme-border);
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-primary-hover: var(--theme-primary-hover);
+  --color-theme-text: var(--theme-text);
+  --color-theme-muted: var(--theme-muted);
+
+  --font-fantasy: "Cinzel", serif;
+  --font-scifi: "Orbitron", sans-serif;
+  --font-horror: "Creepster", cursive;
+  --font-cyberpunk: "Rajdhani", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+body {
+  font-family: "Lato", sans-serif;
+  background-color: var(--theme-bg, #0f172a);
+  color: var(--theme-text, #e2e8f0);
+  transition:
+    background-color 1s ease,
+    color 1s ease;
+}
+.story-text {
+  font-family: "Merriweather", serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--theme-surface, #1e293b);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border, #475569);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-muted, #64748b);
+}
+
+/* --- Environmental Effects --- */
+
+/* Rain */
+.weather-rain {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.3)
+  );
+  background-size: 1px 50px;
+  position: absolute;
+  top: -50px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: rain 0.6s linear infinite;
+  opacity: 0.15;
+  pointer-events: none;
+}
+@keyframes rain {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+/* Snow */
+.weather-snow {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: snow 5s linear infinite;
+  filter: blur(1px);
+}
+@keyframes snow {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+/* Fog */
+.weather-fog {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+  background: url("https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png")
+    repeat-x;
+  background-size: contain;
+  animation: fog 60s linear infinite;
+  opacity: 0.15;
+  pointer-events: none;
+}
+@keyframes fog {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Flicker / Strobe */
+.weather-flicker {
+  animation: flicker 0.1s infinite alternate;
+  background-color: rgba(0, 0, 0, 0.15);
+}
+@keyframes flicker {
+  0% {
+    opacity: 0.05;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+/* Embers/Ash */
+.weather-ember {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  background: #ff4500;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ff4500;
+  animation: ember 4s linear infinite;
+  opacity: 0;
+}
+@keyframes ember {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80vh) translateX(-20px);
+    opacity: 0;
+  }
+}
+
+/* Sunny / Particles */
+.weather-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 200, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 200, 0.4);
+  animation: particle-float 5s ease-in-out infinite;
+  opacity: 0;
+}
+@keyframes particle-float {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0;
+  }
+}
+
+/* Shimmer Effect for Text */
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+}
+
+/* Smooth Fade In Up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Butterfly Effect */
+@keyframes butterfly-float {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(100px, -100px) rotate(10deg);
+  }
+  50% {
+    transform: translate(200px, -50px) rotate(-5deg);
+  }
+  75% {
+    transform: translate(300px, -150px) rotate(5deg);
+  }
+  100% {
+    transform: translate(400px, -200px) rotate(0deg);
+  }
+}
+
+@keyframes butterfly-wing {
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.2);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.butterfly {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+}
+
+.butterfly-wings {
+  animation: butterfly-wing 0.2s infinite ease-in-out;
+  transform-origin: center;
+}
+
+/* Image blur-in animation */
+@keyframes blur-in {
+  0% {
+    filter: blur(20px);
+    opacity: 0;
+  }
+  50% {
+    filter: blur(10px);
+    opacity: 0.5;
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Linear fade mask for horizontal lists */
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - 24px),
+    transparent
+  );
+}
