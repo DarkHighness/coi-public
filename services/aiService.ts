@@ -495,7 +495,7 @@ export const generateAdventureTurn = async (
   });
   contents.push({ role: "model", parts: [{ text: "Status updated." }] });
 
-  // Append History
+  // Append History (already includes the current userAction if not isInit)
   contents.push(
     ...recentHistory.map((seg) => ({
       role: seg.role,
@@ -503,8 +503,15 @@ export const generateAdventureTurn = async (
     })),
   );
 
-  // Append Current Action
-  contents.push({ role: "user", parts: [{ text: userAction }] });
+  // Only append userAction separately if it's not already in recentHistory
+  // (i.e., during initialization when recentHistory might be empty)
+  const userActionAlreadyInHistory = recentHistory.some(
+    (seg) => seg.role === "user" && seg.text === userAction,
+  );
+
+  if (!userActionAlreadyInHistory) {
+    contents.push({ role: "user", parts: [{ text: userAction }] });
+  }
 
   const { result, log, usage } = await generateContentUnified(
     provider,

@@ -246,6 +246,12 @@ export const en = {
   customize: "Customize",
   surpriseMe: "Surprise Me",
   edit: "Edit",
+  veoScriptModal: {
+    title: "Veo Script Generator",
+    loading: "Crafting cinematic script...",
+    regenerate: "Regenerate",
+    copy: "Copy Script",
+  },
   outline: {
     title: "Story Outline",
     premise: "Premise",

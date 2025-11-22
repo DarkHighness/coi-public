@@ -639,6 +639,10 @@ export const useGameEngine = () => {
           currentQuest: newQuests.find(
             (q) => q.status === "active" && q.type === "main",
           )?.title,
+          veoScript: gameStateRef.current.veoScript, // Preserve Veo script in snapshot
+          uiState: gameStateRef.current.uiState, // Preserve UI customizations
+          envTheme: response.envTheme || forceTheme || gameStateRef.current.envTheme, // Save dynamic theme
+          // Note: outline is NOT saved as it's immutable for the entire game
         },
       };
 
@@ -814,23 +818,10 @@ export const useGameEngine = () => {
         envTheme: selectedTheme, // Initial Env Theme
       }));
 
-      // Use setTimeout to allow state update to propagate before generating first turn
-      // We navigate to /game ONLY after the first turn is ready to prevent empty state redirects
+      // Navigate to game immediately after outline is ready
+      navigate("/game");
 
-      // Safety timeout to ensure we don't get stuck in processing state
-      const safetyTimer = setTimeout(() => {
-        setGameState((prev) => {
-          if (prev.isProcessing) {
-            return {
-              ...prev,
-              isProcessing: false,
-              error: "The narrator seems to have drifted off...",
-            };
-          }
-          return prev;
-        });
-      }, 20000); // 20s timeout
-
+      // Generate first turn in the game view
       setTimeout(async () => {
         try {
           const result = await handleAction(
@@ -838,25 +829,27 @@ export const useGameEngine = () => {
             true,
             selectedTheme,
           );
-          clearTimeout(safetyTimer);
 
-          // handleAction returns null on success, or "Error: ..." string on failure
-          if (result === null || !result || !result.startsWith("Error:")) {
-            navigate("/game");
-          } else {
-            // First turn generation failed - clean up the save slot
-            console.warn("First turn generation failed, cleaning up save slot");
-            deleteSlot(slotId);
-            setCurrentSlotId(null);
-            navigate("/");
+          // handleAction returns:
+          // - null or empty string "" on success
+          // - "Error: ..." string on failure
+          // If first turn fails, stay in game and allow retry via retry button
+          // Don't delete the save since outline generation succeeded
+          if (result && result.startsWith("Error:")) {
+            console.warn("First turn generation failed, but outline is valid - player can retry");
+            // Error state is already set by handleAction, player can use retry button
           }
+          // On success, we're already in /game with content showing
         } catch (error) {
-          // Unexpected error during first turn - clean up
+          // Unexpected error during first turn
           console.error("Unexpected error during first turn", error);
-          clearTimeout(safetyTimer);
-          deleteSlot(slotId);
-          setCurrentSlotId(null);
-          navigate("/");
+          // Don't delete save or navigate away - outline is still valid
+          // Set error state so player can retry
+          setGameState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            error: "Failed to start the story. Please try again using the retry button.",
+          }));
         }
       }, 100);
     } catch (e) {
@@ -896,6 +889,10 @@ export const useGameEngine = () => {
           currentLocation: targetNode.stateSnapshot.currentLocation,
           knownLocations: targetNode.stateSnapshot.knownLocations,
           locations: targetNode.stateSnapshot.locations,
+          veoScript: targetNode.stateSnapshot.veoScript, // Restore Veo script from snapshot
+          uiState: targetNode.stateSnapshot.uiState, // Restore UI customizations
+          envTheme: targetNode.stateSnapshot.envTheme, // Restore dynamic theme
+          // Note: outline is NOT restored as it's immutable for the entire game
         };
       }
       return newState;

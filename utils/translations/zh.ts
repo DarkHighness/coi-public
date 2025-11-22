@@ -258,6 +258,12 @@ export const zh = {
     forkConfirm: "确定要从这个时刻创造新的时间线吗？",
     viewMap: "查看树状图",
   },
+  veoScriptModal: {
+    title: "Veo 脚本生成器",
+    loading: "正在生成精致的脚本...",
+    regenerate: "重新生成",
+    copy: "复制脚本",
+  },
   saves: {
     title: "存档槽位",
     create: "新建存档",

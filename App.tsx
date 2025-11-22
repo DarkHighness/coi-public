@@ -605,6 +605,12 @@ export default function App() {
                     gameState={gameState}
                     currentHistory={currentHistory}
                     themeFont={currentThemeConfig.fontClass}
+                    onScriptGenerated={(script) => {
+                      setGameState((prev) => ({
+                        ...prev,
+                        veoScript: script,
+                      }));
+                    }}
                   />
 
                   <SettingsModal

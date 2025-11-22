@@ -48,10 +48,10 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   ) => (
     <div
       key={q.id}
-      className="bg-theme-surface-highlight/50 p-4 rounded border border-theme-border text-theme-text text-sm leading-relaxed border-l-4 border-l-theme-primary relative group cursor-pointer hover:bg-theme-surface-highlight/70 transition-colors mb-2"
+      className="bg-theme-surface-highlight/50 p-4 rounded border border-theme-border text-theme-text text-sm leading-relaxed border-l-4 border-l-theme-primary relative group cursor-pointer hover:bg-theme-surface-highlight/70 transition-colors mb-2 overflow-visible"
       onClick={() => toggleQuest(q.id, isModal)}
     >
-      <div className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-bg border border-theme-primary text-[10px] px-1 rounded text-theme-primary uppercase">
+      <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-bg border border-theme-primary text-[10px] px-1.5 py-0.5 rounded text-theme-primary uppercase shadow-lg">
         {q.type === "main" ? t("questPanel.main") : t("questPanel.side")}
       </div>
       <div className="flex items-center justify-between">
@@ -121,9 +121,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       </div>
 
       <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
+        className={`transition-all duration-500 ease-in-out ${isOpen ? "max-h-[500px] opacity-100 overflow-y-auto" : "max-h-0 opacity-0 overflow-hidden"}`}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 pr-1">
           {/* Main Quests */}
           {mainQuests
             .slice(0, DISPLAY_LIMIT)

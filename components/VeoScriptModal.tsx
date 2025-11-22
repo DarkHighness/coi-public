@@ -9,6 +9,7 @@ interface VeoScriptModalProps {
   gameState: GameState;
   currentHistory: StorySegment[];
   themeFont?: string;
+  onScriptGenerated?: (script: string) => void; // Callback to save script to gameState
 }
 
 export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
@@ -17,6 +18,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   gameState,
   currentHistory,
   themeFont = "font-fantasy",
+  onScriptGenerated,
 }) => {
   const [script, setScript] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -24,10 +26,16 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
-    if (isOpen && !script) {
-      generate();
+    if (isOpen) {
+      // Load cached script if available
+      if (gameState.veoScript) {
+        setScript(gameState.veoScript);
+      } else if (!script) {
+        // Only generate if no cached script and no current script
+        generate();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, gameState.veoScript]);
 
   const generate = async () => {
     setLoading(true);
@@ -39,6 +47,10 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
         i18n.language,
       );
       setScript(result);
+      // Save to gameState via callback
+      if (onScriptGenerated) {
+        onScriptGenerated(result);
+      }
     } catch (e) {
       console.error("Failed to generate script", e);
       setError("Failed to generate script. Please try again.");
@@ -60,7 +72,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
           <h2 className={`text-2xl text-theme-primary ${themeFont}`}>
-            Veo Script Generator
+            {t("veoScriptModal.title")}
           </h2>
           <button
             onClick={onClose}
@@ -88,7 +100,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
             <div className="flex flex-col items-center justify-center h-64 space-y-4">
               <div className="w-12 h-12 border-4 border-theme-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-theme-primary animate-pulse">
-                Crafting cinematic script...
+                {t("veoScriptModal.loading")}
               </p>
             </div>
           ) : error ? (
@@ -115,7 +127,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
             disabled={loading}
             className="px-4 py-2 bg-theme-surface border border-theme-border hover:border-theme-primary text-theme-text rounded transition-colors disabled:opacity-50"
           >
-            Regenerate
+            {t("veoScriptModal.regenerate")}
           </button>
           <button
             onClick={copyToClipboard}
@@ -135,7 +147,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
                 d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
               ></path>
             </svg>
-            Copy Script
+            {t("veoScriptModal.copy")}
           </button>
         </div>
       </div>

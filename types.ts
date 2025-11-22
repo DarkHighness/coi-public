@@ -32,6 +32,9 @@ export interface GameState {
   // Stats & Logs
   totalTokens: number;
   logs: LogEntry[];
+
+  // Cached Veo Script
+  veoScript?: string;
 }
 
 export interface TokenUsage {
@@ -151,6 +154,15 @@ export interface GameStateSnapshot {
   knownLocations: string[];
   locations: Location[];
   currentQuest?: string;
+  veoScript?: string; // Cached Veo script for this story state
+
+  // UI State - preserve user's customizations
+  uiState: UIState;
+
+  // Dynamic environment theme (e.g., "dark", "mystical")
+  envTheme: string;
+
+  // Note: outline is NOT included as it's immutable and global to the entire game
 }
 
 export interface Location {
