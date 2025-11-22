@@ -19,7 +19,8 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   const narrativeSegments = segments.filter((s) => s.role === "model");
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
   const currentEnvThemeKey = envTheme || currentStoryTheme.defaultEnvTheme;
-  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+  const currentThemeConfig =
+    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { t } = useTranslation();
 
   // Auto-scroll to bottom when new segments are added

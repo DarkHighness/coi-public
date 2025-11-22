@@ -84,7 +84,11 @@ export const useStoryAudio = (
 
       // 2. If not found or no key, generate
       if (!audioData) {
-        const arrayBuffer = await generateSpeech(text, undefined, narrativeTone);
+        const arrayBuffer = await generateSpeech(
+          text,
+          undefined,
+          narrativeTone,
+        );
 
         if (arrayBuffer) {
           audioData = new Uint8Array(arrayBuffer);

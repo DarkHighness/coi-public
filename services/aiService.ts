@@ -647,12 +647,33 @@ export const generateSpeech = async (
   // If voiceName is NOT passed, we use settings.voice OR dynamic tone.
   if (!voiceName) {
     if (narrativeTone && (provider === "openai" || provider === "openrouter")) {
-       const tone = narrativeTone.toLowerCase();
-       if (tone.includes("suspense") || tone.includes("tense") || tone.includes("danger")) targetVoice = "onyx";
-       else if (tone.includes("cheerful") || tone.includes("happy") || tone.includes("energetic")) targetVoice = "nova";
-       else if (tone.includes("melancholy") || tone.includes("sad") || tone.includes("quiet")) targetVoice = "shimmer";
-       else if (tone.includes("calm") || tone.includes("peaceful") || tone.includes("mystical")) targetVoice = "alloy";
-       else if (tone.includes("royal") || tone.includes("authoritative")) targetVoice = "fable";
+      const tone = narrativeTone.toLowerCase();
+      if (
+        tone.includes("suspense") ||
+        tone.includes("tense") ||
+        tone.includes("danger")
+      )
+        targetVoice = "onyx";
+      else if (
+        tone.includes("cheerful") ||
+        tone.includes("happy") ||
+        tone.includes("energetic")
+      )
+        targetVoice = "nova";
+      else if (
+        tone.includes("melancholy") ||
+        tone.includes("sad") ||
+        tone.includes("quiet")
+      )
+        targetVoice = "shimmer";
+      else if (
+        tone.includes("calm") ||
+        tone.includes("peaceful") ||
+        tone.includes("mystical")
+      )
+        targetVoice = "alloy";
+      else if (tone.includes("royal") || tone.includes("authoritative"))
+        targetVoice = "fable";
     }
   }
 
@@ -690,7 +711,7 @@ export const generateSpeech = async (
       // We pass narrativeTone as instructions for Gemini's prompt engineering
       const geminiOptions = {
         ...options,
-        instructions: narrativeTone // Pass tone directly
+        instructions: narrativeTone, // Pass tone directly
       };
 
       const { audio } = await generateGeminiSpeech(
@@ -698,7 +719,7 @@ export const generateSpeech = async (
         modelId, // This might be "gemini-1.5-flash" from settings, provider will override to TTS model if needed
         text,
         targetVoice,
-        geminiOptions
+        geminiOptions,
       );
       return audio;
     }
@@ -716,7 +737,8 @@ export const generateVeoScript = async (
   const prompt = getVeoScriptPrompt(gameState, history);
 
   const { provider, modelId } = getProviderConfig("script");
-  const sys = "You are a professional scriptwriter. Output the script directly.";
+  const sys =
+    "You are a professional scriptwriter. Output the script directly.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {

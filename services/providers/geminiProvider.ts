@@ -303,7 +303,9 @@ export const generateSpeech = async (
   }
 
   // Use the specific TTS model if the generic one is passed, or respect the passed model if it's already a TTS model
-  const ttsModel = model.includes("tts") ? model : "gemini-2.5-flash-preview-tts";
+  const ttsModel = model.includes("tts")
+    ? model
+    : "gemini-2.5-flash-preview-tts";
 
   const response = await ai.models.generateContent({
     model: ttsModel,

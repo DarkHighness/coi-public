@@ -76,8 +76,10 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-  const currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
-  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+  const currentEnvThemeKey =
+    gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentThemeConfig =
+    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">

@@ -41,8 +41,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-  const currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
-  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+  const currentEnvThemeKey =
+    gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentThemeConfig =
+    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { character } = gameState;
   const [showSystemFooter, setShowSystemFooter] = useState(true);
 

@@ -74,8 +74,14 @@ export const useGameEngine = () => {
           image: { ...DEFAULTS.image, ...(parsed.image || {}) },
           video: { ...DEFAULTS.video, ...(parsed.video || {}) },
           audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
-          audioVolume: { ...DEFAULTS.audioVolume, ...(parsed.audioVolume || {}) },
-          translation: { ...DEFAULTS.translation, ...(parsed.translation || {}) },
+          audioVolume: {
+            ...DEFAULTS.audioVolume,
+            ...(parsed.audioVolume || {}),
+          },
+          translation: {
+            ...DEFAULTS.translation,
+            ...(parsed.translation || {}),
+          },
           lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
         };
       } catch (e) {
@@ -91,7 +97,9 @@ export const useGameEngine = () => {
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
   const [themeMode, setThemeMode] = useState<"day" | "night" | "system">(() => {
     const saved = localStorage.getItem("chronicles_theme_mode");
-    return (saved === "day" || saved === "night" || saved === "system") ? saved : "system";
+    return saved === "day" || saved === "night" || saved === "system"
+      ? saved
+      : "system";
   });
 
   // Derived Language State
@@ -161,7 +169,8 @@ export const useGameEngine = () => {
       if (activeNode && activeNode.text) {
         // Truncate text to ~60 chars
         const text = activeNode.text.replace(/\s+/g, " ").trim();
-        const truncated = text.length > 60 ? text.substring(0, 60) + "..." : text;
+        const truncated =
+          text.length > 60 ? text.substring(0, 60) + "..." : text;
         document.title = `${truncated} - Chronicles`;
       }
     }
@@ -204,7 +213,8 @@ export const useGameEngine = () => {
     isInit: boolean = false,
     forceTheme?: string,
   ) => {
-    if ((gameStateRef.current.isProcessing && !isInit) || isTranslating) return null; // Return null instead of void for toast handling
+    if ((gameStateRef.current.isProcessing && !isInit) || isTranslating)
+      return null; // Return null instead of void for toast handling
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
@@ -606,7 +616,7 @@ export const useGameEngine = () => {
         narrativeTone: response.narrativeTone, // Save narrative tone
         imageSkipped: !response.generateImage, // Mark if image was intentionally skipped
         envTheme: gameState.envTheme, // Save current envTheme to the node
-      stateSnapshot: {
+        stateSnapshot: {
           inventory: newInventory,
           relationships: newRels,
           quests: newQuests,
@@ -676,7 +686,11 @@ export const useGameEngine = () => {
             setGameState((prev) => {
               if (prev.isImageGenerating) {
                 console.warn("Image generation timeout");
-                return { ...prev, isImageGenerating: false, generatingNodeId: null };
+                return {
+                  ...prev,
+                  isImageGenerating: false,
+                  generatingNodeId: null,
+                };
               }
               return prev;
             });
@@ -707,10 +721,18 @@ export const useGameEngine = () => {
           .catch((error) => {
             clearTimeout(imageTimeout);
             console.error("Image generation failed:", error);
-            setGameState((prev) => ({ ...prev, isImageGenerating: false, generatingNodeId: null }));
+            setGameState((prev) => ({
+              ...prev,
+              isImageGenerating: false,
+              generatingNodeId: null,
+            }));
           });
       } else {
-        setGameState((prev) => ({ ...prev, isImageGenerating: false, generatingNodeId: null }));
+        setGameState((prev) => ({
+          ...prev,
+          isImageGenerating: false,
+          generatingNodeId: null,
+        }));
       }
 
       return toastMessage;

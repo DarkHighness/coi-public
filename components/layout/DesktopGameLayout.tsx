@@ -128,7 +128,11 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             <div className="w-72 bg-theme-surface/30 animate-pulse"></div>
           }
         >
-          <StoryTimeline segments={currentHistory} theme={gameState.theme} envTheme={gameState.envTheme} />
+          <StoryTimeline
+            segments={currentHistory}
+            theme={gameState.theme}
+            envTheme={gameState.envTheme}
+          />
         </Suspense>
       </div>
     </div>

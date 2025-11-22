@@ -146,9 +146,11 @@ export default function App() {
 
   // Use viewed segment's envTheme if available, otherwise fall back to current game state
   // Priority: Preview Theme (StartScreen) > Viewed Segment (History Scroll) > Current Game State
-  const targetSegment = viewedSegment || currentHistory[currentHistory.length - 1];
+  const targetSegment =
+    viewedSegment || currentHistory[currentHistory.length - 1];
 
-  let currentEnvThemeKey = gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  let currentEnvThemeKey =
+    gameState.envTheme || currentStoryTheme.defaultEnvTheme;
 
   if (previewTheme) {
     const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
@@ -157,7 +159,8 @@ export default function App() {
     currentEnvThemeKey = targetSegment.envTheme;
   }
 
-  const currentThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+  const currentThemeConfig =
+    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   // Determine current context for effects
   const currentSegment = currentHistory[currentHistory.length - 1];

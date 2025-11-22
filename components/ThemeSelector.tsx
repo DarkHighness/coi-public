@@ -68,49 +68,92 @@ const CATEGORY_MAP: Record<Exclude<CategoryKey, "all">, string[]> = {
 // Placeholder for getThemeIcon - replace with actual implementation if available
 const getThemeIcon = (key: string) => {
   switch (key) {
-    case "wuxia": return "⚔️";
-    case "xianxia": return "✨";
-    case "demonic_cultivation": return "😈";
-    case "palace_drama": return "👑";
-    case "ancient_romance": return "💖";
-    case "modern_romance": return "❤️";
-    case "ceo": return "💼";
-    case "entertainment": return "🎬";
-    case "esports": return "🎮";
-    case "cs_student": return "💻";
-    case "fantasy": return "🐉";
-    case "scifi": return "🚀";
-    case "cyberpunk": return "🌃";
-    case "horror": return "👻";
-    case "mystery": return "🔍";
-    case "survival": return "🏕️";
-    case "zombie": return "🧟";
-    case "yandere": return "🔪";
-    case "villain_op": return "🦹";
-    case "angst": return "💔";
-    case "long_aotian": return "💪";
-    case "war_god": return "🛡️";
-    case "return_strong": return "🔥";
-    case "female_growth": return "🌸";
-    case "infinite_flow": return "♾️";
-    case "farming": return "🌾";
-    case "period_drama": return "🎭";
-    case "republican": return "🎩";
-    case "intrigue": return "🤫";
-    case "industry_elite": return "🏢";
-    case "rough_guy": return "👊";
-    case "sweet_pet": return "🍬";
-    case "wild_youth": return "🎸";
-    case "love_after_marriage": return "💍";
-    case "reunion": return "🤝";
-    case "wife_chasing": return "🏃‍♀️";
-    case "son_in_law": return "👨‍👩‍👧";
-    case "white_moonlight": return "🌕";
-    case "patriotism": return "🇨🇳";
-    case "body_swap": return "👯";
-    case "special_forces": return "🎖️";
-    case "mutual_redemption": return "💞";
-    default: return "📖";
+    case "wuxia":
+      return "⚔️";
+    case "xianxia":
+      return "✨";
+    case "demonic_cultivation":
+      return "😈";
+    case "palace_drama":
+      return "👑";
+    case "ancient_romance":
+      return "💖";
+    case "modern_romance":
+      return "❤️";
+    case "ceo":
+      return "💼";
+    case "entertainment":
+      return "🎬";
+    case "esports":
+      return "🎮";
+    case "cs_student":
+      return "💻";
+    case "fantasy":
+      return "🐉";
+    case "scifi":
+      return "🚀";
+    case "cyberpunk":
+      return "🌃";
+    case "horror":
+      return "👻";
+    case "mystery":
+      return "🔍";
+    case "survival":
+      return "🏕️";
+    case "zombie":
+      return "🧟";
+    case "yandere":
+      return "🔪";
+    case "villain_op":
+      return "🦹";
+    case "angst":
+      return "💔";
+    case "long_aotian":
+      return "💪";
+    case "war_god":
+      return "🛡️";
+    case "return_strong":
+      return "🔥";
+    case "female_growth":
+      return "🌸";
+    case "infinite_flow":
+      return "♾️";
+    case "farming":
+      return "🌾";
+    case "period_drama":
+      return "🎭";
+    case "republican":
+      return "🎩";
+    case "intrigue":
+      return "🤫";
+    case "industry_elite":
+      return "🏢";
+    case "rough_guy":
+      return "👊";
+    case "sweet_pet":
+      return "🍬";
+    case "wild_youth":
+      return "🎸";
+    case "love_after_marriage":
+      return "💍";
+    case "reunion":
+      return "🤝";
+    case "wife_chasing":
+      return "🏃‍♀️";
+    case "son_in_law":
+      return "👨‍👩‍👧";
+    case "white_moonlight":
+      return "🌕";
+    case "patriotism":
+      return "🇨🇳";
+    case "body_swap":
+      return "👯";
+    case "special_forces":
+      return "🎖️";
+    case "mutual_redemption":
+      return "💞";
+    default:
+      return "📖";
   }
 };
 
@@ -164,7 +207,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         const visibleEntries = entries.filter((entry) => entry.isIntersecting);
         if (visibleEntries.length > 0) {
           // Sort by intersection ratio to find the most visible one
-          visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          visibleEntries.sort(
+            (a, b) => b.intersectionRatio - a.intersectionRatio,
+          );
           const mostVisible = visibleEntries[0];
           const themeKey = mostVisible.target.getAttribute("data-theme-key");
 
@@ -177,7 +222,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       {
         threshold: 0.6, // Trigger when 60% visible
         rootMargin: "-10% 0px -10% 0px", // Focus on center area
-      }
+      },
     );
 
     const cards = document.querySelectorAll(".theme-card");
@@ -441,7 +486,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 </div>
                 <p
                   className={`text-theme-text/90 leading-loose ${
-                    (ENV_THEMES[previewData.defaultEnvTheme]?.fontClass || "font-sans") === "font-serif"
+                    (ENV_THEMES[previewData.defaultEnvTheme]?.fontClass ||
+                      "font-sans") === "font-serif"
                       ? "font-serif text-base"
                       : "font-sans text-sm"
                   }`}

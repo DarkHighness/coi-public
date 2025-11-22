@@ -933,11 +933,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <option value="pcm">PCM (Raw)</option>
                     </select>
                   </div>
-                  </div>
+                </div>
               </div>
             </div>
           )}
-
         </div>
 
         <div className="p-4 border-t border-theme-border bg-theme-surface/50 flex justify-between items-center">

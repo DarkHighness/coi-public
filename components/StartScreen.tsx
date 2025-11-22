@@ -58,7 +58,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
   // Dynamic background style based on hovered theme
   const activeThemeVar =
-    ENV_THEMES[THEMES[hoveredTheme]?.defaultEnvTheme]?.vars["--theme-primary"] || "#f59e0b";
+    ENV_THEMES[THEMES[hoveredTheme]?.defaultEnvTheme]?.vars[
+      "--theme-primary"
+    ] || "#f59e0b";
 
   return (
     <div
@@ -75,7 +77,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       <ButterflyBackground />
 
       {/* Left Panel: Branding & Atmosphere - Hidden on mobile when in theme select mode to give space */}
-      <div className={`relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none ${mode === 'theme_select' ? 'hidden lg:flex' : 'flex'}`}>
+      <div
+        className={`relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none ${mode === "theme_select" ? "hidden lg:flex" : "flex"}`}
+      >
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
           <h1 className="text-5xl lg:text-8xl font-fantasy tracking-tighter text-text-theme-primary/80 bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg">
             {t("titlePart1")}
@@ -90,7 +94,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </div>
 
       {/* Right Panel: Interaction */}
-      <div className={`relative z-20 lg:w-6/12 ${mode === 'theme_select' ? 'h-full w-full' : 'h-2/3'} lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden transition-all duration-500`}>
+      <div
+        className={`relative z-20 lg:w-6/12 ${mode === "theme_select" ? "h-full w-full" : "h-2/3"} lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden transition-all duration-500`}
+      >
         {/* Save Preview Background */}
         {latestSave?.previewImage && (
           <div
