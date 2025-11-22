@@ -181,7 +181,16 @@ export interface Location {
 export interface KnowledgeEntry {
   id: string;
   title: string; // Name of the knowledge (e.g., "Ancient Ruins", "Great War")
-  category: "landscape" | "history" | "item" | "legend" | "faction" | "culture" | "magic" | "technology" | "other";
+  category:
+    | "landscape"
+    | "history"
+    | "item"
+    | "legend"
+    | "faction"
+    | "culture"
+    | "magic"
+    | "technology"
+    | "other";
   description: string; // What the player knows
   details?: string; // Additional details or deeper understanding
   discoveredAt?: string; // Where/when this was learned

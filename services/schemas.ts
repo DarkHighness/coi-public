@@ -342,7 +342,8 @@ export const gameResponseSchema: Schema = {
           action: {
             type: Type.STRING,
             enum: ["add", "update"],
-            description: "Add new knowledge or update existing. No remove action.",
+            description:
+              "Add new knowledge or update existing. No remove action.",
           },
           title: {
             type: Type.STRING,
@@ -379,7 +380,8 @@ export const gameResponseSchema: Schema = {
           relatedTo: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: "IDs or names of related knowledge, items, or locations.",
+            description:
+              "IDs or names of related knowledge, items, or locations.",
           },
         },
         required: ["action", "title", "category", "description"],

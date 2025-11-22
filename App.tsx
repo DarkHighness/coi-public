@@ -17,7 +17,6 @@ import { getEnvApiKey } from "./utils/env";
 import { validateConnection } from "./services/aiService";
 import { useAmbience } from "./hooks/useAmbience";
 
-
 // Lazy Load Heavy Components for Code Splitting
 const MagicMirror = React.lazy(() =>
   import("./components/MagicMirror").then((module) => ({
@@ -534,7 +533,9 @@ export default function App() {
                       const lastUserAction = [...currentHistory]
                         .reverse()
                         .find((seg) => seg.role === "user");
-                      handleAction(lastUserAction?.text || "Continue the story");
+                      handleAction(
+                        lastUserAction?.text || "Continue the story",
+                      );
                     }}
                     onFork={handleFork}
                     onAction={handlePlayerAction}
@@ -570,7 +571,9 @@ export default function App() {
                       const lastUserAction = [...currentHistory]
                         .reverse()
                         .find((seg) => seg.role === "user");
-                      handleAction(lastUserAction?.text || "Continue the story");
+                      handleAction(
+                        lastUserAction?.text || "Continue the story",
+                      );
                     }}
                     onFork={handleFork}
                     onAction={handlePlayerAction}

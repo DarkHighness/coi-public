@@ -167,7 +167,9 @@ export const getModels = async (
 
   // Skip API request if API key is missing or empty
   if (!config.apiKey || config.apiKey.trim() === "") {
-    console.warn(`Skipping model fetch for ${provider}: API key not configured`);
+    console.warn(
+      `Skipping model fetch for ${provider}: API key not configured`,
+    );
     return [];
   }
 
@@ -222,7 +224,14 @@ export const validateConnection = async (
 
 export const filterModels = (
   models: ModelInfo[],
-  type: "story" | "image" | "video" | "audio" | "translation" | "lore" | "script",
+  type:
+    | "story"
+    | "image"
+    | "video"
+    | "audio"
+    | "translation"
+    | "lore"
+    | "script",
 ): ModelInfo[] => {
   let filtered = models;
 

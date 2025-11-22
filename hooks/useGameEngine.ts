@@ -213,7 +213,10 @@ export const useGameEngine = () => {
     const defaultSettings = DEFAULTS;
     setAiSettings(defaultSettings);
     updateAIConfig(defaultSettings);
-    localStorage.setItem("chronicles_aisettings", JSON.stringify(defaultSettings));
+    localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify(defaultSettings),
+    );
     // Reset language to default
     i18n.changeLanguage(defaultSettings.language);
   };
@@ -428,7 +431,9 @@ export const useGameEngine = () => {
               if (act.isMystery !== undefined)
                 newInventory[idx].isMystery = act.isMystery;
             } else {
-              console.warn(`[handleAction] Inventory update failed: item "${act.item}" not found`);
+              console.warn(
+                `[handleAction] Inventory update failed: item "${act.item}" not found`,
+              );
             }
           }
         });
@@ -466,7 +471,9 @@ export const useGameEngine = () => {
             if (act.personality) newRels[idx].personality = act.personality;
             if (act.notes) newRels[idx].notes = act.notes;
           } else if (act.action === "update" && idx === -1) {
-            console.warn(`[handleAction] Relationship update failed: "${act.name}" not found`);
+            console.warn(
+              `[handleAction] Relationship update failed: "${act.name}" not found`,
+            );
           }
         });
       }
@@ -493,7 +500,9 @@ export const useGameEngine = () => {
               newQuests[idx].status = "failed";
             }
           } else if (act.action !== "add") {
-            console.warn(`[handleAction] Quest action "${act.action}" failed: quest "${act.id}" not found`);
+            console.warn(
+              `[handleAction] Quest action "${act.action}" failed: quest "${act.id}" not found`,
+            );
           }
         });
       }
@@ -565,7 +574,8 @@ export const useGameEngine = () => {
               (act.value as string) || (act.strValue as string);
           }
           if (act.target === "race" && act.action === "update") {
-            newCharacter.race = (act.value as string) || (act.strValue as string);
+            newCharacter.race =
+              (act.value as string) || (act.strValue as string);
           }
           if (act.target === "attribute") {
             const idx = newCharacter.attributes.findIndex(
@@ -619,8 +629,7 @@ export const useGameEngine = () => {
           if (act.action === "add" && idx === -1) {
             newKnowledge.push({
               id:
-                Date.now().toString() +
-                Math.random().toString(36).substr(2, 5),
+                Date.now().toString() + Math.random().toString(36).substr(2, 5),
               title: act.title,
               category: act.category || "other",
               description: act.description || "",
@@ -638,9 +647,13 @@ export const useGameEngine = () => {
               newKnowledge[idx].discoveredAt = act.discoveredAt;
             if (act.relatedTo) newKnowledge[idx].relatedTo = act.relatedTo;
           } else if (act.action === "update" && idx === -1) {
-            console.warn(`[handleAction] Knowledge update failed: "${act.title}" not found`);
+            console.warn(
+              `[handleAction] Knowledge update failed: "${act.title}" not found`,
+            );
           } else {
-            console.warn(`[handleAction] Invalid knowledge action: "${act.action}" for "${act.title}"`);
+            console.warn(
+              `[handleAction] Invalid knowledge action: "${act.action}" for "${act.title}"`,
+            );
           }
         });
       }
@@ -676,7 +689,8 @@ export const useGameEngine = () => {
           )?.title,
           veoScript: gameStateRef.current.veoScript, // Preserve Veo script in snapshot
           uiState: gameStateRef.current.uiState, // Preserve UI customizations
-          envTheme: response.envTheme || forceTheme || gameStateRef.current.envTheme, // Save dynamic theme
+          envTheme:
+            response.envTheme || forceTheme || gameStateRef.current.envTheme, // Save dynamic theme
           // Note: outline is NOT saved as it's immutable for the entire game
         },
       };
@@ -872,7 +886,9 @@ export const useGameEngine = () => {
           // If first turn fails, stay in game and allow retry via retry button
           // Don't delete the save since outline generation succeeded
           if (result && result.startsWith("Error:")) {
-            console.warn("First turn generation failed, but outline is valid - player can retry");
+            console.warn(
+              "First turn generation failed, but outline is valid - player can retry",
+            );
             // Error state is already set by handleAction, player can use retry button
           }
           // On success, we're already in /game with content showing
@@ -884,7 +900,8 @@ export const useGameEngine = () => {
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
-            error: "Failed to start the story. Please try again using the retry button.",
+            error:
+              "Failed to start the story. Please try again using the retry button.",
           }));
         }
       }, 100);

@@ -132,7 +132,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const updateFunction = (func: FunctionKey, field: string, value: any) => {
     // Special handling for model selection on text-related functions
-    const textFunctions: FunctionKey[] = ["story", "translation", "lore", "script"];
+    const textFunctions: FunctionKey[] = [
+      "story",
+      "translation",
+      "lore",
+      "script",
+    ];
 
     if (
       field === "modelId" &&
@@ -229,27 +234,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="flex border-b border-theme-border bg-theme-bg">
-          {([
-            "credentials",
-            "models",
-            "audio",
-            "appearance",
-            "data",
-          ] as Tab[]).map(
-            (tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
-                  activeTab === tab
-                    ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
-                    : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
-                }`}
-              >
-                {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ),
-          )}
+          {(
+            ["credentials", "models", "audio", "appearance", "data"] as Tab[]
+          ).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
+                activeTab === tab
+                  ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
+                  : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
+              }`}
+            >
+              {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
@@ -309,21 +308,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="space-y-3 text-sm">
                   {/* Save Count */}
                   <div className="flex justify-between items-center">
-                    <span className="text-theme-muted">{t("data.saveCount")}:</span>
-                    <span className="text-theme-text font-mono">{saveCount}</span>
+                    <span className="text-theme-muted">
+                      {t("data.saveCount")}:
+                    </span>
+                    <span className="text-theme-text font-mono">
+                      {saveCount}
+                    </span>
                   </div>
 
                   {/* Storage Usage */}
                   {storageEstimate && (
                     <>
                       <div className="flex justify-between items-center">
-                        <span className="text-theme-muted">{t("data.storageUsed")}:</span>
+                        <span className="text-theme-muted">
+                          {t("data.storageUsed")}:
+                        </span>
                         <span className="text-theme-text font-mono">
                           {formatBytes(storageEstimate.usage)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-theme-muted">{t("data.storageQuota")}:</span>
+                        <span className="text-theme-muted">
+                          {t("data.storageQuota")}:
+                        </span>
                         <span className="text-theme-text font-mono">
                           {formatBytes(storageEstimate.quota)}
                         </span>
@@ -334,7 +341,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="flex justify-between text-xs text-theme-muted mb-1">
                           <span>{t("data.storageUsage")}</span>
                           <span>
-                            {((storageEstimate.usage / storageEstimate.quota) * 100).toFixed(1)}%
+                            {(
+                              (storageEstimate.usage / storageEstimate.quota) *
+                              100
+                            ).toFixed(1)}
+                            %
                           </span>
                         </div>
                         <div className="w-full h-2 bg-theme-bg rounded-full overflow-hidden">
@@ -409,7 +420,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           window.location.reload();
                         }
                       } else {
-                        showToast(t("data.clearError") || "Failed to clear saves", "error");
+                        showToast(
+                          t("data.clearError") || "Failed to clear saves",
+                          "error",
+                        );
                       }
                     }
                   }}

@@ -257,7 +257,8 @@ export const en = {
       "Require manual click to generate images instead of auto-generation",
     batchUpdateSuccess: "Batch update models successfully!",
     batchUpdateError: "Failed to update models, please try again.",
-    batchUpdatePrompt: "Whether to apply this model to story generation, lore generation, translation and Veo script generation?",
+    batchUpdatePrompt:
+      "Whether to apply this model to story generation, lore generation, translation and Veo script generation?",
   },
   summarySnapshot: "Story So Far",
   customize: "Customize",
@@ -337,15 +338,19 @@ export const en = {
   noInfoAvailable: "No detailed information available.",
   data: {
     resetSettings: "Reset Settings",
-    resetSettingsDesc: "Restore all settings to default values (API keys will be cleared)",
-    confirmReset: "Are you sure you want to reset all settings? This action cannot be undone.",
+    resetSettingsDesc:
+      "Restore all settings to default values (API keys will be cleared)",
+    confirmReset:
+      "Are you sure you want to reset all settings? This action cannot be undone.",
     resetSuccess: "Settings have been reset to defaults",
     clearSaves: "Clear All Saves",
     clearSavesDesc: "Delete all saved game progress and save slots",
-    confirmClear: "Are you sure you want to delete all save data? This action cannot be undone!",
+    confirmClear:
+      "Are you sure you want to delete all save data? This action cannot be undone!",
     clearSuccess: "All save data has been cleared",
     clearError: "Failed to clear saves, please try again",
-    refreshPrompt: "Save data cleared. Page refresh is required for changes to take effect. Refresh now?",
+    refreshPrompt:
+      "Save data cleared. Page refresh is required for changes to take effect. Refresh now?",
     storageInfo: "Storage Information",
     saveCount: "Save Count",
     storageUsed: "Storage Used",

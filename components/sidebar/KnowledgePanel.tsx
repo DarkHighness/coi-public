@@ -37,9 +37,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
   const DISPLAY_LIMIT = 4; // Show limited number in sidebar
 
   const toggleKnowledge = (knowledgeId: string, isModal: boolean = false) => {
-    const setter = isModal
-      ? setModalExpandedKnowledge
-      : setExpandedKnowledge;
+    const setter = isModal ? setModalExpandedKnowledge : setExpandedKnowledge;
     setter((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(knowledgeId)) {
@@ -62,12 +60,11 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       onClick={() => toggleKnowledge(k.id, isModal)}
     >
       <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-bg border border-theme-primary text-[10px] px-1.5 py-0.5 rounded text-theme-primary uppercase shadow-lg">
-        {CATEGORY_ICONS[k.category]} {t(`knowledgePanel.category.${k.category}`)}
+        {CATEGORY_ICONS[k.category]}{" "}
+        {t(`knowledgePanel.category.${k.category}`)}
       </div>
       <div className="flex items-center justify-between mb-1">
-        <h4 className="font-bold text-theme-primary flex-1 pr-16">
-          {k.title}
-        </h4>
+        <h4 className="font-bold text-theme-primary flex-1 pr-16">{k.title}</h4>
         <svg
           className={`w-4 h-4 text-theme-primary transition-transform duration-200 ${expandedSet.has(k.id) ? "rotate-180" : ""}`}
           fill="none"

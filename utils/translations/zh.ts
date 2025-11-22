@@ -258,7 +258,8 @@ export const zh = {
     manualImageGenHelp: "需要手动点击才生成图片，而不是自动生成",
     batchUpdateSuccess: "模型批量更新成功！",
     batchUpdateError: "模型更新失败，请重试。",
-    batchUpdatePrompt: "是否将该模型应用到故事生成，背景生成，翻译和Veo脚本生成中？",
+    batchUpdatePrompt:
+      "是否将该模型应用到故事生成，背景生成，翻译和Veo脚本生成中？",
   },
   customize: "自定义",
   surpriseMe: "来点惊喜",
