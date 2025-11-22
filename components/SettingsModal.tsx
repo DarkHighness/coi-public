@@ -1011,7 +1011,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
                 <div
-                  className={`space-y-2 ${currentSettings.audioVolume?.bgmMuted ? "opacity-50 pointer-events-none" : ""}`}
+                  className={`space-y-2 ${currentSettings.audioVolume?.bgmMuted ? "opacity-75" : ""}`}
                 >
                   <div className="flex justify-between text-xs text-theme-muted">
                     <span>{t("audioSettings.volume")}</span>
@@ -1070,7 +1070,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
                 <div
-                  className={`space-y-2 ${currentSettings.audioVolume?.ttsMuted ? "opacity-50 pointer-events-none" : ""}`}
+                  className={`space-y-2 ${currentSettings.audioVolume?.ttsMuted ? "opacity-75" : ""}`}
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-theme-muted">

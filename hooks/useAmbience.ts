@@ -17,9 +17,19 @@ export const useAmbience = (
   // Update volume/mute for active track
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = muted ? 0 : volume;
+      if (muted) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.volume = volume;
+        // Only resume if it was supposed to be playing (i.e., we have an active environment)
+        if (currentEnv && audioRef.current.paused) {
+          audioRef.current.play().catch((e) => {
+            console.warn("Resume failed:", e);
+          });
+        }
+      }
     }
-  }, [volume, muted]);
+  }, [volume, muted, currentEnv]);
 
   useEffect(() => {
     // If environment is undefined, fade out current track and stop
@@ -55,16 +65,13 @@ export const useAmbience = (
         newAudio.loop = true;
         newAudio.volume = 0; // Start silent for fade-in
 
-        // 2. Start playing
-        // If muted, we still play but at 0 volume so it's ready when unmuted?
-        // Or we just don't play? Let's play at 0 volume to keep logic simple.
-        // 2. Start playing
-        try {
-          await newAudio.play();
-        } catch (e) {
-          console.warn("Audio autoplay blocked or failed:", e);
-          // If autoplay blocked, we might need user interaction.
-          // But usually in a game loop, interaction has happened.
+        // 2. Start playing ONLY if not muted
+        if (!muted) {
+          try {
+            await newAudio.play();
+          } catch (e) {
+            console.warn("Audio autoplay blocked or failed:", e);
+          }
         }
 
         // 3. Fade out old track if it exists
@@ -92,8 +99,6 @@ export const useAmbience = (
               clearInterval(fadeInInterval);
             }
           }, 100);
-        } else {
-          newAudio.volume = 0;
         }
 
         // 5. Update ref and state
