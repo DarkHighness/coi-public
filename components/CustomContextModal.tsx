@@ -37,9 +37,7 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
             <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-wider">
               {t("customContext")}
             </h2>
-            <p className="text-sm text-theme-muted mt-1">
-              {t("customTips")}
-            </p>
+            <p className="text-sm text-theme-muted mt-1">{t("customTips")}</p>
           </div>
           <button
             onClick={onClose}
@@ -73,7 +71,8 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
 
           <div className="mt-4 p-4 bg-theme-bg/50 rounded-lg border border-theme-border/50">
             <p className="text-xs text-theme-muted leading-relaxed">
-              <strong className="text-theme-primary">{t("tip")}:</strong> {t("customWritingTips")}
+              <strong className="text-theme-primary">{t("tip")}:</strong>{" "}
+              {t("customWritingTips")}
             </p>
           </div>
         </div>

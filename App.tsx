@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
@@ -15,17 +21,17 @@ import { GlobalStyles } from "./components/GlobalStyles";
 const SettingsModal = React.lazy(() =>
   import("./components/SettingsModal").then((module) => ({
     default: module.SettingsModal,
-  }))
+  })),
 );
 const SaveManager = React.lazy(() =>
   import("./components/SaveManager").then((module) => ({
     default: module.SaveManager,
-  }))
+  })),
 );
 const EnvironmentalEffects = React.lazy(() =>
   import("./components/EnvironmentalEffects").then((module) => ({
     default: module.EnvironmentalEffects,
-  }))
+  })),
 );
 
 export default function App() {
@@ -108,7 +114,7 @@ export default function App() {
     setNotification({ show: true, msg, type });
     setTimeout(
       () => setNotification({ show: false, msg: "", type: "info" }),
-      3000
+      3000,
     );
   };
 
@@ -147,12 +153,12 @@ export default function App() {
     // Story provider is REQUIRED - block if it fails
     const storyProvider = aiSettings.story.provider;
     const { isValid: storyValid, error: storyError } = await validateConnection(
-      storyProvider as any
+      storyProvider as any,
     );
     if (!storyValid) {
       showToast(
         `${storyProvider}: ${storyError || "Connection Failed"} - Story generation is required`,
-        "error"
+        "error",
       );
       setIsSettingsOpen(true);
       return false;
@@ -189,7 +195,7 @@ export default function App() {
           console.warn(`${name} provider validation failed:`, error);
           showToast(
             `Warning: ${name} (${provider}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`,
-            "error"
+            "error",
           );
         }
       }
@@ -256,7 +262,7 @@ export default function App() {
                 latestSave={
                   saveSlots.length > 0
                     ? [...saveSlots].sort(
-                        (a, b) => b.timestamp - a.timestamp
+                        (a, b) => b.timestamp - a.timestamp,
                       )[0]
                     : undefined
                 }

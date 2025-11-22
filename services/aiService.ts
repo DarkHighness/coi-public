@@ -482,7 +482,9 @@ export const generateAdventureTurn = async (
   // I can update the import to include `THEMES`.
 
   // For this specific block:
-  const themeConfig = (await import("../utils/constants")).THEMES[themeKey || "fantasy"];
+  const themeConfig = (await import("../utils/constants")).THEMES[
+    themeKey || "fantasy"
+  ];
   isRestricted = themeConfig?.restricted || false;
 
   // Split System Instruction for better KV Cache
@@ -490,7 +492,7 @@ export const generateAdventureTurn = async (
     language,
     narrativeStyle,
     example,
-    isRestricted
+    isRestricted,
   );
   const staticWorldContext = getStaticWorldContext(outline);
   const dynamicStoryContext = getDynamicStoryContext(summaries);

@@ -53,7 +53,10 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
           <div className="flex justify-between text-xs text-theme-muted">
             <span>{t("audioSettings.volume")}</span>
             <span>
-              {Math.round((currentSettings.audioVolume?.bgmVolume ?? 0.5) * 100)}%
+              {Math.round(
+                (currentSettings.audioVolume?.bgmVolume ?? 0.5) * 100,
+              )}
+              %
             </span>
           </div>
           <input
@@ -112,7 +115,10 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
             <div className="flex justify-between text-xs text-theme-muted">
               <span>{t("audioSettings.ttsVolume")}</span>
               <span>
-                {Math.round((currentSettings.audioVolume?.ttsVolume ?? 1) * 100)}%
+                {Math.round(
+                  (currentSettings.audioVolume?.ttsVolume ?? 1) * 100,
+                )}
+                %
               </span>
             </div>
             <input
@@ -196,7 +202,9 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
             </label>
             <select
               value={currentSettings.audio.format || "mp3"}
-              onChange={(e) => updateFunction("audio", "format", e.target.value)}
+              onChange={(e) =>
+                updateFunction("audio", "format", e.target.value)
+              }
               className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
             >
               <option value="mp3">MP3 (Default)</option>

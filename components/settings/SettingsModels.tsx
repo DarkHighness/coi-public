@@ -18,14 +18,14 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const getFilteredModels = (
     provider: "gemini" | "openai" | "openrouter",
-    type: FunctionKey
+    type: FunctionKey,
   ) => {
     const list =
       provider === "gemini"
         ? geminiModels
         : provider === "openai"
-        ? openaiModels
-        : openrouterModels;
+          ? openaiModels
+          : openrouterModels;
     return filterModels(list, type);
   };
 
@@ -54,7 +54,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         // Prompt user for batch update
         const shouldBatchUpdate = window.confirm(
           t("models.batchUpdatePrompt") ||
-            "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Translation, Lore, and Script functions?"
+            "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Translation, Lore, and Script functions?",
         );
 
         if (shouldBatchUpdate) {
@@ -71,7 +71,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           showToast(
             t("models.batchUpdateSuccess") ||
               "Model updated for all text-related functions",
-            "info"
+            "info",
           );
           return;
         }

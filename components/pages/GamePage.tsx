@@ -4,38 +4,44 @@ import { useTranslation } from "react-i18next";
 import { useAmbience } from "../../hooks/useAmbience";
 import { FeedLayout, ListState, UIState } from "../../types";
 import { MobileNav, MobileTab } from "../MobileNav";
-import { AISettings, GameState, StorySegment, SaveSlot, LanguageCode } from "../../types";
+import {
+  AISettings,
+  GameState,
+  StorySegment,
+  SaveSlot,
+  LanguageCode,
+} from "../../types";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
   import("../MagicMirror").then((module) => ({
     default: module.MagicMirror,
-  }))
+  })),
 );
 const VeoScriptModal = React.lazy(() =>
   import("../VeoScriptModal").then((module) => ({
     default: module.VeoScriptModal,
-  }))
+  })),
 );
 const DestinyMap = React.lazy(() =>
   import("../DestinyMap").then((module) => ({
     default: module.DestinyMap,
-  }))
+  })),
 );
 const LogPanel = React.lazy(() =>
   import("../sidebar/LogPanel").then((module) => ({
     default: module.LogPanel,
-  }))
+  })),
 );
 const MobileGameLayout = React.lazy(() =>
   import("../layout/MobileGameLayout").then((module) => ({
     default: module.MobileGameLayout,
-  }))
+  })),
 );
 const DesktopGameLayout = React.lazy(() =>
   import("../layout/DesktopGameLayout").then((module) => ({
     default: module.DesktopGameLayout,
-  }))
+  })),
 );
 
 interface GamePageProps {
@@ -94,7 +100,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
-    undefined
+    undefined,
   );
 
   // Ref to track last played environment for notifications
@@ -130,7 +136,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         showToast(`${t("audioSettings.environment")}: ${t(envNameKey)}`);
         lastPlayedEnvRef.current = env;
       }
-    }
+    },
   );
 
   useEffect(() => {
@@ -176,7 +182,7 @@ export const GamePage: React.FC<GamePageProps> = ({
       newMuted
         ? t("audioSettings.muted") || "Muted"
         : t("audioSettings.unmuted") || "Unmuted",
-      "info"
+      "info",
     );
   };
 
@@ -313,7 +319,10 @@ export const GamePage: React.FC<GamePageProps> = ({
         )}
 
         {isLogPanelOpen && (
-          <LogPanel logs={gameState.logs} onClose={() => setIsLogPanelOpen(false)} />
+          <LogPanel
+            logs={gameState.logs}
+            onClose={() => setIsLogPanelOpen(false)}
+          />
         )}
       </Suspense>
     </div>

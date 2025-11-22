@@ -660,7 +660,8 @@ export const useGameEngine = () => {
       }
 
       // Update Time
-      const newTime = response.timeUpdate || gameStateRef.current.time || "unknown";
+      const newTime =
+        response.timeUpdate || gameStateRef.current.time || "unknown";
 
       const modelNode: StorySegment = {
         id: modelNodeId,

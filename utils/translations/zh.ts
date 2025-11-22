@@ -357,7 +357,8 @@ export const zh = {
   },
   customTips: "添加细节以指导你的冒险故事",
   tip: "提示",
-  customWritingTips: "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
+  customWritingTips:
+    "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
   clear: "清空",
-  saveApply: "保存并应用"
+  saveApply: "保存并应用",
 };

@@ -38,7 +38,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     // Filter by Category
     if (selectedCategory !== "all") {
       keys = keys.filter((key) =>
-        themes[key].categories?.includes(selectedCategory)
+        themes[key].categories?.includes(selectedCategory),
       );
     }
 
@@ -63,7 +63,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         if (visibleEntries.length > 0) {
           // Sort by intersection ratio to find the most visible one
           visibleEntries.sort(
-            (a, b) => b.intersectionRatio - a.intersectionRatio
+            (a, b) => b.intersectionRatio - a.intersectionRatio,
           );
           const mostVisible = visibleEntries[0];
           const themeKey = mostVisible.target.getAttribute("data-theme-key");
@@ -77,7 +77,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       {
         threshold: 0.6, // Trigger when 60% visible
         rootMargin: "-10% 0px -10% 0px", // Focus on center area
-      }
+      },
     );
 
     const cards = document.querySelectorAll(".theme-card");

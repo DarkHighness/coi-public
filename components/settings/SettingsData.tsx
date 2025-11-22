@@ -62,7 +62,9 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
           {storageEstimate && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-theme-muted">{t("data.storageUsed")}:</span>
+                <span className="text-theme-muted">
+                  {t("data.storageUsed")}:
+                </span>
                 <span className="text-theme-text font-mono">
                   {formatBytes(storageEstimate.usage)}
                 </span>
@@ -81,9 +83,10 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                 <div className="flex justify-between text-xs text-theme-muted mb-1">
                   <span>{t("data.storageUsage")}</span>
                   <span>
-                    {((storageEstimate.usage / storageEstimate.quota) * 100).toFixed(
-                      1
-                    )}
+                    {(
+                      (storageEstimate.usage / storageEstimate.quota) *
+                      100
+                    ).toFixed(1)}
                     %
                   </span>
                 </div>
@@ -93,7 +96,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                     style={{
                       width: `${Math.min(
                         (storageEstimate.usage / storageEstimate.quota) * 100,
-                        100
+                        100,
                       )}%`,
                     }}
                   ></div>
@@ -164,7 +167,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
               } else {
                 showToast(
                   t("data.clearError") || "Failed to clear saves",
-                  "error"
+                  "error",
                 );
               }
             }

@@ -31,7 +31,9 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
               <div className="text-center">
                 <div
                   className={`font-bold uppercase tracking-wider text-sm ${
-                    themeMode === mode ? "text-theme-primary" : "text-theme-text"
+                    themeMode === mode
+                      ? "text-theme-primary"
+                      : "text-theme-text"
                   }`}
                 >
                   {t(`modes.${mode}`)}

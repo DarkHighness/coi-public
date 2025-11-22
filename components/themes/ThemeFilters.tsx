@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themes";
 
-
 interface ThemeFiltersProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;

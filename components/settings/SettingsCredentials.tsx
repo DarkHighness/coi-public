@@ -15,7 +15,7 @@ export const SettingsCredentials: React.FC<SettingsCredentialsProps> = ({
   const updateCreds = (
     provider: "gemini" | "openai" | "openrouter",
     field: "apiKey" | "baseUrl",
-    value: string
+    value: string,
   ) => {
     const newSettings = {
       ...currentSettings,
@@ -69,8 +69,10 @@ export const SettingsCredentials: React.FC<SettingsCredentialsProps> = ({
             onClick={async () => {
               const { isValid, error } = await validateConnection("gemini");
               showToast(
-                isValid ? t("connectionSuccess") : error || t("connectionFailed"),
-                isValid ? "info" : "error"
+                isValid
+                  ? t("connectionSuccess")
+                  : error || t("connectionFailed"),
+                isValid ? "info" : "error",
               );
             }}
             className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
@@ -109,8 +111,10 @@ export const SettingsCredentials: React.FC<SettingsCredentialsProps> = ({
             onClick={async () => {
               const { isValid, error } = await validateConnection("openai");
               showToast(
-                isValid ? t("connectionSuccess") : error || t("connectionFailed"),
-                isValid ? "info" : "error"
+                isValid
+                  ? t("connectionSuccess")
+                  : error || t("connectionFailed"),
+                isValid ? "info" : "error",
               );
             }}
             className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
@@ -148,8 +152,10 @@ export const SettingsCredentials: React.FC<SettingsCredentialsProps> = ({
             onClick={async () => {
               const { isValid, error } = await validateConnection("openrouter");
               showToast(
-                isValid ? t("connectionSuccess") : error || t("connectionFailed"),
-                isValid ? "info" : "error"
+                isValid
+                  ? t("connectionSuccess")
+                  : error || t("connectionFailed"),
+                isValid ? "info" : "error",
               );
             }}
             className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
