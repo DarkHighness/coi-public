@@ -149,8 +149,6 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           </button>
         </div>
 
-
-
         <div className="p-2 text-xs text-theme-muted text-center mt-2 border-t border-theme-border pt-2">
           {t("builtWith")}
           <div className="text-[10px] opacity-50 mt-1">

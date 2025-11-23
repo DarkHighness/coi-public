@@ -109,13 +109,15 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     }
     // If no exact match, try to find by partial match or default to fantasy
     else {
-       // Simple fallback logic: check if environment contains key words
-       const envLower = environment.toLowerCase();
-       const foundKey = Object.keys(BACKGROUND_IMAGES).find(key => envLower.includes(key));
-       if (foundKey) {
-         bgSource = BACKGROUND_IMAGES[foundKey];
-         isFallback = true;
-       }
+      // Simple fallback logic: check if environment contains key words
+      const envLower = environment.toLowerCase();
+      const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
+        envLower.includes(key),
+      );
+      if (foundKey) {
+        bgSource = BACKGROUND_IMAGES[foundKey];
+        isFallback = true;
+      }
     }
   }
 

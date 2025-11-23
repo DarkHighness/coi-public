@@ -20,7 +20,9 @@ window.addEventListener(
       errorMsg.includes("MIME type") &&
       errorMsg.includes("text/html")
     ) {
-      console.error("Critical MIME type error detected. Unregistering SW and reloading...");
+      console.error(
+        "Critical MIME type error detected. Unregistering SW and reloading...",
+      );
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           for (const registration of registrations) {

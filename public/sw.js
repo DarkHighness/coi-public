@@ -88,7 +88,11 @@ self.addEventListener("fetch", (event) => {
             (networkResponse.type === "cors" &&
               event.request.url.includes("pollinations.ai"));
 
-          if (!networkResponse || networkResponse.status !== 200 || !isValidType) {
+          if (
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            !isValidType
+          ) {
             return networkResponse;
           }
 
@@ -100,7 +104,9 @@ self.addEventListener("fetch", (event) => {
             (url.endsWith(".js") &&
               contentType &&
               !contentType.includes("javascript")) ||
-            (url.endsWith(".css") && contentType && !contentType.includes("css"))
+            (url.endsWith(".css") &&
+              contentType &&
+              !contentType.includes("css"))
           ) {
             return networkResponse; // Do not cache
           }

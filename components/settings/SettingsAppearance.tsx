@@ -67,7 +67,8 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
               onClick={() =>
                 onUpdateSettings({
                   ...currentSettings,
-                  enableFallbackBackground: !currentSettings.enableFallbackBackground,
+                  enableFallbackBackground:
+                    !currentSettings.enableFallbackBackground,
                 })
               }
               className={`w-12 h-6 rounded-full transition-colors relative ${
@@ -78,9 +79,7 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
             >
               <div
                 className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  currentSettings.enableFallbackBackground
-                    ? "left-7"
-                    : "left-1"
+                  currentSettings.enableFallbackBackground ? "left-7" : "left-1"
                 }`}
               />
             </button>

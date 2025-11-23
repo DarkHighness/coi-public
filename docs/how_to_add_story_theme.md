@@ -3,9 +3,11 @@
 This guide outlines the steps to add a new story theme to the application.
 
 ## 1. Define the Theme Key
+
 Choose a unique key for the theme (e.g., `minecraft`, `harry_potter`).
 
 ## 2. Update `utils/constants/themes.ts`
+
 Add the new theme configuration to the `THEMES` object.
 
 ```typescript
@@ -21,9 +23,11 @@ export const THEMES: Record<string, StoryThemeConfig> = {
 ```
 
 ## 3. Update Translations
+
 You must add translations for both English (`en.ts`) and Chinese (`zh.ts`) in `utils/translations/themes/`.
 
 ### English (`utils/translations/themes/en.ts`)
+
 ```typescript
 export const themes = {
   // ...
@@ -37,6 +41,7 @@ export const themes = {
 ```
 
 ### Chinese (`utils/translations/themes/zh.ts`)
+
 ```typescript
 export const themes = {
   // ...
@@ -50,17 +55,21 @@ export const themes = {
 ```
 
 ## Special Rules for Isekai/Fanfic Themes
+
 1.  **Restricted Mode**: Set `restricted: true` in `themes.ts`.
 2.  **Naming Convention**: In Chinese translation, the name should be wrapped in `《》` (e.g., `《魔兽世界》`).
 3.  **Writing Instructions**: The `narrativeStyle` and `backgroundTemplate` must explicitly instruct the model to adhere to the source material's worldview, chronology, and lore, forbidding free invention.
 
 ## Example: World of Warcraft
+
 **themes.ts**:
+
 ```typescript
 wow: { defaultEnvTheme: "fantasy", icon: "⚔️", categories: ["game"], restricted: true },
 ```
 
 **zh.ts**:
+
 ```typescript
 wow: {
   name: "《魔兽世界》",

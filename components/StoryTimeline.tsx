@@ -85,9 +85,10 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                 }}
                 className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 shadow-sm cursor-pointer
                   ${isLast ? "animate-pulse" : ""}
-                  ${isExpanded
-                    ? "border-theme-primary bg-theme-primary"
-                    : "border-theme-muted bg-theme-surface hover:border-theme-primary/70"
+                  ${
+                    isExpanded
+                      ? "border-theme-primary bg-theme-primary"
+                      : "border-theme-muted bg-theme-surface hover:border-theme-primary/70"
                   }`}
                 title={isExpanded ? "Click to collapse" : "Click to expand"}
               ></div>

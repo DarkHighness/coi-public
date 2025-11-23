@@ -1,7 +1,7 @@
-import { execSync } from 'child_process';
-import { writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { execSync } from "child_process";
+import { writeFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,13 +29,13 @@ function getGitHash() {
 
   // Try git command (local development)
   try {
-    return execSync('git rev-parse --short HEAD', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'] // Suppress stderr
+    return execSync("git rev-parse --short HEAD", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"], // Suppress stderr
     }).trim();
   } catch (error) {
-    console.warn('⚠ Git command not available, using fallback');
-    return 'dev';
+    console.warn("⚠ Git command not available, using fallback");
+    return "dev";
   }
 }
 
@@ -49,7 +49,7 @@ function getBuildTime() {
     return envTime;
   }
 
-  return new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  return new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
 }
 
 try {
@@ -70,11 +70,11 @@ export const BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 `;
 
   // Write to constants directory
-  const outputPath = join(__dirname, '../utils/constants/buildInfo.ts');
-  writeFileSync(outputPath, content, 'utf-8');
+  const outputPath = join(__dirname, "../utils/constants/buildInfo.ts");
+  writeFileSync(outputPath, content, "utf-8");
 
   console.log(`✓ Build info generated: ${gitHash} (${buildTime})`);
 } catch (error) {
-  console.error('✗ Failed to generate build info:', error.message);
+  console.error("✗ Failed to generate build info:", error.message);
   process.exit(1);
 }

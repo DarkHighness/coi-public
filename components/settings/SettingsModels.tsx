@@ -444,7 +444,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   </div>
                 </div>
               )}
-                {/* Advanced Parameters for Text Models */}
+              {/* Advanced Parameters for Text Models */}
               {["story", "lore", "script", "translation"].includes(
                 sectionKey,
               ) && (

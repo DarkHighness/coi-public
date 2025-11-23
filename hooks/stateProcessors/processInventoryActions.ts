@@ -59,7 +59,7 @@ export function processInventoryActions(
         // Update visible layer
         if (act.visible?.description || act.visible?.notes) {
           if (!newInventory[idx].visible) {
-             newInventory[idx].visible = { description: "", notes: "" };
+            newInventory[idx].visible = { description: "", notes: "" };
           }
           if (act.visible.description) {
             newInventory[idx].visible.description = act.visible.description;
@@ -72,7 +72,7 @@ export function processInventoryActions(
         // Update hidden layer
         if (act.hidden?.truth || act.hidden?.secrets) {
           if (!newInventory[idx].hidden) {
-             newInventory[idx].hidden = { truth: "", secrets: [] };
+            newInventory[idx].hidden = { truth: "", secrets: [] };
           }
           if (act.hidden.truth) {
             newInventory[idx].hidden.truth = act.hidden.truth;
