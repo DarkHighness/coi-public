@@ -73,33 +73,48 @@ self.addEventListener("fetch", (event) => {
       if (response) {
         return response;
       }
-      return fetch(event.request).then((networkResponse) => {
-        // Check if valid response
-        if (
-          !networkResponse ||
-          networkResponse.status !== 200 ||
-          networkResponse.type !== "basic"
-        ) {
+
+      // Do not attempt to cache non-http/https requests (e.g. chrome-extension://)
+      if (!event.request.url.startsWith("http")) {
+        return fetch(event.request);
+      }
+
+      return fetch(event.request)
+        .then((networkResponse) => {
+          // Check if valid response
+          if (
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            networkResponse.type !== "basic"
+          ) {
+            return networkResponse;
+          }
+
+          // Strict MIME type check for JS/CSS to avoid caching HTML error pages as scripts
+          // This fixes the "MIME type" error when a JS file is missing and server returns 404 HTML
+          const contentType = networkResponse.headers.get("content-type");
+          const url = event.request.url;
+          if (
+            (url.endsWith(".js") &&
+              contentType &&
+              !contentType.includes("javascript")) ||
+            (url.endsWith(".css") && contentType && !contentType.includes("css"))
+          ) {
+            return networkResponse; // Do not cache
+          }
+
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
           return networkResponse;
-        }
-
-        // Strict MIME type check for JS/CSS to avoid caching HTML error pages as scripts
-        // This fixes the "MIME type" error when a JS file is missing and server returns 404 HTML
-        const contentType = networkResponse.headers.get("content-type");
-        const url = event.request.url;
-        if (
-          (url.endsWith(".js") && contentType && !contentType.includes("javascript")) ||
-          (url.endsWith(".css") && contentType && !contentType.includes("css"))
-        ) {
-          return networkResponse; // Do not cache
-        }
-
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+        })
+        .catch((err) => {
+          // Network failure (e.g. blocked by adblocker, offline)
+          // Just return the error, don't crash the SW
+          console.warn("Fetch failed for:", event.request.url, err);
+          throw err;
         });
-        return networkResponse;
-      });
     }),
   );
 });
