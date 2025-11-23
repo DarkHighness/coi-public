@@ -302,6 +302,9 @@ export default function App() {
               }
               onThemePreview={setPreviewTheme}
               setLanguage={setLanguage}
+              saveSlots={saveSlots}
+              onSwitchSlot={switchSlot}
+              onDeleteSlot={deleteSlot}
             />
           }
         />

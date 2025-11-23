@@ -8,6 +8,7 @@ import { SaveSlot } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from '../utils/constants/buildInfo';
+import { SaveManager } from "./SaveManager";
 
 interface StartScreenProps {
   onStart: (theme: string, customContext?: string) => void;
@@ -18,6 +19,9 @@ interface StartScreenProps {
   latestSave?: SaveSlot;
   onThemePreview?: (theme: string | null) => void;
   setLanguage: (lang: any) => void;
+  saveSlots?: SaveSlot[];
+  onSwitchSlot?: (id: string) => void;
+  onDeleteSlot?: (id: string) => void;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -29,11 +33,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   latestSave,
   onThemePreview,
   setLanguage,
+  saveSlots = [],
+  onSwitchSlot,
+  onDeleteSlot,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [hoveredTheme, setHoveredTheme] = useState<string>("fantasy");
   const [customContext, setCustomContext] = useState("");
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
 
@@ -191,7 +199,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
               <div className="pt-6 flex justify-center gap-6">
                 <button
-                  onClick={onOpenSaves}
+                  onClick={() => setIsSaveManagerOpen(true)}
                   className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
                 >
                   <svg
@@ -315,6 +323,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         customContext={customContext}
         setCustomContext={setCustomContext}
       />
+
+      {/* Save Manager Modal */}
+      {isSaveManagerOpen && (
+        <SaveManager
+          slots={saveSlots}
+          currentSlotId={null}
+          onSwitch={(id) => {
+            onSwitchSlot?.(id);
+            setIsSaveManagerOpen(false);
+          }}
+          onDelete={onDeleteSlot || (() => {})}
+          onClose={() => setIsSaveManagerOpen(false)}
+        />
+      )}
     </div>
   );
 };
