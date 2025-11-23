@@ -1,10 +1,13 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { TypewriterText } from "../TypewriterText";
 import { useStoryAudio } from "../../hooks/useStoryAudio";
 import { AISettings } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
 import { Toast } from "../Toast";
+import { markdownComponents } from "../../utils/markdownComponents";
 
 interface StoryTextProps {
   text: string;
@@ -75,9 +78,15 @@ export const StoryText: React.FC<StoryTextProps> = ({
             speed={15}
             instant={!shouldAnimate}
             onComplete={onTypingComplete}
+            enableMarkdown={true}
           />
         ) : (
-          <div className="whitespace-pre-line">{text}</div>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {text}
+          </ReactMarkdown>
         )}
       </div>
     </div>

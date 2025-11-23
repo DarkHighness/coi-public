@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { markdownComponents } from "../utils/markdownComponents";
 
 interface TypewriterTextProps {
   text: string;
   speed?: number;
   onComplete?: () => void;
   instant?: boolean;
+  enableMarkdown?: boolean;
 }
 
 export const TypewriterText: React.FC<TypewriterTextProps> = ({
@@ -12,6 +16,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   speed = 20,
   onComplete,
   instant = false,
+  enableMarkdown = false,
 }) => {
   const [displayedLength, setDisplayedLength] = useState(
     instant ? text.length : 0,
@@ -64,9 +69,20 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
     }
   }, [displayedLength, text.length, instant]);
 
+  const displayedText = text.slice(0, displayedLength);
+
   return (
-    <div className="story-text text-lg leading-relaxed text-theme-text whitespace-pre-line">
-      {text.slice(0, displayedLength)}
+    <div className="story-text text-lg leading-relaxed text-theme-text">
+      {enableMarkdown ? (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={markdownComponents}
+        >
+          {displayedText}
+        </ReactMarkdown>
+      ) : (
+        <div className="whitespace-pre-line">{displayedText}</div>
+      )}
       {!instant && displayedLength < text.length && (
         <span className="inline-block w-1.5 h-5 ml-0.5 align-middle bg-theme-primary animate-pulse"></span>
       )}
