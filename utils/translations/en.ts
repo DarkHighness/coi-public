@@ -3,6 +3,9 @@ import { themes } from "./themes/en.ts";
 export const en = {
   titlePart1: "Chronicles",
   titlePart2: "of Infinity",
+  time: {
+    full: "Year {{year}}, Month {{month}}, Day {{day}}, {{hour}}:{{minute}}",
+  },
   questPanel: {
     title: "Current Objective",
     main: "Main",
@@ -279,6 +282,7 @@ export const en = {
     goal: "Goal",
     world: "World",
     generating: "Weaving an epic tale...",
+    currentGoal: "Current Goal",
   },
   tree: {
     map: "Destiny Map",

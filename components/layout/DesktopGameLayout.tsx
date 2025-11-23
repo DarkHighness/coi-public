@@ -5,6 +5,7 @@ import {
   FeedLayout,
   UIState,
   ListState,
+  StorySegment,
 } from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
@@ -13,7 +14,7 @@ import { StoryTimeline } from "../StoryTimeline";
 
 interface DesktopGameLayoutProps {
   gameState: GameState;
-  currentHistory: any[];
+  currentHistory: StorySegment[];
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
   isTranslating: boolean;
@@ -33,9 +34,9 @@ interface DesktopGameLayoutProps {
   aiSettings: any;
   onTypingComplete?: () => void;
   currentAmbience?: string;
-  onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
+  onUpdateUIState: <K extends keyof UIState>(section: K, newState: UIState[K]) => void;
   onToggleMute?: () => void;
-  onViewedSegmentChange?: (segment: any) => void;
+  onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;
   onVeoScript: () => void;
 }

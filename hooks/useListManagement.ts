@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { ListState } from "../types";
 
-export function useListManagement<T extends { id: string }>(
+export function useListManagement<T extends { id: string | number }>(
   items: T[],
   listState: ListState,
   onUpdate: (newState: ListState) => void,
@@ -12,10 +12,11 @@ export function useListManagement<T extends { id: string }>(
   const { pinnedIds, customOrder } = safeListState;
 
   const togglePin = useCallback(
-    (id: string) => {
-      const newPinnedIds = pinnedIds.includes(id)
-        ? pinnedIds.filter((p) => p !== id)
-        : [...pinnedIds, id];
+    (id: string | number) => {
+      const idStr = id.toString();
+      const newPinnedIds = pinnedIds.includes(idStr)
+        ? pinnedIds.filter((p) => p !== idStr)
+        : [...pinnedIds, idStr];
 
       onUpdate({
         ...safeListState,
@@ -26,20 +27,23 @@ export function useListManagement<T extends { id: string }>(
   );
 
   const reorderItem = useCallback(
-    (dragId: string, hoverId: string) => {
+    (dragId: string | number, hoverId: string | number) => {
+      const dragIdStr = dragId.toString();
+      const hoverIdStr = hoverId.toString();
+
       const currentOrder = [...customOrder];
       // Ensure both IDs are in the order list
-      if (!currentOrder.includes(dragId)) currentOrder.push(dragId);
-      if (!currentOrder.includes(hoverId)) currentOrder.push(hoverId);
+      if (!currentOrder.includes(dragIdStr)) currentOrder.push(dragIdStr);
+      if (!currentOrder.includes(hoverIdStr)) currentOrder.push(hoverIdStr);
 
-      const dragIndex = currentOrder.indexOf(dragId);
-      const hoverIndex = currentOrder.indexOf(hoverId);
+      const dragIndex = currentOrder.indexOf(dragIdStr);
+      const hoverIndex = currentOrder.indexOf(hoverIdStr);
 
       if (dragIndex === -1 || hoverIndex === -1) return;
 
       const newOrder = [...currentOrder];
       newOrder.splice(dragIndex, 1);
-      newOrder.splice(hoverIndex, 0, dragId);
+      newOrder.splice(hoverIndex, 0, dragIdStr);
 
       onUpdate({
         ...safeListState,
@@ -52,7 +56,7 @@ export function useListManagement<T extends { id: string }>(
   // Initialize customOrder with new items
   useEffect(() => {
     const newIds = items
-      .map((i) => i.id)
+      .map((i) => i.id.toString())
       .filter((id) => !customOrder.includes(id));
     if (newIds.length > 0) {
       onUpdate({
@@ -64,14 +68,14 @@ export function useListManagement<T extends { id: string }>(
 
   const processedItems = items.map((item) => ({
     ...item,
-    isPinned: pinnedIds.includes(item.id),
+    isPinned: pinnedIds.includes(item.id.toString()),
   }));
 
   const sortedItems = processedItems.sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
 
-    const indexA = customOrder.indexOf(a.id);
-    const indexB = customOrder.indexOf(b.id);
+    const indexA = customOrder.indexOf(a.id.toString());
+    const indexB = customOrder.indexOf(b.id.toString());
 
     // If both are in customOrder, sort by index
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
@@ -88,7 +92,7 @@ export function useListManagement<T extends { id: string }>(
   const allItems = sortedItems;
 
   const isPinned = useCallback(
-    (id: string) => pinnedIds.includes(id),
+    (id: string | number) => pinnedIds.includes(id.toString()),
     [pinnedIds],
   );
 

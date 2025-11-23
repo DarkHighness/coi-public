@@ -91,7 +91,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
       >
         <InventoryItemDetail
           loading={false}
-          details={{ description: item.description, lore: item.lore || "" }}
+          details={{ description: item.visible?.description || "No description available.", lore: item.lore || "" }}
         />
       </div>
     </div>

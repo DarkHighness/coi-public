@@ -5,7 +5,6 @@ import { useListManagement } from "../../hooks/useListManagement";
 
 interface LocationPanelProps {
   currentLocation: string;
-  knownLocations: string[];
   locations: Location[];
   themeFont: string;
   itemContext: string;
@@ -15,7 +14,6 @@ interface LocationPanelProps {
 
 export const LocationPanel: React.FC<LocationPanelProps> = ({
   currentLocation,
-  knownLocations = [],
   locations = [],
   themeFont,
   listState,
@@ -29,13 +27,13 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 
   // Filter known locations and map to objects with ID for list management
   const locationItems = useMemo(() => {
-    return knownLocations.map((locName) => ({
-      id: locName,
-      name: locName,
-      isCurrent: locName === currentLocation,
-      data: locations.find((l) => l.name === locName),
+    return locations.map((loc) => ({
+      id: loc.name, // Using name as ID for list management compatibility
+      name: loc.name,
+      isCurrent: loc.name === currentLocation,
+      data: loc,
     }));
-  }, [knownLocations, currentLocation, locations]);
+  }, [currentLocation, locations]);
 
   const { visibleItems, togglePin, reorderItem, isPinned } = useListManagement(
     locationItems,
@@ -174,7 +172,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               {locationData ? (
                 <div className="space-y-2 text-xs animate-fade-in">
                   <p className="text-theme-text leading-relaxed">
-                    {locationData.description}
+                    {locationData.visible?.description || "No description available."}
                   </p>
                   {locationData.lore && (
                     <div className="pt-2 border-t border-theme-border/20 mt-1">
@@ -295,7 +293,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             )}
           </button>
           <span className="text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {knownLocations.length}
+            {locations.length}
           </span>
           <button onClick={() => setIsOpen(!isOpen)}>
             <svg

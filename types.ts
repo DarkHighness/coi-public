@@ -12,7 +12,6 @@ export interface GameState {
 
   // Location System
   currentLocation: string;
-  knownLocations: string[];
   locations: Location[];
 
   // UI State (Persisted)
@@ -20,7 +19,7 @@ export interface GameState {
 
   // Meta
   outline: StoryOutline | null;
-  summaries: string[]; // Array of summaries, where the last one is the most current
+  summaries: StorySummary[]; // Array of summaries, where the last one is the most current
   lastSummarizedIndex: number; // Track how many nodes have been summarized to avoid re-summarizing
 
   isProcessing: boolean;
@@ -36,7 +35,92 @@ export interface GameState {
   logs: LogEntry[];
 
   // Cached Veo Script
+  // Cached Veo Script
   veoScript?: string;
+
+  // New World System Fields
+  nextIds: {
+    item: number;
+    npc: number;
+    location: number;
+    knowledge: number;
+    quest: number;
+  };
+  timeline: TimelineEvent[];
+  causalChains: CausalChain[];
+}
+
+// --- World System Interfaces ---
+
+export interface VisibleInfo {
+  description: string;
+  appearance?: string;
+  notes?: string;
+  [key: string]: any;
+}
+
+export interface HiddenInfo {
+  truth: string;
+  realPersonality?: string;
+  secrets?: string[];
+  realMotives?: string;
+  hiddenAttributes?: Record<string, any>;
+  [key: string]: any;
+}
+
+// WorldTime interface removed as we switched to string-based time
+// export interface WorldTime { ... }
+
+export interface TimelineEvent {
+  id: string;
+  gameTime: string;
+  description: string;
+  category: 'player_action' | 'npc_action' | 'world_event' | 'consequence';
+  causedBy?: string;
+  consequences?: string[];
+  involvedEntities?: string[];
+}
+
+export interface CausalChain {
+  chainId: string;
+  rootCause: {
+    eventId: string;
+    description: string;
+  };
+  events: TimelineEvent[];
+  status: 'active' | 'resolved' | 'interrupted';
+  pendingConsequences?: Array<{
+    description: string;
+    delayMinutes: number;
+    probability: number;
+    conditions?: string[];
+  }>;
+}
+
+export interface StorySummary {
+  id: number;
+  displayText: string; // Concise summary for UI display (visible layer only)
+  visible: {
+    narrative: string;
+    majorEvents: string[];
+    characterDevelopment: string;
+    worldState: string;
+  };
+  hidden: {
+    truthNarrative: string;
+    hiddenPlots: string[];
+    npcActions: string[];
+    worldTruth: string;
+    unrevealed: string[];
+  };
+  timeRange: {
+    from: string;
+    to: string;
+  };
+  nodeRange: {
+    fromIndex: number;
+    toIndex: number;
+  };
 }
 
 export interface TokenUsage {
@@ -58,13 +142,22 @@ export interface LogEntry {
 
 export interface StoryOutline {
   title: string;
+  initialTime: string;
   premise: string;
-  mainGoal: string;
-  worldSetting: string;
-  locations: string[]; // Initial locations
+  mainGoal: {
+    visible: string; // The apparent main motivation/task
+    hidden: string; // The hidden event logic or true nature of the goal
+  };
+  quests: Quest[]; // Initial quests (replaces mainGoal/goals)
+  worldSetting: {
+    visible: string;
+    hidden: string;
+  };
+  locations: Omit<Location, "id" | "isVisited" | "createdAt">[]; // Initial locations (Detailed structure)
   character: CharacterStatus; // Initial character state
   inventory?: InventoryItem[]; // Initial inventory
   relationships?: Relationship[]; // Initial relationships
+  knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
 }
 
 export interface SaveSlot {
@@ -84,18 +177,62 @@ export interface CharacterAttribute {
   color: "red" | "blue" | "green" | "yellow" | "purple" | "gray";
 }
 
-export interface Skill {
+export interface CharacterSkill {
+  id: number;
   name: string;
-  level: string;
-  description?: string;
+  level: string | number;
+  visible: {
+    description: string;
+    knownEffects: string[];
+  };
+  hidden: {
+    trueDescription: string;
+    hiddenEffects: string[];
+    drawbacks?: string[];
+  };
+  category?: string;
+  experience?: number;
+}
+
+export interface CharacterCondition {
+  id: number;
+  name: string;
+  type: 'buff' | 'debuff' | 'neutral';
+  visible: {
+    description: string;
+    perceivedSeverity: string;
+  };
+  hidden: {
+    trueCause: string;
+    actualSeverity: number;
+    progression: string;
+    cure?: string;
+  };
+  duration?: number;
+  startTime?: number;
+  effects: {
+    visible: string[];
+    hidden: string[];
+  };
+}
+
+export interface HiddenTrait {
+  id: number;
+  name: string;
+  description: string;
+  effects: string[];
+  triggerConditions?: string[];
+  discovered: boolean;
 }
 
 export interface CharacterStatus {
   name: string;
   title: string;
-  attributes: CharacterAttribute[];
-  skills: Skill[];
   status: string;
+  attributes: CharacterAttribute[];
+  skills: CharacterSkill[];
+  conditions: CharacterCondition[];
+  hiddenTraits?: HiddenTrait[];
   appearance: string;
   profession?: string;
   background?: string;
@@ -116,14 +253,24 @@ export interface UIState {
 }
 
 export interface Relationship {
+  id: number;
   name: string;
-  description: string;
-  status: string;
-  relationshipType?: string; // Type: family, friend, lover, boyfriend, girlfriend, mentor, student, doctor, rival, enemy, etc.
+  visible: {
+    description: string;
+    appearance?: string;
+    status: string;
+  };
+  hidden: {
+    realPersonality: string;
+    realMotives: string;
+    secrets: string[];
+    trueAffinity: number;
+  };
+  relationshipType: string;
   affinity: number;
-  affinityKnown?: boolean;
-  appearance?: string;
-  personality?: string; // Hidden field - true personality (may differ from description)
+  affinityKnown: boolean;
+  createdAt: number;
+  lastModified: number;
   notes?: string;
 }
 
@@ -141,7 +288,7 @@ export interface StorySegment {
   usage?: TokenUsage;
 
   // Fork-safe Summary State
-  summaries?: string[]; // The total summary of the story up to this node
+  summaries?: StorySummary[]; // The total summary of the story up to this point (Dual-layer)
   summarizedIndex?: number; // The index in the history chain where the summary ends
   environment?: string; // The environment ambience for this segment
   envTheme?: string; // The visual theme for this segment
@@ -151,40 +298,62 @@ export interface StorySegment {
 }
 
 export interface GameStateSnapshot {
+  // Entity State (Dual-layer)
   inventory: InventoryItem[];
   relationships: Relationship[];
   quests: Quest[];
   character: CharacterStatus;
-  knowledge: KnowledgeEntry[]; // Player's accumulated knowledge
-  currentLocation: string;
-  knownLocations: string[];
+  knowledge: KnowledgeEntry[];
   locations: Location[];
-  currentQuest?: string;
-  veoScript?: string; // Cached Veo script for this story state
-  time?: string; // In-game time
+  currentLocation: string;
 
-  // UI State - preserve user's customizations
+  // ID Counters (Critical for forks)
+  nextIds: {
+    item: number;
+    npc: number;
+    location: number;
+    knowledge: number;
+    quest: number;
+  };
+
+  // World State
+  time: string;
+  timeline: TimelineEvent[];
+  causalChains: CausalChain[];
+
+  // Summaries (Dual-layer)
+  summaries: StorySummary[];
+  lastSummarizedIndex: number;
+
+  // UI & Meta
   uiState: UIState;
-
-  // Dynamic environment theme (e.g., "dark", "mystical")
   envTheme: string;
-
-  // Note: outline is NOT included as it's immutable and global to the entire game
+  veoScript?: string;
 }
 
 export interface Location {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  visible: {
+    description: string;
+    knownFeatures: string[];
+  };
+  hidden: {
+    fullDescription: string;
+    hiddenFeatures: string[];
+    secrets: string[];
+  };
   lore?: string;
-  isVisited?: boolean;
+  isVisited: boolean;
   environment?: string;
+  createdAt: number;
+  discoveredAt?: number;
   notes?: string;
 }
 
 export interface KnowledgeEntry {
-  id: string;
-  title: string; // Name of the knowledge (e.g., "Ancient Ruins", "Great War")
+  id: number;
+  title: string;
   category:
     | "landscape"
     | "history"
@@ -195,72 +364,140 @@ export interface KnowledgeEntry {
     | "magic"
     | "technology"
     | "other";
-  description: string; // What the player knows
-  details?: string; // Additional details or deeper understanding
-  discoveredAt?: string; // Where/when this was learned
-  relatedTo?: string[]; // IDs of related knowledge, items, or locations
+  visible: {
+    description: string;
+    details?: string;
+  };
+  hidden: {
+    fullTruth: string;
+    misconceptions?: string[];
+    toBeRevealed?: string[];
+  };
+  discoveredAt?: string;
+  relatedTo?: string[];
+  createdAt: number;
+  lastModified: number;
 }
 
 export interface InventoryItem {
-  id: string;
+  id: number;
   name: string;
-  description: string;
+  visible: {
+    description: string;
+    notes?: string;
+  };
+  hidden: {
+    truth: string;
+    secrets?: string[];
+  };
+  createdAt: number;
+  lastModified: number;
   lore?: string;
   isMystery?: boolean;
   icon?: string;
 }
 
 export interface Quest {
-  id: string;
+  id: number;
   title: string;
-  description: string;
   type: "main" | "side" | "hidden";
   status: "active" | "completed" | "failed";
+  visible: {
+    description: string;
+    objectives?: string[];
+  };
+  hidden: {
+    trueDescription?: string;
+    trueObjectives?: string[];
+    secretOutcome?: string;
+  };
+  createdAt: number;
+  lastModified: number;
 }
 
 export interface InventoryAction {
   action: "add" | "remove" | "update";
-  item: string;
-  newItem?: string; // For 'update' name change
-  // New fields for rich items
-  description?: string;
+  id?: number; // Numeric ID
+  name: string; // Name is still useful for reference
+
+  // Dual-layer support
+  visible?: {
+    description?: string;
+    notes?: string;
+  };
+  hidden?: {
+    truth?: string;
+    secrets?: string[];
+  };
+
   lore?: string;
   isMystery?: boolean;
+  newItem?: string;
 }
 
 export interface QuestAction {
   action: "add" | "update" | "complete" | "fail";
-  id: string;
+  id: number | string;
   title?: string;
-  description?: string;
   type?: "main" | "side" | "hidden";
+  visible?: {
+    description?: string;
+    objectives?: string[];
+  };
+  hidden?: {
+    trueDescription?: string;
+    trueObjectives?: string[];
+    secretOutcome?: string;
+  };
 }
 
 export interface RelationshipAction {
   action: "add" | "update" | "remove";
+  id?: number;
   name: string;
-  description?: string;
-  status?: string;
+
+  visible?: {
+    description?: string;
+    appearance?: string;
+    status?: string;
+  };
+  hidden?: {
+    realPersonality?: string;
+    realMotives?: string;
+    secrets?: string[];
+    trueAffinity?: number;
+  };
+
   relationshipType?: string;
   affinity?: number;
   affinityKnown?: boolean;
-  appearance?: string;
-  personality?: string;
   notes?: string;
 }
 
 export interface LocationAction {
   type: "current" | "known";
   action: "update" | "add";
+  id?: number;
   name: string;
-  description?: string;
+
+  visible?: {
+    description?: string;
+    knownFeatures?: string[];
+  };
+  hidden?: {
+    fullDescription?: string;
+    hiddenFeatures?: string[];
+    secrets?: string[];
+  };
+
   lore?: string;
   environment?: string;
   notes?: string;
 }
 
 export interface KnowledgeAction {
-  action: "add" | "update"; // No remove action for knowledge
+  action: "add" | "update";
+  id?: number;
   title: string;
   category:
     | "landscape"
@@ -272,8 +509,17 @@ export interface KnowledgeAction {
     | "magic"
     | "technology"
     | "other";
-  description: string;
-  details?: string;
+
+  visible?: {
+    description?: string;
+    details?: string;
+  };
+  hidden?: {
+    fullTruth?: string;
+    misconceptions?: string[];
+    toBeRevealed?: string[];
+  };
+
   discoveredAt?: string;
   relatedTo?: string[];
 }
@@ -286,15 +532,29 @@ export interface CharacterAction {
     | "appearance"
     | "profession"
     | "background"
-    | "race";
+    | "race"
+    | "condition" // New
+    | "hiddenTrait"; // New
   action: "add" | "remove" | "update";
-  name: string; // Name of attribute/skill, or 'status'
-  value?: any; // Generic value
-  intValue?: number; // For attributes
-  strValue?: string; // For skills/status
+  id?: number; // For skills/conditions
+  name: string;
+
+  // For skills/conditions
+  visible?: {
+    description?: string;
+    effects?: string[]; // For conditions
+  };
+  hidden?: {
+    trueDescription?: string;
+    hiddenEffects?: string[];
+    trueCause?: string; // For conditions
+  };
+
+  value?: any;
+  intValue?: number;
+  strValue?: string;
   maxValue?: number;
   color?: string;
-  description?: string;
 }
 
 export interface AdventureTurnInput {
@@ -313,6 +573,7 @@ export interface AdventureTurnInput {
   themeKey?: string;
   tFunc?: (key: string) => any;
   time?: string;
+  timeline?: TimelineEvent[]; // Added timeline support
 }
 export interface GameResponse {
   narrative: string;
@@ -320,17 +581,43 @@ export interface GameResponse {
   inventoryActions?: InventoryAction[];
   relationshipActions?: RelationshipAction[];
   locationActions?: LocationAction[];
-  characterActions?: CharacterAction[];
+  characterUpdates?: CharacterUpdates;
   questActions?: QuestAction[];
   knowledgeActions?: KnowledgeAction[]; // Player's accumulated knowledge
-  currentQuest?: string; // Legacy support
   imagePrompt?: string;
   envTheme?: string; // Optional update for atmosphere
-  theme?: string; // Optional update for static theme (rarely used but kept for compatibility)
   environment?: string; // The detected environment for audio ambience
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
-  timeUpdate?: string; // Update in-game time
+  timeUpdate?: string; // The new time string
+  worldEvents?: Array<{
+    description: string;
+    category: 'npc_action' | 'world_event';
+    involvedEntities?: string[];
+  }>;
+}
+
+export interface CharacterUpdates {
+  attributes?: Array<{
+    action: "add" | "update" | "remove";
+    name: string;
+    value?: number;
+    maxValue?: number;
+    color?: string;
+  }>;
+  skills?: Array<{
+    action: "add" | "update" | "remove";
+    name: string;
+    level?: string;
+    description?: string;
+  }>;
+  profile?: {
+    status?: string;
+    appearance?: string;
+    profession?: string;
+    background?: string;
+    race?: string;
+  };
 }
 
 export interface ItemExplanation {

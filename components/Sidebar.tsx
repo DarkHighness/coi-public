@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex justify-center mb-4">
           <div className="bg-theme-surface-highlight/30 border border-theme-border px-4 py-1.5 rounded-full text-xs font-mono text-theme-text-secondary shadow-sm flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-theme-primary animate-pulse"></span>
-            {gameState.time || "unknown"}
+            {gameState.time}
           </div>
         </div>
 
@@ -117,7 +117,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
         <LocationPanel
           currentLocation={gameState.currentLocation}
-          knownLocations={gameState.knownLocations}
           locations={gameState.locations || []}
           themeFont={currentThemeConfig.fontClass}
           itemContext={itemContext}

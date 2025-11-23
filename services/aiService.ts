@@ -38,7 +38,7 @@ import {
   getModels as getOpenRouterModels,
   validateConnection as validateOpenRouterConnection,
 } from "./providers/openRouterProvider";
-import { DEFAULTS, DEFAULT_OPENAI_BASE_URL } from "../utils/constants";
+import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, THEMES } from "../utils/constants";
 import { TRANSLATIONS } from "../utils/constants/translations";
 import {
   gameResponseSchema,
@@ -394,7 +394,7 @@ export const summarizeContext = async (
   previousSummary: string,
   newTurns: string,
   language: string,
-): Promise<{ summary: string; log: LogEntry }> => {
+): Promise<{ summary: any; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
   const prompt = getSummaryPrompt(previousSummary, newTurns, language);
   const sys = "You are a diligent scribe. Output strictly valid JSON.";
@@ -406,13 +406,15 @@ export const summarizeContext = async (
       modelId,
       sys,
       contents,
-      summarySchema,
+      summarySchema, // Ensure this schema supports the new dual-layer structure or is flexible enough
     );
-    return { summary: result.summary, log };
+    // The result should now be the full JSON object (visible + hidden)
+    // We return it directly. The caller (useGameEngine) will handle storing it.
+    return { summary: result, log };
   } catch (e: any) {
     console.error("Summary failed", e);
     return {
-      summary: "",
+      summary: null,
       log: createLogEntry(
         provider,
         modelId,
@@ -441,8 +443,9 @@ export const generateAdventureTurn = async (
     language = "English",
     themeKey,
     tFunc,
-    knowledge, // Extract knowledge from input
-    time, // Extract time from input
+    knowledge,
+    time,
+    timeline, // Extract timeline
   } = input;
 
   const { provider, modelId } = getProviderConfig("story");
@@ -452,16 +455,10 @@ export const generateAdventureTurn = async (
   let isRestricted: boolean = false;
 
   if (tFunc && themeKey) {
-    // Use dynamic translation function from React component
     narrativeStyle =
       tFunc(`themes.${themeKey}.narrativeStyle`) || "Standard adventure tone.";
     example = tFunc(`themes.${themeKey}.example`);
-    // Check for restricted flag in THEMES constant (imported or passed)
-    // Since we don't have direct access to THEMES here without import, we rely on the fact that we can import it.
-    // However, to avoid circular deps or complex imports if not already there, let's check imports.
-    // aiService imports DEFAULTS, etc. Let's import THEMES from constants.
   } else if (themeKey) {
-    // Fallback to static translations
     const langCode = getLangCode(language);
     const t = TRANSLATIONS[langCode];
     narrativeStyle =
@@ -472,48 +469,34 @@ export const generateAdventureTurn = async (
     example = undefined;
   }
 
-  // We need to import THEMES to check for restricted status
-  // Since we can't easily change imports in this block, we will assume THEMES is available or we need to add the import.
-  // Looking at file content, THEMES is NOT imported in aiService.ts.
-  // We should add `import { THEMES } from "../utils/constants";` at the top.
-  // But for now, let's use a dynamic require or just add the logic if I can edit imports.
-  // Wait, I can edit the whole file or use replace. I'll add the import in a separate step or just use what I have.
-  // Actually, `generateAdventureTurn` is in `aiService.ts`. `aiService.ts` imports `DEFAULTS` from `../utils/constants`.
-  // I can update the import to include `THEMES`.
-
-  // For this specific block:
-  const themeConfig = (await import("../utils/constants")).THEMES[
-    themeKey || "fantasy"
-  ];
+  // Use imported THEMES
+  const themeConfig = THEMES[themeKey || "fantasy"];
   isRestricted = themeConfig?.restricted || false;
 
-  // Split System Instruction for better KV Cache
+  // --- KV Cache Optimization Order ---
+
+  // 1. Static System Instruction (Core Rules)
+  // This part rarely changes and should be cached effectively.
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
     example,
     isRestricted,
   );
-  const staticWorldContext = getStaticWorldContext(outline);
-  const dynamicStoryContext = getDynamicStoryContext(summaries);
-  const currentStateContext = getCurrentStateContext(
-    inventory,
-    relationships,
-    quests,
-    locations,
-    currentLocationId,
-    character,
-    knowledge, // Pass knowledge to context
-    time, // Pass time to context
-  );
 
-  // Combine system instructions
+  // 2. Static World Context (Outline)
+  // This is constant for the entire playthrough.
+  const staticWorldContext = getStaticWorldContext(outline);
+
+  // Combine for the system prompt
   const fullSystemInstruction = `${coreSystemInstruction}\n\n${staticWorldContext}`;
 
-  // Construct contents
+  // Construct contents array for the chat history
   const contents = [];
 
-  // Inject dynamic summary if it exists
+  // 3. Semi-Static: Story Summary (Dynamic Memory)
+  // Changes every N turns.
+  const dynamicStoryContext = getDynamicStoryContext(summaries);
   if (dynamicStoryContext) {
     contents.push({
       role: "user",
@@ -522,14 +505,27 @@ export const generateAdventureTurn = async (
     contents.push({ role: "model", parts: [{ text: "Memory accessed." }] });
   }
 
-  // Inject current state
+  // 4. Dynamic: Current State Context
+  // Changes every turn, but structure is consistent.
+  const currentStateContext = getCurrentStateContext(
+    inventory,
+    relationships,
+    quests,
+    locations,
+    currentLocationId,
+    character,
+    knowledge,
+    time,
+    timeline, // Pass timeline
+  );
+
   contents.push({
     role: "user",
     parts: [{ text: `[CURRENT STATUS]\n${currentStateContext}` }],
   });
   contents.push({ role: "model", parts: [{ text: "Status updated." }] });
 
-  // Append History (already includes the current userAction if not isInit)
+  // 5. Highly Dynamic: Recent History
   contents.push(
     ...recentHistory.map((seg) => ({
       role: seg.role,
@@ -537,8 +533,7 @@ export const generateAdventureTurn = async (
     })),
   );
 
-  // Only append userAction separately if it's not already in recentHistory
-  // (i.e., during initialization when recentHistory might be empty)
+  // 6. User Action (if new)
   const userActionAlreadyInHistory = recentHistory.some(
     (seg) => seg.role === "user" && seg.text === userAction,
   );
@@ -607,14 +602,12 @@ export const generateSceneImage = async (
 export const translateGameContent = async (
   segments: StorySegment[],
   inventory: string[],
-  currentQuest: string,
   character: CharacterStatus,
   relationships: Relationship[],
   targetLanguage: string,
 ): Promise<{
   segments: any[];
   inventory: string[];
-  currentQuest: string;
   character: CharacterStatus;
   relationships: Relationship[];
 }> => {
@@ -626,7 +619,6 @@ export const translateGameContent = async (
       choices: s.choices,
     })),
     inventory,
-    currentQuest,
     character,
     relationships,
   };

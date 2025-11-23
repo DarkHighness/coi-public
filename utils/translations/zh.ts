@@ -3,6 +3,9 @@ import { themes } from "./themes/zh.ts";
 export const zh = {
   titlePart1: "无尽",
   titlePart2: "编年史",
+  time: {
+    full: "{{year}}年{{month}}月{{day}}日 {{hour}}:{{minute}}",
+  },
   questPanel: {
     title: "当前任务",
     main: "主线",
@@ -272,6 +275,7 @@ export const zh = {
     goal: "目标",
     world: "世界观",
     generating: "与世界连接中...",
+    currentGoal: "当前目标",
   },
   tree: {
     map: "命运地图",

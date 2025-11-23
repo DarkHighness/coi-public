@@ -26,17 +26,17 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedKnowledge, setExpandedKnowledge] = useState<Set<string>>(
+  const [expandedKnowledge, setExpandedKnowledge] = useState<Set<string | number>>(
     new Set(),
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalExpandedKnowledge, setModalExpandedKnowledge] = useState<
-    Set<string>
+    Set<string | number>
   >(new Set());
 
   const DISPLAY_LIMIT = 4; // Show limited number in sidebar
 
-  const toggleKnowledge = (knowledgeId: string, isModal: boolean = false) => {
+  const toggleKnowledge = (knowledgeId: string | number, isModal: boolean = false) => {
     const setter = isModal ? setModalExpandedKnowledge : setExpandedKnowledge;
     setter((prev) => {
       const newSet = new Set(prev);
@@ -51,7 +51,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 
   const renderKnowledge = (
     k: KnowledgeEntry,
-    expandedSet: Set<string>,
+    expandedSet: Set<string | number>,
     isModal: boolean,
   ) => (
     <div
@@ -79,10 +79,10 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           ></path>
         </svg>
       </div>
-      <p className="text-xs opacity-80">{k.description}</p>
-      {expandedSet.has(k.id) && k.details && (
+      <p className="text-xs opacity-80">{k.visible?.description || "No description"}</p>
+      {expandedSet.has(k.id) && k.visible?.details && (
         <div className="mt-2 pt-2 border-t border-theme-border/30 animate-[fade-in_0.3s_ease-in]">
-          <p className="text-xs italic opacity-90">{k.details}</p>
+          <p className="text-xs italic opacity-90">{k.visible.details}</p>
           {k.discoveredAt && (
             <p className="text-[10px] text-theme-muted mt-1">
               {t("knowledgePanel.discovered")}: {k.discoveredAt}

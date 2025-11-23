@@ -26,11 +26,11 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
 
   // Map relationships to include ID for useListManagement
   const relationshipsWithId = useMemo(() => {
-    return safeRelationships.map((r) => ({ ...r, id: r.name }));
+    return safeRelationships.map((r) => ({ ...r, id: r.id || r.name }));
   }, [safeRelationships]);
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | number | null>(null);
 
   const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
     useListManagement(
@@ -48,14 +48,14 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     return "bg-red-600"; // Hated/Enemy
   };
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = (e: React.DragEvent, id: string | number) => {
     setDraggedId(id);
-    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.setData("text/plain", id.toString());
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragEnter = (e: React.DragEvent, targetId: string) => {
-    if (!isEditMode || !draggedId || draggedId === targetId) return;
+  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+    if (!isEditMode || !draggedId || draggedId.toString() === targetId.toString()) return;
     reorderItem(draggedId, targetId);
   };
 
@@ -68,13 +68,13 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDrop = (e: React.DragEvent, targetId: string | number) => {
     e.preventDefault();
     setDraggedId(null);
   };
 
   const renderRelationship = (
-    rel: Relationship & { id: string },
+    rel: Omit<Relationship, "id"> & { id: string | number },
     idx: number,
     enableDrag: boolean = false,
   ) => {
@@ -132,15 +132,20 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               </button>
               <span
                 className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
-                title={rel.status}
+                title={rel.visible?.status || "Unknown"}
               >
-                {rel.status}
+                {rel.visible?.status || "Unknown"}
               </span>
             </div>
           </div>
           <p className="text-xs text-theme-muted italic mb-2 leading-snug">
-            {rel.description}
+            {rel.visible?.description || "No description available."}
           </p>
+          {rel.visible?.appearance && (
+            <p className="text-xs text-theme-muted/80 mb-2 leading-snug border-l-2 border-theme-border pl-2">
+              {rel.visible.appearance}
+            </p>
+          )}
 
           {/* Affinity Bar */}
           <div className="flex items-center gap-2 text-[10px]">
@@ -305,7 +310,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
-          item.description.toLowerCase().includes(query.toLowerCase())
+          (item.visible?.description || "").toLowerCase().includes(query.toLowerCase())
         }
         renderItem={(item) => renderRelationship(item, Math.random(), false)}
       />

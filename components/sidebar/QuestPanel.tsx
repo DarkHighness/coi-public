@@ -28,14 +28,15 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   const allQuests = [...mainQuests, ...sideQuests];
   const DISPLAY_LIMIT = 3; // Lower limit for quests as they are large
 
-  const toggleQuest = (questId: string, isModal: boolean = false) => {
+  const toggleQuest = (questId: string | number, isModal: boolean = false) => {
+    const idStr = questId.toString();
     const setter = isModal ? setModalExpandedQuests : setExpandedQuests;
     setter((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(questId)) {
-        newSet.delete(questId);
+      if (newSet.has(idStr)) {
+        newSet.delete(idStr);
       } else {
-        newSet.add(questId);
+        newSet.add(idStr);
       }
       return newSet;
     });
@@ -57,7 +58,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="font-bold text-theme-primary mb-1 flex-1">{q.title}</h4>
         <svg
-          className={`w-4 h-4 text-theme-primary transition-transform duration-200 ${expandedSet.has(q.id) ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-theme-primary transition-transform duration-200 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -70,9 +71,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           ></path>
         </svg>
       </div>
-      {expandedSet.has(q.id) && (
+      {expandedSet.has(q.id.toString()) && (
         <p className="italic opacity-90 mt-2 animate-[fade-in_0.3s_ease-in]">
-          {q.description}
+          {q.visible.description}
         </p>
       )}
     </div>
@@ -151,7 +152,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
-          item.description.toLowerCase().includes(query.toLowerCase())
+          (item.visible.description || "").toLowerCase().includes(query.toLowerCase())
         }
         renderItem={(item) => renderQuest(item, modalExpandedQuests, true)}
       />

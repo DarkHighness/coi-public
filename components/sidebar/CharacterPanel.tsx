@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CharacterStatus, Skill } from "../../types";
+import { CharacterStatus, CharacterSkill } from "../../types";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -262,7 +262,7 @@ const getStatusConfig = (status: string) => {
 };
 
 // Sub-component for individual skills to handle expansion state
-const SkillItem: React.FC<{ skill: Skill }> = ({ skill }) => {
+const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -284,11 +284,11 @@ const SkillItem: React.FC<{ skill: Skill }> = ({ skill }) => {
       </div>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ${isExpanded && skill.description ? "max-h-20 opacity-100" : "max-h-0 opacity-0"}`}
+        className={`overflow-hidden transition-all duration-300 ${isExpanded && skill.visible?.description ? "max-h-20 opacity-100" : "max-h-0 opacity-0"}`}
       >
         <div className="px-2 pb-2 pt-0">
           <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
-            {skill.description}
+            {skill.visible?.description || "No description"}
           </p>
         </div>
       </div>

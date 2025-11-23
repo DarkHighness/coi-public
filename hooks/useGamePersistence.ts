@@ -45,6 +45,114 @@ export const useGamePersistence = (
       parsed.theme = "fantasy";
     }
 
+    // Migration: Dual-Layer System (Inventory, Relationships, Locations, Knowledge, Skills)
+    if (parsed.inventory) {
+      parsed.inventory = parsed.inventory.map((item: any) => {
+        if (!item.visible) {
+          return {
+            ...item,
+            visible: {
+              description: item.description || "No description available.",
+              quantity: item.quantity || 1,
+              condition: item.condition || "good",
+              knownProperties: item.properties || [],
+            },
+            hidden: {
+              trueDescription: item.description || "",
+              hiddenProperties: [],
+              cursed: false,
+              magical: false,
+            },
+          };
+        }
+        return item;
+      });
+    }
+
+    if (parsed.relationships) {
+      parsed.relationships = parsed.relationships.map((rel: any) => {
+        if (!rel.visible) {
+          return {
+            ...rel,
+            visible: {
+              description: rel.description || "No description available.",
+              status: rel.status || "neutral",
+              knownSecrets: [],
+            },
+            hidden: {
+              trueDescription: rel.description || "",
+              trueStatus: rel.status || "neutral",
+              hiddenSecrets: [],
+              trueIntentions: "Unknown",
+            },
+          };
+        }
+        return rel;
+      });
+    }
+
+    if (parsed.locations) {
+      parsed.locations = parsed.locations.map((loc: any) => {
+        if (!loc.visible) {
+          return {
+            ...loc,
+            visible: {
+              description: loc.description || "No description available.",
+              features: loc.features || [],
+              inhabitants: loc.inhabitants || [],
+            },
+            hidden: {
+              trueDescription: loc.description || "",
+              hiddenFeatures: [],
+              secretInhabitants: [],
+              history: "",
+            },
+          };
+        }
+        return loc;
+      });
+    }
+
+    if (parsed.knowledge) {
+      parsed.knowledge = parsed.knowledge.map((k: any) => {
+        if (!k.visible) {
+          return {
+            ...k,
+            visible: {
+              description: k.description || "No description available.",
+              source: k.source || "unknown",
+              reliability: "high",
+            },
+            hidden: {
+              trueDescription: k.description || "",
+              implications: [],
+              relatedTruths: [],
+            },
+          };
+        }
+        return k;
+      });
+    }
+
+    if (parsed.character && parsed.character.skills) {
+      parsed.character.skills = parsed.character.skills.map((skill: any) => {
+        if (!skill.visible) {
+          return {
+            ...skill,
+            visible: {
+              description: skill.description || "No description available.",
+              knownEffects: [],
+            },
+            hidden: {
+              trueDescription: skill.description || "",
+              hiddenEffects: [],
+            },
+          };
+        }
+        return skill;
+      });
+    }
+
     // Reset processing state on load to prevent stuck state
     parsed.isProcessing = false;
     // Always clear image generation state on load

@@ -8,6 +8,8 @@ export const DEFAULT_CHARACTER: CharacterStatus = {
   title: "Loading...",
   attributes: [],
   skills: [],
+  conditions: [],
+  hiddenTraits: [],
   status: "Pending",
   appearance: "Loading...",
 };

@@ -13,6 +13,8 @@ import {
 } from "../services/aiService";
 import { preloadAudio } from "../utils/audioLoader";
 import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
+import { processAllActions } from "./stateProcessors/processAllActions";
+import { createStateSnapshot } from "../utils/snapshotManager";
 
 // Helper: Traverse tree
 const deriveHistory = (
@@ -239,7 +241,7 @@ export const useGameEngine = () => {
     const parentId = isInit ? null : gameStateRef.current.activeNodeId;
 
     // --- Fork-Safe Summary Retrieval ---
-    let baseSummaries: string[] = [];
+    let baseSummaries: any[] = []; // Will be StorySummary[] once fully migrated
     let baseIndex = 0;
 
     if (parentId && gameStateRef.current.nodes[parentId]) {
@@ -264,7 +266,7 @@ export const useGameEngine = () => {
             imagePrompt: "",
             role: "user",
             timestamp: Date.now(),
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, // User msgs have no token cost locally
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             summaries: baseSummaries,
             summarizedIndex: baseIndex,
           },
@@ -295,29 +297,30 @@ export const useGameEngine = () => {
       if (!isInit) contextNodes.push(tempUserNode);
 
       const limit = aiSettings.contextLen || 10;
-      // Use contextLen as the step to avoid too frequent summarization
       const summaryStep = limit;
 
       let effectiveSummaries = [...baseSummaries];
       let lastIndex = baseIndex;
-      let summarySnapshot = "";
+      let summarySnapshot = ""; // UI display text
 
-      // Calculate range to summarize: from lastIndex to (total - limit)
-      // We keep 'limit' messages as fresh context
       const totalLength = contextNodes.length;
-      const keepFresh = 4; // Keep last 2 turns fresh
+      const keepFresh = 4;
       const summarizeEnd = Math.max(lastIndex, totalLength - keepFresh);
       const nodesToSummarizeCount = summarizeEnd - lastIndex;
 
-      // Only summarize if we have enough new nodes AND we are advancing (not regressing)
       if (nodesToSummarizeCount >= summaryStep && summarizeEnd > lastIndex) {
         const toSummarize = contextNodes.slice(lastIndex, summarizeEnd);
         const textBlock = toSummarize
           .map((s) => `${s.role}: ${s.text}`)
           .join("\n");
+
+        // Get previous summary text for context
         const previousSummary =
           effectiveSummaries.length > 0
-            ? effectiveSummaries[effectiveSummaries.length - 1]
+            ? typeof effectiveSummaries[effectiveSummaries.length - 1] ===
+              "string"
+              ? effectiveSummaries[effectiveSummaries.length - 1]
+              : effectiveSummaries[effectiveSummaries.length - 1].displayText
             : "";
 
         // Call Summary Service
@@ -327,8 +330,12 @@ export const useGameEngine = () => {
           LANG_MAP[language],
         );
 
+        // Push the new summary object (or string for legacy compatibility)
         effectiveSummaries.push(sumResult.summary);
-        summarySnapshot = sumResult.summary;
+
+        // Extract displayText for UI
+        summarySnapshot =
+          sumResult.summary?.displayText || sumResult.summary || "";
         lastIndex = summarizeEnd;
 
         // Log the summary action
@@ -382,6 +389,7 @@ export const useGameEngine = () => {
         themeKey: gameStateRef.current.theme, // Pass the static theme key
         tFunc: t, // Pass translation function
         time: gameStateRef.current.time, // Pass current time
+        timeline: gameStateRef.current.timeline, // Pass timeline
       });
 
       // Sanitize choices to ensure strict string array
@@ -401,310 +409,11 @@ export const useGameEngine = () => {
 
       const modelNodeId = `model-${newSegmentId}`;
 
+      // ===== PROCESS ALL STATE CHANGES USING MODULAR PROCESSORS =====
+      const processedState = processAllActions(gameStateRef.current, response);
+
       // Determine Toast Message based on state changes
       let toastMessage = "";
-      // Process Deltas
-      let newInventory = [...(gameStateRef.current.inventory || [])];
-      if (response.inventoryActions) {
-        response.inventoryActions.forEach((act) => {
-          if (act.action === "add") {
-            // Check if exists by ID or Name to avoid dupes
-            const exists = newInventory.some((i) => i.name === act.item);
-            if (!exists) {
-              newInventory.push({
-                id:
-                  Date.now().toString() +
-                  Math.random().toString(36).substr(2, 5),
-                name: act.item,
-                description: act.description || "A mysterious item.",
-                lore: act.lore,
-                isMystery: act.isMystery,
-              });
-            }
-          }
-          if (act.action === "remove") {
-            newInventory = newInventory.filter((i) => i.name !== act.item);
-          }
-          if (act.action === "update") {
-            const idx = newInventory.findIndex((i) => i.name === act.item);
-            if (idx !== -1) {
-              if (act.newItem) newInventory[idx].name = act.newItem;
-              if (act.description)
-                newInventory[idx].description = act.description;
-              if (act.lore) newInventory[idx].lore = act.lore;
-              if (act.isMystery !== undefined)
-                newInventory[idx].isMystery = act.isMystery;
-            } else {
-              console.warn(
-                `[handleAction] Inventory update failed: item "${act.item}" not found`,
-              );
-            }
-          }
-        });
-      }
-
-      let newRels = [...(gameStateRef.current.relationships || [])];
-      if (response.relationshipActions) {
-        response.relationshipActions.forEach((act) => {
-          const idx = newRels.findIndex((r) => r.name === act.name);
-          if (act.action === "add" && idx === -1) {
-            newRels.push({
-              name: act.name,
-              description: act.description || "Unknown",
-              status: act.status || "Neutral",
-              affinity: act.affinity || 50,
-              affinityKnown: act.affinityKnown ?? true,
-              appearance: act.appearance,
-              personality: act.personality,
-              notes: act.notes,
-            });
-          } else if (act.action === "remove" && idx !== -1) {
-            newRels.splice(idx, 1);
-          } else if (
-            (act.action === "update" || act.action === "add") &&
-            idx !== -1
-          ) {
-            // Allow 'add' to update if exists
-            if (act.description) newRels[idx].description = act.description;
-            if (act.status) newRels[idx].status = act.status;
-            if (act.affinity !== undefined)
-              newRels[idx].affinity = act.affinity;
-            if (act.affinityKnown !== undefined)
-              newRels[idx].affinityKnown = act.affinityKnown;
-            if (act.appearance) newRels[idx].appearance = act.appearance;
-            if (act.personality) newRels[idx].personality = act.personality;
-            if (act.notes) newRels[idx].notes = act.notes;
-          } else if (act.action === "update" && idx === -1) {
-            console.warn(
-              `[handleAction] Relationship update failed: "${act.name}" not found`,
-            );
-          }
-        });
-      }
-
-      let newQuests = [...(gameStateRef.current.quests || [])];
-      if (response.questActions) {
-        response.questActions.forEach((act) => {
-          const idx = newQuests.findIndex((q) => q.id === act.id);
-          if (act.action === "add" && idx === -1) {
-            newQuests.push({
-              id: act.id,
-              title: act.title || "Unknown Quest",
-              description: act.description || "",
-              type: act.type || "main",
-              status: "active",
-            });
-          } else if (idx !== -1) {
-            if (act.action === "update") {
-              if (act.title) newQuests[idx].title = act.title;
-              if (act.description) newQuests[idx].description = act.description;
-            } else if (act.action === "complete") {
-              newQuests[idx].status = "completed";
-            } else if (act.action === "fail") {
-              newQuests[idx].status = "failed";
-            }
-          } else if (act.action !== "add") {
-            console.warn(
-              `[handleAction] Quest action "${act.action}" failed: quest "${act.id}" not found`,
-            );
-          }
-        });
-      }
-
-      let newKnownLocations = [...(gameStateRef.current.knownLocations || [])];
-      let newCurrentLocation = gameStateRef.current.currentLocation;
-      let newLocations = [...(gameStateRef.current.locations || [])];
-
-      if (response.locationActions) {
-        response.locationActions.forEach((act) => {
-          if (act.type === "current" && act.action === "update")
-            newCurrentLocation = act.name;
-          if (
-            act.type === "known" &&
-            act.action === "add" &&
-            !newKnownLocations.includes(act.name)
-          )
-            newKnownLocations.push(act.name);
-
-          // Rich Location Update
-          const locIdx = newLocations.findIndex((l) => l.name === act.name);
-          if (locIdx === -1) {
-            if (act.description) {
-              newLocations.push({
-                id:
-                  Date.now().toString() +
-                  Math.random().toString(36).substr(2, 5),
-                name: act.name,
-                description: act.description,
-                lore: act.lore,
-                isVisited: act.type === "current",
-                environment: act.environment,
-                notes: act.notes,
-              });
-            }
-          } else {
-            if (act.description)
-              newLocations[locIdx].description = act.description;
-            if (act.lore) newLocations[locIdx].lore = act.lore;
-            if (act.type === "current") newLocations[locIdx].isVisited = true;
-            if (act.environment)
-              newLocations[locIdx].environment = act.environment;
-            if (act.notes) newLocations[locIdx].notes = act.notes;
-          }
-        });
-      }
-
-      let newCharacter = { ...gameStateRef.current.character };
-      if (response.characterActions) {
-        response.characterActions.forEach((act) => {
-          if (act.target === "status" && act.action === "update") {
-            newCharacter.status =
-              (act.value as string) ||
-              (act.strValue as string) ||
-              newCharacter.status;
-          }
-          if (act.target === "appearance" && act.action === "update") {
-            newCharacter.appearance =
-              (act.value as string) ||
-              (act.strValue as string) ||
-              newCharacter.appearance;
-          }
-          if (act.target === "profession" && act.action === "update") {
-            newCharacter.profession =
-              (act.value as string) || (act.strValue as string);
-          }
-          if (act.target === "background" && act.action === "update") {
-            newCharacter.background =
-              (act.value as string) || (act.strValue as string);
-          }
-          if (act.target === "race" && act.action === "update") {
-            newCharacter.race =
-              (act.value as string) || (act.strValue as string);
-          }
-          if (act.target === "attribute") {
-            const idx = newCharacter.attributes.findIndex(
-              (a) => a.label === act.name,
-            );
-            if (act.action === "add" && idx === -1) {
-              newCharacter.attributes.push({
-                label: act.name,
-                value: (act.value as number) || (act.intValue as number) || 0,
-                maxValue: act.maxValue || 100,
-                color: (act.color as any) || "gray",
-              });
-            } else if (act.action === "remove" && idx !== -1) {
-              newCharacter.attributes.splice(idx, 1);
-            } else if (act.action === "update" && idx !== -1) {
-              const val = act.value !== undefined ? act.value : act.intValue;
-              if (val !== undefined)
-                newCharacter.attributes[idx].value = Number(val);
-              if (act.maxValue)
-                newCharacter.attributes[idx].maxValue = act.maxValue;
-            }
-          }
-          if (act.target === "skill") {
-            const idx = newCharacter.skills.findIndex(
-              (s) => s.name === act.name,
-            );
-            if (act.action === "add" && idx === -1) {
-              newCharacter.skills.push({
-                name: act.name,
-                level:
-                  (act.value as string) || (act.strValue as string) || "Novice",
-                description: act.description,
-              });
-            } else if (act.action === "remove" && idx !== -1) {
-              newCharacter.skills.splice(idx, 1);
-            } else if (act.action === "update" && idx !== -1) {
-              const val = (act.value as string) || (act.strValue as string);
-              if (val) newCharacter.skills[idx].level = val;
-              if (act.description)
-                newCharacter.skills[idx].description = act.description;
-            }
-          }
-        });
-      }
-
-      // Process Knowledge Actions (add/update only, no remove)
-      let newKnowledge = [...(gameStateRef.current.knowledge || [])];
-      if (response.knowledgeActions) {
-        response.knowledgeActions.forEach((act) => {
-          const idx = newKnowledge.findIndex((k) => k.title === act.title);
-          if (act.action === "add" && idx === -1) {
-            newKnowledge.push({
-              id:
-                Date.now().toString() + Math.random().toString(36).substr(2, 5),
-              title: act.title,
-              category: act.category || "other",
-              description: act.description || "",
-              details: act.details,
-              discoveredAt: act.discoveredAt,
-              relatedTo: act.relatedTo,
-            });
-          } else if (act.action === "update" && idx !== -1) {
-            // Update existing knowledge
-            if (act.description)
-              newKnowledge[idx].description = act.description;
-            if (act.details) newKnowledge[idx].details = act.details;
-            if (act.category) newKnowledge[idx].category = act.category;
-            if (act.discoveredAt)
-              newKnowledge[idx].discoveredAt = act.discoveredAt;
-            if (act.relatedTo) newKnowledge[idx].relatedTo = act.relatedTo;
-          } else if (act.action === "update" && idx === -1) {
-            console.warn(
-              `[handleAction] Knowledge update failed: "${act.title}" not found`,
-            );
-          } else {
-            console.warn(
-              `[handleAction] Invalid knowledge action: "${act.action}" for "${act.title}"`,
-            );
-          }
-        });
-      }
-
-      // Update Time
-      const newTime =
-        response.timeUpdate || gameStateRef.current.time || "unknown";
-
-      const modelNode: StorySegment = {
-        id: modelNodeId,
-        parentId: isInit ? null : userNodeId,
-        text: response.narrative || "...",
-        choices: sanitizedChoices,
-        imagePrompt: response.imagePrompt || "",
-        role: "model",
-        timestamp: Date.now(),
-        summarySnapshot: summarySnapshot || undefined,
-        usage: usage,
-        // Inherit summary state from the user node (which was just updated)
-        summaries: effectiveSummaries,
-        summarizedIndex: lastIndex,
-        environment: response.environment,
-        narrativeTone: response.narrativeTone, // Save narrative tone
-        imageSkipped: !response.generateImage, // Mark if image was intentionally skipped
-        envTheme: gameState.envTheme, // Save current envTheme to the node
-        stateSnapshot: {
-          inventory: newInventory,
-          relationships: newRels,
-          quests: newQuests,
-          character: newCharacter,
-          knowledge: newKnowledge, // Preserve accumulated knowledge
-          currentLocation: newCurrentLocation,
-          knownLocations: newKnownLocations,
-          locations: newLocations,
-          currentQuest: newQuests.find(
-            (q) => q.status === "active" && q.type === "main",
-          )?.title,
-          veoScript: gameStateRef.current.veoScript, // Preserve Veo script in snapshot
-          uiState: gameStateRef.current.uiState, // Preserve UI customizations
-          envTheme:
-            response.envTheme || forceTheme || gameStateRef.current.envTheme, // Save dynamic theme
-          time: newTime, // Save time in snapshot
-          // Note: outline is NOT saved as it's immutable for the entire game
-        },
-      };
-
-      // Determine Toast Message based on ACTIONS
       if (response.inventoryActions?.some((a) => a.action === "add")) {
         toastMessage = t("toast.itemAdded");
       } else if (
@@ -719,6 +428,43 @@ export const useGameEngine = () => {
         toastMessage = t("toast.questUpd");
       }
 
+      const modelNode: StorySegment = {
+        id: modelNodeId,
+        parentId: isInit ? null : userNodeId,
+        text: response.narrative || "...",
+        choices: sanitizedChoices,
+        imagePrompt: response.imagePrompt || "",
+        role: "model",
+        timestamp: Date.now(),
+        summarySnapshot: summarySnapshot || undefined,
+        usage: usage,
+        summaries: effectiveSummaries,
+        summarizedIndex: lastIndex,
+        environment: response.environment,
+        narrativeTone: response.narrativeTone,
+        imageSkipped: !response.generateImage,
+        envTheme: gameState.envTheme,
+        stateSnapshot: {
+          inventory: processedState.inventory,
+          relationships: processedState.relationships,
+          quests: processedState.quests,
+          character: processedState.character,
+          knowledge: processedState.knowledge,
+          currentLocation: processedState.currentLocation,
+          locations: processedState.locations,
+          veoScript: gameStateRef.current.veoScript,
+          uiState: gameStateRef.current.uiState,
+          envTheme:
+            response.envTheme || forceTheme || gameStateRef.current.envTheme,
+          nextIds: processedState.nextIds,
+          time: processedState.time,
+          timeline: processedState.timeline,
+          causalChains: processedState.causalChains,
+          summaries: effectiveSummaries,
+          lastSummarizedIndex: lastIndex,
+        },
+      };
+
       // Update State with Response
       setGameState((prev) => ({
         ...prev,
@@ -728,27 +474,26 @@ export const useGameEngine = () => {
         },
         activeNodeId: modelNodeId,
         rootNodeId: prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
-        inventory: newInventory,
-        relationships: newRels,
-        quests: newQuests,
-        currentQuest:
-          newQuests.find((q) => q.status === "active" && q.type === "main")
-            ?.title || undefined, // Fallback sync
-        currentLocation: newCurrentLocation,
-        knownLocations: newKnownLocations,
-        locations: newLocations,
-        character: newCharacter,
-        knowledge: newKnowledge, // Update knowledge state
+        inventory: processedState.inventory,
+        relationships: processedState.relationships,
+        quests: processedState.quests,
+        currentLocation: processedState.currentLocation,
+        locations: processedState.locations,
+        character: processedState.character,
+        knowledge: processedState.knowledge,
         summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
         generatingNodeId: modelNodeId,
         envTheme: response.envTheme || forceTheme || prev.envTheme,
-        theme: prev.theme, // Keep static theme
+        theme: prev.theme,
         logs: [log, ...prev.logs].slice(0, 50),
         totalTokens: prev.totalTokens + usage.totalTokens,
         generateImage: response.generateImage,
-        time: newTime, // Update global time
+        time: processedState.time, // Use AI-generated time string
+        nextIds: processedState.nextIds,
+        timeline: processedState.timeline,
+        causalChains: processedState.causalChains,
       }));
 
       // Async Image Gen with Timeout
@@ -851,18 +596,40 @@ export const useGameEngine = () => {
         ...prev,
         outline,
         character: outline.character,
-        inventory: (outline.inventory || []).map((item: any) => ({
+        inventory: (outline.inventory || []).map((item: any, index: number) => ({
           ...item,
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          id: index + 1,
+          createdAt: Date.now(),
         })),
-        relationships: outline.relationships || [],
-        quests: [
-
-        ],
-        currentQuest: outline.mainGoal || "Survive and explore.",
-        currentLocation: outline.locations?.[0] || "Unknown",
-        knownLocations: outline.locations || [],
-        locations: [],
+        relationships: (outline.relationships || []).map((rel: any, index: number) => ({
+          ...rel,
+          id: index + 1,
+          createdAt: Date.now(),
+        })),
+        quests: (outline.quests || []).map((q: any, index: number) => ({
+          ...q,
+          id: index + 1,
+          status: "active",
+          createdAt: Date.now(),
+        })),
+        currentLocation: outline.locations?.[0]?.name || "Unknown",
+        locations: (outline.locations || []).map((loc: any, index: number) => ({
+          ...loc,
+          id: index + 1,
+          isVisited: index === 0,
+          createdAt: Date.now(),
+        })),
+        knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
+          ...k,
+          id: index + 1,
+        })),
+        nextIds: {
+          item: (outline.inventory?.length || 0) + 1,
+          npc: (outline.relationships?.length || 0) + 1,
+          location: (outline.locations?.length || 0) + 1,
+          knowledge: (outline.knowledge?.length || 0) + 1,
+          quest: (outline.quests?.length || 0) + 1,
+        },
         isProcessing: true, // Keep processing true while generating first turn
         logs: [log, ...prev.logs],
         totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
@@ -870,6 +637,7 @@ export const useGameEngine = () => {
         summaries: [],
         theme: selectedTheme, // Static Theme
         envTheme: selectedTheme, // Initial Env Theme
+        time: outline.initialTime || "Day 1",
       }));
 
       // Navigate to game immediately after outline is ready
@@ -951,7 +719,6 @@ export const useGameEngine = () => {
           character: targetNode.stateSnapshot.character,
           knowledge: targetNode.stateSnapshot.knowledge, // Restore accumulated knowledge
           currentLocation: targetNode.stateSnapshot.currentLocation,
-          knownLocations: targetNode.stateSnapshot.knownLocations,
           locations: targetNode.stateSnapshot.locations,
           veoScript: targetNode.stateSnapshot.veoScript, // Restore Veo script from snapshot
           uiState: targetNode.stateSnapshot.uiState, // Restore UI customizations

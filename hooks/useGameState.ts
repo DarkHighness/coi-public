@@ -14,7 +14,6 @@ const INITIAL_STATE: GameState = {
 
   // Location System
   currentLocation: "Unknown",
-  knownLocations: [],
   locations: [],
 
   uiState: {
@@ -35,7 +34,18 @@ const INITIAL_STATE: GameState = {
   generatingNodeId: null,
   totalTokens: 0,
   logs: [],
-  time: "",
+  time: "Day 1, 08:00",
+
+  // New World System Fields
+  nextIds: {
+    item: 1,
+    npc: 1,
+    location: 1,
+    knowledge: 1,
+    quest: 1,
+  },
+  timeline: [],
+  causalChains: [],
 };
 
 export const useGameState = () => {

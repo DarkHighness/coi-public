@@ -34,15 +34,17 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
   const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
     useListManagement(safeInventory, listState, onUpdateList, DISPLAY_LIMIT);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id);
-    e.dataTransfer.setData("text/plain", id);
+  const handleDragStart = (e: React.DragEvent, id: string | number) => {
+    const idStr = id.toString();
+    setDraggedId(idStr);
+    e.dataTransfer.setData("text/plain", idStr);
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragEnter = (e: React.DragEvent, targetId: string) => {
-    if (!isEditMode || !draggedId || draggedId === targetId) return;
-    reorderItem(draggedId, targetId);
+  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+    const targetIdStr = targetId.toString();
+    if (!isEditMode || !draggedId || draggedId === targetIdStr) return;
+    reorderItem(draggedId, targetIdStr);
   };
 
   const handleDragEnd = () => {
@@ -54,7 +56,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDrop = (e: React.DragEvent, targetId: string | number) => {
     e.preventDefault();
     // Final reorder is already done by dragEnter, just clear state
     setDraggedId(null);
@@ -189,7 +191,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 onDragOver={isEditMode ? handleDragOver : undefined}
                 onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
                 isEditMode={isEditMode}
-                isDragging={draggedId === item.id}
+                isDragging={draggedId === item.id.toString()}
               />
             ))
           )}
@@ -202,9 +204,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
         title={t("inventory")}
         items={allItems}
         themeFont={themeFont}
-        searchFilter={(item, query) =>
+        searchFilter={(item: any, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
-          item.description.toLowerCase().includes(query.toLowerCase())
+          (item.visible?.description || "").toLowerCase().includes(query.toLowerCase())
         }
         renderItem={(item) => (
           <InventoryItem
