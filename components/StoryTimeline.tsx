@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StorySegment } from "../types";
 import { ENV_THEMES, THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,8 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   envTheme,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
   // Filter for model segments to show the narrative flow
   const narrativeSegments = segments.filter((s) => s.role === "model");
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
@@ -31,14 +33,26 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     }
   }, [narrativeSegments.length]);
 
+  const toggleItem = (id: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="h-full flex flex-col p-6 border-l border-theme-border bg-theme-surface/80 backdrop-blur-sm w-72">
+    <div className="h-full flex flex-col p-4 md:p-6 md:border-l border-theme-border bg-theme-surface/80 backdrop-blur-sm w-full md:w-72">
       <h2
-        className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 text-center ${currentThemeConfig.fontClass} flex items-center justify-center`}
+        className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2`}
       >
-        <span className="w-8 h-px bg-theme-primary/50 mr-2"></span>
+        <span className="w-8 h-px bg-theme-primary/50"></span>
         {t("timeline")}
-        <span className="w-8 h-px bg-theme-primary/50 ml-2"></span>
+        <span className="w-8 h-px bg-theme-primary/50"></span>
       </h2>
 
       <div
@@ -48,27 +62,61 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
         {narrativeSegments.map((seg, index) => {
           const isFirst = index === 0;
           const isLast = index === narrativeSegments.length - 1;
+          const isExpanded = expandedItems.has(seg.id);
 
           return (
             <div
               key={seg.id}
-              className={`relative pl-6 pb-6 group ${isLast ? "pb-0" : ""}`}
+              className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
             >
               {/* Line */}
               <div
-                className={`absolute left-0 w-px bg-theme-border group-hover:bg-theme-primary/50 transition-colors
+                className={`absolute left-2 w-px bg-theme-border group-hover:bg-theme-primary/50 transition-colors
                  ${isFirst ? "top-2" : "top-0"}
                  ${isLast ? "h-2" : "bottom-0"}
               `}
               ></div>
 
-              {/* Dot */}
-              <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-theme-surface border-2 border-theme-muted group-hover:border-theme-primary group-hover:bg-theme-primary transition-all z-10 shadow-sm"></div>
+              {/* Interactive Dot - Color indicates state */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleItem(seg.id);
+                }}
+                className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 shadow-sm cursor-pointer
+                  ${isLast ? "animate-pulse" : ""}
+                  ${isExpanded
+                    ? "border-theme-primary bg-theme-primary"
+                    : "border-theme-muted bg-theme-surface hover:border-theme-primary/70"
+                  }`}
+                title={isExpanded ? "Click to collapse" : "Click to expand"}
+              ></div>
+
+              {/* Latest Item Indicator */}
+              {isLast && (
+                <div className="absolute left-0 top-0 w-4 h-4 rounded-full border-2 border-theme-primary/30 animate-ping"></div>
+              )}
 
               {/* Content */}
-              <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors cursor-default relative -top-1">
+              <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors relative -top-1">
+                {/* Time and Location Metadata */}
+                <div className="flex items-center gap-2 mb-1.5 text-[10px] opacity-60">
+                  <span className="font-mono text-theme-primary/70">
+                    {seg.stateSnapshot?.time || "Unknown Time"}
+                  </span>
+                  {seg.stateSnapshot?.currentLocation && (
+                    <>
+                      <span className="text-theme-muted/50">•</span>
+                      <span className="text-theme-muted/80">
+                        {seg.stateSnapshot.currentLocation}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Image - Always visible */}
                 {seg.imageUrl && (
-                  <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity border border-theme-border group-hover:border-theme-primary/30">
+                  <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 hover:opacity-100 transition-opacity border border-theme-border hover:border-theme-primary/30">
                     <img
                       src={seg.imageUrl}
                       alt="Moment"
@@ -76,9 +124,32 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                     />
                   </div>
                 )}
-                <div className="line-clamp-3 leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif [&_p]:mb-1">
-                  <MarkdownText content={seg.text} />
-                </div>
+
+                {/* Preview text when collapsed */}
+                {!isExpanded && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleItem(seg.id);
+                    }}
+                    className="line-clamp-2 leading-relaxed text-[11px] opacity-80 font-serif break-words cursor-pointer hover:opacity-100"
+                  >
+                    <MarkdownText content={seg.text} />
+                  </div>
+                )}
+
+                {/* Full content when expanded */}
+                {isExpanded && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleItem(seg.id);
+                    }}
+                    className="leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer"
+                  >
+                    <MarkdownText content={seg.text} />
+                  </div>
+                )}
               </div>
             </div>
           );

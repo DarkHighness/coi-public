@@ -59,23 +59,46 @@ export function processLocationActions(
       // Update existing location
 
       // Update visible layer
-      if (act.visible?.description) {
-        newLocations[locIdx].visible.description = act.visible.description;
-      }
-      if (act.visible?.knownFeatures) {
-        newLocations[locIdx].visible.knownFeatures = act.visible.knownFeatures;
+      if (act.visible?.description || act.visible?.knownFeatures) {
+        if (!newLocations[locIdx].visible) {
+          newLocations[locIdx].visible = {
+            description: "Unknown",
+            knownFeatures: [],
+          };
+        }
+        if (act.visible.description) {
+          newLocations[locIdx].visible.description = act.visible.description;
+        }
+        if (act.visible.knownFeatures) {
+          newLocations[locIdx].visible.knownFeatures =
+            act.visible.knownFeatures;
+        }
       }
 
       // Update hidden layer
-      if (act.hidden?.fullDescription) {
-        newLocations[locIdx].hidden.fullDescription =
-          act.hidden.fullDescription;
-      }
-      if (act.hidden?.hiddenFeatures) {
-        newLocations[locIdx].hidden.hiddenFeatures = act.hidden.hiddenFeatures;
-      }
-      if (act.hidden?.secrets) {
-        newLocations[locIdx].hidden.secrets = act.hidden.secrets;
+      if (
+        act.hidden?.fullDescription ||
+        act.hidden?.hiddenFeatures ||
+        act.hidden?.secrets
+      ) {
+        if (!newLocations[locIdx].hidden) {
+          newLocations[locIdx].hidden = {
+            fullDescription: "Unknown",
+            hiddenFeatures: [],
+            secrets: [],
+          };
+        }
+        if (act.hidden.fullDescription) {
+          newLocations[locIdx].hidden.fullDescription =
+            act.hidden.fullDescription;
+        }
+        if (act.hidden.hiddenFeatures) {
+          newLocations[locIdx].hidden.hiddenFeatures =
+            act.hidden.hiddenFeatures;
+        }
+        if (act.hidden.secrets) {
+          newLocations[locIdx].hidden.secrets = act.hidden.secrets;
+        }
       }
 
       // Update metadata

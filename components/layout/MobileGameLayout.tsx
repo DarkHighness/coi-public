@@ -8,6 +8,7 @@ import {
   StorySegment,
 } from "../../types";
 import { StoryFeed } from "../StoryFeed";
+import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { MobileNav, MobileTab } from "../MobileNav";
@@ -120,7 +121,20 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         </div>
       </div>
 
-      {/* 2. Status/Sidebar View */}
+      {/* 2. Timeline View */}
+      <div
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <StoryTimeline
+          segments={currentHistory}
+          theme={gameState.theme}
+          envTheme={gameState.envTheme}
+        />
+        <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
+        <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
+      </div>
+
+      {/* 3. Status/Sidebar View */}
       <div
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
       >

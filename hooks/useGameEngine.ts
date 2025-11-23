@@ -240,51 +240,85 @@ export const useGameEngine = () => {
     const userNodeId = `user-${newSegmentId}`;
     const parentId = isInit ? null : gameStateRef.current.activeNodeId;
 
+    let effectiveUserNodeId = userNodeId;
+    let effectiveParentId = parentId;
+    let reuseExistingNode = false;
+
+    if (!isInit && parentId) {
+      const parentNode = gameStateRef.current.nodes[parentId];
+      // If the active node is a USER node and has the same text, we are retrying
+      if (
+        parentNode &&
+        parentNode.role === "user" &&
+        parentNode.text === action
+      ) {
+        effectiveUserNodeId = parentId;
+        effectiveParentId = parentNode.parentId;
+        reuseExistingNode = true;
+      }
+    }
+
     // --- Fork-Safe Summary Retrieval ---
     let baseSummaries: any[] = []; // Will be StorySummary[] once fully migrated
     let baseIndex = 0;
 
-    if (parentId && gameStateRef.current.nodes[parentId]) {
-      const pNode = gameStateRef.current.nodes[parentId];
+    // Use effectiveParentId for context
+    if (effectiveParentId && gameStateRef.current.nodes[effectiveParentId]) {
+      const pNode = gameStateRef.current.nodes[effectiveParentId];
       baseSummaries = pNode.summaries || [];
       baseIndex = pNode.summarizedIndex || 0;
     }
     // -----------------------------------
 
     if (!isInit) {
-      setGameState((prev) => ({
-        ...prev,
-        isProcessing: true,
-        error: null,
-        nodes: {
-          ...prev.nodes,
-          [userNodeId]: {
-            id: userNodeId,
-            parentId: parentId,
-            text: action,
-            choices: [],
-            imagePrompt: "",
-            role: "user",
-            timestamp: Date.now(),
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            summaries: baseSummaries,
-            summarizedIndex: baseIndex,
+      setGameState((prev) => {
+        // If reusing, just set processing and clear error
+        if (reuseExistingNode) {
+          return {
+            ...prev,
+            isProcessing: true,
+            error: null,
+          };
+        }
+
+        // Otherwise add new node
+        return {
+          ...prev,
+          isProcessing: true,
+          error: null,
+          nodes: {
+            ...prev.nodes,
+            [userNodeId]: {
+              id: userNodeId,
+              parentId: parentId,
+              text: action,
+              choices: [],
+              imagePrompt: "",
+              role: "user",
+              timestamp: Date.now(),
+              usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+              summaries: baseSummaries,
+              summarizedIndex: baseIndex,
+            },
           },
-        },
-        activeNodeId: userNodeId,
-      }));
+          activeNodeId: userNodeId,
+        };
+      });
     } else {
       setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
     }
 
     try {
       // Summarization Logic
-      let contextNodes = deriveHistory(gameStateRef.current.nodes, parentId);
+      let contextNodes = deriveHistory(
+        gameStateRef.current.nodes,
+        effectiveParentId,
+      );
 
       // Create temp user node for context calculation
       const tempUserNode: StorySegment = {
-        id: userNodeId,
-        parentId,
+        id: effectiveUserNodeId,
+        parentId: effectiveParentId,
         text: action,
         choices: [],
         imagePrompt: "",
@@ -357,8 +391,8 @@ export const useGameEngine = () => {
           ...prev,
           nodes: {
             ...prev.nodes,
-            [userNodeId]: {
-              ...prev.nodes[userNodeId],
+            [effectiveUserNodeId]: {
+              ...prev.nodes[effectiveUserNodeId],
               summaries: effectiveSummaries,
               summarizedIndex: lastIndex,
             },
@@ -430,7 +464,7 @@ export const useGameEngine = () => {
 
       const modelNode: StorySegment = {
         id: modelNodeId,
-        parentId: isInit ? null : userNodeId,
+        parentId: isInit ? null : effectiveUserNodeId,
         text: response.narrative || "...",
         choices: sanitizedChoices,
         imagePrompt: response.imagePrompt || "",

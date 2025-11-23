@@ -316,6 +316,7 @@ export const en = {
     story: "Story",
     status: "Status",
     menu: "Menu",
+    timeline: "Timeline",
   },
   location: {
     title: "Location",

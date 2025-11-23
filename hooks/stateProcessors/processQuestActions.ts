@@ -46,17 +46,35 @@ export function processQuestActions(
         if (act.title) newQuests[idx].title = act.title;
         if (act.type) newQuests[idx].type = act.type;
 
-        if (act.visible?.description)
-          newQuests[idx].visible.description = act.visible.description;
-        if (act.visible?.objectives)
-          newQuests[idx].visible.objectives = act.visible.objectives;
+        if (act.visible?.description || act.visible?.objectives) {
+          if (!newQuests[idx].visible) {
+            newQuests[idx].visible = { description: "", objectives: [] };
+          }
+          if (act.visible.description)
+            newQuests[idx].visible.description = act.visible.description;
+          if (act.visible.objectives)
+            newQuests[idx].visible.objectives = act.visible.objectives;
+        }
 
-        if (act.hidden?.trueDescription)
-          newQuests[idx].hidden.trueDescription = act.hidden.trueDescription;
-        if (act.hidden?.trueObjectives)
-          newQuests[idx].hidden.trueObjectives = act.hidden.trueObjectives;
-        if (act.hidden?.secretOutcome)
-          newQuests[idx].hidden.secretOutcome = act.hidden.secretOutcome;
+        if (
+          act.hidden?.trueDescription ||
+          act.hidden?.trueObjectives ||
+          act.hidden?.secretOutcome
+        ) {
+          if (!newQuests[idx].hidden) {
+            newQuests[idx].hidden = {
+              trueDescription: "",
+              trueObjectives: [],
+              secretOutcome: "",
+            };
+          }
+          if (act.hidden.trueDescription)
+            newQuests[idx].hidden.trueDescription = act.hidden.trueDescription;
+          if (act.hidden.trueObjectives)
+            newQuests[idx].hidden.trueObjectives = act.hidden.trueObjectives;
+          if (act.hidden.secretOutcome)
+            newQuests[idx].hidden.secretOutcome = act.hidden.secretOutcome;
+        }
 
         newQuests[idx].lastModified = Date.now();
       } else if (act.action === "complete") {

@@ -57,19 +57,29 @@ export function processInventoryActions(
         if (act.name) newInventory[idx].name = act.name;
 
         // Update visible layer
-        if (act.visible?.description) {
-          newInventory[idx].visible.description = act.visible.description;
-        }
-        if (act.visible?.notes) {
-          newInventory[idx].visible.notes = act.visible.notes;
+        if (act.visible?.description || act.visible?.notes) {
+          if (!newInventory[idx].visible) {
+             newInventory[idx].visible = { description: "", notes: "" };
+          }
+          if (act.visible.description) {
+            newInventory[idx].visible.description = act.visible.description;
+          }
+          if (act.visible.notes) {
+            newInventory[idx].visible.notes = act.visible.notes;
+          }
         }
 
         // Update hidden layer
-        if (act.hidden?.truth) {
-          newInventory[idx].hidden.truth = act.hidden.truth;
-        }
-        if (act.hidden?.secrets) {
-          newInventory[idx].hidden.secrets = act.hidden.secrets;
+        if (act.hidden?.truth || act.hidden?.secrets) {
+          if (!newInventory[idx].hidden) {
+             newInventory[idx].hidden = { truth: "", secrets: [] };
+          }
+          if (act.hidden.truth) {
+            newInventory[idx].hidden.truth = act.hidden.truth;
+          }
+          if (act.hidden.secrets) {
+            newInventory[idx].hidden.secrets = act.hidden.secrets;
+          }
         }
 
         // Update metadata
@@ -80,7 +90,7 @@ export function processInventoryActions(
         newInventory[idx].lastModified = Date.now();
       } else {
         console.warn(
-          `[processInventoryActions] Update failed: item "${act.item || act.name}" not found`,
+          `[processInventoryActions] Update failed: item "${act.name}" not found`,
         );
       }
     }
