@@ -53,7 +53,7 @@ export const zh = {
   generationFailed: "生成失败 - 点击重试",
   tryAgain: "重试",
   error: "与宇宙的连接中断了... (API 错误，请重试)",
-  builtWith: "由 Gemini 3 Pro & Imagen 4 & Veo 驱动",
+  builtWith: "由 Gemini 3 Pro 驱动",
   magicMirror: "魔镜 (Veo 动画)",
   veoScript: {
     title: "Veo 脚本生成",
@@ -385,4 +385,5 @@ export const zh = {
   traits: "特质",
   apiConsole: "API 控制台",
   apiConsoleDescription: "追踪原始 API 请求和令牌使用情况。",
+  version: "版本",
 };

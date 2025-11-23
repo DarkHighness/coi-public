@@ -51,7 +51,7 @@ export const en = {
   tryAgain: "Try Again",
   error:
     "The connection to the universe was interrupted... (API Error, please try again)",
-  builtWith: "Built with Gemini 3 Pro & Imagen 4 & Veo",
+  builtWith: "Built with Gemini 3 Pro",
   magicMirror: "Animate (Veo)",
   veoScript: {
     title: "Veo Script Generation",
@@ -392,4 +392,5 @@ export const en = {
   traits: "Traits",
   apiConsole: "API Console",
   apiConsoleDescription: "Trace raw API requests and token usage.",
+  version: "Version",
 };
