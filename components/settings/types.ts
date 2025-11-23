@@ -19,6 +19,8 @@ export interface SettingsTabProps {
 export interface SettingsAppearanceProps {
   themeMode?: "day" | "night" | "system";
   onSetThemeMode?: (mode: "day" | "night" | "system") => void;
+  currentSettings?: AISettings;
+  onUpdateSettings?: (settings: AISettings) => void;
 }
 
 export interface SettingsDataProps {

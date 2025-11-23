@@ -7,6 +7,11 @@ export const CATEGORY_KEYS = [
   "modern",
   "fantasy",
   "suspense",
+  "wuxia",
+  "scifi",
+  "game",
+  "novel",
+  "movie",
 ] as const;
 export type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
@@ -803,6 +808,102 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
+  // Interstellar / Cosmic
+  interstellar: {
+    vars: {
+      "--theme-bg": "#0b0d17",
+      "--theme-surface": "#15192b",
+      "--theme-surface-highlight": "#20253e",
+      "--theme-border": "#4338ca",
+      "--theme-primary": "#818cf8",
+      "--theme-primary-hover": "#6366f1",
+      "--theme-text": "#e0e7ff",
+      "--theme-muted": "#6366f1",
+    },
+    dayVars: {
+      "--theme-bg": "#e0e7ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#c7d2fe",
+      "--theme-border": "#818cf8",
+      "--theme-primary": "#4f46e5",
+      "--theme-primary-hover": "#4338ca",
+      "--theme-text": "#1e1b4b",
+      "--theme-muted": "#4338ca",
+    },
+    fontClass: "font-scifi",
+  },
+  // Gothic / Dark Gold
+  gothic: {
+    vars: {
+      "--theme-bg": "#0c0a09",
+      "--theme-surface": "#1c1917",
+      "--theme-surface-highlight": "#292524",
+      "--theme-border": "#78716c",
+      "--theme-primary": "#d4af37", // Dull Gold
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#e7e5e4",
+      "--theme-muted": "#a8a29e",
+    },
+    dayVars: {
+      "--theme-bg": "#f5f5f4",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e7e5e4",
+      "--theme-border": "#a8a29e",
+      "--theme-primary": "#b45309",
+      "--theme-primary-hover": "#92400e",
+      "--theme-text": "#1c1917",
+      "--theme-muted": "#78716c",
+    },
+    fontClass: "font-serif",
+  },
+  // Academy / Navy Gold
+  academy: {
+    vars: {
+      "--theme-bg": "#172554", // blue-950
+      "--theme-surface": "#1e3a8a", // blue-900
+      "--theme-surface-highlight": "#1e40af", // blue-800
+      "--theme-border": "#fbbf24", // amber-400
+      "--theme-primary": "#fbbf24",
+      "--theme-primary-hover": "#f59e0b",
+      "--theme-text": "#eff6ff",
+      "--theme-muted": "#93c5fd",
+    },
+    dayVars: {
+      "--theme-bg": "#eff6ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#dbeafe",
+      "--theme-border": "#fbbf24",
+      "--theme-primary": "#d97706",
+      "--theme-primary-hover": "#b45309",
+      "--theme-text": "#172554",
+      "--theme-muted": "#2563eb",
+    },
+    fontClass: "font-serif",
+  },
+  // Apocalypse / Rust Grey
+  apocalypse: {
+    vars: {
+      "--theme-bg": "#262626", // neutral-800
+      "--theme-surface": "#404040", // neutral-700
+      "--theme-surface-highlight": "#525252", // neutral-600
+      "--theme-border": "#ef4444", // red-500
+      "--theme-primary": "#ef4444",
+      "--theme-primary-hover": "#dc2626",
+      "--theme-text": "#d4d4d4",
+      "--theme-muted": "#a3a3a3",
+    },
+    dayVars: {
+      "--theme-bg": "#f5f5f5",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#e5e5e5",
+      "--theme-border": "#ef4444",
+      "--theme-primary": "#dc2626",
+      "--theme-primary-hover": "#b91c1c",
+      "--theme-text": "#171717",
+      "--theme-muted": "#525252",
+    },
+    fontClass: "font-scifi",
+  },
 };
 
 // Story Themes (Static Genres)
@@ -931,7 +1032,7 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🎖️",
     categories: ["modern"],
   },
-  zombie: { defaultEnvTheme: "horror", icon: "🧟", categories: ["suspense"] },
+  zombie: { defaultEnvTheme: "apocalypse", icon: "🧟", categories: ["suspense"] },
   body_swap: { defaultEnvTheme: "modern", icon: "👯", categories: ["modern"] },
   industry_elite: {
     defaultEnvTheme: "modern",
@@ -991,4 +1092,259 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     categories: ["modern"],
     restricted: true,
   },
+  same_sex_love: {
+    defaultEnvTheme: "romance",
+    icon: "🏳️‍🌈",
+    categories: ["modern", "suspense"],
+  },
+  minecraft: {
+    defaultEnvTheme: "nature",
+    icon: "⛏️",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  delta_force: {
+    defaultEnvTheme: "war",
+    icon: "🔫",
+    categories: ["modern", "game"],
+    restricted: true,
+  },
+  warhammer_40k: {
+    defaultEnvTheme: "war",
+    icon: "💀",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  wow: {
+    defaultEnvTheme: "fantasy",
+    icon: "⚔️",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  elder_scrolls: {
+    defaultEnvTheme: "fantasy",
+    icon: "📜",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  dark_souls: {
+    defaultEnvTheme: "gothic",
+    icon: "🔥",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  ninja_gaiden: {
+    defaultEnvTheme: "wuxia",
+    icon: "🥷",
+    categories: ["modern", "game"],
+    restricted: true,
+  },
+  elden_ring: {
+    defaultEnvTheme: "gold",
+    icon: "💍",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  stellaris: {
+    defaultEnvTheme: "interstellar",
+    icon: "🌌",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  expedition_33: {
+    defaultEnvTheme: "fantasy",
+    icon: "🧭",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  detroit_become_human: {
+    defaultEnvTheme: "scifi",
+    icon: "🤖",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  witcher: {
+    defaultEnvTheme: "gothic",
+    icon: "🐺",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  dead_space: {
+    defaultEnvTheme: "interstellar",
+    icon: "👽",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  helldivers: {
+    defaultEnvTheme: "war",
+    icon: "🫡",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  l4d: {
+    defaultEnvTheme: "apocalypse",
+    icon: "🧟",
+    categories: ["modern", "game"],
+    restricted: true,
+  },
+  monster_hunter: {
+    defaultEnvTheme: "fantasy",
+    icon: "🦖",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  warframe: {
+    defaultEnvTheme: "scifi",
+    icon: "🥷",
+    categories: ["scifi", "game"],
+    restricted: true,
+  },
+  lol: {
+    defaultEnvTheme: "fantasy",
+    icon: "🏆",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  terraria: {
+    defaultEnvTheme: "nature",
+    icon: "🌳",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  dnd: {
+    defaultEnvTheme: "fantasy",
+    icon: "🎲",
+    categories: ["fantasy", "game"],
+    restricted: true,
+  },
+  mo_dao_zu_shi: {
+    defaultEnvTheme: "wuxia",
+    icon: "🪈",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  tian_guan_ci_fu: {
+    defaultEnvTheme: "wuxia",
+    icon: "🦋",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  harry_potter: {
+    defaultEnvTheme: "academy",
+    icon: "🪄",
+    categories: ["fantasy", "novel"],
+    restricted: true,
+  },
+  battle_through_heavens: {
+    defaultEnvTheme: "wuxia",
+    icon: "🔥",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  soul_land: {
+    defaultEnvTheme: "academy",
+    icon: "🌾",
+    categories: ["fantasy", "novel"],
+    restricted: true,
+  },
+  xian_ni: {
+    defaultEnvTheme: "wuxia",
+    icon: "⚡",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  scum_villain: {
+    defaultEnvTheme: "wuxia",
+    icon: "🥒",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  swallowed_star: {
+    defaultEnvTheme: "interstellar",
+    icon: "🌌",
+    categories: ["scifi", "novel"],
+    restricted: true,
+  },
+  desolate_era: {
+    defaultEnvTheme: "wuxia",
+    icon: "⚔️",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  mortals_journey: {
+    defaultEnvTheme: "wuxia",
+    icon: "💊",
+    categories: ["wuxia", "novel"],
+    restricted: true,
+  },
+  shepherd_of_gods: {
+    defaultEnvTheme: "fantasy",
+    icon: "🐮",
+    categories: ["fantasy", "novel"],
+    restricted: true,
+  },
+  frieren: {
+    defaultEnvTheme: "fantasy",
+    icon: "🧝‍♀️",
+    categories: ["fantasy", "novel"],
+    restricted: true,
+  },
+  infinite_sequence: {
+    defaultEnvTheme: "interstellar",
+    icon: "♾️",
+    categories: ["scifi", "suspense", "novel"],
+    restricted: true,
+  },
+  kamen_rider: {
+    defaultEnvTheme: "modern",
+    icon: "🏍️",
+    categories: ["scifi", "movie"],
+    restricted: true,
+  },
+  slay_gods_hospital: {
+    defaultEnvTheme: "modern",
+    icon: "🏥",
+    categories: ["novel", "modern", "fantasy"],
+    restricted: true,
+  },
+};
+
+export const BACKGROUND_IMAGES: Record<string, string> = {
+  fantasy: "https://image.pollinations.ai/prompt/fantasy%20landscape%20painting?width=1080&height=720&nologo=true",
+  scifi: "https://image.pollinations.ai/prompt/futuristic%20sci-fi%20city?width=1080&height=720&nologo=true",
+  cyberpunk: "https://image.pollinations.ai/prompt/cyberpunk%20neon%20city%20night?width=1080&height=720&nologo=true",
+  horror: "https://image.pollinations.ai/prompt/dark%20horror%20forest%20fog?width=1080&height=720&nologo=true",
+  mystery: "https://image.pollinations.ai/prompt/mystery%20noir%20detective%20office?width=1080&height=720&nologo=true",
+  romance: "https://image.pollinations.ai/prompt/romantic%20garden%20flowers?width=1080&height=720&nologo=true",
+  royal: "https://image.pollinations.ai/prompt/royal%20palace%20throne%20room?width=1080&height=720&nologo=true",
+  wuxia: "https://image.pollinations.ai/prompt/chinese%20ink%20painting%20mountains?width=1080&height=720&nologo=true",
+  demonic: "https://image.pollinations.ai/prompt/dark%20red%20hellscape%20fire?width=1080&height=720&nologo=true",
+  ethereal: "https://image.pollinations.ai/prompt/ethereal%20blue%20clouds%20heaven?width=1080&height=720&nologo=true",
+  modern: "https://image.pollinations.ai/prompt/modern%20city%20skyline%20day?width=1080&height=720&nologo=true",
+  gold: "https://image.pollinations.ai/prompt/golden%20treasure%20room?width=1080&height=720&nologo=true",
+  villain: "https://image.pollinations.ai/prompt/dark%20purple%20evil%20castle?width=1080&height=720&nologo=true",
+  sepia: "https://image.pollinations.ai/prompt/old%20vintage%20paper%20texture?width=1080&height=720&nologo=true",
+  rose: "https://image.pollinations.ai/prompt/pink%20rose%20garden?width=1080&height=720&nologo=true",
+  war: "https://image.pollinations.ai/prompt/battlefield%20fire%20smoke?width=1080&height=720&nologo=true",
+  sunset: "https://image.pollinations.ai/prompt/sunset%20landscape%20orange?width=1080&height=720&nologo=true",
+  cold: "https://image.pollinations.ai/prompt/frozen%20ice%20landscape%20snow?width=1080&height=720&nologo=true",
+  violet: "https://image.pollinations.ai/prompt/violet%20dreamscape%20magic?width=1080&height=720&nologo=true",
+  nature: "https://image.pollinations.ai/prompt/green%20forest%20nature%20sunlight?width=1080&height=720&nologo=true",
+  artdeco: "https://image.pollinations.ai/prompt/art%20deco%20pattern%20gold%20black?width=1080&height=720&nologo=true",
+  intrigue: "https://image.pollinations.ai/prompt/dark%20red%20curtain%20shadows?width=1080&height=720&nologo=true",
+  wasteland: "https://image.pollinations.ai/prompt/post%20apocalyptic%20wasteland?width=1080&height=720&nologo=true",
+  patriotic: "https://image.pollinations.ai/prompt/red%20flag%20background?width=1080&height=720&nologo=true",
+  cyan: "https://image.pollinations.ai/prompt/cyan%20tech%20background?width=1080&height=720&nologo=true",
+  silver: "https://image.pollinations.ai/prompt/silver%20moonlight%20night?width=1080&height=720&nologo=true",
+  obsessive: "https://image.pollinations.ai/prompt/dark%20red%20blood%20background?width=1080&height=720&nologo=true",
+  emerald: "https://image.pollinations.ai/prompt/matrix%20code%20green?width=1080&height=720&nologo=true",
+  danger: "https://image.pollinations.ai/prompt/red%20warning%20background?width=1080&height=720&nologo=true",
+  glamour: "https://image.pollinations.ai/prompt/stage%20lights%20background?width=1080&height=720&nologo=true",
+  rgb: "https://image.pollinations.ai/prompt/gaming%20room%20neon%20lights?width=1080&height=720&nologo=true",
+  stone: "https://image.pollinations.ai/prompt/stone%20wall%20texture?width=1080&height=720&nologo=true",
+  heartbreak: "https://image.pollinations.ai/prompt/rain%20window%20sad%20background?width=1080&height=720&nologo=true",
+  interstellar: "https://image.pollinations.ai/prompt/space%20stars%20galaxy?width=1080&height=720&nologo=true",
+  gothic: "https://image.pollinations.ai/prompt/gothic%20cathedral%20dark?width=1080&height=720&nologo=true",
+  academy: "https://image.pollinations.ai/prompt/magic%20academy%20library?width=1080&height=720&nologo=true",
+  apocalypse: "https://image.pollinations.ai/prompt/ruined%20city%20apocalypse?width=1080&height=720&nologo=true",
 };

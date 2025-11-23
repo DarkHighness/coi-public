@@ -723,6 +723,7 @@ export interface AISettings {
   // Image Generation Settings
   imageTimeout: number; // Timeout in seconds
   manualImageGen: boolean; // Require manual click to generate
+  enableFallbackBackground: boolean; // Enable fallback background images
 }
 
 export interface ModelInfo {

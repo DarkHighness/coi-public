@@ -279,6 +279,8 @@ export default function App() {
             imagePrompt={effectPrompt}
             theme={gameState.theme}
             backgroundImage={targetSegment?.imageUrl}
+            environment={currentEnvThemeKey}
+            fallbackEnabled={aiSettings.enableFallbackBackground}
           />
         </Suspense>
       </div>

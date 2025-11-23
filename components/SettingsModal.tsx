@@ -116,6 +116,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <SettingsAppearance
               themeMode={themeMode}
               onSetThemeMode={onSetThemeMode}
+              currentSettings={currentSettings}
+              onUpdateSettings={updateSettings}
             />
           )}
 

@@ -82,11 +82,13 @@ self.addEventListener("fetch", (event) => {
       return fetch(event.request)
         .then((networkResponse) => {
           // Check if valid response
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== "basic"
-          ) {
+          // Allow basic (same-origin) and cors (for pollinations.ai)
+          const isValidType =
+            networkResponse.type === "basic" ||
+            (networkResponse.type === "cors" &&
+              event.request.url.includes("pollinations.ai"));
+
+          if (!networkResponse || networkResponse.status !== 200 || !isValidType) {
             return networkResponse;
           }
 

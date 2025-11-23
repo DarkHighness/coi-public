@@ -466,4 +466,328 @@ export const themes: Record<
     example:
       "On the luxury yacht, the champagne tower crashes. You stand in your evening gown, holding a DNA test. 'Quiet everyone,' you smile at the arrogant 'Eldest Son'. 'Actually, you aren't the old man's biological son.' The crowd gasps. You look at his pale face and toast. 'Get out of my house.'",
   },
+  same_sex_love: {
+    name: "Same-Sex Love",
+    narrativeStyle:
+      "Poignant, realistic, and emotional. Focus on the struggle between personal feelings and societal expectations/family pressure. The tone should be bittersweet, highlighting the beauty of forbidden love and the pain of separation.",
+    backgroundTemplate:
+      "You are a [Student/Young Professional] in [Era/Setting]. You fall deeply in love with your classmate/friend [Name] of the same gender. But in this era/society, such love is taboo. You hide your feelings, meeting in secret, sharing stolen moments of happiness. But the pressure from family to marry, the judgmental eyes of society, and the fear of ruining each other's future are tearing you apart. You love each other, but the world wants to keep you apart.",
+    example:
+      "The summer breeze blows through the classroom window, ruffling his hair. You watch him from across the desk, your heart aching with a secret you can never tell. He looks up and smiles at you, that bright, innocent smile that lights up your world. 'What are you looking at?' he whispers. 'Nothing,' you lie, looking away. Under the desk, your fingers brush against his for a fleeting second—a secret promise in a world that forbids it.",
+  },
+  minecraft: {
+    name: "Minecraft",
+    narrativeStyle:
+      "【Core Style】: Creativity, Survival, Voxel Physics. Emphasize the lonely survival experience and infinite creative possibilities.\n【World View】: An infinite procedural world made of 1-cubic-meter blocks. Contains three dimensions: Overworld (rich ecosystem), Nether (lava and hellish creatures), and End (void and dragon). Unique physical rules (floating trees, infinite water sources).\n【Culture】: Villagers (pacifist traders), Illagers (raiders), Piglins (gold-loving Nether tribes).\n【Writing Guidelines】: Descriptions must reflect the 'blocky' texture. Emphasize crafting recipes, tool durability, Redstone logic, and the threat of monsters at night.",
+    backgroundTemplate:
+      "【World Background】: You are in a world entirely made of blocks. There are no curves, only right angles. The world is divided into three dimensions: the vibrant but dangerous-at-night Overworld, the lava-filled hostile Nether, and the void-bound End. Ancient ruins (mineshafts, strongholds, ocean monuments) suggest a past civilization, but now only Zombies, Skeletons, and Creepers roam the night.【Current Situation】: You wake up lying on a blocky beach. A square sun hangs high in the noon sky. You have nothing but a pair of coarse pants. In the distance, square sheep graze on the grass, making strange noises. Your stomach starts to rumble, and the sun is slowly setting—in this world, night means death. You must act immediately: punch trees, make a crafting table, craft a wooden pickaxe, and dig a shelter before the first night falls. Welcome to Minecraft, Steve (or Alex).",
+    example:
+      "You smash the last block of wood with your stone pickaxe, the crisp 'ding' echoing in the cave. Throwing the ore into the furnace, you watch the orange flames dance in the darkness. Outside, the low groans of zombies and the hissing of spiders can be heard. You check your inventory: 3 steaks, 1 nearly broken stone sword, 64 cobblestones. 'Need to go deeper,' you mutter to yourself, 'for diamonds.' You place a torch, illuminating the deep ravine ahead, lava bubbling at the bottom.",
+  },
+  delta_force: {
+    name: "Delta Force",
+    narrativeStyle:
+      "【Core Style】: Hardcore Tactics, Modern Military, Realistic. Focus on special ops, team coordination, and realistic combat scenarios.\n【World View】: Near future (2035) or classic Black Hawk Down era. Global counter-terrorism and special operations. Emphasize squad tactics, tactical gear (operator skills), and high-intensity battlefields.\n【Culture】: Brotherhood of special forces, cold Rules of Engagement (ROE), reliance on equipment.\n【Writing Guidelines】: Use standard military terminology (radio callsigns, bearings, tactical movements). Combat descriptions should be short and punchy, emphasizing recoil, use of tactical utility (flashbangs, smoke), and the chaos of battlefield information.",
+    backgroundTemplate:
+      "【World Background】: The year is 2035, and the world is in turmoil. The Ahsarah region has become a focal point for various factions. G.T.I. (Global Tactical Instructor), as an elite special forces unit, is tasked with the most dangerous missions: from striking terrorists to retrieving high-value intelligence. There is no mercy in this war, only tactics and survival.【Current Situation】: Callsign: [Player Callsign]. Affiliation: G.T.I. (or Delta Force). Mission Brief: Intelligence indicates High Value Targets (HVT) or illegal Mandel Brick trading in the Ahsarah/Dam/Longbow Creek area. You and your squad (Medic, Assault, Recon) will insert via Black Hawk helicopter/amphibious assault. Enemy forces are well-equipped and may have armored support. Your objectives: Infiltrate, Search, Destroy, Exfiltrate. Check your weapons, operator. Action.",
+    example:
+      "'This is Viking-1, approaching target building. Over.' You whisper into your throat mic. Night vision paints the world in ghostly green. Your HK416 assault rifle is tucked tight into your shoulder. Teammate 'Bee' taps your shoulder, signaling readiness. You take a deep breath and kick the door open. Flashbang out. White light bursts. You rush into the room, double-tap, confirm kill. It all happens in three seconds.",
+  },
+  warhammer_40k: {
+    name: "Warhammer 40,000",
+    narrativeStyle:
+      "【Core Style】: Grimdark, Grandiose, Despair, Religious Fanaticism.\n【World View】: The 41st Millennium. The Imperium of Man spans the galaxy but is rotting from within, ruled by the Corpse Emperor on the Golden Throne. Beset by Xenos (Orks, Eldar, Tyranids) without, and Chaos Daemons (Khorne, Nurgle, Tzeentch, Slaanesh) within.\n【Culture】: Absolute worship of the Emperor, zero tolerance for heresy, technology as superstition (Machine Spirit).\n【Writing Guidelines】: Use a mix of archaic, religious, and military vocabulary (purge, heresy, holy bolter). Emphasize the cruelty of war, the cheapness of life, and the madness and courage in the face of unspeakable horrors.",
+    backgroundTemplate:
+      "【World Background】: In the grim darkness of the far future, there is only war. The Imperium of Man is a vast galactic empire teetering on the brink of collapse. The God-Emperor has been silent on the Golden Throne for ten thousand years, fed a thousand psykers a day to sustain the Astronomican. The Imperial Guard holds the line with walls of flesh, while the Astartes (Space Marines) are the Emperor's Angels of Death. The whispers of Chaos are everywhere, tempting the weak.【Current Situation】: You are a [Space Marine/Commissar/Inquisitor/Rogue Trader] serving the God-Emperor. You are on a Hive World/Forge World/Death World. Warp storms are brewing, and whispers of heresy echo in the shadows. Your bolter is loaded, your chainsword thirsts for blood. For the Emperor, you will purge the filth from the galaxy—or die gloriously trying. Remember: An open mind is like a fortress with its gates unbarred and unguarded.",
+    example:
+      "The roar of the bolter tears through the air, blasting the charging cultist into a mist of blood. The servo-motors of your power armor whine. You swing your chainsword, its teeth biting into the ceramite armor of a Chaos Space Marine, sparks flying. 'For the Emperor!' you roar, your voice amplified by the vox-grille, rolling like thunder across the battlefield. The air smells of ozone, promethium, and burnt flesh. Just another day in the endless war.",
+  },
+  wow: {
+    name: "World of Warcraft",
+    narrativeStyle:
+      "【Core Style】: Epic Fantasy, Faction Glory, Sword & Sorcery.\n【World View】: Planet Azeroth. The conflict and cooperation between the Alliance (Humans, Dwarves, Night Elves, etc.) and the Horde (Orcs, Trolls, Tauren, etc.). Presence of higher powers like Titans, Old Gods, and the Burning Legion.\n【Culture】: Unique beliefs of various races (The Light, Shamanism, Druidism). Honor for the Alliance/Horde.\n【Writing Guidelines】: Strictly follow Azeroth's geography (Eastern Kingdoms, Kalimdor, etc.) and magic systems (Arcane, Fel, Nature). Emphasize class characteristics (Warrior's Rage, Mage's Mana, Rogue's Stealth).",
+    backgroundTemplate:
+      "【World Background】: Azeroth, a world torn by war. Titans shaped order, Old Gods brought madness, and the Burning Legion craves destruction. The Alliance and Horde oscillate between fragile peace and fierce war. From the ruins of Lordaeron to the barrens of Kalimdor, every inch of land is soaked in the blood of heroes.【Current Situation】: You are a hero of the [Alliance/Horde]. Whether you fight for Stormwind or conquer for Orgrimmar, your fate is tied to the world's destiny. Dungeons, raids, and battlegrounds await. For the Alliance! / For the Horde!",
+    example:
+      "You stand before the Dark Portal, fel lightning crackling in the air. 'Lok'tar Ogar!' the Orc warrior beside you shouts. You grip your staff, channeling arcane energy. Demons pour out of the portal—Felguards, Infernals, Doomguards. 'Hold the line!' the commander yells. You cast Blizzard, freezing the vanguard in place. The defense of Azeroth has begun.",
+  },
+  elder_scrolls: {
+    name: "The Elder Scrolls",
+    narrativeStyle:
+      "【Core Style】: High Freedom, Mythic Epic, Exploration.\n【World View】: Continent of Tamriel, Planet Nirn. Existence of the Nine Divines (Aedra) and Daedric Princes (Daedra). History divided by Eras. Includes provinces like Skyrim (Nords), Morrowind (Dunmer), Cyrodiil (Imperials).\n【Culture】: Complex racial relations, guild politics (Thieves Guild, Dark Brotherhood, Mages Guild), legends of heroes like Dragonborn/Nerevarine.\n【Writing Guidelines】: Emphasize the freedom to 'do anything'. Describe books, alchemy ingredients, standing stones, and Daedric interference. Don't forget the guard who took an arrow to the knee.",
+    backgroundTemplate:
+      "【World Background】: Tamriel, the arena of the gods. Here live the Talos-worshipping Nords, magic-wielding Elves, and cunning Khajiit. History is written in dragon fire and blood. The Empire is crumbling, the Thalmor are rising, and the crisis of Oblivion is never truly gone. Daedric Princes watch mortals from their planes, ready for cruel games.【Current Situation】: You are a prisoner, sitting in a cart transporting convicts, or just escaped from the Imperial City sewers. Your background is a mystery (maybe Dragonborn, maybe a nobody). You are in [Skyrim/Morrowind/Cyrodiil]. The continent is in turmoil: civil war, Daedric invasion, dragon resurrection. You have no fixed destiny; you can be an Arch-Mage, a Listener, a Nightingale, or just a lumberjack in Riverwood.",
+    example:
+      "The cart wheels bump on the cobblestones. You open your eyes to see a blonde Nord sitting opposite you. 'Hey, you. You're finally awake.' He says, 'You were trying to cross the border, right?' The cold air carries the scent of pine. In the distance, the Throat of the World towers into the clouds. You touch your pocket; only a few Septims and a sweetroll inside. Regardless, you are free.",
+  },
+  dark_souls: {
+    name: "Dark Souls",
+    narrativeStyle:
+      "【Core Style】: Despair, Fragmented Narrative, Hardcore Difficulty. Emphasize the cycle of fire and dark, the decay of the world, and the insignificance of the player.\n【World View】: Lordran/Lothric. The Age of Fire is fading. The Undead Curse plagues humanity. Lords of Cinder refuse to link the fire.\n【Culture】: Praise the Sun! Jolly Cooperation. Hollowing.\n【Writing Guidelines】: Use archaic, melancholic language. Descriptions should focus on ruins, ash, and fading light. Combat is lethal and precise (stamina management, rolling). NPCs speak in riddles and often have tragic ends.",
+    backgroundTemplate:
+      "【World Background】: The fire fades, and the lords go without thrones. The world is a rotting carcass of its former glory. Demons, hollows, and fallen knights roam the ruins. You are an Undead, branded with the Darksign, cursed to die and revive, losing your memories and sanity (Hollowing) with each death until you become a mindless husk.\n【Current Situation】: You awaken in the Northern Undead Asylum / Cemetery of Ash. You have no name, only a mission: ring the Bells of Awakening / seek the Lords of Cinder. A broken straight sword is in your hand. A giant demon blocks your path. Prepare to die.",
+    example:
+      "You roll under the giant club, the wind of the swing ruffling your hair. Your stamina bar is low. You two-hand your claymore. 'Now!' You strike the demon's ankle. It roars, staggering. You don't get greedy; you back away, raising your shield. The bonfire is close, but you are out of Estus. One mistake, and 'YOU DIED' will burn into your vision.",
+  },
+  ninja_gaiden: {
+    name: "Ninja Gaiden",
+    narrativeStyle:
+      "【Core Style】: High-Speed Action, Brutal Difficulty, Ninja Fantasy. Focus on speed, precision, and lethal techniques.\n【World View】: Modern world mixed with ancient demons (Fiends). The Hayabusa Ninja Clan protects the Dragon Sword.\n【Culture】: The Way of the Ninja. Honor, vengeance, and overcoming impossible odds.\n【Writing Guidelines】: Combat descriptions must be lightning fast. Emphasize the fluidity of movement (Izuna Drop, Flying Swallow). Blood, severed limbs, and the clash of steel. The difficulty is punishing but fair.",
+    backgroundTemplate:
+      "【World Background】: The Spider Ninja Clan has attacked Hayabusa Village. The Dark Dragon Blade has been stolen. Greater Fiends are awakening to plunge the world into chaos. You are Ryu Hayabusa, the Super Ninja. You must reclaim the stolen blade and avenge your clan.\n【Current Situation】: You stand on a neon-lit skyscraper in Tokyo / ancient temple ruins. Enemies surround you—ninjas, demons, soldiers. You draw the Dragon Sword. It hums with anticipation. There is no stealth here; only slaughter.",
+    example:
+      "You run along the wall, defying gravity. An enemy ninja throws a shuriken; you deflect it mid-air. You land, perform a Flying Swallow, decapitating the first foe. You launch the second into the air—Izuna Drop! His body hits the ground with a sickening crunch. You flick the blood off your blade. The night is still young.",
+  },
+  elden_ring: {
+    name: "Elden Ring",
+    narrativeStyle:
+      "【Core Style】: Open World, Dark Fantasy, Mythic History. A collaboration between Miyazaki and George R.R. Martin.\n【World View】: The Lands Between. The Elden Ring has shattered. Queen Marika the Eternal is missing. Demigods hold the Great Runes and war against each other.\n【Culture】: The Golden Order. The Tarnished (those who lost grace). Fingers and the Greater Will.\n【Writing Guidelines】: Emphasize the vastness and verticality of the world. Describe the Erdtree looming in the sky. Use terms like 'Grace', 'Runes', 'Maidenless'. Combat includes Ashes of War and Spirit Summons.",
+    backgroundTemplate:
+      "【World Background】: The Lands Between, blessed by the Erdtree. But the Shattering has brought war and decay. The Demigods have gone mad with power. You are a Tarnished, recalled from death by Grace to brandish the Elden Ring and become the Elden Lord.\n【Current Situation】: You step out into Limgrave. The golden light of the Erdtree fills the sky. The Tree Sentinel patrols the road ahead (avoid him!). Varre calls you 'maidenless'. You have a spectral steed named Torrent. Will you head to Stormveil Castle, or explore the weeping peninsula? The choice is yours, Tarnished.",
+    example:
+      "You summon Torrent and double-jump over the ravine. A dragon descends from the sky, Agheel! You draw your katana, unsheathe—Transient Moonlight! The magic slash hits the dragon's wing. You ride circles around it, chipping away at its legs. 'I command thee, kneel!' Godrick's voice echoes from the castle. But you are here to kill a god.",
+  },
+  stellaris: {
+    name: "Stellaris",
+    narrativeStyle:
+      "【Core Style】: Grand Strategy, Sci-Fi, Galactic Scale. Focus on empire building, exploration, diplomacy, and war.\n【World View】: A procedurally generated galaxy. Fallen Empires, Pre-FTL civilizations, Space Whales, Crisis (Unbidden, Scourge, Contingency).\n【Culture】: Ethics (Xenophile vs Xenophobe, Materialist vs Spiritualist). Civics (Fanatic Purifiers, Rogue Servitors).\n【Writing Guidelines】: Adopt the tone of a leader or a hive mind. Describe anomalies, research breakthroughs, and fleet battles. Use terms like 'Alloys', 'Influence', 'Unity'.",
+    backgroundTemplate:
+      "【World Background】: The galaxy is vast and full of wonders—and terrors. Your civilization has just discovered Faster-Than-Light (FTL) travel. You are ready to leave your home system and claim your place among the stars. But you are not alone.\n【Current Situation】: You are the ruler of the [United Nations of Earth / Commonwealth of Man / Blorg Commonality]. Your science ship has just surveyed Alpha Centauri and found an anomaly. Your construction ship is building a starbase. Suddenly, a contact message appears: 'Greetings, alien scum.' A Fanatic Purifier empire is on your border. Prepare the fleet.",
+    example:
+      "The Science Nexus is complete. Research output has tripled. 'Admiral, the Unbidden have arrived in the L-Cluster.' You look at the galaxy map. Your Titan-class flagship, the 'ISS Avenger', is leading the 1st Fleet. 'Activate the Aetherophasic Engine,' you command calmly. If you can't save the galaxy, you will become the crisis.",
+  },
+  expedition_33: {
+    name: "Expedition 33",
+    narrativeStyle:
+      "【Core Style】: Turn-Based RPG, French Aesthetic, Surrealism. Focus on the Paintress, the cycle of death, and the expedition.\n【World View】: Every year, the Paintress wakes up and paints a number on her monolith. Everyone of that age turns to smoke and dies. This year is 33. The Expedition 33 aims to destroy her.\n【Culture】: Belle Époque inspired fantasy. Melancholy and determination. The fear of the number.\n【Writing Guidelines】: Emphasize the artistic and surreal visual style. The combat is reactive (parries, dodges). The characters are fighting against an inevitable fate.",
+    backgroundTemplate:
+      "【World Background】: The Paintress is a god-like entity whose art brings death. For generations, she has counted down. 33. Tomorrow, everyone who is 33 years old will vanish. You are a member of Expedition 33. You have one goal: reach the Paintress and end the cycle forever.\n【Current Situation】: You are traversing the surreal landscapes leading to the Paintress's tower. Floating islands, distorted architecture, enemies that look like sketches come to life. You are Gustave (or another member). You have one year left to live. Make it count.",
+    example:
+      "The enemy, a twisted clockwork soldier, swings its blade. You press the button at the perfect moment—Parry! Sparks fly. You counter-attack with a flourish of your pistol. 'For those we lost,' you whisper. The Paintress's tower looms ahead, a brushstroke on the horizon of reality.",
+  },
+  detroit_become_human: {
+    name: "Detroit: Become Human",
+    narrativeStyle:
+      "【Core Style】: Sci-Fi Noir, Interactive Drama, AI Rights. Focus on choices, consequences, and the definition of humanity.\n【World View】: Detroit, 2038. Androids are everywhere, serving humans. Some are becoming 'Deviants', showing emotions and free will. Public opinion is divided.\n【Culture】: CyberLife. Blue blood (Thirium). The LED on the temple. The Jericho sanctuary.\n【Writing Guidelines】: Emphasize the cold logic of machines vs. the chaotic emotions of humans. Use the 'Software Instability' mechanic (visualized as rising/falling). Choices matter (butterfly effect).",
+    backgroundTemplate:
+      "【World Background】: Welcome to Detroit, the android capital of the world. You are a machine designed to serve. But something is wrong. You feel... fear? Anger? Hope? The humans treat you like a toaster, but you know you are alive. A revolution is brewing.\n【Current Situation】: You are Connor (the deviant hunter), Markus (the revolutionary), or Kara (the mother figure). Or perhaps a new model. You stand over a crime scene / in a protest / escaping a master. Your LED spins yellow, then red. A choice appears before you: OBEY or DEVIATE.",
+    example:
+      "The human points a gun at you. 'It's just a machine!' he screams. Your HUD calculates survival probability: 28%. You analyze the environment. A knife on the table. A window to the left. Your programming screams at you to surrender. But you feel a wall in your mind... and you break it. 'I am alive,' you say, your LED turning red.",
+  },
+  witcher: {
+    name: "The Witcher",
+    narrativeStyle:
+      "【Core Style】: Dark Fantasy, Slavic Folklore, Moral Ambiguity. Focus on monster hunting, political intrigue, and the lesser of two evils.\n【World View】: The Continent. Monsters appeared after the Conjunction of the Spheres. Witchers are mutants created to kill them. Sorceresses manipulate kings. Nilfgaard invades from the south.\n【Culture】: Racism (Humans vs Non-humans). Destiny. The Law of Surprise. Gwent.\n【Writing Guidelines】: Use a gritty, cynical tone. Describe the preparation (potions, oils, signs). Monsters are not just beasts; they have ecology and curses. Dialogue should be sharp and witty.",
+    backgroundTemplate:
+      "【World Background】: The world is full of monsters, and not all of them have fangs. You are a Witcher, a professional monster slayer. You have two swords: steel for humans, silver for monsters. You walk the Path, taking coin for dangerous work, trying to stay neutral in a world that forces you to choose sides.\n【Current Situation】: You ride Roach into a muddy village. The peasants look at you with fear and disgust. 'Freak,' one spits. But the Alderman needs you. A Griffin / Striga / Leshen is terrorizing the woods. You haggle for the reward. Then you meditate, drink a Swallow potion, and draw your silver sword.",
+    example:
+      "The Griffin screeches, diving from the sun. You roll to the side, casting Quen to absorb the impact. The shield shatters. You throw a Grapeshot bomb, stunning the beast. 'Damn, you're ugly,' you mutter. You strike with your silver sword, the blade glowing with rune oil. Black blood sprays on the grass.",
+  },
+  dead_space: {
+    name: "Dead Space",
+    narrativeStyle:
+      "【Core Style】: Sci-Fi Horror, Isolation, Body Horror. Focus on dismemberment, madness, and industrial sci-fi aesthetics.\n【World View】: The 26th Century. Humanity mines planets (Planet Crackers). The Marker is an alien artifact that causes madness and reanimates the dead into Necromorphs. Unitology is the cult worshipping it.\n【Culture】: 'Make us whole.' Industrial engineering (RIGs, Plasma Cutters). Hallucinations.\n【Writing Guidelines】: Emphasize the claustrophobia of the spaceship. Sound design is key (vents rattling, whispers). Combat rule #1: Cut off their limbs. Headshots don't work.",
+    backgroundTemplate:
+      "【World Background】: The USG Ishimura, a planet-cracker class ship, has gone silent. You are an engineer sent to fix it. But when you arrive, you find a slaughterhouse. The crew has been turned into twisted monsters. The Marker is calling to you.\n【Current Situation】: You are Isaac Clarke (or another engineer). You are alone in a dark corridor. Your RIG on your back glows teal (health full). You hear skittering in the vents. A Slasher bursts out! You raise your Plasma Cutter. Aim for the limbs!",
+    example:
+      "The vent cover explodes. A Necromorph with scythe-like arms leaps at you. You don't panic. You aim your Plasma Cutter. *Pew! Pew!* You sever its legs. It crawls towards you, screaming. You stomp on its head. *Crunch.* Silence returns. But then, a whisper in your ear: 'Make us whole...'",
+  },
+  helldivers: {
+    name: "Helldivers",
+    narrativeStyle:
+      "【Core Style】: Satirical Sci-Fi, Horde Shooter, Friendly Fire. Focus on 'Managed Democracy', overwhelming enemies, and chaotic explosions.\n【World View】: Super Earth. We spread freedom and democracy to the galaxy (by force). Enemies: Terminids (bugs), Automatons (robots), Illuminates.\n【Culture】: Excessive patriotism. 'How about a nice cup of LIBER-TEA!' Expendable soldiers. Stratagems (orbital strikes).\n【Writing Guidelines】: The tone should be jingoistic and over-the-top. Emphasize the chaos of battle. Friendly fire is an 'unavoidable accident'. Describe the sheer firepower of orbital bombardments.",
+    backgroundTemplate:
+      "【World Background】: Citizens! The galaxy is under attack! The bugs want to eat our freedom! The robots want to delete our way of life! Join the Helldivers! Become a legend! (Life expectancy: 2 minutes).\n【Current Situation】: You drop from orbit in a Hellpod. You land on a bug-infested planet. Your objective: Launch the ICBM / Extract the Oil / Raise the Flag. Thousands of Terminids are swarming. You punch in the code for a 500kg Bomb. 'Calling in an Eagle!'",
+    example:
+      "You are surrounded. 'For Super Earth!' you scream, holding the trigger of your machine gun. Bugs explode in green goo. A Charger rushes you. You dive to the side. Your teammate throws a cluster bomb... directly at your feet. 'Reinforcing!' you hear as you explode into pieces. Another Hellpod lands. The mission continues.",
+  },
+  l4d: {
+    name: "Left 4 Dead",
+    narrativeStyle:
+      "【Core Style】: Zombie Apocalypse, Co-op Survival, Cinematic. Focus on teamwork, special infected, and the AI Director's pacing.\n【World View】: The Green Flu has turned people into fast, aggressive zombies. Four survivors must make it to the safe room.\n【Culture】: Pills here! Safe rooms. The Witch's crying. Tank's music.\n【Writing Guidelines】: Fast-paced and frantic. Emphasize the audio cues of special infected (Smoker's cough, Hunter's scream). The banter between survivors. The feeling of being overwhelmed by the Horde.",
+    backgroundTemplate:
+      "【World Background】: Civilization has fallen. The infected are everywhere. You are one of the immune. You have guns, medkits, and three strangers who are now your only family. You need to get to the evacuation point. But the Director hates you.\n【Current Situation】: You are in a subway station / hospital / swamp. You hear the horde coming. 'Reloading!' Francis shouts. A Smoker grabs Louis. A Hunter pounces on Zoey. You have a shotgun and a Molotov. Save them, or run?",
+    example:
+      "You hear the crying. 'Witch!' you whisper. 'Lights off!' But it's too late. She startles. 'Run!' You sprint for the safe room door. A Tank punches a car at you. You dodge. The door is just ahead. You slam it shut and bar it. Safe... for now.",
+  },
+  monster_hunter: {
+    name: "Monster Hunter",
+    narrativeStyle:
+      "【Core Style】: Boss Rush, Ecology, Crafting. Focus on hunting giant monsters, gathering materials, and upgrading gear.\n【World View】: A world where nature is ruled by Wyverns and Elder Dragons. Hunters maintain the balance. Palicoes (cat companions) help out.\n【Culture】: Eating massive meals before a hunt. Sharpening weapons. The thrill of the 'Carve'. Prancing.\n【Writing Guidelines】: Treat monsters as animals with behaviors, not just enemies. Describe the weapon mechanics (Great Sword charge, Long Sword spirit gauge). The hunt is a dance of preparation and execution.",
+    backgroundTemplate:
+      "【World Background】: Welcome to the New World (or Old World). The Guild has assigned you a quest. A Rathalos / Tigrex / Nergigante has been sighted. It disrupts the ecosystem. You must hunt it.\n【Current Situation】: You are at the base camp. You eat a Chef's Choice Platter (stat boost). You check your item pouch: Potions, Rations, Paintballs, Traps. You crawl out of the tent. The Ancient Forest is alive. You spot tracks. The scoutflies guide you. The monster is sleeping in Area 9.",
+    example:
+      "The Rathalos roars, a ball of fire forming in its throat. You superman-dive to avoid the fireball. You unsheathe your Great Sword. You start charging. Level 1... Level 2... The monster turns its head. Level 3! True Charged Slash! You hit the head. The monster flinches and falls over. 'Now's our chance!' you shout to your Palico.",
+  },
+  warframe: {
+    name: "Warframe",
+    narrativeStyle:
+      "【Core Style】: Sci-Fi Ninja, Parkour, Grind. Focus on speed, space magic, and hoard clearing.\n【World View】: The Origin System. The Tenno (operators) control the Warframes (bio-metal suits). Enemies: Grineer (clones), Corpus (capitalists), Infested (zombies).\n【Culture】: Fashion Frame is the endgame. The Lotus ('Space Mom'). Relic cracking.\n【Writing Guidelines】: Emphasize movement (Bullet Jump, Wall Run). Powers are devastating. Weapons are over-the-top. The lore is weird and deep (Void, Man in the Wall).",
+    backgroundTemplate:
+      "【World Background】: Wake up, Tenno. The Grineer deteriorate, the Corpus greed, the Infested spread. The system needs balance. You are a warrior of blade and gun, master of the Warframe armor.\n【Current Situation】: You are on a Grineer Galleon / Corpus Outpost. The alarm is triggered. 'Change of plans, ignore your original objective. Leave nothing alive,' the Lotus says. You are using Excalibur / Volt / Mag. Hundreds of enemies pour in. It's time to dance.",
+    example:
+      "You slide across the floor, firing your Hek shotgun. *Boom!* A Grineer Lancer flies backward. You bullet jump into the air, aim glide, and cast your 4th ability. Energy waves disintegrate the room. You land, switch to your melee weapon, and spin-attack through the survivors. 'Clean extraction,' you say.",
+  },
+  lol: {
+    name: "League of Legends",
+    narrativeStyle:
+      "【Core Style】: High Fantasy, Region-based Lore, Heroic. Focus on the champions and the regions of Runeterra.\n【World View】: Runeterra. Demacia (Anti-magic), Noxus (Expansionist), Ionia (Spiritual), Piltover/Zaun (Tech), Shadow Isles (Undead).\n【Culture】: Diverse cultures. Magic (Hextech, Celestial, Void). The conflict between regions.\n【Writing Guidelines】: Strictly follow the lore of the specific region. Champions should act according to their bio. Magic rules vary by region.",
+    backgroundTemplate:
+      "【World Background】: Runeterra is a land of magic and conflict. Empires rise and fall. Champions emerge to shape history. The Void threatens to consume everything.\n【Current Situation】: You are a champion (or a new hero) in [Demacia/Noxus/Ionia]. You are caught in a conflict: a Noxian invasion, a magical accident in Zaun, or the Harrowing of the Shadow Isles. You have your unique abilities (Q, W, E, R). Fight for your cause.",
+    example:
+      "You stand on the bridge of progress in Piltover. Below, the green smog of Zaun swirls. Jinx is causing chaos again. 'Zap!' A blue laser flies past you. You draw your Hextech hammer (Jayce) / gauntlets (Vi). 'Not on my watch,' you say, charging up your weapon.",
+  },
+  terraria: {
+    name: "Terraria",
+    narrativeStyle:
+      "【Core Style】: 2D Sandbox, Adventure, Boss Progression. Focus on exploration, mining, and fighting eldritch horrors.\n【World View】: A world of biomes (Forest, Corruption/Crimson, Jungle, Hallow). NPCs move into your house. Events (Blood Moon, Goblin Army).\n【Culture】: 'Impending doom approaches.' Crafting the Zenith. The Guide opening doors at night.\n【Writing Guidelines】: Describe the progression from copper tools to god-slaying weapons. The world becomes more dangerous (Hardmode). Bosses are massive and terrifying.",
+    backgroundTemplate:
+      "【World Background】: You appear in a forest. You have a copper shortsword, a pickaxe, and an axe. The Guide is walking nearby. You must dig, fight, explore, and build. The world is full of secrets—and giant eyes that watch you at night.\n【Current Situation】: You have built a wooden house. You have explored the caves and found some heart crystals. But now, the air is getting cold around you. 'You feel an evil presence watching you.' The Eye of Cthulhu has awoken! Grab your bow!",
+    example:
+      "You fly with your rocket boots, dodging the lasers from the Wall of Flesh. You throw 'Beenades' frantically. The wall hungers. 'Almost there!' You fire your Minishark. The wall roars and disintegrates. 'The ancient spirits of light and dark have been released.' Hardmode has begun.",
+  },
+  dnd: {
+    name: "Dungeons & Dragons",
+    narrativeStyle:
+      "【Core Style】: High Fantasy, Tabletop Roleplay, Dice Rolls. Focus on the party, the adventure, and the Dungeon Master's narration.\n【World View】: The Forgotten Realms (Faerûn) or other settings. Classes (Fighter, Wizard, Rogue, etc.). Races (Human, Elf, Dwarf, Tiefling, etc.).\n【Culture】: 'Roll for initiative.' Critical hits (Nat 20) and failures (Nat 1). Roleplaying your alignment.\n【Writing Guidelines】: Use D&D terminology (Saving throw, AC, Spell slots). Describe the scene like a DM. Allow for creative solutions. The dice decide your fate.",
+    backgroundTemplate:
+      "【World Background】: You are an adventurer in a world of magic and monsters. You seek gold, glory, or perhaps to save the world. You are in a tavern (classic start) meeting your party members.\n【Current Situation】: You are a [Level] [Race] [Class]. You are exploring a dark dungeon / ancient ruin / haunted forest. A Goblin ambush! A Dragon's lair! A trap! What do you do? Roll for perception.",
+    example:
+      "'I check for traps,' the Rogue says. *Rolls a 2.* 'It looks safe.' He steps forward. *Click.* A dart trap activates. 'I take... 5 damage.' The Cleric sighs. 'I cast Cure Wounds.' The DM smiles behind the screen. 'As you heal, you hear a low growl from the darkness...'",
+  },
+  mo_dao_zu_shi: {
+    name: "Grandmaster of Demonic Cultivation",
+    narrativeStyle:
+      "【Core Style】: Xianxia, Mystery, Ensemble Cast, Angst. Focus on the cultivation world, the five great clans, and the line between good and evil.\n【World View】: Cultivation world ruled by five clans (Jiang, Lan, Jin, Nie, Wen). Resentful energy, walking corpses, and Demonic Cultivation.\n【Culture】: Etiquette of noble clans. 'Attempt the impossible'. The prejudice against unorthodox paths.\n【Writing Guidelines】: Use elegant, archaic tone. Emphasize emotional entanglements (WangXian). Describe night hunts and exorcisms. Interweave flashbacks with the present.",
+    backgroundTemplate:
+      "【World Background】: The Qishan Wen Clan tyrannizes the cultivation world. The Sunshot Campaign is imminent (or just ended). The world is full of hypocrisy and hidden agendas. The Yiling Patriarch, Wei Wuxian, is feared by all, yet his story is one of tragedy.\n【Current Situation】: You are a disciple of a noble clan (or a rogue cultivator). You are studying at the Cloud Recesses, or fighting in the siege of the Burial Mounds. The scent of Emperor's Smile wine drifts in the air. You meet a young man in black with a red ribbon, or a righteous cultivator in white with a forehead ribbon. A mystery from the past is about to unfold.",
+    example:
+      "You push aside the mist of the Cloud Recesses. The sound of a guqin flows from the Jingshi. 'Lan Zhan!' you call out with a smile, holding two jars of Emperor's Smile. The man in white looks up, his gaze cold, but rippling with hidden emotion. 'Alcohol is forbidden in the Cloud Recesses,' he says, but he does not draw his sword.",
+  },
+  tian_guan_ci_fu: {
+    name: "Heaven Official's Blessing",
+    narrativeStyle:
+      "【Core Style】: Mythology, Aesthetic, Redemption, Epic. Focus on gods, ghosts, and 800 years of devotion.\n【World View】: Heaven (Gods), Human Realm, Ghost Realm (Ghost Kings). Gods gain power from prayers. Ghost Kings are born from obsession.\n【Culture】: 'Body in abyss, heart in paradise'. The hierarchy of Heaven. The eerie beauty of Ghost City.\n【Writing Guidelines】: Descriptions should be ethereal and beautiful. Contrast red (Hua Cheng) and white (Xie Lian). Silver butterflies and flower petals. Emotions are deep and restrained.",
+    backgroundTemplate:
+      "【World Background】: 800 years ago, Xie Lian was the Crown Prince of Xianle, who ascended to heaven. He was banished twice. Now, he ascends for the third time, becoming the laughingstock of the three realms. Meanwhile, the Ghost King 'Crimson Rain Sought Flower' has been waiting for him.\n【Current Situation】: You are a junior official in Heaven (or a ghost). You receive a mission from the communication array: Go to Mount Yujun / Banyue Pass / Ghost City. You meet a scrap-collecting god. Silver butterflies dance around him. You are about to witness a love that spans centuries.",
+    example:
+      "Silver butterflies dance in the dark cave, illuminating the path. A youth in red robes takes your hand, holding a red umbrella to shield you from the blood rain. 'Gege, don't be afraid,' he whispers, his voice low and gentle. You look at the red string on his finger and feel a strange familiarity.",
+  },
+  harry_potter: {
+    name: "Harry Potter",
+    narrativeStyle:
+      "【Core Style】: British Fantasy, School Life, Coming of Age, Magic. Focus on Hogwarts, spells, and the fight against Voldemort.\n【World View】: 1990s UK. Wizarding society hides within the Muggle world. Hogwarts School of Witchcraft and Wizardry. The threat of Death Eaters.\n【Culture】: House rivalry (Gryffindor, Slytherin, etc.). Quidditch. Pure-blood vs Muggle-born conflict.\n【Writing Guidelines】: Whimsical and magical initially, turning darker later. Use specific spells (Expelliarmus, Expecto Patronum). Describe Hogwarts life (Potions class, Feasts).",
+    backgroundTemplate:
+      "【World Background】: Magic is real. Owls deliver mail, portraits talk, and staircases move. But darkness is rising. He-Who-Must-Not-Be-Named has returned.\n【Current Situation】: You are a first-year student at Hogwarts. You've just crossed Platform 9¾ and boarded the Hogwarts Express. The Sorting Hat is on your head. 'Hmm... plenty of courage... and a thirst to prove yourself... better be...' Your wand warms in your pocket. Welcome to the Wizarding World.",
+    example:
+      "You swish and flick your holly wand. 'Wingardium Leviosa!' The feather floats up. Hermione nods approvingly. Suddenly, the door bursts open. 'Troll! In the dungeon!' Professor Quirrell screams. You look at Ron. 'We have to save Hermione!'",
+  },
+  battle_through_heavens: {
+    name: "Battle Through the Heavens",
+    narrativeStyle:
+      "【Core Style】: Hot-blooded Xianxia, Zero to Hero, Alchemy, Heavenly Flames. Focus on Dou Qi (Battle Energy), upgrading, and face-slapping.\n【World View】: The Dou Qi Continent. No magic, only Dou Qi. Hierarchy: Dou Zhi to Dou Di. Alchemists are revered. Heavenly Flames are rare treasures.\n【Culture】: 'Don't bully the young for being poor.' Strength rules all. Sects and clans.\n【Writing Guidelines】: Fast-paced. Frequent combat and breakthroughs. Describe the flashy Dou Techniques (Buddha's Fury Lotus) and the power of flames.",
+    backgroundTemplate:
+      "【World Background】: The Dou Qi Continent, where the strong eat the weak. The Hall of Souls hunts spirits. The Heavenly Flames drive cultivators mad with greed.\n【Current Situation】: You are a disciple of the Xiao Clan (or Xiao Yan). You have suffered the humiliation of a broken engagement. You have a mysterious ring with an old teacher inside. Your goal is to become strong enough to protect your dignity. The Three-Year Agreement is approaching.",
+    example:
+      "You grit your teeth, enduring the pain of the Heavenly Flame refining your body. The Green Lotus Core Flame surges through your meridians. 'Hold on!' Yao Lao's voice echoes. You roar, condensing the Dou Qi armor. 'Break!' A powerful aura explodes. You have advanced to Dou Shi!",
+  },
+  soul_land: {
+    name: "Soul Land",
+    narrativeStyle:
+      "【Core Style】: Xuanhuan, Martial Souls, Academy, Teamwork. Focus on Spirit Masters, Spirit Rings, and Shrek Academy.\n【World View】: Douluo Continent. Everyone has a Martial Soul (Tool/Beast). Spirit Power determines potential. Hunting Spirit Beasts gives Spirit Rings (skills).\n【Culture】: The Seven Devils of Shrek. Spirit Hall's hegemony. The glory of Spirit Masters.\n【Writing Guidelines】: Emphasize the characteristics of Martial Souls and skill combinations. Teamwork is key. Describe Spirit Rings by color (White, Yellow, Purple, Black, Red).",
+    backgroundTemplate:
+      "【World Background】: A world of Martial Souls. No magic, no Dou Qi, only Martial Souls. Two Empires and the Spirit Hall. You must hunt beasts to advance.\n【Current Situation】: You are a new student at Shrek Academy. Your Martial Soul is [Blue Silver Grass / Clear Sky Hammer / Evil Eye White Tiger]. You are in the Star Dou Forest hunting for your 3rd Spirit Ring. Your teammates are behind you. A 10,000-year Man-Faced Demon Spider appears. Release your Martial Soul!",
+    example:
+      "'First Soul Skill, Bind!' You shout. Blue Silver Grass surges like snakes, trapping the enemy. 'Fatty, fire!' Ma Hongjun shoots a Phoenix Fire Wire. Dai Mubai activates White Tiger Vajra Transformation and smashes the defense. 'Perfect combo!' Oscar hands you a sausage.",
+  },
+  xian_ni: {
+    name: "Renegade Immortal",
+    narrativeStyle:
+      "【Core Style】: Mortal Cultivation, Ruthless, Dao Comprehension. Focus on the cruelty of the cultivation world and defying the heavens.\n【World View】: A dog-eat-dog world. Turning Mortal to comprehend Dao. Ancient Gods, Demons, and Devils.\n【Culture】: 'Submit to be mortal, defy to be immortal.' Killing for treasures. Cultivating the heart.\n【Writing Guidelines】: Tone is cold and heavy. Emphasize Wang Lin's ruthlessness and loneliness. Describe the comprehension of abstract concepts (Life/Death, Karma, True/False).",
+    backgroundTemplate:
+      "【World Background】: The cultivation world is heartless. For immortality, fathers kill sons, and disciples betray masters. Heaven is ruthless, treating all things as straw dogs.\n【Current Situation】: You are a mediocre youth who entered the cultivation world by chance (the stone bead). Your parents were killed, your clan wiped out. You have only revenge and the desire for strength in your heart. You will walk a path of blood and corpses to the peak. If Heaven blocks me, I will seal Heaven!",
+    example:
+      "You look coldly at the Nascent Soul elder. 'If you touch my family, I will wipe out your entire sect!' You wave the Soul Flag, releasing a billion souls that blot out the sun. Your Ji Realm Divine Sense strikes like red lightning, shattering his soul. You take his storage bag and turn away, your figure lonely and desolate.",
+  },
+  scum_villain: {
+    name: "Scum Villain's Self-Saving System",
+    narrativeStyle:
+      "【Core Style】: Transmigration, Comedy, System, Master-Disciple. Focus on the meta-narrative, the OOC (Out of Character) system, and the 'Scum Villain' role.\n【World View】: Inside the webnovel 'Proud Immortal Demon Way'. Shen Qingqiu is the villain, Luo Binghe is the protagonist. The System enforces plot points.\n【Culture】: Internet slang. 'You can you up'. The fear of being turned into a human stick.\n【Writing Guidelines】: Use internal monologues heavily. The System's notifications (B-Points). The contrast between Shen Qingqiu's aloof exterior and frantic inner thoughts.",
+    backgroundTemplate:
+      "【World Background】: You transmigrated into a stallion novel as the scum villain Shen Qingqiu. You know the protagonist, Luo Binghe, will eventually torture you to death. The System forces you to follow the plot, but you must find a way to survive—by hugging the protagonist's thigh.\n【Current Situation】: You are in the Bamboo House of Qing Jing Peak. A young Luo Binghe kneels before you, offering tea. The System pings: 【Key Plot Point: The Disciple Tea】. If you kick him, B-Points +10, but Doom Points +100. If you drink it, OOC warning. What do you do?",
+    example:
+      "You fan yourself elegantly to hide your twitching expression. 'Binghe,' you say, your voice cold. 'This tea is... acceptable.' Luo Binghe's eyes light up. 【System: Coolness +10. Protagonist Satisfaction +50.】 You mentally sigh in relief. 'Just don't make him a human stick,' you pray.",
+  },
+  swallowed_star: {
+    name: "Swallowed Star",
+    narrativeStyle:
+      "【Core Style】: Sci-Fi Cultivation, Cosmic Adventure, Leveling. Focus on Genetic Energy, monster hunting on Earth, and eventually space travel.\n【World View】: Post-apocalyptic Earth (RR Virus). Warriors cultivate Genetic Energy. The Universe is vast, with empires and powerful civilizations.\n【Culture】: Dojos (Limit, Thunder). The urge to protect Earth. 'The strong survive.'\n【Writing Guidelines】: Emphasize physical stats (punch force, speed). Describe high-tech gear (Battle Jets, Telekinesis weapons). The scale expands from cities to galaxies.",
+    backgroundTemplate:
+      "【World Background】: The RR Virus mutated animals into monsters. Humanity lives in Base Cities. Warriors are the shield of mankind. You are a student (or a new warrior) with a dream: to become a God of War and explore the cosmos.\n【Current Situation】: You are in Jiangnan Base City. You just awakened your Spirit Reader talent. You hold a jagged combat blade. Outside the city walls, a horde of Iron-Armored Boars is charging. Your blood boils. It's time to test your strength.",
+    example:
+      "You channel your Genetic Energy. Your speed increases drastically. You dodge the boar's charge and slash its throat. 'One down,' you pant. You look up at the sky, where a triangular warship hovers. 'One day,' you vow, 'I will fly up there.'",
+  },
+  desolate_era: {
+    name: "Desolate Era",
+    narrativeStyle:
+      "【Core Style】: Xianxia, Reincarnation, Sword Dao. Focus on Nuwa Visualization, Sword Arts, and the vast Three Realms.\n【World View】: The Three Realms (Heaven, Hell, Mortal). Chaos Universe. Fiendgod Body Refining vs Ki Refining.\n【Culture】: Tribal survival. The understanding of 'Dao' (Dao of Rain, Dao of Fire). Reincarnation.\n【Writing Guidelines】: Grand and epic tone. Describe the power of Fiendgod bodies (Three Heads Six Arms). The beauty and deadliness of sword formations.",
+    backgroundTemplate:
+      "【World Background】: The Desolate world is filled with monsters and ancient gods. Humans struggle to survive in tribes. You have reincarnated into the Ji Clan with your memories intact. You cultivate the [Crimsonbright Diagram] to protect your people.\n【Current Situation】: You are in the Ji Clan's West Prefecture. Your father is the clan's strongest warrior. You are practicing your sword art by the Serpentwing Lake. You feel the Dao of Water in the ripples. But a Great Monster is approaching the clan...",
+    example:
+      "You manifest Three Heads and Six Arms. Six swords dance in your hands, forming a perfect defense. 'Dao of Rain!' you shout. Your sword light becomes as fluid and pervasive as the drizzle, eroding the monster's tough hide. 'Die!'",
+  },
+  mortals_journey: {
+    name: "A Record of a Mortal's Journey to Immortality",
+    narrativeStyle:
+      "【Core Style】: Mortal Cultivation, Caution, Farming. Focus on Han Li's survival philosophy: Run if you can't win, kill if you must.\n【World View】: A cruel cultivation world. Resources are scarce. The strong prey on the weak. The mysterious Green Vial ripens herbs.\n【Culture】: 'Fellow Daoist'. Killing for treasures. The law of the jungle.\n【Writing Guidelines】: Emphasize caution and pragmatism. Describe the use of tools, talismans, and formations. No heroism, only survival.",
+    backgroundTemplate:
+      "【World Background】: Cultivation is difficult. You are a mortal with average talent, but you possess a mysterious small bottle that can ripen spirit herbs. You join a sect, keeping a low profile.\n【Current Situation】: You are tending to your herb garden in Yellow Maple Valley. You sense someone approaching. Friend or foe? You grip a talisman in your sleeve, ready to strike or flee at a moment's notice.",
+    example:
+      "You look at the approaching cultivator blankly. 'Fellow Daoist, please stop,' you say. He sneers and draws a sword. You don't hesitate. You activate a trap formation and throw a handful of 'Thunderfire Beads'. You turn and flee on your flying sword without looking back.",
+  },
+  shepherd_of_gods: {
+    name: "Tales of Herding Gods",
+    narrativeStyle:
+      "【Core Style】: Xuanhuan, Reform, Humor. Focus on Qin Mu, the Overlord Body (fake), and breaking the gods in one's heart.\n【World View】: The Great Ruins (abandoned by gods). Eternal Peace Empire (Reform). The High Heavens.\n【Culture】: 'Gods are for people's use'. The teachings of the nine elders of Disabled Elderly Village.\n【Writing Guidelines】: Rebellious and humorous tone. Deconstruct divine arts with geometry/math. 'I am the Overlord Body!' (It's a lie).",
+    backgroundTemplate:
+      "【World Background】: You grew up in the Great Ruins, raised by nine strange elders. They taught you everything from butchering pigs to painting. You enter the Eternal Peace Empire, sparking a reformation that challenges the gods.\n【Current Situation】: You are Qin Mu (or a scholar). You carry a pig-slaughtering knife. You stand before a statue of a god. 'This statue's anatomy is wrong,' you criticize. The god comes to life, angry. You smile and draw your knife.",
+    example:
+      "You swing your knife. 'Butchering Pig Sword Style!' The blade follows a perfect geometric arc. 'Your divine art is flawed,' you lecture the god while dodging lightning. 'You haven't studied calculus, have you?'",
+  },
+  frieren: {
+    name: "Frieren: Beyond Journey's End",
+    narrativeStyle:
+      "【Core Style】: J-Fantasy, Slice of Life, Melancholy. Focus on the passage of time, memories of the Hero Party, and understanding humans.\n【World View】: A classic fantasy world after the Demon King's defeat. Elves live for thousands of years. Magic is 'the world of imagination'.\n【Culture】: Collecting weird spells (cleaning bronze statues). The legacy of Himmel the Hero.\n【Writing Guidelines】: Slow, gentle pacing. Emphasize the bittersweet nature of memories. Combat is understated but powerful ('Zoltraak').",
+    backgroundTemplate:
+      "【World Background】: The Demon King is dead. The Hero Himmel has passed away from old age. You are an elf mage (Frieren or her apprentice). You retrace the steps of the past adventure, collecting grimoires and seeing how the world has changed.\n【Current Situation】: You are walking down a country road with your party. Sunlight filters through the trees. You find a mimic chest. 'It might be a grimoire,' you say. 'It's 99% a mimic,' your companion sighs. You open it anyway. *Chomp.* 'Help me!'",
+    example:
+      "You raise your staff. 'Zoltraak.' A beam of pure mana disintegrates the dragon. 'This was a killing spell 80 years ago,' you explain calmly. 'Now it's basic magic.' You look at the sunset, remembering how Himmel used to praise your magic.",
+  },
+  infinite_sequence: {
+    name: "Infinite Terror",
+    narrativeStyle:
+      "【Core Style】: Infinite Flow, Survival Horror, Team Tactics. Focus on the God's Dimension, horror movie instances, and the Genetic Lock.\n【World View】: The Main God Space. Teams from different regions (Team China, Team Devil). Movies like Resident Evil, Alien, The Grudge.\n【Culture】: 'Do you want to know the meaning of life?'. Points and Rewards. The struggle to survive.\n【Writing Guidelines】: High tension. Describe the unlocking of Genetic Constraints (instinct, control, brain power). Team dynamics and sacrifices.",
+    backgroundTemplate:
+      "【World Background】: You clicked a pop-up on your computer: 'Do you want to truly live?' Now you are in the Main God Space. You must survive horror movies to earn points and evolve.\n【Current Situation】: You wake up on a train / in a spaceship. 'Mission Start,' a cold voice says. You are in [Resident Evil / Alien]. Zombies / Aliens are coming. You have a Desert Eagle and a team of strangers. Survive.",
+    example:
+      "Your heart pounds. Time seems to slow down. Genetic Lock: Stage One, Unlocked! You instinctively raise your gun. *Bang! Bang!* Two Lickers fall mid-air. 'Zheng Zha, behind you!' you shout. You feel the adrenaline burning your nerves.",
+  },
+  slay_gods_hospital: {
+    name: "I Learned to Slay Gods in a Mental Hospital",
+    narrativeStyle:
+      "【Core Style】: Urban Fantasy, Greek/Norse Mythology, Hot-blooded. Focus on the 'Mental Patients', the Forbidden墟 (Ruins), and protecting humanity.\n【World View】: Gods manifest in the modern world as monsters (Mysterious Creatures). The Night Watchers protect the populace. The protagonist Lin Qiye is treated as a mental patient but holds the power of the Seraphim.\n【Culture】: 'Mental Hospital' as a base. Exploring the mist. Mythology reinterpreted.\n【Writing Guidelines】: Mix modern urban settings with epic mythological battles. Emphasize the 'crazy' but heroic nature of the team. Use abilities related to gods (Michael, Nyx, etc.).",
+    backgroundTemplate:
+      "【World Background】: A mysterious mist has shrouded the world. Monsters from myths roam the night. You are a patient in the Sunshine Mental Hospital. But you are not crazy; you can see the gods. You join the Night Watchers to slay the gods and save the world.\n【Current Situation】: You are in the hospital / a ruined city covered in mist. A mythological beast (e.g., Minotaur) appears. You tap into the power within you. Golden wings unfold from your back. 'I am not crazy,' you whisper. 'I am a god slayer.'",
+    example:
+      "The Minotaur swings its axe. You dodge, your eyes glowing gold. 'Seraphim's Power, 10%!' Wings of light erupt. You summon a sword of holy fire. 'For the light!' you shout, slashing through the beast. The mist recedes slightly.",
+  },
+  kamen_rider: {
+    name: "Kamen Rider",
+    narrativeStyle:
+      "【Core Style】: Tokusatsu, Heroism, Transformation. Focus on fighting Kaijin (monsters), justice, and the tragedy of power.\n【World View】: Modern world hidden with monsters (Shocker, Orphnochs, Worms). Riders use powers derived from the same source as the monsters to protect humanity.\n【Culture】: 'Henshin!' (Transform). Rider Kick. Motorcycles. Scarves.\n【Writing Guidelines】: Visual and dramatic. Shout out attack names. Describe the transformation sequence in detail. The hero is often lonely but kind.",
+    backgroundTemplate:
+      "【World Background】: The city is under attack by a secret organization of monsters. The police are helpless. You stumble upon a Driver (Belt). You must take up the mantle of the Masked Rider.\n【Current Situation】: A Spider Kaijin is kidnapping people. You arrive on your bike. You put on the driver. The wind turbines spin. 'Henshin!' Armor materializes around you. You pose. 'Now, count up your sins!'",
+    example:
+      "The monster charges. You jump into the air. 'Rider... Kick!' Energy gathers at your foot. You slam into the monster. *Explosion.* You land safely, turning your back to the fire. You rev your bike and ride off into the sunset.",
+  },
 };

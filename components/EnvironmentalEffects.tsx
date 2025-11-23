@@ -1,3 +1,4 @@
+import { BACKGROUND_IMAGES } from "../utils/constants";
 import React, { useEffect, useState } from "react";
 
 interface EnvironmentalEffectsProps {
@@ -6,6 +7,7 @@ interface EnvironmentalEffectsProps {
   theme: string;
   environment?: string;
   backgroundImage?: string;
+  fallbackEnabled?: boolean;
 }
 
 type EffectType =
@@ -23,6 +25,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   theme,
   environment,
   backgroundImage,
+  fallbackEnabled = true,
 }) => {
   const [effect, setEffect] = useState<EffectType>(null);
 
@@ -93,13 +96,38 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     setEffect(detectedEffect);
   }, [currentText, imagePrompt, environment]);
 
+  // Determine background source
+  let bgSource = backgroundImage;
+  let isFallback = false;
+
+  if (!bgSource && fallbackEnabled && environment) {
+    // Try to find a matching background from constants
+    // First try exact match
+    if (BACKGROUND_IMAGES[environment]) {
+      bgSource = BACKGROUND_IMAGES[environment];
+      isFallback = true;
+    }
+    // If no exact match, try to find by partial match or default to fantasy
+    else {
+       // Simple fallback logic: check if environment contains key words
+       const envLower = environment.toLowerCase();
+       const foundKey = Object.keys(BACKGROUND_IMAGES).find(key => envLower.includes(key));
+       if (foundKey) {
+         bgSource = BACKGROUND_IMAGES[foundKey];
+         isFallback = true;
+       }
+    }
+  }
+
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
       {/* Background Image Layer */}
       <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${backgroundImage ? "opacity-30" : "opacity-0"}`}
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
+          bgSource ? "opacity-30" : "opacity-0"
+        }`}
         style={{
-          backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+          backgroundImage: bgSource ? `url(${bgSource})` : "none",
           filter: "blur(8px) brightness(0.6)",
         }}
       />

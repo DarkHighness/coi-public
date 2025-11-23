@@ -5,6 +5,8 @@ import { SettingsAppearanceProps } from "./types";
 export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
   themeMode,
   onSetThemeMode,
+  currentSettings,
+  onUpdateSettings,
 }) => {
   const { t } = useTranslation();
 
@@ -46,6 +48,45 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
           ))}
         </div>
       </div>
+
+      {currentSettings && onUpdateSettings && (
+        <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+          <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">
+            {t("visualEffects")}
+          </h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-theme-text">
+                {t("enableFallbackBackground")}
+              </div>
+              <div className="text-xs text-theme-muted">
+                {t("enableFallbackBackgroundDesc")}
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                onUpdateSettings({
+                  ...currentSettings,
+                  enableFallbackBackground: !currentSettings.enableFallbackBackground,
+                })
+              }
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                currentSettings.enableFallbackBackground
+                  ? "bg-theme-primary"
+                  : "bg-theme-border"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  currentSettings.enableFallbackBackground
+                    ? "left-7"
+                    : "left-1"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
