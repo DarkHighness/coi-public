@@ -91,6 +91,7 @@ export const zh = {
     scifi: "科幻",
     novel: "小说",
     movie: "电影",
+    game: "游戏"
   },
   preview: "预览",
   refresh: "刷新",
@@ -377,6 +378,7 @@ export const zh = {
   customWritingTips:
     "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
   clear: "清空",
+  load: "加载",
   saveApply: "保存并应用",
   description: "描述",
   currentMood: "心情",

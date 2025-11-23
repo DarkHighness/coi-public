@@ -1,5 +1,6 @@
 const CACHE_NAME = "chronicles-v3";
 const URLS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
+const NETWORK_TIMEOUT = 5000; // 5 seconds timeout for slow networks
 
 self.addEventListener("install", (event) => {
   // Force this new service worker to become the active one, bypassing the waiting state
@@ -13,6 +14,16 @@ self.addEventListener("install", (event) => {
   );
 });
 
+// Helper function: Fetch with timeout
+const fetchWithTimeout = (request, timeout = NETWORK_TIMEOUT) => {
+  return Promise.race([
+    fetch(request),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Network timeout")), timeout)
+    ),
+  ]);
+};
+
 self.addEventListener("fetch", (event) => {
   // 1. API Requests: Network Only (bypass SW)
   if (
@@ -24,20 +35,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Navigation Requests (HTML): Network First, Fallback to Cache
-  // This ensures the user gets the latest index.html (with new JS hashes) if online.
+  // 2. Navigation Requests (HTML): Stale-While-Revalidate with timeout
+  // This provides instant response from cache while updating in background
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
+      Promise.race([
+        fetch(event.request).then((response) => {
           return caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, response.clone());
             return response;
           });
-        })
-        .catch(() => {
-          return caches.match(event.request);
         }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Network timeout")), NETWORK_TIMEOUT)
+        ),
+      ]).catch(() => {
+        return caches.match(event.request);
+      }),
     );
     return;
   }
@@ -50,7 +64,7 @@ self.addEventListener("fetch", (event) => {
           if (response) {
             return response;
           }
-          return fetch(event.request).then((networkResponse) => {
+          return fetchWithTimeout(event.request, 8000).then((networkResponse) => {
             if (
               !networkResponse ||
               networkResponse.status !== 200 ||
@@ -60,6 +74,9 @@ self.addEventListener("fetch", (event) => {
             }
             cache.put(event.request, networkResponse.clone());
             return networkResponse;
+          }).catch((err) => {
+            console.warn("Audio fetch timeout/failed:", err);
+            throw err;
           });
         });
       }),
@@ -67,7 +84,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 4. Static Assets (JS, CSS, Images): Cache First, but with strict validation
+  // 4. Static Assets (JS, CSS, Images): Cache First with network timeout
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -79,7 +96,7 @@ self.addEventListener("fetch", (event) => {
         return fetch(event.request);
       }
 
-      return fetch(event.request)
+      return fetchWithTimeout(event.request, NETWORK_TIMEOUT)
         .then((networkResponse) => {
           // Check if valid response
           // Allow basic (same-origin) and cors (for pollinations.ai)
@@ -97,7 +114,6 @@ self.addEventListener("fetch", (event) => {
           }
 
           // Strict MIME type check for JS/CSS to avoid caching HTML error pages as scripts
-          // This fixes the "MIME type" error when a JS file is missing and server returns 404 HTML
           const contentType = networkResponse.headers.get("content-type");
           const url = event.request.url;
           if (
@@ -118,10 +134,15 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch((err) => {
-          // Network failure (e.g. blocked by adblocker, offline)
-          // Just return the error, don't crash the SW
-          console.warn("Fetch failed for:", event.request.url, err);
-          throw err;
+          console.warn("Fetch timeout/failed for:", event.request.url, err);
+          // On slow network timeout, try to return any cached version
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              console.info("Using stale cache for:", event.request.url);
+              return cachedResponse;
+            }
+            throw err;
+          });
         });
     }),
   );

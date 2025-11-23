@@ -91,6 +91,7 @@ export const en = {
     scifi: "Sci-Fi",
     novel: "Novel",
     movie: "Movie",
+    game: "Game",
   },
   preview: "Preview",
   start: "Start",
@@ -384,6 +385,7 @@ export const en = {
   customWritingTips:
     "Describe characters, settings, plot hooks, or themes you'd like to explore. The AI will incorporate these elements into your story.",
   clear: "Clear",
+  load: "Load",
   saveApply: "Save & Apply",
   description: "Description",
   currentMood: "Mood",

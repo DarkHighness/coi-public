@@ -18,6 +18,14 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   const [audioProgress, setAudioProgress] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [shouldCheckProcessing, setShouldCheckProcessing] = useState(false);
+  const [hasEverProcessed, setHasEverProcessed] = useState(false);
+
+  // Track if processing has ever been true
+  useEffect(() => {
+    if (isProcessing) {
+      setHasEverProcessed(true);
+    }
+  }, [isProcessing]);
 
   useEffect(() => {
     preloadAudio(setAudioProgress);
@@ -29,7 +37,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     // After 3 seconds, start checking if we're actually processing
     const checkTimer = setTimeout(() => {
       setShouldCheckProcessing(true);
-    }, 1000);
+    }, 3000);
 
     return () => {
       clearInterval(timer);
@@ -37,13 +45,13 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     };
   }, []);
 
-  // If not processing after initial delay, redirect to home
+  // If not processing after initial delay AND never processed, redirect to home
   useEffect(() => {
-    if (shouldCheckProcessing && !isProcessing) {
+    if (shouldCheckProcessing && !isProcessing && !hasEverProcessed) {
       console.warn("InitializingPage: Not processing, redirecting to home");
       navigate("/");
     }
-  }, [shouldCheckProcessing, isProcessing, navigate]);
+  }, [shouldCheckProcessing, isProcessing, hasEverProcessed, navigate]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

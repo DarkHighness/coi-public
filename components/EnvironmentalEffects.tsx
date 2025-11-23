@@ -28,6 +28,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   fallbackEnabled = true,
 }) => {
   const [effect, setEffect] = useState<EffectType>(null);
+  const [loadedBgSource, setLoadedBgSource] = useState<string | null>(null);
 
   useEffect(() => {
     // Combine texts for analysis
@@ -96,40 +97,64 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     setEffect(detectedEffect);
   }, [currentText, imagePrompt, environment]);
 
-  // Determine background source
-  let bgSource = backgroundImage;
-  let isFallback = false;
+  // Determine background source and preload
+  useEffect(() => {
+    let bgSource = backgroundImage;
+    let isFallback = false;
 
-  if (!bgSource && fallbackEnabled && environment) {
-    // Try to find a matching background from constants
-    // First try exact match
-    if (BACKGROUND_IMAGES[environment]) {
-      bgSource = BACKGROUND_IMAGES[environment];
-      isFallback = true;
-    }
-    // If no exact match, try to find by partial match or default to fantasy
-    else {
-      // Simple fallback logic: check if environment contains key words
-      const envLower = environment.toLowerCase();
-      const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
-        envLower.includes(key),
-      );
-      if (foundKey) {
-        bgSource = BACKGROUND_IMAGES[foundKey];
+    if (!bgSource && fallbackEnabled && environment) {
+      // Try to find a matching background from constants
+      // First try exact match
+      if (BACKGROUND_IMAGES[environment]) {
+        bgSource = BACKGROUND_IMAGES[environment];
         isFallback = true;
       }
+      // If no exact match, try to find by partial match or default to fantasy
+      else {
+        // Simple fallback logic: check if environment contains key words
+        const envLower = environment.toLowerCase();
+        const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
+          envLower.includes(key),
+        );
+        if (foundKey) {
+          bgSource = BACKGROUND_IMAGES[foundKey];
+          isFallback = true;
+        }
+      }
     }
-  }
+
+    // If we have a background source, try to load it
+    if (bgSource) {
+      // For pollinations.ai images (fallback), preload and handle errors silently
+      if (isFallback && bgSource.includes("pollinations.ai")) {
+        const img = new Image();
+        img.onload = () => {
+          setLoadedBgSource(bgSource);
+        };
+        img.onerror = (e) => {
+          // Silently fail on 429 or any other error from pollinations.ai
+          console.warn("Failed to load fallback background image (pollinations.ai):", e);
+          setLoadedBgSource(null);
+        };
+        img.src = bgSource;
+      } else {
+        // For non-fallback images, use them directly
+        setLoadedBgSource(bgSource);
+      }
+    } else {
+      setLoadedBgSource(null);
+    }
+  }, [backgroundImage, fallbackEnabled, environment]);
 
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
       {/* Background Image Layer */}
       <div
         className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
-          bgSource ? "opacity-30" : "opacity-0"
+          loadedBgSource ? "opacity-30" : "opacity-0"
         }`}
         style={{
-          backgroundImage: bgSource ? `url(${bgSource})` : "none",
+          backgroundImage: loadedBgSource ? `url(${loadedBgSource})` : "none",
           filter: "blur(8px) brightness(0.6)",
         }}
       />

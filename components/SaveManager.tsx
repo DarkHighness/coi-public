@@ -21,16 +21,38 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const handleExport = (slot: SaveSlot) => {
+    const dataStr = JSON.stringify(slot, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `save-${slot.name}-${new Date(slot.timestamp).toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/20 backdrop-blur p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
-        <div className="p-4 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
-          <h2 className="text-xl font-bold text-theme-primary">
-            {t("saves.title")}
-          </h2>
-          <button onClick={onClose}>
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in">
+      <div className="bg-theme-surface border border-theme-border rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="p-6 border-b border-theme-border flex justify-between items-center bg-gradient-to-r from-theme-surface-highlight/50 to-theme-surface-highlight/30">
+          <div>
+            <h2 className="text-2xl font-bold text-theme-primary">
+              {t("saves.title")}
+            </h2>
+            <p className="text-xs text-theme-muted mt-1">
+              {slots.length} {slots.length === 1 ? "save" : "saves"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-theme-surface-highlight rounded-full transition-colors"
+          >
             <svg
-              className="w-6 h-6 text-theme-muted"
+              className="w-6 h-6 text-theme-muted hover:text-theme-text"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -45,10 +67,25 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
           </button>
         </div>
 
-        <div className="p-4 overflow-y-auto space-y-3 flex-1">
+        {/* Content */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {slots.length === 0 && (
-            <div className="text-center text-theme-muted py-8 italic">
-              {t("saves.empty")}
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <svg
+                className="w-16 h-16 text-theme-muted/30 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                ></path>
+              </svg>
+              <p className="text-theme-muted text-lg">{t("saves.empty")}</p>
+              <p className="text-theme-muted/60 text-sm mt-2">Start a new game to create your first save</p>
             </div>
           )}
 
@@ -63,58 +100,114 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
             return (
               <div
                 key={slot.id}
-                className={`p-3 rounded border flex justify-between items-center group ${isCurrent ? "border-theme-primary bg-theme-primary/10" : "border-theme-border bg-theme-bg hover:border-theme-muted"}`}
+                className={`relative rounded-lg border-2 overflow-hidden transition-all ${
+                  isCurrent
+                    ? "border-theme-primary bg-theme-primary/5 shadow-lg shadow-theme-primary/20"
+                    : "border-theme-border hover:border-theme-muted bg-theme-bg"
+                }`}
               >
-                <div className="flex items-center gap-3 overflow-hidden">
+                {/* Preview Image Background */}
+                {slot.previewImage && (
                   <div
-                    className="w-2 h-12 rounded-full shrink-0"
+                    className="absolute inset-0 bg-cover bg-center opacity-10 blur-sm"
+                    style={{ backgroundImage: `url(${slot.previewImage})` }}
+                  ></div>
+                )}
+
+                <div className="relative flex gap-4 p-4">
+                  {/* Theme Color Bar */}
+                  <div
+                    className="w-1 rounded-full shrink-0"
                     style={{ backgroundColor: themeColor }}
                   ></div>
-                  <div>
-                    <h4 className="font-bold text-theme-text text-sm">
-                      {t(`themes.${slot.theme}.name`)} : {slot.name}
-                    </h4>
-                    <div className="text-xs text-theme-muted w-40 line-clamp-2 [&_p]:mb-0">
-                      <MarkdownText content={slot.summary} />
-                    </div>
-                    <span className="text-[10px] text-theme-muted opacity-50">
-                      {new Date(slot.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex gap-2">
-                  {!isCurrent && (
-                    <button
-                      onClick={() => {
-                        onSwitch(slot.id);
-                        onClose();
-                      }}
-                      className="px-3 py-1 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg text-xs rounded border border-theme-border transition-colors"
-                    >
-                      {t("saves.load")}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (window.confirm("Delete?")) onDelete(slot.id);
-                    }}
-                    className="p-1 text-theme-muted hover:text-red-500"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      ></path>
-                    </svg>
-                  </button>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-theme-text text-base flex items-center gap-2">
+                          {slot.name}
+                          {isCurrent && (
+                            <span className="text-[10px] px-2 py-0.5 bg-theme-primary text-theme-bg rounded-full uppercase tracking-wider">
+                              Current
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-xs text-theme-muted/80 mt-0.5">
+                          {t(`themes.${slot.theme}.name`)}
+                        </p>
+                        <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
+                          <MarkdownText content={slot.summary} />
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-[10px] text-theme-muted/60">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {new Date(slot.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        {!isCurrent && (
+                          <button
+                            onClick={() => {
+                              onSwitch(slot.id);
+                              onClose();
+                            }}
+                            className="px-4 py-2 bg-theme-primary text-theme-bg hover:bg-theme-primary-hover text-xs font-bold uppercase tracking-wide rounded transition-all hover:scale-105"
+                            title={t("saves.load")}
+                          >
+                            Load
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleExport(slot)}
+                          className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded transition-colors"
+                          title="Export"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                            ></path>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(t("saves.confirmDelete") || "Delete this save?")) {
+                              onDelete(slot.id);
+                            }
+                          }}
+                          className="p-2 text-theme-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                          title="Delete"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             );

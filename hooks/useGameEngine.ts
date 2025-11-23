@@ -618,6 +618,9 @@ export const useGameEngine = () => {
     // Strict Reset
     resetState(selectedTheme);
 
+    // Set processing state BEFORE navigation so InitializingPage sees it
+    setGameState((prev) => ({ ...prev, isProcessing: true }));
+
     navigate("/initializing");
     try {
       const { outline, log } = await generateStoryOutline(
