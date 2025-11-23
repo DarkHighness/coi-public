@@ -121,8 +121,8 @@ const createLogEntry = (
   provider: string,
   model: string,
   endpoint: string,
-  req: any,
-  res: any,
+  req: Record<string, any>,
+  res: Record<string, any>,
   usage?: TokenUsage,
 ): LogEntry => ({
   id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -351,7 +351,7 @@ export const generateStoryOutline = async (
   theme: string,
   language: string,
   customContext?: string,
-  tFunc?: (key: string) => any,
+  tFunc?: (key: string) => string,
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
 
@@ -778,10 +778,10 @@ export const generateSpeech = async (
 
 export const generateVeoScript = async (
   gameState: GameState,
-  history: any[],
+  history: StorySegment[],
   language: string = "English",
 ): Promise<string> => {
-  const prompt = getVeoScriptPrompt(gameState, history);
+  const prompt = getVeoScriptPrompt(gameState, history, language);
 
   const { provider, modelId } = getProviderConfig("script");
   const sys =
@@ -797,7 +797,7 @@ export const generateVeoScript = async (
     );
     // result should be the text string since no schema was provided
     return typeof result === "string" ? result : JSON.stringify(result);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Veo script generation failed", e);
     return "Failed to generate script.";
   }

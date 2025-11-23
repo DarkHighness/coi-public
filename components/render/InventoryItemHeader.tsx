@@ -30,7 +30,7 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
           : "bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 border-theme-border text-theme-text"
       }`}
     >
-      <span className="font-medium truncate mr-2">{name}</span>
+      <span className="font-medium truncate mr-2" title={name}>{name}</span>
       <div className="flex items-center gap-2">
         {onPin && (
           <div

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState, UIState, ListState } from "../types";
+import { GameState, UIState, ListState, LanguageCode } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
 import { ENV_THEMES, THEMES } from "../utils/constants";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
@@ -22,9 +22,12 @@ interface SidebarProps {
   onOpenMap: () => void;
   onOpenLogs: () => void;
   currentAmbience?: string;
-  onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
+  onUpdateUIState: <K extends keyof UIState>(
+    section: K,
+    newState: UIState[K],
+  ) => void;
   onVeoScript: () => void;
-  setLanguage?: (lang: any) => void;
+  setLanguage?: (lang: LanguageCode) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,7 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { character } = gameState;
-  const [showSystemFooter, setShowSystemFooter] = useState(true);
+  // Default to true if undefined
+  const showSystemFooter = gameState.uiState?.showSystemFooter !== false;
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
   const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${gameState.currentLocation}.`;
@@ -150,7 +154,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span>Tokens: {gameState.totalTokens.toLocaleString()}</span>
         <div className="flex gap-4">
           <button
-            onClick={() => setShowSystemFooter(!showSystemFooter)}
+            onClick={() =>
+              onUpdateUIState("showSystemFooter", !showSystemFooter)
+            }
             className="hover:text-theme-primary underline"
           >
             {showSystemFooter ? t("hideSystem") : t("showSystem")}

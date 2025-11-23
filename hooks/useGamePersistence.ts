@@ -7,6 +7,7 @@ import {
   saveMetadata,
   loadMetadata,
   getStorageEstimate,
+  clearDatabase,
 } from "../utils/indexedDB";
 
 export const useGamePersistence = (
@@ -17,9 +18,10 @@ export const useGamePersistence = (
   const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   // Helper to sanitize and fix state on load
-  const sanitizeState = (parsed: any): GameState => {
+  const sanitizeState = (parsed: Record<string, any>): GameState => {
     // Migrations
     if (!parsed.logs) parsed.logs = [];
     if (!parsed.totalTokens) parsed.totalTokens = 0;
@@ -95,8 +97,9 @@ export const useGamePersistence = (
           const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
           console.log(`Storage: ${usageMB} MB / ${quotaMB} MB`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to load saves from IndexedDB", error);
+        setPersistenceError(error?.message || "Unknown IndexedDB error");
       }
     };
 
@@ -160,10 +163,13 @@ export const useGamePersistence = (
           setIsAutoSaving(true);
           const timer = setTimeout(() => setIsAutoSaving(false), 2000);
           return () => clearTimeout(timer);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("Failed to save game to IndexedDB:", error);
           // Show user-friendly error
-          if (error.name === "QuotaExceededError") {
+          if (
+            error instanceof Error &&
+            error.name === "QuotaExceededError"
+          ) {
             alert("QuotaExceededError");
           }
         }
@@ -264,6 +270,18 @@ export const useGamePersistence = (
     }
   };
 
+  const hardReset = async () => {
+    try {
+      await clearDatabase();
+      localStorage.clear();
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to hard reset:", error);
+      // Force reload anyway
+      window.location.reload();
+    }
+  };
+
   return {
     saveSlots,
     currentSlotId,
@@ -273,5 +291,7 @@ export const useGamePersistence = (
     deleteSlot,
     clearAllSaves,
     isAutoSaving,
+    persistenceError,
+    hardReset,
   };
 };

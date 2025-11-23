@@ -25,7 +25,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-6 mt-auto">
+    <div className="shrink-0 p-4 border-t border-theme-border bg-theme-surface/30 space-y-4 mt-auto">
       {/* Tools Panel */}
       <div>
         <div className="flex rounded-md overflow-hidden border border-theme-border hover:border-theme-primary transition-colors group">
@@ -34,7 +34,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               onMagicMirror();
               onCloseMobile();
             }}
-            className="flex-1 py-3 px-4 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative border-r border-theme-border"
+            className="flex-1 py-2 px-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative border-r border-theme-border"
             title={t("magicMirror")}
           >
             <svg
@@ -57,7 +57,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               onVeoScript();
               onCloseMobile();
             }}
-            className="w-12 py-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative"
+            className="w-10 py-2 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative"
             title={t("veoScript.title")}
           >
             <svg
@@ -80,7 +80,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
       {/* System Panel */}
       <div>
         <h2
-          className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-4 flex items-center ${themeFont}`}
+          className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-2 flex items-center ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -148,7 +148,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           </button>
         </div>
 
-        <div className="p-4 text-xs text-theme-muted text-center mt-4 border-t border-theme-border pt-4">
+        <div className="p-2 text-xs text-theme-muted text-center mt-2 border-t border-theme-border pt-2">
           {t("builtWith")}
         </div>
       </div>

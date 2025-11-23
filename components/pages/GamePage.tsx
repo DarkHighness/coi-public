@@ -157,7 +157,10 @@ export const GamePage: React.FC<GamePageProps> = ({
     }
   };
 
-  const handleUpdateUIState = (section: keyof UIState, newState: ListState) => {
+  const handleUpdateUIState = <K extends keyof UIState>(
+    section: K,
+    newState: UIState[K],
+  ) => {
     setGameState((prev) => ({
       ...prev,
       uiState: {

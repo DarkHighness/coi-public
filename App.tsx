@@ -59,6 +59,8 @@ export default function App() {
     setThemeMode,
     resetSettings,
     clearAllSaves,
+    persistenceError,
+    hardReset,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -78,12 +80,42 @@ export default function App() {
   // Track preview theme from StartScreen
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
 
-  // Reset viewed segment to latest when history updates (new turn)
+  // Global Error Handling (PWA/Chunk/Network errors)
+  const [appError, setAppError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (currentHistory.length > 0) {
-      setViewedSegment(currentHistory[currentHistory.length - 1]);
-    }
-  }, [currentHistory.length]);
+    const handleGlobalError = (event: ErrorEvent) => {
+      console.error("Global error caught:", event.error);
+      if (
+        event.message?.includes("ChunkLoadError") ||
+        event.message?.includes("Importing a module script failed") ||
+        event.message?.includes("Failed to fetch")
+      ) {
+        setAppError(event.message);
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled rejection caught:", event.reason);
+      const reason = event.reason?.toString() || "";
+      if (
+        reason.includes("ChunkLoadError") ||
+        reason.includes("Importing a module script failed") ||
+        reason.includes("Failed to fetch") ||
+        reason.includes("QuotaExceededError")
+      ) {
+        setAppError(reason);
+      }
+    };
+
+    window.addEventListener("error", handleGlobalError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleGlobalError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, []);
 
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
 
@@ -342,6 +374,35 @@ export default function App() {
         message={notification.show ? notification.msg : t("autoSaving")}
         type={notification.type}
       />
+
+      {/* Critical Error Modal */}
+      {(persistenceError || appError) && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="bg-gray-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-2xl shadow-red-900/20 text-center">
+            <div className="text-5xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-red-500 mb-4">
+              Critical Error Detected
+            </h2>
+            <p className="text-gray-300 mb-6">
+              The game encountered a critical error. This is likely due to data
+              corruption, a PWA update issue, or network failure.
+            </p>
+            <div className="bg-black/50 p-3 rounded mb-6 font-mono text-xs text-red-300 overflow-auto max-h-32 text-left border border-red-900/30">
+              Error: {persistenceError || appError}
+            </div>
+            <p className="text-gray-400 text-sm mb-6">
+              To fix this, you need to reset the game data. This will clear all
+              saves and settings.
+            </p>
+            <button
+              onClick={hardReset}
+              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition-colors uppercase tracking-widest"
+            >
+              Clear Data & Reset Game
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

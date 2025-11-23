@@ -59,7 +59,7 @@ const openDB = (): Promise<IDBDatabase> => {
 /**
  * Save game state to IndexedDB
  */
-export const saveGameState = async (id: string, data: any): Promise<void> => {
+export const saveGameState = async <T>(id: string, data: T): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([SAVES_STORE], "readwrite");
@@ -74,7 +74,7 @@ export const saveGameState = async (id: string, data: any): Promise<void> => {
 /**
  * Load game state from IndexedDB
  */
-export const loadGameState = async (id: string): Promise<any | null> => {
+export const loadGameState = async <T = any>(id: string): Promise<T | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([SAVES_STORE], "readonly");
@@ -122,7 +122,7 @@ export const getAllSaveIds = async (): Promise<string[]> => {
 /**
  * Save metadata (save slots info)
  */
-export const saveMetadata = async (key: string, data: any): Promise<void> => {
+export const saveMetadata = async <T>(key: string, data: T): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([META_STORE], "readwrite");
@@ -137,7 +137,7 @@ export const saveMetadata = async (key: string, data: any): Promise<void> => {
 /**
  * Load metadata
  */
-export const loadMetadata = async (key: string): Promise<any | null> => {
+export const loadMetadata = async <T = any>(key: string): Promise<T | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([META_STORE], "readonly");
@@ -190,4 +190,25 @@ export const getStorageEstimate = async (): Promise<{
     return await navigator.storage.estimate();
   }
   return null;
+};
+
+/**
+ * Clear the entire database (Hard Reset)
+ */
+export const clearDatabase = async (): Promise<void> => {
+  if (dbPromise) {
+    const db = await dbPromise;
+    db.close();
+    dbPromise = null;
+  }
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      console.warn("Delete database blocked");
+      // Try to resolve anyway as we can't do much else
+      resolve();
+    };
+  });
 };

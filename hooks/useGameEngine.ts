@@ -50,6 +50,8 @@ export const useGameEngine = () => {
     deleteSlot,
     clearAllSaves,
     isAutoSaving,
+    persistenceError,
+    hardReset,
   } = useGamePersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -855,13 +857,7 @@ export const useGameEngine = () => {
         })),
         relationships: outline.relationships || [],
         quests: [
-          {
-            id: "main_quest_init",
-            title: outline.mainGoal || "Survive and explore.",
-            description: outline.premise,
-            type: "main",
-            status: "active",
-          },
+
         ],
         currentQuest: outline.mainGoal || "Survive and explore.",
         currentLocation: outline.locations?.[0] || "Unknown",
@@ -1081,5 +1077,7 @@ export const useGameEngine = () => {
     setThemeMode: setThemeModeValue,
     resetSettings,
     clearAllSaves,
+    persistenceError,
+    hardReset,
   };
 };

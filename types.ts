@@ -112,16 +112,18 @@ export interface UIState {
   locations: ListState;
   relationships: ListState;
   knowledge: ListState; // UI state for knowledge panel
+  showSystemFooter?: boolean; // Persisted state for system footer
 }
 
 export interface Relationship {
   name: string;
   description: string;
   status: string;
+  relationshipType?: string; // Type: family, friend, lover, boyfriend, girlfriend, mentor, student, doctor, rival, enemy, etc.
   affinity: number;
   affinityKnown?: boolean;
   appearance?: string;
-  personality?: string;
+  personality?: string; // Hidden field - true personality (may differ from description)
   notes?: string;
 }
 
@@ -239,6 +241,7 @@ export interface RelationshipAction {
   name: string;
   description?: string;
   status?: string;
+  relationshipType?: string;
   affinity?: number;
   affinityKnown?: boolean;
   appearance?: string;
