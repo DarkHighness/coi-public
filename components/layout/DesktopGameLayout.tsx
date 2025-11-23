@@ -85,6 +85,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
           onVeoScript={onVeoScript}
+          setLanguage={setLanguage}
         />
       </div>
 

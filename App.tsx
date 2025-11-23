@@ -267,6 +267,7 @@ export default function App() {
                     : undefined
                 }
                 onThemePreview={setPreviewTheme}
+                setLanguage={setLanguage}
               />
               <Suspense fallback={<LoadingFallback />}>
                 <SettingsModal

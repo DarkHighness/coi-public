@@ -11,6 +11,7 @@ import {
   generateStoryOutline,
   summarizeContext,
 } from "../services/aiService";
+import { preloadAudio } from "../utils/audioLoader";
 import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
 
 // Helper: Traverse tree
@@ -876,6 +877,8 @@ export const useGameEngine = () => {
       }));
 
       // Navigate to game immediately after outline is ready
+      // But ensure audio is preloaded first
+      await preloadAudio();
       navigate("/game");
 
       // Generate first turn in the game view
@@ -927,6 +930,10 @@ export const useGameEngine = () => {
   };
 
   const switchSlot = async (id: string) => {
+    navigate("/initializing");
+    // Ensure audio is preloaded
+    await preloadAudio();
+
     if (await loadSlot(id)) {
       // Allow state to propagate
       setTimeout(() => navigate("/game"), 0);

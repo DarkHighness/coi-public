@@ -133,6 +133,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
           onVeoScript={onVeoScript}
+          setLanguage={setLanguage}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

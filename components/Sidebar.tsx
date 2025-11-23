@@ -24,6 +24,7 @@ interface SidebarProps {
   currentAmbience?: string;
   onUpdateUIState: (section: keyof UIState, newState: ListState) => void;
   onVeoScript: () => void;
+  setLanguage?: (lang: any) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentAmbience,
   onUpdateUIState,
   onVeoScript,
+  setLanguage,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="hidden md:block">
           <LanguageSelector
             disabled={isTranslating || gameState.isProcessing}
+            onChange={setLanguage}
           />
         </div>
         <div className="md:hidden flex items-center gap-2">

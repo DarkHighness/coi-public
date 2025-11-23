@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getAudioTrack } from "../utils/audioLoader";
 
 export const useAmbience = (
   environment?: string,
@@ -77,10 +78,12 @@ export const useAmbience = (
 
     const playNewTrack = async () => {
       try {
-        // 1. Create new audio element
-        const newAudio = new Audio(`/audio/${environment}/ambience.mp3`);
-        newAudio.loop = true;
-        newAudio.volume = 0; // Start silent for fade-in
+        // 1. Get cached audio element
+        const newAudio = getAudioTrack(environment);
+        if (!newAudio) return; // Should not happen with fallback
+
+        // Reset volume just in case
+        newAudio.volume = 0;
 
         // 2. Start playing ONLY if not muted AND not cancelled
         // We check latestMutedRef because 'muted' prop might have changed while we were setting up

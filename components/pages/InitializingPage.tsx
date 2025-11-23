@@ -1,5 +1,6 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { preloadAudio } from "../../utils/audioLoader";
 
 interface InitializingPageProps {
   themeFont: string;
@@ -9,6 +10,25 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   themeFont,
 }) => {
   const { t } = useTranslation();
+
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    preloadAudio(setAudioProgress);
+
+    const timer = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
@@ -37,12 +57,21 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
           <h2
             className={`text-4xl md:text-6xl ${themeFont} tracking-[0.2em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-theme-muted via-theme-primary to-theme-muted animate-shimmer bg-[length:200%_auto] font-bold`}
           >
-            {t("outline.generating")}
+            {t("loading")}
           </h2>
-          <div className="flex items-center justify-center gap-2 text-theme-muted/80 text-xs md:text-sm uppercase tracking-[0.3em]">
-            <span className="w-8 h-[1px] bg-theme-primary/50"></span>
-            <span>{t("loading")}</span>
-            <span className="w-8 h-[1px] bg-theme-primary/50"></span>
+
+          {/* Progress Indicators */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2 text-theme-muted/80 text-xs md:text-sm uppercase tracking-[0.3em]">
+              <span className="w-8 h-[1px] bg-theme-primary/50"></span>
+              <span>{t("loading")}</span>
+              <span className="w-8 h-[1px] bg-theme-primary/50"></span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1 text-[10px] text-theme-muted font-mono">
+              <div>Audio Preload: {audioProgress}%</div>
+              <div>Time Elapsed: {formatTime(elapsedTime)}</div>
+            </div>
           </div>
         </div>
       </div>

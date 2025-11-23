@@ -15,6 +15,7 @@ interface StartScreenProps {
   onSettings: () => void;
   latestSave?: SaveSlot;
   onThemePreview?: (theme: string | null) => void;
+  setLanguage: (lang: any) => void;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -25,6 +26,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   onSettings,
   latestSave,
   onThemePreview,
+  setLanguage,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [hoveredTheme, setHoveredTheme] = useState<string>("fantasy");
@@ -132,7 +134,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               ></path>
             </svg>
           </button>
-          <LanguageSelector />
+          <LanguageSelector onChange={setLanguage} />
         </div>
 
         {/* Menu Content */}
