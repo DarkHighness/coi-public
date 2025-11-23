@@ -393,4 +393,7 @@ export const en = {
   apiConsole: "API Console",
   apiConsoleDescription: "Trace raw API requests and token usage.",
   version: "Version",
+  visualEffects: "Visual Effects",
+  enableFallbackBackground: "Enable Fallback Background",
+  enableFallbackBackgroundDesc: "Enable fallback background images",
 };

@@ -29,7 +29,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     // After 3 seconds, start checking if we're actually processing
     const checkTimer = setTimeout(() => {
       setShouldCheckProcessing(true);
-    }, 3000);
+    }, 1000);
 
     return () => {
       clearInterval(timer);

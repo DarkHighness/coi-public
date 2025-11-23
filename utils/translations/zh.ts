@@ -386,4 +386,7 @@ export const zh = {
   apiConsole: "API 控制台",
   apiConsoleDescription: "追踪原始 API 请求和令牌使用情况。",
   version: "版本",
+  visualEffects: "视觉效果",
+  enableFallbackBackground: "启用 Fallback 的背景",
+  enableFallbackBackgroundDesc: "启用 Fallback 的背景图片",
 };
