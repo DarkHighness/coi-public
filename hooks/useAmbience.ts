@@ -10,9 +10,21 @@ export const useAmbience = (
   const [currentEnv, setCurrentEnv] = useState<string | undefined>(undefined);
   const onPlayRef = useRef(onPlay);
 
+  // Track latest values to handle async race conditions
+  const latestEnvRef = useRef(environment);
+  const latestMutedRef = useRef(muted);
+
   useEffect(() => {
     onPlayRef.current = onPlay;
   }, [onPlay]);
+
+  useEffect(() => {
+    latestEnvRef.current = environment;
+  }, [environment]);
+
+  useEffect(() => {
+    latestMutedRef.current = muted;
+  }, [muted]);
 
   // Update volume/mute for active track
   useEffect(() => {
@@ -22,7 +34,8 @@ export const useAmbience = (
       } else {
         audioRef.current.volume = volume;
         // Only resume if it was supposed to be playing (i.e., we have an active environment)
-        if (currentEnv && audioRef.current.paused) {
+        // AND if the current environment matches what we expect
+        if (currentEnv && audioRef.current.paused && currentEnv === latestEnvRef.current) {
           audioRef.current.play().catch((e) => {
             console.warn("Resume failed:", e);
           });
@@ -32,6 +45,8 @@ export const useAmbience = (
   }, [volume, muted, currentEnv]);
 
   useEffect(() => {
+    let isCancelled = false;
+
     // If environment is undefined or "Unknown", fade out current track and stop
     if (!environment || environment === "Unknown") {
       if (audioRef.current) {
@@ -55,7 +70,9 @@ export const useAmbience = (
         setCurrentEnv(undefined);
       }
       return;
-    } // If it's the same as current, do nothing
+    }
+
+    // If it's the same as current, do nothing
     if (environment === currentEnv) return;
 
     const playNewTrack = async () => {
@@ -65,13 +82,19 @@ export const useAmbience = (
         newAudio.loop = true;
         newAudio.volume = 0; // Start silent for fade-in
 
-        // 2. Start playing ONLY if not muted
-        if (!muted) {
+        // 2. Start playing ONLY if not muted AND not cancelled
+        // We check latestMutedRef because 'muted' prop might have changed while we were setting up
+        if (!latestMutedRef.current && !isCancelled) {
           try {
             await newAudio.play();
           } catch (e) {
             console.warn("Audio autoplay blocked or failed:", e);
           }
+        }
+
+        if (isCancelled) {
+          newAudio.pause();
+          return;
         }
 
         // 3. Fade out old track if it exists
@@ -89,9 +112,13 @@ export const useAmbience = (
         }
 
         // 4. Fade in new track (only if not muted)
-        if (!muted) {
+        if (!latestMutedRef.current && !isCancelled) {
           const targetVolume = volume;
           const fadeInInterval = setInterval(() => {
+            if (isCancelled) {
+                clearInterval(fadeInInterval);
+                return;
+            }
             if (newAudio.volume < targetVolume - 0.05) {
               newAudio.volume += 0.05;
             } else {
@@ -102,10 +129,12 @@ export const useAmbience = (
         }
 
         // 5. Update ref and state
-        audioRef.current = newAudio;
-        setCurrentEnv(environment);
-        if (onPlayRef.current) {
-          onPlayRef.current(environment);
+        if (!isCancelled) {
+            audioRef.current = newAudio;
+            setCurrentEnv(environment);
+            if (onPlayRef.current) {
+            onPlayRef.current(environment);
+            }
         }
       } catch (error) {
         console.warn(`Failed to play ambience for ${environment}:`, error);
@@ -114,9 +143,14 @@ export const useAmbience = (
 
     playNewTrack();
 
-    // Cleanup on unmount (stop all audio)
+    // Cleanup on unmount or dependency change
     return () => {
-      // We don't stop audio here because we want it to persist across re-renders unless environment changes
+      isCancelled = true;
+      // Note: We don't stop audioRef.current here immediately because we want the fade-out logic
+      // in the NEXT effect run to handle it (or the fade-out block above).
+      // However, if we are unmounting completely, we should stop it.
+      // But this cleanup runs on every dependency change (env change).
+      // The "fade out old track" logic in the next run handles the transition.
     };
   }, [environment, currentEnv]); // Removed volume/muted from dependency to avoid restarting track on volume change
 
