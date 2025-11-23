@@ -19,7 +19,9 @@ const audioCache = new Map<string, HTMLAudioElement>();
 
 let loadingPromise: Promise<void> | null = null;
 
-export const preloadAudio = (onProgress?: (progress: number) => void): Promise<void> => {
+export const preloadAudio = (
+  onProgress?: (progress: number) => void,
+): Promise<void> => {
   if (loadingPromise) return loadingPromise;
 
   let loadedCount = 0;
@@ -60,7 +62,7 @@ export const preloadAudio = (onProgress?: (progress: number) => void): Promise<v
 
         audioCache.set(env, audio);
       });
-    })
+    }),
   ).then(() => {});
 
   return loadingPromise;

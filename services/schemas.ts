@@ -15,13 +15,19 @@ export const locationProperties = {
   hidden: {
     type: Type.OBJECT,
     properties: {
-      fullDescription: { type: Type.STRING, description: "True nature of the location." },
+      fullDescription: {
+        type: Type.STRING,
+        description: "True nature of the location.",
+      },
       hiddenFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
       secrets: { type: Type.ARRAY, items: { type: Type.STRING } },
     },
     required: ["fullDescription", "hiddenFeatures", "secrets"],
   },
-  environment: { type: Type.STRING, description: "Atmosphere/Environment tag." },
+  environment: {
+    type: Type.STRING,
+    description: "Atmosphere/Environment tag.",
+  },
 };
 
 export const questProperties = {
@@ -30,7 +36,10 @@ export const questProperties = {
   visible: {
     type: Type.OBJECT,
     properties: {
-      description: { type: Type.STRING, description: "The apparent objective." },
+      description: {
+        type: Type.STRING,
+        description: "The apparent objective.",
+      },
       objectives: { type: Type.ARRAY, items: { type: Type.STRING } },
     },
     required: ["description", "objectives"],
@@ -38,7 +47,10 @@ export const questProperties = {
   hidden: {
     type: Type.OBJECT,
     properties: {
-      trueDescription: { type: Type.STRING, description: "The hidden truth or real purpose." },
+      trueDescription: {
+        type: Type.STRING,
+        description: "The hidden truth or real purpose.",
+      },
       trueObjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
       secretOutcome: { type: Type.STRING },
     },
@@ -53,8 +65,15 @@ export const relationshipProperties = {
     properties: {
       description: { type: Type.STRING, description: "Visual description" },
       appearance: { type: Type.STRING, description: "Physical appearance" },
-      status: { type: Type.STRING, description: "Relationship status (e.g. Friend, Rival)" },
-      currentImpression: { type: Type.STRING, description: "The NPC's current state from the protagonist's perspective (e.g. 'Looks exhausted', 'Smiling mysteriously', 'Seems hostile')" },
+      status: {
+        type: Type.STRING,
+        description: "Relationship status (e.g. Friend, Rival)",
+      },
+      currentImpression: {
+        type: Type.STRING,
+        description:
+          "The NPC's current state from the protagonist's perspective (e.g. 'Looks exhausted', 'Smiling mysteriously', 'Seems hostile')",
+      },
     },
     required: ["description", "status", "appearance"],
   },
@@ -83,12 +102,25 @@ export const knowledgeProperties = {
   title: { type: Type.STRING, description: "Title of the knowledge entry." },
   category: {
     type: Type.STRING,
-    enum: ["landscape", "history", "item", "person", "faction", "secret", "magic", "tech", "other"],
+    enum: [
+      "landscape",
+      "history",
+      "item",
+      "person",
+      "faction",
+      "secret",
+      "magic",
+      "tech",
+      "other",
+    ],
   },
   visible: {
     type: Type.OBJECT,
     properties: {
-      description: { type: Type.STRING, description: "What is commonly known." },
+      description: {
+        type: Type.STRING,
+        description: "What is commonly known.",
+      },
       details: { type: Type.STRING },
     },
     required: ["description"],
@@ -138,7 +170,8 @@ export const storyOutlineSchema: Schema = {
     },
     initialTime: {
       type: Type.STRING,
-      description: "The starting time of the story (e.g., 'Year 2024', 'Day 1', 'The 3rd Era'). Must fit the world setting.",
+      description:
+        "The starting time of the story (e.g., 'Year 2024', 'Day 1', 'The 3rd Era'). Must fit the world setting.",
     },
     premise: {
       type: Type.STRING,
@@ -149,15 +182,18 @@ export const storyOutlineSchema: Schema = {
       properties: {
         visible: {
           type: Type.STRING,
-          description: "The apparent main motivation or task for the protagonist.",
+          description:
+            "The apparent main motivation or task for the protagonist.",
         },
         hidden: {
           type: Type.STRING,
-          description: "The hidden event logic, true nature, or secret reason behind the goal.",
+          description:
+            "The hidden event logic, true nature, or secret reason behind the goal.",
         },
       },
       required: ["visible", "hidden"],
-      description: "The primary driving force of the story, with both surface and hidden layers.",
+      description:
+        "The primary driving force of the story, with both surface and hidden layers.",
     },
     quests: {
       type: Type.ARRAY,
@@ -173,15 +209,18 @@ export const storyOutlineSchema: Schema = {
       properties: {
         visible: {
           type: Type.STRING,
-          description: "Common knowledge about the world (war, peace, magic level, tech level).",
+          description:
+            "Common knowledge about the world (war, peace, magic level, tech level).",
         },
         hidden: {
           type: Type.STRING,
-          description: "Secret truths about the world (ancient conspiracies, hidden magic, true history).",
+          description:
+            "Secret truths about the world (ancient conspiracies, hidden magic, true history).",
         },
       },
       required: ["visible", "hidden"],
-      description: "Dual-layer world setting: public knowledge vs. secret truths.",
+      description:
+        "Dual-layer world setting: public knowledge vs. secret truths.",
     },
     locations: {
       type: Type.ARRAY,
@@ -291,7 +330,10 @@ export const storyOutlineSchema: Schema = {
               name: { type: Type.STRING },
               description: { type: Type.STRING },
               effects: { type: Type.ARRAY, items: { type: Type.STRING } },
-              triggerConditions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              triggerConditions: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
               discovered: { type: Type.BOOLEAN },
             },
             required: ["name", "description"],
@@ -364,7 +406,8 @@ export const summarySchema: Schema = {
   properties: {
     displayText: {
       type: Type.STRING,
-      description: "Concise 2-3 sentence summary for UI display (visible layer only)",
+      description:
+        "Concise 2-3 sentence summary for UI display (visible layer only)",
       nullable: false,
     },
     visible: {
@@ -428,7 +471,8 @@ export const gameResponseSchema: Schema = {
   properties: {
     narrative: {
       type: Type.STRING,
-      description: "The main story segment text. Write in coherent, flowing paragraphs. Integrate sensory details (sight, sound, touch) naturally. DO NOT use bullet points or lists for descriptions. MUST be in the target language.",
+      description:
+        "The main story segment text. Write in coherent, flowing paragraphs. Integrate sensory details (sight, sound, touch) naturally. DO NOT use bullet points or lists for descriptions. MUST be in the target language.",
     },
     choices: {
       type: Type.ARRAY,
@@ -443,7 +487,7 @@ export const gameResponseSchema: Schema = {
         properties: {
           action: { type: Type.STRING, enum: ["add", "remove", "update"] },
           id: { type: Type.INTEGER, description: "Numeric ID of the item." },
-          ...inventoryItemProperties
+          ...inventoryItemProperties,
         },
         required: ["action"],
       },
@@ -457,7 +501,7 @@ export const gameResponseSchema: Schema = {
           action: { type: Type.STRING, enum: ["add", "update", "remove"] },
           id: { type: Type.INTEGER, description: "Numeric ID of the NPC." },
           notes: { type: Type.STRING },
-          ...relationshipProperties
+          ...relationshipProperties,
         },
         required: ["action"],
       },
@@ -470,9 +514,12 @@ export const gameResponseSchema: Schema = {
         properties: {
           type: { type: Type.STRING, enum: ["current", "known"] },
           action: { type: Type.STRING, enum: ["update", "add"] },
-          id: { type: Type.INTEGER, description: "Numeric ID of the location." },
+          id: {
+            type: Type.INTEGER,
+            description: "Numeric ID of the location.",
+          },
           notes: { type: Type.STRING },
-          ...locationProperties
+          ...locationProperties,
         },
         required: ["type", "action", "name"],
       },
@@ -486,8 +533,12 @@ export const gameResponseSchema: Schema = {
           action: { type: Type.STRING, enum: ["add", "update"] },
           id: { type: Type.INTEGER, description: "Numeric ID." },
           relatedTo: { type: Type.ARRAY, items: { type: Type.STRING } },
-          discoveredAt: { type: Type.STRING, description: "Time and location of discovery (e.g. 'Year 2024, The Old Library')." },
-          ...knowledgeProperties
+          discoveredAt: {
+            type: Type.STRING,
+            description:
+              "Time and location of discovery (e.g. 'Year 2024, The Old Library').",
+          },
+          ...knowledgeProperties,
         },
         required: ["action"],
       },
@@ -514,8 +565,14 @@ export const gameResponseSchema: Schema = {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-              name: { type: Type.STRING, description: "Name of the attribute (e.g. Health, Sanity)." },
-              value: { type: Type.INTEGER, description: "New value or starting value." },
+              name: {
+                type: Type.STRING,
+                description: "Name of the attribute (e.g. Health, Sanity).",
+              },
+              value: {
+                type: Type.INTEGER,
+                description: "New value or starting value.",
+              },
               maxValue: { type: Type.INTEGER },
               color: { type: Type.STRING },
             },
@@ -530,7 +587,10 @@ export const gameResponseSchema: Schema = {
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
               name: { type: Type.STRING },
-              level: { type: Type.STRING, description: "Skill level (e.g. Novice, Master)." },
+              level: {
+                type: Type.STRING,
+                description: "Skill level (e.g. Novice, Master).",
+              },
               description: { type: Type.STRING },
             },
             required: ["action", "name"],
@@ -554,10 +614,22 @@ export const gameResponseSchema: Schema = {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-              name: { type: Type.STRING, description: "Name of the condition (e.g. Poisoned, Blessed)." },
-              description: { type: Type.STRING, description: "Effect description." },
-              duration: { type: Type.STRING, description: "Duration or 'permanent'." },
-              value: { type: Type.INTEGER, description: "Intensity value if applicable." },
+              name: {
+                type: Type.STRING,
+                description: "Name of the condition (e.g. Poisoned, Blessed).",
+              },
+              description: {
+                type: Type.STRING,
+                description: "Effect description.",
+              },
+              duration: {
+                type: Type.STRING,
+                description: "Duration or 'permanent'.",
+              },
+              value: {
+                type: Type.INTEGER,
+                description: "Intensity value if applicable.",
+              },
             },
             required: ["action", "name"],
           },
@@ -569,8 +641,14 @@ export const gameResponseSchema: Schema = {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-              name: { type: Type.STRING, description: "Name of the hidden trait." },
-              description: { type: Type.STRING, description: "Description of the trait." },
+              name: {
+                type: Type.STRING,
+                description: "Name of the hidden trait.",
+              },
+              description: {
+                type: Type.STRING,
+                description: "Description of the trait.",
+              },
             },
             required: ["action", "name"],
           },
@@ -592,7 +670,7 @@ export const gameResponseSchema: Schema = {
             type: Type.STRING,
             description: "Unique ID for the quest (e.g. 'find_relic').",
           },
-          ...questProperties
+          ...questProperties,
         },
         required: ["action", "id"],
       },
@@ -654,7 +732,8 @@ export const gameResponseSchema: Schema = {
         "storm",
         "tavern",
       ],
-      description: "The current audio ambience/environment. MUST be one of the defined enum values.",
+      description:
+        "The current audio ambience/environment. MUST be one of the defined enum values.",
     },
     narrativeTone: {
       type: Type.STRING,
@@ -698,7 +777,8 @@ export const gameResponseSchema: Schema = {
         "stone",
         "heartbreak",
       ],
-      description: "Update the visual theme/atmosphere ONLY if it shifts significantly.",
+      description:
+        "Update the visual theme/atmosphere ONLY if it shifts significantly.",
     },
     timeUpdate: {
       type: Type.STRING,

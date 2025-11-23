@@ -26,9 +26,9 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedKnowledge, setExpandedKnowledge] = useState<Set<string | number>>(
-    new Set(),
-  );
+  const [expandedKnowledge, setExpandedKnowledge] = useState<
+    Set<string | number>
+  >(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalExpandedKnowledge, setModalExpandedKnowledge] = useState<
     Set<string | number>
@@ -36,7 +36,10 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 
   const DISPLAY_LIMIT = 4; // Show limited number in sidebar
 
-  const toggleKnowledge = (knowledgeId: string | number, isModal: boolean = false) => {
+  const toggleKnowledge = (
+    knowledgeId: string | number,
+    isModal: boolean = false,
+  ) => {
     const setter = isModal ? setModalExpandedKnowledge : setExpandedKnowledge;
     setter((prev) => {
       const newSet = new Set(prev);
@@ -64,10 +67,15 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm" title={t(`knowledgePanel.category.${k.category}`)}>
+            <span
+              className="text-sm"
+              title={t(`knowledgePanel.category.${k.category}`)}
+            >
               {CATEGORY_ICONS[k.category] || "📖"}
             </span>
-            <h4 className="font-bold text-theme-text text-sm leading-tight truncate">{k.title}</h4>
+            <h4 className="font-bold text-theme-text text-sm leading-tight truncate">
+              {k.title}
+            </h4>
           </div>
           <p className="text-[10px] text-theme-muted truncate opacity-80 pl-6">
             {k.visible?.description || "No description"}
@@ -79,18 +87,29 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </div>
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedSet.has(k.id) ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedSet.has(k.id) ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
         <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
-          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
+          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+            {t("description") || "Description"}
+          </span>
           <p className="pl-1 mb-2">{k.visible?.description}</p>
 
           {k.visible?.details && (
             <div className="mt-2 pt-2 border-t border-theme-border/30">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("details") || "Details"}</span>
+              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                {t("details") || "Details"}
+              </span>
               <div className="pl-1">
                 <p>{k.visible.details}</p>
               </div>
@@ -98,8 +117,12 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           )}
           {k.discoveredAt && (
             <div className="mt-2 pt-2 border-t border-theme-border/30 flex justify-between items-center">
-               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">{t("knowledgePanel.discovered") || "Discovered"}</span>
-               <span className="text-[10px] text-theme-muted opacity-80">{k.discoveredAt}</span>
+              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
+                {t("knowledgePanel.discovered") || "Discovered"}
+              </span>
+              <span className="text-[10px] text-theme-muted opacity-80">
+                {k.discoveredAt}
+              </span>
             </div>
           )}
         </div>
@@ -121,7 +144,9 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 
   return (
     <div>
-      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
+      <div
+        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+      >
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
@@ -143,19 +168,37 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
               className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           )}
-          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-theme-muted hover:text-theme-primary p-1"
+          >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
             </svg>
           </button>
         </div>
@@ -183,7 +226,9 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
-          (item.visible?.description || "").toLowerCase().includes(query.toLowerCase()) ||
+          (item.visible?.description || "")
+            .toLowerCase()
+            .includes(query.toLowerCase()) ||
           item.category.toLowerCase().includes(query.toLowerCase())
         }
         renderItem={(item) =>

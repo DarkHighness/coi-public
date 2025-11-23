@@ -280,10 +280,7 @@ export const useGamePersistence = (
         } catch (error: unknown) {
           console.error("Failed to save game to IndexedDB:", error);
           // Show user-friendly error
-          if (
-            error instanceof Error &&
-            error.name === "QuotaExceededError"
-          ) {
+          if (error instanceof Error && error.name === "QuotaExceededError") {
             alert("QuotaExceededError");
           }
         }

@@ -6,9 +6,9 @@ import { InventoryItem, InventoryAction, GameState } from "../../types";
 export function processInventoryActions(
   currentInventory: InventoryItem[],
   actions: InventoryAction[] | undefined,
-  nextIds: GameState['nextIds'],
-  currentTime: string
-): { inventory: InventoryItem[]; nextIds: GameState['nextIds'] } {
+  nextIds: GameState["nextIds"],
+  currentTime: string,
+): { inventory: InventoryItem[]; nextIds: GameState["nextIds"] } {
   if (!actions || actions.length === 0) {
     return { inventory: currentInventory, nextIds };
   }
@@ -20,7 +20,7 @@ export function processInventoryActions(
     if (act.action === "add") {
       // Check for duplicates by ID first, then by name
       const exists = newInventory.some(
-        (i) => (act.id && i.id === act.id) || i.name === act.name
+        (i) => (act.id && i.id === act.id) || i.name === act.name,
       );
 
       if (!exists) {
@@ -30,11 +30,11 @@ export function processInventoryActions(
           name: act.name || "Unknown Item",
           visible: {
             description: act.visible?.description || "A mysterious item.",
-            notes: act.visible?.notes
+            notes: act.visible?.notes,
           },
           hidden: {
             truth: act.hidden?.truth || "The truth is hidden.",
-            secrets: act.hidden?.secrets
+            secrets: act.hidden?.secrets,
           },
           createdAt: Date.now(),
           lastModified: Date.now(),
@@ -44,11 +44,11 @@ export function processInventoryActions(
       }
     } else if (act.action === "remove") {
       newInventory = newInventory.filter(
-        (i) => (act.id && i.id !== act.id) && i.name !== act.name
+        (i) => act.id && i.id !== act.id && i.name !== act.name,
       );
     } else if (act.action === "update") {
       const idx = newInventory.findIndex(
-        (i) => (act.id && i.id === act.id) || i.name === act.name
+        (i) => (act.id && i.id === act.id) || i.name === act.name,
       );
 
       if (idx !== -1) {
@@ -80,7 +80,7 @@ export function processInventoryActions(
         newInventory[idx].lastModified = Date.now();
       } else {
         console.warn(
-          `[processInventoryActions] Update failed: item "${act.item || act.name}" not found`
+          `[processInventoryActions] Update failed: item "${act.item || act.name}" not found`,
         );
       }
     }

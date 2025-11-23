@@ -7,11 +7,11 @@ export function processLocationActions(
   currentLocations: Location[],
   currentLocation: string,
   actions: LocationAction[] | undefined,
-  nextIds: GameState['nextIds']
+  nextIds: GameState["nextIds"],
 ): {
   locations: Location[];
   currentLocation: string;
-  nextIds: GameState['nextIds'];
+  nextIds: GameState["nextIds"];
 } {
   if (!actions || actions.length === 0) {
     return { locations: currentLocations, currentLocation, nextIds };
@@ -29,7 +29,7 @@ export function processLocationActions(
 
     // Rich Location Update/Add
     const locIdx = newLocations.findIndex(
-      (l) => (act.id && l.id === act.id) || l.name === act.name
+      (l) => (act.id && l.id === act.id) || l.name === act.name,
     );
 
     if (locIdx === -1) {
@@ -41,18 +41,18 @@ export function processLocationActions(
           name: act.name,
           visible: {
             description: act.visible?.description || "Unknown",
-            knownFeatures: act.visible?.knownFeatures || []
+            knownFeatures: act.visible?.knownFeatures || [],
           },
           hidden: {
             fullDescription: act.hidden?.fullDescription || "Unknown",
             hiddenFeatures: act.hidden?.hiddenFeatures || [],
-            secrets: act.hidden?.secrets || []
+            secrets: act.hidden?.secrets || [],
           },
           lore: act.lore,
           isVisited: act.type === "current",
           environment: act.environment,
           notes: act.notes,
-          createdAt: Date.now()
+          createdAt: Date.now(),
         });
       }
     } else {
@@ -68,7 +68,8 @@ export function processLocationActions(
 
       // Update hidden layer
       if (act.hidden?.fullDescription) {
-        newLocations[locIdx].hidden.fullDescription = act.hidden.fullDescription;
+        newLocations[locIdx].hidden.fullDescription =
+          act.hidden.fullDescription;
       }
       if (act.hidden?.hiddenFeatures) {
         newLocations[locIdx].hidden.hiddenFeatures = act.hidden.hiddenFeatures;
@@ -99,6 +100,6 @@ export function processLocationActions(
   return {
     locations: newLocations,
     currentLocation: newCurrentLocation,
-    nextIds: updatedNextIds
+    nextIds: updatedNextIds,
   };
 }

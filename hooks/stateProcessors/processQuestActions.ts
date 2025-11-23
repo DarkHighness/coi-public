@@ -6,8 +6,8 @@ import { Quest, QuestAction, GameState } from "../../types";
 export function processQuestActions(
   currentQuests: Quest[],
   actions: QuestAction[] | undefined,
-  nextIds: GameState['nextIds']
-): { quests: Quest[]; nextIds: GameState['nextIds'] } {
+  nextIds: GameState["nextIds"],
+): { quests: Quest[]; nextIds: GameState["nextIds"] } {
   if (!actions || actions.length === 0) {
     return { quests: currentQuests, nextIds };
   }
@@ -17,9 +17,9 @@ export function processQuestActions(
 
   actions.forEach((act) => {
     // Handle legacy string IDs
-    const actId = typeof act.id === 'string' ? parseInt(act.id) : act.id;
+    const actId = typeof act.id === "string" ? parseInt(act.id) : act.id;
     const idx = newQuests.findIndex(
-      (q) => (actId && q.id === actId) || q.title === act.title
+      (q) => (actId && q.id === actId) || q.title === act.title,
     );
 
     if (act.action === "add" && idx === -1) {
@@ -31,27 +31,32 @@ export function processQuestActions(
         status: "active",
         visible: {
           description: act.visible?.description || "",
-          objectives: act.visible?.objectives || []
+          objectives: act.visible?.objectives || [],
         },
         hidden: {
           trueDescription: act.hidden?.trueDescription || "",
           trueObjectives: act.hidden?.trueObjectives || [],
-          secretOutcome: act.hidden?.secretOutcome || ""
+          secretOutcome: act.hidden?.secretOutcome || "",
         },
         createdAt: Date.now(),
-        lastModified: Date.now()
+        lastModified: Date.now(),
       });
     } else if (idx !== -1) {
       if (act.action === "update") {
         if (act.title) newQuests[idx].title = act.title;
         if (act.type) newQuests[idx].type = act.type;
 
-        if (act.visible?.description) newQuests[idx].visible.description = act.visible.description;
-        if (act.visible?.objectives) newQuests[idx].visible.objectives = act.visible.objectives;
+        if (act.visible?.description)
+          newQuests[idx].visible.description = act.visible.description;
+        if (act.visible?.objectives)
+          newQuests[idx].visible.objectives = act.visible.objectives;
 
-        if (act.hidden?.trueDescription) newQuests[idx].hidden.trueDescription = act.hidden.trueDescription;
-        if (act.hidden?.trueObjectives) newQuests[idx].hidden.trueObjectives = act.hidden.trueObjectives;
-        if (act.hidden?.secretOutcome) newQuests[idx].hidden.secretOutcome = act.hidden.secretOutcome;
+        if (act.hidden?.trueDescription)
+          newQuests[idx].hidden.trueDescription = act.hidden.trueDescription;
+        if (act.hidden?.trueObjectives)
+          newQuests[idx].hidden.trueObjectives = act.hidden.trueObjectives;
+        if (act.hidden?.secretOutcome)
+          newQuests[idx].hidden.secretOutcome = act.hidden.secretOutcome;
 
         newQuests[idx].lastModified = Date.now();
       } else if (act.action === "complete") {
@@ -63,7 +68,7 @@ export function processQuestActions(
       }
     } else if (act.action !== "add") {
       console.warn(
-        `[processQuestActions] Action "${act.action}" failed: quest "${act.id}" not found`
+        `[processQuestActions] Action "${act.action}" failed: quest "${act.id}" not found`,
       );
     }
   });

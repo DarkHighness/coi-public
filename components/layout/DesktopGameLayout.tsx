@@ -34,7 +34,10 @@ interface DesktopGameLayoutProps {
   aiSettings: any;
   onTypingComplete?: () => void;
   currentAmbience?: string;
-  onUpdateUIState: <K extends keyof UIState>(section: K, newState: UIState[K]) => void;
+  onUpdateUIState: <K extends keyof UIState>(
+    section: K,
+    newState: UIState[K],
+  ) => void;
   onToggleMute?: () => void;
   onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;

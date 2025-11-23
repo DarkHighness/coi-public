@@ -32,7 +32,8 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             {t("apiConsole") || "API Console"}
           </h2>
           <p className="text-xs text-theme-muted mt-1">
-            {t("apiConsoleDescription") || "Trace raw API requests and token usage."}
+            {t("apiConsoleDescription") ||
+              "Trace raw API requests and token usage."}
           </p>
         </div>
         <button

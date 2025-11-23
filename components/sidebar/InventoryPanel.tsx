@@ -64,7 +64,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
 
   return (
     <div>
-      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
+      <div
+        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+      >
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
@@ -102,12 +104,32 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
               </svg>
             )}
           </button>
@@ -121,20 +143,38 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
               className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           )}
 
-          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-theme-muted hover:text-theme-primary p-1"
+          >
             <svg
               className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
             </svg>
           </button>
         </div>
@@ -155,8 +195,12 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 context={itemContext}
                 isPinned={isPinned(item.id)}
                 onPin={() => togglePin(item.id)}
-                onDragStart={isEditMode ? (e) => handleDragStart(e, item.id) : undefined}
-                onDragEnter={isEditMode ? (e) => handleDragEnter(e, item.id) : undefined}
+                onDragStart={
+                  isEditMode ? (e) => handleDragStart(e, item.id) : undefined
+                }
+                onDragEnter={
+                  isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
+                }
                 onDragOver={isEditMode ? handleDragOver : undefined}
                 onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
                 isEditMode={isEditMode}
@@ -175,7 +219,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item: any, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
-          (item.visible?.description || "").toLowerCase().includes(query.toLowerCase())
+          (item.visible?.description || "")
+            .toLowerCase()
+            .includes(query.toLowerCase())
         }
         renderItem={(item) => (
           <InventoryItem

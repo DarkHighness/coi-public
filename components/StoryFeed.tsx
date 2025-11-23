@@ -202,7 +202,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
               </p>
               {gameState.outline.mainGoal?.visible && (
                 <p className="text-theme-text text-sm mt-4 border-t border-theme-border/30 pt-2">
-                  <strong className="text-theme-primary">{t("outline.currentGoal")}:</strong>{" "}
+                  <strong className="text-theme-primary">
+                    {t("outline.currentGoal")}:
+                  </strong>{" "}
                   {gameState.outline.mainGoal.visible}
                 </p>
               )}

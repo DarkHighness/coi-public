@@ -597,25 +597,33 @@ export const useGameEngine = () => {
         outline,
         character: {
           ...outline.character,
-          conditions: (outline.character.conditions || []).map((c: any, i: number) => ({
-            ...c,
-            id: i + 1,
-          })),
-          hiddenTraits: (outline.character.hiddenTraits || []).map((t: any, i: number) => ({
-            ...t,
-            id: i + 1,
-          })),
+          conditions: (outline.character.conditions || []).map(
+            (c: any, i: number) => ({
+              ...c,
+              id: i + 1,
+            }),
+          ),
+          hiddenTraits: (outline.character.hiddenTraits || []).map(
+            (t: any, i: number) => ({
+              ...t,
+              id: i + 1,
+            }),
+          ),
         },
-        inventory: (outline.inventory || []).map((item: any, index: number) => ({
-          ...item,
-          id: index + 1,
-          createdAt: Date.now(),
-        })),
-        relationships: (outline.relationships || []).map((rel: any, index: number) => ({
-          ...rel,
-          id: index + 1,
-          createdAt: Date.now(),
-        })),
+        inventory: (outline.inventory || []).map(
+          (item: any, index: number) => ({
+            ...item,
+            id: index + 1,
+            createdAt: Date.now(),
+          }),
+        ),
+        relationships: (outline.relationships || []).map(
+          (rel: any, index: number) => ({
+            ...rel,
+            id: index + 1,
+            createdAt: Date.now(),
+          }),
+        ),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           id: index + 1,

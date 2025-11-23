@@ -9,17 +9,17 @@ import { processWorldEvents } from "./processWorldEvents";
 import { processCausalChains } from "./processCausalChains";
 
 export interface ProcessedState {
-  inventory: GameState['inventory'];
-  relationships: GameState['relationships'];
-  quests: GameState['quests'];
-  knowledge: GameState['knowledge'];
-  locations: GameState['locations'];
+  inventory: GameState["inventory"];
+  relationships: GameState["relationships"];
+  quests: GameState["quests"];
+  knowledge: GameState["knowledge"];
+  locations: GameState["locations"];
   currentLocation: string;
-  character: GameState['character'];
-  timeline: GameState['timeline'];
-  nextIds: GameState['nextIds'];
+  character: GameState["character"];
+  timeline: GameState["timeline"];
+  nextIds: GameState["nextIds"];
   time: string;
-  causalChains: GameState['causalChains'];
+  causalChains: GameState["causalChains"];
 }
 
 /**
@@ -43,23 +43,24 @@ export function processAllActions(
     gameState.inventory,
     response.inventoryActions,
     nextIds,
-    currentTimeString
+    currentTimeString,
   );
   nextIds = inventoryNextIds;
 
   // Process relationships
-  const { relationships, nextIds: relationshipsNextIds } = processRelationshipActions(
-    gameState.relationships,
-    response.relationshipActions,
-    nextIds
-  );
+  const { relationships, nextIds: relationshipsNextIds } =
+    processRelationshipActions(
+      gameState.relationships,
+      response.relationshipActions,
+      nextIds,
+    );
   nextIds = relationshipsNextIds;
 
   // Process quests
   const { quests, nextIds: questsNextIds } = processQuestActions(
     gameState.quests,
     response.questActions,
-    nextIds
+    nextIds,
   );
   nextIds = questsNextIds;
 
@@ -68,7 +69,7 @@ export function processAllActions(
     gameState.knowledge,
     response.knowledgeActions,
     nextIds,
-    currentTimeString
+    currentTimeString,
   );
   nextIds = knowledgeNextIds;
 
@@ -76,26 +77,26 @@ export function processAllActions(
   const {
     locations,
     currentLocation,
-    nextIds: locationsNextIds
+    nextIds: locationsNextIds,
   } = processLocationActions(
     gameState.locations,
     gameState.currentLocation,
     response.locationActions,
-    nextIds
+    nextIds,
   );
   nextIds = locationsNextIds;
 
   // Process character
   const character = processCharacterActions(
     gameState.character,
-    response.characterUpdates
+    response.characterUpdates,
   );
 
   // Process world events (AI generated)
   let timeline = processWorldEvents(
     gameState.timeline,
     response.worldEvents,
-    currentTimeString
+    currentTimeString,
   );
 
   // Process Causal Chains (Simulation)
@@ -104,7 +105,7 @@ export function processAllActions(
   const chainResult = processCausalChains(
     causalChains,
     timeline,
-    currentTimeString
+    currentTimeString,
   );
   causalChains = chainResult.causalChains;
   timeline = chainResult.timeline;
@@ -120,6 +121,6 @@ export function processAllActions(
     timeline,
     nextIds,
     time: currentTimeString,
-    causalChains
+    causalChains,
   };
 }

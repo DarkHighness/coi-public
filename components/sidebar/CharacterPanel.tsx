@@ -348,7 +348,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           <div className="bg-theme-surface-highlight/30 p-3 rounded border border-theme-border">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className={`text-lg font-bold text-theme-primary ${themeFont}`}>
+                <h3
+                  className={`text-lg font-bold text-theme-primary ${themeFont}`}
+                >
                   {character.name}
                 </h3>
                 <p className="text-xs text-theme-muted uppercase tracking-wider">
@@ -364,18 +366,24 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
             {/* Status & Profession */}
             <div className="flex flex-col gap-1 text-xs mt-2">
-               {character.profession && (
+              {character.profession && (
                 <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-12">{t("role") || "Role"}:</span>
+                  <span className="text-theme-muted w-12">
+                    {t("role") || "Role"}:
+                  </span>
                   <span>{character.profession}</span>
                 </div>
-               )}
-               {character.status && (
-                 <div className="flex items-center gap-2 text-theme-text">
-                   <span className="text-theme-muted w-12">{t("status") || "Status"}:</span>
-                   <span className="text-theme-primary font-medium">{character.status}</span>
-                 </div>
-               )}
+              )}
+              {character.status && (
+                <div className="flex items-center gap-2 text-theme-text">
+                  <span className="text-theme-muted w-12">
+                    {t("status") || "Status"}:
+                  </span>
+                  <span className="text-theme-primary font-medium">
+                    {character.status}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -437,18 +445,29 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               </h4>
               <div className="flex flex-col gap-1">
                 {character.conditions.map((cond, idx) => (
-                  <div key={idx} className={`p-2 rounded border text-xs ${
-                    cond.type === 'buff' ? 'bg-blue-500 border-theme-muted/50 text-white' :
-                    cond.type === 'debuff' ? 'bg-red-500 border-theme-muted/50  text-white' :
-                    'bg-theme-surface-highlight/20 border-theme-border/50 text-theme-text'
-                  }`}>
+                  <div
+                    key={idx}
+                    className={`p-2 rounded border text-xs ${
+                      cond.type === "buff"
+                        ? "bg-blue-500 border-theme-muted/50 text-white"
+                        : cond.type === "debuff"
+                          ? "bg-red-500 border-theme-muted/50  text-white"
+                          : "bg-theme-surface-highlight/20 border-theme-border/50 text-theme-text"
+                    }`}
+                  >
                     <div className="flex justify-between items-center mb-0.5">
                       <span className="font-bold">{cond.name}</span>
                       {/* @ts-ignore - duration might be string or number depending on schema version */}
-                      {cond.duration && <span className="text-[10px] opacity-70">{cond.duration}</span>}
+                      {cond.duration && (
+                        <span className="text-[10px] opacity-70">
+                          {cond.duration}
+                        </span>
+                      )}
                     </div>
                     {cond.visible?.description && (
-                      <p className="text-[11px] opacity-80">{cond.visible.description}</p>
+                      <p className="text-[11px] opacity-80">
+                        {cond.visible.description}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -457,36 +476,76 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           )}
 
           {/* Hidden Traits (Only Discovered) */}
-          {character.hiddenTraits && character.hiddenTraits.some(t => t.discovered) && (
-            <div>
-              <h4 className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                {t("traits") || "Traits"}
-              </h4>
-              <div className="flex flex-col gap-1">
-                {character.hiddenTraits.filter(t => t.discovered).map((trait, idx) => (
-                  <div key={idx} className="p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs">
-                    <div className="font-bold mb-0.5">{trait.name}</div>
-                    {trait.description && (
-                      <p className="text-[10px] opacity-80">{trait.description}</p>
-                    )}
-                  </div>
-                ))}
+          {character.hiddenTraits &&
+            character.hiddenTraits.some((t) => t.discovered) && (
+              <div>
+                <h4 className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  {t("traits") || "Traits"}
+                </h4>
+                <div className="flex flex-col gap-1">
+                  {character.hiddenTraits
+                    .filter((t) => t.discovered)
+                    .map((trait, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs"
+                      >
+                        <div className="font-bold mb-0.5">{trait.name}</div>
+                        {trait.description && (
+                          <p className="text-[10px] opacity-80">
+                            {trait.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Appearance (Collapsible) */}
           {character.appearance && (
-             <details className="group text-xs">
-                <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-1">
-                   <span className="uppercase tracking-wider text-[10px] font-bold">{t("appearance") || "Appearance"}</span>
-                   <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </summary>
-                <p className="mt-2 text-theme-text-secondary italic leading-relaxed pl-2 border-l-2 border-theme-border">
-                   {character.appearance}
-                </p>
-             </details>
+            <details className="group text-xs">
+              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-1">
+                <span className="uppercase tracking-wider text-[10px] font-bold">
+                  {t("appearance") || "Appearance"}
+                </span>
+                <svg
+                  className="w-3 h-3 transition-transform group-open:rotate-90"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </summary>
+              <p className="mt-2 text-theme-text-secondary italic leading-relaxed pl-2 border-l-2 border-theme-border">
+                {character.appearance}
+              </p>
+            </details>
           )}
         </div>
       )}

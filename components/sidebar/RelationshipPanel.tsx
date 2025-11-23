@@ -55,7 +55,12 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   };
 
   const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
-    if (!isEditMode || !draggedId || draggedId.toString() === targetId.toString()) return;
+    if (
+      !isEditMode ||
+      !draggedId ||
+      draggedId.toString() === targetId.toString()
+    )
+      return;
     reorderItem(draggedId, targetId);
   };
 
@@ -140,31 +145,43 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           </div>
 
           <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2">
-             <div>
-               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
-               <p className="pl-1">{rel.visible?.description || t("noDescription") || "No description available."}</p>
-             </div>
-             {rel.visible?.appearance && (
-               <div>
-                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("appearance") || "Appearance"}</span>
-                 <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
-                   {rel.visible.appearance}
-                 </p>
-               </div>
-             )}
-             {rel.visible?.currentImpression && (
-               <div>
-                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("currentImpression") || "Current Impression"}</span>
-                 <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
-                   {rel.visible.currentImpression}
-                 </p>
-               </div>
-             )}
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                {t("description") || "Description"}
+              </span>
+              <p className="pl-1">
+                {rel.visible?.description ||
+                  t("noDescription") ||
+                  "No description available."}
+              </p>
+            </div>
+            {rel.visible?.appearance && (
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                  {t("appearance") || "Appearance"}
+                </span>
+                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
+                  {rel.visible.appearance}
+                </p>
+              </div>
+            )}
+            {rel.visible?.currentImpression && (
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                  {t("currentImpression") || "Current Impression"}
+                </span>
+                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
+                  {rel.visible.currentImpression}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Affinity Bar */}
           <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
-            <span className="text-theme-muted font-bold">{t("affinity") || "Affinity"}</span>
+            <span className="text-theme-muted font-bold">
+              {t("affinity") || "Affinity"}
+            </span>
             <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
               {isUnknown ? (
                 <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
@@ -209,7 +226,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
 
   return (
     <div>
-      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
+      <div
+        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+      >
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
@@ -247,12 +266,32 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
               </svg>
             )}
           </button>
@@ -266,20 +305,38 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           )}
 
-          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-theme-muted hover:text-theme-primary p-1"
+          >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
             </svg>
           </button>
         </div>
@@ -305,7 +362,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
-          (item.visible?.description || "").toLowerCase().includes(query.toLowerCase())
+          (item.visible?.description || "")
+            .toLowerCase()
+            .includes(query.toLowerCase())
         }
         renderItem={(item) => renderRelationship(item, Math.random(), false)}
       />

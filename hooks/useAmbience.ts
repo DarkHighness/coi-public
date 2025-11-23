@@ -36,7 +36,11 @@ export const useAmbience = (
         audioRef.current.volume = volume;
         // Only resume if it was supposed to be playing (i.e., we have an active environment)
         // AND if the current environment matches what we expect
-        if (currentEnv && audioRef.current.paused && currentEnv === latestEnvRef.current) {
+        if (
+          currentEnv &&
+          audioRef.current.paused &&
+          currentEnv === latestEnvRef.current
+        ) {
           audioRef.current.play().catch((e) => {
             console.warn("Resume failed:", e);
           });
@@ -119,8 +123,8 @@ export const useAmbience = (
           const targetVolume = volume;
           const fadeInInterval = setInterval(() => {
             if (isCancelled) {
-                clearInterval(fadeInInterval);
-                return;
+              clearInterval(fadeInInterval);
+              return;
             }
             if (newAudio.volume < targetVolume - 0.05) {
               newAudio.volume += 0.05;
@@ -133,11 +137,11 @@ export const useAmbience = (
 
         // 5. Update ref and state
         if (!isCancelled) {
-            audioRef.current = newAudio;
-            setCurrentEnv(environment);
-            if (onPlayRef.current) {
+          audioRef.current = newAudio;
+          setCurrentEnv(environment);
+          if (onPlayRef.current) {
             onPlayRef.current(environment);
-            }
+          }
         }
       } catch (error) {
         console.warn(`Failed to play ambience for ${environment}:`, error);

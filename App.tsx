@@ -113,7 +113,10 @@ export default function App() {
 
     return () => {
       window.removeEventListener("error", handleGlobalError);
-      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection,
+      );
     };
   }, []);
 
@@ -292,9 +295,7 @@ export default function App() {
               onSettings={() => setIsSettingsOpen(true)}
               latestSave={
                 saveSlots.length > 0
-                  ? [...saveSlots].sort(
-                      (a, b) => b.timestamp - a.timestamp,
-                    )[0]
+                  ? [...saveSlots].sort((a, b) => b.timestamp - a.timestamp)[0]
                   : undefined
               }
               onThemePreview={setPreviewTheme}

@@ -8,7 +8,7 @@ export interface SnapshotMetadata {
   time: string;
   envTheme: string;
   veoScript?: string;
-  uiState: GameState['uiState'];
+  uiState: GameState["uiState"];
 }
 
 /**
@@ -17,7 +17,7 @@ export interface SnapshotMetadata {
 export function createStateSnapshot(
   processedState: ProcessedState,
   metadata: SnapshotMetadata,
-  gameState: GameState
+  gameState: GameState,
 ): GameStateSnapshot {
   return {
     // Entity State (Dual-layer)

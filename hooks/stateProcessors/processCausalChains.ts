@@ -3,7 +3,7 @@ import { CausalChain, TimelineEvent } from "../../types";
 export function processCausalChains(
   currentChains: CausalChain[],
   currentTimeline: TimelineEvent[],
-  currentTimeString: string
+  currentTimeString: string,
 ): { causalChains: CausalChain[]; timeline: TimelineEvent[] } {
   let newTimeline = [...currentTimeline];
 

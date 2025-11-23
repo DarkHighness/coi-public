@@ -17,46 +17,48 @@ Unlike traditional text adventures with pre-written paths, Chronicles of Infinit
 
 ## ✨ Key Features
 
--   **♾️ Infinite Storytelling**: No two playthroughs are the same. The AI generates unique plots, twists, and endings based on your decisions.
--   **🌍 Dynamic World Generation**: Explore diverse genres including Fantasy, Sci-Fi, Cyberpunk, Horror, Wuxia, and more. The world is built on the fly with consistent lore and rules.
--   **🧠 Deep RPG Systems**:
-    -   **Character Tracking**: Race, class, appearance, and status effects (injuries, mental state).
-    -   **Inventory & Economy**: Find, buy, and use items that impact the story.
-    -   **Relationships**: NPCs remember your interactions. Build friendships, rivalries, or romance.
-    -   **Quest System**: Track Main Quests, Side Quests, and hidden mysteries.
-    -   **Knowledge System**: Accumulate lore about the world, history, and magic/tech systems.
--   **🎨 Visual Immersion**:
-    -   **AI Image Generation**: Automatically generates visuals for new locations (Bird's Eye View) and dramatic moments (Player Perspective).
-    -   **Cinematic Descriptions**: High-quality, sensory-rich narrative descriptions.
--   **⚙️ Advanced State Management**: The game tracks time, weather, and causal consequences of your actions (e.g., if you break a door, it stays broken).
+- **♾️ Infinite Storytelling**: No two playthroughs are the same. The AI generates unique plots, twists, and endings based on your decisions.
+- **🌍 Dynamic World Generation**: Explore diverse genres including Fantasy, Sci-Fi, Cyberpunk, Horror, Wuxia, and more. The world is built on the fly with consistent lore and rules.
+- **🧠 Deep RPG Systems**:
+  - **Character Tracking**: Race, class, appearance, and status effects (injuries, mental state).
+  - **Inventory & Economy**: Find, buy, and use items that impact the story.
+  - **Relationships**: NPCs remember your interactions. Build friendships, rivalries, or romance.
+  - **Quest System**: Track Main Quests, Side Quests, and hidden mysteries.
+  - **Knowledge System**: Accumulate lore about the world, history, and magic/tech systems.
+- **🎨 Visual Immersion**:
+  - **AI Image Generation**: Automatically generates visuals for new locations (Bird's Eye View) and dramatic moments (Player Perspective).
+  - **Cinematic Descriptions**: High-quality, sensory-rich narrative descriptions.
+- **⚙️ Advanced State Management**: The game tracks time, weather, and causal consequences of your actions (e.g., if you break a door, it stays broken).
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/)
--   **Styling**: [TailwindCSS v4](https://tailwindcss.com/)
--   **AI Integration**:
-    -   [Google Gemini](https://deepmind.google/technologies/gemini/) (via `@google/genai`)
-    -   OpenAI / OpenRouter (via `openai` SDK)
--   **Internationalization**: [i18next](https://www.i18next.com/)
--   **Language**: TypeScript
+- **Frontend**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/)
+- **Styling**: [TailwindCSS v4](https://tailwindcss.com/)
+- **AI Integration**:
+  - [Google Gemini](https://deepmind.google/technologies/gemini/) (via `@google/genai`)
+  - OpenAI / OpenRouter (via `openai` SDK)
+- **Internationalization**: [i18next](https://www.i18next.com/)
+- **Language**: TypeScript
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
--   **Node.js** (Latest LTS recommended)
--   **npm** or **pnpm** or **yarn**
--   API Keys for **Google Gemini** or **OpenAI/OpenRouter**
+- **Node.js** (Latest LTS recommended)
+- **npm** or **pnpm** or **yarn**
+- API Keys for **Google Gemini** or **OpenAI/OpenRouter**
 
 ### Installation
 
 1.  **Clone the repository**
+
     ```bash
     git clone https://github.com/yourusername/chronicles-of-infinity.git
     cd chronicles-of-infinity
     ```
 
 2.  **Install dependencies**
+
     ```bash
     npm install
     ```
@@ -72,6 +74,7 @@ Unlike traditional text adventures with pre-written paths, Chronicles of Infinit
     ```
 
 4.  **Run the Development Server**
+
     ```bash
     npm run dev
     ```
@@ -84,11 +87,13 @@ Unlike traditional text adventures with pre-written paths, Chronicles of Infinit
 This project is configured to support both **GitHub Pages** and **Cloudflare Pages**.
 
 ### GitHub Pages
+
 1.  Push your changes to the `main` branch.
 2.  A GitHub Action will automatically build and deploy the site to `https://<your-username>.github.io/coi/`.
 3.  Ensure "GitHub Actions" is selected as the source in your repository's Pages settings.
 
 ### Cloudflare Pages
+
 1.  Connect your GitHub repository to Cloudflare Pages.
 2.  Use the default build settings (`npm run build`).
 3.  The site will be deployed to your Cloudflare Pages URL (e.g., `https://<project-name>.pages.dev/`).

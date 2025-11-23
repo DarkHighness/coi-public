@@ -75,7 +75,7 @@ export interface TimelineEvent {
   id: string;
   gameTime: string;
   description: string;
-  category: 'player_action' | 'npc_action' | 'world_event' | 'consequence';
+  category: "player_action" | "npc_action" | "world_event" | "consequence";
   causedBy?: string;
   consequences?: string[];
   involvedEntities?: string[];
@@ -88,7 +88,7 @@ export interface CausalChain {
     description: string;
   };
   events: TimelineEvent[];
-  status: 'active' | 'resolved' | 'interrupted';
+  status: "active" | "resolved" | "interrupted";
   pendingConsequences?: Array<{
     description: string;
     delayMinutes: number;
@@ -197,7 +197,7 @@ export interface CharacterSkill {
 export interface CharacterCondition {
   id: number;
   name: string;
-  type: 'buff' | 'debuff' | 'neutral';
+  type: "buff" | "debuff" | "neutral";
   visible: {
     description: string;
     perceivedSeverity: string;
@@ -594,7 +594,7 @@ export interface GameResponse {
   timeUpdate?: string; // The new time string
   worldEvents?: Array<{
     description: string;
-    category: 'npc_action' | 'world_event';
+    category: "npc_action" | "world_event";
     involvedEntities?: string[];
   }>;
 }
@@ -617,7 +617,7 @@ export interface CharacterUpdates {
     action: "add" | "update" | "remove";
     id?: number;
     name: string;
-    type?: 'buff' | 'debuff' | 'neutral';
+    type?: "buff" | "debuff" | "neutral";
     visible?: {
       description?: string;
       perceivedSeverity?: string;

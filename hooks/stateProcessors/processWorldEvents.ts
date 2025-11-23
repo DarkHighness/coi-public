@@ -5,8 +5,8 @@ import { TimelineEvent, GameResponse } from "../../types";
  */
 export function processWorldEvents(
   currentTimeline: TimelineEvent[],
-  worldEvents: GameResponse['worldEvents'],
-  currentTimeString: string
+  worldEvents: GameResponse["worldEvents"],
+  currentTimeString: string,
 ): TimelineEvent[] {
   if (!worldEvents || worldEvents.length === 0) {
     return currentTimeline;
@@ -22,7 +22,7 @@ export function processWorldEvents(
       description: event.description,
       category: event.category,
       involvedEntities: event.involvedEntities,
-      consequences: []
+      consequences: [],
     });
   });
 

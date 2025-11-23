@@ -50,7 +50,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     <div
       key={q.id}
       className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${
-        q.type === "main" ? "border-l-4 border-l-theme-primary" : "border-l-4 border-l-theme-muted"
+        q.type === "main"
+          ? "border-l-4 border-l-theme-primary"
+          : "border-l-4 border-l-theme-muted"
       }`}
     >
       <div
@@ -59,14 +61,20 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       >
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
-              q.type === "main"
-                ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
-                : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
-            }`}>
-              {q.type === "main" ? (t("mainQuest") || "Main") : (t("sideQuest") || "Side")}
+            <span
+              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
+                q.type === "main"
+                  ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
+                  : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
+              }`}
+            >
+              {q.type === "main"
+                ? t("mainQuest") || "Main"
+                : t("sideQuest") || "Side"}
             </span>
-            <h4 className="font-bold text-theme-text text-sm leading-tight">{q.title}</h4>
+            <h4 className="font-bold text-theme-text text-sm leading-tight">
+              {q.title}
+            </h4>
           </div>
         </div>
         <svg
@@ -75,13 +83,22 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </div>
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedSet.has(q.id.toString()) ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedSet.has(q.id.toString()) ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
         <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
-          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
+          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+            {t("description") || "Description"}
+          </span>
           <p className="pl-1">{q.visible.description}</p>
         </div>
       </div>
@@ -90,7 +107,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
 
   return (
     <div>
-      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
+      <div
+        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+      >
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
@@ -112,25 +131,45 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           )}
-          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-theme-muted hover:text-theme-primary p-1"
+          >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
             </svg>
           </button>
         </div>
       </div>
 
-      <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}>
+      <div
+        className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
         <div className="space-y-3">
           {/* Main Quests */}
           {mainQuests
@@ -159,7 +198,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
-          (item.visible.description || "").toLowerCase().includes(query.toLowerCase())
+          (item.visible.description || "")
+            .toLowerCase()
+            .includes(query.toLowerCase())
         }
         renderItem={(item) => renderQuest(item, modalExpandedQuests, true)}
       />

@@ -6,8 +6,8 @@ import { Relationship, RelationshipAction, GameState } from "../../types";
 export function processRelationshipActions(
   currentRelationships: Relationship[],
   actions: RelationshipAction[] | undefined,
-  nextIds: GameState['nextIds']
-): { relationships: Relationship[]; nextIds: GameState['nextIds'] } {
+  nextIds: GameState["nextIds"],
+): { relationships: Relationship[]; nextIds: GameState["nextIds"] } {
   if (!actions || actions.length === 0) {
     return { relationships: currentRelationships, nextIds };
   }
@@ -17,7 +17,7 @@ export function processRelationshipActions(
 
   actions.forEach((act) => {
     const idx = newRelationships.findIndex(
-      (r) => (act.id && r.id === act.id) || r.name === act.name
+      (r) => (act.id && r.id === act.id) || r.name === act.name,
     );
 
     if (act.action === "add" && idx === -1) {
@@ -29,13 +29,13 @@ export function processRelationshipActions(
           description: act.visible?.description || "Unknown",
           appearance: act.visible?.appearance,
           status: act.visible?.status || "Neutral",
-          currentImpression: act.visible?.currentImpression
+          currentImpression: act.visible?.currentImpression,
         },
         hidden: {
           realPersonality: act.hidden?.realPersonality || "Unknown",
           realMotives: act.hidden?.realMotives || "Unknown",
           secrets: act.hidden?.secrets || [],
-          trueAffinity: act.hidden?.trueAffinity || act.affinity || 50
+          trueAffinity: act.hidden?.trueAffinity || act.affinity || 50,
         },
         relationshipType: act.relationshipType || "Neutral",
         affinity: act.affinity || 50,
@@ -46,7 +46,10 @@ export function processRelationshipActions(
       });
     } else if (act.action === "remove" && idx !== -1) {
       newRelationships.splice(idx, 1);
-    } else if ((act.action === "update" || act.action === "add") && idx !== -1) {
+    } else if (
+      (act.action === "update" || act.action === "add") &&
+      idx !== -1
+    ) {
       // Allow 'add' to update if exists
 
       // Update visible layer
@@ -60,12 +63,14 @@ export function processRelationshipActions(
         newRelationships[idx].visible.appearance = act.visible.appearance;
       }
       if (act.visible?.currentImpression) {
-        newRelationships[idx].visible.currentImpression = act.visible.currentImpression;
+        newRelationships[idx].visible.currentImpression =
+          act.visible.currentImpression;
       }
 
       // Update hidden layer
       if (act.hidden?.realPersonality) {
-        newRelationships[idx].hidden.realPersonality = act.hidden.realPersonality;
+        newRelationships[idx].hidden.realPersonality =
+          act.hidden.realPersonality;
       }
       if (act.hidden?.realMotives) {
         newRelationships[idx].hidden.realMotives = act.hidden.realMotives;
@@ -94,7 +99,7 @@ export function processRelationshipActions(
       newRelationships[idx].lastModified = Date.now();
     } else if (act.action === "update" && idx === -1) {
       console.warn(
-        `[processRelationshipActions] Update failed: "${act.name}" not found`
+        `[processRelationshipActions] Update failed: "${act.name}" not found`,
       );
     }
   });
