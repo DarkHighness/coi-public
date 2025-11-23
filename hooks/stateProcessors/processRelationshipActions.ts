@@ -28,7 +28,8 @@ export function processRelationshipActions(
         visible: {
           description: act.visible?.description || "Unknown",
           appearance: act.visible?.appearance,
-          status: act.visible?.status || "Neutral"
+          status: act.visible?.status || "Neutral",
+          currentImpression: act.visible?.currentImpression
         },
         hidden: {
           realPersonality: act.hidden?.realPersonality || "Unknown",
@@ -57,6 +58,9 @@ export function processRelationshipActions(
       }
       if (act.visible?.appearance) {
         newRelationships[idx].visible.appearance = act.visible.appearance;
+      }
+      if (act.visible?.currentImpression) {
+        newRelationships[idx].visible.currentImpression = act.visible.currentImpression;
       }
 
       // Update hidden layer

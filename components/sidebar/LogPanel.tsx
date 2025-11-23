@@ -1,5 +1,6 @@
 import React from "react";
 import { LogEntry } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface LogPanelProps {
   logs: LogEntry[];
@@ -7,6 +8,8 @@ interface LogPanelProps {
 }
 
 export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col animate-fade-in text-theme-text font-mono">
       {/* Header */}
@@ -26,17 +29,17 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               ></path>
             </svg>
-            System Logs & Debugger
+            {t("apiConsole") || "API Console"}
           </h2>
           <p className="text-xs text-theme-muted mt-1">
-            Trace raw API requests and token usage.
+            {t("apiConsoleDescription") || "Trace raw API requests and token usage."}
           </p>
         </div>
         <button
           onClick={onClose}
           className="px-4 py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors uppercase text-xs font-bold tracking-widest"
         >
-          Close Console
+          {t("close") || "Close"}
         </button>
       </div>
 

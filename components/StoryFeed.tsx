@@ -181,7 +181,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
         totalSegments={currentHistory.length}
         environment={currentHistory[activeIndex]?.environment}
         ambience={currentAmbience}
-        theme={gameState.envTheme || gameState.theme}
+        theme={gameState.theme}
         isMuted={aiSettings?.audioVolume?.bgmMuted}
         onToggleMute={onToggleMute}
       />

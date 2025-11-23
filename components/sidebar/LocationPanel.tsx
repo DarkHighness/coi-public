@@ -21,7 +21,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
@@ -44,18 +44,21 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 
   const handleLocationClick = (locationName: string) => {
     if (isEditMode) return;
-    if (expandedLocation === locationName) {
-      setExpandedLocation(null);
-    } else {
-      setExpandedLocation(locationName);
-    }
+    setExpandedLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(locationName)) {
+        next.delete(locationName);
+      } else {
+        next.add(locationName);
+      }
+      return next;
+    });
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.setData("text/plain", id);
     e.dataTransfer.effectAllowed = "move";
-    // Create a ghost image that's cleaner if possible, or just let browser handle it
   };
 
   const handleDragEnter = (e: React.DragEvent, targetId: string) => {
@@ -73,7 +76,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   };
 
   const renderLocationItem = (item: (typeof locationItems)[0]) => {
-    const isExpanded = expandedLocation === item.name;
+    const isExpanded = expandedLocations.has(item.name);
     const locationData = item.data;
     const isCurrent = item.isCurrent;
     const pinned = isPinned(item.id);
@@ -82,16 +85,12 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     return (
       <div
         key={item.id}
-        className={`mb-2 transition-all duration-300 ease-in-out ${
-          isExpanded ? "bg-theme-surface-highlight/30" : ""
-        } ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"} rounded flex items-center gap-1`}
+        className={`mb-2 transition-all duration-300 ease-in-out rounded flex items-center gap-1 ${
+          isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"
+        }`}
         draggable={isEditMode}
-        onDragStart={
-          isEditMode ? (e) => handleDragStart(e, item.id) : undefined
-        }
-        onDragEnter={
-          isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
-        }
+        onDragStart={isEditMode ? (e) => handleDragStart(e, item.id) : undefined}
+        onDragEnter={isEditMode ? (e) => handleDragEnter(e, item.id) : undefined}
         onDragOver={isEditMode ? handleDragOver : undefined}
         onDragEnd={handleDragEnd}
       >
@@ -104,14 +103,20 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
                 : "bg-theme-bg border-theme-border/50 text-theme-muted hover:text-theme-primary hover:border-theme-primary/50"
             }`}
           >
-            <span
-              className={`font-bold tracking-wide text-xs truncate mr-2 ${
-                isCurrent ? "text-theme-primary" : ""
-              }`}
-            >
-              {item.name}
-            </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+               {isCurrent && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shrink-0"></span>
+               )}
+               <span
+                 className={`font-bold tracking-wide text-xs truncate ${
+                   isCurrent ? "text-theme-primary" : ""
+                 }`}
+               >
+                 {item.name}
+               </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -122,7 +127,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
                     ? "text-theme-primary"
                     : "text-theme-muted hover:text-theme-text"
                 }`}
-                title={pinned ? "Unpin" : "Pin to top"}
+                title={pinned ? t("unpin") || "Unpin" : t("pinToTop") || "Pin to top"}
               >
                 <svg
                   className="w-3 h-3"
@@ -138,27 +143,6 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
                   ></path>
                 </svg>
               </div>
-              {isCurrent && (
-                <svg
-                  className="w-3 h-3 text-theme-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  ></path>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  ></path>
-                </svg>
-              )}
             </div>
           </button>
 
@@ -168,18 +152,21 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
             }`}
           >
-            <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/20">
+            <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
               {locationData ? (
-                <div className="space-y-2 text-xs animate-fade-in">
-                  <p className="text-theme-text leading-relaxed">
-                    {locationData.visible?.description || "No description available."}
-                  </p>
+                <div className="space-y-3 text-xs animate-fade-in">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
+                    <p className="text-theme-text leading-relaxed pl-1">
+                      {locationData.visible?.description || t("noDescription") || "No description available."}
+                    </p>
+                  </div>
                   {locationData.lore && (
                     <div className="pt-2 border-t border-theme-border/20 mt-1">
                       <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                         {t("history")}
                       </span>
-                      <p className="text-theme-muted italic">
+                      <p className="text-theme-muted italic pl-1">
                         {locationData.lore}
                       </p>
                     </div>
@@ -196,8 +183,8 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 
         {isEditMode && (
           <div
-            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none"
-            title="Drag to reorder"
+            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none shrink-0"
+            title={t("dragToReorder") || "Drag to reorder"}
             draggable={true}
             onDragStart={(e) => handleDragStart(e, item.id)}
           >
@@ -221,11 +208,11 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`text-left text-theme-primary uppercase text-xs font-bold tracking-widest flex items-center group ${themeFont}`}
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -247,6 +234,9 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             ></path>
           </svg>
           {t("locations")}
+          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            {locations.length}
+          </span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -255,47 +245,25 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               e.stopPropagation();
               setIsEditMode(!isEditMode);
             }}
-            className={`text-[10px] uppercase tracking-wider font-bold border rounded px-2 py-0.5 transition-colors ${
+            className={`p-1 rounded transition-colors ${
               isEditMode
-                ? "bg-theme-primary text-theme-bg border-theme-primary"
-                : "text-theme-primary border-theme-primary/50 hover:text-theme-primary-hover"
+                ? "bg-theme-primary text-theme-bg"
+                : "text-theme-muted hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             )}
           </button>
-          <span className="text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {locations.length}
-          </span>
-          <button onClick={() => setIsOpen(!isOpen)}>
+
+          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
@@ -304,12 +272,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
         </div>
@@ -320,11 +283,11 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
           isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="space-y-2">
+        <div className="space-y-3">
           {visibleItems.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
+            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("noKnownLocations")}
-            </p>
+            </div>
           ) : (
             visibleItems.map((item) => renderLocationItem(item))
           )}

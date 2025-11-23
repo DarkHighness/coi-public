@@ -55,7 +55,12 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({
 
   return (
     <div className="space-y-3">
-      <p className="leading-relaxed">{details.description}</p>
+      <div className="text-xs text-theme-muted/90 italic">
+        <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+          {t("description") || "Description"}
+        </span>
+        <p className="leading-relaxed pl-1">{details.description}</p>
+      </div>
       {details.lore && (
         <ItemLore
           lore={details.lore}

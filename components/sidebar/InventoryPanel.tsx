@@ -63,11 +63,11 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`text-left text-theme-primary uppercase text-xs font-bold tracking-widest flex items-center group ${themeFont}`}
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -83,6 +83,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             ></path>
           </svg>
           {t("inventory")}
+          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            {allItems.length}
+          </span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -91,88 +94,58 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
               e.stopPropagation();
               setIsEditMode(!isEditMode);
             }}
-            className={`text-[10px] uppercase tracking-wider font-bold border rounded px-2 py-0.5 transition-colors ${
+            className={`p-1 rounded transition-colors ${
               isEditMode
-                ? "bg-theme-primary text-theme-bg border-theme-primary"
-                : "text-theme-primary border-theme-primary/50 hover:text-theme-primary-hover"
+                ? "bg-theme-primary text-theme-bg"
+                : "text-theme-muted hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             )}
           </button>
+
           {allItems.length > DISPLAY_LIMIT && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-[10px] text-theme-primary hover:text-theme-primary-hover uppercase tracking-wider font-bold border border-theme-primary/50 rounded px-2 py-0.5 transition-colors"
+              className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              {t("viewAll") || "View All"}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           )}
-          <span className="text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {allItems.length}
-          </span>
-          <button onClick={() => setIsOpen(!isOpen)}>
+
+          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
+              className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
         </div>
       </div>
 
-      <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${
-          isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="space-y-2">
+      {isOpen && (
+        <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
           {visibleItems.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
+            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("emptyInventory")}
-            </p>
+            </div>
           ) : (
             visibleItems.map((item) => (
               <InventoryItem
@@ -182,12 +155,8 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 context={itemContext}
                 isPinned={isPinned(item.id)}
                 onPin={() => togglePin(item.id)}
-                onDragStart={
-                  isEditMode ? (e) => handleDragStart(e, item.id) : undefined
-                }
-                onDragEnter={
-                  isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
-                }
+                onDragStart={isEditMode ? (e) => handleDragStart(e, item.id) : undefined}
+                onDragEnter={isEditMode ? (e) => handleDragEnter(e, item.id) : undefined}
                 onDragOver={isEditMode ? handleDragOver : undefined}
                 onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
                 isEditMode={isEditMode}
@@ -196,7 +165,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             ))
           )}
         </div>
-      </div>
+      )}
 
       <DetailedListModal
         isOpen={isModalOpen}

@@ -284,48 +284,22 @@ export default function App() {
         <Route
           path="/"
           element={
-            <>
-              <StartScreen
-                onStart={handleStartGame}
-                onContinue={handleContinueGame}
-                onLoad={(file) => setIsSaveManagerOpen(true)}
-                onOpenSaves={() => setIsSaveManagerOpen(true)}
-                onSettings={() => setIsSettingsOpen(true)}
-                latestSave={
-                  saveSlots.length > 0
-                    ? [...saveSlots].sort(
-                        (a, b) => b.timestamp - a.timestamp,
-                      )[0]
-                    : undefined
-                }
-                onThemePreview={setPreviewTheme}
-                setLanguage={setLanguage}
-              />
-              <Suspense fallback={<LoadingFallback />}>
-                <SettingsModal
-                  isOpen={isSettingsOpen}
-                  onClose={() => setIsSettingsOpen(false)}
-                  currentSettings={aiSettings}
-                  onSave={handleSaveSettings}
-                  themeFont={currentThemeConfig.fontClass}
-                  showToast={showToast}
-                  themeMode={themeMode}
-                  onSetThemeMode={setThemeMode}
-                  onResetSettings={resetSettings}
-                  onClearAllSaves={clearAllSaves}
-                  saveCount={saveSlots.length}
-                />
-                {isSaveManagerOpen && (
-                  <SaveManager
-                    slots={saveSlots}
-                    currentSlotId={null}
-                    onSwitch={switchSlot}
-                    onDelete={deleteSlot}
-                    onClose={() => setIsSaveManagerOpen(false)}
-                  />
-                )}
-              </Suspense>
-            </>
+            <StartScreen
+              onStart={handleStartGame}
+              onContinue={handleContinueGame}
+              onLoad={(file) => setIsSaveManagerOpen(true)}
+              onOpenSaves={() => setIsSaveManagerOpen(true)}
+              onSettings={() => setIsSettingsOpen(true)}
+              latestSave={
+                saveSlots.length > 0
+                  ? [...saveSlots].sort(
+                      (a, b) => b.timestamp - a.timestamp,
+                    )[0]
+                  : undefined
+              }
+              onThemePreview={setPreviewTheme}
+              setLanguage={setLanguage}
+            />
           }
         />
 
@@ -369,6 +343,31 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
+      <Suspense fallback={<LoadingFallback />}>
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          currentSettings={aiSettings}
+          onSave={handleSaveSettings}
+          themeFont={currentThemeConfig.fontClass}
+          showToast={showToast}
+          themeMode={themeMode}
+          onSetThemeMode={setThemeMode}
+          onResetSettings={resetSettings}
+          onClearAllSaves={clearAllSaves}
+          saveCount={saveSlots.length}
+        />
+        {isSaveManagerOpen && (
+          <SaveManager
+            slots={saveSlots}
+            currentSlotId={null}
+            onSwitch={switchSlot}
+            onDelete={deleteSlot}
+            onClose={() => setIsSaveManagerOpen(false)}
+          />
+        )}
+      </Suspense>
+
       <Toast
         show={isAutoSaving || notification.show}
         message={notification.show ? notification.msg : t("autoSaving")}
@@ -377,7 +376,7 @@ export default function App() {
 
       {/* Critical Error Modal */}
       {(persistenceError || appError) && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
           <div className="bg-gray-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-2xl shadow-red-900/20 text-center">
             <div className="text-5xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-red-500 mb-4">

@@ -153,6 +153,12 @@ export const useGamePersistence = (
       });
     }
 
+    // Migration: Character Conditions and Hidden Traits
+    if (parsed.character) {
+      if (!parsed.character.conditions) parsed.character.conditions = [];
+      if (!parsed.character.hiddenTraits) parsed.character.hiddenTraits = [];
+    }
+
     // Reset processing state on load to prevent stuck state
     parsed.isProcessing = false;
     // Always clear image generation state on load

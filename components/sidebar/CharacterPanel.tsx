@@ -267,24 +267,24 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
   return (
     <div
-      className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group
+      className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group w-full
         ${isExpanded ? "bg-theme-surface-highlight/30 border-theme-primary/30" : "hover:bg-theme-surface-highlight/20 hover:border-theme-primary/20"}
       `}
       onClick={() => setIsExpanded(!isExpanded)}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
     >
       <div className="flex justify-between items-center px-2 py-1.5">
         <span className="text-xs text-theme-text font-medium">
           {skill.name}
         </span>
-        <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
-          {skill.level}
-        </span>
+        {skill.level && (
+          <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
+            {skill.level}
+          </span>
+        )}
       </div>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ${isExpanded && skill.visible?.description ? "max-h-20 opacity-100" : "max-h-0 opacity-0"}`}
+        className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-20 opacity-100" : "max-h-0 opacity-0"}`}
       >
         <div className="px-2 pb-2 pt-0">
           <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
@@ -303,24 +303,32 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const attributes = character.attributes || [];
-  // Handle optional skills array (for backward compatibility)
-  const skills = character.skills || [];
-  const statusConfig = getStatusConfig(character.status);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  if (!character) return null;
 
   return (
-    <div className="animate-fade-in mb-6">
+    <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full text-left text-theme-primary uppercase text-xs font-bold tracking-widest mb-4 flex items-center justify-between group ${themeFont}`}
+        className={`w-full flex items-center justify-between text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont} ${isOpen ? "mb-3" : "mb-0"}`}
       >
-        <span className="flex items-center">
-          <span className="w-2 h-2 bg-theme-primary rounded-full mr-2"></span>
+        <div className="flex items-center">
+          <svg
+            className="w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            ></path>
+          </svg>
           {t("character")}
-        </span>
+        </div>
         <svg
-          className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -334,159 +342,154 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         </svg>
       </button>
 
-      <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"}`}
-      >
-        <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border space-y-3">
-          <div className="flex justify-between items-baseline">
-            <span className="font-bold text-lg text-theme-text tracking-wide">
-              {character.name}
-            </span>
-            <span className="text-xs text-theme-muted uppercase tracking-wider">
-              {character.title}
-            </span>
-          </div>
-
-          {/* Details Toggle */}
-          <button
-            onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-            className="w-full text-left text-[10px] uppercase tracking-widest text-theme-muted hover:text-theme-primary transition-colors flex items-center justify-between border-b border-theme-border/30 pb-1"
-          >
-            <span>{t("details")}</span>
-            <svg
-              className={`w-3 h-3 transition-transform duration-300 ${isDetailsOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </button>
-
-          {/* Collapsible Details Section */}
-          <div
-            className={`overflow-hidden transition-all duration-300 ${isDetailsOpen ? "max-h-[300px] opacity-100" : "max-h-0 opacity-0"}`}
-          >
-            <div className="space-y-2 pt-2 text-xs text-theme-muted/80">
+      {isOpen && (
+        <div className="space-y-4 animate-[fade-in_0.3s_ease-in]">
+          {/* Header Info */}
+          <div className="bg-theme-surface-highlight/30 p-3 rounded border border-theme-border">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className={`text-lg font-bold text-theme-primary ${themeFont}`}>
+                  {character.name}
+                </h3>
+                <p className="text-xs text-theme-muted uppercase tracking-wider">
+                  {character.title}
+                </p>
+              </div>
               {character.race && (
-                <div>
-                  <span className="text-theme-primary/70 font-bold block mb-0.5">
-                    {t("race")}
-                  </span>
-                  <p>{character.race}</p>
-                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">
+                  {character.race}
+                </span>
               )}
-              {character.appearance && (
-                <div>
-                  <span className="text-theme-primary/70 font-bold block mb-0.5">
-                    {t("appearance")}
-                  </span>
-                  <p className="italic leading-relaxed">
-                    {character.appearance}
-                  </p>
+            </div>
+
+            {/* Status & Profession */}
+            <div className="flex flex-col gap-1 text-xs mt-2">
+               {character.profession && (
+                <div className="flex items-center gap-2 text-theme-text">
+                  <span className="text-theme-muted w-12">{t("role") || "Role"}:</span>
+                  <span>{character.profession}</span>
                 </div>
-              )}
-              {character.profession && (
-                <div>
-                  <span className="text-theme-primary/70 font-bold block mb-0.5">
-                    {t("profession")}
-                  </span>
-                  <p>{character.profession}</p>
-                </div>
-              )}
-              {character.background && (
-                <div>
-                  <span className="text-theme-primary/70 font-bold block mb-0.5">
-                    {t("background")}
-                  </span>
-                  <p className="italic leading-relaxed">
-                    {character.background}
-                  </p>
-                </div>
-              )}
+               )}
+               {character.status && (
+                 <div className="flex items-center gap-2 text-theme-text">
+                   <span className="text-theme-muted w-12">{t("status") || "Status"}:</span>
+                   <span className="text-theme-primary font-medium">{character.status}</span>
+                 </div>
+               )}
             </div>
           </div>
 
-          {/* Dynamic Attributes */}
-          {attributes.map((attr, idx) => {
-            const rawColor = attr.color?.toLowerCase().trim() || "gray";
-            const gradientClass = colorMap[rawColor];
-            const textColorClass = textMap[rawColor] || "text-theme-text";
-
-            const percentage =
-              attr.maxValue > 0
-                ? Math.max(0, Math.min(100, (attr.value / attr.maxValue) * 100))
-                : 0;
-
-            return (
-              <div key={idx}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span
-                    className={`font-bold ${textColorClass}`}
-                    style={!gradientClass ? { color: attr.color } : {}}
-                  >
-                    {attr.label}
-                  </span>
-                  <span className="text-theme-muted">
-                    {attr.value}/{attr.maxValue}
-                  </span>
+          {/* Attributes Grid */}
+          {character.attributes && character.attributes.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {character.attributes.map((attr, idx) => (
+                <div
+                  key={idx}
+                  className="bg-theme-surface-highlight/20 p-2 rounded border border-theme-border/50 flex flex-col"
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] text-theme-muted uppercase tracking-wider truncate">
+                      {attr.label}
+                    </span>
+                    <span className="text-xs font-bold text-theme-text">
+                      {attr.value}
+                      {attr.maxValue ? `/${attr.maxValue}` : ""}
+                    </span>
+                  </div>
+                  {attr.maxValue && (
+                    <div className="h-1 w-full bg-theme-bg rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          colorMap[attr.color || "gray"]
+                            ? `bg-linear-to-r ${colorMap[attr.color || "gray"]}`
+                            : "bg-gray-500"
+                        }`}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, (attr.value / attr.maxValue) * 100))}%`,
+                        }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
-                <div className="w-full h-2 bg-theme-surface-highlight rounded-full overflow-hidden border border-theme-border/50">
-                  <div
-                    className={`h-full ${gradientClass || ""} transition-all duration-700 ease-out bg-linear-to-r`}
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor: gradientClass ? undefined : attr.color,
-                    }}
-                  ></div>
-                </div>
-              </div>
-            );
-          })}
-
-          {attributes.length === 0 && (
-            <div className="text-xs text-theme-muted italic text-center py-2">
-              {character.status === "Unknown" ? "..." : character.status}
+              ))}
             </div>
           )}
 
-          {/* Skills Section */}
-          <div className="pt-3 border-t border-theme-border/50">
-            <h4 className="text-[10px] uppercase tracking-widest text-theme-muted mb-2 font-bold">
-              {t("skills")}
-            </h4>
-            {skills.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {skills.map((skill, idx) => (
+          {/* Skills List */}
+          {character.skills && character.skills.length > 0 && (
+            <div>
+              <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold">
+                {t("skills")}
+              </h4>
+              <div className="flex flex-col gap-1">
+                {character.skills.map((skill, idx) => (
                   <SkillItem key={idx} skill={skill} />
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-theme-muted italic">
-                {t("emptySkills")}
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Status Condition */}
-          <div className="pt-2 border-t border-theme-border/50 flex items-center gap-2">
-            <span className="text-xs text-theme-muted uppercase">
-              {t("status")}:
-            </span>
-            <span
-              className={`text-xs px-2 py-1 rounded flex items-center gap-1.5 border ${statusConfig.style}`}
-            >
-              {statusConfig.icon}
-              <span className="font-medium">{character.status}</span>
-            </span>
-          </div>
+          {/* Conditions List */}
+          {character.conditions && character.conditions.length > 0 && (
+            <div>
+              <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold mt-3">
+                {t("conditions") || "Conditions"}
+              </h4>
+              <div className="flex flex-col gap-1">
+                {character.conditions.map((cond, idx) => (
+                  <div key={idx} className={`p-2 rounded border text-xs ${
+                    cond.type === 'buff' ? 'bg-blue-500 border-theme-muted/50 text-white' :
+                    cond.type === 'debuff' ? 'bg-red-500 border-theme-muted/50  text-white' :
+                    'bg-theme-surface-highlight/20 border-theme-border/50 text-theme-text'
+                  }`}>
+                    <div className="flex justify-between items-center mb-0.5">
+                      <span className="font-bold">{cond.name}</span>
+                      {/* @ts-ignore - duration might be string or number depending on schema version */}
+                      {cond.duration && <span className="text-[10px] opacity-70">{cond.duration}</span>}
+                    </div>
+                    {cond.visible?.description && (
+                      <p className="text-[11px] opacity-80">{cond.visible.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Hidden Traits (Only Discovered) */}
+          {character.hiddenTraits && character.hiddenTraits.some(t => t.discovered) && (
+            <div>
+              <h4 className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                {t("traits") || "Traits"}
+              </h4>
+              <div className="flex flex-col gap-1">
+                {character.hiddenTraits.filter(t => t.discovered).map((trait, idx) => (
+                  <div key={idx} className="p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs">
+                    <div className="font-bold mb-0.5">{trait.name}</div>
+                    {trait.description && (
+                      <p className="text-[10px] opacity-80">{trait.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Appearance (Collapsible) */}
+          {character.appearance && (
+             <details className="group text-xs">
+                <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-1">
+                   <span className="uppercase tracking-wider text-[10px] font-bold">{t("appearance") || "Appearance"}</span>
+                   <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </summary>
+                <p className="mt-2 text-theme-text-secondary italic leading-relaxed pl-2 border-l-2 border-theme-border">
+                   {character.appearance}
+                </p>
+             </details>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

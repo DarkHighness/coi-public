@@ -37,7 +37,7 @@ export function processKnowledgeActions(
             misconceptions: action.hidden?.misconceptions,
             toBeRevealed: action.hidden?.toBeRevealed
           },
-          discoveredAt: currentTime,
+          discoveredAt: action.discoveredAt || currentTime,
           createdAt: Date.now(),
           lastModified: Date.now(),
           relatedTo: action.relatedTo,

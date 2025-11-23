@@ -100,9 +100,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 pb-32 md:pb-6 space-y-8 scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-4 pb-32 md:pb-6 space-y-3 scroll-smooth">
         {/* Time Display */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-2">
           <div className="bg-theme-surface-highlight/30 border border-theme-border px-4 py-1.5 rounded-full text-xs font-mono text-theme-text-secondary shadow-sm flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-theme-primary animate-pulse"></span>
             {gameState.time}
@@ -110,42 +110,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {character && (
-          <CharacterPanel
-            character={character}
+          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+            <CharacterPanel
+              character={character}
+              themeFont={currentThemeConfig.fontClass}
+            />
+          </div>
+        )}
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <LocationPanel
+            currentLocation={gameState.currentLocation}
+            locations={gameState.locations || []}
+            themeFont={currentThemeConfig.fontClass}
+            itemContext={itemContext}
+            listState={gameState.uiState?.locations}
+            onUpdateList={(newState) => onUpdateUIState("locations", newState)}
+          />
+        </div>
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <QuestPanel
+            quests={gameState.quests || []}
             themeFont={currentThemeConfig.fontClass}
           />
-        )}
-        <LocationPanel
-          currentLocation={gameState.currentLocation}
-          locations={gameState.locations || []}
-          themeFont={currentThemeConfig.fontClass}
-          itemContext={itemContext}
-          listState={gameState.uiState?.locations}
-          onUpdateList={(newState) => onUpdateUIState("locations", newState)}
-        />
-        <QuestPanel
-          quests={gameState.quests || []}
-          themeFont={currentThemeConfig.fontClass}
-        />
-        <RelationshipPanel
-          relationships={gameState.relationships || []}
-          themeFont={currentThemeConfig.fontClass}
-          listState={gameState.uiState?.relationships}
-          onUpdateList={(newState) =>
-            onUpdateUIState("relationships", newState)
-          }
-        />
-        <InventoryPanel
-          inventory={gameState.inventory || []}
-          themeFont={currentThemeConfig.fontClass}
-          itemContext={itemContext}
-          listState={gameState.uiState?.inventory}
-          onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
-        />
-        <KnowledgePanel
-          knowledge={gameState.knowledge || []}
-          themeFont={currentThemeConfig.fontClass}
-        />
+        </div>
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <RelationshipPanel
+            relationships={gameState.relationships || []}
+            themeFont={currentThemeConfig.fontClass}
+            listState={gameState.uiState?.relationships}
+            onUpdateList={(newState) =>
+              onUpdateUIState("relationships", newState)
+            }
+          />
+        </div>
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <InventoryPanel
+            inventory={gameState.inventory || []}
+            themeFont={currentThemeConfig.fontClass}
+            itemContext={itemContext}
+            listState={gameState.uiState?.inventory}
+            onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
+          />
+        </div>
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <KnowledgePanel
+            knowledge={gameState.knowledge || []}
+            themeFont={currentThemeConfig.fontClass}
+          />
+        </div>
       </div>
 
       {/* Status Bar */}

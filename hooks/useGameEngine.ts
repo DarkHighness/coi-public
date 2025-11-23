@@ -443,7 +443,7 @@ export const useGameEngine = () => {
         environment: response.environment,
         narrativeTone: response.narrativeTone,
         imageSkipped: !response.generateImage,
-        envTheme: gameState.envTheme,
+        envTheme: response.envTheme,
         stateSnapshot: {
           inventory: processedState.inventory,
           relationships: processedState.relationships,
@@ -595,7 +595,17 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         outline,
-        character: outline.character,
+        character: {
+          ...outline.character,
+          conditions: (outline.character.conditions || []).map((c: any, i: number) => ({
+            ...c,
+            id: i + 1,
+          })),
+          hiddenTraits: (outline.character.hiddenTraits || []).map((t: any, i: number) => ({
+            ...t,
+            id: i + 1,
+          })),
+        },
         inventory: (outline.inventory || []).map((item: any, index: number) => ({
           ...item,
           id: index + 1,

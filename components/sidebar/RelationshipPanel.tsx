@@ -85,7 +85,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     return (
       <div
         key={rel.id}
-        className={`bg-theme-surface-highlight/30 p-3 rounded border border-theme-border hover:border-theme-primary/30 transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1 ${
+        className={`bg-theme-surface-highlight/30 rounded border border-theme-border transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1 ${
           isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"
         }`}
         draggable={isEditMode}
@@ -95,11 +95,17 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         onDragEnd={handleDragEnd}
         onDrop={isEditMode ? (e) => handleDrop(e, rel.id) : undefined}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 p-3">
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="font-bold text-theme-text text-sm truncate">
                 {rel.name}
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
+                title={rel.visible?.status || "Unknown"}
+              >
+                {rel.visible?.status || "Unknown"}
               </span>
             </div>
 
@@ -130,26 +136,35 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
                   ></path>
                 </svg>
               </button>
-              <span
-                className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
-                title={rel.visible?.status || "Unknown"}
-              >
-                {rel.visible?.status || "Unknown"}
-              </span>
             </div>
           </div>
-          <p className="text-xs text-theme-muted italic mb-2 leading-snug">
-            {rel.visible?.description || "No description available."}
-          </p>
-          {rel.visible?.appearance && (
-            <p className="text-xs text-theme-muted/80 mb-2 leading-snug border-l-2 border-theme-border pl-2">
-              {rel.visible.appearance}
-            </p>
-          )}
+
+          <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2">
+             <div>
+               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
+               <p className="pl-1">{rel.visible?.description || t("noDescription") || "No description available."}</p>
+             </div>
+             {rel.visible?.appearance && (
+               <div>
+                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("appearance") || "Appearance"}</span>
+                 <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
+                   {rel.visible.appearance}
+                 </p>
+               </div>
+             )}
+             {rel.visible?.currentImpression && (
+               <div>
+                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("currentImpression") || "Current Impression"}</span>
+                 <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
+                   {rel.visible.currentImpression}
+                 </p>
+               </div>
+             )}
+          </div>
 
           {/* Affinity Bar */}
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="text-theme-muted">{t("affinity")}</span>
+          <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
+            <span className="text-theme-muted font-bold">{t("affinity") || "Affinity"}</span>
             <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
               {isUnknown ? (
                 <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
@@ -165,9 +180,10 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             </span>
           </div>
         </div>
+
         {isEditMode && (
           <div
-            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none"
+            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none self-stretch flex items-center justify-center"
             title="Drag to reorder"
             draggable={true}
             onDragStart={(e) => handleDragStart(e, rel.id)}
@@ -192,11 +208,11 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`text-left text-theme-primary uppercase text-xs font-bold tracking-widest flex items-center group ${themeFont}`}
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -212,6 +228,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             ></path>
           </svg>
           {t("relationships")}
+          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            {allItems.length}
+          </span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -220,71 +239,47 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               e.stopPropagation();
               setIsEditMode(!isEditMode);
             }}
-            className={`text-[10px] uppercase tracking-wider font-bold border rounded px-2 py-0.5 transition-colors ${
+            className={`p-1 rounded transition-colors ${
               isEditMode
-                ? "bg-theme-primary text-theme-bg border-theme-primary"
-                : "text-theme-primary border-theme-primary/50 hover:text-theme-primary-hover"
+                ? "bg-theme-primary text-theme-bg"
+                : "text-theme-muted hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             )}
           </button>
+
           {allItems.length > DISPLAY_LIMIT && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-[10px] text-theme-primary hover:text-theme-primary-hover uppercase tracking-wider font-bold border border-theme-primary/50 rounded px-2 py-0.5 transition-colors"
+              className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              {t("viewAll") || "View All"}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           )}
-          <span className="text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {allItems.length}
-          </span>
-          <button onClick={() => setIsOpen(!isOpen)}>
+
+          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
         </div>
@@ -294,9 +289,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
       >
         <div className="space-y-3">
           {visibleItems.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
+            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("emptyRelationships")}
-            </p>
+            </div>
           ) : (
             visibleItems.map((rel, idx) => renderRelationship(rel, idx, true))
           )}

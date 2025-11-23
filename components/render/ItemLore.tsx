@@ -17,7 +17,7 @@ export const ItemLore: React.FC<ItemLoreProps> = ({
   const LORE_LIMIT = 150;
 
   return (
-    <div className="pt-2 border-t border-theme-border">
+    <div className="pt-2 border-t border-theme-border/30">
       <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 block">
         {labelHistory}
       </span>

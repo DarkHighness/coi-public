@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { StorySegment } from "../types";
 import { ENV_THEMES, THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface StoryTimelineProps {
   segments: StorySegment[];
@@ -35,9 +36,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
       <h2
         className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 text-center ${currentThemeConfig.fontClass} flex items-center justify-center`}
       >
-        <span className="w-8 h-[1px] bg-theme-primary/50 mr-2"></span>
+        <span className="w-8 h-px bg-theme-primary/50 mr-2"></span>
         {t("timeline")}
-        <span className="w-8 h-[1px] bg-theme-primary/50 ml-2"></span>
+        <span className="w-8 h-px bg-theme-primary/50 ml-2"></span>
       </h2>
 
       <div
@@ -55,7 +56,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
             >
               {/* Line */}
               <div
-                className={`absolute left-0 w-[1px] bg-theme-border group-hover:bg-theme-primary/50 transition-colors
+                className={`absolute left-0 w-px bg-theme-border group-hover:bg-theme-primary/50 transition-colors
                  ${isFirst ? "top-2" : "top-0"}
                  ${isLast ? "h-2" : "bottom-0"}
               `}
@@ -75,9 +76,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                     />
                   </div>
                 )}
-                <p className="line-clamp-3 leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif">
-                  {seg.text}
-                </p>
+                <div className="line-clamp-3 leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif [&_p]:mb-1">
+                  <MarkdownText content={seg.text} />
+                </div>
               </div>
             </div>
           );
@@ -85,7 +86,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
         {narrativeSegments.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">
-            <div className="w-1 h-16 bg-gradient-to-b from-transparent via-theme-muted/30 to-transparent"></div>
+            <div className="w-1 h-16 bg-linear-to-b from-transparent via-theme-muted/30 to-transparent"></div>
             <p className="text-xs italic">{t("timeline.empty")}</p>
           </div>
         )}

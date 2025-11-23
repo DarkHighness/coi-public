@@ -259,6 +259,7 @@ export interface Relationship {
     description: string;
     appearance?: string;
     status: string;
+    currentImpression?: string;
   };
   hidden: {
     realPersonality: string;
@@ -460,6 +461,7 @@ export interface RelationshipAction {
     description?: string;
     appearance?: string;
     status?: string;
+    currentImpression?: string;
   };
   hidden?: {
     realPersonality?: string;
@@ -610,6 +612,35 @@ export interface CharacterUpdates {
     name: string;
     level?: string;
     description?: string;
+  }>;
+  conditions?: Array<{
+    action: "add" | "update" | "remove";
+    id?: number;
+    name: string;
+    type?: 'buff' | 'debuff' | 'neutral';
+    visible?: {
+      description?: string;
+      perceivedSeverity?: string;
+    };
+    hidden?: {
+      trueCause?: string;
+      actualSeverity?: number;
+      progression?: string;
+      cure?: string;
+    };
+    effects?: {
+      visible?: string[];
+      hidden?: string[];
+    };
+  }>;
+  hiddenTraits?: Array<{
+    action: "add" | "update" | "remove";
+    id?: number;
+    name: string;
+    description?: string;
+    effects?: string[];
+    triggerConditions?: string[];
+    discovered?: boolean;
   }>;
   profile?: {
     status?: string;

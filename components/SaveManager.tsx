@@ -2,6 +2,7 @@ import React from "react";
 import { SaveSlot, LanguageCode } from "../types";
 import { THEMES, ENV_THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface SaveManagerProps {
   slots: SaveSlot[];
@@ -21,7 +22,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur p-4 animate-fade-in">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/20 backdrop-blur p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
         <div className="p-4 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
           <h2 className="text-xl font-bold text-theme-primary">
@@ -73,9 +74,9 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                     <h4 className="font-bold text-theme-text text-sm">
                       {t(`themes.${slot.theme}.name`)} : {slot.name}
                     </h4>
-                    <p className="text-xs text-theme-muted truncate w-40">
-                      {slot.summary}
-                    </p>
+                    <div className="text-xs text-theme-muted w-40 line-clamp-2 [&_p]:mb-0">
+                      <MarkdownText content={slot.summary} />
+                    </div>
                     <span className="text-[10px] text-theme-muted opacity-50">
                       {new Date(slot.timestamp).toLocaleDateString()}
                     </span>

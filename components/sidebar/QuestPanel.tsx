@@ -49,45 +49,57 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   ) => (
     <div
       key={q.id}
-      className="bg-theme-surface-highlight/50 p-4 rounded border border-theme-border text-theme-text text-sm leading-relaxed border-l-4 border-l-theme-primary relative group cursor-pointer hover:bg-theme-surface-highlight/70 transition-colors mb-2 overflow-visible"
-      onClick={() => toggleQuest(q.id, isModal)}
+      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${
+        q.type === "main" ? "border-l-4 border-l-theme-primary" : "border-l-4 border-l-theme-muted"
+      }`}
     >
-      <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-bg border border-theme-primary text-[10px] px-1.5 py-0.5 rounded text-theme-primary uppercase shadow-lg">
-        {q.type === "main" ? t("questPanel.main") : t("questPanel.side")}
-      </div>
-      <div className="flex items-center justify-between">
-        <h4 className="font-bold text-theme-primary mb-1 flex-1">{q.title}</h4>
+      <div
+        className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-start justify-between gap-2"
+        onClick={() => toggleQuest(q.id, isModal)}
+      >
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
+              q.type === "main"
+                ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
+                : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
+            }`}>
+              {q.type === "main" ? (t("mainQuest") || "Main") : (t("sideQuest") || "Side")}
+            </span>
+            <h4 className="font-bold text-theme-text text-sm leading-tight">{q.title}</h4>
+          </div>
+        </div>
         <svg
-          className={`w-4 h-4 text-theme-primary transition-transform duration-200 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-1 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          ></path>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      {expandedSet.has(q.id.toString()) && (
-        <p className="italic opacity-90 mt-2 animate-[fade-in_0.3s_ease-in]">
-          {q.visible.description}
-        </p>
-      )}
+
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedSet.has(q.id.toString()) ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
+          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">{t("description") || "Description"}</span>
+          <p className="pl-1">{q.visible.description}</p>
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`text-left text-theme-primary uppercase text-xs font-bold tracking-widest flex items-center group ${themeFont}`}
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
         >
           <span className="w-2 h-2 bg-theme-primary rounded-full mr-2 animate-pulse"></span>
           {t("questPanel.title")}
+          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            {allQuests.length}
+          </span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -97,34 +109,29 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-[10px] text-theme-primary hover:text-theme-primary-hover uppercase tracking-wider font-bold border border-theme-primary/50 rounded px-2 py-0.5 transition-colors"
+              className="text-theme-muted hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
-              {t("viewAll") || "View All"}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           )}
-          <button onClick={() => setIsOpen(!isOpen)}>
+          <button onClick={() => setIsOpen(!isOpen)} className="text-theme-muted hover:text-theme-primary p-1">
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
         </div>
       </div>
 
-      <div
-        className={`transition-all duration-500 ease-in-out ${isOpen ? "max-h-[500px] opacity-100 overflow-y-auto" : "max-h-0 opacity-0 overflow-hidden"}`}
-      >
-        <div className="space-y-4 pr-1">
+      <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className="space-y-3">
           {/* Main Quests */}
           {mainQuests
             .slice(0, DISPLAY_LIMIT)
@@ -137,9 +144,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               .map((q) => renderQuest(q, expandedQuests, false))}
 
           {allQuests.length === 0 && (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border rounded text-center opacity-50">
+            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("questPanel.empty")}
-            </p>
+            </div>
           )}
         </div>
       </div>
