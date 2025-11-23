@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { preloadAudio } from "../../utils/audioLoader";
 
 interface InitializingPageProps {
   themeFont: string;
+  isProcessing?: boolean;
 }
 
 export const InitializingPage: React.FC<InitializingPageProps> = ({
   themeFont,
+  isProcessing = false,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [audioProgress, setAudioProgress] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [shouldCheckProcessing, setShouldCheckProcessing] = useState(false);
 
   useEffect(() => {
     preloadAudio(setAudioProgress);
@@ -21,8 +26,24 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
       setElapsedTime((prev) => prev + 1);
     }, 1000);
 
-    return () => clearInterval(timer);
+    // After 3 seconds, start checking if we're actually processing
+    const checkTimer = setTimeout(() => {
+      setShouldCheckProcessing(true);
+    }, 3000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(checkTimer);
+    };
   }, []);
+
+  // If not processing after initial delay, redirect to home
+  useEffect(() => {
+    if (shouldCheckProcessing && !isProcessing) {
+      console.warn("InitializingPage: Not processing, redirecting to home");
+      navigate("/");
+    }
+  }, [shouldCheckProcessing, isProcessing, navigate]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

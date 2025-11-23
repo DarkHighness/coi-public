@@ -309,7 +309,10 @@ export default function App() {
         <Route
           path="/initializing"
           element={
-            <InitializingPage themeFont={currentThemeConfig.fontClass} />
+            <InitializingPage
+              themeFont={currentThemeConfig.fontClass}
+              isProcessing={gameState.isProcessing}
+            />
           }
         />
 
