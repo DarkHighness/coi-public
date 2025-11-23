@@ -12,7 +12,7 @@ import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { MobileNav, MobileTab } from "../MobileNav";
-import { THEMES, ENV_THEMES } from "../../utils/constants";
+import { THEMES, ENV_THEMES, BUILD_INFO } from "../../utils/constants";
 import { useTranslation } from "react-i18next";
 
 interface MobileGameLayoutProps {
@@ -321,6 +321,13 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                 {t("newGame")}
               </span>
             </button>
+          </div>
+
+          <div className="mt-8 text-center">
+            <div className="text-xs text-theme-muted">{t("builtWith")}</div>
+            <div className="text-[10px] text-theme-muted/50 mt-1">
+              {BUILD_INFO.gitHash} ({BUILD_INFO.buildTime})
+            </div>
           </div>
         </div>
       </div>

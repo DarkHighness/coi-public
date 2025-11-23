@@ -1,11 +1,11 @@
 {
   "name": "chronicles-of-infinity",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node scripts/generate-build-info.js && vite",
+    "build": "node scripts/generate-build-info.js && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
