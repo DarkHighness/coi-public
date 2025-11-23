@@ -63,6 +63,10 @@ export const generateContent = async (
   options?: {
     thinkingLevel?: "low" | "medium" | "high";
     mediaResolution?: "low" | "medium" | "high";
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    minP?: number;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const ai = getGeminiClient(config);
@@ -93,23 +97,12 @@ export const generateContent = async (
 
   if (model.includes("thinking")) {
     generationConfig.thinkingConfig = { includeThoughts: true };
-    if (options?.thinkingLevel) {
-      // Note: The docs say thinking_level is a parameter, but the SDK might expect it in thinkingConfig or top level.
-      // Based on docs: thinking_level parameter.
-      // Let's assume it goes into thinkingConfig or generationConfig.
-      // Docs: "thinking_level parameter used to control..."
-      // SDK usage usually puts it in generationConfig.
-      // Let's try putting it in thinkingConfig first as that seems logical for "includeThoughts".
-      // Actually, looking at the snippet: "thinking_level" seems to be a separate param or part of config.
-      // Let's add it to generationConfig directly as `thinkingLevel` (camelCase for JS SDK usually).
-      // Wait, the snippet showed `thinking_level` in text description but didn't show JS code for it.
-      // It showed `media_resolution` in JS.
-      // Let's assume `thinkingConfig: { includeThoughts: true, thinkingBudget: ... }` or similar.
-      // Since I don't have the exact JS SDK signature for thinking level, I will omit it for now and just enable thinking.
-      // The user docs said "thinking_level" parameter.
-    }
   } else {
-    generationConfig.temperature = 0.8;
+    // Standard params
+    if (options?.temperature !== undefined)
+      generationConfig.temperature = options.temperature;
+    if (options?.topP !== undefined) generationConfig.topP = options.topP;
+    if (options?.topK !== undefined) generationConfig.topK = options.topK;
   }
 
   const response = await ai.models.generateContent({

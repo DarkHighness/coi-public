@@ -691,6 +691,12 @@ export interface FunctionConfig {
   voice?: string; // Specific voice ID (e.g. "alloy", "coral")
   speed?: number; // 0.25 to 4.0
   format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
+
+  // Advanced Model Parameters
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
 }
 
 export interface AISettings {

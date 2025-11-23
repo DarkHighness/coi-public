@@ -112,6 +112,10 @@ export const generateContent = async (
   options?: {
     thinkingLevel?: "low" | "medium" | "high";
     mediaResolution?: "low" | "medium" | "high";
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    minP?: number;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   // Map contents to messages
@@ -133,6 +137,10 @@ export const generateContent = async (
   const body: any = {
     model: model,
     messages: messages,
+    temperature: options?.temperature,
+    top_p: options?.topP,
+    top_k: options?.topK,
+    min_p: options?.minP,
   };
 
   if (schema) {

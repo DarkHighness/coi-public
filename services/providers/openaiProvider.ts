@@ -128,6 +128,10 @@ export const generateContent = async (
   options?: {
     thinkingLevel?: "low" | "medium" | "high";
     mediaResolution?: "low" | "medium" | "high";
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    minP?: number;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const client = getClient(config);
@@ -154,7 +158,8 @@ export const generateContent = async (
     response_format: schema
       ? { type: "json_schema", json_schema: schema }
       : { type: "json_object" },
-    temperature: 0.8,
+    temperature: options?.temperature ?? 0.8,
+    top_p: options?.topP,
   });
 
   const choice = response.choices[0];

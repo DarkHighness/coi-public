@@ -112,6 +112,11 @@ const getProviderConfig = (
     resolution: config.resolution,
     thinkingLevel: config.thinkingLevel,
     mediaResolution: config.mediaResolution,
+    // Advanced Parameters
+    temperature: config.temperature,
+    topP: config.topP,
+    topK: config.topK,
+    minP: config.minP,
   };
 };
 
@@ -288,6 +293,10 @@ const generateContentUnified = async (
   const options = {
     thinkingLevel: storyConfig.thinkingLevel,
     mediaResolution: storyConfig.mediaResolution,
+    temperature: storyConfig.temperature,
+    topP: storyConfig.topP,
+    topK: storyConfig.topK,
+    minP: storyConfig.minP,
   };
 
   try {
