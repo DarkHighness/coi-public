@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CharacterStatus, CharacterSkill } from "../../types";
+import { CharacterStatus, CharacterSkill, CharacterCondition } from "../../types";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -263,18 +263,33 @@ const getStatusConfig = (status: string) => {
 
 // Sub-component for individual skills to handle expansion state
 const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(skill.highlight || false);
+
+  const handleClick = () => {
+    setIsExpanded(!isExpanded);
+    if (isHighlight) {
+      setIsHighlight(false);
+    }
+  };
 
   return (
     <div
       className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group w-full
         ${isExpanded ? "bg-theme-surface-highlight/30 border-theme-primary/30" : "hover:bg-theme-surface-highlight/20 hover:border-theme-primary/20"}
+        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
       `}
-      onClick={() => setIsExpanded(!isExpanded)}
+      onClick={handleClick}
     >
       <div className="flex justify-between items-center px-2 py-1.5">
-        <span className="text-xs text-theme-text font-medium">
+        <span className="text-xs text-theme-text font-medium flex items-center gap-1">
           {skill.name}
+          {skill.unlocked && (
+            <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+            </svg>
+          )}
         </span>
         {skill.level && (
           <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
@@ -284,13 +299,147 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
       </div>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-20 opacity-100" : "max-h-0 opacity-0"}`}
+        className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
       >
         <div className="px-2 pb-2 pt-0">
           <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
             {skill.visible?.description || "No description"}
           </p>
+
+          {/* Unlocked Hidden Truth */}
+          {skill.unlocked && skill.hidden?.trueDescription && (
+            <div className="mt-2 text-xs border-l-2 border-yellow-500/50 pl-2 bg-yellow-900/10 py-1.5 rounded-r">
+              <span className="text-[9px] uppercase tracking-wider text-yellow-400 font-bold block mb-0.5 flex items-center gap-1">
+                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                {t("hidden.truth")}
+              </span>
+              <p className="leading-relaxed text-yellow-200/90 text-[10px]">{skill.hidden.trueDescription}</p>
+              {skill.hidden.hiddenEffects && skill.hidden.hiddenEffects.length > 0 && (
+                <div className="mt-1.5">
+                  <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">{t("hidden.effects")}:</span>
+                  <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5 text-[10px]">
+                    {skill.hidden.hiddenEffects.map((effect, i) => (
+                      <li key={i}>{effect}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {skill.hidden.drawbacks && skill.hidden.drawbacks.length > 0 && (
+                <div className="mt-1.5">
+                  <span className="text-[9px] uppercase tracking-wider text-red-400/70 block mb-0.5">{t("hidden.drawbacks")}:</span>
+                  <ul className="list-disc list-inside text-red-200/80 space-y-0.5 text-[10px]">
+                    {skill.hidden.drawbacks.map((drawback, i) => (
+                      <li key={i}>{drawback}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Sub-component for individual conditions to handle expansion state
+const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition }) => {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
+
+  const { icon, style } = getStatusConfig(condition.name);
+
+  const handleClick = () => {
+    setIsExpanded(!isExpanded);
+    if (isHighlight) {
+      setIsHighlight(false);
+    }
+  };
+
+  return (
+    <div
+      className={`rounded border text-xs cursor-pointer transition-all duration-300 ${style}
+        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+      `}
+      onClick={handleClick}
+    >
+      <div className="p-2">
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="font-bold flex items-center gap-1">
+            {icon}
+            {condition.name}
+            {condition.unlocked && (
+              <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+              </svg>
+            )}
+          </span>
+          {condition.duration && (
+            <span className="text-[10px] opacity-70">
+              {condition.duration}
+            </span>
+          )}
+        </div>
+
+        {condition.visible?.description && (
+          <p className="text-[11px] opacity-80">
+            {condition.visible.description}
+          </p>
+        )}
+
+        {/* Expanded content with unlocked information */}
+        {isExpanded && (
+          <div className="mt-2 pt-2 border-t border-current/20">
+            {condition.visible?.perceivedSeverity && (
+              <p className="text-[10px] opacity-70">
+                <span className="font-semibold">Severity:</span> {condition.visible.perceivedSeverity}
+              </p>
+            )}
+
+            {/* Unlocked Hidden Information */}
+            {condition.unlocked && (
+              <div className="mt-2 text-xs border-l-2 border-yellow-500/50 pl-2 bg-yellow-900/10 py-1.5 rounded-r">
+                <span className="text-[9px] uppercase tracking-wider text-yellow-400 font-bold block mb-0.5 flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  {t("hidden.cause")}
+                </span>
+                {condition.hidden?.trueCause && (
+                  <p className="leading-relaxed text-yellow-200/90 text-[10px] mb-1">{condition.hidden.trueCause}</p>
+                )}
+                {condition.hidden?.actualSeverity && (
+                  <p className="text-[10px] text-yellow-200/80">
+                    <span className="font-semibold">{t("hidden.severity")}:</span> {condition.hidden.actualSeverity}
+                  </p>
+                )}
+                {condition.hidden?.progression && (
+                  <p className="text-[10px] text-yellow-200/80 mt-1">
+                    <span className="font-semibold">{t("hidden.progression")}:</span> {condition.hidden.progression}
+                  </p>
+                )}
+                {condition.hidden?.cure && (
+                  <p className="text-[10px] text-green-200/80 mt-1">
+                    <span className="font-semibold">{t("hidden.cure")}:</span> {condition.hidden.cure}
+                  </p>
+                )}
+                {condition.effects?.hidden && condition.effects.hidden.length > 0 && (
+                  <div className="mt-1.5">
+                    <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">{t("hidden.effects")}:</span>
+                    <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5 text-[10px]">
+                      {condition.effects.hidden.map((effect, i) => (
+                        <li key={i}>{effect}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -445,39 +594,16 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               </h4>
               <div className="flex flex-col gap-1">
                 {character.conditions.map((cond, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-2 rounded border text-xs ${
-                      cond.type === "buff"
-                        ? "bg-blue-500 border-theme-muted/50 text-white"
-                        : cond.type === "debuff"
-                          ? "bg-red-500 border-theme-muted/50  text-white"
-                          : "bg-theme-surface-highlight/20 border-theme-border/50 text-theme-text"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-0.5">
-                      <span className="font-bold">{cond.name}</span>
-                      {/* @ts-ignore - duration might be string or number depending on schema version */}
-                      {cond.duration && (
-                        <span className="text-[10px] opacity-70">
-                          {cond.duration}
-                        </span>
-                      )}
-                    </div>
-                    {cond.visible?.description && (
-                      <p className="text-[11px] opacity-80">
-                        {cond.visible.description}
-                      </p>
-                    )}
-                  </div>
+                  <ConditionItem key={idx} condition={cond} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Hidden Traits (Only Discovered) */}
+          {/* Hidden Traits (Only Unlocked) */}
           {character.hiddenTraits &&
-            character.hiddenTraits.some((t) => t.discovered) && (
+            character.hiddenTraits.length > 0 &&
+            character.hiddenTraits.some((t) => t.unlocked) && (
               <div>
                 <h4 className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
                   <svg
@@ -503,11 +629,13 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </h4>
                 <div className="flex flex-col gap-1">
                   {character.hiddenTraits
-                    .filter((t) => t.discovered)
+                    .filter((t) => t.unlocked)
                     .map((trait, idx) => (
                       <div
                         key={idx}
-                        className="p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs"
+                        className={`p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs ${
+                          trait.highlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""
+                        }`}
                       >
                         <div className="font-bold mb-0.5">{trait.name}</div>
                         {trait.description && (

@@ -5,6 +5,9 @@ import { ItemLore } from "./ItemLore";
 interface ItemDetails {
   description: string;
   lore: string;
+  unlocked?: boolean;
+  hiddenTruth?: string;
+  hiddenSecrets?: string[];
 }
 
 interface InventoryItemDetailProps {
@@ -61,6 +64,32 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({
         </span>
         <p className="leading-relaxed pl-1">{details.description}</p>
       </div>
+
+      {/* Unlocked Hidden Truth */}
+      {details.unlocked && details.hiddenTruth && (
+        <div className="text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
+          <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+            </svg>
+            {t("hidden.truth")}
+          </span>
+          <p className="leading-relaxed text-yellow-200/90">{details.hiddenTruth}</p>
+          {details.hiddenSecrets && details.hiddenSecrets.length > 0 && (
+            <div className="mt-2">
+              <span className="text-[10px] uppercase tracking-wider text-yellow-400/80 font-bold block mb-1">
+                {t("hidden.secrets")}:
+              </span>
+              <ul className="list-disc list-inside space-y-0.5 text-yellow-200/80">
+                {details.hiddenSecrets.map((secret, idx) => (
+                  <li key={idx}>{secret}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {details.lore && (
         <ItemLore
           lore={details.lore}

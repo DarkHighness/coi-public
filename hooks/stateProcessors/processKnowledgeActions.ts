@@ -41,6 +41,8 @@ export function processKnowledgeActions(
           createdAt: Date.now(),
           lastModified: Date.now(),
           relatedTo: action.relatedTo,
+          unlocked: action.unlocked ?? false, // AI decides if player already knows the truth
+          highlight: true,
         });
       }
     } else if (action.action === "update") {
@@ -49,30 +51,55 @@ export function processKnowledgeActions(
       );
 
       if (index !== -1) {
+        let hasVisibleChange = false;
+
         // Update visible layer
         if (action.visible?.description) {
           newKnowledge[index].visible.description = action.visible.description;
+          hasVisibleChange = true;
         }
         if (action.visible?.details) {
           newKnowledge[index].visible.details = action.visible.details;
+          hasVisibleChange = true;
         }
 
         // Update hidden layer
         if (action.hidden?.fullTruth) {
           newKnowledge[index].hidden.fullTruth = action.hidden.fullTruth;
+          if (newKnowledge[index].unlocked) {
+            hasVisibleChange = true;
+          }
         }
         if (action.hidden?.misconceptions) {
           newKnowledge[index].hidden.misconceptions =
             action.hidden.misconceptions;
+          if (newKnowledge[index].unlocked) {
+            hasVisibleChange = true;
+          }
         }
         if (action.hidden?.toBeRevealed) {
           newKnowledge[index].hidden.toBeRevealed = action.hidden.toBeRevealed;
+          if (newKnowledge[index].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+
+        // Update unlocked state
+        if (action.unlocked !== undefined) {
+          const wasUnlocked = newKnowledge[index].unlocked;
+          newKnowledge[index].unlocked = action.unlocked;
+          if (!wasUnlocked && action.unlocked) {
+            hasVisibleChange = true;
+          }
         }
 
         // Update metadata
         if (action.relatedTo) {
           newKnowledge[index].relatedTo = action.relatedTo;
+          hasVisibleChange = true;
         }
+
+        newKnowledge[index].highlight = hasVisibleChange;
         newKnowledge[index].lastModified = Date.now();
       }
     }

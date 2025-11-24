@@ -74,14 +74,29 @@ export function processCharacterActions(
             hiddenEffects: [],
             drawbacks: [],
           },
+          unlocked: act.unlocked ?? false, // AI decides based on player's understanding
+          highlight: true,
         });
       } else if (act.action === "remove" && idx !== -1) {
         newCharacter.skills.splice(idx, 1);
       } else if (act.action === "update" && idx !== -1) {
-        if (act.level) newCharacter.skills[idx].level = act.level;
+        let hasVisibleChange = false;
+        if (act.level) {
+          newCharacter.skills[idx].level = act.level;
+          hasVisibleChange = true;
+        }
         if (act.description) {
           newCharacter.skills[idx].visible.description = act.description;
+          hasVisibleChange = true;
         }
+        if (act.unlocked !== undefined) {
+          const wasUnlocked = newCharacter.skills[idx].unlocked;
+          newCharacter.skills[idx].unlocked = act.unlocked;
+          if (!wasUnlocked && act.unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+        newCharacter.skills[idx].highlight = hasVisibleChange;
       }
     });
   }
@@ -113,34 +128,77 @@ export function processCharacterActions(
             hidden: act.effects?.hidden || [],
           },
           startTime: Date.now(),
+          unlocked: act.unlocked ?? false, // AI decides based on context
+          highlight: true,
         });
       } else if (act.action === "remove" && idx !== -1) {
         newCharacter.conditions.splice(idx, 1);
       } else if (act.action === "update" && idx !== -1) {
-        if (act.type) newCharacter.conditions[idx].type = act.type;
+        let hasVisibleChange = false;
 
-        if (act.visible?.description)
+        if (act.type) {
+          newCharacter.conditions[idx].type = act.type;
+          hasVisibleChange = true;
+        }
+
+        if (act.visible?.description) {
           newCharacter.conditions[idx].visible.description =
             act.visible.description;
-        if (act.visible?.perceivedSeverity)
+          hasVisibleChange = true;
+        }
+        if (act.visible?.perceivedSeverity) {
           newCharacter.conditions[idx].visible.perceivedSeverity =
             act.visible.perceivedSeverity;
+          hasVisibleChange = true;
+        }
 
-        if (act.hidden?.trueCause)
+        if (act.hidden?.trueCause) {
           newCharacter.conditions[idx].hidden.trueCause = act.hidden.trueCause;
-        if (act.hidden?.actualSeverity)
+          if (newCharacter.conditions[idx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+        if (act.hidden?.actualSeverity) {
           newCharacter.conditions[idx].hidden.actualSeverity =
             act.hidden.actualSeverity;
-        if (act.hidden?.progression)
+          if (newCharacter.conditions[idx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+        if (act.hidden?.progression) {
           newCharacter.conditions[idx].hidden.progression =
             act.hidden.progression;
-        if (act.hidden?.cure)
+          if (newCharacter.conditions[idx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+        if (act.hidden?.cure) {
           newCharacter.conditions[idx].hidden.cure = act.hidden.cure;
+          if (newCharacter.conditions[idx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
 
-        if (act.effects?.visible)
+        if (act.effects?.visible) {
           newCharacter.conditions[idx].effects.visible = act.effects.visible;
-        if (act.effects?.hidden)
+          hasVisibleChange = true;
+        }
+        if (act.effects?.hidden) {
           newCharacter.conditions[idx].effects.hidden = act.effects.hidden;
+          if (newCharacter.conditions[idx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+
+        if (act.unlocked !== undefined) {
+          const wasUnlocked = newCharacter.conditions[idx].unlocked;
+          newCharacter.conditions[idx].unlocked = act.unlocked;
+          if (!wasUnlocked && act.unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+
+        newCharacter.conditions[idx].highlight = hasVisibleChange;
       }
     });
   }
@@ -161,19 +219,36 @@ export function processCharacterActions(
           description: act.description || "Unknown trait",
           effects: act.effects || [],
           triggerConditions: act.triggerConditions || [],
-          discovered: act.discovered || false,
+          unlocked: act.unlocked ?? false, // AI sets based on trigger conditions met
+          highlight: true,
         });
       } else if (act.action === "remove" && idx !== -1) {
         newCharacter.hiddenTraits!.splice(idx, 1);
       } else if (act.action === "update" && idx !== -1) {
-        if (act.description)
+        let hasVisibleChange = false;
+
+        if (act.description) {
           newCharacter.hiddenTraits![idx].description = act.description;
-        if (act.effects) newCharacter.hiddenTraits![idx].effects = act.effects;
-        if (act.triggerConditions)
+          hasVisibleChange = true;
+        }
+        if (act.effects) {
+          newCharacter.hiddenTraits![idx].effects = act.effects;
+          hasVisibleChange = true;
+        }
+        if (act.triggerConditions) {
           newCharacter.hiddenTraits![idx].triggerConditions =
             act.triggerConditions;
-        if (act.discovered !== undefined)
-          newCharacter.hiddenTraits![idx].discovered = act.discovered;
+          hasVisibleChange = true;
+        }
+        if (act.unlocked !== undefined) {
+          const wasUnlocked = newCharacter.hiddenTraits![idx].unlocked;
+          newCharacter.hiddenTraits![idx].unlocked = act.unlocked;
+          if (!wasUnlocked && act.unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+
+        newCharacter.hiddenTraits![idx].highlight = hasVisibleChange;
       }
     });
   }

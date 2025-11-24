@@ -169,13 +169,26 @@ export const generateContent = async (
     totalTokens: response.usageMetadata?.totalTokenCount || 0,
   };
 
-  try {
+    try {
     // Clean JSON before parsing (remove markdown code blocks if present)
     const cleanedText = text.replace(/```json\n?|```/g, "").trim();
     return { result: JSON.parse(cleanedText), usage, raw: response };
   } catch (e) {
-    console.error("JSON Parse Error", e, "Text:", text);
-    throw new Error("Failed to parse AI response as JSON.");
+    console.warn("Initial JSON parse failed, attempting repair...", e);
+    try {
+      const cleanedText = text.replace(/```json\n?|```/g, "").trim();
+      // Attempt simple repairs
+      const repairedText = cleanedText
+        // Replace single quotes around keys: { 'key': -> { "key":
+        .replace(/([{,]\s*)'([^']+)'(\s*:)/g, '$1"$2"$3')
+        // Remove trailing commas: , } -> }
+        .replace(/,(\s*[}\]])/g, "$1");
+
+      return { result: JSON.parse(repairedText), usage, raw: response };
+    } catch (e2) {
+      console.error("JSON Parse Error", e2, "Text:", text);
+      throw new Error("Failed to parse AI response as JSON.");
+    }
   }
 };
 

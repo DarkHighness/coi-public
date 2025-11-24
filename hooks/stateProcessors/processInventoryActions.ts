@@ -39,7 +39,8 @@ export function processInventoryActions(
           createdAt: Date.now(),
           lastModified: Date.now(),
           lore: act.lore,
-          isMystery: act.isMystery,
+          unlocked: act.unlocked ?? false, // AI can set true if player already understands
+          highlight: true, // New items are always highlighted
         });
       }
     } else if (act.action === "remove") {
@@ -52,9 +53,17 @@ export function processInventoryActions(
       );
 
       if (idx !== -1) {
+        let hasVisibleChange = false;
+
         // Update name if provided
-        if (act.newItem) newInventory[idx].name = act.newItem;
-        if (act.name) newInventory[idx].name = act.name;
+        if (act.newItem) {
+          newInventory[idx].name = act.newItem;
+          hasVisibleChange = true;
+        }
+        if (act.name) {
+          newInventory[idx].name = act.name;
+          hasVisibleChange = true;
+        }
 
         // Update visible layer
         if (act.visible?.description || act.visible?.notes) {
@@ -63,9 +72,11 @@ export function processInventoryActions(
           }
           if (act.visible.description) {
             newInventory[idx].visible.description = act.visible.description;
+            hasVisibleChange = true;
           }
           if (act.visible.notes) {
             newInventory[idx].visible.notes = act.visible.notes;
+            hasVisibleChange = true;
           }
         }
 
@@ -76,17 +87,37 @@ export function processInventoryActions(
           }
           if (act.hidden.truth) {
             newInventory[idx].hidden.truth = act.hidden.truth;
+            // Only highlight if unlocked (otherwise hidden changes aren't visible)
+            if (newInventory[idx].unlocked) {
+              hasVisibleChange = true;
+            }
           }
           if (act.hidden.secrets) {
             newInventory[idx].hidden.secrets = act.hidden.secrets;
+            if (newInventory[idx].unlocked) {
+              hasVisibleChange = true;
+            }
+          }
+        }
+
+        // Update unlocked state
+        if (act.unlocked !== undefined) {
+          const wasUnlocked = newInventory[idx].unlocked;
+          newInventory[idx].unlocked = act.unlocked;
+          // Unlocking is always a visible change
+          if (!wasUnlocked && act.unlocked) {
+            hasVisibleChange = true;
           }
         }
 
         // Update metadata
-        if (act.lore) newInventory[idx].lore = act.lore;
-        if (act.isMystery !== undefined) {
-          newInventory[idx].isMystery = act.isMystery;
+        if (act.lore) {
+          newInventory[idx].lore = act.lore;
+          hasVisibleChange = true;
         }
+
+        // Set highlight if there was a visible change
+        newInventory[idx].highlight = hasVisibleChange;
         newInventory[idx].lastModified = Date.now();
       } else {
         console.warn(

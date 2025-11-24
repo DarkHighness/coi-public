@@ -34,14 +34,14 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
   // Animation states
   const [isVisible, setIsVisible] = useState(false);
-  const [isHighlight, setIsHighlight] = useState(true);
+  const [isHighlight, setIsHighlight] = useState(item.highlight || false);
 
   useEffect(() => {
     // Trigger slide-in
     const entryTimer = setTimeout(() => setIsVisible(true), 50);
 
-    // Remove highlight after a few seconds
-    const highlightTimer = setTimeout(() => setIsHighlight(false), 2000);
+    // Remove highlight after a few seconds, or on click
+    const highlightTimer = setTimeout(() => setIsHighlight(false), 3000);
 
     return () => {
       clearTimeout(entryTimer);
@@ -52,6 +52,8 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
   const handleClick = () => {
     if (!isEditMode) {
       setIsOpen(!isOpen);
+      // Clear highlight on click
+      setIsHighlight(false);
     }
   };
 
@@ -95,6 +97,9 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
             description:
               item.visible?.description || "No description available.",
             lore: item.lore || "",
+            unlocked: item.unlocked || false,
+            hiddenTruth: item.hidden?.truth || "",
+            hiddenSecrets: item.hidden?.secrets || [],
           }}
         />
       </div>

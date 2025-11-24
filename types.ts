@@ -84,6 +84,8 @@ export interface TimelineEvent {
   };
   involvedEntities?: string[];
   chainId?: string; // Link to a CausalChain
+  unlocked?: boolean; // True when true cause/consequences are revealed
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface CausalChain {
@@ -207,6 +209,8 @@ export interface CharacterSkill {
   };
   category?: string;
   experience?: number;
+  unlocked?: boolean; // True when hidden effects are revealed to player
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface CharacterCondition {
@@ -229,6 +233,8 @@ export interface CharacterCondition {
     visible: string[];
     hidden: string[];
   };
+  unlocked?: boolean; // True when true cause/cure are revealed
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface HiddenTrait {
@@ -237,7 +243,8 @@ export interface HiddenTrait {
   description: string;
   effects: string[];
   triggerConditions?: string[];
-  discovered: boolean;
+  unlocked: boolean; // True when triggerConditions are met and trait is revealed
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface CharacterStatus {
@@ -291,7 +298,9 @@ export interface Relationship {
   };
   createdAt: number;
   lastModified: number;
-  notes?: string;
+  notes?: string; // NPC's observations of player's displayed knowledge/behavior
+  unlocked?: boolean; // True when hidden personality/motives revealed (requires special ability)
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface StorySegment {
@@ -371,6 +380,8 @@ export interface Location {
   createdAt: number;
   discoveredAt?: number;
   notes?: string;
+  unlocked?: boolean; // True when hidden secrets are discovered
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface KnowledgeEntry {
@@ -399,6 +410,8 @@ export interface KnowledgeEntry {
   relatedTo?: string[];
   createdAt: number;
   lastModified: number;
+  unlocked?: boolean; // True when full truth is revealed
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface InventoryItem {
@@ -415,8 +428,9 @@ export interface InventoryItem {
   createdAt: number;
   lastModified: number;
   lore?: string;
-  isMystery?: boolean;
   icon?: string;
+  unlocked?: boolean; // True when hidden truth is revealed to player
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface Quest {
@@ -435,6 +449,8 @@ export interface Quest {
   };
   createdAt: number;
   lastModified: number;
+  unlocked?: boolean; // True when true objectives/outcome are revealed
+  highlight?: boolean; // True when updated in current turn (for UI)
 }
 
 export interface InventoryAction {
@@ -453,8 +469,8 @@ export interface InventoryAction {
   };
 
   lore?: string;
-  isMystery?: boolean;
   newItem?: string;
+  unlocked?: boolean; // Set when hidden truth should be revealed/locked
 }
 
 export interface QuestAction {
@@ -471,6 +487,7 @@ export interface QuestAction {
     trueObjectives?: string[];
     secretOutcome?: string;
   };
+  unlocked?: boolean; // Set when true objectives should be revealed
 }
 
 export interface RelationshipAction {
@@ -496,6 +513,7 @@ export interface RelationshipAction {
   };
 
   notes?: string;
+  unlocked?: boolean; // Set when mind-reading/telepathy reveals hidden personality
 }
 
 export interface LocationAction {
@@ -517,6 +535,7 @@ export interface LocationAction {
   lore?: string;
   environment?: string;
   notes?: string;
+  unlocked?: boolean; // Set when hidden secrets are discovered
 }
 
 export interface KnowledgeAction {
@@ -546,6 +565,7 @@ export interface KnowledgeAction {
 
   discoveredAt?: string;
   relatedTo?: string[];
+  unlocked?: boolean; // Set when full truth is revealed
 }
 
 export interface CharacterAction {
@@ -579,6 +599,7 @@ export interface CharacterAction {
   strValue?: string;
   maxValue?: number;
   color?: string;
+  unlocked?: boolean; // Set when hidden effects should be revealed (skills/conditions)
 }
 
 export interface AdventureTurnInput {
@@ -663,6 +684,7 @@ export interface CharacterUpdates {
     name: string;
     level?: string;
     description?: string;
+    unlocked?: boolean; // Set when hidden techniques/true nature revealed
   }>;
   conditions?: Array<{
     action: "add" | "update" | "remove";
@@ -683,6 +705,7 @@ export interface CharacterUpdates {
       visible?: string[];
       hidden?: string[];
     };
+    unlocked?: boolean; // Set when true diagnosis/cure revealed
   }>;
   hiddenTraits?: Array<{
     action: "add" | "update" | "remove";
@@ -691,7 +714,7 @@ export interface CharacterUpdates {
     description?: string;
     effects?: string[];
     triggerConditions?: string[];
-    discovered?: boolean;
+    unlocked?: boolean; // Set to true when triggerConditions are met
   }>;
   profile?: {
     status?: string;

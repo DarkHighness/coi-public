@@ -75,7 +75,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
               >
                 {t("worldInfo.history") || "History"}
               </h4>
-              <div className="text-xs text-theme-text/80 font-serif leading-relaxed max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="text-xs text-theme-text/80 font-serif leading-relaxed">
                 <MarkdownText content={history} />
               </div>
             </div>

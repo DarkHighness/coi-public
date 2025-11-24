@@ -12,6 +12,253 @@ interface LocationPanelProps {
   onUpdateList: (newState: ListState) => void;
 }
 
+interface LocationItemProps {
+  item: {
+    id: string;
+    name: string;
+    isCurrent: boolean;
+    data: Location;
+  };
+  expandedLocations: Set<string>;
+  isEditMode: boolean;
+  draggedId: string | null;
+  onLocationClick: (name: string) => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
+  onDragEnter: (e: React.DragEvent, id: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onTogglePin: (id: string) => void;
+  isPinned: (id: string) => boolean;
+  t: any;
+}
+
+const LocationItem: React.FC<LocationItemProps> = ({
+  item,
+  expandedLocations,
+  isEditMode,
+  draggedId,
+  onLocationClick,
+  onDragStart,
+  onDragEnter,
+  onDragOver,
+  onDragEnd,
+  onTogglePin,
+  isPinned,
+  t,
+}) => {
+  const isExpanded = expandedLocations.has(item.name);
+  const locationData = item.data;
+  const isCurrent = item.isCurrent;
+  const pinned = isPinned(item.id);
+  const isDragging = draggedId === item.id;
+  const [isHighlight, setIsHighlight] = useState(
+    locationData.highlight || false,
+  );
+
+  const handleToggle = () => {
+    onLocationClick(item.name);
+    if (isHighlight) {
+      setIsHighlight(false);
+    }
+  };
+
+  return (
+    <div
+      key={item.id}
+      className={`mb-2 transition-all duration-300 ease-in-out rounded flex items-center gap-1
+        ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
+        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+      `}
+      draggable={isEditMode}
+      onDragStart={isEditMode ? (e) => onDragStart(e, item.id) : undefined}
+      onDragEnter={isEditMode ? (e) => onDragEnter(e, item.id) : undefined}
+      onDragOver={isEditMode ? onDragOver : undefined}
+      onDragEnd={onDragEnd}
+    >
+      <div className="flex-1 min-w-0">
+        <button
+          onClick={handleToggle}
+          className={`w-full text-left px-3 py-2 rounded border transition-all duration-300 flex justify-between items-center ${
+            isCurrent
+              ? "bg-theme-surface-highlight/50 border-theme-primary/30 text-theme-text hover:bg-theme-primary/10"
+              : "bg-theme-bg border-theme-border/50 text-theme-muted hover:text-theme-primary hover:border-theme-primary/50"
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            {isCurrent && (
+              <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shrink-0"></span>
+            )}
+            <span
+              className={`font-bold tracking-wide text-xs truncate flex items-center gap-1 ${
+                isCurrent ? "text-theme-primary" : ""
+              }`}
+            >
+              {item.name}
+              {locationData.unlocked && (
+                <svg
+                  className="w-3 h-3 text-yellow-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                </svg>
+              )}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(item.id);
+              }}
+              className={`p-1 rounded hover:bg-theme-bg transition-colors ${
+                pinned
+                  ? "text-theme-primary"
+                  : "text-theme-muted hover:text-theme-text"
+              }`}
+              title={
+                pinned ? t("unpin") || "Unpin" : t("pinToTop") || "Pin to top"
+              }
+            >
+              <svg
+                className="w-3 h-3"
+                fill={pinned ? "currentColor" : "none"}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                ></path>
+              </svg>
+            </div>
+          </div>
+        </button>
+
+        {/* Inline Details */}
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+            isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
+            {locationData ? (
+              <div className="space-y-3 text-xs animate-fade-in">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    {t("description") || "Description"}
+                  </span>
+                  <p className="text-theme-text leading-relaxed pl-1">
+                    {locationData.visible?.description ||
+                      t("noDescription") ||
+                      "No description available."}
+                  </p>
+                </div>
+
+                {/* Unlocked Hidden Secrets */}
+                {locationData.unlocked && (
+                  <div className="mt-3 text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
+                    <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {t("hidden.secrets")}
+                    </span>
+                    {locationData.hidden?.fullDescription && (
+                      <p className="leading-relaxed text-yellow-200/90 mb-2">
+                        {locationData.hidden.fullDescription}
+                      </p>
+                    )}
+
+                    {locationData.hidden?.hiddenFeatures &&
+                      locationData.hidden.hiddenFeatures.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                            {t("hidden.features")}:
+                          </span>
+                          <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5">
+                            {locationData.hidden.hiddenFeatures.map(
+                              (feature, i) => (
+                                <li key={i}>{feature}</li>
+                              ),
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                    {locationData.hidden?.secrets &&
+                      locationData.hidden.secrets.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-[9px] uppercase tracking-wider text-purple-400/70 block mb-0.5">
+                            {t("hidden.secrets")}:
+                          </span>
+                          <ul className="list-disc list-inside text-purple-200/80 space-y-0.5">
+                            {locationData.hidden.secrets.map((secret, i) => (
+                              <li key={i}>{secret}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+                )}
+
+                {locationData.lore && (
+                  <div className="pt-2 border-t border-theme-border/20 mt-1">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("history")}
+                    </span>
+                    <p className="text-theme-muted italic pl-1">
+                      {locationData.lore}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs text-theme-muted italic opacity-50">
+                {t("noInfoAvailable")}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {isEditMode && (
+        <div
+          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none shrink-0"
+          title={t("dragToReorder") || "Drag to reorder"}
+          draggable={true}
+          onDragStart={(e) => onDragStart(e, item.id)}
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const LocationPanel: React.FC<LocationPanelProps> = ({
   currentLocation,
   locations = [],
@@ -75,148 +322,6 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-  };
-
-  const renderLocationItem = (item: (typeof locationItems)[0]) => {
-    const isExpanded = expandedLocations.has(item.name);
-    const locationData = item.data;
-    const isCurrent = item.isCurrent;
-    const pinned = isPinned(item.id);
-    const isDragging = draggedId === item.id;
-
-    return (
-      <div
-        key={item.id}
-        className={`mb-2 transition-all duration-300 ease-in-out rounded flex items-center gap-1 ${
-          isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"
-        }`}
-        draggable={isEditMode}
-        onDragStart={
-          isEditMode ? (e) => handleDragStart(e, item.id) : undefined
-        }
-        onDragEnter={
-          isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
-        }
-        onDragOver={isEditMode ? handleDragOver : undefined}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 min-w-0">
-          <button
-            onClick={() => handleLocationClick(item.name)}
-            className={`w-full text-left px-3 py-2 rounded border transition-all duration-300 flex justify-between items-center ${
-              isCurrent
-                ? "bg-theme-surface-highlight/50 border-theme-primary/30 text-theme-text hover:bg-theme-primary/10"
-                : "bg-theme-bg border-theme-border/50 text-theme-muted hover:text-theme-primary hover:border-theme-primary/50"
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {isCurrent && (
-                <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shrink-0"></span>
-              )}
-              <span
-                className={`font-bold tracking-wide text-xs truncate ${
-                  isCurrent ? "text-theme-primary" : ""
-                }`}
-              >
-                {item.name}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  togglePin(item.id);
-                }}
-                className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-                  pinned
-                    ? "text-theme-primary"
-                    : "text-theme-muted hover:text-theme-text"
-                }`}
-                title={
-                  pinned ? t("unpin") || "Unpin" : t("pinToTop") || "Pin to top"
-                }
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill={pinned ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                  ></path>
-                </svg>
-              </div>
-            </div>
-          </button>
-
-          {/* Inline Details */}
-          <div
-            className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-            }`}
-          >
-            <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
-              {locationData ? (
-                <div className="space-y-3 text-xs animate-fade-in">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                      {t("description") || "Description"}
-                    </span>
-                    <p className="text-theme-text leading-relaxed pl-1">
-                      {locationData.visible?.description ||
-                        t("noDescription") ||
-                        "No description available."}
-                    </p>
-                  </div>
-                  {locationData.lore && (
-                    <div className="pt-2 border-t border-theme-border/20 mt-1">
-                      <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                        {t("history")}
-                      </span>
-                      <p className="text-theme-muted italic pl-1">
-                        {locationData.lore}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-xs text-theme-muted italic opacity-50">
-                  {t("noInfoAvailable")}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {isEditMode && (
-          <div
-            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none shrink-0"
-            title={t("dragToReorder") || "Drag to reorder"}
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, item.id)}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -331,7 +436,23 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               {t("noKnownLocations")}
             </div>
           ) : (
-            visibleItems.map((item) => renderLocationItem(item))
+            visibleItems.map((item) => (
+              <LocationItem
+                key={item.id}
+                item={item}
+                expandedLocations={expandedLocations}
+                isEditMode={isEditMode}
+                draggedId={draggedId}
+                onLocationClick={handleLocationClick}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onTogglePin={togglePin}
+                isPinned={isPinned}
+                t={t}
+              />
+            ))
           )}
         </div>
       </div>

@@ -53,10 +53,13 @@ export function processLocationActions(
           environment: act.environment,
           notes: act.notes,
           createdAt: Date.now(),
+          unlocked: act.unlocked ?? false, // AI decides if secrets are already known
+          highlight: true,
         });
       }
     } else {
       // Update existing location
+      let hasVisibleChange = false;
 
       // Update visible layer
       if (act.visible?.description || act.visible?.knownFeatures) {
@@ -68,10 +71,12 @@ export function processLocationActions(
         }
         if (act.visible.description) {
           newLocations[locIdx].visible.description = act.visible.description;
+          hasVisibleChange = true;
         }
         if (act.visible.knownFeatures) {
           newLocations[locIdx].visible.knownFeatures =
             act.visible.knownFeatures;
+          hasVisibleChange = true;
         }
       }
 
@@ -91,19 +96,38 @@ export function processLocationActions(
         if (act.hidden.fullDescription) {
           newLocations[locIdx].hidden.fullDescription =
             act.hidden.fullDescription;
+          if (newLocations[locIdx].unlocked) {
+            hasVisibleChange = true;
+          }
         }
         if (act.hidden.hiddenFeatures) {
           newLocations[locIdx].hidden.hiddenFeatures =
             act.hidden.hiddenFeatures;
+          if (newLocations[locIdx].unlocked) {
+            hasVisibleChange = true;
+          }
         }
         if (act.hidden.secrets) {
           newLocations[locIdx].hidden.secrets = act.hidden.secrets;
+          if (newLocations[locIdx].unlocked) {
+            hasVisibleChange = true;
+          }
+        }
+      }
+
+      // Update unlocked state
+      if (act.unlocked !== undefined) {
+        const wasUnlocked = newLocations[locIdx].unlocked;
+        newLocations[locIdx].unlocked = act.unlocked;
+        if (!wasUnlocked && act.unlocked) {
+          hasVisibleChange = true;
         }
       }
 
       // Update metadata
       if (act.lore) {
         newLocations[locIdx].lore = act.lore;
+        hasVisibleChange = true;
       }
       if (act.type === "current") {
         newLocations[locIdx].isVisited = true;
@@ -113,10 +137,14 @@ export function processLocationActions(
       }
       if (act.environment) {
         newLocations[locIdx].environment = act.environment;
+        hasVisibleChange = true;
       }
       if (act.notes) {
         newLocations[locIdx].notes = act.notes;
+        hasVisibleChange = true;
       }
+
+      newLocations[locIdx].highlight = hasVisibleChange;
     }
   });
 

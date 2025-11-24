@@ -28,6 +28,11 @@ export const locationProperties = {
     type: Type.STRING,
     description: "Atmosphere/Environment tag.",
   },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when player has discovered the location's hidden secrets through thorough exploration or revelation.",
+  },
 };
 
 export const questProperties = {
@@ -55,6 +60,11 @@ export const questProperties = {
       secretOutcome: { type: Type.STRING },
     },
     required: ["trueDescription", "secretOutcome"],
+  },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when the quest's true objectives and secret outcome are revealed to the player.",
   },
 };
 
@@ -130,6 +140,16 @@ export const relationshipProperties = {
       "status",
     ],
   },
+  notes: {
+    type: Type.STRING,
+    description:
+      "NPC's observations of player's displayed knowledge/behavior. Record what player has SAID or SHOWN about their understanding, and how this affects NPC's perception.",
+  },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "SPECIAL: Set to true ONLY when player uses mind-reading magic, telepathy, or advanced technology to reveal NPC's true personality and motives. NOT through normal story progression.",
+  },
 };
 
 export const relationshipSchema: Schema = {
@@ -165,6 +185,11 @@ export const skillProperties = {
     required: ["trueDescription", "hiddenEffects"],
   },
   category: { type: Type.STRING },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when player has deeply understood this skill's true nature through mastery, observation, or revelation.",
+  },
 };
 
 export const conditionProperties = {
@@ -199,6 +224,11 @@ export const conditionProperties = {
   duration: {
     type: Type.INTEGER,
     description: "Duration in turns (optional).",
+  },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when the true cause and cure are revealed (diagnosis from healer, scientific analysis, or player revelation).",
   },
 };
 
@@ -245,6 +275,11 @@ export const timelineEventProperties = {
   },
   involvedEntities: { type: Type.ARRAY, items: { type: Type.STRING } },
   chainId: { type: Type.STRING, description: "Link to a CausalChain." },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when player has investigated and uncovered the event's true cause and consequences.",
+  },
 };
 
 export const knowledgeProperties = {
@@ -291,6 +326,11 @@ export const knowledgeProperties = {
     },
     required: ["fullTruth"],
   },
+  unlocked: {
+    type: Type.BOOLEAN,
+    description:
+      "Set to true when player has discovered the full truth through research, investigation, or authoritative revelation.",
+  },
 };
 
 export const inventoryItemProperties = {
@@ -312,9 +352,10 @@ export const inventoryItemProperties = {
     required: ["truth"],
   },
   lore: { type: Type.STRING, description: "Brief lore or history." },
-  isMystery: {
+  unlocked: {
     type: Type.BOOLEAN,
-    description: "True if the item's true nature is hidden.",
+    description:
+      "Set to true when player has discovered the item's hidden truth through close examination, analysis, or witnessing its true power.",
   },
 };
 
@@ -495,14 +536,18 @@ export const storyOutlineSchema: Schema = {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
               },
-              discovered: { type: Type.BOOLEAN },
+              unlocked: {
+                type: Type.BOOLEAN,
+                description:
+                  "Set to true when the triggerConditions are met and the trait is revealed to the player.",
+              },
             },
             required: [
               "name",
               "description",
               "effects",
               "triggerConditions",
-              "discovered",
+              "unlocked",
             ],
           },
           description: "Hidden personality traits or secrets.",
@@ -545,7 +590,7 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: inventoryItemProperties,
-        required: ["name", "visible", "lore", "isMystery"],
+        required: ["name", "visible", "lore"],
       },
       description: "Initial items in the inventory (1-3 items).",
     },

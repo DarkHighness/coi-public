@@ -11,6 +11,290 @@ interface RelationshipPanelProps {
   onUpdateList: (newState: ListState) => void;
 }
 
+interface RelationshipItemProps {
+  rel: Omit<Relationship, "id"> & { id: string | number };
+  enableDrag: boolean;
+  expandedItems: Set<string | number>;
+  isEditMode: boolean;
+  draggedId: string | number | null;
+  onToggle: (id: string | number) => void;
+  onDragStart: (e: React.DragEvent, id: string | number) => void;
+  onDragEnter: (e: React.DragEvent, id: string | number) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onDrop: (e: React.DragEvent, id: string | number) => void;
+  onTogglePin: (id: string | number) => void;
+  isPinned: (id: string | number) => boolean;
+  getAffinityColor: (val: number) => string;
+  t: any;
+}
+
+const RelationshipItem: React.FC<RelationshipItemProps> = ({
+  rel,
+  enableDrag,
+  expandedItems,
+  isEditMode,
+  draggedId,
+  onToggle,
+  onDragStart,
+  onDragEnter,
+  onDragOver,
+  onDragEnd,
+  onDrop,
+  onTogglePin,
+  isPinned,
+  getAffinityColor,
+  t,
+}) => {
+  const isUnknown = rel.visible.affinityKnown === false;
+  const pinned = isPinned(rel.id);
+  const isDragging = draggedId === rel.id;
+  const isExpanded = expandedItems.has(rel.id);
+  const [isHighlight, setIsHighlight] = useState(rel.highlight || false);
+
+  const handleToggle = () => {
+    onToggle(rel.id);
+    if (isHighlight) {
+      setIsHighlight(false);
+    }
+  };
+
+  return (
+    <div
+      key={rel.id}
+      className={`bg-theme-surface-highlight/30 rounded border border-theme-border transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1
+        ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
+        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+      `}
+      draggable={isEditMode}
+      onDragStart={isEditMode ? (e) => onDragStart(e, rel.id) : undefined}
+      onDragEnter={isEditMode ? (e) => onDragEnter(e, rel.id) : undefined}
+      onDragOver={isEditMode ? onDragOver : undefined}
+      onDragEnd={onDragEnd}
+      onDrop={isEditMode ? (e) => onDrop(e, rel.id) : undefined}
+      onClick={handleToggle}
+    >
+      <div className="flex-1 min-w-0 p-3 cursor-pointer">
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <svg
+              className={`w-3 h-3 text-theme-muted transition-transform duration-200 ${
+                isExpanded ? "rotate-90" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+            <span className="font-bold text-theme-text text-sm truncate flex items-center gap-1">
+              {rel.name}
+              {rel.unlocked && (
+                <svg
+                  className="w-3 h-3 text-yellow-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                </svg>
+              )}
+            </span>
+            <span
+              className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
+              title={rel.visible?.relationshipType || "Unknown"}
+            >
+              {rel.visible?.relationshipType || "Unknown"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(rel.id);
+              }}
+              className={`p-1 rounded hover:bg-theme-bg transition-colors ${
+                pinned
+                  ? "text-theme-primary"
+                  : "text-theme-muted hover:text-theme-text opacity-0 group-hover/item:opacity-100"
+              }`}
+              title={pinned ? "Unpin" : "Pin to top"}
+            >
+              <svg
+                className="w-3 h-3"
+                fill={pinned ? "currentColor" : "none"}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className="animate-[fade-in_0.2s_ease-in-out]">
+            <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2 mt-2">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                  {t("description") || "Description"}
+                </span>
+                <p className="pl-1">
+                  {rel.visible?.description ||
+                    t("noDescription") ||
+                    "No description available."}
+                </p>
+              </div>
+              {rel.visible?.appearance && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    {t("appearance") || "Appearance"}
+                  </span>
+                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
+                    {rel.visible.appearance}
+                  </p>
+                </div>
+              )}
+              {rel.visible?.currentImpression && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    {t("currentImpression") || "Current Impression"}
+                  </span>
+                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
+                    {rel.visible.currentImpression}
+                  </p>
+                </div>
+              )}
+
+              {/* Unlocked Hidden Truth */}
+              {rel.unlocked && (
+                <div className="mt-3 text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
+                  <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+                    <svg
+                      className="w-3 h-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {t("hidden.truth")}
+                  </span>
+
+                  {rel.hidden?.realPersonality && (
+                    <div className="mb-2">
+                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                        {t("hidden.personality")}:
+                      </span>
+                      <p className="leading-relaxed text-yellow-200/90">
+                        {rel.hidden.realPersonality}
+                      </p>
+                    </div>
+                  )}
+
+                  {rel.hidden?.realMotives && (
+                    <div className="mb-2">
+                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                        {t("hidden.motives")}:
+                      </span>
+                      <p className="leading-relaxed text-yellow-200/90">
+                        {rel.hidden.realMotives}
+                      </p>
+                    </div>
+                  )}
+
+                  {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-[9px] uppercase tracking-wider text-purple-400/70 block mb-0.5">
+                        {t("hidden.secrets")}:
+                      </span>
+                      <ul className="list-disc list-inside text-purple-200/80 space-y-0.5">
+                        {rel.hidden.secrets.map((secret, i) => (
+                          <li key={i}>{secret}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {rel.hidden?.trueAffinity !== undefined && (
+                    <div className="mt-2 text-[10px] flex items-center gap-2">
+                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70">
+                        {t("hidden.affinity")}:
+                      </span>
+                      <span
+                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-green-400" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-red-400" : "text-yellow-200"}`}
+                      >
+                        {rel.hidden.trueAffinity}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Affinity Bar */}
+            <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
+              <span className="text-theme-muted font-bold">
+                {t("affinity") || "Affinity"}
+              </span>
+              <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
+                {isUnknown ? (
+                  <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
+                ) : (
+                  <div
+                    className={`h-full ${getAffinityColor(rel.visible.affinity)} transition-all duration-500`}
+                    style={{ width: `${rel.visible.affinity}%` }}
+                  ></div>
+                )}
+              </div>
+              <span className="text-theme-text w-8 text-right font-mono">
+                {isUnknown ? t("unknown") : `${rel.visible.affinity}%`}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {isEditMode && (
+        <div
+          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none self-stretch flex items-center justify-center"
+          title="Drag to reorder"
+          draggable={true}
+          onDragStart={(e) => onDragStart(e, rel.id)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   relationships = [],
   themeFont,
@@ -89,174 +373,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   const handleDrop = (e: React.DragEvent, targetId: string | number) => {
     e.preventDefault();
     setDraggedId(null);
-  };
-
-  const renderRelationship = (
-    rel: Omit<Relationship, "id"> & { id: string | number },
-    idx: number,
-    enableDrag: boolean = false,
-  ) => {
-    const isUnknown = rel.visible.affinityKnown === false;
-    const pinned = isPinned(rel.id);
-    const isDragging = draggedId === rel.id;
-    const isExpanded = expandedItems.has(rel.id);
-
-    return (
-      <div
-        key={rel.id}
-        className={`bg-theme-surface-highlight/30 rounded border border-theme-border transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1 ${
-          isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"
-        }`}
-        draggable={isEditMode}
-        onDragStart={isEditMode ? (e) => handleDragStart(e, rel.id) : undefined}
-        onDragEnter={isEditMode ? (e) => handleDragEnter(e, rel.id) : undefined}
-        onDragOver={isEditMode ? handleDragOver : undefined}
-        onDragEnd={handleDragEnd}
-        onDrop={isEditMode ? (e) => handleDrop(e, rel.id) : undefined}
-        onClick={() => toggleItem(rel.id)}
-      >
-        <div className="flex-1 min-w-0 p-3 cursor-pointer">
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <svg
-                className={`w-3 h-3 text-theme-muted transition-transform duration-200 ${
-                  isExpanded ? "rotate-90" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <span className="font-bold text-theme-text text-sm truncate">
-                {rel.name}
-              </span>
-              <span
-                className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
-                title={rel.visible?.relationshipType || "Unknown"}
-              >
-                {rel.visible?.relationshipType || "Unknown"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  togglePin(rel.id);
-                }}
-                className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-                  pinned
-                    ? "text-theme-primary"
-                    : "text-theme-muted hover:text-theme-text opacity-0 group-hover/item:opacity-100"
-                }`}
-                title={pinned ? "Unpin" : "Pin to top"}
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill={pinned ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                  ></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {isExpanded && (
-            <div className="animate-[fade-in_0.2s_ease-in-out]">
-              <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2 mt-2">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                    {t("description") || "Description"}
-                  </span>
-                  <p className="pl-1">
-                    {rel.visible?.description ||
-                      t("noDescription") ||
-                      "No description available."}
-                  </p>
-                </div>
-                {rel.visible?.appearance && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                      {t("appearance") || "Appearance"}
-                    </span>
-                    <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
-                      {rel.visible.appearance}
-                    </p>
-                  </div>
-                )}
-                {rel.visible?.currentImpression && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                      {t("currentImpression") || "Current Impression"}
-                    </span>
-                    <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
-                      {rel.visible.currentImpression}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Affinity Bar */}
-              <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
-                <span className="text-theme-muted font-bold">
-                  {t("affinity") || "Affinity"}
-                </span>
-                <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
-                  {isUnknown ? (
-                    <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
-                  ) : (
-                    <div
-                      className={`h-full ${getAffinityColor(rel.visible.affinity)} transition-all duration-500`}
-                      style={{ width: `${rel.visible.affinity}%` }}
-                    ></div>
-                  )}
-                </div>
-                <span className="text-theme-text w-8 text-right font-mono">
-                  {isUnknown ? t("unknown") : `${rel.visible.affinity}%`}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {isEditMode && (
-          <div
-            className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none self-stretch flex items-center justify-center"
-            title="Drag to reorder"
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, rel.id)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -385,7 +501,26 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               {t("emptyRelationships")}
             </div>
           ) : (
-            visibleItems.map((rel, idx) => renderRelationship(rel, idx, true))
+            visibleItems.map((rel, idx) => (
+              <RelationshipItem
+                key={rel.id}
+                rel={rel}
+                enableDrag={true}
+                expandedItems={expandedItems}
+                isEditMode={isEditMode}
+                draggedId={draggedId}
+                onToggle={toggleItem}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                onTogglePin={togglePin}
+                isPinned={isPinned}
+                getAffinityColor={getAffinityColor}
+                t={t}
+              />
+            ))
           )}
         </div>
       </div>{" "}
@@ -401,7 +536,26 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             .toLowerCase()
             .includes(query.toLowerCase())
         }
-        renderItem={(item) => renderRelationship(item, Math.random(), false)}
+        renderItem={(item) => (
+          <RelationshipItem
+            key={item.id}
+            rel={item}
+            enableDrag={false}
+            expandedItems={expandedItems}
+            isEditMode={false}
+            draggedId={null}
+            onToggle={toggleItem}
+            onDragStart={() => {}}
+            onDragEnter={() => {}}
+            onDragOver={() => {}}
+            onDragEnd={() => {}}
+            onDrop={() => {}}
+            onTogglePin={togglePin}
+            isPinned={isPinned}
+            getAffinityColor={getAffinityColor}
+            t={t}
+          />
+        )}
       />
     </div>
   );
