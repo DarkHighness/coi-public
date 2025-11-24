@@ -1,5 +1,3 @@
-import LZString from "lz-string";
-
 // Compression Helpers
 const compress = async (str: string): Promise<ArrayBuffer> => {
   const stream = new Blob([str]).stream();
