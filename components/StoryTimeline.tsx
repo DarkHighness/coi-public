@@ -46,9 +46,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 md:border-l border-theme-border bg-theme-surface/80 backdrop-blur-sm w-full md:w-72">
+    <div className="h-full flex flex-col p-2 md:p-6 md:border-l border-theme-border bg-theme-surface/60 backdrop-blur-md w-full md:w-72">
       <h2
-        className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2`}
+        className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 mt-2 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2`}
       >
         <span className="w-8 h-px bg-theme-primary/50"></span>
         {t("timeline")}
@@ -57,7 +57,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-0 pr-2 scroll-smooth pt-1"
+        className="flex-1 overflow-y-auto space-y-0 px-1 scroll-smooth pt-1"
       >
         {narrativeSegments.map((seg, index) => {
           const isFirst = index === 0;

@@ -123,7 +123,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
       {/* 2. Timeline View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
       >
         <StoryTimeline
           segments={currentHistory}
@@ -136,7 +136,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
       {/* 3. Status/Sidebar View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
       >
         <Sidebar
           gameState={gameState}
@@ -159,7 +159,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
       {/* 3. Menu Grid View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="p-6 pb-24">
           <h2

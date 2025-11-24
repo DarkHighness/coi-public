@@ -91,9 +91,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   return (
     <div className="flex-none w-full z-30">
       {/* Gradient fade to blend with content */}
-      <div className="h-8 bg-gradient-to-t from-theme-bg to-transparent pointer-events-none"></div>
+      <div className="h-8 bg-gradient-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
-      <div className="bg-theme-bg p-4 pb-6 md:px-8">
+      <div className="bg-theme-bg/80 backdrop-blur-md p-4 pb-6 md:px-8">
         <div className="max-w-4xl mx-auto space-y-4">
           {/* Action Chips (Choices) */}
           {!gameState.isProcessing &&
@@ -194,7 +194,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           <div className="relative">
             <form
               onSubmit={handleCustomSubmit}
-              className="relative flex items-end gap-2 bg-theme-surface border border-theme-border rounded-xl shadow-lg p-2 transition-colors focus-within:border-theme-primary/50 focus-within:ring-1 focus-within:ring-theme-primary/50"
+              className="relative flex items-end gap-2 bg-theme-surface/50 backdrop-blur-sm border border-theme-border rounded-xl shadow-lg p-2 transition-colors focus-within:border-theme-primary/50 focus-within:ring-1 focus-within:ring-theme-primary/50"
             >
               {/* Roll Button (Integrated) */}
               <button

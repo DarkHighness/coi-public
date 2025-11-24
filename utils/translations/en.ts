@@ -1,6 +1,7 @@
 import { themes } from "./themes/en.ts";
 
 export const en = {
+  titile: "Chronicles of Infinity",
   titlePart1: "Chronicles",
   titlePart2: "of Infinity",
   time: {
@@ -25,6 +26,8 @@ export const en = {
       culture: "Culture",
       magic: "Magic",
       technology: "Technology",
+      tech: "Technology",
+      secret: "Secret",
       other: "Other",
     },
   },
@@ -198,6 +201,7 @@ export const en = {
     tavern: "Tavern",
     snow: "Snow",
     desert: "Desert",
+    scifi: "Sci-Fi",
     Unknown: "Unknown",
   },
   environmentNames: {
@@ -218,6 +222,7 @@ export const en = {
     market: "Market",
     ocean: "Ocean",
     tavern: "Tavern",
+    scifi: "Sci-Fi",
   },
   hideSystem: "Hide System",
   showSystem: "Show System",
@@ -392,8 +397,8 @@ export const en = {
   currentImpression: "Impression",
   role: "Role",
   pinToTop: "Pin",
-  mainQuest: "Main Quest",
-  sideQuest: "Side Quest",
+  mainQuest: "Main",
+  sideQuest: "Side",
   conditions: "Conditions",
   traits: "Traits",
   apiConsole: "API Console",

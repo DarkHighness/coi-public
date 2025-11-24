@@ -285,6 +285,7 @@ const generateContentUnified = async (
   systemInstruction: string,
   contents: any[],
   schema?: any,
+  onChunk?: (text: string) => void,
 ): Promise<{ result: any; usage: any; raw: any; log: LogEntry }> => {
   let result, usage, raw;
 
@@ -297,6 +298,7 @@ const generateContentUnified = async (
     topP: storyConfig.topP,
     topK: storyConfig.topK,
     minP: storyConfig.minP,
+    onChunk: onChunk,
   };
 
   try {
@@ -361,6 +363,7 @@ export const generateStoryOutline = async (
   language: string,
   customContext?: string,
   tFunc?: (key: string) => string,
+  onChunk?: (text: string) => void,
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
 
@@ -395,6 +398,7 @@ export const generateStoryOutline = async (
     sys,
     contents,
     storyOutlineSchema,
+    onChunk,
   );
   return { outline: result, log };
 };
@@ -435,6 +439,112 @@ export const summarizeContext = async (
   }
 };
 
+// --- Refactored Helpers for generateAdventureTurn ---
+
+const resolveThemeConfig = (
+  themeKey: string | undefined,
+  language: string,
+  tFunc?: (key: string) => string,
+) => {
+  let narrativeStyle = "Standard adventure tone.";
+  let example: string | undefined;
+
+  if (tFunc && themeKey) {
+    narrativeStyle =
+      tFunc(`themes.${themeKey}.narrativeStyle`) || narrativeStyle;
+    example = tFunc(`themes.${themeKey}.example`);
+  } else if (themeKey) {
+    const langCode = getLangCode(language);
+    const t = TRANSLATIONS[langCode];
+    narrativeStyle =
+      t.themes[themeKey]?.narrativeStyle || narrativeStyle;
+    example = t.themes[themeKey]?.example;
+  }
+
+  const themeConfig = THEMES[themeKey || "fantasy"];
+  const isRestricted = themeConfig?.restricted || false;
+
+  return { narrativeStyle, example, isRestricted };
+};
+
+const buildSystemContext = (
+  language: string,
+  narrativeStyle: string,
+  example: string | undefined,
+  isRestricted: boolean,
+  outline: StoryOutline | null,
+) => {
+  const coreSystemInstruction = getCoreSystemInstruction(
+    language,
+    narrativeStyle,
+    example,
+    isRestricted,
+  );
+  const staticWorldContext = getStaticWorldContext(outline);
+  return `${coreSystemInstruction}\n\n${staticWorldContext}`;
+};
+
+const buildTurnContents = (
+  summaries: any[],
+  currentStateContext: string,
+  recentHistory: StorySegment[],
+  userAction: string,
+) => {
+  const contents = [];
+
+  // 1. Dynamic Story Context (Memory)
+  // Use XML tags for better separation and attention
+  const dynamicStoryContext = getDynamicStoryContext(summaries);
+  if (dynamicStoryContext) {
+    contents.push({
+      role: "user",
+      parts: [{ text: `<story_memory>\n${dynamicStoryContext}\n</story_memory>` }],
+    });
+    contents.push({ role: "model", parts: [{ text: "Memory context acknowledged." }] });
+  }
+
+  // 2. Current State Context
+  contents.push({
+    role: "user",
+    parts: [{ text: `<current_state>\n${currentStateContext}\n</current_state>` }],
+  });
+  contents.push({ role: "model", parts: [{ text: "State context acknowledged." }] });
+
+  // 3. Recent History
+  // We keep this as raw conversation turns for natural flow, but we might want to wrap them if the model gets confused.
+  // For now, standard role-play history is best left as-is.
+  contents.push(
+    ...recentHistory.map((seg) => ({
+      role: seg.role,
+      parts: [{ text: seg.text }],
+    })),
+  );
+
+  // 4. User Action (if new)
+  const userActionAlreadyInHistory = recentHistory.some(
+    (seg) => seg.role === "user" && seg.text === userAction,
+  );
+
+  if (!userActionAlreadyInHistory) {
+    // Add a reinforcement instruction before the final action
+    // This helps "wake up" the model to the specific task constraints after a long context window
+    const reinforcement = `
+<instruction>
+Generate the next turn based on the <story_memory>, <current_state>, and the conversation history above.
+- Adhere strictly to the JSON schema.
+- Maintain the defined narrative style and tone.
+- Advance the plot logically based on the player's action.
+</instruction>
+`;
+    contents.push({
+      role: "user",
+      parts: [{ text: `${reinforcement}\n\n<player_action>\n${userAction}\n</player_action>` }]
+    });
+  }
+
+  return contents;
+};
+
 export const generateAdventureTurn = async (
   input: AdventureTurnInput,
 ): Promise<{ response: GameResponse; log: LogEntry; usage: TokenUsage }> => {
@@ -454,68 +564,28 @@ export const generateAdventureTurn = async (
     tFunc,
     knowledge,
     time,
-    timeline, // Extract timeline
+    timeline,
   } = input;
 
   const { provider, modelId } = getProviderConfig("story");
 
-  let narrativeStyle: string;
-  let example: string | undefined;
-  let isRestricted: boolean = false;
+  // 1. Configuration
+  const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
+    themeKey,
+    language,
+    tFunc,
+  );
 
-  if (tFunc && themeKey) {
-    narrativeStyle =
-      tFunc(`themes.${themeKey}.narrativeStyle`) || "Standard adventure tone.";
-    example = tFunc(`themes.${themeKey}.example`);
-  } else if (themeKey) {
-    const langCode = getLangCode(language);
-    const t = TRANSLATIONS[langCode];
-    narrativeStyle =
-      t.themes[themeKey]?.narrativeStyle || "Standard adventure tone.";
-    example = t.themes[themeKey]?.example;
-  } else {
-    narrativeStyle = "Standard adventure tone.";
-    example = undefined;
-  }
-
-  // Use imported THEMES
-  const themeConfig = THEMES[themeKey || "fantasy"];
-  isRestricted = themeConfig?.restricted || false;
-
-  // --- KV Cache Optimization Order ---
-
-  // 1. Static System Instruction (Core Rules)
-  // This part rarely changes and should be cached effectively.
-  const coreSystemInstruction = getCoreSystemInstruction(
+  // 2. System Context (Rules + Static World)
+  const fullSystemInstruction = buildSystemContext(
     language,
     narrativeStyle,
     example,
     isRestricted,
+    outline,
   );
 
-  // 2. Static World Context (Outline)
-  // This is constant for the entire playthrough.
-  const staticWorldContext = getStaticWorldContext(outline);
-
-  // Combine for the system prompt
-  const fullSystemInstruction = `${coreSystemInstruction}\n\n${staticWorldContext}`;
-
-  // Construct contents array for the chat history
-  const contents = [];
-
-  // 3. Semi-Static: Story Summary (Dynamic Memory)
-  // Changes every N turns.
-  const dynamicStoryContext = getDynamicStoryContext(summaries);
-  if (dynamicStoryContext) {
-    contents.push({
-      role: "user",
-      parts: [{ text: `[MEMORY RECALL]\n${dynamicStoryContext}` }],
-    });
-    contents.push({ role: "model", parts: [{ text: "Memory accessed." }] });
-  }
-
-  // 4. Dynamic: Current State Context
-  // Changes every turn, but structure is consistent.
+  // 3. Dynamic Context (State)
   const currentStateContext = getCurrentStateContext(
     inventory,
     relationships,
@@ -525,32 +595,18 @@ export const generateAdventureTurn = async (
     character,
     knowledge,
     time,
-    timeline, // Pass timeline
+    timeline,
   );
 
-  contents.push({
-    role: "user",
-    parts: [{ text: `[CURRENT STATUS]\n${currentStateContext}` }],
-  });
-  contents.push({ role: "model", parts: [{ text: "Status updated." }] });
-
-  // 5. Highly Dynamic: Recent History
-  contents.push(
-    ...recentHistory.map((seg) => ({
-      role: seg.role,
-      parts: [{ text: seg.text }],
-    })),
+  // 4. Build Prompt Contents
+  const contents = buildTurnContents(
+    summaries,
+    currentStateContext,
+    recentHistory,
+    userAction,
   );
 
-  // 6. User Action (if new)
-  const userActionAlreadyInHistory = recentHistory.some(
-    (seg) => seg.role === "user" && seg.text === userAction,
-  );
-
-  if (!userActionAlreadyInHistory) {
-    contents.push({ role: "user", parts: [{ text: userAction }] });
-  }
-
+  // 5. Execution
   const { result, log, usage } = await generateContentUnified(
     provider,
     modelId,
@@ -558,11 +614,13 @@ export const generateAdventureTurn = async (
     contents,
     gameResponseSchema,
   );
+
   return { response: result, log, usage };
 };
 
 export const generateSceneImage = async (
   prompt: string,
+  context: any, // Using any temporarily to avoid circular dependency issues if types are not shared, but ideally should be ImageGenerationContext
 ): Promise<{ url: string | null; log: LogEntry }> => {
   const { provider, modelId, enabled, resolution } = getProviderConfig("image");
   if (!enabled)
@@ -571,7 +629,7 @@ export const generateSceneImage = async (
       log: createLogEntry("none", "none", "image", { disabled: true }, null),
     };
 
-  const styledPrompt = getSceneImagePrompt(prompt);
+  const styledPrompt = getSceneImagePrompt(prompt, context);
   let url, usage, raw;
 
   if (provider === "openai") {

@@ -60,22 +60,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="p-6 border-b border-theme-border bg-theme-surface/50 flex justify-between items-start shrink-0">
+      <div className="p-6 border-b border-theme-border bg-theme-surface/20 backdrop-blur-sm flex items-center justify-center relative shrink-0 min-h-[88px]">
         <h1
-          className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider drop-shadow-sm`}
+          className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider drop-shadow-sm text-center`}
         >
           {t("titlePart1")}
           <span className="block text-sm text-theme-muted font-sans tracking-normal mt-1">
             {t("titlePart2")}
           </span>
         </h1>
-        <div className="hidden md:block">
+
+        <div className="absolute right-6 top-6 hidden md:block">
           <LanguageSelector
             disabled={isTranslating || gameState.isProcessing}
             onChange={setLanguage}
           />
         </div>
-        <div className="md:hidden flex items-center gap-2">
+        <div className="absolute right-6 top-6 md:hidden flex items-center gap-2">
           <button
             className="text-theme-primary text-xs uppercase font-bold border border-theme-primary px-2 py-1 rounded"
             onClick={onNewGame}

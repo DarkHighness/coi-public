@@ -1,168 +1,135 @@
-const CACHE_NAME = "chronicles-v3";
-const URLS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
-const NETWORK_TIMEOUT = 5000; // 5 seconds timeout for slow networks
+const CACHE_NAME = "chronicles-v4";
+const ASSETS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
 
+// Install Event: Cache Core Assets
 self.addEventListener("install", (event) => {
-  // Force this new service worker to become the active one, bypassing the waiting state
-  self.skipWaiting();
+  // Note: We do NOT call self.skipWaiting() here to avoid interrupting active clients.
+  // The new SW will wait until all tabs are closed or the user manually updates.
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE).catch((err) => {
-        console.warn("Failed to cache some assets during install:", err);
+      return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
+        console.warn("SW: Failed to cache core assets:", err);
       });
     }),
   );
 });
 
-// Helper function: Fetch with timeout
-const fetchWithTimeout = (request, timeout = NETWORK_TIMEOUT) => {
-  return Promise.race([
-    fetch(request),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Network timeout")), timeout)
-    ),
-  ]);
-};
-
-self.addEventListener("fetch", (event) => {
-  // 1. API Requests: Network Only (bypass SW)
-  if (
-    event.request.url.includes("generativelanguage.googleapis.com") ||
-    event.request.url.includes("api.openai.com") ||
-    event.request.url.includes("openrouter.ai") ||
-    event.request.url.includes("api")
-  ) {
-    return;
+// Listen for skipWaiting message (e.g., from a "New Version Available" prompt)
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
-
-  // 2. Navigation Requests (HTML): Stale-While-Revalidate with timeout
-  // This provides instant response from cache while updating in background
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      Promise.race([
-        fetch(event.request).then((response) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, response.clone());
-            return response;
-          });
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Network timeout")), NETWORK_TIMEOUT)
-        ),
-      ]).catch(() => {
-        return caches.match(event.request);
-      }),
-    );
-    return;
-  }
-
-  // 3. Audio files: Cache First (Runtime Caching)
-  if (event.request.url.includes("/audio/")) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(event.request).then((response) => {
-          if (response) {
-            return response;
-          }
-          return fetchWithTimeout(event.request, 8000).then((networkResponse) => {
-            if (
-              !networkResponse ||
-              networkResponse.status !== 200 ||
-              networkResponse.type !== "basic"
-            ) {
-              return networkResponse;
-            }
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          }).catch((err) => {
-            console.warn("Audio fetch timeout/failed:", err);
-            throw err;
-          });
-        });
-      }),
-    );
-    return;
-  }
-
-  // 4. Static Assets (JS, CSS, Images): Cache First with network timeout
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      // Do not attempt to cache non-http/https requests (e.g. chrome-extension://)
-      if (!event.request.url.startsWith("http")) {
-        return fetch(event.request);
-      }
-
-      return fetchWithTimeout(event.request, NETWORK_TIMEOUT)
-        .then((networkResponse) => {
-          // Check if valid response
-          // Allow basic (same-origin) and cors (for pollinations.ai)
-          const isValidType =
-            networkResponse.type === "basic" ||
-            (networkResponse.type === "cors" &&
-              event.request.url.includes("pollinations.ai"));
-
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            !isValidType
-          ) {
-            return networkResponse;
-          }
-
-          // Strict MIME type check for JS/CSS to avoid caching HTML error pages as scripts
-          const contentType = networkResponse.headers.get("content-type");
-          const url = event.request.url;
-          if (
-            (url.endsWith(".js") &&
-              contentType &&
-              !contentType.includes("javascript")) ||
-            (url.endsWith(".css") &&
-              contentType &&
-              !contentType.includes("css"))
-          ) {
-            return networkResponse; // Do not cache
-          }
-
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return networkResponse;
-        })
-        .catch((err) => {
-          console.warn("Fetch timeout/failed for:", event.request.url, err);
-          // On slow network timeout, try to return any cached version
-          return caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.info("Using stale cache for:", event.request.url);
-              return cachedResponse;
-            }
-            throw err;
-          });
-        });
-    }),
-  );
 });
 
+// Activate Event: Clean up old caches
 self.addEventListener("activate", (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  // Take control of all clients immediately
   event.waitUntil(
-    Promise.all([
-      self.clients.claim(),
-      caches.keys().then((cacheNames) => {
+    caches
+      .keys()
+      .then((cacheNames) => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheWhitelist.indexOf(cacheName) === -1) {
-              return caches.delete(cacheName);
+          cacheNames.map((cache) => {
+            if (cache !== CACHE_NAME) {
+              console.log("SW: Clearing old cache", cache);
+              return caches.delete(cache);
             }
           }),
         );
-      }),
-    ]),
+      })
+      .then(() => self.clients.claim()), // Take control of clients immediately
   );
+});
+
+// Helper: Network Only
+const networkOnly = (event) => {
+  event.respondWith(fetch(event.request));
+};
+
+// Helper: Cache First (falling back to network)
+const cacheFirst = (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((networkResponse) => {
+        // Cache valid responses
+        if (
+          !networkResponse ||
+          networkResponse.status !== 200 ||
+          networkResponse.type !== "basic"
+        ) {
+          return networkResponse;
+        }
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        return networkResponse;
+      });
+    }),
+  );
+};
+
+// Helper: Stale-While-Revalidate (for HTML/Navigation)
+const staleWhileRevalidate = (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch((err) => {
+          console.warn("SW: Network fetch failed during SWR:", err);
+        });
+
+      return cachedResponse || fetchPromise;
+    }),
+  );
+};
+
+// Fetch Event Router
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+
+  // Ignore non-http/https requests (e.g., chrome-extension://)
+  if (!url.protocol.startsWith("http")) {
+    return;
+  }
+
+  // 1. API Requests: Network Only
+  if (
+    url.pathname.includes("/api/") ||
+    url.hostname.includes("googleapis.com") ||
+    url.hostname.includes("openai.com") ||
+    url.hostname.includes("openrouter.ai")
+  ) {
+    return networkOnly(event);
+  }
+
+  // 2. Navigation (HTML): Stale-While-Revalidate
+  if (event.request.mode === "navigate") {
+    return staleWhileRevalidate(event);
+  }
+
+  // 3. Static Assets (JS, CSS, Images, Fonts): Cache First
+  if (
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)
+  ) {
+    return cacheFirst(event);
+  }
+
+  // 4. Audio: Cache First
+  if (url.pathname.includes("/audio/")) {
+    return cacheFirst(event);
+  }
+
+  // Default: Network Only for everything else
+  return networkOnly(event);
 });

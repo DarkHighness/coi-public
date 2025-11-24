@@ -1,6 +1,7 @@
 import { themes } from "./themes/zh.ts";
 
 export const zh = {
+  title: "无尽编年史",
   titlePart1: "无尽",
   titlePart2: "编年史",
   time: {
@@ -26,6 +27,8 @@ export const zh = {
       culture: "文化",
       magic: "魔法",
       technology: "科技",
+      tech: "科技",
+      secret: "隐秘",
       other: "其他",
     },
   },
@@ -209,6 +212,7 @@ export const zh = {
     tavern: "酒馆",
     snow: "雪地",
     desert: "沙漠",
+    scifi: "科幻",
     Unknown: "未知",
   },
   environmentNames: {
@@ -231,6 +235,7 @@ export const zh = {
     tavern: "酒馆",
     rain: "雨天",
     storm: "暴风雨",
+    scifi: "科幻",
   },
   models: {
     story: "故事生成",
@@ -385,8 +390,8 @@ export const zh = {
   role: "职业",
   currentImpression: "印象",
   pinToTop: "置顶",
-  mainQuest: "主线任务",
-  sideQuest: "支线任务",
+  mainQuest: "主线",
+  sideQuest: "支线",
   conditions: "状态",
   traits: "特质",
   apiConsole: "API 控制台",

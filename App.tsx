@@ -80,6 +80,9 @@ export default function App() {
   // Track preview theme from StartScreen
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
 
+  // Streaming text for initialization
+  const [streamedText, setStreamedText] = useState("");
+
   // Global Error Handling (PWA/Chunk/Network errors)
   const [appError, setAppError] = useState<string | null>(null);
 
@@ -120,6 +123,11 @@ export default function App() {
     };
   }, []);
 
+  // Update Document Title based on Language
+  useEffect(() => {
+    document.title = t("title");
+  }, [t, language]);
+
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
 
   // Use viewed segment's envTheme if available, otherwise fall back to current game state
@@ -141,9 +149,37 @@ export default function App() {
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   // Determine current context for effects
+  const isStartScreen = location.pathname === "/";
   const currentSegment = currentHistory[currentHistory.length - 1];
-  const effectText = currentSegment ? currentSegment.text : "";
-  const effectPrompt = currentSegment ? currentSegment.imagePrompt : "";
+
+  // Reset effects on Start Screen
+  const effectText = !isStartScreen && currentSegment ? currentSegment.text : "";
+  const effectPrompt = !isStartScreen && currentSegment ? currentSegment.imagePrompt : "";
+
+  // Calculate Sticky Background
+  const stickyBackground = React.useMemo(() => {
+    if (isStartScreen) return undefined;
+
+    const startSegment = viewedSegment || currentHistory[currentHistory.length - 1];
+    if (!startSegment) return undefined;
+
+    const startIndex = currentHistory.findIndex((s) => s.id === startSegment.id);
+    // If index not found (shouldn't happen) or list empty, default to current segment's image
+    if (startIndex === -1) return startSegment.imageUrl;
+
+    // Search backwards for the "Active Scene Image"
+    for (let i = startIndex; i >= 0; i--) {
+      const seg = currentHistory[i];
+      // If we find an image, that's our background
+      if (seg.imageUrl) return seg.imageUrl;
+      // If we find a prompt (intention) but no image, it means we are in a scene
+      // that *should* have an image but doesn't (generating or failed).
+      // In this case, we return undefined to trigger the Fallback (Environment Image).
+      if (seg.imagePrompt) return undefined;
+    }
+    // If we reach the start without finding anything, return undefined (Fallback)
+    return undefined;
+  }, [viewedSegment, currentHistory, isStartScreen]);
 
   const showToast = (msg: string, type: "info" | "error" = "info") => {
     setNotification({ show: true, msg, type });
@@ -241,7 +277,10 @@ export default function App() {
 
   const handleStartGame = async (theme: string, customContext?: string) => {
     if (await performValidation()) {
-      startNewGame(theme, customContext);
+      setStreamedText("");
+      startNewGame(theme, customContext, (text) =>
+        setStreamedText((prev) => prev + text),
+      );
     }
   };
 
@@ -278,7 +317,7 @@ export default function App() {
             currentText={effectText}
             imagePrompt={effectPrompt}
             theme={gameState.theme}
-            backgroundImage={targetSegment?.imageUrl}
+            backgroundImage={stickyBackground}
             environment={currentEnvThemeKey}
             fallbackEnabled={aiSettings.enableFallbackBackground}
           />
@@ -315,6 +354,7 @@ export default function App() {
             <InitializingPage
               themeFont={currentThemeConfig.fontClass}
               isProcessing={gameState.isProcessing}
+              streamedText={streamedText}
             />
           }
         />
@@ -345,6 +385,7 @@ export default function App() {
                 switchSlot={switchSlot}
                 deleteSlot={deleteSlot}
                 currentSlotId={currentSlotId}
+                onViewedSegmentChange={setViewedSegment}
               />
             )
           }

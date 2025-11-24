@@ -58,8 +58,15 @@ export const useGameEngine = () => {
 
   // Ref to access latest state in async callbacks/closures
   const gameStateRef = useRef(gameState);
+  const processingRef = useRef(false); // Immediate lock to prevent race conditions
+
   useEffect(() => {
     gameStateRef.current = gameState;
+    // Sync processing ref with state, but only if we're not in the middle of a locked operation
+    // actually, we should trust the state if it says we are processing
+    if (gameState.isProcessing) processingRef.current = true;
+    // If state says NOT processing, we only clear ref if we are sure we're done?
+    // It's safer to just use the ref as a "local lock" for handleAction
   }, [gameState]);
 
   const [isTranslating, setIsTranslating] = useState(false);
@@ -233,8 +240,16 @@ export const useGameEngine = () => {
     isInit: boolean = false,
     forceTheme?: string,
   ) => {
-    if ((gameStateRef.current.isProcessing && !isInit) || isTranslating)
-      return null; // Return null instead of void for toast handling
+    // Check both the ref (immediate) and state (persisted)
+    if (
+      (processingRef.current && !isInit) ||
+      (gameStateRef.current.isProcessing && !isInit) ||
+      isTranslating
+    )
+      return null;
+
+    // Immediately lock
+    if (!isInit) processingRef.current = true;
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
@@ -536,6 +551,44 @@ export const useGameEngine = () => {
         response.imagePrompt &&
         !aiSettings.manualImageGen
       ) {
+        const imageContext = {
+          theme: response.envTheme || forceTheme || gameStateRef.current.theme,
+          time: processedState.time,
+          location: {
+            name: processedState.currentLocation,
+            environment:
+              processedState.locations.find(
+                (l) => l.name === processedState.currentLocation,
+              )?.environment || "Unknown",
+            details:
+              processedState.locations.find(
+                (l) => l.name === processedState.currentLocation,
+              )?.visible?.description || "",
+          },
+          character: {
+            race: processedState.character.race,
+            profession: processedState.character.profession,
+            appearance: processedState.character.appearance,
+            status: processedState.character.status,
+          },
+          activeNPCs: processedState.relationships
+            .filter(
+              (r) =>
+                // Simple heuristic: If they were just added, updated, or mentioned in the text (we can't easily check text here without parsing,
+                // so we rely on 'active' status or recent updates if we tracked them.
+                // For now, let's pass ALL 'active' or 'present' NPCs if the game tracks location.
+                // Since we don't track NPC location strictly, we'll pass those with high affinity or recent interaction if possible.
+                // BETTER: Pass all relationships that are marked as 'present' or similar if we had that.
+                // Fallback: Pass all known relationships, the Prompt will filter based on the scene description.
+                r.visible?.status !== "Absent" && r.visible?.status !== "Dead"
+            )
+            .map((r) => ({
+              name: r.name,
+              description: r.visible?.description || "No description",
+              status: r.visible?.status || "Unknown",
+            })),
+        };
+
         const imageTimeout = setTimeout(
           () => {
             setGameState((prev) => {
@@ -553,7 +606,7 @@ export const useGameEngine = () => {
           (aiSettings.imageTimeout || 60) * 1000,
         );
 
-        generateSceneImage(response.imagePrompt)
+        generateSceneImage(response.imagePrompt, imageContext)
           .then(({ url, log }) => {
             clearTimeout(imageTimeout);
             setGameState((prev) => ({
@@ -590,6 +643,8 @@ export const useGameEngine = () => {
         }));
       }
 
+      // Clear lock
+      processingRef.current = false;
       return toastMessage;
     } catch (error: any) {
       console.error(error);
@@ -599,6 +654,8 @@ export const useGameEngine = () => {
         isProcessing: false,
         error: errorMsg,
       }));
+      // Clear lock
+      processingRef.current = false;
       return `Error: ${errorMsg}`;
     }
   };
@@ -606,6 +663,7 @@ export const useGameEngine = () => {
   const startNewGame = async (
     initialTheme?: string,
     customContext?: string,
+    onStream?: (text: string) => void,
   ) => {
     let selectedTheme =
       initialTheme ||
@@ -628,6 +686,7 @@ export const useGameEngine = () => {
         LANG_MAP[language],
         customContext,
         t,
+        onStream,
       );
       setGameState((prev) => ({
         ...prev,
@@ -821,7 +880,43 @@ export const useGameEngine = () => {
     );
 
     try {
-      const { url, log } = await generateSceneImage(node.imagePrompt);
+      const snapshot = node.stateSnapshot || gameStateRef.current;
+      const imageContext = {
+        theme: snapshot.envTheme || gameStateRef.current.theme,
+        time: snapshot.time,
+        location: {
+          name: snapshot.currentLocation,
+          environment:
+            snapshot.locations?.find(
+              (l: any) => l.name === snapshot.currentLocation,
+            )?.environment || "Unknown",
+          details:
+            snapshot.locations?.find(
+              (l: any) => l.name === snapshot.currentLocation,
+            )?.visible?.description || "",
+        },
+        character: {
+          race: snapshot.character?.race || "Unknown",
+          profession: snapshot.character?.profession || "",
+          appearance: snapshot.character?.appearance || "Not described",
+          status: snapshot.character?.status || "Normal",
+        },
+        activeNPCs: (snapshot.relationships || [])
+          .filter(
+            (r: any) =>
+              r.visible?.status !== "Absent" && r.visible?.status !== "Dead",
+          )
+          .map((r: any) => ({
+            name: r.name,
+            description: r.visible?.description || "No description",
+            status: r.visible?.status || "Unknown",
+          })),
+      };
+
+      const { url, log } = await generateSceneImage(
+        node.imagePrompt,
+        imageContext,
+      );
       clearTimeout(imageTimeout);
 
       if (url && url.trim()) {

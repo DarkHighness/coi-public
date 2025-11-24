@@ -3,22 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { preloadAudio } from "../../utils/audioLoader";
 
+import { useWakeLock } from "../../hooks/useWakeLock";
+import { GenerationTimer } from "../common/GenerationTimer";
+
 interface InitializingPageProps {
   themeFont: string;
   isProcessing?: boolean;
+  streamedText?: string;
 }
 
 export const InitializingPage: React.FC<InitializingPageProps> = ({
   themeFont,
   isProcessing = false,
+  streamedText = "",
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [audioProgress, setAudioProgress] = useState(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [shouldCheckProcessing, setShouldCheckProcessing] = useState(false);
   const [hasEverProcessed, setHasEverProcessed] = useState(false);
+
+  // Wake Lock
+  useWakeLock(isProcessing);
 
   // Track if processing has ever been true
   useEffect(() => {
@@ -27,12 +34,11 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     }
   }, [isProcessing]);
 
+  // This file is just the view. The logic for `startNewGame` is likely in StartScreen.tsx or similar.
+  // I need to find where `startNewGame` is called.
+  // Let me check StartScreen.tsx first.
   useEffect(() => {
     preloadAudio(setAudioProgress);
-
-    const timer = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
 
     // After 3 seconds, start checking if we're actually processing
     const checkTimer = setTimeout(() => {
@@ -40,7 +46,6 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     }, 3000);
 
     return () => {
-      clearInterval(timer);
       clearTimeout(checkTimer);
     };
   }, []);
@@ -53,16 +58,20 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     }
   }, [shouldCheckProcessing, isProcessing, hasEverProcessed, navigate]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
       {/* Cinematic Background */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse z-0"></div>
+
+      {/* Streamed Text Background (Blurred) */}
+      {streamedText && (
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          <div className="w-full h-full p-8 md:p-16 text-justify opacity-20 blur-[2px] select-none font-serif text-lg md:text-xl leading-relaxed text-theme-muted whitespace-pre-wrap animate-pulse overflow-hidden mask-image-fade">
+            {streamedText.slice(-1000)} {/* Show only last 1000 chars to prevent DOM overload and keep it relevant */}
+          </div>
+        </div>
+      )}
+
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 z-0"></div>
 
       {/* Central Loader */}
@@ -99,7 +108,10 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
 
             <div className="flex flex-col items-center gap-1 text-[10px] text-theme-muted font-mono">
               <div>Audio Preload: {audioProgress}%</div>
-              <div>Time Elapsed: {formatTime(elapsedTime)}</div>
+              <div className="flex items-center gap-2">
+                <span>Time Elapsed:</span>
+                <GenerationTimer isActive={true} />
+              </div>
             </div>
           </div>
         </div>

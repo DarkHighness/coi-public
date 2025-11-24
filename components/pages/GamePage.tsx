@@ -11,6 +11,8 @@ import {
   SaveSlot,
   LanguageCode,
 } from "../../types";
+import { useWakeLock } from "../../hooks/useWakeLock";
+import { GenerationTimer } from "../common/GenerationTimer";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -64,6 +66,7 @@ interface GamePageProps {
   switchSlot: (id: string) => Promise<void>;
   deleteSlot: (id: string) => void;
   currentSlotId: string | null;
+  onViewedSegmentChange: (segment: StorySegment) => void;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
@@ -86,6 +89,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   switchSlot,
   deleteSlot,
   currentSlotId,
+  onViewedSegmentChange,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -115,6 +119,9 @@ export const GamePage: React.FC<GamePageProps> = ({
       setIsTyping(false);
     }
   }, [currentHistory]);
+
+  // Wake Lock
+  useWakeLock(isTyping || gameState.isProcessing);
 
   // Audio Ambience Logic
   const isAnyMenuOpen =
@@ -209,7 +216,10 @@ export const GamePage: React.FC<GamePageProps> = ({
       <Suspense
         fallback={
           <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/50 backdrop-blur pointer-events-none">
-            <div className="w-10 h-10 border-4 border-theme-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-10 h-10 border-4 border-theme-primary border-t-transparent rounded-full animate-spin"></div>
+              <GenerationTimer isActive={true} className="text-theme-primary" />
+            </div>
           </div>
         }
       >
@@ -248,6 +258,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onUpdateUIState={handleUpdateUIState}
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
+          onViewedSegmentChange={onViewedSegmentChange}
         />
 
         <DesktopGameLayout
@@ -283,6 +294,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onUpdateUIState={handleUpdateUIState}
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
+          onViewedSegmentChange={onViewedSegmentChange}
         />
 
         {/* Mobile Bottom Navigation */}

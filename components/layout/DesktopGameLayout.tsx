@@ -75,7 +75,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
       {/* Desktop Sidebar */}
-      <div className="w-80 border-r border-theme-border bg-theme-surface/90 backdrop-blur shrink-0 relative z-20">
+      <div className="w-80 border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20">
         <Sidebar
           gameState={gameState}
           isTranslating={isTranslating}

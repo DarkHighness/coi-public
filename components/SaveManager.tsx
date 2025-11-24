@@ -160,7 +160,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                             className="px-4 py-2 bg-theme-primary text-theme-bg hover:bg-theme-primary-hover text-xs font-bold uppercase tracking-wide rounded transition-all hover:scale-105"
                             title={t("saves.load")}
                           >
-                            Load
+                            {t("saves.load")}
                           </button>
                         )}
                         <button

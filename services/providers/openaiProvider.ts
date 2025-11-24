@@ -132,6 +132,7 @@ export const generateContent = async (
     topP?: number;
     topK?: number;
     minP?: number;
+    onChunk?: (text: string) => void;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const client = getClient(config);
@@ -160,29 +161,49 @@ export const generateContent = async (
       : { type: "json_object" },
     temperature: options?.temperature ?? 0.8,
     top_p: options?.topP,
+    stream: !!options?.onChunk,
   });
 
-  const choice = response.choices[0];
-  const content = choice?.message?.content;
+  let content = "";
+  let responseObj: any = {};
+
+  if (options?.onChunk) {
+    const stream = response as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || "";
+      if (delta) {
+        content += delta;
+        options.onChunk(delta);
+      }
+      // Keep track of the last chunk for usage/finish reason if needed (though usage is often missing in stream)
+      responseObj = chunk;
+    }
+  } else {
+    const completion = response as OpenAI.Chat.Completions.ChatCompletion;
+    responseObj = completion;
+    content = completion.choices[0]?.message?.content || "";
+  }
+
+  // If streaming, we might not get full usage stats easily from the last chunk in all providers,
+  // but OpenAI sometimes sends it in a final chunk with usage field.
+  // For now, we'll construct a mock usage if missing or try to extract it.
+  const usage = {
+    promptTokens: responseObj.usage?.prompt_tokens || 0,
+    completionTokens: responseObj.usage?.completion_tokens || 0,
+    totalTokens: responseObj.usage?.total_tokens || 0,
+  };
 
   if (!content) throw new Error("No content returned from OpenAI");
 
-  if (choice.finish_reason === "content_filter") {
-    throw new Error(
-      "OpenAI content generation failed: Content filter triggered.",
-    );
+  // Basic validation for non-streaming (or if we reconstructed full content)
+  if (!options?.onChunk) {
+    const choice = (responseObj as OpenAI.Chat.Completions.ChatCompletion).choices[0];
+    if (choice.finish_reason === "content_filter") {
+      throw new Error(
+        "OpenAI content generation failed: Content filter triggered.",
+      );
+    }
   }
-
-  if (choice.finish_reason === "length") {
-    console.warn("OpenAI content generation truncated due to length.");
-  }
-
-  // Normalize Usage
-  const usage = {
-    promptTokens: response.usage?.prompt_tokens || 0,
-    completionTokens: response.usage?.completion_tokens || 0,
-    totalTokens: response.usage?.total_tokens || 0,
-  };
 
   try {
     // Clean JSON before parsing (remove markdown code blocks if present)

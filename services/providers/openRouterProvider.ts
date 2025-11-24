@@ -116,6 +116,7 @@ export const generateContent = async (
     topP?: number;
     topK?: number;
     minP?: number;
+    onChunk?: (text: string) => void;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   // Map contents to messages
@@ -141,6 +142,7 @@ export const generateContent = async (
     top_p: options?.topP,
     top_k: options?.topK,
     min_p: options?.minP,
+    stream: !!options?.onChunk,
   };
 
   if (schema) {
@@ -188,35 +190,80 @@ export const generateContent = async (
       );
     }
 
-    const result = await response.json();
-    const choice = result.choices[0];
-    let content = choice?.message?.content || "";
+    let content = "";
+    let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    let rawResult: any = {};
 
-    if (choice?.finish_reason === "content_filter") {
-      throw new Error(
-        "OpenRouter content generation failed: Content filter triggered.",
-      );
+    if (options?.onChunk) {
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      if (!reader) throw new Error("Failed to read response body");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+        for (const line of lines) {
+          if (line === "data: [DONE]") continue;
+          if (line.startsWith("data: ")) {
+            try {
+              const json = JSON.parse(line.substring(6));
+              const delta = json.choices?.[0]?.delta?.content || "";
+              if (delta) {
+                content += delta;
+                options.onChunk(delta);
+              }
+              // Capture usage if present in last chunk
+              if (json.usage) {
+                usage = {
+                  promptTokens: json.usage.prompt_tokens || 0,
+                  completionTokens: json.usage.completion_tokens || 0,
+                  totalTokens: json.usage.total_tokens || 0,
+                };
+              }
+              rawResult = json;
+            } catch (e) {
+              console.warn("Error parsing stream chunk", e);
+            }
+          }
+        }
+      }
+    } else {
+      const result = await response.json();
+      rawResult = result;
+      const choice = result.choices[0];
+      content = choice?.message?.content || "";
+
+      if (choice?.finish_reason === "content_filter") {
+        throw new Error(
+          "OpenRouter content generation failed: Content filter triggered.",
+        );
+      }
+
+      // Extract Usage
+      usage = {
+        promptTokens: result.usage?.prompt_tokens || 0,
+        completionTokens: result.usage?.completion_tokens || 0,
+        totalTokens: result.usage?.total_tokens || 0,
+      };
     }
-
-    // Extract Usage
-    const usage = {
-      promptTokens: result.usage?.prompt_tokens || 0,
-      completionTokens: result.usage?.completion_tokens || 0,
-      totalTokens: result.usage?.total_tokens || 0,
-    };
 
     if (schema) {
       try {
         // Clean JSON before parsing (remove markdown code blocks if present)
         const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-        return { result: JSON.parse(cleanedContent), usage, raw: result };
+        return { result: JSON.parse(cleanedContent), usage, raw: rawResult };
       } catch (e) {
         console.error("Failed to parse OpenRouter JSON", content);
         throw new Error("Failed to parse AI response as JSON.");
       }
     }
 
-    return { result: content, usage, raw: result };
+    return { result: content, usage, raw: rawResult };
   } catch (e: any) {
     console.error("OpenRouter generation failed", e);
     throw new Error(e.message || "OpenRouter generation failed");

@@ -4,6 +4,7 @@ import { GameState, FeedLayout, StorySegment, AISettings } from "../types";
 import { StoryCard } from "./StoryCard";
 import { FeedHeader } from "./feed/FeedHeader";
 import { StackControls } from "./feed/StackControls";
+import { GenerationTimer } from "./common/GenerationTimer";
 
 interface StoryFeedProps {
   gameState: GameState;
@@ -365,9 +366,12 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
             <div className="flex justify-center py-8 animate-pulse flex-none">
               <div className="flex flex-col items-center space-y-2">
                 <div className="w-2 h-2 bg-theme-primary rounded-full animate-bounce delay-75"></div>
-                <span className="text-theme-muted text-xs uppercase tracking-widest">
-                  {gameState.outline ? t("loading") : t("outline.generating")}
-                </span>
+                <div className="flex items-center gap-2 text-theme-muted text-xs uppercase tracking-widest">
+                  <span>
+                    {gameState.outline ? t("loading") : t("outline.generating")}
+                  </span>
+                  <GenerationTimer isActive={true} />
+                </div>
               </div>
             </div>
           )}

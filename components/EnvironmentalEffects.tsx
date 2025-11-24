@@ -146,15 +146,45 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     }
   }, [backgroundImage, fallbackEnabled, environment]);
 
+  // Double buffering for smooth transitions
+  const [bg1, setBg1] = useState<string | null>(null);
+  const [bg2, setBg2] = useState<string | null>(null);
+  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
+
+  useEffect(() => {
+    // When a new background is loaded, switch layers
+    if (activeLayer === 1) {
+      if (bg1 !== loadedBgSource) {
+        setBg2(loadedBgSource);
+        setActiveLayer(2);
+      }
+    } else {
+      if (bg2 !== loadedBgSource) {
+        setBg1(loadedBgSource);
+        setActiveLayer(1);
+      }
+    }
+  }, [loadedBgSource]);
+
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-      {/* Background Image Layer */}
+      {/* Background Layer 1 */}
       <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
-          loadedBgSource ? "opacity-30" : "opacity-0"
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
+          activeLayer === 1 ? "opacity-30" : "opacity-0"
         }`}
         style={{
-          backgroundImage: loadedBgSource ? `url(${loadedBgSource})` : "none",
+          backgroundImage: bg1 ? `url(${bg1})` : "none",
+          filter: "blur(8px) brightness(0.6)",
+        }}
+      />
+      {/* Background Layer 2 */}
+      <div
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
+          activeLayer === 2 ? "opacity-30" : "opacity-0"
+        }`}
+        style={{
+          backgroundImage: bg2 ? `url(${bg2})` : "none",
           filter: "blur(8px) brightness(0.6)",
         }}
       />

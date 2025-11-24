@@ -67,6 +67,7 @@ export const generateContent = async (
     topP?: number;
     topK?: number;
     minP?: number;
+    onChunk?: (text: string) => void;
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const ai = getGeminiClient(config);
@@ -105,11 +106,38 @@ export const generateContent = async (
     if (options?.topK !== undefined) generationConfig.topK = options.topK;
   }
 
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: processedContents,
-    config: generationConfig,
-  });
+  let text = "";
+  let response;
+
+  if (options?.onChunk) {
+    const stream = await ai.models.generateContentStream({
+      model: model,
+      contents: processedContents,
+      config: generationConfig,
+    });
+
+    for await (const chunk of stream) {
+      const chunkText = chunk.text;
+      if (chunkText) {
+        text += chunkText;
+        options.onChunk(chunkText);
+      }
+    }
+    // For streaming, we might not get the full response object with usage metadata easily
+    // unless the generator yields it at the end or we can access it otherwise.
+    // We'll reconstruct a basic response object.
+    response = {
+      text: text,
+      candidates: [{ finishReason: "STOP" }], // Assumed
+    };
+  } else {
+    response = await ai.models.generateContent({
+      model: model,
+      contents: processedContents,
+      config: generationConfig,
+    });
+    text = response.text || "";
+  }
 
   const candidate = response.candidates?.[0];
   const finishReason = candidate?.finishReason;
@@ -128,7 +156,6 @@ export const generateContent = async (
     console.warn("Gemini content generation finished with reason: OTHER");
   }
 
-  const text = response.text;
   if (!text && finishReason !== "STOP")
     throw new Error(
       `No response from Gemini AI (Finish Reason: ${finishReason})`,

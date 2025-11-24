@@ -39,17 +39,17 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--theme-surface, #1e293b);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--theme-border, #475569);
+  background: var(--theme-surface, #475569);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-muted, #64748b);
+  background: var(--theme-primary, #64748b);
 }
 
 /* --- Environmental Effects --- */
