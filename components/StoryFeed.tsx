@@ -185,15 +185,15 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   const containerPadding = bothCollapsed
     ? "p-6 md:p-12 lg:px-24 xl:px-32"
     : anyCollapsed
-    ? "p-4 md:p-10 lg:px-16"
-    : "p-4 md:p-8 lg:px-12";
+      ? "p-4 md:p-10 lg:px-16"
+      : "p-4 md:p-8 lg:px-12";
 
   // Dynamic max-width for content
   const contentMaxWidth = bothCollapsed
     ? "max-w-5xl"
     : anyCollapsed
-    ? "max-w-4xl"
-    : "max-w-3xl";
+      ? "max-w-4xl"
+      : "max-w-3xl";
 
   // Dynamic text scaling
   const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
@@ -219,7 +219,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
         <div ref={contentRef} className="flex flex-col min-h-full">
           {/* Outline Display */}
           {gameState.outline && (
-            <div className={`mb-8 p-6 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in transition-all duration-300`}>
+            <div
+              className={`mb-8 p-6 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in transition-all duration-300`}
+            >
               <h3 className="text-theme-primary font-fantasy text-xl mb-2">
                 {gameState.outline.title}
               </h3>
@@ -330,7 +332,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
             // Stack Layout
             <div className="flex-1 flex flex-col justify-center items-center relative min-h-[400px] w-full">
               {currentHistory.length > 0 && activeSegment && (
-                <div className={`w-full ${contentMaxWidth} relative pb-24 transition-all duration-300`}>
+                <div
+                  className={`w-full ${contentMaxWidth} relative pb-24 transition-all duration-300`}
+                >
                   {" "}
                   {/* Padding bottom for fixed controls */}
                   {/* Fork Button for Stack Mode */}

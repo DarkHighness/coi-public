@@ -12,6 +12,7 @@ import {
   Quest,
   AdventureTurnInput,
   GameState,
+  ImageGenerationContext,
 } from "../types";
 import {
   GeminiConfig,
@@ -633,7 +634,7 @@ export const generateAdventureTurn = async (
 
 export const generateSceneImage = async (
   prompt: string,
-  context: any, // Using any temporarily to avoid circular dependency issues if types are not shared, but ideally should be ImageGenerationContext
+  context: ImageGenerationContext,
 ): Promise<{ url: string | null; log: LogEntry }> => {
   const { provider, modelId, enabled, resolution } = getProviderConfig("image");
   if (!enabled)
@@ -644,6 +645,15 @@ export const generateSceneImage = async (
 
   const styledPrompt = getSceneImagePrompt(prompt, context);
   let url, usage, raw;
+
+  console.log(
+    "Generating image for prompt:",
+    styledPrompt,
+    "with model:",
+    modelId,
+    "and resolution:",
+    resolution,
+  );
 
   if (provider === "openai") {
     ({ url, usage, raw } = await generateOpenAIImage(

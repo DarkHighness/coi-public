@@ -566,6 +566,7 @@ export const useGameEngine = () => {
               )?.visible?.description || "",
           },
           character: {
+            name: processedState.character.name,
             race: processedState.character.race,
             profession: processedState.character.profession,
             appearance: processedState.character.appearance,
@@ -574,17 +575,13 @@ export const useGameEngine = () => {
           activeNPCs: processedState.relationships
             .filter(
               (r) =>
-                // Simple heuristic: If they were just added, updated, or mentioned in the text (we can't easily check text here without parsing,
-                // so we rely on 'active' status or recent updates if we tracked them.
-                // For now, let's pass ALL 'active' or 'present' NPCs if the game tracks location.
-                // Since we don't track NPC location strictly, we'll pass those with high affinity or recent interaction if possible.
-                // BETTER: Pass all relationships that are marked as 'present' or similar if we had that.
                 // Fallback: Pass all known relationships, the Prompt will filter based on the scene description.
                 r.visible?.status !== "Absent" && r.visible?.status !== "Dead",
             )
             .map((r) => ({
               name: r.name,
               description: r.visible?.description || "No description",
+              appearance: r.visible?.appearance || "No appearance available",
               status: r.visible?.status || "Unknown",
             })),
         };
@@ -867,7 +864,7 @@ export const useGameEngine = () => {
       "Starting image generation for node:",
       nodeId,
       "with prompt:",
-      node.imagePrompt.substring(0, 50) + "...",
+      node.imagePrompt,
     );
     setGameState((prev) => ({
       ...prev,
@@ -905,6 +902,7 @@ export const useGameEngine = () => {
             )?.visible?.description || "",
         },
         character: {
+          name: snapshot.character?.name || "Unknown",
           race: snapshot.character?.race || "Unknown",
           profession: snapshot.character?.profession || "",
           appearance: snapshot.character?.appearance || "Not described",
@@ -918,6 +916,7 @@ export const useGameEngine = () => {
           .map((r: any) => ({
             name: r.name,
             description: r.visible?.description || "No description",
+            appearance: r.visible?.appearance || "No appearance available",
             status: r.visible?.status || "Unknown",
           })),
       };

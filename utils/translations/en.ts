@@ -417,5 +417,6 @@ export const en = {
   showSidebarDesc: "Display character status, inventory, and relationships",
   showTimeline: "Show Right Timeline",
   showTimelineDesc: "Display journey timeline and story progress",
-  layoutToggleTip: "Tip: Use the arrow buttons at panel edges to quickly toggle visibility",
+  layoutToggleTip:
+    "Tip: Use the arrow buttons at panel edges to quickly toggle visibility",
 };

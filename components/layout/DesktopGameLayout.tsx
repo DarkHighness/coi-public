@@ -168,7 +168,9 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
         }`}
       >
         {/* Timeline Content - hidden when collapsed */}
-        <div className={`w-full h-full ${timelineCollapsed ? "hidden" : "block"}`}>
+        <div
+          className={`w-full h-full ${timelineCollapsed ? "hidden" : "block"}`}
+        >
           <Suspense
             fallback={
               <div className="w-72 bg-theme-surface/30 animate-pulse"></div>

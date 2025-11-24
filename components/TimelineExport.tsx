@@ -25,17 +25,12 @@ interface TimelineExportProps {
   onExportEnd?: () => void;
 }
 
-export const TimelineExport = forwardRef<TimelineExportRef, TimelineExportProps>(
+export const TimelineExport = forwardRef<
+  TimelineExportRef,
+  TimelineExportProps
+>(
   (
-    {
-      segments,
-      theme,
-      envTheme,
-      title,
-      subtitle,
-      onExportStart,
-      onExportEnd,
-    },
+    { segments, theme, envTheme, title, subtitle, onExportStart, onExportEnd },
     ref,
   ) => {
     const [exportChunk, setExportChunk] = useState<StorySegment[]>([]);
@@ -58,10 +53,7 @@ export const TimelineExport = forwardRef<TimelineExportRef, TimelineExportProps>
 
         try {
           for (let i = 0; i < totalChunks; i++) {
-            const chunk = segments.slice(
-              i * chunkSize,
-              (i + 1) * chunkSize,
-            );
+            const chunk = segments.slice(i * chunkSize, (i + 1) * chunkSize);
             setExportChunk(chunk);
 
             // Wait for render and images
@@ -93,7 +85,8 @@ export const TimelineExport = forwardRef<TimelineExportRef, TimelineExportProps>
                 width: 800,
                 windowWidth: 1920,
                 onclone: (clonedDoc) => {
-                  const clonedElement = clonedDoc.getElementById("export-container");
+                  const clonedElement =
+                    clonedDoc.getElementById("export-container");
                   if (clonedElement) {
                     // Reset position for the capture
                     clonedElement.style.left = "0px";
@@ -148,9 +141,11 @@ export const TimelineExport = forwardRef<TimelineExportRef, TimelineExportProps>
       <div
         id="export-container"
         className="absolute left-[-9999px] top-0 w-[800px] p-12 bg-theme-bg text-theme-text"
-        style={{
-          ...currentThemeConfig.vars,
-        } as React.CSSProperties}
+        style={
+          {
+            ...currentThemeConfig.vars,
+          } as React.CSSProperties
+        }
         ref={exportContainerRef}
       >
         <div className="relative">
@@ -212,9 +207,9 @@ export const TimelineExport = forwardRef<TimelineExportRef, TimelineExportProps>
           </div>
         </div>
       </div>,
-      document.body
+      document.body,
     );
-  }
+  },
 );
 
 TimelineExport.displayName = "TimelineExport";

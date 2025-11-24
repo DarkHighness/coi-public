@@ -5,7 +5,9 @@ import React from "react";
  * Used by StoryText and TypewriterText components
  */
 export const markdownComponents = {
-  p: ({ node, ...props }: any) => <p className="mb-4 last:mb-0 indent-8" {...props} />,
+  p: ({ node, ...props }: any) => (
+    <p className="mb-4 last:mb-0 indent-8" {...props} />
+  ),
   strong: ({ node, ...props }: any) => (
     <strong className="font-bold text-theme-primary" {...props} />
   ),

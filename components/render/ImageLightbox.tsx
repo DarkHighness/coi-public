@@ -57,6 +57,6 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 };

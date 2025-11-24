@@ -177,9 +177,13 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                   )}
 
                   {/* Content */}
-                  <div className={`text-xs transition-colors relative -top-1 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}>
+                  <div
+                    className={`text-xs transition-colors relative -top-1 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
+                  >
                     {/* Time and Location Metadata */}
-                    <div className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}>
+                    <div
+                      className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}
+                    >
                       <span className="font-mono text-theme-primary/70">
                         {seg.stateSnapshot?.time || "Unknown Time"}
                       </span>
@@ -223,7 +227,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                         }}
                         className={`line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-80"}`}
                       >
-                        <MarkdownText content={seg.text} disableIndent/>
+                        <MarkdownText content={seg.text} disableIndent />
                       </motion.div>
                     )}
 
@@ -240,7 +244,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                         }}
                         className={`leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-80"}`}
                       >
-                        <MarkdownText content={seg.text} disableIndent/>
+                        <MarkdownText content={seg.text} disableIndent />
                       </motion.div>
                     )}
                   </div>

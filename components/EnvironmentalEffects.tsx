@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 interface EnvironmentalEffectsProps {
   currentText: string;
   imagePrompt?: string;
-  theme: string;
+  envTheme: string;
   environment?: string;
   backgroundImage?: string;
   fallbackEnabled?: boolean;
@@ -22,7 +22,7 @@ type EffectType =
 export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   currentText,
   imagePrompt,
-  theme,
+  envTheme,
   environment,
   backgroundImage,
   fallbackEnabled = true,
@@ -33,7 +33,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   useEffect(() => {
     // Combine texts for analysis
     const analysisText =
-      `${currentText} ${imagePrompt || ""} ${environment || ""}`.toLowerCase();
+      `${currentText} ${imagePrompt || ""} ${environment || ""} ${envTheme || ""}`.toLowerCase();
 
     // Priority Detection Logic
     let detectedEffect: EffectType = null;
@@ -229,10 +229,23 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
       {effect === "fog" && (
         <>
-          <div className="weather-fog" style={{ top: "60%" }}></div>
+          {/* Multiple fog layers for depth */}
           <div
             className="weather-fog"
-            style={{ top: "30%", animationDirection: "reverse", opacity: 0.2 }}
+            style={{ top: "0%", opacity: 0.15 }}
+          ></div>
+          <div
+            className="weather-fog"
+            style={{
+              top: "30%",
+              animationDirection: "reverse",
+              opacity: 0.2,
+              animationDuration: "80s",
+            }}
+          ></div>
+          <div
+            className="weather-fog"
+            style={{ top: "60%", opacity: 0.1, animationDuration: "100s" }}
           ></div>
         </>
       )}

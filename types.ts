@@ -740,3 +740,26 @@ export interface ModelInfo {
 }
 
 export type FeedLayout = "scroll" | "stack";
+
+export interface ImageGenerationContext {
+  theme: string;
+  time?: string;
+  location?: {
+    name: string;
+    environment: string;
+    details: string;
+  };
+  character?: {
+    name: string;
+    race: string;
+    profession: string;
+    appearance: string;
+    status: string;
+  };
+  activeNPCs?: {
+    name: string;
+    description: string;
+    appearance: string;
+    status: string;
+  }[];
+}

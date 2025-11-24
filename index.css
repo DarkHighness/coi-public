@@ -108,12 +108,18 @@ body {
   position: absolute;
   width: 200%;
   height: 100%;
-  background: url("https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png")
-    repeat-x;
-  background-size: contain;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(200, 200, 220, 0.3) 25%,
+    rgba(180, 180, 200, 0.4) 50%,
+    rgba(200, 200, 220, 0.3) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
   animation: fog 60s linear infinite;
   opacity: 0.15;
   pointer-events: none;
+  filter: blur(40px);
 }
 @keyframes fog {
   0% {

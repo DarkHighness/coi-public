@@ -137,6 +137,7 @@ export default function App() {
 
   let currentEnvThemeKey =
     gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  let currentEnvironment = targetSegment?.environment || "";
 
   if (previewTheme) {
     const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
@@ -321,9 +322,9 @@ export default function App() {
           <EnvironmentalEffects
             currentText={effectText}
             imagePrompt={effectPrompt}
-            theme={gameState.theme}
+            envTheme={gameState.envTheme}
             backgroundImage={stickyBackground}
-            environment={currentEnvThemeKey}
+            environment={currentEnvironment}
             fallbackEnabled={aiSettings.enableFallbackBackground}
           />
         </Suspense>
