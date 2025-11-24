@@ -28,6 +28,7 @@ export const en = {
       technology: "Technology",
       tech: "Technology",
       secret: "Secret",
+      person: "Person",
       other: "Other",
     },
   },
@@ -419,4 +420,13 @@ export const en = {
   showTimelineDesc: "Display journey timeline and story progress",
   layoutToggleTip:
     "Tip: Use the arrow buttons at panel edges to quickly toggle visibility",
+  worldInfo: {
+    title: "World Info",
+    history: "History",
+    setting: "Setting",
+    factions: "Factions",
+    recentEvents: "Recent Events",
+    causedBy: "Caused by",
+    noEvents: "No recent events recorded.",
+  },
 };

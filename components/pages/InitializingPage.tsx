@@ -66,7 +66,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
       {/* Streamed Text Background (Blurred) */}
       {streamedText && (
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
-          <div className="w-full h-full p-8 md:p-16 text-justify opacity-20 blur-[2px] select-none font-serif text-lg md:text-xl leading-relaxed text-theme-muted whitespace-pre-wrap animate-pulse overflow-hidden mask-image-fade">
+          <div className="w-full h-full p-8 md:p-16 text-justify opacity-20 blur-[4px] select-none font-serif text-lg md:text-xl leading-relaxed text-theme-muted whitespace-pre-wrap animate-pulse overflow-hidden mask-image-fade">
             {streamedText.slice(-1000)}{" "}
             {/* Show only last 1000 chars to prevent DOM overload and keep it relevant */}
           </div>

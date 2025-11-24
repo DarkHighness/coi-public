@@ -68,7 +68,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
               <span>{t("summarySnapshot")}</span>
             </div>
             <div className="text-sm text-theme-text/90 italic font-serif leading-relaxed">
-              {segment.summarySnapshot}
+              {segment.summarySnapshot?.displayText || "No Summary Yet."}
             </div>
           </div>
         </div>

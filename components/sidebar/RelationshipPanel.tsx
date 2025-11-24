@@ -20,6 +20,19 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<string | number>>(
+    new Set(),
+  );
+
+  const toggleItem = (id: string | number) => {
+    const newSet = new Set(expandedItems);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setExpandedItems(newSet);
+  };
 
   const safeRelationships = Array.isArray(relationships) ? relationships : [];
   const DISPLAY_LIMIT = 5;
@@ -83,9 +96,10 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     idx: number,
     enableDrag: boolean = false,
   ) => {
-    const isUnknown = rel.affinityKnown === false;
+    const isUnknown = rel.visible.affinityKnown === false;
     const pinned = isPinned(rel.id);
     const isDragging = draggedId === rel.id;
+    const isExpanded = expandedItems.has(rel.id);
 
     return (
       <div
@@ -99,18 +113,34 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         onDragOver={isEditMode ? handleDragOver : undefined}
         onDragEnd={handleDragEnd}
         onDrop={isEditMode ? (e) => handleDrop(e, rel.id) : undefined}
+        onClick={() => toggleItem(rel.id)}
       >
-        <div className="flex-1 min-w-0 p-3">
+        <div className="flex-1 min-w-0 p-3 cursor-pointer">
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2 flex-1 min-w-0">
+              <svg
+                className={`w-3 h-3 text-theme-muted transition-transform duration-200 ${
+                  isExpanded ? "rotate-90" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
               <span className="font-bold text-theme-text text-sm truncate">
                 {rel.name}
               </span>
               <span
                 className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
-                title={rel.visible?.status || "Unknown"}
+                title={rel.visible?.relationshipType || "Unknown"}
               >
-                {rel.visible?.status || "Unknown"}
+                {rel.visible?.relationshipType || "Unknown"}
               </span>
             </div>
 
@@ -144,58 +174,62 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             </div>
           </div>
 
-          <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2">
-            <div>
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                {t("description") || "Description"}
-              </span>
-              <p className="pl-1">
-                {rel.visible?.description ||
-                  t("noDescription") ||
-                  "No description available."}
-              </p>
-            </div>
-            {rel.visible?.appearance && (
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                  {t("appearance") || "Appearance"}
-                </span>
-                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
-                  {rel.visible.appearance}
-                </p>
+          {isExpanded && (
+            <div className="animate-[fade-in_0.2s_ease-in-out]">
+              <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2 mt-2">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    {t("description") || "Description"}
+                  </span>
+                  <p className="pl-1">
+                    {rel.visible?.description ||
+                      t("noDescription") ||
+                      "No description available."}
+                  </p>
+                </div>
+                {rel.visible?.appearance && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                      {t("appearance") || "Appearance"}
+                    </span>
+                    <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
+                      {rel.visible.appearance}
+                    </p>
+                  </div>
+                )}
+                {rel.visible?.currentImpression && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                      {t("currentImpression") || "Current Impression"}
+                    </span>
+                    <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
+                      {rel.visible.currentImpression}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-            {rel.visible?.currentImpression && (
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                  {t("currentImpression") || "Current Impression"}
-                </span>
-                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
-                  {rel.visible.currentImpression}
-                </p>
-              </div>
-            )}
-          </div>
 
-          {/* Affinity Bar */}
-          <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
-            <span className="text-theme-muted font-bold">
-              {t("affinity") || "Affinity"}
-            </span>
-            <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
-              {isUnknown ? (
-                <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
-              ) : (
-                <div
-                  className={`h-full ${getAffinityColor(rel.affinity)} transition-all duration-500`}
-                  style={{ width: `${rel.affinity}%` }}
-                ></div>
-              )}
+              {/* Affinity Bar */}
+              <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
+                <span className="text-theme-muted font-bold">
+                  {t("affinity") || "Affinity"}
+                </span>
+                <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
+                  {isUnknown ? (
+                    <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
+                  ) : (
+                    <div
+                      className={`h-full ${getAffinityColor(rel.visible.affinity)} transition-all duration-500`}
+                      style={{ width: `${rel.visible.affinity}%` }}
+                    ></div>
+                  )}
+                </div>
+                <span className="text-theme-text w-8 text-right font-mono">
+                  {isUnknown ? t("unknown") : `${rel.visible.affinity}%`}
+                </span>
+              </div>
             </div>
-            <span className="text-theme-text w-8 text-right font-mono">
-              {isUnknown ? t("unknown") : `${rel.affinity}%`}
-            </span>
-          </div>
+          )}
         </div>
 
         {isEditMode && (
@@ -204,6 +238,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             title="Drag to reorder"
             draggable={true}
             onDragStart={(e) => handleDragStart(e, rel.id)}
+            onClick={(e) => e.stopPropagation()}
           >
             <svg
               className="w-4 h-4"

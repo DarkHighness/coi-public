@@ -16,12 +16,7 @@ export function processCausalChains(
     const triggeredEvents: TimelineEvent[] = [];
 
     chain.pendingConsequences.forEach((consequence) => {
-      // Since we moved to string-based time, we can't easily calculate delayMinutes.
-      // For now, we will rely on probability check every turn.
-      // If we want to support delays, we need AI to output "time passed" or manage it differently.
-      // Assuming "1 turn" as the unit for now if delayMinutes was used.
-
-      const newDelay = consequence.delayMinutes - 1; // Decrement by 1 turn roughly
+      const newDelay = consequence.delayTurns - 1;
 
       if (newDelay <= 0) {
         // Check probability
@@ -31,20 +26,26 @@ export function processCausalChains(
           const newEvent: TimelineEvent = {
             id: eventId,
             gameTime: currentTimeString,
-            description: consequence.description,
             category: "consequence",
-            causedBy: chain.rootCause.eventId,
+            visible: {
+              description: consequence.description,
+              causedBy: chain.rootCause.description,
+            },
+            hidden: {
+              trueDescription: consequence.description,
+              trueCausedBy: chain.rootCause.description,
+            },
             involvedEntities: [],
+            chainId: chain.chainId,
           };
           triggeredEvents.push(newEvent);
           newTimeline.push(newEvent);
         }
-        // If probability fails, it just expires or we could keep it?
-        // Original logic: if probability fails, it expires (implied by not adding to remainingConsequences)
+        // If probability fails, it expires
       } else {
         remainingConsequences.push({
           ...consequence,
-          delayMinutes: newDelay,
+          delayTurns: newDelay,
         });
       }
     });

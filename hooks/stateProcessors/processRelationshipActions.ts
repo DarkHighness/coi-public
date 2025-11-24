@@ -28,18 +28,19 @@ export function processRelationshipActions(
         visible: {
           description: act.visible?.description || "Unknown",
           appearance: act.visible?.appearance,
-          status: act.visible?.status || "Neutral",
+          relationshipType: act.visible?.relationshipType || "Neutral",
           currentImpression: act.visible?.currentImpression,
+          affinity: act.visible?.affinity || 50,
+          affinityKnown: act.visible?.affinityKnown ?? true,
         },
         hidden: {
           realPersonality: act.hidden?.realPersonality || "Unknown",
           realMotives: act.hidden?.realMotives || "Unknown",
           secrets: act.hidden?.secrets || [],
-          trueAffinity: act.hidden?.trueAffinity || act.affinity || 50,
+          trueAffinity: act.hidden?.trueAffinity || act.visible?.affinity || 50,
+          relationshipType: act.hidden?.relationshipType || "Neutral",
+          status: act.hidden?.status || "Normal",
         },
-        relationshipType: act.relationshipType || "Neutral",
-        affinity: act.affinity || 50,
-        affinityKnown: act.affinityKnown ?? true,
         createdAt: Date.now(),
         lastModified: Date.now(),
         notes: act.notes,
@@ -56,8 +57,9 @@ export function processRelationshipActions(
       if (act.visible?.description) {
         newRelationships[idx].visible.description = act.visible.description;
       }
-      if (act.visible?.status) {
-        newRelationships[idx].visible.status = act.visible.status;
+      if (act.visible?.relationshipType) {
+        newRelationships[idx].visible.relationshipType =
+          act.visible.relationshipType;
       }
       if (act.visible?.appearance) {
         newRelationships[idx].visible.appearance = act.visible.appearance;
@@ -65,6 +67,12 @@ export function processRelationshipActions(
       if (act.visible?.currentImpression) {
         newRelationships[idx].visible.currentImpression =
           act.visible.currentImpression;
+      }
+      if (act.visible?.affinity !== undefined) {
+        newRelationships[idx].visible.affinity = act.visible.affinity;
+      }
+      if (act.visible?.affinityKnown !== undefined) {
+        newRelationships[idx].visible.affinityKnown = act.visible.affinityKnown;
       }
 
       // Update hidden layer
@@ -81,17 +89,14 @@ export function processRelationshipActions(
       if (act.hidden?.trueAffinity !== undefined) {
         newRelationships[idx].hidden.trueAffinity = act.hidden.trueAffinity;
       }
+      if (act.hidden?.relationshipType) {
+        newRelationships[idx].hidden.relationshipType =
+          act.hidden.relationshipType;
+      }
+      if (act.hidden?.status) {
+        newRelationships[idx].hidden.status = act.hidden.status;
+      }
 
-      // Update affinity and metadata
-      if (act.affinity !== undefined) {
-        newRelationships[idx].affinity = act.affinity;
-      }
-      if (act.affinityKnown !== undefined) {
-        newRelationships[idx].affinityKnown = act.affinityKnown;
-      }
-      if (act.relationshipType) {
-        newRelationships[idx].relationshipType = act.relationshipType;
-      }
       if (act.notes) {
         newRelationships[idx].notes = act.notes;
       }

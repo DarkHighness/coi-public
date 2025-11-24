@@ -7,6 +7,7 @@ import { processLocationActions } from "./processLocationActions";
 import { processCharacterActions } from "./processCharacterActions";
 import { processWorldEvents } from "./processWorldEvents";
 import { processCausalChains } from "./processCausalChains";
+import { processFactionActions } from "./processFactionActions";
 
 export interface ProcessedState {
   inventory: GameState["inventory"];
@@ -20,6 +21,7 @@ export interface ProcessedState {
   nextIds: GameState["nextIds"];
   time: string;
   causalChains: GameState["causalChains"];
+  factions: GameState["factions"]; // Added factions
 }
 
 /**
@@ -92,16 +94,26 @@ export function processAllActions(
     response.characterUpdates,
   );
 
-  // Process world events (AI generated)
-  let timeline = processWorldEvents(
-    gameState.timeline,
-    response.worldEvents,
-    currentTimeString,
+  // Process factions
+  const factions = processFactionActions(
+    gameState.factions || [],
+    response.factionActions,
   );
 
-  // Process Causal Chains (Simulation)
+  // Process world events (AI generated)
   let causalChains = gameState.causalChains || [];
+  let timeline = gameState.timeline || [];
 
+  const worldEventsResult = processWorldEvents(
+    timeline,
+    causalChains,
+    response.timelineEvents,
+    currentTimeString,
+  );
+  timeline = worldEventsResult.timeline;
+  causalChains = worldEventsResult.causalChains;
+
+  // Process Causal Chains (Simulation)
   const chainResult = processCausalChains(
     causalChains,
     timeline,
@@ -122,5 +134,6 @@ export function processAllActions(
     nextIds,
     time: currentTimeString,
     causalChains,
+    factions, // Use processed factions
   };
 }

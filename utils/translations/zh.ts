@@ -29,6 +29,7 @@ export const zh = {
       technology: "科技",
       tech: "科技",
       secret: "隐秘",
+      person: "人物",
       other: "其他",
     },
   },
@@ -412,4 +413,13 @@ export const zh = {
   showTimeline: "显示右侧时间轴",
   showTimelineDesc: "显示旅程时间轴和故事进度",
   layoutToggleTip: "提示：使用面板边缘的箭头按钮快速切换显示",
+  worldInfo: {
+    title: "世界信息",
+    history: "历史",
+    setting: "设定",
+    factions: "派系",
+    recentEvents: "近期事件",
+    causedBy: "起因",
+    noEvents: "暂无近期事件记录。",
+  },
 };

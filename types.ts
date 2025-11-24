@@ -9,6 +9,7 @@ export interface GameState {
   quests: Quest[];
   character: CharacterStatus;
   knowledge: KnowledgeEntry[]; // Player's accumulated knowledge about the world
+  factions: Faction[]; // Major power groups
 
   // Location System
   currentLocation: string;
@@ -35,7 +36,6 @@ export interface GameState {
   logs: LogEntry[];
 
   // Cached Veo Script
-  // Cached Veo Script
   veoScript?: string;
 
   // New World System Fields
@@ -45,6 +45,7 @@ export interface GameState {
     location: number;
     knowledge: number;
     quest: number;
+    faction: number;
   };
   timeline: TimelineEvent[];
   causalChains: CausalChain[];
@@ -68,17 +69,21 @@ export interface HiddenInfo {
   [key: string]: any;
 }
 
-// WorldTime interface removed as we switched to string-based time
-// export interface WorldTime { ... }
-
 export interface TimelineEvent {
   id: string;
   gameTime: string;
-  description: string;
   category: "player_action" | "npc_action" | "world_event" | "consequence";
-  causedBy?: string;
-  consequences?: string[];
+  visible: {
+    description: string;
+    causedBy?: string;
+  };
+  hidden: {
+    trueDescription: string;
+    trueCausedBy?: string;
+    consequences?: string[];
+  };
   involvedEntities?: string[];
+  chainId?: string; // Link to a CausalChain
 }
 
 export interface CausalChain {
@@ -91,7 +96,7 @@ export interface CausalChain {
   status: "active" | "resolved" | "interrupted";
   pendingConsequences?: Array<{
     description: string;
-    delayMinutes: number;
+    delayTurns: number; // Changed from delayMinutes
     probability: number;
     conditions?: string[];
   }>;
@@ -140,6 +145,13 @@ export interface LogEntry {
   usage?: TokenUsage;
 }
 
+export interface Faction {
+  id: number;
+  name: string;
+  visible: string; // Public agenda
+  hidden: string; // Secret agenda
+}
+
 export interface StoryOutline {
   title: string;
   initialTime: string;
@@ -152,12 +164,15 @@ export interface StoryOutline {
   worldSetting: {
     visible: string;
     hidden: string;
+    history: string; // Ancient events that shape the present
   };
+  factions: Omit<Faction, "id">[]; // Major power groups
   locations: Omit<Location, "id" | "isVisited" | "createdAt">[]; // Initial locations (Detailed structure)
   character: CharacterStatus; // Initial character state
   inventory?: InventoryItem[]; // Initial inventory
   relationships?: Relationship[]; // Initial relationships
   knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
+  timeline?: TimelineEvent[]; // Initial timeline events (Backstory)
 }
 
 export interface SaveSlot {
@@ -260,18 +275,20 @@ export interface Relationship {
   visible: {
     description: string;
     appearance?: string;
-    status: string;
+    relationshipType: string; // Was status
     currentImpression?: string;
+    personality?: string; // Public perception of personality (may differ from hidden truth)
+    affinity: number; // Moved from root
+    affinityKnown: boolean; // Moved from root
   };
   hidden: {
     realPersonality: string;
     realMotives: string;
     secrets: string[];
     trueAffinity: number;
+    relationshipType: string; // Added
+    status: string; // Current state (e.g. "plotting", "injured")
   };
-  relationshipType: string;
-  affinity: number;
-  affinityKnown: boolean;
   createdAt: number;
   lastModified: number;
   notes?: string;
@@ -287,7 +304,7 @@ export interface StorySegment {
   audioKey?: string; // Key for cached TTS audio in IndexedDB
   role: "user" | "model";
   timestamp: number;
-  summarySnapshot?: string; // If this node triggered a summary, store it here
+  summarySnapshot?: StorySummary; // If this node triggered a summary, store it here
   usage?: TokenUsage;
 
   // Fork-safe Summary State
@@ -309,6 +326,7 @@ export interface GameStateSnapshot {
   knowledge: KnowledgeEntry[];
   locations: Location[];
   currentLocation: string;
+  factions: Faction[]; // Added factions to snapshot
 
   // ID Counters (Critical for forks)
   nextIds: {
@@ -317,6 +335,7 @@ export interface GameStateSnapshot {
     location: number;
     knowledge: number;
     quest: number;
+    faction: number;
   };
 
   // World State
@@ -462,19 +481,20 @@ export interface RelationshipAction {
   visible?: {
     description?: string;
     appearance?: string;
-    status?: string;
+    relationshipType?: string;
     currentImpression?: string;
+    affinity?: number;
+    affinityKnown?: boolean;
   };
   hidden?: {
     realPersonality?: string;
     realMotives?: string;
     secrets?: string[];
     trueAffinity?: number;
+    relationshipType?: string;
+    status?: string;
   };
 
-  relationshipType?: string;
-  affinity?: number;
-  affinityKnown?: boolean;
   notes?: string;
 }
 
@@ -563,7 +583,7 @@ export interface CharacterAction {
 
 export interface AdventureTurnInput {
   recentHistory: StorySegment[];
-  summaries: string[];
+  summaries: StorySummary[];
   outline: StoryOutline | null;
   inventory: InventoryItem[];
   relationships: Relationship[];
@@ -572,12 +592,14 @@ export interface AdventureTurnInput {
   currentLocationId: string;
   character: CharacterStatus;
   knowledge?: KnowledgeEntry[]; // Player's accumulated knowledge
+  factions?: any[]; // Added factions support
   userAction: string;
   language: string;
   themeKey?: string;
   tFunc?: (key: string) => any;
   time?: string;
   timeline?: TimelineEvent[]; // Added timeline support
+  causalChains?: CausalChain[]; // Added causal chain support
 }
 export interface GameResponse {
   narrative: string;
@@ -594,11 +616,38 @@ export interface GameResponse {
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
   timeUpdate?: string; // The new time string
-  worldEvents?: Array<{
-    description: string;
-    category: "npc_action" | "world_event";
+  timelineEvents?: Array<{
+    category: "npc_action" | "world_event" | "consequence";
+    visible: {
+      description: string;
+      causedBy?: string;
+    };
+    hidden: {
+      trueDescription: string;
+      trueCausedBy?: string;
+      consequences?: string[];
+    };
     involvedEntities?: string[];
+    // Causal Chain Logic
+    chainId?: string; // Link to existing chain
+    newChain?: {
+      description: string; // Description of the chain's theme/cause
+    };
+    projectedConsequences?: Array<{
+      description: string;
+      delayTurns: number;
+      probability: number;
+    }>;
   }>;
+  factionActions?: FactionAction[];
+}
+
+export interface FactionAction {
+  action: "update";
+  id: number;
+  name: string;
+  visible?: string;
+  hidden?: string;
 }
 
 export interface CharacterUpdates {

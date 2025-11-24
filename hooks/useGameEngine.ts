@@ -1,7 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AISettings, StorySegment, LanguageCode } from "../types";
+import {
+  AISettings,
+  StorySegment,
+  LanguageCode,
+  StorySummary,
+  Relationship,
+} from "../types";
 import { useGameState } from "./useGameState";
 import { useGamePersistence } from "./useGamePersistence";
 import {
@@ -14,7 +20,10 @@ import {
 import { preloadAudio } from "../utils/audioLoader";
 import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
 import { processAllActions } from "./stateProcessors/processAllActions";
-import { createStateSnapshot } from "../utils/snapshotManager";
+import {
+  createStateSnapshot,
+  restoreStateFromSnapshot,
+} from "../utils/snapshotManager";
 
 // Helper: Traverse tree
 const deriveHistory = (
@@ -350,7 +359,7 @@ export const useGameEngine = () => {
 
       let effectiveSummaries = [...baseSummaries];
       let lastIndex = baseIndex;
-      let summarySnapshot = ""; // UI display text
+      let summarySnapshot: StorySummary;
 
       const totalLength = contextNodes.length;
       const keepFresh = 4;
@@ -383,8 +392,7 @@ export const useGameEngine = () => {
         effectiveSummaries.push(sumResult.summary);
 
         // Extract displayText for UI
-        summarySnapshot =
-          sumResult.summary?.displayText || sumResult.summary || "";
+        summarySnapshot = sumResult.summary || sumResult.summary;
         lastIndex = summarizeEnd;
 
         // Log the summary action
@@ -433,12 +441,14 @@ export const useGameEngine = () => {
         currentLocationId: gameStateRef.current.currentLocation,
         character: gameStateRef.current.character,
         knowledge: gameStateRef.current.knowledge, // Pass knowledge to AI
+        factions: gameStateRef.current.factions, // Pass factions to AI
         userAction: action,
         language: LANG_MAP[language],
         themeKey: gameStateRef.current.theme, // Pass the static theme key
         tFunc: t, // Pass translation function
         time: gameStateRef.current.time, // Pass current time
         timeline: gameStateRef.current.timeline, // Pass timeline
+        causalChains: gameStateRef.current.causalChains, // Pass causalChains
       });
 
       // Sanitize choices to ensure strict string array
@@ -493,25 +503,20 @@ export const useGameEngine = () => {
         narrativeTone: response.narrativeTone,
         imageSkipped: !response.generateImage,
         envTheme: response.envTheme,
-        stateSnapshot: {
-          inventory: processedState.inventory,
-          relationships: processedState.relationships,
-          quests: processedState.quests,
-          character: processedState.character,
-          knowledge: processedState.knowledge,
-          currentLocation: processedState.currentLocation,
-          locations: processedState.locations,
-          veoScript: gameStateRef.current.veoScript,
-          uiState: gameStateRef.current.uiState,
-          envTheme:
-            response.envTheme || forceTheme || gameStateRef.current.envTheme,
-          nextIds: processedState.nextIds,
-          time: processedState.time,
-          timeline: processedState.timeline,
-          causalChains: processedState.causalChains,
-          summaries: effectiveSummaries,
-          lastSummarizedIndex: lastIndex,
-        },
+        stateSnapshot: createStateSnapshot(
+          processedState,
+          {
+            summaries: effectiveSummaries,
+            lastSummarizedIndex: lastIndex,
+            currentLocation: processedState.currentLocation,
+            time: processedState.time,
+            envTheme:
+              response.envTheme || forceTheme || gameStateRef.current.envTheme,
+            veoScript: gameStateRef.current.veoScript,
+            uiState: gameStateRef.current.uiState,
+          },
+          gameStateRef.current,
+        ),
       };
 
       // Update State with Response
@@ -576,13 +581,13 @@ export const useGameEngine = () => {
             .filter(
               (r) =>
                 // Fallback: Pass all known relationships, the Prompt will filter based on the scene description.
-                r.visible?.status !== "Absent" && r.visible?.status !== "Dead",
+                r.hidden?.status !== "Absent" && r.hidden?.status !== "Dead",
             )
             .map((r) => ({
               name: r.name,
-              description: r.visible?.description || "No description",
+              description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
               appearance: r.visible?.appearance || "No appearance available",
-              status: r.visible?.status || "Unknown",
+              status: `${r.visible?.relationshipType || "Unknown"} (${r.hidden?.status || "Normal"})`,
             })),
         };
 
@@ -745,12 +750,21 @@ export const useGameEngine = () => {
           ...k,
           id: index + 1,
         })),
+        factions: (outline.factions || []).map((f: any, index: number) => ({
+          ...f,
+          id: index + 1,
+        })),
+        timeline: (outline.timeline || []).map((e: any) => ({
+          ...e,
+          category: e.category || "world_event", // Default to world_event if missing
+        })),
         nextIds: {
           item: (outline.inventory?.length || 0) + 1,
           npc: (outline.relationships?.length || 0) + 1,
           location: (outline.locations?.length || 0) + 1,
           knowledge: (outline.knowledge?.length || 0) + 1,
           quest: (outline.quests?.length || 0) + 1,
+          faction: (outline.factions?.length || 0) + 1,
         },
         isProcessing: true, // Keep processing true while generating first turn
         logs: [log, ...prev.logs],
@@ -831,20 +845,7 @@ export const useGameEngine = () => {
 
       if (targetNode && targetNode.stateSnapshot) {
         // Restore state from snapshot
-        newState = {
-          ...newState,
-          inventory: targetNode.stateSnapshot.inventory,
-          relationships: targetNode.stateSnapshot.relationships,
-          quests: targetNode.stateSnapshot.quests,
-          character: targetNode.stateSnapshot.character,
-          knowledge: targetNode.stateSnapshot.knowledge, // Restore accumulated knowledge
-          currentLocation: targetNode.stateSnapshot.currentLocation,
-          locations: targetNode.stateSnapshot.locations,
-          veoScript: targetNode.stateSnapshot.veoScript, // Restore Veo script from snapshot
-          uiState: targetNode.stateSnapshot.uiState, // Restore UI customizations
-          envTheme: targetNode.stateSnapshot.envTheme, // Restore dynamic theme
-          // Note: outline is NOT restored as it's immutable for the entire game
-        };
+        newState = restoreStateFromSnapshot(newState, targetNode.stateSnapshot);
       }
       return newState;
     });
@@ -911,13 +912,14 @@ export const useGameEngine = () => {
         activeNPCs: (snapshot.relationships || [])
           .filter(
             (r: any) =>
-              r.visible?.status !== "Absent" && r.visible?.status !== "Dead",
+              r.visible?.relationshipType !== "Absent" &&
+              r.visible?.relationshipType !== "Dead",
           )
           .map((r: any) => ({
             name: r.name,
-            description: r.visible?.description || "No description",
+            description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
             appearance: r.visible?.appearance || "No appearance available",
-            status: r.visible?.status || "Unknown",
+            status: `${r.visible?.relationshipType || "Unknown"} (${r.hidden?.status || "Normal"})`,
           })),
       };
 

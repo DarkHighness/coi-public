@@ -9,6 +9,7 @@ const INITIAL_STATE: GameState = {
   inventory: [],
   relationships: [],
   quests: [],
+  factions: [], // Added factions
   character: DEFAULT_CHARACTER,
   knowledge: [], // Player's accumulated knowledge
 

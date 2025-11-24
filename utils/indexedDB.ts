@@ -1,3 +1,20 @@
+import LZString from "lz-string";
+
+// Compression Helpers
+const compress = async (str: string): Promise<ArrayBuffer> => {
+  const stream = new Blob([str]).stream();
+  const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
+  return new Response(compressedStream).arrayBuffer();
+};
+
+const decompress = async (buffer: ArrayBuffer): Promise<string> => {
+  const stream = new Blob([buffer]).stream();
+  const decompressedStream = stream.pipeThrough(
+    new DecompressionStream("gzip"),
+  );
+  return new Response(decompressedStream).text();
+};
+
 /**
  * IndexedDB wrapper for game save data
  * Provides much larger storage capacity than localStorage
@@ -60,11 +77,22 @@ const openDB = (): Promise<IDBDatabase> => {
  * Save game state to IndexedDB
  */
 export const saveGameState = async <T>(id: string, data: T): Promise<void> => {
+  // Compress BEFORE opening transaction to prevent auto-commit during async compression
+  const jsonString = JSON.stringify(data);
+  const compressed = await compress(jsonString);
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([SAVES_STORE], "readwrite");
     const store = transaction.objectStore(SAVES_STORE);
-    const request = store.put({ id, data, timestamp: Date.now() });
+
+    const request = store.put({
+      id,
+      data: compressed,
+      isCompressed: true,
+      compressionMethod: "gzip",
+      timestamp: Date.now(),
+    });
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -81,9 +109,41 @@ export const loadGameState = async <T = any>(id: string): Promise<T | null> => {
     const store = transaction.objectStore(SAVES_STORE);
     const request = store.get(id);
 
-    request.onsuccess = () => {
+    request.onsuccess = async () => {
       const result = request.result;
-      resolve(result ? result.data : null);
+      if (!result) {
+        resolve(null);
+        return;
+      }
+
+      try {
+        let finalData = result.data;
+
+        // Handle compression
+        if (result.isCompressed) {
+          // Method 1: Native GZIP (ArrayBuffer)
+          if (
+            result.data instanceof ArrayBuffer ||
+            (result.data && result.data.byteLength !== undefined)
+          ) {
+            try {
+              const json = await decompress(result.data);
+              finalData = JSON.parse(json);
+            } catch (e) {
+              console.error("GZIP Decompression failed", e);
+              resolve(null);
+              return;
+            }
+          } else if (typeof result.data === "string") {
+            finalData = JSON.parse(result.data);
+          }
+        }
+
+        resolve(finalData);
+      } catch (e) {
+        console.error("Error parsing save data:", e);
+        resolve(null);
+      }
     };
     request.onerror = () => reject(request.error);
   });

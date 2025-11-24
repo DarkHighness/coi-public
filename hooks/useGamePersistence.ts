@@ -25,10 +25,6 @@ export const useGamePersistence = (
     // Migrations
     if (!parsed.logs) parsed.logs = [];
     if (!parsed.totalTokens) parsed.totalTokens = 0;
-    if (!parsed.explicitLine)
-      parsed.explicitLine = { primary: "Survive", secondary: "Find your way." };
-    if (!parsed.implicitLine)
-      parsed.implicitLine = { content: "Unknown forces are watching." };
 
     // Migration: accumulatedSummary -> summaries
     if (
@@ -81,11 +77,20 @@ export const useGamePersistence = (
             },
             hidden: {
               trueDescription: rel.description || "",
-              trueStatus: rel.status || "neutral",
+              trueStatus: rel.status || "neutral", // Legacy field, kept for safety or mapped if needed
               hiddenSecrets: [],
               trueIntentions: "Unknown",
+              relationshipType: rel.status || "neutral",
+              status: "normal", // Default status
             },
           };
+        }
+        // Ensure new fields exist on existing objects
+        if (!rel.hidden.relationshipType) {
+          rel.hidden.relationshipType = rel.hidden.trueStatus || "neutral";
+        }
+        if (!rel.hidden.status) {
+          rel.hidden.status = "normal";
         }
         return rel;
       });

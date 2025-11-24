@@ -10,6 +10,8 @@ import { RelationshipPanel } from "./sidebar/RelationshipPanel";
 import { LocationPanel } from "./sidebar/LocationPanel";
 import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { SystemFooter } from "./sidebar/SystemFooter";
+import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
+import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
 
 interface SidebarProps {
   gameState: GameState;
@@ -118,6 +120,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           </div>
         )}
+
+        {/* Timeline Events Panel (New) */}
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <TimelineEventsPanel
+            events={gameState.timeline}
+            themeFont={currentThemeConfig.fontClass}
+          />
+        </div>
+
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
           <LocationPanel
             currentLocation={gameState.currentLocation}
@@ -156,6 +167,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
           <KnowledgePanel
             knowledge={gameState.knowledge || []}
+            themeFont={currentThemeConfig.fontClass}
+          />
+        </div>
+
+        {/* World Info Panel (New) */}
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <WorldInfoPanel
+            history={gameState.outline?.worldSetting?.history}
+            factions={gameState.factions}
+            worldSetting={gameState.outline?.worldSetting}
             themeFont={currentThemeConfig.fontClass}
           />
         </div>

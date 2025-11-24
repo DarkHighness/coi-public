@@ -17,6 +17,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   culture: "🎭",
   magic: "✨",
   technology: "⚙️",
+  tech: "⚙️",
+  secret: "🤐",
+  person: "🧑",
   other: "📖",
 };
 

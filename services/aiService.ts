@@ -1,18 +1,19 @@
-import {
-  GameResponse,
-  StorySegment,
+import type {
   AISettings,
-  CharacterStatus,
-  Relationship,
+  LogEntry,
   StoryOutline,
+  LanguageCode,
   ModelInfo,
   TokenUsage,
-  LogEntry,
-  InventoryItem,
-  Quest,
+  ImageGenerationContext,
+  StorySegment,
+  CharacterStatus,
+  Relationship,
+  StorySummary,
+  TimelineEvent,
+  GameResponse,
   AdventureTurnInput,
   GameState,
-  ImageGenerationContext,
 } from "../types";
 import {
   GeminiConfig,
@@ -61,6 +62,7 @@ import {
   getVeoScriptPrompt,
 } from "./prompts";
 import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
+import { Schema } from "@google/genai";
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
@@ -127,8 +129,8 @@ const createLogEntry = (
   provider: string,
   model: string,
   endpoint: string,
-  req: Record<string, any>,
-  res: Record<string, any>,
+  req: Record<string, unknown>,
+  res: Record<string, unknown>,
   usage?: TokenUsage,
 ): LogEntry => ({
   id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -284,10 +286,10 @@ const generateContentUnified = async (
   provider: "gemini" | "openai" | "openrouter",
   modelId: string,
   systemInstruction: string,
-  contents: any[],
-  schema?: any,
+  contents: any[], // @ts-ignore
+  schema?: Schema,
   onChunk?: (text: string) => void,
-): Promise<{ result: any; usage: any; raw: any; log: LogEntry }> => {
+): Promise<any> => {
   let result, usage, raw;
 
   // Get options from current settings
@@ -369,12 +371,14 @@ export const generateStoryOutline = async (
   const { provider, modelId } = getProviderConfig("story");
 
   let themeDataBackgroundTemplate: string;
+  let themeDataExample: string;
 
   if (tFunc) {
     // Use dynamic translation function from React component
     themeDataBackgroundTemplate =
       tFunc(`themes.${theme}.backgroundTemplate`) ||
       tFunc(`themes.fantasy.backgroundTemplate`);
+    themeDataExample = tFunc(`themes.${theme}.example`);
   } else {
     // Fallback to static translations
     const langCode = getLangCode(language);
@@ -382,15 +386,22 @@ export const generateStoryOutline = async (
     themeDataBackgroundTemplate =
       t.themes[theme]?.backgroundTemplate ||
       t.themes.fantasy.backgroundTemplate;
+    themeDataExample = t.themes[theme]?.example || "";
   }
+
+  const themeConfig = THEMES[theme || "fantasy"];
+  const isRestricted = themeConfig?.restricted || false;
 
   const prompt = getOutlinePrompt(
     theme,
     language,
     customContext,
     themeDataBackgroundTemplate,
+    themeDataExample, // Pass themeExample here
+    isRestricted,
   );
-  const sys = "You are a master storyteller. Output strictly valid JSON.";
+  const sys =
+    "You are a professional TRPG Game Master creating story outlines. Be creative and introduce randomness - avoid generic templates. Output strictly valid JSON matching the schema.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   const { result, log } = await generateContentUnified(
@@ -405,13 +416,14 @@ export const generateStoryOutline = async (
 };
 
 export const summarizeContext = async (
-  previousSummary: string,
+  previousSummary: StorySummary,
   newTurns: string,
   language: string,
-): Promise<{ summary: any; log: LogEntry }> => {
+): Promise<{ summary: StorySummary; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
   const prompt = getSummaryPrompt(previousSummary, newTurns, language);
-  const sys = "You are a diligent scribe. Output strictly valid JSON.";
+  const sys =
+    "You are a diligent chronicler summarizing events. Focus on facts and cause-and-effect, tracking changes in quests, relationships, inventory, character status, and locations. Output strictly valid JSON.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {
@@ -477,7 +489,6 @@ const buildSystemContext = (
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
-    example,
     isRestricted,
   );
   const staticWorldContext = getStaticWorldContext(outline);
@@ -485,16 +496,21 @@ const buildSystemContext = (
 };
 
 const buildTurnContents = (
-  summaries: any[],
+  summaries: StorySummary[],
   currentStateContext: string,
   recentHistory: StorySegment[],
+  timeline: TimelineEvent[],
   userAction: string,
 ) => {
   const contents = [];
 
   // 1. Dynamic Story Context (Memory)
   // Use XML tags for better separation and attention
-  const dynamicStoryContext = getDynamicStoryContext(summaries);
+  const dynamicStoryContext = getDynamicStoryContext(
+    summaries,
+    recentHistory,
+    timeline,
+  );
   if (dynamicStoryContext) {
     contents.push({
       role: "user",
@@ -579,6 +595,7 @@ export const generateAdventureTurn = async (
     knowledge,
     time,
     timeline,
+    causalChains,
   } = input;
 
   const { provider, modelId } = getProviderConfig("story");
@@ -606,10 +623,12 @@ export const generateAdventureTurn = async (
     quests,
     locations,
     currentLocationId,
+    input.factions,
     character,
     knowledge,
     time,
     timeline,
+    causalChains,
   );
 
   // 4. Build Prompt Contents
@@ -617,6 +636,7 @@ export const generateAdventureTurn = async (
     summaries,
     currentStateContext,
     recentHistory,
+    timeline,
     userAction,
   );
 
@@ -696,7 +716,7 @@ export const translateGameContent = async (
   relationships: Relationship[],
   targetLanguage: string,
 ): Promise<{
-  segments: any[];
+  segments: StorySegment[];
   inventory: string[];
   character: CharacterStatus;
   relationships: Relationship[];
@@ -713,7 +733,8 @@ export const translateGameContent = async (
     relationships,
   };
   const prompt = getTranslationPrompt(targetLanguage, JSON.stringify(payload));
-  const sys = "Translator. Output valid JSON.";
+  const sys =
+    "Professional translator. Translate all text fields while preserving JSON structure and IDs. Maintain tone and style appropriate to the content. Output valid JSON.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {
@@ -867,7 +888,7 @@ export const generateVeoScript = async (
 
   const { provider, modelId } = getProviderConfig("script");
   const sys =
-    "You are a professional scriptwriter. Output the script directly.";
+    "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {

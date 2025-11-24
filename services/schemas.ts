@@ -63,54 +63,205 @@ export const relationshipProperties = {
   visible: {
     type: Type.OBJECT,
     properties: {
-      description: { type: Type.STRING, description: "Visual description" },
-      appearance: { type: Type.STRING, description: "Physical appearance" },
-      status: {
+      description: {
         type: Type.STRING,
-        description: "Relationship status (e.g. Friend, Rival)",
+        description: "Public perception - how others view this NPC",
+      },
+      appearance: {
+        type: Type.STRING,
+        description: "Physical appearance details",
+      },
+      relationshipType: {
+        type: Type.STRING,
+        description:
+          "Relationship status from player's perspective (e.g. Friend, Rival, Enemy, Mentor, Lover)",
       },
       currentImpression: {
         type: Type.STRING,
         description:
           "The NPC's current state from the protagonist's perspective (e.g. 'Looks exhausted', 'Smiling mysteriously', 'Seems hostile')",
       },
+      personality: {
+        type: Type.STRING,
+        description:
+          "Public perception of personality - what people SAY about them (may not reflect true nature in hidden.realPersonality)",
+      },
+      affinity: {
+        type: Type.INTEGER,
+        description:
+          "Affinity score 0-100. <30=hostile, 30-70=neutral, >70=friendly. MUST update when player actions significantly impact relationship.",
+      },
+      affinityKnown: {
+        type: Type.BOOLEAN,
+        description: "Whether the player knows the affinity level.",
+      },
     },
-    required: ["description", "status", "appearance"],
+    required: ["description", "relationshipType", "appearance", "affinity"],
   },
   hidden: {
     type: Type.OBJECT,
     properties: {
-      realPersonality: { type: Type.STRING, description: "True personality" },
-      realMotives: { type: Type.STRING, description: "True motives" },
+      realPersonality: {
+        type: Type.STRING,
+        description: "True personality - what they REALLY are like",
+      },
+      realMotives: {
+        type: Type.STRING,
+        description: "True underlying motives and goals",
+      },
       secrets: { type: Type.ARRAY, items: { type: Type.STRING } },
       trueAffinity: { type: Type.INTEGER },
+      relationshipType: {
+        type: Type.STRING,
+        description:
+          "Relationship status from NPC's perspective (e.g. Tool, Prey, Master, Secret Lover)",
+      },
+      status: {
+        type: Type.STRING,
+        description:
+          "Current state/condition of the NPC (e.g. 'plotting', 'injured', 'waiting', 'traveling').",
+      },
     },
-    required: ["realPersonality", "realMotives", "trueAffinity"],
+    required: [
+      "realPersonality",
+      "realMotives",
+      "trueAffinity",
+      "relationshipType",
+      "status",
+    ],
   },
-  relationshipType: {
+};
+
+export const relationshipSchema: Schema = {
+  type: Type.OBJECT,
+  properties: relationshipProperties,
+  required: ["name", "visible"],
+};
+
+export const skillProperties = {
+  name: { type: Type.STRING, description: "Skill name" },
+  level: {
     type: Type.STRING,
-    description: "Type of relationship (e.g. family, friend, mentor, enemy)",
+    description: "Skill level (e.g. Novice, Master, 1-100).",
   },
-  affinity: {
+  visible: {
+    type: Type.OBJECT,
+    properties: {
+      description: {
+        type: Type.STRING,
+        description: "Publicly known description.",
+      },
+      knownEffects: { type: Type.ARRAY, items: { type: Type.STRING } },
+    },
+    required: ["description", "knownEffects"],
+  },
+  hidden: {
+    type: Type.OBJECT,
+    properties: {
+      trueDescription: { type: Type.STRING, description: "True nature/power." },
+      hiddenEffects: { type: Type.ARRAY, items: { type: Type.STRING } },
+      drawbacks: { type: Type.ARRAY, items: { type: Type.STRING } },
+    },
+    required: ["trueDescription", "hiddenEffects"],
+  },
+  category: { type: Type.STRING },
+};
+
+export const conditionProperties = {
+  name: { type: Type.STRING },
+  type: { type: Type.STRING, enum: ["buff", "debuff", "neutral"] },
+  visible: {
+    type: Type.OBJECT,
+    properties: {
+      description: { type: Type.STRING },
+      perceivedSeverity: { type: Type.STRING },
+    },
+    required: ["description"],
+  },
+  hidden: {
+    type: Type.OBJECT,
+    properties: {
+      trueCause: { type: Type.STRING },
+      actualSeverity: { type: Type.INTEGER },
+      progression: { type: Type.STRING },
+      cure: { type: Type.STRING },
+    },
+    required: ["trueCause"],
+  },
+  effects: {
+    type: Type.OBJECT,
+    properties: {
+      visible: { type: Type.ARRAY, items: { type: Type.STRING } },
+      hidden: { type: Type.ARRAY, items: { type: Type.STRING } },
+    },
+    required: ["visible", "hidden"],
+  },
+  duration: {
     type: Type.INTEGER,
-    description: "Starting affinity (0-100)",
+    description: "Duration in turns (optional).",
   },
-  affinityKnown: { type: Type.BOOLEAN },
+};
+
+export const timelineEventProperties = {
+  id: { type: Type.STRING, description: "Unique ID for the event." },
+  gameTime: { type: Type.STRING, description: "When the event happened." },
+  category: {
+    type: Type.STRING,
+    enum: ["player_action", "npc_action", "world_event", "consequence"],
+    description: "Category of the event.",
+  },
+  visible: {
+    type: Type.OBJECT,
+    properties: {
+      description: {
+        type: Type.STRING,
+        description: "Publicly known description of the event.",
+      },
+      causedBy: {
+        type: Type.STRING,
+        description: "Publicly known cause or instigator.",
+      },
+    },
+    required: ["description"],
+  },
+  hidden: {
+    type: Type.OBJECT,
+    properties: {
+      trueDescription: {
+        type: Type.STRING,
+        description: "The true nature of the event (GM knowledge).",
+      },
+      trueCausedBy: {
+        type: Type.STRING,
+        description: "The real instigator or cause.",
+      },
+      consequences: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: "Hidden consequences or future implications.",
+      },
+    },
+    required: ["trueDescription"],
+  },
+  involvedEntities: { type: Type.ARRAY, items: { type: Type.STRING } },
+  chainId: { type: Type.STRING, description: "Link to a CausalChain." },
 };
 
 export const knowledgeProperties = {
   title: { type: Type.STRING, description: "Title of the knowledge entry." },
   category: {
     type: Type.STRING,
+    description:
+      "Category for organization. Use: landscape, history, item, legend, faction, culture, magic, technology, or other",
     enum: [
       "landscape",
       "history",
       "item",
-      "person",
+      "legend",
       "faction",
-      "secret",
+      "culture",
       "magic",
-      "tech",
+      "technology",
       "other",
     ],
   },
@@ -119,16 +270,22 @@ export const knowledgeProperties = {
     properties: {
       description: {
         type: Type.STRING,
-        description: "What is commonly known.",
+        description: "What is commonly known about this topic.",
       },
-      details: { type: Type.STRING },
+      details: {
+        type: Type.STRING,
+        description: "Additional details or context.",
+      },
     },
     required: ["description"],
   },
   hidden: {
     type: Type.OBJECT,
     properties: {
-      fullTruth: { type: Type.STRING, description: "The complete truth." },
+      fullTruth: {
+        type: Type.STRING,
+        description: "The complete truth (GM knowledge).",
+      },
       misconceptions: { type: Type.ARRAY, items: { type: Type.STRING } },
       toBeRevealed: { type: Type.ARRAY, items: { type: Type.STRING } },
     },
@@ -191,7 +348,7 @@ export const storyOutlineSchema: Schema = {
             "The hidden event logic, true nature, or secret reason behind the goal.",
         },
       },
-      required: ["visible", "hidden"],
+      required: ["visible"],
       description:
         "The primary driving force of the story, with both surface and hidden layers.",
     },
@@ -200,7 +357,7 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: questProperties,
-        required: ["title", "type", "visible", "hidden"],
+        required: ["title", "type", "visible"],
       },
       description: "Initial quests (at least one main quest is required).",
     },
@@ -217,17 +374,41 @@ export const storyOutlineSchema: Schema = {
           description:
             "Secret truths about the world (ancient conspiracies, hidden magic, true history).",
         },
+        history: {
+          type: Type.STRING,
+          description:
+            "Ancient events or history that shape the present situation.",
+        },
       },
-      required: ["visible", "hidden"],
+      required: ["visible", "history"],
       description:
         "Dual-layer world setting: public knowledge vs. secret truths.",
+    },
+    factions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING, description: "Name of the faction." },
+          visible: {
+            type: Type.STRING,
+            description: "Public agenda or reputation.",
+          },
+          hidden: {
+            type: Type.STRING,
+            description: "Secret agenda or corruption.",
+          },
+        },
+        required: ["name", "visible"],
+      },
+      description: "List of 2-3 major power groups or factions.",
     },
     locations: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: locationProperties,
-        required: ["name", "visible", "hidden", "environment"],
+        required: ["name", "visible", "environment"],
       },
       description: "A list of 1-2 starting locations with full details.",
     },
@@ -236,9 +417,19 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: knowledgeProperties,
-        required: ["title", "category", "visible", "hidden"],
+        required: ["title", "category", "visible"],
       },
       description: "Initial knowledge entries about the world.",
+    },
+    timeline: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: timelineEventProperties,
+        required: ["id", "gameTime", "visible", "category"],
+      },
+      description:
+        "Initial timeline events representing the backstory or recent history.",
     },
     character: {
       type: Type.OBJECT,
@@ -274,18 +465,8 @@ export const storyOutlineSchema: Schema = {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING, description: "Skill name" },
-              level: {
-                type: Type.STRING,
-                description: "Starting level (e.g. Beginner)",
-              },
-              description: {
-                type: Type.STRING,
-                description: "Short description",
-              },
-            },
-            required: ["name", "level"],
+            properties: skillProperties,
+            required: ["name", "level", "visible"],
           },
           description: "Initial skills/abilities.",
         },
@@ -297,28 +478,8 @@ export const storyOutlineSchema: Schema = {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              type: { type: Type.STRING, enum: ["buff", "debuff", "neutral"] },
-              visible: {
-                type: Type.OBJECT,
-                properties: {
-                  description: { type: Type.STRING },
-                  perceivedSeverity: { type: Type.STRING },
-                },
-                required: ["description"],
-              },
-              hidden: {
-                type: Type.OBJECT,
-                properties: {
-                  trueCause: { type: Type.STRING },
-                  actualSeverity: { type: Type.INTEGER },
-                  progression: { type: Type.STRING },
-                },
-                required: ["trueCause"],
-              },
-            },
-            required: ["name", "type", "visible", "hidden"],
+            properties: conditionProperties,
+            required: ["name", "type", "visible", "effects"],
           },
           description: "Initial conditions (buffs/debuffs).",
         },
@@ -336,7 +497,13 @@ export const storyOutlineSchema: Schema = {
               },
               discovered: { type: Type.BOOLEAN },
             },
-            required: ["name", "description"],
+            required: [
+              "name",
+              "description",
+              "effects",
+              "triggerConditions",
+              "discovered",
+            ],
           },
           description: "Hidden personality traits or secrets.",
         },
@@ -368,6 +535,8 @@ export const storyOutlineSchema: Schema = {
         "skills",
         "status",
         "appearance",
+        "profession",
+        "background",
       ],
       description: "The initialized character profile suited for this story.",
     },
@@ -376,7 +545,7 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: inventoryItemProperties,
-        required: ["name", "visible", "hidden", "lore", "isMystery"],
+        required: ["name", "visible", "lore", "isMystery"],
       },
       description: "Initial items in the inventory (1-3 items).",
     },
@@ -385,7 +554,7 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: relationshipProperties,
-        required: ["name", "visible", "hidden", "relationshipType", "affinity"],
+        required: ["name", "visible"],
       },
       description: "Initial relationships (1-2 NPCs).",
     },
@@ -394,10 +563,16 @@ export const storyOutlineSchema: Schema = {
     "title",
     "initialTime",
     "premise",
+    "mainGoal",
     "quests",
     "worldSetting",
+    "factions",
     "locations",
+    "knowledge",
+    "timeline",
     "character",
+    "inventory",
+    "relationships",
   ],
 };
 
@@ -432,7 +607,12 @@ export const summarySchema: Schema = {
           description: "World state as player understands it",
         },
       },
-      required: ["narrative"],
+      required: [
+        "narrative",
+        "majorEvents",
+        "characterDevelopment",
+        "worldState",
+      ],
     },
     hidden: {
       type: Type.OBJECT,
@@ -461,9 +641,16 @@ export const summarySchema: Schema = {
           description: "Secrets not yet revealed to player",
         },
       },
+      required: [
+        "truthNarrative",
+        "hiddenPlots",
+        "npcActions",
+        "worldTruth",
+        "unrevealed",
+      ],
     },
   },
-  required: ["displayText", "visible", "hidden"],
+  required: ["displayText", "visible"],
 };
 
 export const gameResponseSchema: Schema = {
@@ -489,7 +676,7 @@ export const gameResponseSchema: Schema = {
           id: { type: Type.INTEGER, description: "Numeric ID of the item." },
           ...inventoryItemProperties,
         },
-        required: ["action"],
+        required: ["action", "id"],
       },
       description: "List of changes to the inventory.",
     },
@@ -503,7 +690,7 @@ export const gameResponseSchema: Schema = {
           notes: { type: Type.STRING },
           ...relationshipProperties,
         },
-        required: ["action"],
+        required: ["action", "id"],
       },
       description: "List of changes to relationships.",
     },
@@ -521,7 +708,7 @@ export const gameResponseSchema: Schema = {
           notes: { type: Type.STRING },
           ...locationProperties,
         },
-        required: ["type", "action", "name"],
+        required: ["type", "action", "id"],
       },
       description: "Updates to location.",
     },
@@ -540,21 +727,90 @@ export const gameResponseSchema: Schema = {
           },
           ...knowledgeProperties,
         },
-        required: ["action"],
+        required: ["action", "id", "relatedTo", "discoveredAt"],
       },
       description: "Updates to knowledge.",
     },
-    worldEvents: {
+    timelineEvents: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          description: { type: Type.STRING },
-          category: { type: Type.STRING, enum: ["npc_action", "world_event"] },
+          category: {
+            type: Type.STRING,
+            enum: ["npc_action", "world_event", "consequence"],
+          },
+          visible: {
+            type: Type.OBJECT,
+            properties: {
+              description: { type: Type.STRING },
+              causedBy: { type: Type.STRING },
+            },
+            required: ["description"],
+          },
+          hidden: {
+            type: Type.OBJECT,
+            properties: {
+              trueDescription: { type: Type.STRING },
+              trueCausedBy: { type: Type.STRING },
+              consequences: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["trueDescription"],
+          },
           involvedEntities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          chainId: {
+            type: Type.STRING,
+            description:
+              "ID of an existing causal chain this event belongs to.",
+          },
+          newChain: {
+            type: Type.OBJECT,
+            properties: {
+              description: {
+                type: Type.STRING,
+                description: "Description of the new causal chain.",
+              },
+            },
+            required: ["description"],
+          },
+          projectedConsequences: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                description: { type: Type.STRING },
+                delayTurns: { type: Type.INTEGER },
+                probability: { type: Type.NUMBER },
+              },
+              required: ["description", "delayTurns", "probability"],
+            },
+          },
         },
+        required: ["category", "visible", "involvedEntities"],
       },
-      description: "Events happening in the world independent of the player.",
+      description:
+        "Events happening in the world, potentially linked to causal chains.",
+    },
+    factionActions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          action: { type: Type.STRING, enum: ["update"] },
+          id: { type: Type.INTEGER, description: "Numeric ID of the faction." },
+          name: { type: Type.STRING, description: "Name of the faction." },
+          visible: {
+            type: Type.STRING,
+            description: "Updated public agenda or reputation.",
+          },
+          hidden: {
+            type: Type.STRING,
+            description: "Updated secret agenda or corruption.",
+          },
+        },
+        required: ["action", "id"],
+      },
+      description: "Updates to factions.",
     },
     characterUpdates: {
       type: Type.OBJECT,
@@ -586,12 +842,7 @@ export const gameResponseSchema: Schema = {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-              name: { type: Type.STRING },
-              level: {
-                type: Type.STRING,
-                description: "Skill level (e.g. Novice, Master).",
-              },
-              description: { type: Type.STRING },
+              ...skillProperties,
             },
             required: ["action", "name"],
           },
@@ -614,22 +865,7 @@ export const gameResponseSchema: Schema = {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-              name: {
-                type: Type.STRING,
-                description: "Name of the condition (e.g. Poisoned, Blessed).",
-              },
-              description: {
-                type: Type.STRING,
-                description: "Effect description.",
-              },
-              duration: {
-                type: Type.STRING,
-                description: "Duration or 'permanent'.",
-              },
-              value: {
-                type: Type.INTEGER,
-                description: "Intensity value if applicable.",
-              },
+              ...conditionProperties,
             },
             required: ["action", "name"],
           },
@@ -649,6 +885,12 @@ export const gameResponseSchema: Schema = {
                 type: Type.STRING,
                 description: "Description of the trait.",
               },
+              effects: { type: Type.ARRAY, items: { type: Type.STRING } },
+              triggerConditions: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              discovered: { type: Type.BOOLEAN },
             },
             required: ["action", "name"],
           },
@@ -676,41 +918,15 @@ export const gameResponseSchema: Schema = {
       },
       description: "Updates to quests.",
     },
-    explicitLine: {
-      type: Type.OBJECT,
-      properties: {
-        action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-        primary: {
-          type: Type.STRING,
-          description: "The main explicit storyline goal/task.",
-        },
-        secondary: {
-          type: Type.STRING,
-          description: "Secondary explicit storyline details.",
-        },
-      },
-      description: "Updates to the Explicit Line (visible to user).",
-    },
-    implicitLine: {
-      type: Type.OBJECT,
-      properties: {
-        action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-        content: {
-          type: Type.STRING,
-          description: "The hidden implicit storyline development.",
-        },
-      },
-      description: "Updates to the Implicit Line (invisible to user).",
-    },
     generateImage: {
       type: Type.BOOLEAN,
       description:
-        "Set to true ONLY if this is an important scene that requires visual representation.",
+        "Set to true ONLY when scene qualifies for Type 1 (Bird's Eye View for NEW location introduction) OR Type 2 (Player Perspective action scene - MORE COMMON). DEFAULT to false for: dialogue-only scenes, minor exploration, inventory management, status updates, routine actions.",
     },
     imagePrompt: {
       type: Type.STRING,
       description:
-        "Visual description for the scene. Required if generateImage is true.",
+        "HIGHLY DETAILED visual description for scene image generation. REQUIRED if generateImage is true. Must specify TYPE: either 'BIRD'S EYE VIEW: ...' for location introductions OR 'PLAYER PERSPECTIVE: ...' for action scenes. Include specific visual elements: colors, lighting, textures, atmosphere, environmental details. Reference character appearance, visible equipment from inventory, NPCs present, and location environment. Be cinematic and atmospheric with rich sensory details. AVOID vague descriptions.",
     },
     environment: {
       type: Type.STRING,
@@ -769,33 +985,13 @@ export const gameResponseSchema: Schema = {
         "patriotic",
         "cyan",
         "silver",
-        "obsessive",
-        "emerald",
-        "danger",
-        "glamour",
-        "rgb",
-        "stone",
-        "heartbreak",
+        "obsidian",
       ],
       description:
-        "Update the visual theme/atmosphere ONLY if it shifts significantly.",
-    },
-    timeUpdate: {
-      type: Type.STRING,
-      description:
-        "The current in-game time string. Maintain continuity with previous time unless a time jump/travel occurs. Format depends on the setting (e.g., 'Day 2', '2023-11-24 14:00', 'Star Date 45.2').",
+        "The current visual theme/color palette. MUST be one of the defined enum values.",
     },
   },
-  required: [
-    "narrative",
-    "choices",
-    "inventoryActions",
-    "relationshipActions",
-    "locationActions",
-    "characterUpdates",
-    "questActions",
-    "timeUpdate",
-  ],
+  required: ["narrative", "choices"],
 };
 
 export const translationSchema: Schema = {
@@ -810,60 +1006,19 @@ export const translationSchema: Schema = {
           text: { type: Type.STRING },
           choices: { type: Type.ARRAY, items: { type: Type.STRING } },
         },
+        required: ["id", "text", "choices"],
       },
     },
     inventory: { type: Type.ARRAY, items: { type: Type.STRING } },
-    currentLocation: { type: Type.STRING },
     character: {
       type: Type.OBJECT,
       properties: {
         name: { type: Type.STRING },
         title: { type: Type.STRING },
-        attributes: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              label: { type: Type.STRING },
-              value: { type: Type.INTEGER },
-              maxValue: { type: Type.INTEGER },
-              color: { type: Type.STRING },
-            },
-          },
-        },
-        skills: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              level: { type: Type.STRING },
-              description: { type: Type.STRING },
-            },
-          },
-        },
-        status: { type: Type.STRING },
-        conditions: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              description: { type: Type.STRING },
-              duration: { type: Type.STRING },
-            },
-          },
-        },
-        hiddenTraits: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              description: { type: Type.STRING },
-            },
-          },
-        },
+        appearance: { type: Type.STRING },
+        profession: { type: Type.STRING },
+        background: { type: Type.STRING },
+        race: { type: Type.STRING },
       },
     },
     relationships: {
@@ -873,12 +1028,10 @@ export const translationSchema: Schema = {
         properties: {
           name: { type: Type.STRING },
           description: { type: Type.STRING },
-          status: { type: Type.STRING },
-          currentImpression: { type: Type.STRING },
-          affinity: { type: Type.INTEGER },
-          affinityKnown: { type: Type.BOOLEAN },
+          relationshipType: { type: Type.STRING },
         },
       },
     },
   },
+  required: ["segments"],
 };
