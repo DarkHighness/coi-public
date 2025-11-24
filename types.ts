@@ -706,6 +706,7 @@ export interface AISettings {
   contextLen: number; // Max conversation turns before summarization
 
   story: FunctionConfig;
+  lore: FunctionConfig;
   script: FunctionConfig;
   image: FunctionConfig;
   video: FunctionConfig;
@@ -717,7 +718,6 @@ export interface AISettings {
     ttsMuted: boolean;
   };
   translation: FunctionConfig;
-  lore: FunctionConfig;
   language: LanguageCode;
 
   // Image Generation Settings

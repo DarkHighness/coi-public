@@ -54,7 +54,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         // Prompt user for batch update
         const shouldBatchUpdate = window.confirm(
           t("models.batchUpdatePrompt") ||
-            "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Translation, Lore, and Script functions?",
+          "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Translation, Lore, and Script functions?",
         );
 
         if (shouldBatchUpdate) {
@@ -70,7 +70,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           onUpdateSettings(newSettings);
           showToast(
             t("models.batchUpdateSuccess") ||
-              "Model updated for all text-related functions",
+            "Model updated for all text-related functions",
             "info",
           );
           return;
@@ -167,9 +167,21 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             hasEnable: false,
           },
           {
+            key: "lore",
+            label: t("models.lore"),
+            help: t("models.loreHelp"),
+            hasEnable: false,
+          },
+          {
             key: "script",
             label: t("models.script"),
             help: t("models.scriptHelp"),
+            hasEnable: true,
+          },
+          {
+            key: "translation",
+            label: t("models.translation"),
+            help: t("models.translationHelp"),
             hasEnable: true,
           },
           {
@@ -188,18 +200,6 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             key: "audio",
             label: t("models.audio"),
             help: t("models.audioHelp"),
-            hasEnable: true,
-          },
-          {
-            key: "translation",
-            label: t("models.translation"),
-            help: t("models.translationHelp"),
-            hasEnable: true,
-          },
-          {
-            key: "lore",
-            label: t("models.lore"),
-            help: t("models.loreHelp"),
             hasEnable: true,
           },
         ] as const
@@ -224,25 +224,22 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   onClick={() =>
                     updateFunction(sectionKey, "enabled", !isEnabled)
                   }
-                  className={`w-8 h-4 rounded-full relative transition-colors ${
-                    isEnabled ? "bg-green-500" : "bg-theme-border"
-                  }`}
+                  className={`w-8 h-4 rounded-full relative transition-colors ${isEnabled ? "bg-green-500" : "bg-theme-border"
+                    }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
-                      isEnabled ? "translate-x-4" : ""
-                    }`}
+                    className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isEnabled ? "translate-x-4" : ""
+                      }`}
                   ></span>
                 </button>
               )}
             </div>
 
             <div
-              className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${
-                section.hasEnable && !isEnabled
+              className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${section.hasEnable && !isEnabled
                   ? "opacity-40 pointer-events-none"
                   : ""
-              }`}
+                }`}
             >
               <select
                 value={config.provider}
@@ -271,11 +268,10 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   onChange={(e) =>
                     updateFunction(sectionKey, "modelId", e.target.value)
                   }
-                  className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
-                    !isModelValid && !loadingModels
+                  className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${!isModelValid && !loadingModels
                       ? "border-red-500 text-red-500"
                       : "border-theme-border"
-                  }`}
+                    }`}
                   disabled={loadingModels}
                 >
                   <option
@@ -429,16 +425,14 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                           manualImageGen: !currentSettings.manualImageGen,
                         })
                       }
-                      className={`w-8 h-4 rounded-full relative transition-colors ${
-                        currentSettings.manualImageGen
+                      className={`w-8 h-4 rounded-full relative transition-colors ${currentSettings.manualImageGen
                           ? "bg-green-500"
                           : "bg-theme-border"
-                      }`}
+                        }`}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
-                          currentSettings.manualImageGen ? "translate-x-4" : ""
-                        }`}
+                        className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${currentSettings.manualImageGen ? "translate-x-4" : ""
+                          }`}
                       ></span>
                     </button>
                   </div>
@@ -448,151 +442,151 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               {["story", "lore", "script", "translation"].includes(
                 sectionKey,
               ) && (
-                <div className="col-span-3 mt-2">
-                  <details className="group">
-                    <summary className="text-xs font-bold text-theme-muted uppercase tracking-widest cursor-pointer hover:text-theme-primary transition-colors select-none flex items-center gap-2">
-                      <svg
-                        className="w-3 h-3 transition-transform group-open:rotate-90"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                      {t("models.advancedParams") || "Advanced Parameters"}
-                    </summary>
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 border-l-2 border-theme-border/30">
-                      {/* Temperature */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                            {t("models.temperature") || "Temperature"}
-                          </label>
-                          <span className="text-[10px] font-mono text-theme-text">
-                            {config.temperature ?? 1.0}
-                          </span>
+                  <div className="col-span-3 mt-2">
+                    <details className="group">
+                      <summary className="text-xs font-bold text-theme-muted uppercase tracking-widest cursor-pointer hover:text-theme-primary transition-colors select-none flex items-center gap-2">
+                        <svg
+                          className="w-3 h-3 transition-transform group-open:rotate-90"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                        {t("models.advancedParams") || "Advanced Parameters"}
+                      </summary>
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 border-l-2 border-theme-border/30">
+                        {/* Temperature */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                              {t("models.temperature") || "Temperature"}
+                            </label>
+                            <span className="text-[10px] font-mono text-theme-text">
+                              {config.temperature ?? 1.0}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={config.temperature ?? 1.0}
+                            onChange={(e) =>
+                              updateFunction(
+                                sectionKey,
+                                "temperature",
+                                parseFloat(e.target.value),
+                              )
+                            }
+                            className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                          />
+                          <p className="text-[9px] text-theme-muted/70 italic">
+                            {t("models.temperatureHelp") ||
+                              "Controls randomness (0 = deterministic, 2 = creative)"}
+                          </p>
                         </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={config.temperature ?? 1.0}
-                          onChange={(e) =>
-                            updateFunction(
-                              sectionKey,
-                              "temperature",
-                              parseFloat(e.target.value),
-                            )
-                          }
-                          className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-                        />
-                        <p className="text-[9px] text-theme-muted/70 italic">
-                          {t("models.temperatureHelp") ||
-                            "Controls randomness (0 = deterministic, 2 = creative)"}
-                        </p>
-                      </div>
 
-                      {/* Top P */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                            {t("models.topP") || "Top P"}
-                          </label>
-                          <span className="text-[10px] font-mono text-theme-text">
-                            {config.topP ?? 0.95}
-                          </span>
+                        {/* Top P */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                              {t("models.topP") || "Top P"}
+                            </label>
+                            <span className="text-[10px] font-mono text-theme-text">
+                              {config.topP ?? 0.95}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={config.topP ?? 0.95}
+                            onChange={(e) =>
+                              updateFunction(
+                                sectionKey,
+                                "topP",
+                                parseFloat(e.target.value),
+                              )
+                            }
+                            className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                          />
+                          <p className="text-[9px] text-theme-muted/70 italic">
+                            {t("models.topPHelp") ||
+                              "Nucleus sampling (lower = more focused)"}
+                          </p>
                         </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.05"
-                          value={config.topP ?? 0.95}
-                          onChange={(e) =>
-                            updateFunction(
-                              sectionKey,
-                              "topP",
-                              parseFloat(e.target.value),
-                            )
-                          }
-                          className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-                        />
-                        <p className="text-[9px] text-theme-muted/70 italic">
-                          {t("models.topPHelp") ||
-                            "Nucleus sampling (lower = more focused)"}
-                        </p>
-                      </div>
 
-                      {/* Top K */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                            {t("models.topK") || "Top K"}
-                          </label>
-                          <span className="text-[10px] font-mono text-theme-text">
-                            {config.topK ?? 40}
-                          </span>
+                        {/* Top K */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                              {t("models.topK") || "Top K"}
+                            </label>
+                            <span className="text-[10px] font-mono text-theme-text">
+                              {config.topK ?? 40}
+                            </span>
+                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={config.topK ?? 40}
+                            onChange={(e) =>
+                              updateFunction(
+                                sectionKey,
+                                "topK",
+                                parseInt(e.target.value),
+                              )
+                            }
+                            className="w-full bg-theme-bg border border-theme-border rounded px-2 py-1 text-xs text-theme-text focus:border-theme-primary outline-none"
+                          />
+                          <p className="text-[9px] text-theme-muted/70 italic">
+                            {t("models.topKHelp") ||
+                              "Limits vocabulary to top K tokens"}
+                          </p>
                         </div>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={config.topK ?? 40}
-                          onChange={(e) =>
-                            updateFunction(
-                              sectionKey,
-                              "topK",
-                              parseInt(e.target.value),
-                            )
-                          }
-                          className="w-full bg-theme-bg border border-theme-border rounded px-2 py-1 text-xs text-theme-text focus:border-theme-primary outline-none"
-                        />
-                        <p className="text-[9px] text-theme-muted/70 italic">
-                          {t("models.topKHelp") ||
-                            "Limits vocabulary to top K tokens"}
-                        </p>
-                      </div>
 
-                      {/* Min P (OpenRouter/Some backends) */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                            {t("models.minP") || "Min P"}
-                          </label>
-                          <span className="text-[10px] font-mono text-theme-text">
-                            {config.minP ?? 0.0}
-                          </span>
+                        {/* Min P (OpenRouter/Some backends) */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                              {t("models.minP") || "Min P"}
+                            </label>
+                            <span className="text-[10px] font-mono text-theme-text">
+                              {config.minP ?? 0.0}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={config.minP ?? 0.0}
+                            onChange={(e) =>
+                              updateFunction(
+                                sectionKey,
+                                "minP",
+                                parseFloat(e.target.value),
+                              )
+                            }
+                            className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                          />
+                          <p className="text-[9px] text-theme-muted/70 italic">
+                            {t("models.minPHelp") ||
+                              "Minimum probability threshold"}
+                          </p>
                         </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={config.minP ?? 0.0}
-                          onChange={(e) =>
-                            updateFunction(
-                              sectionKey,
-                              "minP",
-                              parseFloat(e.target.value),
-                            )
-                          }
-                          className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-                        />
-                        <p className="text-[9px] text-theme-muted/70 italic">
-                          {t("models.minPHelp") ||
-                            "Minimum probability threshold"}
-                        </p>
                       </div>
-                    </div>
-                  </details>
-                </div>
-              )}
+                    </details>
+                  </div>
+                )}
             </div>
           </div>
         );

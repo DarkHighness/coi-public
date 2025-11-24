@@ -670,6 +670,17 @@ export const useGameEngine = () => {
       Object.keys(THEMES)[
         Math.floor(Math.random() * Object.keys(THEMES).length)
       ];
+
+    // Preload audio in background if not muted (Mobile optimization: trigger on user click)
+    if (
+      !aiSettings.audioVolume.bgmMuted &&
+      aiSettings.audioVolume.bgmVolume > 0
+    ) {
+      preloadAudio().catch((e) =>
+        console.warn("Background audio preload failed", e),
+      );
+    }
+
     const slotId = createSaveSlot(selectedTheme);
     setCurrentSlotId(slotId);
 
@@ -755,8 +766,6 @@ export const useGameEngine = () => {
       }));
 
       // Navigate to game immediately after outline is ready
-      // But ensure audio is preloaded first
-      await preloadAudio();
       navigate("/game");
 
       // Generate first turn in the game view
