@@ -51,7 +51,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   return (
     <div
       className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2
-        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
     >
       <div
@@ -65,7 +65,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
               {k.title}
               {k.unlocked && (
                 <svg
-                  className="w-3.5 h-3.5 text-yellow-400"
+                  className="w-3.5 h-3.5 text-theme-primary"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -116,8 +116,8 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
           {/* Unlocked Hidden Truth */}
           {k.unlocked && k.hidden?.fullTruth && (
-            <div className="mt-3 text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
-              <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+            <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                 <svg
                   className="w-3 h-3"
                   fill="currentColor"
@@ -131,7 +131,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                 </svg>
                 {t("hidden.truth")}
               </span>
-              <p className="leading-relaxed text-yellow-200/90">
+              <p className="leading-relaxed text-theme-text">
                 {k.hidden.fullTruth}
               </p>
 

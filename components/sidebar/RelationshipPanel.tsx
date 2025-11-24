@@ -64,7 +64,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
       key={rel.id}
       className={`bg-theme-surface-highlight/30 rounded border border-theme-border transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1
         ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
-        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       draggable={isEditMode}
       onDragStart={isEditMode ? (e) => onDragStart(e, rel.id) : undefined}
@@ -178,8 +178,8 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
               {/* Unlocked Hidden Truth */}
               {rel.unlocked && (
-                <div className="mt-3 text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
-                  <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+                <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                     <svg
                       className="w-3 h-3"
                       fill="currentColor"
@@ -196,10 +196,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
                   {rel.hidden?.realPersonality && (
                     <div className="mb-2">
-                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("hidden.personality")}:
                       </span>
-                      <p className="leading-relaxed text-yellow-200/90">
+                      <p className="leading-relaxed text-theme-text">
                         {rel.hidden.realPersonality}
                       </p>
                     </div>
@@ -207,10 +207,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
                   {rel.hidden?.realMotives && (
                     <div className="mb-2">
-                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("hidden.motives")}:
                       </span>
-                      <p className="leading-relaxed text-yellow-200/90">
+                      <p className="leading-relaxed text-theme-text">
                         {rel.hidden.realMotives}
                       </p>
                     </div>
@@ -218,10 +218,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
                   {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
                     <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-purple-400/70 block mb-0.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("hidden.secrets")}:
                       </span>
-                      <ul className="list-disc list-inside text-purple-200/80 space-y-0.5">
+                      <ul className="list-disc list-inside text-theme-text space-y-0.5">
                         {rel.hidden.secrets.map((secret, i) => (
                           <li key={i}>{secret}</li>
                         ))}
@@ -231,11 +231,11 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
                   {rel.hidden?.trueAffinity !== undefined && (
                     <div className="mt-2 text-[10px] flex items-center gap-2">
-                      <span className="text-[9px] uppercase tracking-wider text-yellow-400/70">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80">
                         {t("hidden.affinity")}:
                       </span>
                       <span
-                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-green-400" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-red-400" : "text-yellow-200"}`}
+                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-green-400" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-red-400" : "text-theme-text"}`}
                       >
                         {rel.hidden.trueAffinity}%
                       </span>

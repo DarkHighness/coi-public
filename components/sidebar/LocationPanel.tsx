@@ -67,7 +67,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
       key={item.id}
       className={`mb-2 transition-all duration-300 ease-in-out rounded flex items-center gap-1
         ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
-        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       draggable={isEditMode}
       onDragStart={isEditMode ? (e) => onDragStart(e, item.id) : undefined}
@@ -96,7 +96,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
               {item.name}
               {locationData.unlocked && (
                 <svg
-                  className="w-3 h-3 text-yellow-400"
+                  className="w-3 h-3 text-theme-primary"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -160,8 +160,8 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
                 {/* Unlocked Hidden Secrets */}
                 {locationData.unlocked && (
-                  <div className="mt-3 text-xs border-l-2 border-yellow-500/50 pl-3 bg-yellow-900/10 py-2 rounded-r">
-                    <span className="text-[10px] uppercase tracking-wider text-yellow-400 font-bold block mb-1 flex items-center gap-1">
+                  <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 flex items-center gap-1">
                       <svg
                         className="w-3 h-3"
                         fill="currentColor"
@@ -176,7 +176,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       {t("hidden.secrets")}
                     </span>
                     {locationData.hidden?.fullDescription && (
-                      <p className="leading-relaxed text-yellow-200/90 mb-2">
+                      <p className="leading-relaxed text-theme-text mb-2">
                         {locationData.hidden.fullDescription}
                       </p>
                     )}
@@ -184,10 +184,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
                     {locationData.hidden?.hiddenFeatures &&
                       locationData.hidden.hiddenFeatures.length > 0 && (
                         <div className="mt-2">
-                          <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">
+                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                             {t("hidden.features")}:
                           </span>
-                          <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5">
+                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
                             {locationData.hidden.hiddenFeatures.map(
                               (feature, i) => (
                                 <li key={i}>{feature}</li>
@@ -200,10 +200,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
                     {locationData.hidden?.secrets &&
                       locationData.hidden.secrets.length > 0 && (
                         <div className="mt-2">
-                          <span className="text-[9px] uppercase tracking-wider text-purple-400/70 block mb-0.5">
+                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                             {t("hidden.secrets")}:
                           </span>
-                          <ul className="list-disc list-inside text-purple-200/80 space-y-0.5">
+                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
                             {locationData.hidden.secrets.map((secret, i) => (
                               <li key={i}>{secret}</li>
                             ))}

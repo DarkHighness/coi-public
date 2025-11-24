@@ -278,7 +278,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
     <div
       className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group w-full
         ${isExpanded ? "bg-theme-surface-highlight/30 border-theme-primary/30" : "hover:bg-theme-surface-highlight/20 hover:border-theme-primary/20"}
-        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       onClick={handleClick}
     >
@@ -286,7 +286,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         <span className="text-xs text-theme-text font-medium flex items-center gap-1">
           {skill.name}
           {skill.unlocked && (
-            <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-3 h-3 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
             </svg>
           )}
@@ -308,18 +308,18 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
           {/* Unlocked Hidden Truth */}
           {skill.unlocked && skill.hidden?.trueDescription && (
-            <div className="mt-2 text-xs border-l-2 border-yellow-500/50 pl-2 bg-yellow-900/10 py-1.5 rounded-r">
-              <span className="text-[9px] uppercase tracking-wider text-yellow-400 font-bold block mb-0.5 flex items-center gap-1">
+            <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
+              <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
                 <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 {t("hidden.truth")}
               </span>
-              <p className="leading-relaxed text-yellow-200/90 text-[10px]">{skill.hidden.trueDescription}</p>
+              <p className="leading-relaxed text-theme-text text-[10px]">{skill.hidden.trueDescription}</p>
               {skill.hidden.hiddenEffects && skill.hidden.hiddenEffects.length > 0 && (
                 <div className="mt-1.5">
-                  <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">{t("hidden.effects")}:</span>
-                  <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5 text-[10px]">
+                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.effects")}:</span>
+                  <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
                     {skill.hidden.hiddenEffects.map((effect, i) => (
                       <li key={i}>{effect}</li>
                     ))}
@@ -328,8 +328,8 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
               )}
               {skill.hidden.drawbacks && skill.hidden.drawbacks.length > 0 && (
                 <div className="mt-1.5">
-                  <span className="text-[9px] uppercase tracking-wider text-red-400/70 block mb-0.5">{t("hidden.drawbacks")}:</span>
-                  <ul className="list-disc list-inside text-red-200/80 space-y-0.5 text-[10px]">
+                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.drawbacks")}:</span>
+                  <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
                     {skill.hidden.drawbacks.map((drawback, i) => (
                       <li key={i}>{drawback}</li>
                     ))}
@@ -362,7 +362,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
   return (
     <div
       className={`rounded border text-xs cursor-pointer transition-all duration-300 ${style}
-        ${isHighlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       onClick={handleClick}
     >
@@ -372,7 +372,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
             {icon}
             {condition.name}
             {condition.unlocked && (
-              <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
               </svg>
             )}
@@ -401,35 +401,35 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
 
             {/* Unlocked Hidden Information */}
             {condition.unlocked && (
-              <div className="mt-2 text-xs border-l-2 border-yellow-500/50 pl-2 bg-yellow-900/10 py-1.5 rounded-r">
-                <span className="text-[9px] uppercase tracking-wider text-yellow-400 font-bold block mb-0.5 flex items-center gap-1">
+              <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
+                <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
                   <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                   {t("hidden.cause")}
                 </span>
                 {condition.hidden?.trueCause && (
-                  <p className="leading-relaxed text-yellow-200/90 text-[10px] mb-1">{condition.hidden.trueCause}</p>
+                  <p className="leading-relaxed text-theme-text text-[10px] mb-1">{condition.hidden.trueCause}</p>
                 )}
                 {condition.hidden?.actualSeverity && (
-                  <p className="text-[10px] text-yellow-200/80">
+                  <p className="text-[10px] text-theme-text">
                     <span className="font-semibold">{t("hidden.severity")}:</span> {condition.hidden.actualSeverity}
                   </p>
                 )}
                 {condition.hidden?.progression && (
-                  <p className="text-[10px] text-yellow-200/80 mt-1">
+                  <p className="text-[10px] text-theme-text mt-1">
                     <span className="font-semibold">{t("hidden.progression")}:</span> {condition.hidden.progression}
                   </p>
                 )}
                 {condition.hidden?.cure && (
-                  <p className="text-[10px] text-green-200/80 mt-1">
+                  <p className="text-[10px] text-theme-text mt-1">
                     <span className="font-semibold">{t("hidden.cure")}:</span> {condition.hidden.cure}
                   </p>
                 )}
                 {condition.effects?.hidden && condition.effects.hidden.length > 0 && (
                   <div className="mt-1.5">
-                    <span className="text-[9px] uppercase tracking-wider text-yellow-400/70 block mb-0.5">{t("hidden.effects")}:</span>
-                    <ul className="list-disc list-inside text-yellow-200/80 space-y-0.5 text-[10px]">
+                    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.effects")}:</span>
+                    <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
                       {condition.effects.hidden.map((effect, i) => (
                         <li key={i}>{effect}</li>
                       ))}
@@ -605,9 +605,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             character.hiddenTraits.length > 0 &&
             character.hiddenTraits.some((t) => t.unlocked) && (
               <div>
-                <h4 className="text-[10px] text-purple-400 uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
+                <h4 className="text-[10px] text-theme-primary uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1 truncate">
                   <svg
-                    className="w-3 h-3"
+                    className="w-3 h-3 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -633,8 +633,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     .map((trait, idx) => (
                       <div
                         key={idx}
-                        className={`p-2 rounded border bg-purple-900/10 border-purple-500/20 text-purple-300 text-xs ${
-                          trait.highlight ? "animate-pulse ring-2 ring-yellow-400/50" : ""
+                        className={`p-2 rounded border bg-theme-primary/10 border-theme-primary/20 text-theme-text text-xs ${
+                          trait.highlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""
                         }`}
                       >
                         <div className="font-bold mb-0.5">{trait.name}</div>
