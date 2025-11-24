@@ -22,6 +22,8 @@ interface StoryFeedProps {
   onToggleMute?: () => void;
   onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;
+  sidebarCollapsed?: boolean;
+  timelineCollapsed?: boolean;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -40,6 +42,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onToggleMute,
   onViewedSegmentChange,
   onAudioGenerated,
+  sidebarCollapsed = false,
+  timelineCollapsed = false,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -173,6 +177,27 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   );
   const activeSegment = currentHistory[safeActiveIndex];
 
+  // Calculate dynamic styling based on panel states
+  const bothCollapsed = sidebarCollapsed && timelineCollapsed;
+  const anyCollapsed = sidebarCollapsed || timelineCollapsed;
+
+  // Dynamic container padding
+  const containerPadding = bothCollapsed
+    ? "p-6 md:p-12 lg:px-24 xl:px-32"
+    : anyCollapsed
+    ? "p-4 md:p-10 lg:px-16"
+    : "p-4 md:p-8 lg:px-12";
+
+  // Dynamic max-width for content
+  const contentMaxWidth = bothCollapsed
+    ? "max-w-5xl"
+    : anyCollapsed
+    ? "max-w-4xl"
+    : "max-w-3xl";
+
+  // Dynamic text scaling
+  const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
+
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       <FeedHeader
@@ -189,12 +214,12 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
 
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-4 md:p-8 lg:px-12 scroll-smooth relative"
+        className={`flex-1 overflow-y-auto scroll-smooth relative transition-all duration-300 ${containerPadding} ${textScaleClass}`}
       >
         <div ref={contentRef} className="flex flex-col min-h-full">
           {/* Outline Display */}
           {gameState.outline && (
-            <div className="mb-8 p-6 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg mx-auto max-w-3xl text-center animate-fade-in">
+            <div className={`mb-8 p-6 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in transition-all duration-300`}>
               <h3 className="text-theme-primary font-fantasy text-xl mb-2">
                 {gameState.outline.title}
               </h3>
@@ -305,7 +330,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
             // Stack Layout
             <div className="flex-1 flex flex-col justify-center items-center relative min-h-[400px] w-full">
               {currentHistory.length > 0 && activeSegment && (
-                <div className="w-full max-w-3xl relative pb-24">
+                <div className={`w-full ${contentMaxWidth} relative pb-24 transition-all duration-300`}>
                   {" "}
                   {/* Padding bottom for fixed controls */}
                   {/* Fork Button for Stack Mode */}

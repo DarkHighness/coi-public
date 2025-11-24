@@ -405,4 +405,11 @@ export const zh = {
   visualEffects: "视觉效果",
   enableFallbackBackground: "启用 Fallback 的背景",
   enableFallbackBackgroundDesc: "启用 Fallback 的背景图片",
+  layoutPreferences: "布局偏好（桌面端）",
+  layoutPreferencesDesc: "控制桌面端侧边栏面板的显示",
+  showSidebar: "显示左侧边栏",
+  showSidebarDesc: "显示角色状态、背包和关系",
+  showTimeline: "显示右侧时间轴",
+  showTimelineDesc: "显示旅程时间轴和故事进度",
+  layoutToggleTip: "提示：使用面板边缘的箭头按钮快速切换显示",
 };

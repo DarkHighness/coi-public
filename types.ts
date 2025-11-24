@@ -250,6 +250,8 @@ export interface UIState {
   relationships: ListState;
   knowledge: ListState; // UI state for knowledge panel
   showSystemFooter?: boolean; // Persisted state for system footer
+  sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
+  timelineCollapsed?: boolean; // Persisted state for right timeline collapse
 }
 
 export interface Relationship {

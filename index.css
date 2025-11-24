@@ -292,3 +292,19 @@ body {
     transparent
   );
 }
+
+/* Dynamic content scaling when sidebars are collapsed */
+.scale-content-expanded {
+  font-size: 1.05em;
+}
+
+.scale-content-expanded .story-text {
+  font-size: 1.1em;
+  line-height: 1.8;
+}
+
+.scale-content-expanded h1,
+.scale-content-expanded h2,
+.scale-content-expanded h3 {
+  font-size: 1.15em;
+}

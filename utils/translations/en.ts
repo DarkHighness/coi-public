@@ -411,4 +411,11 @@ export const en = {
   visualEffects: "Visual Effects",
   enableFallbackBackground: "Enable Fallback Background",
   enableFallbackBackgroundDesc: "Enable fallback background images",
+  layoutPreferences: "Layout Preferences (Desktop)",
+  layoutPreferencesDesc: "Control visibility of sidebar panels in desktop view",
+  showSidebar: "Show Left Sidebar",
+  showSidebarDesc: "Display character status, inventory, and relationships",
+  showTimeline: "Show Right Timeline",
+  showTimelineDesc: "Display journey timeline and story progress",
+  layoutToggleTip: "Tip: Use the arrow buttons at panel edges to quickly toggle visibility",
 };

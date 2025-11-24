@@ -21,6 +21,8 @@ const INITIAL_STATE: GameState = {
     locations: { pinnedIds: [], customOrder: [] },
     relationships: { pinnedIds: [], customOrder: [] },
     knowledge: { pinnedIds: [], customOrder: [] },
+    sidebarCollapsed: false,
+    timelineCollapsed: false,
   },
 
   outline: null,
