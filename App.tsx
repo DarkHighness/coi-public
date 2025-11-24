@@ -153,17 +153,22 @@ export default function App() {
   const currentSegment = currentHistory[currentHistory.length - 1];
 
   // Reset effects on Start Screen
-  const effectText = !isStartScreen && currentSegment ? currentSegment.text : "";
-  const effectPrompt = !isStartScreen && currentSegment ? currentSegment.imagePrompt : "";
+  const effectText =
+    !isStartScreen && currentSegment ? currentSegment.text : "";
+  const effectPrompt =
+    !isStartScreen && currentSegment ? currentSegment.imagePrompt : "";
 
   // Calculate Sticky Background
   const stickyBackground = React.useMemo(() => {
     if (isStartScreen) return undefined;
 
-    const startSegment = viewedSegment || currentHistory[currentHistory.length - 1];
+    const startSegment =
+      viewedSegment || currentHistory[currentHistory.length - 1];
     if (!startSegment) return undefined;
 
-    const startIndex = currentHistory.findIndex((s) => s.id === startSegment.id);
+    const startIndex = currentHistory.findIndex(
+      (s) => s.id === startSegment.id,
+    );
     // If index not found (shouldn't happen) or list empty, default to current segment's image
     if (startIndex === -1) return startSegment.imageUrl;
 

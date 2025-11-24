@@ -27,7 +27,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `save-${slot.name}-${new Date(slot.timestamp).toISOString().split('T')[0]}.json`;
+    link.download = `save-${slot.name}-${new Date(slot.timestamp).toISOString().split("T")[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -85,7 +85,9 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                 ></path>
               </svg>
               <p className="text-theme-muted text-lg">{t("saves.empty")}</p>
-              <p className="text-theme-muted/60 text-sm mt-2">Start a new game to create your first save</p>
+              <p className="text-theme-muted/60 text-sm mt-2">
+                Start a new game to create your first save
+              </p>
             </div>
           )}
 
@@ -141,8 +143,18 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                         </div>
                         <div className="flex items-center gap-4 mt-3 text-[10px] text-theme-muted/60">
                           <span className="flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              ></path>
                             </svg>
                             {new Date(slot.timestamp).toLocaleString()}
                           </span>
@@ -184,7 +196,11 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm(t("saves.confirmDelete") || "Delete this save?")) {
+                            if (
+                              window.confirm(
+                                t("saves.confirmDelete") || "Delete this save?",
+                              )
+                            ) {
                               onDelete(slot.id);
                             }
                           }}

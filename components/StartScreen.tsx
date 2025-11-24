@@ -7,7 +7,7 @@ import { CustomContextModal } from "./CustomContextModal";
 import { SaveSlot } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
-import { BUILD_INFO } from '../utils/constants/buildInfo';
+import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { SaveManager } from "./SaveManager";
 
 interface StartScreenProps {
@@ -304,7 +304,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
         {/* Footer */}
         <div className="relative z-10 p-6 text-center text-xs text-theme-muted/50 uppercase tracking-widest shrink-0">
-          {t("version")} : { BUILD_INFO.buildTime } { BUILD_INFO.gitHash }
+          {t("version")} : {BUILD_INFO.buildTime} {BUILD_INFO.gitHash}
         </div>
       </div>
 

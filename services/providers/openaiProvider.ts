@@ -168,7 +168,8 @@ export const generateContent = async (
   let responseObj: any = {};
 
   if (options?.onChunk) {
-    const stream = response as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+    const stream =
+      response as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content || "";
       if (delta) {
@@ -197,7 +198,8 @@ export const generateContent = async (
 
   // Basic validation for non-streaming (or if we reconstructed full content)
   if (!options?.onChunk) {
-    const choice = (responseObj as OpenAI.Chat.Completions.ChatCompletion).choices[0];
+    const choice = (responseObj as OpenAI.Chat.Completions.ChatCompletion)
+      .choices[0];
     if (choice.finish_reason === "content_filter") {
       throw new Error(
         "OpenAI content generation failed: Content filter triggered.",

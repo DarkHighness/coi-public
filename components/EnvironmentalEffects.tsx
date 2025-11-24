@@ -133,7 +133,10 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
         };
         img.onerror = (e) => {
           // Silently fail on 429 or any other error from pollinations.ai
-          console.warn("Failed to load fallback background image (pollinations.ai):", e);
+          console.warn(
+            "Failed to load fallback background image (pollinations.ai):",
+            e,
+          );
           setLoadedBgSource(null);
         };
         img.src = bgSource;

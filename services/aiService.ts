@@ -456,8 +456,7 @@ const resolveThemeConfig = (
   } else if (themeKey) {
     const langCode = getLangCode(language);
     const t = TRANSLATIONS[langCode];
-    narrativeStyle =
-      t.themes[themeKey]?.narrativeStyle || narrativeStyle;
+    narrativeStyle = t.themes[themeKey]?.narrativeStyle || narrativeStyle;
     example = t.themes[themeKey]?.example;
   }
 
@@ -498,17 +497,27 @@ const buildTurnContents = (
   if (dynamicStoryContext) {
     contents.push({
       role: "user",
-      parts: [{ text: `<story_memory>\n${dynamicStoryContext}\n</story_memory>` }],
+      parts: [
+        { text: `<story_memory>\n${dynamicStoryContext}\n</story_memory>` },
+      ],
     });
-    contents.push({ role: "model", parts: [{ text: "Memory context acknowledged." }] });
+    contents.push({
+      role: "model",
+      parts: [{ text: "Memory context acknowledged." }],
+    });
   }
 
   // 2. Current State Context
   contents.push({
     role: "user",
-    parts: [{ text: `<current_state>\n${currentStateContext}\n</current_state>` }],
+    parts: [
+      { text: `<current_state>\n${currentStateContext}\n</current_state>` },
+    ],
   });
-  contents.push({ role: "model", parts: [{ text: "State context acknowledged." }] });
+  contents.push({
+    role: "model",
+    parts: [{ text: "State context acknowledged." }],
+  });
 
   // 3. Recent History
   // We keep this as raw conversation turns for natural flow, but we might want to wrap them if the model gets confused.
@@ -538,7 +547,11 @@ Generate the next turn based on the <story_memory>, <current_state>, and the con
 `;
     contents.push({
       role: "user",
-      parts: [{ text: `${reinforcement}\n\n<player_action>\n${userAction}\n</player_action>` }]
+      parts: [
+        {
+          text: `${reinforcement}\n\n<player_action>\n${userAction}\n</player_action>`,
+        },
+      ],
     });
   }
 

@@ -94,7 +94,7 @@ export const zh = {
     scifi: "科幻",
     novel: "小说",
     movie: "电影",
-    game: "游戏"
+    game: "游戏",
   },
   preview: "预览",
   refresh: "刷新",

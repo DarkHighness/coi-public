@@ -580,7 +580,7 @@ export const useGameEngine = () => {
                 // Since we don't track NPC location strictly, we'll pass those with high affinity or recent interaction if possible.
                 // BETTER: Pass all relationships that are marked as 'present' or similar if we had that.
                 // Fallback: Pass all known relationships, the Prompt will filter based on the scene description.
-                r.visible?.status !== "Absent" && r.visible?.status !== "Dead"
+                r.visible?.status !== "Absent" && r.visible?.status !== "Dead",
             )
             .map((r) => ({
               name: r.name,
