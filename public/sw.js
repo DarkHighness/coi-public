@@ -3,8 +3,9 @@ const ASSETS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
 
 // Install Event: Cache Core Assets
 self.addEventListener("install", (event) => {
-  // Note: We do NOT call self.skipWaiting() here to avoid interrupting active clients.
-  // The new SW will wait until all tabs are closed or the user manually updates.
+  // Skip waiting to ensure the new service worker takes over immediately
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
