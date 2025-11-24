@@ -325,6 +325,7 @@ export const zh = {
     story: "故事",
     status: "状态",
     menu: "菜单",
+    timeline: "时间轴",
   },
   location: {
     title: "当前位置",

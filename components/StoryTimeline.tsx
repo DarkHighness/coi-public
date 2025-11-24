@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { StorySegment } from "../types";
 import { ENV_THEMES, THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
@@ -57,104 +58,129 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-0 px-1 scroll-smooth pt-1"
+        className="flex-1 overflow-y-auto space-y-0 px-1 scroll-smooth pt-1 pb-24 md:pb-0"
       >
-        {narrativeSegments.map((seg, index) => {
-          const isFirst = index === 0;
-          const isLast = index === narrativeSegments.length - 1;
-          const isExpanded = expandedItems.has(seg.id);
+        <AnimatePresence initial={false}>
+          {narrativeSegments.map((seg, index) => {
+            const isFirst = index === 0;
+            const isLast = index === narrativeSegments.length - 1;
+            const isExpanded = expandedItems.has(seg.id);
 
-          return (
-            <div
-              key={seg.id}
-              className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
-            >
-              {/* Line */}
-              <div
-                className={`absolute left-2 w-px bg-theme-border group-hover:bg-theme-primary/50 transition-colors
+            return (
+              <motion.div
+                key={seg.id}
+                layout
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{
+                  layout: {
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 35,
+                    mass: 0.8,
+                  },
+                  opacity: { duration: 0.4, ease: "easeOut" },
+                  y: { type: "spring", stiffness: 300, damping: 25 },
+                  scale: { duration: 0.35, ease: "easeOut" },
+                }}
+                className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
+              >
+                {/* Line */}
+                <div
+                  className={`absolute left-2 w-px bg-theme-border group-hover:bg-theme-primary/50 transition-colors
                  ${isFirst ? "top-2" : "top-0"}
                  ${isLast ? "h-2" : "bottom-0"}
               `}
-              ></div>
+                ></div>
 
-              {/* Interactive Dot - Color indicates state */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleItem(seg.id);
-                }}
-                className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 shadow-sm cursor-pointer
+                {/* Interactive Dot - Color indicates state */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleItem(seg.id);
+                  }}
+                  className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 shadow-sm cursor-pointer
                   ${isLast ? "animate-pulse" : ""}
                   ${
                     isExpanded
                       ? "border-theme-primary bg-theme-primary"
                       : "border-theme-muted bg-theme-surface hover:border-theme-primary/70"
                   }`}
-                title={isExpanded ? "Click to collapse" : "Click to expand"}
-              ></div>
+                  title={isExpanded ? "Click to collapse" : "Click to expand"}
+                ></div>
 
-              {/* Latest Item Indicator */}
-              {isLast && (
-                <div className="absolute left-0 top-0 w-4 h-4 rounded-full border-2 border-theme-primary/30 animate-ping"></div>
-              )}
+                {/* Latest Item Indicator */}
+                {isLast && (
+                  <div className="absolute left-0 top-0 w-4 h-4 rounded-full border-2 border-theme-primary/30 animate-ping"></div>
+                )}
 
-              {/* Content */}
-              <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors relative -top-1">
-                {/* Time and Location Metadata */}
-                <div className="flex items-center gap-2 mb-1.5 text-[10px] opacity-60">
-                  <span className="font-mono text-theme-primary/70">
-                    {seg.stateSnapshot?.time || "Unknown Time"}
-                  </span>
-                  {seg.stateSnapshot?.currentLocation && (
-                    <>
-                      <span className="text-theme-muted/50">•</span>
-                      <span className="text-theme-muted/80">
-                        {seg.stateSnapshot.currentLocation}
-                      </span>
-                    </>
+                {/* Content */}
+                <div className="text-xs text-theme-muted group-hover:text-theme-text transition-colors relative -top-1">
+                  {/* Time and Location Metadata */}
+                  <div className="flex items-center gap-2 mb-1.5 text-[10px] opacity-60">
+                    <span className="font-mono text-theme-primary/70">
+                      {seg.stateSnapshot?.time || "Unknown Time"}
+                    </span>
+                    {seg.stateSnapshot?.currentLocation && (
+                      <>
+                        <span className="text-theme-muted/50">•</span>
+                        <span className="text-theme-muted/80">
+                          {seg.stateSnapshot.currentLocation}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Image - Always visible */}
+                  {seg.imageUrl && (
+                    <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 hover:opacity-100 transition-opacity border border-theme-border hover:border-theme-primary/30">
+                      <img
+                        src={seg.imageUrl}
+                        alt="Moment"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  {/* Preview text when collapsed */}
+                  {!isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 0.8, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleItem(seg.id);
+                      }}
+                      className="line-clamp-2 leading-relaxed text-[11px] opacity-80 font-serif break-words cursor-pointer hover:opacity-100"
+                    >
+                      <MarkdownText content={seg.text} />
+                    </motion.div>
+                  )}
+
+                  {/* Full content when expanded */}
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.8 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleItem(seg.id);
+                      }}
+                      className="leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer"
+                    >
+                      <MarkdownText content={seg.text} />
+                    </motion.div>
                   )}
                 </div>
-
-                {/* Image - Always visible */}
-                {seg.imageUrl && (
-                  <div className="mb-2 w-full aspect-video rounded overflow-hidden opacity-60 hover:opacity-100 transition-opacity border border-theme-border hover:border-theme-primary/30">
-                    <img
-                      src={seg.imageUrl}
-                      alt="Moment"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                {/* Preview text when collapsed */}
-                {!isExpanded && (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleItem(seg.id);
-                    }}
-                    className="line-clamp-2 leading-relaxed text-[11px] opacity-80 font-serif break-words cursor-pointer hover:opacity-100"
-                  >
-                    <MarkdownText content={seg.text} />
-                  </div>
-                )}
-
-                {/* Full content when expanded */}
-                {isExpanded && (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleItem(seg.id);
-                    }}
-                    className="leading-relaxed text-[11px] opacity-80 group-hover:opacity-100 font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer"
-                  >
-                    <MarkdownText content={seg.text} />
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
 
         {narrativeSegments.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">
