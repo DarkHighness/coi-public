@@ -129,6 +129,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           segments={currentHistory}
           theme={gameState.theme}
           envTheme={gameState.envTheme}
+          title={gameState.outline?.title}
+          subtitle={gameState.outline?.premise}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

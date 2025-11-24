@@ -13,6 +13,7 @@
     "@openrouter/sdk": "^0.1.17",
     "@tailwindcss/vite": "^4.1.17",
     "framer-motion": "^12.23.24",
+    "html2canvas": "^1.4.1",
     "i18next": "^25.6.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "openai": "^4.60.0",

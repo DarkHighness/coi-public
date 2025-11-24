@@ -49,7 +49,7 @@ export const DEFAULTS: AISettings = {
     provider: "gemini",
     modelId: "imagen-4.0-generate-001",
     enabled: true,
-    resolution: "512x512",
+    resolution: "1344x768",
   },
   video: {
     provider: "gemini",

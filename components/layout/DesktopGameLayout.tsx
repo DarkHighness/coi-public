@@ -137,6 +137,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             segments={currentHistory}
             theme={gameState.theme}
             envTheme={gameState.envTheme}
+            title={gameState.outline?.title}
+            subtitle={gameState.outline?.premise}
           />
         </Suspense>
       </div>
