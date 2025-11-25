@@ -127,20 +127,20 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 </div>
               </div>
 
-                <div className="px-4 py-2 bg-theme-surface-highlight/10 border-t border-theme-border/30 flex justify-end gap-6 text-xs text-theme-primary/80 items-center">
-                  <span>
-                    <strong className="text-theme-primary">Prompt:</strong>{" "}
-                    {log.usage.promptTokens}
-                  </span>
-                  <span>
-                    <strong className="text-theme-primary">Completion:</strong>{" "}
-                    {log.usage.completionTokens}
-                  </span>
-                  <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">
-                    <strong className="text-theme-primary">Total:</strong>{" "}
-                    {log.usage.totalTokens}
-                  </span>
-                </div>
+              <div className="px-4 py-2 bg-theme-surface-highlight/10 border-t border-theme-border/30 flex justify-end gap-6 text-xs text-theme-primary/80 items-center">
+                <span>
+                  <strong className="text-theme-primary">Prompt:</strong>{" "}
+                  {log.usage.promptTokens}
+                </span>
+                <span>
+                  <strong className="text-theme-primary">Completion:</strong>{" "}
+                  {log.usage.completionTokens}
+                </span>
+                <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">
+                  <strong className="text-theme-primary">Total:</strong>{" "}
+                  {log.usage.totalTokens}
+                </span>
+              </div>
             </div>
           );
         })}

@@ -69,11 +69,17 @@ export const questProperties: Record<string, JsonSchema> = {
 };
 
 export const relationshipProperties: Record<string, JsonSchema> = {
-  known: { type: "boolean", description: "Whether the player knows this character." },
+  known: {
+    type: "boolean",
+    description: "Whether the player knows this character.",
+  },
   visible: {
     type: "object",
     properties: {
-      name: { type: "string", description: "Name/Title the player knows them by." },
+      name: {
+        type: "string",
+        description: "Name/Title the player knows them by.",
+      },
       description: {
         type: "string",
         description: "Public perception - how others view this NPC",
@@ -107,12 +113,21 @@ export const relationshipProperties: Record<string, JsonSchema> = {
         description: "Whether the player knows the affinity level.",
       },
     },
-    required: ["name", "description", "relationshipType", "appearance", "affinity"],
+    required: [
+      "name",
+      "description",
+      "relationshipType",
+      "appearance",
+      "affinity",
+    ],
   },
   hidden: {
     type: "object",
     properties: {
-      trueName: { type: "string", description: "The character's real name (if different)." },
+      trueName: {
+        type: "string",
+        description: "The character's real name (if different).",
+      },
       realPersonality: {
         type: "string",
         description: "True personality - what they REALLY are like",
@@ -284,7 +299,8 @@ export const timelineEventProperties: Record<string, JsonSchema> = {
   },
   known: {
     type: "boolean",
-    description: "Set to true if the player witnessed or heard about this event.",
+    description:
+      "Set to true if the player witnessed or heard about this event.",
   },
 };
 

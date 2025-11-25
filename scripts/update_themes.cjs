@@ -1,28 +1,28 @@
-const fs = require('fs');
-const path = require('path');
-const ts = require('typescript');
+const fs = require("fs");
+const path = require("path");
+const ts = require("typescript");
 
-const zhPath = path.join(__dirname, '../utils/translations/themes/zh.ts');
-const enPath = path.join(__dirname, '../utils/translations/themes/en.ts');
-const zhSettingsPath = path.join(__dirname, 'worldSettings_zh.json');
-const enSettingsPath = path.join(__dirname, 'worldSettings_en.json');
+const zhPath = path.join(__dirname, "../utils/translations/themes/zh.ts");
+const enPath = path.join(__dirname, "../utils/translations/themes/en.ts");
+const zhSettingsPath = path.join(__dirname, "worldSettings_zh.json");
+const enSettingsPath = path.join(__dirname, "worldSettings_en.json");
 
 function loadThemes(filePath) {
   if (!fs.existsSync(filePath)) {
     console.error(`File not found: ${filePath}`);
     return null;
   }
-  const source = fs.readFileSync(filePath, 'utf8');
+  const source = fs.readFileSync(filePath, "utf8");
   // Transpile TS to JS
   const result = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS }
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
   });
 
   // Execute the JS to get the object
   const context = { exports: {} };
   try {
     // We wrap in a function to provide a scoped 'exports' object
-    const run = new Function('exports', result.outputText);
+    const run = new Function("exports", result.outputText);
     run(context.exports);
     return context.exports.themes;
   } catch (e) {
@@ -49,7 +49,7 @@ function saveThemes(filePath, themesObj) {
   // Combine
   const content = `${interfaceDef}${jsonString};\n`;
 
-  fs.writeFileSync(filePath, content, 'utf8');
+  fs.writeFileSync(filePath, content, "utf8");
   console.log(`Successfully updated ${filePath}`);
 }
 
@@ -64,7 +64,7 @@ function updateFile(filePath, settingsPath) {
     return;
   }
 
-  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
 
   // Merge settings
   let updatedCount = 0;

@@ -13,13 +13,15 @@ import {
 
 export const QUERY_INVENTORY_TOOL = {
   name: "query_inventory",
-  description: "Query the player's inventory. Returns a list of items matching the query.",
+  description:
+    "Query the player's inventory. Returns a list of items matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Name, ID, or keyword to search for. If omitted, lists all items.",
+        description:
+          "Name, ID, or keyword to search for. If omitted, lists all items.",
       },
     },
   },
@@ -27,13 +29,15 @@ export const QUERY_INVENTORY_TOOL = {
 
 export const QUERY_RELATIONSHIPS_TOOL = {
   name: "query_relationships",
-  description: "Query known NPCs and relationships. Returns a list of NPCs matching the query.",
+  description:
+    "Query known NPCs and relationships. Returns a list of NPCs matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Name, ID, or keyword to search for. If omitted, lists all known NPCs.",
+        description:
+          "Name, ID, or keyword to search for. If omitted, lists all known NPCs.",
       },
     },
   },
@@ -41,13 +45,15 @@ export const QUERY_RELATIONSHIPS_TOOL = {
 
 export const QUERY_LOCATIONS_TOOL = {
   name: "query_locations",
-  description: "Query known locations. Returns a list of locations matching the query.",
+  description:
+    "Query known locations. Returns a list of locations matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Name, ID, or keyword to search for. If omitted, lists all known locations.",
+        description:
+          "Name, ID, or keyword to search for. If omitted, lists all known locations.",
       },
     },
   },
@@ -55,13 +61,15 @@ export const QUERY_LOCATIONS_TOOL = {
 
 export const QUERY_QUESTS_TOOL = {
   name: "query_quests",
-  description: "Query active and completed quests. Returns a list of quests matching the query.",
+  description:
+    "Query active and completed quests. Returns a list of quests matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Title, ID, or keyword to search for. If omitted, lists all active quests.",
+        description:
+          "Title, ID, or keyword to search for. If omitted, lists all active quests.",
       },
     },
   },
@@ -69,13 +77,15 @@ export const QUERY_QUESTS_TOOL = {
 
 export const QUERY_KNOWLEDGE_TOOL = {
   name: "query_knowledge",
-  description: "Query the player's accumulated knowledge/lore. Returns a list of entries matching the query.",
+  description:
+    "Query the player's accumulated knowledge/lore. Returns a list of entries matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Title, ID, or keyword to search for. If omitted, lists all knowledge.",
+        description:
+          "Title, ID, or keyword to search for. If omitted, lists all knowledge.",
       },
     },
   },
@@ -83,13 +93,15 @@ export const QUERY_KNOWLEDGE_TOOL = {
 
 export const QUERY_TIMELINE_TOOL = {
   name: "query_timeline",
-  description: "Query the world timeline and history. Returns a list of events matching the query.",
+  description:
+    "Query the world timeline and history. Returns a list of events matching the query.",
   parameters: {
     type: "object",
     properties: {
       query: {
         type: "string",
-        description: "Keyword, ID, or category to search for. If omitted, lists recent events.",
+        description:
+          "Keyword, ID, or category to search for. If omitted, lists recent events.",
       },
     },
   },
@@ -125,7 +137,8 @@ export const QUERY_FACTIONS_TOOL = {
 
 export const QUERY_GLOBAL_TOOL = {
   name: "query_global",
-  description: "Query global game state properties like time, theme, environment, etc.",
+  description:
+    "Query global game state properties like time, theme, environment, etc.",
   parameters: {
     type: "object",
     properties: {},
@@ -201,7 +214,10 @@ export const UPDATE_LOCATION_TOOL = {
         properties: {
           id: { type: "number" },
           ...locationProperties,
-          isCurrent: { type: "boolean", description: "Set to true if player moves here." },
+          isCurrent: {
+            type: "boolean",
+            description: "Set to true if player moves here.",
+          },
           isVisited: { type: "boolean" },
         },
         required: ["name"],
@@ -262,7 +278,8 @@ export const UPDATE_KNOWLEDGE_TOOL = {
 
 export const UPDATE_TIMELINE_TOOL = {
   name: "update_timeline",
-  description: "Add or update timeline events (World Events, NPC Actions, Consequences).",
+  description:
+    "Add or update timeline events (World Events, NPC Actions, Consequences).",
   parameters: {
     type: "object",
     properties: {
@@ -272,7 +289,8 @@ export const UPDATE_TIMELINE_TOOL = {
       },
       data: {
         type: "object",
-        description: "Event data. Must include 'id' (for update) or be a new event.",
+        description:
+          "Event data. Must include 'id' (for update) or be a new event.",
         properties: {
           ...timelineEventProperties,
         },
@@ -285,7 +303,8 @@ export const UPDATE_TIMELINE_TOOL = {
 
 export const UPDATE_CAUSAL_CHAIN_TOOL = {
   name: "update_causal_chain",
-  description: "Create or update causal chains to track long-term consequences.",
+  description:
+    "Create or update causal chains to track long-term consequences.",
   parameters: {
     type: "object",
     properties: {
@@ -337,7 +356,10 @@ export const UPDATE_GLOBAL_TOOL = {
         type: "object",
         properties: {
           time: { type: "string" },
-          envTheme: { type: "string", description: "Current atmosphere (e.g. 'Tense', 'Rainy')" },
+          envTheme: {
+            type: "string",
+            description: "Current atmosphere (e.g. 'Tense', 'Rainy')",
+          },
           // Removed 'theme' and 'isImageGenerating' as they are not modifiable by AI
         },
       },
@@ -348,13 +370,15 @@ export const UPDATE_GLOBAL_TOOL = {
 
 export const FINISH_TURN_TOOL = {
   name: "finish_turn",
-  description: "Finish the turn and generate the final narrative response. Call this ONLY when you have completed all necessary state queries and modifications.",
+  description:
+    "Finish the turn and generate the final narrative response. Call this ONLY when you have completed all necessary state queries and modifications.",
   parameters: {
     type: "object",
     properties: {
       narrative: {
         type: "string",
-        description: "The final story text to present to the player. Use the defined narrative style. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.",
+        description:
+          "The final story text to present to the player. Use the defined narrative style. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.",
       },
       choices: {
         type: "array",
@@ -363,7 +387,8 @@ export const FINISH_TURN_TOOL = {
       },
       imagePrompt: {
         type: "string",
-        description: "Optional prompt for generating an image of the current scene.",
+        description:
+          "Optional prompt for generating an image of the current scene.",
       },
       generateImage: {
         type: "boolean",

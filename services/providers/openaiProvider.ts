@@ -148,29 +148,29 @@ export const generateContent = async (
         // Map Gemini format to OpenAI
         // Handle function calls/responses in history if present
         if (c.parts[0].functionCall) {
-            return {
-                role: "assistant",
-                tool_calls: c.parts.map((p: any) => ({
-                    id: "call_" + Math.random().toString(36).substr(2, 9), // Dummy ID if not preserved
-                    type: "function",
-                    function: {
-                        name: p.functionCall.name,
-                        arguments: JSON.stringify(p.functionCall.args)
-                    }
-                }))
-            };
+          return {
+            role: "assistant",
+            tool_calls: c.parts.map((p: any) => ({
+              id: "call_" + Math.random().toString(36).substr(2, 9), // Dummy ID if not preserved
+              type: "function",
+              function: {
+                name: p.functionCall.name,
+                arguments: JSON.stringify(p.functionCall.args),
+              },
+            })),
+          };
         }
         if (c.parts[0].functionResponse) {
-             return {
-                 role: "tool",
-                 tool_call_id: "call_" + Math.random().toString(36).substr(2, 9), // This might fail if IDs don't match.
-                 // OpenAI requires matching IDs. If we don't track them, this is tricky.
-                 // For now, let's assume single-turn or simple history where we might not need perfect ID matching
-                 // OR we need to store IDs in the history.
-                 // Given the complexity, we might need to rely on the fact that we are sending the whole history.
-                 // Ideally, we should store the original tool_call_id in the history.
-                 content: JSON.stringify(c.parts[0].functionResponse.response)
-             };
+          return {
+            role: "tool",
+            tool_call_id: "call_" + Math.random().toString(36).substr(2, 9), // This might fail if IDs don't match.
+            // OpenAI requires matching IDs. If we don't track them, this is tricky.
+            // For now, let's assume single-turn or simple history where we might not need perfect ID matching
+            // OR we need to store IDs in the history.
+            // Given the complexity, we might need to rely on the fact that we are sending the whole history.
+            // Ideally, we should store the original tool_call_id in the history.
+            content: JSON.stringify(c.parts[0].functionResponse.response),
+          };
         }
 
         return {
@@ -185,14 +185,14 @@ export const generateContent = async (
   // Map Tools to OpenAI Format
   let openAITools: OpenAI.Chat.ChatCompletionTool[] | undefined;
   if (options?.tools) {
-      openAITools = options.tools.map(t => ({
-          type: "function",
-          function: {
-              name: t.name,
-              description: t.description,
-              parameters: convertJsonSchemaToOpenAIObject(t.parameters)
-          }
-      }));
+    openAITools = options.tools.map((t) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: convertJsonSchemaToOpenAIObject(t.parameters),
+      },
+    }));
   }
 
   const response = await client.chat.completions.create({
@@ -205,7 +205,7 @@ export const generateContent = async (
     top_p: options?.topP,
     stream: !!options?.onChunk,
     tools: openAITools,
-    tool_choice: openAITools ? "auto" : undefined
+    tool_choice: openAITools ? "auto" : undefined,
   });
 
   let content = "";
@@ -233,10 +233,10 @@ export const generateContent = async (
     content = message?.content || "";
 
     if (message?.tool_calls) {
-        toolCalls = message.tool_calls.map(tc => ({
-            name: tc.function.name,
-            args: JSON.parse(tc.function.arguments)
-        }));
+      toolCalls = message.tool_calls.map((tc) => ({
+        name: tc.function.name,
+        args: JSON.parse(tc.function.arguments),
+      }));
     }
   }
 
@@ -262,10 +262,11 @@ export const generateContent = async (
 
   // If we have tool calls, return them
   if (toolCalls.length > 0) {
-      return { result: { functionCalls: toolCalls }, usage, raw: response };
+    return { result: { functionCalls: toolCalls }, usage, raw: response };
   }
 
-  if (!content && toolCalls.length === 0) throw new Error("No content returned from OpenAI");
+  if (!content && toolCalls.length === 0)
+    throw new Error("No content returned from OpenAI");
 
   try {
     // Clean JSON before parsing (remove markdown code blocks if present)
@@ -276,8 +277,8 @@ export const generateContent = async (
     // If it's not JSON (maybe just narrative text if tools weren't used or model ignored schema), return as is or error
     // If schema was requested, it should be JSON.
     if (schema) {
-        console.error("JSON Parse Error", e, "Content:", content);
-        throw new Error("Failed to parse AI response as JSON.");
+      console.error("JSON Parse Error", e, "Content:", content);
+      throw new Error("Failed to parse AI response as JSON.");
     }
     return { result: { narrative: content }, usage, raw: response };
   }

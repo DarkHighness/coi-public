@@ -39,7 +39,6 @@ const deriveHistory = (
   return history;
 };
 
-
 export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
   const navigate = useNavigate();
@@ -74,7 +73,6 @@ export const useGameEngine = () => {
     gameStateRef.current = gameState;
     if (gameState.isProcessing) processingRef.current = true;
   }, [gameState]);
-
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -473,7 +471,9 @@ export const useGameEngine = () => {
       const finalState = response.finalState;
 
       if (!finalState) {
-          throw new Error("AI Service did not return a final state. Agentic loop failed?");
+        throw new Error(
+          "AI Service did not return a final state. Agentic loop failed?",
+        );
       }
 
       // Determine Toast Message based on state changes (using the accumulated actions in response)
@@ -564,30 +564,27 @@ export const useGameEngine = () => {
         response.imagePrompt &&
         !aiSettings.manualImageGen
       ) {
-        const stateSnapshot = createStateSnapshot(
-          finalState,
-          {
-            time: finalState.time,
-            currentLocation: finalState.currentLocation, // Added required field
-            summaries: effectiveSummaries, // Use previous summaries or updated ones if available
-            lastSummarizedIndex: lastIndex,
-            uiState: gameStateRef.current.uiState,
-            envTheme: finalState.envTheme,
-            veoScript: gameStateRef.current.veoScript,
-          }
-        );
+        const stateSnapshot = createStateSnapshot(finalState, {
+          time: finalState.time,
+          currentLocation: finalState.currentLocation, // Added required field
+          summaries: effectiveSummaries, // Use previous summaries or updated ones if available
+          lastSummarizedIndex: lastIndex,
+          uiState: gameStateRef.current.uiState,
+          envTheme: finalState.envTheme,
+          veoScript: gameStateRef.current.veoScript,
+        });
 
         const imageContext = {
-            theme: finalState.theme, // Added theme
-            stateSnapshot,
-            activeNPCs: finalState.relationships
-                .filter((r) => r.visible.name)
-                .map((r) => ({
-                    name: r.visible.name,
-                    description: r.visible.description,
-                    appearance: r.visible.appearance || "Unknown",
-                    status: r.visible.relationshipType
-                })),
+          theme: finalState.theme, // Added theme
+          stateSnapshot,
+          activeNPCs: finalState.relationships
+            .filter((r) => r.visible.name)
+            .map((r) => ({
+              name: r.visible.name,
+              description: r.visible.description,
+              appearance: r.visible.appearance || "Unknown",
+              status: r.visible.relationshipType,
+            })),
         };
 
         const imageTimeout = setTimeout(
@@ -970,9 +967,6 @@ export const useGameEngine = () => {
       },
     }));
   };
-
-
-
 
   return {
     language,

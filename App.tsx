@@ -386,7 +386,9 @@ export default function App() {
                 onOpenSaves={() => setIsSaveManagerOpen(true)}
                 themeFont={currentThemeConfig.fontClass}
                 saveSlots={saveSlots}
-                switchSlot={async (id) => { await loadSlot(id); }}
+                switchSlot={async (id) => {
+                  await loadSlot(id);
+                }}
                 deleteSlot={deleteSlot}
                 currentSlotId={currentSlotId}
                 onViewedSegmentChange={setViewedSegment}

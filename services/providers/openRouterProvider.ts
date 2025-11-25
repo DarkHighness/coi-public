@@ -129,24 +129,24 @@ export const generateContent = async (
         // Map Gemini format to OpenAI
         // Handle function calls/responses in history if present
         if (c.parts[0].functionCall) {
-            return {
-                role: "assistant",
-                tool_calls: c.parts.map((p: any) => ({
-                    id: "call_" + Math.random().toString(36).substr(2, 9),
-                    type: "function",
-                    function: {
-                        name: p.functionCall.name,
-                        arguments: JSON.stringify(p.functionCall.args)
-                    }
-                }))
-            };
+          return {
+            role: "assistant",
+            tool_calls: c.parts.map((p: any) => ({
+              id: "call_" + Math.random().toString(36).substr(2, 9),
+              type: "function",
+              function: {
+                name: p.functionCall.name,
+                arguments: JSON.stringify(p.functionCall.args),
+              },
+            })),
+          };
         }
         if (c.parts[0].functionResponse) {
-             return {
-                 role: "tool",
-                 tool_call_id: "call_" + Math.random().toString(36).substr(2, 9),
-                 content: JSON.stringify(c.parts[0].functionResponse.response)
-             };
+          return {
+            role: "tool",
+            tool_call_id: "call_" + Math.random().toString(36).substr(2, 9),
+            content: JSON.stringify(c.parts[0].functionResponse.response),
+          };
         }
 
         return {
@@ -161,14 +161,14 @@ export const generateContent = async (
   // Map Tools to OpenAI Format
   let openAITools: any[] | undefined;
   if (options?.tools) {
-      openAITools = options.tools.map(t => ({
-          type: "function",
-          function: {
-              name: t.name,
-              description: t.description,
-              parameters: t.parameters
-          }
-      }));
+    openAITools = options.tools.map((t) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      },
+    }));
   }
 
   const body: any = {
@@ -180,7 +180,7 @@ export const generateContent = async (
     min_p: options?.minP,
     stream: !!options?.onChunk,
     tools: openAITools,
-    tool_choice: openAITools ? "auto" : undefined
+    tool_choice: openAITools ? "auto" : undefined,
   };
 
   if (schema) {
@@ -279,10 +279,10 @@ export const generateContent = async (
       content = message?.content || "";
 
       if (message?.tool_calls) {
-          toolCalls = message.tool_calls.map((tc: any) => ({
-              name: tc.function.name,
-              args: JSON.parse(tc.function.arguments)
-          }));
+        toolCalls = message.tool_calls.map((tc: any) => ({
+          name: tc.function.name,
+          args: JSON.parse(tc.function.arguments),
+        }));
       }
 
       if (choice?.finish_reason === "content_filter") {
@@ -301,7 +301,7 @@ export const generateContent = async (
 
     // If we have tool calls, return them
     if (toolCalls.length > 0) {
-        return { result: { functionCalls: toolCalls }, usage, raw: rawResult };
+      return { result: { functionCalls: toolCalls }, usage, raw: rawResult };
     }
 
     if (schema) {

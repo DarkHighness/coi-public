@@ -105,19 +105,21 @@ export const generateContent = async (
   // because the model might return a tool call instead of JSON.
   // So if tools are present, we remove responseMimeType/responseSchema unless we are sure.
   if (options?.tools) {
-      delete generationConfig.responseMimeType;
-      delete generationConfig.responseSchema;
-      // Convert tools if necessary?
-      // Tools in services/tools.ts are now standard JSON schema parameters.
-      // Gemini expects FunctionDeclaration with Schema.
-      // We need to map the tools to Gemini format.
-      generationConfig.tools = options.tools.map((tool: any) => ({
-        functionDeclarations: [{
+    delete generationConfig.responseMimeType;
+    delete generationConfig.responseSchema;
+    // Convert tools if necessary?
+    // Tools in services/tools.ts are now standard JSON schema parameters.
+    // Gemini expects FunctionDeclaration with Schema.
+    // We need to map the tools to Gemini format.
+    generationConfig.tools = options.tools.map((tool: any) => ({
+      functionDeclarations: [
+        {
           name: tool.name,
           description: tool.description,
-          parameters: convertJsonSchemaToGemini(tool.parameters)
-        }]
-      }));
+          parameters: convertJsonSchemaToGemini(tool.parameters),
+        },
+      ],
+    }));
   }
 
   if (model.includes("thinking")) {
@@ -167,15 +169,17 @@ export const generateContent = async (
   const finishReason = candidate?.finishReason;
 
   // Check for tool calls
-  const functionCalls = candidate?.content?.parts?.filter((p: any) => p.functionCall).map((p: any) => p.functionCall);
+  const functionCalls = candidate?.content?.parts
+    ?.filter((p: any) => p.functionCall)
+    .map((p: any) => p.functionCall);
 
   if (functionCalls && functionCalls.length > 0) {
-      const usage = {
-        promptTokens: response.usageMetadata?.promptTokenCount || 0,
-        completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-        totalTokens: response.usageMetadata?.totalTokenCount || 0,
-      };
-      return { result: { functionCalls }, usage, raw: response };
+    const usage = {
+      promptTokens: response.usageMetadata?.promptTokenCount || 0,
+      completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+      totalTokens: response.usageMetadata?.totalTokenCount || 0,
+    };
+    return { result: { functionCalls }, usage, raw: response };
   }
 
   if (finishReason === "SAFETY") {
@@ -205,7 +209,7 @@ export const generateContent = async (
     totalTokens: response.usageMetadata?.totalTokenCount || 0,
   };
 
-    try {
+  try {
     // Clean JSON before parsing (remove markdown code blocks if present)
     const cleanedText = text.replace(/```json\n?|```/g, "").trim();
     return { result: JSON.parse(cleanedText), usage, raw: response };

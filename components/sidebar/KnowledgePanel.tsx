@@ -60,7 +60,9 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">{CATEGORY_ICONS[k.category] || "📖"}</span>
+            <span className="text-lg">
+              {CATEGORY_ICONS[k.category] || "📖"}
+            </span>
             <h4 className="text-sm font-bold text-theme-primary truncate flex items-center gap-2">
               {k.title}
               {k.unlocked && (
@@ -94,7 +96,9 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          expandedSet.has(k.id) ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+          expandedSet.has(k.id)
+            ? "max-h-[800px] opacity-100"
+            : "max-h-0 opacity-0"
         }`}
       >
         <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">

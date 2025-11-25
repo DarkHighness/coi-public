@@ -643,45 +643,52 @@ const runAgenticLoop = async (
   // Actually, AdventureTurnInput is NOT a full GameState. It has components.
   // We need to reconstruct a GameState-like object for the DB.
   const initialState: GameState = {
-      inventory: inputState.inventory,
-      relationships: inputState.relationships,
-      quests: inputState.quests,
-      locations: inputState.locations,
-      currentLocation: inputState.currentLocationId, // Map ID to name/ID
-      character: inputState.character,
-      knowledge: inputState.knowledge || [],
-      factions: inputState.factions || [],
-      timeline: inputState.timeline || [],
-      causalChains: inputState.causalChains || [],
-      time: inputState.time || "Unknown",
-      // We need nextIds to generate new IDs. If not passed in input, we might have issues.
-      // AdventureTurnInput doesn't seem to have nextIds.
-      // We should probably add nextIds to AdventureTurnInput or generate them temporarily.
-      // For now, let's assume we can start from a safe high number or random strings if missing.
-      nextIds: { item: 1000, npc: 1000, location: 1000, quest: 1000, knowledge: 1000, faction: 1000 },
-      // Other fields
-      nodes: {},
-      activeNodeId: "temp-root", // Placeholder
-      rootNodeId: "temp-root", // Placeholder
-      uiState: {
-          inventory: { pinnedIds: [], customOrder: [] },
-          locations: { pinnedIds: [], customOrder: [] },
-          relationships: { pinnedIds: [], customOrder: [] },
-          knowledge: { pinnedIds: [], customOrder: [] },
-          sidebarCollapsed: false,
-          timelineCollapsed: false
-      },
-      outline: null,
-      summaries: [],
-      lastSummarizedIndex: 0,
-      isProcessing: false,
-      isImageGenerating: false,
-      generatingNodeId: null,
-      error: null,
-      envTheme: "fantasy",
-      theme: "fantasy",
-      totalTokens: 0,
-      logs: []
+    inventory: inputState.inventory,
+    relationships: inputState.relationships,
+    quests: inputState.quests,
+    locations: inputState.locations,
+    currentLocation: inputState.currentLocationId, // Map ID to name/ID
+    character: inputState.character,
+    knowledge: inputState.knowledge || [],
+    factions: inputState.factions || [],
+    timeline: inputState.timeline || [],
+    causalChains: inputState.causalChains || [],
+    time: inputState.time || "Unknown",
+    // We need nextIds to generate new IDs. If not passed in input, we might have issues.
+    // AdventureTurnInput doesn't seem to have nextIds.
+    // We should probably add nextIds to AdventureTurnInput or generate them temporarily.
+    // For now, let's assume we can start from a safe high number or random strings if missing.
+    nextIds: {
+      item: 1000,
+      npc: 1000,
+      location: 1000,
+      quest: 1000,
+      knowledge: 1000,
+      faction: 1000,
+    },
+    // Other fields
+    nodes: {},
+    activeNodeId: "temp-root", // Placeholder
+    rootNodeId: "temp-root", // Placeholder
+    uiState: {
+      inventory: { pinnedIds: [], customOrder: [] },
+      locations: { pinnedIds: [], customOrder: [] },
+      relationships: { pinnedIds: [], customOrder: [] },
+      knowledge: { pinnedIds: [], customOrder: [] },
+      sidebarCollapsed: false,
+      timelineCollapsed: false,
+    },
+    outline: null,
+    summaries: [],
+    lastSummarizedIndex: 0,
+    isProcessing: false,
+    isImageGenerating: false,
+    generatingNodeId: null,
+    error: null,
+    envTheme: "fantasy",
+    theme: "fantasy",
+    totalTokens: 0,
+    logs: [],
   };
 
   const db = new GameDatabase(initialState);
@@ -701,14 +708,18 @@ const runAgenticLoop = async (
     timelineEvents: [],
   };
 
-  let totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  let totalUsage: TokenUsage = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+  };
   let lastLog: LogEntry | null = null;
 
   // Prepare tools for the provider
-  const toolConfig = TOOLS.map(t => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
+  const toolConfig = TOOLS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters,
   }));
 
   while (turnCount < maxTurns) {
@@ -717,156 +728,196 @@ const runAgenticLoop = async (
     let result, usage, raw;
 
     try {
-        // Unified generation call for all providers
-        // We pass 'undefined' for schema because we want tool calls, not JSON mode (unless tools are not supported, but we assume they are now)
-        // If the provider doesn't support tools, it might fail or ignore them.
-        const resultData = await generateContentUnified(
-            provider,
-            modelId,
-            systemInstruction,
-            currentContents,
-            undefined, // No schema
-            { tools: toolConfig } // Pass tools!
-        );
+      // Unified generation call for all providers
+      // We pass 'undefined' for schema because we want tool calls, not JSON mode (unless tools are not supported, but we assume they are now)
+      // If the provider doesn't support tools, it might fail or ignore them.
+      const resultData = await generateContentUnified(
+        provider,
+        modelId,
+        systemInstruction,
+        currentContents,
+        undefined, // No schema
+        { tools: toolConfig }, // Pass tools!
+      );
 
-        result = resultData.result;
-        usage = resultData.usage;
-        raw = resultData.raw;
-
+      result = resultData.result;
+      usage = resultData.usage;
+      raw = resultData.raw;
     } catch (e) {
-        console.error("Agentic Loop Error", e);
-        throw e;
+      console.error("Agentic Loop Error", e);
+      throw e;
     }
 
     // Update Usage
     if (usage) {
-        totalUsage.promptTokens += usage.promptTokens;
-        totalUsage.completionTokens += usage.completionTokens;
-        totalUsage.totalTokens += usage.totalTokens;
+      totalUsage.promptTokens += usage.promptTokens;
+      totalUsage.completionTokens += usage.completionTokens;
+      totalUsage.totalTokens += usage.totalTokens;
     }
 
-    lastLog = createLogEntry(provider, modelId, "agentic_turn", { systemInstruction, currentContents }, raw, usage);
+    lastLog = createLogEntry(
+      provider,
+      modelId,
+      "agentic_turn",
+      { systemInstruction, currentContents },
+      raw,
+      usage,
+    );
 
     // Handle Tool Calls
     if (result && result.functionCalls) {
-        const toolCalls = result.functionCalls;
+      const toolCalls = result.functionCalls;
 
-        // Add model's tool call to history
-        currentContents.push({
-            role: "model",
-            parts: toolCalls.map((fc: any) => ({ functionCall: fc }))
-        });
+      // Add model's tool call to history
+      currentContents.push({
+        role: "model",
+        parts: toolCalls.map((fc: any) => ({ functionCall: fc })),
+      });
 
-        // Execute Tools
-        const toolOutputs = [];
+      // Execute Tools
+      const toolOutputs = [];
 
-        // Parallel Execution Support
-        // We execute all tools in the list.
-        // Note: modify_state is synchronous in GameDatabase, so "parallel" here just means
-        // processing the array of calls returned by the model.
-        for (const call of toolCalls) {
-            const { name, args } = call;
-            console.log(`[Agentic Loop] Tool Call: ${name}`, args);
+      // Parallel Execution Support
+      // We execute all tools in the list.
+      // Note: modify_state is synchronous in GameDatabase, so "parallel" here just means
+      // processing the array of calls returned by the model.
+      for (const call of toolCalls) {
+        const { name, args } = call;
+        console.log(`[Agentic Loop] Tool Call: ${name}`, args);
 
-            let output: unknown = { result: "Tool executed" };
+        let output: unknown = { result: "Tool executed" };
 
-            if (name === "query_inventory") {
-                output = db.query("inventory", args.query);
-            } else if (name === "query_relationships") {
-                output = db.query("relationship", args.query);
-            } else if (name === "query_locations") {
-                output = db.query("location", args.query);
-            } else if (name === "query_quests") {
-                output = db.query("quest", args.query);
-            } else if (name === "query_knowledge") {
-                output = db.query("knowledge", args.query);
-            } else if (name === "update_inventory") {
-                db.modify("inventory", args.action, args.data);
-                if (!accumulatedResponse.inventoryActions) accumulatedResponse.inventoryActions = [];
-                accumulatedResponse.inventoryActions.push({ action: args.action, ...args.data });
-                output = { status: "success", message: "Inventory updated." };
-            } else if (name === "update_relationship") {
-                db.modify("relationship", args.action, args.data);
-                if (!accumulatedResponse.relationshipActions) accumulatedResponse.relationshipActions = [];
-                accumulatedResponse.relationshipActions.push({ action: args.action, ...args.data });
-                output = { status: "success", message: "Relationship updated." };
-            } else if (name === "update_location") {
-                db.modify("location", args.action, args.data);
-                if (!accumulatedResponse.locationActions) accumulatedResponse.locationActions = [];
-                accumulatedResponse.locationActions.push({ type: "known", action: args.action, ...args.data });
-                output = { status: "success", message: "Location updated." };
-            } else if (name === "update_quest") {
-                db.modify("quest", args.action, args.data);
-                if (!accumulatedResponse.questActions) accumulatedResponse.questActions = [];
-                accumulatedResponse.questActions.push({ action: args.action, ...args.data });
-                output = { status: "success", message: "Quest updated." };
-            } else if (name === "update_knowledge") {
-                db.modify("knowledge", args.action, args.data);
-                if (!accumulatedResponse.knowledgeActions) accumulatedResponse.knowledgeActions = [];
-                accumulatedResponse.knowledgeActions.push({ action: args.action, ...args.data });
-                output = { status: "success", message: "Knowledge updated." };
-            } else if (name === "query_timeline") {
-                output = db.query("timeline", args.query);
-            } else if (name === "update_timeline") {
-                db.modify("timeline", args.action, args.data);
-                output = { status: "success", message: "Timeline updated." };
-            } else if (name === "query_causal_chain") {
-                output = db.query("causal_chain", args.query);
-            } else if (name === "update_causal_chain") {
-                db.modify("causal_chain", args.action, args.data);
-                output = { status: "success", message: "Causal chain updated." };
-            } else if (name === "query_factions") {
-                output = db.query("faction", args.query);
-            } else if (name === "update_faction") {
-                db.modify("faction", args.action, args.data);
-                if (!accumulatedResponse.factionActions) accumulatedResponse.factionActions = [];
-                accumulatedResponse.factionActions.push({ action: args.action, ...args.data });
-                output = { status: "success", message: "Faction updated." };
-            } else if (name === "query_global") {
-                output = db.query("global");
-            } else if (name === "update_global") {
-                db.modify("global", "update", args.data); // Action is ignored for global
-                output = { status: "success", message: "Global state updated." };
-            } else if (name === "finish_turn") {
-                // Finalize
-                accumulatedResponse.narrative = args.narrative;
-                accumulatedResponse.choices = args.choices;
-                accumulatedResponse.imagePrompt = args.imagePrompt;
-                accumulatedResponse.generateImage = args.generateImage;
+        if (name === "query_inventory") {
+          output = db.query("inventory", args.query);
+        } else if (name === "query_relationships") {
+          output = db.query("relationship", args.query);
+        } else if (name === "query_locations") {
+          output = db.query("location", args.query);
+        } else if (name === "query_quests") {
+          output = db.query("quest", args.query);
+        } else if (name === "query_knowledge") {
+          output = db.query("knowledge", args.query);
+        } else if (name === "update_inventory") {
+          db.modify("inventory", args.action, args.data);
+          if (!accumulatedResponse.inventoryActions)
+            accumulatedResponse.inventoryActions = [];
+          accumulatedResponse.inventoryActions.push({
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Inventory updated." };
+        } else if (name === "update_relationship") {
+          db.modify("relationship", args.action, args.data);
+          if (!accumulatedResponse.relationshipActions)
+            accumulatedResponse.relationshipActions = [];
+          accumulatedResponse.relationshipActions.push({
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Relationship updated." };
+        } else if (name === "update_location") {
+          db.modify("location", args.action, args.data);
+          if (!accumulatedResponse.locationActions)
+            accumulatedResponse.locationActions = [];
+          accumulatedResponse.locationActions.push({
+            type: "known",
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Location updated." };
+        } else if (name === "update_quest") {
+          db.modify("quest", args.action, args.data);
+          if (!accumulatedResponse.questActions)
+            accumulatedResponse.questActions = [];
+          accumulatedResponse.questActions.push({
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Quest updated." };
+        } else if (name === "update_knowledge") {
+          db.modify("knowledge", args.action, args.data);
+          if (!accumulatedResponse.knowledgeActions)
+            accumulatedResponse.knowledgeActions = [];
+          accumulatedResponse.knowledgeActions.push({
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Knowledge updated." };
+        } else if (name === "query_timeline") {
+          output = db.query("timeline", args.query);
+        } else if (name === "update_timeline") {
+          db.modify("timeline", args.action, args.data);
+          output = { status: "success", message: "Timeline updated." };
+        } else if (name === "query_causal_chain") {
+          output = db.query("causal_chain", args.query);
+        } else if (name === "update_causal_chain") {
+          db.modify("causal_chain", args.action, args.data);
+          output = { status: "success", message: "Causal chain updated." };
+        } else if (name === "query_factions") {
+          output = db.query("faction", args.query);
+        } else if (name === "update_faction") {
+          db.modify("faction", args.action, args.data);
+          if (!accumulatedResponse.factionActions)
+            accumulatedResponse.factionActions = [];
+          accumulatedResponse.factionActions.push({
+            action: args.action,
+            ...args.data,
+          });
+          output = { status: "success", message: "Faction updated." };
+        } else if (name === "query_global") {
+          output = db.query("global");
+        } else if (name === "update_global") {
+          db.modify("global", "update", args.data); // Action is ignored for global
+          output = { status: "success", message: "Global state updated." };
+        } else if (name === "finish_turn") {
+          // Finalize
+          accumulatedResponse.narrative = args.narrative;
+          accumulatedResponse.choices = args.choices;
+          accumulatedResponse.imagePrompt = args.imagePrompt;
+          accumulatedResponse.generateImage = args.generateImage;
 
-                // Attach the FINAL STATE from the DB
-                (accumulatedResponse as any).finalState = db.getState();
+          // Attach the FINAL STATE from the DB
+          (accumulatedResponse as any).finalState = db.getState();
 
-                return { response: accumulatedResponse, log: lastLog, usage: totalUsage };
-            }
-
-            toolOutputs.push({
-                functionResponse: {
-                    name: name,
-                    response: { content: output }
-                }
-            });
-        }
-
-        // Add tool outputs to history
-        currentContents.push({
-            role: "function",
-            parts: toolOutputs
-        });
-
-        turnCount++;
-    } else {
-        // Fallback for text-only response
-        if (result.narrative) {
-             return { response: result, log: lastLog, usage: totalUsage };
-        }
-
-        console.warn("Model returned text instead of tool call:", result);
-        return {
-            response: { ...accumulatedResponse, narrative: typeof result === 'string' ? result : JSON.stringify(result), choices: ["Continue"] },
+          return {
+            response: accumulatedResponse,
             log: lastLog,
-            usage: totalUsage
-        };
+            usage: totalUsage,
+          };
+        }
+
+        toolOutputs.push({
+          functionResponse: {
+            name: name,
+            response: { content: output },
+          },
+        });
+      }
+
+      // Add tool outputs to history
+      currentContents.push({
+        role: "function",
+        parts: toolOutputs,
+      });
+
+      turnCount++;
+    } else {
+      // Fallback for text-only response
+      if (result.narrative) {
+        return { response: result, log: lastLog, usage: totalUsage };
+      }
+
+      console.warn("Model returned text instead of tool call:", result);
+      return {
+        response: {
+          ...accumulatedResponse,
+          narrative:
+            typeof result === "string" ? result : JSON.stringify(result),
+          choices: ["Continue"],
+        },
+        log: lastLog,
+        usage: totalUsage,
+      };
     }
   }
 

@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CharacterStatus, CharacterSkill, CharacterCondition } from "../../types";
+import {
+  CharacterStatus,
+  CharacterSkill,
+  CharacterCondition,
+} from "../../types";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -286,7 +290,11 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         <span className="text-xs text-theme-text font-medium flex items-center gap-1">
           {skill.name}
           {skill.unlocked && (
-            <svg className="w-3 h-3 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
+            <svg
+              className="w-3 h-3 text-theme-primary"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
               <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
             </svg>
           )}
@@ -310,25 +318,40 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
           {skill.unlocked && skill.hidden?.trueDescription && (
             <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
               <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
-                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <svg
+                  className="w-2.5 h-2.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 {t("hidden.truth")}
               </span>
-              <p className="leading-relaxed text-theme-text text-[10px]">{skill.hidden.trueDescription}</p>
-              {skill.hidden.hiddenEffects && skill.hidden.hiddenEffects.length > 0 && (
-                <div className="mt-1.5">
-                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.effects")}:</span>
-                  <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
-                    {skill.hidden.hiddenEffects.map((effect, i) => (
-                      <li key={i}>{effect}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <p className="leading-relaxed text-theme-text text-[10px]">
+                {skill.hidden.trueDescription}
+              </p>
+              {skill.hidden.hiddenEffects &&
+                skill.hidden.hiddenEffects.length > 0 && (
+                  <div className="mt-1.5">
+                    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                      {t("hidden.effects")}:
+                    </span>
+                    <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                      {skill.hidden.hiddenEffects.map((effect, i) => (
+                        <li key={i}>{effect}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               {skill.hidden.drawbacks && skill.hidden.drawbacks.length > 0 && (
                 <div className="mt-1.5">
-                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.drawbacks")}:</span>
+                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                    {t("hidden.drawbacks")}:
+                  </span>
                   <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
                     {skill.hidden.drawbacks.map((drawback, i) => (
                       <li key={i}>{drawback}</li>
@@ -345,7 +368,9 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 };
 
 // Sub-component for individual conditions to handle expansion state
-const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition }) => {
+const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
+  condition,
+}) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
@@ -372,15 +397,17 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
             {icon}
             {condition.name}
             {condition.unlocked && (
-              <svg className="w-3 h-3 text-theme-primary" fill="currentColor" viewBox="0 0 20 20">
+              <svg
+                className="w-3 h-3 text-theme-primary"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
                 <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
               </svg>
             )}
           </span>
           {condition.duration && (
-            <span className="text-[10px] opacity-70">
-              {condition.duration}
-            </span>
+            <span className="text-[10px] opacity-70">{condition.duration}</span>
           )}
         </div>
 
@@ -395,7 +422,8 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
           <div className="mt-2 pt-2 border-t border-current/20">
             {condition.visible?.perceivedSeverity && (
               <p className="text-[10px] opacity-70">
-                <span className="font-semibold">Severity:</span> {condition.visible.perceivedSeverity}
+                <span className="font-semibold">Severity:</span>{" "}
+                {condition.visible.perceivedSeverity}
               </p>
             )}
 
@@ -403,39 +431,59 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({ condition 
             {condition.unlocked && (
               <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
                 <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
-                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   {t("hidden.cause")}
                 </span>
                 {condition.hidden?.trueCause && (
-                  <p className="leading-relaxed text-theme-text text-[10px] mb-1">{condition.hidden.trueCause}</p>
+                  <p className="leading-relaxed text-theme-text text-[10px] mb-1">
+                    {condition.hidden.trueCause}
+                  </p>
                 )}
                 {condition.hidden?.actualSeverity && (
                   <p className="text-[10px] text-theme-text">
-                    <span className="font-semibold">{t("hidden.severity")}:</span> {condition.hidden.actualSeverity}
+                    <span className="font-semibold">
+                      {t("hidden.severity")}:
+                    </span>{" "}
+                    {condition.hidden.actualSeverity}
                   </p>
                 )}
                 {condition.hidden?.progression && (
                   <p className="text-[10px] text-theme-text mt-1">
-                    <span className="font-semibold">{t("hidden.progression")}:</span> {condition.hidden.progression}
+                    <span className="font-semibold">
+                      {t("hidden.progression")}:
+                    </span>{" "}
+                    {condition.hidden.progression}
                   </p>
                 )}
                 {condition.hidden?.cure && (
                   <p className="text-[10px] text-theme-text mt-1">
-                    <span className="font-semibold">{t("hidden.cure")}:</span> {condition.hidden.cure}
+                    <span className="font-semibold">{t("hidden.cure")}:</span>{" "}
+                    {condition.hidden.cure}
                   </p>
                 )}
-                {condition.effects?.hidden && condition.effects.hidden.length > 0 && (
-                  <div className="mt-1.5">
-                    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">{t("hidden.effects")}:</span>
-                    <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
-                      {condition.effects.hidden.map((effect, i) => (
-                        <li key={i}>{effect}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {condition.effects?.hidden &&
+                  condition.effects.hidden.length > 0 && (
+                    <div className="mt-1.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("hidden.effects")}:
+                      </span>
+                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                        {condition.effects.hidden.map((effect, i) => (
+                          <li key={i}>{effect}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -634,7 +682,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                       <div
                         key={idx}
                         className={`p-2 rounded border bg-theme-primary/10 border-theme-primary/20 text-theme-text text-xs ${
-                          trait.highlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""
+                          trait.highlight
+                            ? "animate-pulse ring-2 ring-theme-primary/50"
+                            : ""
                         }`}
                       >
                         <div className="font-bold mb-0.5">{trait.name}</div>
