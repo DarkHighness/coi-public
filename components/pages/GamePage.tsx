@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAmbience } from "../../hooks/useAmbience";
-import { FeedLayout, ListState, UIState } from "../../types";
+import { FeedLayout, ListState, UIState, ActionResult } from "../../types";
 import { MobileNav, MobileTab } from "../MobileNav";
 import {
   AISettings,
@@ -13,6 +13,7 @@ import {
 } from "../../types";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
+import { useToastManager, ToastContainer } from "../Toast";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -53,7 +54,7 @@ interface GamePageProps {
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
   isTranslating: boolean;
-  handleAction: (action: string) => Promise<string | null>;
+  handleAction: (action: string) => Promise<ActionResult | null>;
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
   navigateToNode: (nodeId: string) => void;
@@ -91,6 +92,9 @@ export const GamePage: React.FC<GamePageProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  // Toast Manager for multiple toast notifications
+  const { toasts, pushToast, removeToast, pushStateChangeToasts } = useToastManager();
 
   // Local State
   const [feedLayout, setFeedLayout] = useState<FeedLayout>("scroll");
@@ -203,12 +207,14 @@ export const GamePage: React.FC<GamePageProps> = ({
   };
 
   const handlePlayerAction = async (action: string) => {
-    const toastMsg = await handleAction(action);
-    if (toastMsg) {
-      if (toastMsg.startsWith("Error:")) {
-        showToast(toastMsg.replace("Error: ", ""), "error");
-      } else {
-        showToast(toastMsg);
+    const result = await handleAction(action);
+    if (result) {
+      if (result.success === false) {
+        // Error case - show error toast
+        pushToast(result.error, "error");
+      } else if (result.success === true) {
+        // Success case - show multiple toasts for state changes
+        pushStateChangeToasts(result.stateChanges, t);
       }
     }
   };
@@ -354,6 +360,9 @@ export const GamePage: React.FC<GamePageProps> = ({
           />
         )}
       </Suspense>
+
+      {/* Toast Container for multiple notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

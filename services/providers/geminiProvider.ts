@@ -30,6 +30,35 @@ export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
 
     const models = [];
     for await (const model of response) {
+      const capabilities = {
+        text: false,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      };
+
+      const name = model.name.toLowerCase();
+      if (name.includes("image")) {
+        capabilities.image = true;
+      }
+
+      if (name.includes("veo") || name.includes("video")) {
+        capabilities.video = true;
+      }
+
+      if (name.includes("audio") || name.includes("tts")) {
+        capabilities.audio = true;
+      }
+
+      if (name.includes("text") || name.includes("gemini")) {
+        capabilities.text = true;
+      }
+
+      // @ts-ignore
+      model.capabilities = capabilities;
+
       models.push(model);
     }
 
@@ -43,6 +72,7 @@ export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
       .map((m) => ({
         id: m.name.replace("models/", ""),
         name: m.displayName || m.name,
+        capabilities: m.capabilities,
       }));
   } catch (e) {
     console.warn("Failed to list Gemini models", e);
@@ -171,7 +201,13 @@ export const generateContent = async (
   // Check for tool calls
   const functionCalls = candidate?.content?.parts
     ?.filter((p: any) => p.functionCall)
-    .map((p: any) => p.functionCall);
+    .map((p: any, index: number) => ({
+      // Gemini doesn't provide explicit IDs for function calls, so we generate deterministic ones
+      // using the function name and index to ensure consistency within a single response
+      id: `gemini_call_${p.functionCall.name}_${index}`,
+      name: p.functionCall.name,
+      args: p.functionCall.args,
+    }));
 
   if (functionCalls && functionCalls.length > 0) {
     const usage = {

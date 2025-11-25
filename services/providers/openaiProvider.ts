@@ -155,7 +155,7 @@ export const generateContent = async (
           return {
             role: "assistant",
             tool_calls: c.parts.map((p: any) => ({
-              id: "call_" + Math.random().toString(36).substr(2, 9), // Dummy ID if not preserved
+              id: p.functionCall.id || "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
               type: "function",
               function: {
                 name: p.functionCall.name,
@@ -167,12 +167,7 @@ export const generateContent = async (
         if (c.parts[0].functionResponse) {
           return {
             role: "tool",
-            tool_call_id: "call_" + Math.random().toString(36).substr(2, 9), // This might fail if IDs don't match.
-            // OpenAI requires matching IDs. If we don't track them, this is tricky.
-            // For now, let's assume single-turn or simple history where we might not need perfect ID matching
-            // OR we need to store IDs in the history.
-            // Given the complexity, we might need to rely on the fact that we are sending the whole history.
-            // Ideally, we should store the original tool_call_id in the history.
+            tool_call_id: c.parts[0].functionResponse.id || "call_unknown", // Use preserved ID from response
             content: JSON.stringify(c.parts[0].functionResponse.response),
           };
         }
@@ -238,6 +233,7 @@ export const generateContent = async (
 
     if (message?.tool_calls) {
       toolCalls = message.tool_calls.map((tc) => ({
+        id: tc.id, // Preserve the tool call ID for proper request/response matching
         name: tc.function.name,
         args: JSON.parse(tc.function.arguments),
       }));

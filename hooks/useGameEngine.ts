@@ -63,6 +63,8 @@ export const useGameEngine = () => {
     isAutoSaving,
     persistenceError,
     hardReset,
+    saveToSlot,
+    setSkipNextSave,
   } = useGamePersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -425,27 +427,17 @@ export const useGameEngine = () => {
       // We send everything from the last summarized point onwards
       let segmentsToSend = contextNodes.slice(lastIndex);
 
-      // Generate Turn
-      const { response, log, usage } = await generateAdventureTurn({
-        recentHistory: segmentsToSend,
-        summaries: effectiveSummaries,
-        outline: gameStateRef.current.outline,
-        inventory: gameStateRef.current.inventory,
-        relationships: gameStateRef.current.relationships,
-        quests: gameStateRef.current.quests,
-        locations: gameStateRef.current.locations,
-        currentLocationId: gameStateRef.current.currentLocation,
-        character: gameStateRef.current.character,
-        knowledge: gameStateRef.current.knowledge, // Pass knowledge to AI
-        factions: gameStateRef.current.factions, // Pass factions to AI
-        userAction: action,
-        language: LANG_MAP[language],
-        themeKey: gameStateRef.current.theme, // Pass the static theme key
-        tFunc: t, // Pass translation function
-        time: gameStateRef.current.time, // Pass current time
-        timeline: gameStateRef.current.timeline, // Pass timeline
-        causalChains: gameStateRef.current.causalChains, // Pass causalChains
-      });
+      // Generate Turn - pass GameState directly with TurnContext
+      const { response, log, usage } = await generateAdventureTurn(
+        gameStateRef.current,
+        {
+          recentHistory: segmentsToSend,
+          userAction: action,
+          language: LANG_MAP[language],
+          themeKey: gameStateRef.current.theme,
+          tFunc: t,
+        },
+      );
 
       // Sanitize choices to ensure strict string array
       const sanitizedChoices = Array.isArray(response.choices)
@@ -476,19 +468,23 @@ export const useGameEngine = () => {
         );
       }
 
-      // Determine Toast Message based on state changes (using the accumulated actions in response)
+      // Collect state changes for toast notifications
+      const stateChanges = {
+        itemsAdded: response.inventoryActions?.filter((a) => a.action === "add").length || 0,
+        itemsRemoved: response.inventoryActions?.filter((a) => a.action === "remove").length || 0,
+        npcsAdded: response.relationshipActions?.filter((a) => a.action === "add").length || 0,
+        questsAdded: response.questActions?.filter((a) => a.action === "add").length || 0,
+        questsCompleted: response.questActions?.filter((a) => a.action === "complete").length || 0,
+        locationsDiscovered: response.locationActions?.filter((a) => a.action === "add").length || 0,
+      };
+
+      // Legacy single toast message for backwards compatibility
       let toastMessage = "";
-      if (response.inventoryActions?.some((a) => a.action === "add")) {
+      if (stateChanges.itemsAdded > 0) {
         toastMessage = t("toast.itemAdded");
-      } else if (
-        response.relationshipActions?.some((a) => a.action === "add")
-      ) {
+      } else if (stateChanges.npcsAdded > 0) {
         toastMessage = t("toast.charMet");
-      } else if (
-        response.questActions?.some(
-          (a) => a.action === "add" || a.action === "complete",
-        )
-      ) {
+      } else if (stateChanges.questsAdded > 0 || stateChanges.questsCompleted > 0) {
         toastMessage = t("toast.questUpd");
       }
 
@@ -643,7 +639,9 @@ export const useGameEngine = () => {
 
       // Clear lock
       processingRef.current = false;
-      return toastMessage;
+
+      // Return state changes for toast notifications
+      return { success: true as const, stateChanges, legacyMessage: toastMessage };
     } catch (error: any) {
       console.error(error);
       const errorMsg = error.message || "Error connecting to the universe...";
@@ -654,7 +652,7 @@ export const useGameEngine = () => {
       }));
       // Clear lock
       processingRef.current = false;
-      return `Error: ${errorMsg}`;
+      return { success: false as const, error: errorMsg };
     }
   };
 
@@ -761,6 +759,11 @@ export const useGameEngine = () => {
           knowledge: (outline.knowledge?.length || 0) + 1,
           quest: (outline.quests?.length || 0) + 1,
           faction: (outline.factions?.length || 0) + 1,
+          timeline: (outline.timeline?.length || 0) + 1,
+          causalChain: 1, // Causal chains start fresh
+          skill: (outline.character?.skills?.length || 0) + 1,
+          condition: (outline.character?.conditions?.length || 0) + 1,
+          hiddenTrait: (outline.character?.hiddenTraits?.length || 0) + 1,
         },
         isProcessing: true, // Keep processing true while generating first turn
         logs: [log, ...prev.logs],
@@ -771,6 +774,18 @@ export const useGameEngine = () => {
         envTheme: outline.initialEnvTheme || selectedTheme, // Initial Env Theme
         time: outline.initialTime || "Day 1",
       }));
+
+      // === IMPORTANT: Save outline immediately after generation ===
+      // This ensures we have a valid checkpoint even if first turn generation fails
+      // Use setTimeout to ensure the state update has propagated
+      setTimeout(async () => {
+        try {
+          await saveToSlot(slotId, gameStateRef.current);
+          console.log("[StartNewGame] Outline checkpoint saved successfully");
+        } catch (e) {
+          console.error("[StartNewGame] Failed to save outline checkpoint", e);
+        }
+      }, 50);
 
       // Navigate to game immediately after outline is ready
       navigate("/game");
@@ -790,11 +805,11 @@ export const useGameEngine = () => {
           );
 
           // handleAction returns:
-          // - null or empty string "" on success
-          // - "Error: ..." string on failure
+          // - { success: true, stateChanges, legacyMessage } on success
+          // - { success: false, error } on failure
           // If first turn fails, stay in game and allow retry via retry button
           // Don't delete the save since outline generation succeeded
-          if (result && result.startsWith("Error:")) {
+          if (result && !result.success) {
             console.warn(
               "First turn generation failed, but outline is valid - player can retry",
             );

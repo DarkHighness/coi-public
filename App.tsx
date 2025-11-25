@@ -298,6 +298,7 @@ export default function App() {
         const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
         const mostRecent = sorted[0];
         await loadSlot(mostRecent.id);
+        navigate("/game");
       }
     }
   };

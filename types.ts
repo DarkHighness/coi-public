@@ -1,3 +1,20 @@
+// Action Result type for handleAction return value
+export interface StateChanges {
+  itemsAdded?: number;
+  itemsRemoved?: number;
+  npcsAdded?: number;
+  npcsRemoved?: number;
+  questsAdded?: number;
+  questsCompleted?: number;
+  locationsDiscovered?: number;
+  skillsGained?: number;
+  conditionsChanged?: number;
+}
+
+export type ActionResult =
+  | { success: true; stateChanges: StateChanges; legacyMessage: string }
+  | { success: false; error: string };
+
 export interface GameState {
   // Tree Structure: ID -> Segment
   nodes: Record<string, StorySegment>;
@@ -49,6 +66,11 @@ export interface GameState {
     knowledge: number;
     quest: number;
     faction: number;
+    timeline: number;
+    causalChain: number;
+    skill: number;
+    condition: number;
+    hiddenTrait: number;
   };
   timeline: TimelineEvent[];
   causalChains: CausalChain[];
@@ -353,6 +375,11 @@ export interface GameStateSnapshot {
     knowledge: number;
     quest: number;
     faction: number;
+    timeline: number;
+    causalChain: number;
+    skill: number;
+    condition: number;
+    hiddenTrait: number;
   };
 
   // World State
@@ -613,26 +640,8 @@ export interface CharacterAction {
   finalState?: GameState;
 }
 
-export interface AdventureTurnInput {
-  recentHistory: StorySegment[];
-  summaries: StorySummary[];
-  outline: StoryOutline | null;
-  inventory: InventoryItem[];
-  relationships: Relationship[];
-  quests: Quest[];
-  locations: Location[];
-  currentLocationId: string;
-  character: CharacterStatus;
-  knowledge?: KnowledgeEntry[]; // Player's accumulated knowledge
-  factions?: any[]; // Added factions support
-  userAction: string;
-  language: string;
-  themeKey?: string;
-  tFunc?: (key: string) => any;
-  time?: string;
-  timeline?: TimelineEvent[]; // Added timeline support
-  causalChains?: CausalChain[]; // Added causal chain support
-}
+// Note: AdventureTurnInput has been removed. Use GameState directly with TurnContext from aiService.ts
+
 export interface GameResponse {
   narrative: string;
   choices: string[];

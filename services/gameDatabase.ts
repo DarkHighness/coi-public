@@ -9,7 +9,39 @@ import {
   TimelineEvent,
   CausalChain,
   CharacterStatus,
+  CharacterAttribute,
 } from "../types";
+import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
+
+// --- Tool Call Result Types ---
+
+export interface ToolCallSuccess<T = unknown> {
+  success: true;
+  data: T;
+  message: string;
+}
+
+export interface ToolCallError {
+  success: false;
+  error: string;
+  code: "NOT_FOUND" | "ALREADY_EXISTS" | "INVALID_ACTION" | "INVALID_DATA" | "UNKNOWN";
+}
+
+export type ToolCallResult<T = unknown> = ToolCallSuccess<T> | ToolCallError;
+
+// --- Helper Functions ---
+
+const createSuccess = <T>(data: T, message: string): ToolCallSuccess<T> => ({
+  success: true,
+  data,
+  message,
+});
+
+const createError = (error: string, code: ToolCallError["code"] = "UNKNOWN"): ToolCallError => ({
+  success: false,
+  error,
+  code,
+});
 
 export class GameDatabase {
   private state: GameState;
@@ -23,55 +55,149 @@ export class GameDatabase {
     return this.state;
   }
 
+  // --- ID Generation ---
+
+  private generateId(type: EntityType): string {
+    const keyMap: Record<EntityType, keyof typeof this.state.nextIds> = {
+      inventory: "item",
+      npc: "npc",
+      location: "location",
+      quest: "quest",
+      knowledge: "knowledge",
+      faction: "faction",
+      timeline: "timeline",
+      causalChain: "causalChain",
+      skill: "skill",
+      condition: "condition",
+      hiddenTrait: "hiddenTrait",
+    };
+
+    const key = keyMap[type];
+    const nextNum = this.state.nextIds[key] || 1;
+    this.state.nextIds[key] = nextNum + 1;
+
+    return generateEntityId(type, nextNum);
+  }
+
   // --- Query Methods ---
 
-  public query(target: string, query?: string): unknown {
-    const term = query?.toLowerCase();
-    const filter = (list: any[]) => {
+  public query(target: string, queryOrAspect?: string, extraQuery?: string): ToolCallResult<unknown> {
+    const term = queryOrAspect?.toLowerCase();
+
+    const filter = (list: any[]): any[] => {
       if (!term) return list;
       return list.filter(
         (item) =>
           (item.name && item.name.toLowerCase().includes(term)) ||
           (item.title && item.title.toLowerCase().includes(term)) ||
-          (item.visible?.name &&
-            item.visible.name.toLowerCase().includes(term)) ||
-          (item.id && String(item.id).includes(term)),
+          (item.visible?.name && item.visible.name.toLowerCase().includes(term)) ||
+          (item.id && String(item.id).toLowerCase().includes(term)),
       );
     };
 
-    switch (target) {
-      case "inventory":
-        return filter(this.state.inventory);
-      case "relationship":
-        return filter(this.state.relationships);
-      case "location":
-        if (term) return filter(this.state.locations);
-        return this.state.locations.map((l) => ({
-          id: l.id,
-          name: l.name,
-          visited: l.isVisited,
-        }));
-      case "quest":
-        return filter(this.state.quests);
-      case "knowledge":
-        return filter(this.state.knowledge || []);
-      case "faction":
-        return filter(this.state.factions || []);
-      case "character":
-        return this.state.character;
-      case "timeline":
-        return this.state.timeline ? this.state.timeline.slice(-20) : [];
-      case "causal_chain":
-        return this.state.causalChains || [];
-      case "global":
-        return {
-          time: this.state.time,
-          envTheme: this.state.envTheme,
-          theme: this.state.theme,
-          activeNodeId: this.state.activeNodeId,
-        };
-      default:
-        return { error: "Unknown target" };
+    try {
+      switch (target) {
+        case "inventory":
+          return createSuccess(filter(this.state.inventory), `Found ${filter(this.state.inventory).length} items`);
+
+        case "relationship":
+          return createSuccess(filter(this.state.relationships), `Found ${filter(this.state.relationships).length} NPCs`);
+
+        case "location":
+          if (term) {
+            return createSuccess(filter(this.state.locations), `Found ${filter(this.state.locations).length} locations`);
+          }
+          return createSuccess(
+            this.state.locations.map((l) => ({
+              id: l.id,
+              name: l.name,
+              visited: l.isVisited,
+              isCurrent: l.name === this.state.currentLocation || l.id === this.state.currentLocation,
+            })),
+            `Listed ${this.state.locations.length} locations`
+          );
+
+        case "quest":
+          return createSuccess(filter(this.state.quests), `Found ${filter(this.state.quests).length} quests`);
+
+        case "knowledge":
+          return createSuccess(filter(this.state.knowledge || []), `Found ${filter(this.state.knowledge || []).length} knowledge entries`);
+
+        case "faction":
+          return createSuccess(filter(this.state.factions || []), `Found ${filter(this.state.factions || []).length} factions`);
+
+        case "character": {
+          const aspect = queryOrAspect || "all";
+          const searchTerm = extraQuery?.toLowerCase();
+
+          const filterByTerm = <T extends { id?: string; name?: string }>(list: T[]): T[] => {
+            if (!searchTerm) return list;
+            return list.filter(
+              (item) =>
+                (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                (item.id && String(item.id).toLowerCase().includes(searchTerm))
+            );
+          };
+
+          switch (aspect) {
+            case "profile":
+              return createSuccess({
+                name: this.state.character.name,
+                title: this.state.character.title,
+                status: this.state.character.status,
+                appearance: this.state.character.appearance,
+                profession: this.state.character.profession,
+                background: this.state.character.background,
+                race: this.state.character.race,
+              }, "Character profile retrieved");
+            case "attributes":
+              return createSuccess(this.state.character.attributes, `Found ${this.state.character.attributes.length} attributes`);
+            case "skills":
+              return createSuccess(filterByTerm(this.state.character.skills), `Found skills`);
+            case "conditions":
+              return createSuccess(filterByTerm(this.state.character.conditions), `Found conditions`);
+            case "hiddenTraits":
+              return createSuccess(filterByTerm(this.state.character.hiddenTraits || []), `Found hidden traits`);
+            case "all":
+            default:
+              return createSuccess(this.state.character, "Full character data retrieved");
+          }
+        }
+
+        case "timeline":
+          const timeline = this.state.timeline ? this.state.timeline.slice(-20) : [];
+          if (term) {
+            const filtered = timeline.filter(
+              (e) =>
+                e.id?.toLowerCase().includes(term) ||
+                e.visible.description.toLowerCase().includes(term) ||
+                e.category.toLowerCase().includes(term)
+            );
+            return createSuccess(filtered, `Found ${filtered.length} timeline events`);
+          }
+          return createSuccess(timeline, `Retrieved ${timeline.length} recent events`);
+
+        case "causal_chain":
+          const chains = this.state.causalChains || [];
+          if (term) {
+            const filtered = chains.filter((c) => c.chainId.toLowerCase().includes(term));
+            return createSuccess(filtered, `Found ${filtered.length} causal chains`);
+          }
+          return createSuccess(chains, `Retrieved ${chains.length} causal chains`);
+
+        case "global":
+          return createSuccess({
+            time: this.state.time,
+            envTheme: this.state.envTheme,
+            theme: this.state.theme,
+            currentLocation: this.state.currentLocation,
+          }, "Global state retrieved");
+
+        default:
+          return createError(`Unknown query target: ${target}`, "INVALID_ACTION");
+      }
+    } catch (error) {
+      return createError(`Query failed: ${error}`, "UNKNOWN");
     }
   }
 
@@ -79,312 +205,736 @@ export class GameDatabase {
 
   public modify(
     target: string,
-    action: "add" | "update" | "remove",
+    action: string,
     data: unknown,
-  ): void {
-    switch (target) {
-      case "inventory":
-        this.modifyInventory(action, data);
-        break;
-      case "relationship":
-        this.modifyRelationship(action, data);
-        break;
-      case "location":
-        this.modifyLocation(action, data);
-        break;
-      case "quest":
-        this.modifyQuest(action, data);
-        break;
-      case "knowledge":
-        this.modifyKnowledge(action, data);
-        break;
-      case "faction":
-        this.modifyFaction(action, data);
-        break;
-      case "character":
-        this.modifyCharacter(data); // Character usually just updates
-        break;
-      case "timeline":
-        this.modifyTimeline(action, data);
-        break;
-      case "causal_chain":
-        this.modifyCausalChain(action, data);
-        break;
-      case "global":
-        this.modifyGlobal(data);
-        break;
+  ): ToolCallResult<unknown> {
+    try {
+      switch (target) {
+        case "inventory":
+          return this.modifyInventory(action, data as any);
+        case "relationship":
+          return this.modifyRelationship(action, data as any);
+        case "location":
+          return this.modifyLocation(action, data as any);
+        case "quest":
+          return this.modifyQuest(action, data as any);
+        case "knowledge":
+          return this.modifyKnowledge(action, data as any);
+        case "faction":
+          return this.modifyFaction(action, data as any);
+        case "character":
+          return this.modifyCharacter(data as any);
+        case "timeline":
+          return this.modifyTimeline(action, data as any);
+        case "causal_chain":
+          return this.modifyCausalChain(action, data as any);
+        case "global":
+          return this.modifyGlobal(data as any);
+        default:
+          return createError(`Unknown modification target: ${target}`, "INVALID_ACTION");
+      }
+    } catch (error) {
+      return createError(`Modification failed: ${error}`, "UNKNOWN");
     }
   }
 
-  // --- Specific Modifiers (Logic migrated from stateProcessors) ---
+  // --- Specific Modifiers ---
 
   private modifyInventory(
     action: string,
-    data: Partial<InventoryItem> & { id?: number },
-  ) {
+    data: Partial<InventoryItem> & { id?: string; name?: string },
+  ): ToolCallResult<InventoryItem | { removed: string }> {
     if (action === "add") {
+      if (!data.name) {
+        return createError("Item name is required for 'add' action", "INVALID_DATA");
+      }
+
       const exists = this.state.inventory.some(
         (i) => (data.id && i.id === data.id) || i.name === data.name,
       );
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.item++;
-        this.state.inventory.push({
-          id: newId,
-          name: data.name || "Unknown Item",
-          visible: {
-            description: data.visible?.description || "A mysterious item.",
-            notes: data.visible?.notes,
-          },
-          hidden: {
-            truth: data.hidden?.truth || "The truth is hidden.",
-            secrets: data.hidden?.secrets,
-          },
-          createdAt: Date.now(),
-          lastModified: Date.now(),
-          lore: data.lore,
-          unlocked: data.unlocked ?? false,
-          highlight: true,
-        });
+      if (exists) {
+        return createError(`Item "${data.name}" already exists`, "ALREADY_EXISTS");
       }
-    } else if (action === "remove") {
-      this.state.inventory = this.state.inventory.filter(
-        (i) => !(data.id && i.id === data.id) && i.name !== data.name,
-      );
-    } else if (action === "update") {
-      const item = this.state.inventory.find(
-        (i) => (data.id && i.id === data.id) || i.name === data.name,
-      );
-      if (item) {
-        if (data.name) item.name = data.name;
-        if (data.visible) Object.assign(item.visible, data.visible);
-        if (data.hidden) Object.assign(item.hidden, data.hidden);
-        if (data.unlocked !== undefined) item.unlocked = data.unlocked;
-        item.highlight = true;
-        item.lastModified = Date.now();
-      }
+
+      const newId = data.id || this.generateId("inventory");
+      const newItem: InventoryItem = {
+        id: newId,
+        name: data.name,
+        visible: {
+          description: data.visible?.description || "A mysterious item.",
+          notes: data.visible?.notes,
+        },
+        hidden: {
+          truth: data.hidden?.truth || "The truth is hidden.",
+          secrets: data.hidden?.secrets,
+        },
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+        lore: data.lore,
+        unlocked: data.unlocked ?? false,
+        highlight: true,
+      };
+      this.state.inventory.push(newItem);
+      return createSuccess(newItem, `Added item: ${newItem.name} (${newItem.id})`);
     }
+
+    if (action === "remove") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Item ID or name is required for 'remove' action", "INVALID_DATA");
+      }
+
+      const index = this.state.inventory.findIndex(
+        (i) => i.id === identifier || i.name === identifier,
+      );
+      if (index === -1) {
+        return createError(`Item "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      const removed = this.state.inventory.splice(index, 1)[0];
+      return createSuccess({ removed: removed.id }, `Removed item: ${removed.name}`);
+    }
+
+    if (action === "update") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Item ID or name is required for 'update' action", "INVALID_DATA");
+      }
+
+      const item = this.state.inventory.find(
+        (i) => i.id === identifier || i.name === identifier,
+      );
+      if (!item) {
+        return createError(`Item "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (data.name && data.name !== identifier) item.name = data.name;
+      if (data.visible) Object.assign(item.visible, data.visible);
+      if (data.hidden) Object.assign(item.hidden, data.hidden);
+      if (data.lore !== undefined) item.lore = data.lore;
+      if (data.unlocked !== undefined) item.unlocked = data.unlocked;
+      item.highlight = true;
+      item.lastModified = Date.now();
+
+      return createSuccess(item, `Updated item: ${item.name}`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
   private modifyRelationship(
     action: string,
-    data: Partial<Relationship> & {
-      id?: number;
-      name?: string;
-      visible?: any;
-      hidden?: any;
-    },
-  ) {
+    data: Partial<Relationship> & { id?: string; name?: string; visible?: any; hidden?: any },
+  ): ToolCallResult<Relationship | { removed: string }> {
+    const getName = () => data.visible?.name || data.name;
+
     if (action === "add") {
+      const name = getName();
+      if (!name) {
+        return createError("NPC name is required for 'add' action", "INVALID_DATA");
+      }
+
       const exists = this.state.relationships.some(
-        (r) => (data.id && r.id === data.id) || r.visible.name === data.name,
+        (r) => (data.id && r.id === data.id) || r.visible.name === name,
       );
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.npc++;
-        this.state.relationships.push({
-          id: newId,
-          visible: {
-            name: data.name,
-            relationshipType: data.visible?.relationshipType || "Stranger",
-            affinity: data.visible?.affinity || 0,
-            description: data.visible?.description || "A stranger.",
-            appearance: data.visible?.appearance,
-            personality: data.visible?.personality,
-            currentImpression: data.visible?.currentImpression,
-            affinityKnown: data.visible?.affinityKnown ?? false,
-          },
-          hidden: {
-            trueName: data.hidden?.trueName,
-            relationshipType: data.hidden?.relationshipType || "Stranger",
-            realPersonality: data.hidden?.realPersonality || "Unknown",
-            realMotives: data.hidden?.realMotives || "Unknown",
-            status: data.hidden?.status || "Normal",
-            secrets: data.hidden?.secrets || [],
-            trueAffinity: data.hidden?.trueAffinity || 0,
-          },
-          known: data.known ?? true,
-          createdAt: Date.now(),
-          lastModified: Date.now(),
-          highlight: true,
-        });
+      if (exists) {
+        return createError(`NPC "${name}" already exists`, "ALREADY_EXISTS");
       }
-    } else if (action === "update") {
-      const npc = this.state.relationships.find(
-        (r) => (data.id && r.id === data.id) || r.visible.name === data.name,
-      );
-      if (npc) {
-        if (data.visible) Object.assign(npc.visible, data.visible);
-        if (data.hidden) Object.assign(npc.hidden, data.hidden);
-        if (data.known !== undefined) npc.known = data.known;
-        npc.highlight = true;
-        npc.lastModified = Date.now();
-      }
+
+      const newId = data.id || this.generateId("npc");
+      const newNpc: Relationship = {
+        id: newId,
+        visible: {
+          name: name,
+          relationshipType: data.visible?.relationshipType || "Stranger",
+          affinity: data.visible?.affinity ?? 50,
+          affinityKnown: data.visible?.affinityKnown ?? false,
+          description: data.visible?.description || "A stranger.",
+          appearance: data.visible?.appearance,
+          personality: data.visible?.personality,
+          currentImpression: data.visible?.currentImpression,
+        },
+        hidden: {
+          trueName: data.hidden?.trueName,
+          relationshipType: data.hidden?.relationshipType || "Stranger",
+          realPersonality: data.hidden?.realPersonality || "Unknown",
+          realMotives: data.hidden?.realMotives || "Unknown",
+          status: data.hidden?.status || "Normal",
+          secrets: data.hidden?.secrets || [],
+          trueAffinity: data.hidden?.trueAffinity ?? 50,
+        },
+        known: data.known ?? true,
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+        notes: data.notes,
+        unlocked: data.unlocked ?? false,
+        highlight: true,
+      };
+      this.state.relationships.push(newNpc);
+      return createSuccess(newNpc, `Added NPC: ${newNpc.visible.name} (${newNpc.id})`);
     }
+
+    if (action === "remove") {
+      const identifier = data.id || getName();
+      if (!identifier) {
+        return createError("NPC ID or name is required for 'remove' action", "INVALID_DATA");
+      }
+
+      const index = this.state.relationships.findIndex(
+        (r) => r.id === identifier || r.visible.name === identifier,
+      );
+      if (index === -1) {
+        return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      const removed = this.state.relationships.splice(index, 1)[0];
+      return createSuccess({ removed: removed.id }, `Removed NPC: ${removed.visible.name}`);
+    }
+
+    if (action === "update") {
+      const identifier = data.id || getName();
+      if (!identifier) {
+        return createError("NPC ID or name is required for 'update' action", "INVALID_DATA");
+      }
+
+      const npc = this.state.relationships.find(
+        (r) => r.id === identifier || r.visible.name === identifier,
+      );
+      if (!npc) {
+        return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (data.visible) Object.assign(npc.visible, data.visible);
+      if (data.hidden) Object.assign(npc.hidden, data.hidden);
+      if (data.known !== undefined) npc.known = data.known;
+      if (data.notes !== undefined) npc.notes = data.notes;
+      if (data.unlocked !== undefined) npc.unlocked = data.unlocked;
+      npc.highlight = true;
+      npc.lastModified = Date.now();
+
+      return createSuccess(npc, `Updated NPC: ${npc.visible.name}`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
   private modifyLocation(
     action: string,
-    data: Partial<Location> & { id?: number; isCurrent?: boolean },
-  ) {
-    // If action is "update" and target is "current", we move the player
-    if (action === "update" && data.isCurrent) {
+    data: Partial<Location> & { id?: string; isCurrent?: boolean },
+  ): ToolCallResult<Location | { removed: string }> {
+    if (action === "add") {
+      if (!data.name) {
+        return createError("Location name is required for 'add' action", "INVALID_DATA");
+      }
+
+      const exists = this.state.locations.find((l) => l.name === data.name);
+      if (exists) {
+        if (data.isCurrent) {
+          this.state.currentLocation = data.name;
+          exists.isVisited = true;
+          exists.highlight = true;
+          return createSuccess(exists, `Moved to existing location: ${data.name}`);
+        }
+        return createError(`Location "${data.name}" already exists`, "ALREADY_EXISTS");
+      }
+
+      const newId = data.id || this.generateId("location");
+      const newLocation: Location = {
+        id: newId,
+        name: data.name,
+        visible: {
+          description: data.visible?.description || "A new place.",
+          knownFeatures: data.visible?.knownFeatures || [],
+        },
+        hidden: {
+          fullDescription: data.hidden?.fullDescription || "",
+          hiddenFeatures: data.hidden?.hiddenFeatures || [],
+          secrets: data.hidden?.secrets || [],
+        },
+        isVisited: true,
+        environment: data.environment || "Unknown",
+        createdAt: Date.now(),
+        unlocked: data.unlocked ?? false,
+        highlight: true,
+      };
+      this.state.locations.push(newLocation);
       this.state.currentLocation = data.name;
+
+      return createSuccess(newLocation, `Added location: ${newLocation.name} (${newLocation.id})`);
     }
 
-    if (action === "add") {
-      const exists = this.state.locations.find((l) => l.name === data.name);
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.location++;
-        this.state.locations.push({
-          id: newId,
-          name: data.name,
-          visible: {
-            description: data.visible?.description || "A new place.",
-            knownFeatures: data.visible?.knownFeatures || [],
-          },
-          hidden: {
-            fullDescription: data.hidden?.fullDescription || "",
-            hiddenFeatures: data.hidden?.hiddenFeatures || [],
-            secrets: data.hidden?.secrets || [],
-          },
-          isVisited: true,
-          environment: data.environment || "Unknown",
-          createdAt: Date.now(),
-        });
-        this.state.currentLocation = data.name; // Auto-move to new location if added? Usually yes.
-      } else {
-        // If exists, just ensure visited
-        exists.isVisited = true;
-        this.state.currentLocation = data.name;
+    if (action === "remove") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Location ID or name is required for 'remove' action", "INVALID_DATA");
       }
-    } else if (action === "update") {
-      const loc = this.state.locations.find(
-        (l) => l.name === data.name || l.id === data.id,
+
+      const index = this.state.locations.findIndex(
+        (l) => l.id === identifier || l.name === identifier,
       );
-      if (loc) {
-        if (data.visible) Object.assign(loc.visible, data.visible);
-        if (data.hidden) Object.assign(loc.hidden, data.hidden);
-        if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
+      if (index === -1) {
+        return createError(`Location "${identifier}" not found`, "NOT_FOUND");
       }
+
+      const removed = this.state.locations.splice(index, 1)[0];
+      if (this.state.currentLocation === removed.name || this.state.currentLocation === removed.id) {
+        this.state.currentLocation = this.state.locations[0]?.name || "";
+      }
+
+      return createSuccess({ removed: removed.id }, `Removed location: ${removed.name}`);
     }
+
+    if (action === "update") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Location ID or name is required for 'update' action", "INVALID_DATA");
+      }
+
+      const loc = this.state.locations.find(
+        (l) => l.name === identifier || l.id === identifier,
+      );
+      if (!loc) {
+        return createError(`Location "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (data.visible) Object.assign(loc.visible, data.visible);
+      if (data.hidden) Object.assign(loc.hidden, data.hidden);
+      if (data.environment) loc.environment = data.environment;
+      if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
+      if (data.unlocked !== undefined) loc.unlocked = data.unlocked;
+      loc.highlight = true;
+
+      if (data.isCurrent) {
+        this.state.currentLocation = loc.name;
+        loc.isVisited = true;
+      }
+
+      return createSuccess(loc, `Updated location: ${loc.name}`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
-  private modifyQuest(action: string, data: Partial<Quest> & { id?: number }) {
+  private modifyQuest(
+    action: string,
+    data: Partial<Quest> & { id?: string },
+  ): ToolCallResult<Quest | { removed: string }> {
     if (action === "add") {
+      if (!data.title) {
+        return createError("Quest title is required for 'add' action", "INVALID_DATA");
+      }
+
       const exists = this.state.quests.find((q) => q.title === data.title);
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.quest++;
-        this.state.quests.push({
-          id: newId,
-          title: data.title,
-          type: data.type || "side",
-          status: "active",
-          visible: {
-            description: data.visible?.description || "",
-            objectives: data.visible?.objectives || [],
-          },
-          hidden: {
-            trueDescription: data.hidden?.trueDescription,
-            trueObjectives: data.hidden?.trueObjectives,
-          },
-          createdAt: Date.now(),
-          lastModified: Date.now(),
-          highlight: true,
-        });
+      if (exists) {
+        return createError(`Quest "${data.title}" already exists`, "ALREADY_EXISTS");
       }
-    } else if (action === "update") {
-      const quest = this.state.quests.find(
-        (q) => q.title === data.title || q.id === data.id,
-      );
-      if (quest) {
-        if (data.status) quest.status = data.status;
-        if (data.visible) Object.assign(quest.visible, data.visible);
-        if (data.hidden) Object.assign(quest.hidden, data.hidden);
-        quest.highlight = true;
-        quest.lastModified = Date.now();
-      }
+
+      const newId = data.id || this.generateId("quest");
+      const newQuest: Quest = {
+        id: newId,
+        title: data.title,
+        type: data.type || "side",
+        status: "active",
+        visible: {
+          description: data.visible?.description || "",
+          objectives: data.visible?.objectives || [],
+        },
+        hidden: {
+          trueDescription: data.hidden?.trueDescription,
+          trueObjectives: data.hidden?.trueObjectives,
+          secretOutcome: data.hidden?.secretOutcome,
+        },
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+        unlocked: data.unlocked ?? false,
+        highlight: true,
+      };
+      this.state.quests.push(newQuest);
+      return createSuccess(newQuest, `Added quest: ${newQuest.title} (${newQuest.id})`);
     }
+
+    if (action === "remove") {
+      const identifier = data.id || data.title;
+      if (!identifier) {
+        return createError("Quest ID or title is required for 'remove' action", "INVALID_DATA");
+      }
+
+      const index = this.state.quests.findIndex(
+        (q) => q.id === identifier || q.title === identifier,
+      );
+      if (index === -1) {
+        return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      const removed = this.state.quests.splice(index, 1)[0];
+      return createSuccess({ removed: removed.id }, `Removed quest: ${removed.title}`);
+    }
+
+    if (action === "update" || action === "complete" || action === "fail") {
+      const identifier = data.id || data.title;
+      if (!identifier) {
+        return createError("Quest ID or title is required", "INVALID_DATA");
+      }
+
+      const quest = this.state.quests.find(
+        (q) => q.title === identifier || q.id === identifier,
+      );
+      if (!quest) {
+        return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (action === "complete") quest.status = "completed";
+      else if (action === "fail") quest.status = "failed";
+      else if (data.status) quest.status = data.status;
+
+      if (data.visible) Object.assign(quest.visible, data.visible);
+      if (data.hidden) Object.assign(quest.hidden, data.hidden);
+      if (data.unlocked !== undefined) quest.unlocked = data.unlocked;
+      quest.highlight = true;
+      quest.lastModified = Date.now();
+
+      return createSuccess(quest, `Updated quest: ${quest.title} (${quest.status})`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
   private modifyKnowledge(
     action: string,
-    data: Partial<KnowledgeEntry> & { id?: number },
-  ) {
+    data: Partial<KnowledgeEntry> & { id?: string },
+  ): ToolCallResult<KnowledgeEntry> {
     if (action === "add") {
+      if (!data.title) {
+        return createError("Knowledge title is required for 'add' action", "INVALID_DATA");
+      }
+
       const exists = this.state.knowledge.find((k) => k.title === data.title);
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.knowledge++;
-        this.state.knowledge.push({
-          id: newId,
-          category: data.category || "other", // Default to 'other' if invalid
-          title: data.title,
-          visible: {
-            description: data.visible?.description || "",
-            details: data.visible?.details,
-          },
-          hidden: {
-            fullTruth: data.hidden?.fullTruth || "",
-          },
-          unlocked: data.unlocked ?? false,
-          createdAt: Date.now(),
-          lastModified: Date.now(),
-          highlight: true,
-        });
+      if (exists) {
+        return createError(`Knowledge "${data.title}" already exists`, "ALREADY_EXISTS");
       }
-    } else if (action === "update") {
-      const k = this.state.knowledge.find(
-        (k) => k.title === data.title || k.id === data.id,
-      );
-      if (k) {
-        if (data.visible) Object.assign(k.visible, data.visible);
-        if (data.hidden) Object.assign(k.hidden, data.hidden);
-        if (data.unlocked !== undefined) k.unlocked = data.unlocked;
-        k.highlight = true;
-        k.lastModified = Date.now();
-      }
+
+      const newId = data.id || this.generateId("knowledge");
+      const newKnowledge: KnowledgeEntry = {
+        id: newId,
+        title: data.title,
+        category: data.category || "other",
+        visible: {
+          description: data.visible?.description || "",
+          details: data.visible?.details,
+        },
+        hidden: {
+          fullTruth: data.hidden?.fullTruth || "",
+          misconceptions: data.hidden?.misconceptions,
+          toBeRevealed: data.hidden?.toBeRevealed,
+        },
+        discoveredAt: data.discoveredAt,
+        relatedTo: data.relatedTo,
+        unlocked: data.unlocked ?? false,
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+        highlight: true,
+      };
+      this.state.knowledge.push(newKnowledge);
+      return createSuccess(newKnowledge, `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})`);
     }
+
+    if (action === "update") {
+      const identifier = data.id || data.title;
+      if (!identifier) {
+        return createError("Knowledge ID or title is required for 'update' action", "INVALID_DATA");
+      }
+
+      const k = this.state.knowledge.find(
+        (k) => k.title === identifier || k.id === identifier,
+      );
+      if (!k) {
+        return createError(`Knowledge "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (data.visible) Object.assign(k.visible, data.visible);
+      if (data.hidden) Object.assign(k.hidden, data.hidden);
+      if (data.category) k.category = data.category;
+      if (data.unlocked !== undefined) k.unlocked = data.unlocked;
+      k.highlight = true;
+      k.lastModified = Date.now();
+
+      return createSuccess(k, `Updated knowledge: ${k.title}`);
+    }
+
+    return createError(`Invalid action: ${action}. Knowledge can only be added or updated.`, "INVALID_ACTION");
   }
 
   private modifyFaction(
     action: string,
-    data: Partial<Faction> & { id?: number },
-  ) {
+    data: Partial<Faction> & { id?: string },
+  ): ToolCallResult<Faction | { removed: string }> {
     if (action === "add") {
+      if (!data.name) {
+        return createError("Faction name is required for 'add' action", "INVALID_DATA");
+      }
+
       const exists = this.state.factions.find((f) => f.name === data.name);
-      if (!exists) {
-        const newId = data.id || this.state.nextIds.faction++;
-        this.state.factions.push({
-          id: newId,
-          name: data.name || "Unknown Faction",
-          visible: data.visible || "Neutral",
-          hidden: data.hidden || "Unknown",
-          highlight: true,
-        });
+      if (exists) {
+        return createError(`Faction "${data.name}" already exists`, "ALREADY_EXISTS");
       }
-    } else if (action === "update") {
-      const f = this.state.factions.find(
-        (f) => f.name === data.name || f.id === data.id,
-      );
-      if (f) {
-        if (data.visible) f.visible = data.visible;
-        if (data.hidden) f.hidden = data.hidden;
-        f.highlight = true;
-      }
+
+      const newId = data.id || this.generateId("faction");
+      const newFaction: Faction = {
+        id: newId,
+        name: data.name,
+        visible: data.visible || "Neutral",
+        hidden: data.hidden || "Unknown",
+        highlight: true,
+      };
+      this.state.factions.push(newFaction);
+      return createSuccess(newFaction, `Added faction: ${newFaction.name} (${newFaction.id})`);
     }
+
+    if (action === "remove") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Faction ID or name is required for 'remove' action", "INVALID_DATA");
+      }
+
+      const index = this.state.factions.findIndex(
+        (f) => f.id === identifier || f.name === identifier,
+      );
+      if (index === -1) {
+        return createError(`Faction "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      const removed = this.state.factions.splice(index, 1)[0];
+      return createSuccess({ removed: removed.id }, `Removed faction: ${removed.name}`);
+    }
+
+    if (action === "update") {
+      const identifier = data.id || data.name;
+      if (!identifier) {
+        return createError("Faction ID or name is required for 'update' action", "INVALID_DATA");
+      }
+
+      const f = this.state.factions.find(
+        (f) => f.name === identifier || f.id === identifier,
+      );
+      if (!f) {
+        return createError(`Faction "${identifier}" not found`, "NOT_FOUND");
+      }
+
+      if (data.name && data.name !== identifier) f.name = data.name;
+      if (data.visible) f.visible = data.visible;
+      if (data.hidden) f.hidden = data.hidden;
+      f.highlight = true;
+
+      return createSuccess(f, `Updated faction: ${f.name}`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
-  private modifyCharacter(data: Partial<CharacterStatus>) {
-    if (data.status) this.state.character.status = data.status;
-    if (data.appearance) this.state.character.appearance = data.appearance;
-    if (data.profession) this.state.character.profession = data.profession;
+  private modifyCharacter(
+    data: {
+      profile?: Partial<CharacterStatus>;
+      attributes?: Array<{ action: string; name: string; value?: number; maxValue?: number; color?: string }>;
+      skills?: Array<{ action: string; id?: string; name: string; [key: string]: any }>;
+      conditions?: Array<{ action: string; id?: string; name: string; [key: string]: any }>;
+      hiddenTraits?: Array<{ action: string; id?: string; name: string; [key: string]: any }>;
+    },
+  ): ToolCallResult<{ updated: string[] }> {
+    const updated: string[] = [];
+
+    // Profile updates
+    if (data.profile) {
+      if (data.profile.status) this.state.character.status = data.profile.status;
+      if (data.profile.appearance) this.state.character.appearance = data.profile.appearance;
+      if (data.profile.profession) this.state.character.profession = data.profile.profession;
+      if (data.profile.background) this.state.character.background = data.profile.background;
+      if (data.profile.race) this.state.character.race = data.profile.race;
+      if (data.profile.title) this.state.character.title = data.profile.title;
+      updated.push("profile");
+    }
+
+    // Attribute updates
+    if (data.attributes) {
+      for (const attr of data.attributes) {
+        if (attr.action === "add") {
+          const exists = this.state.character.attributes.find((a) => a.label === attr.name);
+          if (!exists) {
+            this.state.character.attributes.push({
+              label: attr.name,
+              value: attr.value ?? 0,
+              maxValue: attr.maxValue ?? 100,
+              color: (attr.color as CharacterAttribute["color"]) || "gray",
+            });
+            updated.push(`attribute:${attr.name}:added`);
+          }
+        } else if (attr.action === "update") {
+          const existing = this.state.character.attributes.find((a) => a.label === attr.name);
+          if (existing) {
+            if (attr.value !== undefined) existing.value = attr.value;
+            if (attr.maxValue !== undefined) existing.maxValue = attr.maxValue;
+            if (attr.color) existing.color = attr.color as CharacterAttribute["color"];
+            updated.push(`attribute:${attr.name}:updated`);
+          }
+        } else if (attr.action === "remove") {
+          const index = this.state.character.attributes.findIndex((a) => a.label === attr.name);
+          if (index !== -1) {
+            this.state.character.attributes.splice(index, 1);
+            updated.push(`attribute:${attr.name}:removed`);
+          }
+        }
+      }
+    }
+
+    // Skill updates
+    if (data.skills) {
+      for (const skill of data.skills) {
+        if (skill.action === "add") {
+          const exists = this.state.character.skills.find((s) => s.name === skill.name);
+          if (!exists) {
+            const newId = skill.id || this.generateId("skill");
+            this.state.character.skills.push({
+              id: newId,
+              name: skill.name,
+              level: skill.level || "Novice",
+              visible: skill.visible || { description: "", knownEffects: [] },
+              hidden: skill.hidden || { trueDescription: "", hiddenEffects: [] },
+              category: skill.category,
+              unlocked: skill.unlocked ?? false,
+              highlight: true,
+            });
+            updated.push(`skill:${skill.name}:added`);
+          }
+        } else if (skill.action === "update") {
+          const existing = this.state.character.skills.find(
+            (s) => s.id === skill.id || s.name === skill.name
+          );
+          if (existing) {
+            if (skill.level) existing.level = skill.level;
+            if (skill.visible) Object.assign(existing.visible, skill.visible);
+            if (skill.hidden) Object.assign(existing.hidden, skill.hidden);
+            if (skill.unlocked !== undefined) existing.unlocked = skill.unlocked;
+            existing.highlight = true;
+            updated.push(`skill:${skill.name}:updated`);
+          }
+        } else if (skill.action === "remove") {
+          const index = this.state.character.skills.findIndex(
+            (s) => s.id === skill.id || s.name === skill.name
+          );
+          if (index !== -1) {
+            this.state.character.skills.splice(index, 1);
+            updated.push(`skill:${skill.name}:removed`);
+          }
+        }
+      }
+    }
+
+    // Condition updates
+    if (data.conditions) {
+      for (const cond of data.conditions) {
+        if (cond.action === "add") {
+          const exists = this.state.character.conditions.find((c) => c.name === cond.name);
+          if (!exists) {
+            const newId = cond.id || this.generateId("condition");
+            this.state.character.conditions.push({
+              id: newId,
+              name: cond.name,
+              type: cond.type || "neutral",
+              visible: cond.visible || { description: "", perceivedSeverity: "" },
+              hidden: cond.hidden || { trueCause: "", actualSeverity: 0, progression: "" },
+              effects: cond.effects || { visible: [], hidden: [] },
+              duration: cond.duration,
+              unlocked: cond.unlocked ?? false,
+              highlight: true,
+            });
+            updated.push(`condition:${cond.name}:added`);
+          }
+        } else if (cond.action === "update") {
+          const existing = this.state.character.conditions.find(
+            (c) => c.id === cond.id || c.name === cond.name
+          );
+          if (existing) {
+            if (cond.type) existing.type = cond.type;
+            if (cond.visible) Object.assign(existing.visible, cond.visible);
+            if (cond.hidden) Object.assign(existing.hidden, cond.hidden);
+            if (cond.effects) existing.effects = cond.effects;
+            if (cond.duration !== undefined) existing.duration = cond.duration;
+            if (cond.unlocked !== undefined) existing.unlocked = cond.unlocked;
+            existing.highlight = true;
+            updated.push(`condition:${cond.name}:updated`);
+          }
+        } else if (cond.action === "remove") {
+          const index = this.state.character.conditions.findIndex(
+            (c) => c.id === cond.id || c.name === cond.name
+          );
+          if (index !== -1) {
+            this.state.character.conditions.splice(index, 1);
+            updated.push(`condition:${cond.name}:removed`);
+          }
+        }
+      }
+    }
+
+    // Hidden Trait updates
+    if (data.hiddenTraits) {
+      if (!this.state.character.hiddenTraits) {
+        this.state.character.hiddenTraits = [];
+      }
+
+      for (const trait of data.hiddenTraits) {
+        if (trait.action === "add") {
+          const exists = this.state.character.hiddenTraits!.find((t) => t.name === trait.name);
+          if (!exists) {
+            const newId = trait.id || this.generateId("hiddenTrait");
+            this.state.character.hiddenTraits!.push({
+              id: newId,
+              name: trait.name,
+              description: trait.description || "",
+              effects: trait.effects || [],
+              triggerConditions: trait.triggerConditions,
+              unlocked: trait.unlocked ?? false,
+              highlight: true,
+            });
+            updated.push(`trait:${trait.name}:added`);
+          }
+        } else if (trait.action === "update") {
+          const existing = this.state.character.hiddenTraits!.find(
+            (t) => t.id === trait.id || t.name === trait.name
+          );
+          if (existing) {
+            if (trait.description) existing.description = trait.description;
+            if (trait.effects) existing.effects = trait.effects;
+            if (trait.triggerConditions) existing.triggerConditions = trait.triggerConditions;
+            if (trait.unlocked !== undefined) existing.unlocked = trait.unlocked;
+            existing.highlight = true;
+            updated.push(`trait:${trait.name}:updated`);
+          }
+        } else if (trait.action === "remove") {
+          const index = this.state.character.hiddenTraits!.findIndex(
+            (t) => t.id === trait.id || t.name === trait.name
+          );
+          if (index !== -1) {
+            this.state.character.hiddenTraits!.splice(index, 1);
+            updated.push(`trait:${trait.name}:removed`);
+          }
+        }
+      }
+    }
+
+    if (updated.length === 0) {
+      return createError("No valid character updates provided", "INVALID_DATA");
+    }
+
+    return createSuccess({ updated }, `Character updated: ${updated.join(", ")}`);
   }
 
   private modifyTimeline(
     action: string,
     data: Partial<TimelineEvent> & { description?: string },
-  ) {
+  ): ToolCallResult<TimelineEvent> {
     if (action === "add") {
+      const newId = data.id || this.generateId("timeline");
       const newEvent: TimelineEvent = {
-        id: data.id || Date.now().toString(),
+        id: newId,
         gameTime: data.gameTime || this.state.time,
         category: data.category || "world_event",
         visible: {
@@ -403,43 +953,101 @@ export class GameDatabase {
         highlight: true,
       };
       this.state.timeline.push(newEvent);
-    } else if (action === "update") {
+      return createSuccess(newEvent, `Added timeline event: ${newEvent.id}`);
+    }
+
+    if (action === "update") {
+      if (!data.id) {
+        return createError("Event ID is required for 'update' action", "INVALID_DATA");
+      }
+
       const event = this.state.timeline.find((e) => e.id === data.id);
-      if (event) {
-        if (data.visible) Object.assign(event.visible, data.visible);
-        if (data.hidden) Object.assign(event.hidden, data.hidden);
-        if (data.unlocked !== undefined) event.unlocked = data.unlocked;
-        if (data.known !== undefined) event.known = data.known;
-        event.highlight = true;
+      if (!event) {
+        return createError(`Timeline event "${data.id}" not found`, "NOT_FOUND");
       }
+
+      if (data.visible) Object.assign(event.visible, data.visible);
+      if (data.hidden) Object.assign(event.hidden, data.hidden);
+      if (data.unlocked !== undefined) event.unlocked = data.unlocked;
+      if (data.known !== undefined) event.known = data.known;
+      event.highlight = true;
+
+      return createSuccess(event, `Updated timeline event: ${event.id}`);
     }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
-  private modifyCausalChain(action: string, data: Partial<CausalChain>) {
+  private modifyCausalChain(
+    action: string,
+    data: Partial<CausalChain>,
+  ): ToolCallResult<CausalChain> {
     if (action === "add") {
-      if (data.chainId && data.rootCause) {
-        this.state.causalChains.push({
-          chainId: data.chainId,
-          rootCause: data.rootCause,
-          events: [],
-          status: data.status || "active",
-          pendingConsequences: data.pendingConsequences,
-        });
+      if (!data.chainId) {
+        return createError("Chain ID is required for 'add' action", "INVALID_DATA");
       }
-    } else if (action === "update") {
-      const chain = this.state.causalChains.find(
-        (c) => c.chainId === data.chainId,
-      );
-      if (chain) {
-        if (data.status) chain.status = data.status;
-        if (data.pendingConsequences)
-          chain.pendingConsequences = data.pendingConsequences;
+      if (!data.rootCause) {
+        return createError("Root cause is required for 'add' action", "INVALID_DATA");
       }
+
+      const exists = this.state.causalChains.find((c) => c.chainId === data.chainId);
+      if (exists) {
+        return createError(`Causal chain "${data.chainId}" already exists`, "ALREADY_EXISTS");
+      }
+
+      const newChain: CausalChain = {
+        chainId: data.chainId,
+        rootCause: data.rootCause,
+        events: [],
+        status: data.status || "active",
+        pendingConsequences: data.pendingConsequences,
+      };
+      this.state.causalChains.push(newChain);
+      return createSuccess(newChain, `Added causal chain: ${newChain.chainId}`);
     }
+
+    if (action === "update" || action === "resolve" || action === "interrupt") {
+      if (!data.chainId) {
+        return createError("Chain ID is required", "INVALID_DATA");
+      }
+
+      const chain = this.state.causalChains.find((c) => c.chainId === data.chainId);
+      if (!chain) {
+        return createError(`Causal chain "${data.chainId}" not found`, "NOT_FOUND");
+      }
+
+      if (action === "resolve") chain.status = "resolved";
+      else if (action === "interrupt") chain.status = "interrupted";
+      else if (data.status) chain.status = data.status;
+
+      if (data.pendingConsequences) {
+        chain.pendingConsequences = data.pendingConsequences;
+      }
+
+      return createSuccess(chain, `Updated causal chain: ${chain.chainId} (${chain.status})`);
+    }
+
+    return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
-  private modifyGlobal(data: any) {
-    if (data.time) this.state.time = data.time;
-    if (data.envTheme) this.state.envTheme = data.envTheme;
+  private modifyGlobal(
+    data: { time?: string; envTheme?: string; environment?: string },
+  ): ToolCallResult<{ updated: string[] }> {
+    const updated: string[] = [];
+
+    if (data.time) {
+      this.state.time = data.time;
+      updated.push("time");
+    }
+    if (data.envTheme) {
+      this.state.envTheme = data.envTheme;
+      updated.push("envTheme");
+    }
+
+    if (updated.length === 0) {
+      return createError("No valid global updates provided", "INVALID_DATA");
+    }
+
+    return createSuccess({ updated }, `Global state updated: ${updated.join(", ")}`);
   }
 }

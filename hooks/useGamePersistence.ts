@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { GameState, SaveSlot } from "../types";
 import {
   saveGameState,
@@ -10,6 +10,21 @@ import {
   clearDatabase,
 } from "../utils/indexedDB";
 
+// Default nextIds structure for recovery
+const DEFAULT_NEXT_IDS = {
+  item: 1,
+  npc: 1,
+  location: 1,
+  knowledge: 1,
+  quest: 1,
+  faction: 1,
+  timeline: 1,
+  causalChain: 1,
+  skill: 1,
+  condition: 1,
+  hiddenTrait: 1,
+};
+
 export const useGamePersistence = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
@@ -19,6 +34,8 @@ export const useGamePersistence = (
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
+  // Track if we should skip the next auto-save (e.g., during error recovery)
+  const [skipNextSave, setSkipNextSave] = useState(false);
 
   // Use memo for latest slot ID
   const latestSlotId = useMemo(() => {
@@ -27,31 +44,176 @@ export const useGamePersistence = (
     return sorted[0].id;
   }, [saveSlots]);
 
-  // Helper to sanitize and fix state on load
-  const sanitizeState = (parsed: Record<string, any>): GameState => {
-    // Reset processing state on load to prevent stuck state
+  /**
+   * Comprehensive state sanitization and repair.
+   * Called when loading a save to fix any corrupted or incomplete state.
+   */
+  const sanitizeState = useCallback((parsed: Record<string, any>): GameState => {
+    const repairLog: string[] = [];
+
+    // === 1. Reset transient processing states ===
     parsed.isProcessing = false;
-    // Always clear image generation state on load
-    // If an image was generating when saved, consider it failed
     parsed.isImageGenerating = false;
+    parsed.generatingNodeId = null;
     parsed.error = null;
 
-    // Fix Dangling User Node (Crash/Exit during generation)
-    // If the last node is a 'user' node, it means we never got a response.
-    // Revert to parent so the user can try again.
-    if (parsed.activeNodeId && parsed.nodes[parsed.activeNodeId]) {
+    // === 2. Fix missing or corrupted nextIds ===
+    if (!parsed.nextIds || typeof parsed.nextIds !== 'object') {
+      repairLog.push("Repaired: missing nextIds");
+      parsed.nextIds = { ...DEFAULT_NEXT_IDS };
+    } else {
+      // Ensure all fields exist
+      for (const [key, defaultVal] of Object.entries(DEFAULT_NEXT_IDS)) {
+        if (typeof parsed.nextIds[key] !== 'number') {
+          repairLog.push(`Repaired: nextIds.${key} was invalid`);
+          parsed.nextIds[key] = defaultVal;
+        }
+      }
+    }
+
+    // === 3. Recalculate nextIds based on actual data to prevent ID collisions ===
+    const recalculateNextId = (items: any[] | undefined, prefix: string, field: keyof typeof DEFAULT_NEXT_IDS) => {
+      if (!items || !Array.isArray(items)) return;
+      let maxId = 0;
+      for (const item of items) {
+        if (item.id && typeof item.id === 'string' && item.id.startsWith(`${prefix}:`)) {
+          const num = parseInt(item.id.split(':')[1], 10);
+          if (!isNaN(num) && num > maxId) maxId = num;
+        }
+      }
+      if (maxId >= parsed.nextIds[field]) {
+        parsed.nextIds[field] = maxId + 1;
+        repairLog.push(`Repaired: nextIds.${field} recalculated to ${maxId + 1}`);
+      }
+    };
+
+    recalculateNextId(parsed.inventory, 'inv', 'item');
+    recalculateNextId(parsed.relationships, 'npc', 'npc');
+    recalculateNextId(parsed.locations, 'loc', 'location');
+    recalculateNextId(parsed.knowledge, 'know', 'knowledge');
+    recalculateNextId(parsed.quests, 'quest', 'quest');
+    recalculateNextId(parsed.factions, 'fac', 'faction');
+    recalculateNextId(parsed.timeline, 'evt', 'timeline');
+    recalculateNextId(parsed.causalChains, 'chain', 'causalChain');
+
+    // Skills, conditions, and hiddenTraits are nested in character
+    if (parsed.character) {
+      recalculateNextId(parsed.character.skills, 'skill', 'skill');
+      recalculateNextId(parsed.character.conditions, 'cond', 'condition');
+      recalculateNextId(parsed.character.hiddenTraits, 'trait', 'hiddenTrait');
+    }
+
+    // === 4. Fix dangling user node (crash during generation) ===
+    if (parsed.activeNodeId && parsed.nodes && parsed.nodes[parsed.activeNodeId]) {
       const lastNode = parsed.nodes[parsed.activeNodeId];
       if (lastNode.role === "user") {
-        console.warn(
-          "Detected dangling user node (crash recovery). Reverting to parent.",
-        );
-        if (lastNode.parentId) {
+        repairLog.push("Repaired: removed dangling user node");
+        if (lastNode.parentId && parsed.nodes[lastNode.parentId]) {
+          // Remove the dangling user node and revert to parent
+          delete parsed.nodes[parsed.activeNodeId];
           parsed.activeNodeId = lastNode.parentId;
         }
       }
     }
+
+    // === 5. Ensure essential arrays exist ===
+    const ensureArray = (field: string) => {
+      if (!Array.isArray(parsed[field])) {
+        repairLog.push(`Repaired: ${field} was not an array`);
+        parsed[field] = [];
+      }
+    };
+
+    ensureArray('inventory');
+    ensureArray('relationships');
+    ensureArray('quests');
+    ensureArray('locations');
+    ensureArray('knowledge');
+    ensureArray('factions');
+    ensureArray('timeline');
+    ensureArray('causalChains');
+    ensureArray('summaries');
+    ensureArray('logs');
+
+    // === 6. Ensure nodes object exists ===
+    if (!parsed.nodes || typeof parsed.nodes !== 'object') {
+      repairLog.push("Repaired: nodes was invalid");
+      parsed.nodes = {};
+    }
+
+    // === 7. Fix character structure ===
+    if (!parsed.character || typeof parsed.character !== 'object') {
+      repairLog.push("Repaired: character was invalid");
+      parsed.character = {
+        name: "Unknown",
+        background: "",
+        motivation: "",
+        skills: [],
+        conditions: [],
+        hiddenTraits: [],
+      };
+    } else {
+      // Ensure character sub-arrays exist
+      if (!Array.isArray(parsed.character.skills)) parsed.character.skills = [];
+      if (!Array.isArray(parsed.character.conditions)) parsed.character.conditions = [];
+      if (!Array.isArray(parsed.character.hiddenTraits)) parsed.character.hiddenTraits = [];
+    }
+
+    // === 8. Validate activeNodeId points to an existing node ===
+    if (parsed.activeNodeId && !parsed.nodes[parsed.activeNodeId]) {
+      repairLog.push("Repaired: activeNodeId pointed to non-existent node");
+      // Try to find any valid node
+      const nodeIds = Object.keys(parsed.nodes);
+      if (nodeIds.length > 0) {
+        // Find the most recent node
+        const sortedNodes = nodeIds
+          .map(id => parsed.nodes[id])
+          .filter(n => n && n.timestamp)
+          .sort((a, b) => b.timestamp - a.timestamp);
+        if (sortedNodes.length > 0) {
+          parsed.activeNodeId = sortedNodes[0].id;
+        } else {
+          parsed.activeNodeId = nodeIds[0];
+        }
+      } else {
+        parsed.activeNodeId = null;
+      }
+    }
+
+    // === 9. Fix rootNodeId ===
+    if (parsed.rootNodeId && !parsed.nodes[parsed.rootNodeId]) {
+      repairLog.push("Repaired: rootNodeId pointed to non-existent node");
+      // Find a node with no parent
+      const rootCandidates = Object.values(parsed.nodes).filter((n: any) => !n.parentId);
+      if (rootCandidates.length > 0) {
+        parsed.rootNodeId = (rootCandidates[0] as any).id;
+      } else {
+        parsed.rootNodeId = null;
+      }
+    }
+
+    // Log repairs if any
+    if (repairLog.length > 0) {
+      console.warn("[Save Repair]", repairLog);
+    }
+
     return parsed as GameState;
-  };
+  }, []);
+
+  /**
+   * Manually save the current state to a slot.
+   * Use this for explicit save points (e.g., after outline generation).
+   */
+  const saveToSlot = useCallback(async (slotId: string, state: GameState) => {
+    try {
+      await saveGameState(slotId, state);
+      console.log(`[Persistence] Saved to slot ${slotId}`);
+      return true;
+    } catch (error) {
+      console.error("[Persistence] Manual save failed:", error);
+      return false;
+    }
+  }, []);
 
   // Load Slots and Current Game on Mount
   useEffect(() => {
@@ -97,74 +259,102 @@ export const useGamePersistence = (
   }, []);
 
   // Auto-Save Logic using IndexedDB
+  // IMPORTANT: Skip saving during processing to avoid corrupted state
   useEffect(() => {
-    if (view === "game" && currentSlotId && gameState.rootNodeId) {
-      const performSave = async () => {
-        try {
-          // Save game state to IndexedDB
-          await saveGameState(currentSlotId, gameState);
+    // Skip conditions:
+    // 1. Not in game view
+    // 2. No current slot
+    // 3. No root node (game not started)
+    // 4. Currently processing (AI generating response)
+    // 5. Skip flag is set (manual recovery in progress)
+    if (
+      view !== "game" ||
+      !currentSlotId ||
+      !gameState.rootNodeId ||
+      gameState.isProcessing ||
+      skipNextSave
+    ) {
+      if (skipNextSave) {
+        setSkipNextSave(false); // Reset flag after skipping
+      }
+      return;
+    }
 
-          // Update Slot Meta
-          const activeNode = gameState.activeNodeId
-            ? gameState.nodes[gameState.activeNodeId]
-            : null;
-          const summaryText = activeNode
-            ? activeNode.text.substring(0, 60) + "..."
-            : "In Progress";
-
-          // Find the latest image for preview
-          let previewImage: string | undefined;
-          if (activeNode) {
-            let curr: typeof activeNode | null = activeNode;
-            let steps = 0;
-            // Look back up to 5 steps for an image
-            while (curr && steps < 5) {
-              if (curr.imageUrl) {
-                previewImage = curr.imageUrl;
-                break;
-              }
-              if (curr.parentId) {
-                curr = gameState.nodes[curr.parentId];
-              } else {
-                curr = null;
-              }
-              steps++;
-            }
-          }
-
-          const updatedSlots = saveSlots.map((s) =>
-            s.id === currentSlotId
-              ? {
-                  ...s,
-                  timestamp: Date.now(),
-                  theme: gameState.theme,
-                  summary: summaryText,
-                  previewImage,
-                }
-              : s,
-          );
-
-          // Only update if changed to avoid loops
-          if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
-            setSaveSlots(updatedSlots);
-            await saveMetadata("slots", updatedSlots);
-          }
-
-          setIsAutoSaving(true);
-          const timer = setTimeout(() => setIsAutoSaving(false), 2000);
-          return () => clearTimeout(timer);
-        } catch (error: unknown) {
-          console.error("Failed to save game to IndexedDB:", error);
-          // Show user-friendly error
-          if (error instanceof Error && error.name === "QuotaExceededError") {
-            alert("QuotaExceededError");
+    const performSave = async () => {
+      try {
+        // Additional safety check: ensure activeNodeId points to a model node
+        // If it's a user node, we're mid-generation and shouldn't save
+        if (gameState.activeNodeId) {
+          const activeNode = gameState.nodes[gameState.activeNodeId];
+          if (activeNode && activeNode.role === "user") {
+            console.log("[AutoSave] Skipping: active node is user node (mid-generation)");
+            return;
           }
         }
-      };
 
-      performSave();
-    }
-  }, [gameState, currentSlotId, view]);
+        // Save game state to IndexedDB
+        await saveGameState(currentSlotId, gameState);
+
+        // Update Slot Meta
+        const activeNode = gameState.activeNodeId
+          ? gameState.nodes[gameState.activeNodeId]
+          : null;
+        const summaryText = activeNode
+          ? activeNode.text.substring(0, 60) + "..."
+          : "In Progress";
+
+        // Find the latest image for preview
+        let previewImage: string | undefined;
+        if (activeNode) {
+          let curr: typeof activeNode | null = activeNode;
+          let steps = 0;
+          // Look back up to 5 steps for an image
+          while (curr && steps < 5) {
+            if (curr.imageUrl) {
+              previewImage = curr.imageUrl;
+              break;
+            }
+            if (curr.parentId) {
+              curr = gameState.nodes[curr.parentId];
+            } else {
+              curr = null;
+            }
+            steps++;
+          }
+        }
+
+        const updatedSlots = saveSlots.map((s) =>
+          s.id === currentSlotId
+            ? {
+                ...s,
+                timestamp: Date.now(),
+                theme: gameState.theme,
+                summary: summaryText,
+                previewImage,
+              }
+            : s,
+        );
+
+        // Only update if changed to avoid loops
+        if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
+          setSaveSlots(updatedSlots);
+          await saveMetadata("slots", updatedSlots);
+        }
+
+        setIsAutoSaving(true);
+        const timer = setTimeout(() => setIsAutoSaving(false), 2000);
+        return () => clearTimeout(timer);
+      } catch (error: unknown) {
+        console.error("Failed to save game to IndexedDB:", error);
+        // Show user-friendly error
+        if (error instanceof Error && error.name === "QuotaExceededError") {
+          alert("QuotaExceededError");
+        }
+      }
+    };
+
+    performSave();
+  }, [gameState, currentSlotId, view, skipNextSave, saveSlots]);
 
   // Persist Current Slot ID to IndexedDB
   useEffect(() => {
@@ -280,5 +470,7 @@ export const useGamePersistence = (
     isAutoSaving,
     persistenceError,
     hardReset,
+    saveToSlot, // Manual save for explicit save points
+    setSkipNextSave, // Skip next auto-save (for error recovery)
   };
 };

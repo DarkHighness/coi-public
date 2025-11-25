@@ -146,7 +146,7 @@ export const generateContent = async (
           return {
             role: "assistant",
             tool_calls: c.parts.map((p: any) => ({
-              id: "call_" + Math.random().toString(36).substr(2, 9),
+              id: p.functionCall.id || "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
               type: "function",
               function: {
                 name: p.functionCall.name,
@@ -158,7 +158,7 @@ export const generateContent = async (
         if (c.parts[0].functionResponse) {
           return {
             role: "tool",
-            tool_call_id: "call_" + Math.random().toString(36).substr(2, 9),
+            tool_call_id: c.parts[0].functionResponse.id || "call_unknown", // Use preserved ID from response
             content: JSON.stringify(c.parts[0].functionResponse.response),
           };
         }
@@ -294,6 +294,7 @@ export const generateContent = async (
 
       if (message?.tool_calls) {
         toolCalls = message.tool_calls.map((tc: any) => ({
+          id: tc.id, // Preserve the tool call ID for proper request/response matching
           name: tc.function.name,
           args: JSON.parse(tc.function.arguments),
         }));

@@ -318,7 +318,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                       onChange={(e) =>
                         updateFunction(sectionKey, "resolution", e.target.value)
                       }
-                      className="bg-theme-bg border border-theme-border rounded p-1 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-1/2 text-white"
+                      className="bg-theme-bg border border-theme-border rounded p-1 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-1/2"
                     >
                       <option
                         value="1024x1024"

@@ -46,6 +46,10 @@ export const parseModelCapabilities = (
     capabilities.tools = true;
   }
 
+  if (name.includes("image")) {
+    capabilities.image = true;
+  }
+
   // Explicit check if available in data
   if (info.supports_tools) capabilities.tools = true;
   if (info.supports_parallel_function_calling) capabilities.parallelTools = true;
