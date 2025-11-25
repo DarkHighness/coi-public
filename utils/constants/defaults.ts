@@ -79,6 +79,6 @@ export const DEFAULTS: AISettings = {
   },
   language: "en",
   imageTimeout: 60, // 60 seconds
-  manualImageGen: false, // Auto-generate by default
+  manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
 };

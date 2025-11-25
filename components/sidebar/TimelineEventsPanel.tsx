@@ -14,8 +14,13 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
-  // Show only the last 5 events reversed (newest first)
-  const recentEvents = events ? [...events].reverse().slice(0, 5) : [];
+  // Show only the last 5 known events reversed (newest first)
+  const recentEvents = events
+    ? [...events]
+        .filter((e) => e.known !== false)
+        .reverse()
+        .slice(0, 5)
+    : [];
 
   return (
     <div className="space-y-2">
@@ -79,7 +84,7 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
                     </svg>
                   )}
                 </div>
-                <div className="text-xs text-theme-text/90 leading-snug">
+                <div className="text-xs text-theme-text/90 leading-snug break-words whitespace-normal">
                   {event.visible.description}
                 </div>
                 {event.visible.causedBy && (

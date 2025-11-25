@@ -89,7 +89,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shrink-0"></span>
             )}
             <span
-              className={`font-bold tracking-wide text-xs truncate flex items-center gap-1 ${
+              className={`font-bold tracking-wide text-xs flex items-center gap-1 break-words whitespace-normal ${
                 isCurrent ? "text-theme-primary" : ""
               }`}
             >

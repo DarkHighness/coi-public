@@ -92,8 +92,11 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 d="M9 5l7 7-7 7"
               />
             </svg>
-            <span className="font-bold text-theme-text text-sm truncate flex items-center gap-1">
-              {rel.name}
+            <span
+              className="font-bold text-theme-text text-sm flex items-center gap-1 break-words whitespace-normal"
+              title={rel.visible.name}
+            >
+              {rel.visible.name}
               {rel.unlocked && (
                 <svg
                   className="w-3 h-3 text-yellow-400"
@@ -323,7 +326,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
 
   // Map relationships to include ID for useListManagement
   const relationshipsWithId = useMemo(() => {
-    return safeRelationships.map((r) => ({ ...r, id: r.id || r.name }));
+    return safeRelationships
+      .filter((r) => r.known !== false) // Filter out unknown characters
+      .map((r) => ({ ...r, id: r.id || r.visible.name }));
   }, [safeRelationships]);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -531,7 +536,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         items={allItems}
         themeFont={themeFont}
         searchFilter={(item, query) =>
-          item.name.toLowerCase().includes(query.toLowerCase()) ||
+          item.visible.name.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
             .toLowerCase()
             .includes(query.toLowerCase())

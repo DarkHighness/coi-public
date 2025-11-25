@@ -72,9 +72,12 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 ? t("mainQuest") || "Main"
                 : t("sideQuest") || "Side"}
             </span>
-            <h4 className="font-bold text-theme-text text-sm leading-tight">
+            <span
+              className="font-bold text-theme-text text-xs break-words whitespace-normal"
+              title={q.title}
+            >
               {q.title}
-            </h4>
+            </span>
           </div>
         </div>
         <svg

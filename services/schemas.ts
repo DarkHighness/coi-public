@@ -69,10 +69,11 @@ export const questProperties = {
 };
 
 export const relationshipProperties = {
-  name: { type: Type.STRING, description: "Name of the NPC" },
+  known: { type: Type.BOOLEAN, description: "Whether the player knows this character." },
   visible: {
     type: Type.OBJECT,
     properties: {
+      name: { type: Type.STRING, description: "Name/Title the player knows them by." },
       description: {
         type: Type.STRING,
         description: "Public perception - how others view this NPC",
@@ -106,11 +107,12 @@ export const relationshipProperties = {
         description: "Whether the player knows the affinity level.",
       },
     },
-    required: ["description", "relationshipType", "appearance", "affinity"],
+    required: ["name", "description", "relationshipType", "appearance", "affinity"],
   },
   hidden: {
     type: Type.OBJECT,
     properties: {
+      trueName: { type: Type.STRING, description: "The character's real name (if different)." },
       realPersonality: {
         type: Type.STRING,
         description: "True personality - what they REALLY are like",
@@ -155,7 +157,7 @@ export const relationshipProperties = {
 export const relationshipSchema: Schema = {
   type: Type.OBJECT,
   properties: relationshipProperties,
-  required: ["name", "visible"],
+  required: ["visible"],
 };
 
 export const skillProperties = {
@@ -279,6 +281,10 @@ export const timelineEventProperties = {
     type: Type.BOOLEAN,
     description:
       "Set to true when player has investigated and uncovered the event's true cause and consequences.",
+  },
+  known: {
+    type: Type.BOOLEAN,
+    description: "Set to true if the player witnessed or heard about this event.",
   },
 };
 
@@ -599,7 +605,7 @@ export const storyOutlineSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: relationshipProperties,
-        required: ["name", "visible"],
+        required: ["visible"],
       },
       description: "Initial relationships (1-2 NPCs).",
     },
@@ -627,7 +633,7 @@ export const summarySchema: Schema = {
     displayText: {
       type: Type.STRING,
       description:
-        "Concise 2-3 sentence summary for UI display (visible layer only)",
+        "Concise 2-3 sentence summary for UI display (visible layer only). MUST be in the language of the story.",
       nullable: false,
     },
     visible: {
@@ -695,82 +701,31 @@ export const summarySchema: Schema = {
       ],
     },
   },
-  required: ["displayText", "visible"],
+  required: ["displayText", "visible", "hidden"],
 };
 
 export const gameResponseSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    narrative: {
-      type: Type.STRING,
-      description:
-        "The main story segment text. Write in coherent, flowing paragraphs. Integrate sensory details (sight, sound, touch) naturally. DO NOT use bullet points or lists for descriptions. MUST be in the target language.",
-    },
-    choices: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description:
-        "A list of 2-4 actions the user can take next. MUST be simple strings in the target language.",
-    },
-    inventoryActions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          action: { type: Type.STRING, enum: ["add", "remove", "update"] },
-          id: { type: Type.INTEGER, description: "Numeric ID of the item." },
-          ...inventoryItemProperties,
-        },
-        required: ["action", "id"],
-      },
-      description: "List of changes to the inventory.",
-    },
-    relationshipActions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          action: { type: Type.STRING, enum: ["add", "update", "remove"] },
-          id: { type: Type.INTEGER, description: "Numeric ID of the NPC." },
-          notes: { type: Type.STRING },
-          ...relationshipProperties,
-        },
-        required: ["action", "id"],
-      },
-      description: "List of changes to relationships.",
-    },
-    locationActions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          type: { type: Type.STRING, enum: ["current", "known"] },
-          action: { type: Type.STRING, enum: ["update", "add"] },
-          id: {
-            type: Type.INTEGER,
-            description: "Numeric ID of the location.",
-          },
-          notes: { type: Type.STRING },
-          ...locationProperties,
-        },
-        required: ["type", "action", "id"],
-      },
-      description: "Updates to location.",
-    },
-    knowledgeActions: {
+    knowledge: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
           action: { type: Type.STRING, enum: ["add", "update"] },
-          id: { type: Type.INTEGER, description: "Numeric ID." },
-          relatedTo: { type: Type.ARRAY, items: { type: Type.STRING } },
-          discoveredAt: {
-            type: Type.STRING,
-            description:
-              "Time and location of discovery (e.g. 'Year 2024, The Old Library').",
+          id: { type: Type.STRING },
+          relatedTo: { type: Type.STRING },
+          discoveredAt: { type: Type.STRING },
+          category: { type: Type.STRING },
+          title: { type: Type.STRING },
+          visible: {
+            type: Type.OBJECT,
+            properties: {
+              description: { type: Type.STRING },
+              details: { type: Type.STRING },
+            },
+            required: ["description"],
           },
-          ...knowledgeProperties,
         },
         required: ["action", "id", "relatedTo", "discoveredAt"],
       },
@@ -805,8 +760,6 @@ export const gameResponseSchema: Schema = {
           involvedEntities: { type: Type.ARRAY, items: { type: Type.STRING } },
           chainId: {
             type: Type.STRING,
-            description:
-              "ID of an existing causal chain this event belongs to.",
           },
           newChain: {
             type: Type.OBJECT,
@@ -830,11 +783,22 @@ export const gameResponseSchema: Schema = {
               required: ["description", "delayTurns", "probability"],
             },
           },
+          known: { type: Type.BOOLEAN },
         },
-        required: ["category", "visible", "involvedEntities"],
+        required: ["category", "visible", "hidden"],
       },
+      description: "New timeline events.",
+    },
+    narrative: {
+      type: Type.STRING,
       description:
-        "Events happening in the world, potentially linked to causal chains.",
+        "The main story segment text. Write in coherent, flowing paragraphs. Integrate sensory details (sight, sound, touch) naturally. DO NOT use bullet points or lists for descriptions. MUST be in the target language. GENERATE THIS LAST, based on the state changes above.",
+    },
+    choices: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "A list of 2-4 actions the user can take next. MUST be simple strings in the target language.",
     },
     factionActions: {
       type: Type.ARRAY,
@@ -1055,6 +1019,7 @@ export const translationSchema: Schema = {
       },
     },
     inventory: { type: Type.ARRAY, items: { type: Type.STRING } },
+
     character: {
       type: Type.OBJECT,
       properties: {

@@ -86,6 +86,7 @@ export interface TimelineEvent {
   chainId?: string; // Link to a CausalChain
   unlocked?: boolean; // True when true cause/consequences are revealed
   highlight?: boolean; // True when updated in current turn (for UI)
+  known?: boolean; // True if the player is aware of this event
 }
 
 export interface CausalChain {
@@ -278,8 +279,9 @@ export interface UIState {
 
 export interface Relationship {
   id: number;
-  name: string;
+  known?: boolean; // Whether the player has met/knows this character
   visible: {
+    name: string; // The name the player knows them by
     description: string;
     appearance?: string;
     relationshipType: string; // Was status
@@ -289,6 +291,7 @@ export interface Relationship {
     affinityKnown: boolean; // Moved from root
   };
   hidden: {
+    trueName?: string; // The character's real name (if different from visible)
     realPersonality: string;
     realMotives: string;
     secrets: string[];
@@ -493,9 +496,10 @@ export interface QuestAction {
 export interface RelationshipAction {
   action: "add" | "update" | "remove";
   id?: number;
-  name: string;
+  known?: boolean; // Update known status
 
   visible?: {
+    name?: string; // Update visible name
     description?: string;
     appearance?: string;
     relationshipType?: string;
@@ -800,6 +804,14 @@ export interface AISettings {
   enableFallbackBackground: boolean; // Enable fallback background images
 }
 
+export interface ThemeData {
+  name: string;
+  narrativeStyle: string;
+  backgroundTemplate: string;
+  example: string;
+  worldSetting: string;
+}
+
 export interface ModelInfo {
   id: string;
   name?: string;
@@ -815,6 +827,7 @@ export type FeedLayout = "scroll" | "stack";
 
 export interface ImageGenerationContext {
   theme: string;
+  worldSetting?: string; // Added worldSetting
   time?: string;
   location?: {
     name: string;

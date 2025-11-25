@@ -30,7 +30,7 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
           : "bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 border-theme-border text-theme-text"
       }`}
     >
-      <span className="font-medium truncate mr-2" title={name}>
+      <span className="font-medium mr-2 break-words whitespace-normal" title={name}>
         {name}
       </span>
       <div className="flex items-center gap-2">
