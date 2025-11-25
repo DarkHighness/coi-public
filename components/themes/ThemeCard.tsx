@@ -58,11 +58,11 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
                 {themeConfig.icon || "📖"}
               </span>
               <h3 className="text-lg md:text-xl font-bold text-theme-text group-hover:text-theme-primary transition-colors truncate">
-                {t(`${themeKey}.name`, { ns: 'themes' })}
+                {t(`${themeKey}.name`, { ns: "themes" })}
               </h3>
             </div>
             <p className="text-xs md:text-sm text-theme-muted line-clamp-2 group-hover:text-theme-text/80 transition-colors">
-              {t(`${themeKey}.narrativeStyle`, { ns: 'themes' })}
+              {t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
             </p>
           </div>
 

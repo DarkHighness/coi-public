@@ -46,8 +46,10 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       keys = keys.filter((key) => {
-        const name = t(`${key}.name`, { ns: 'themes' }).toLowerCase();
-        const style = t(`${key}.narrativeStyle`, { ns: 'themes' }).toLowerCase();
+        const name = t(`${key}.name`, { ns: "themes" }).toLowerCase();
+        const style = t(`${key}.narrativeStyle`, {
+          ns: "themes",
+        }).toLowerCase();
         return name.includes(query) || style.includes(query);
       });
     }

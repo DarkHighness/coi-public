@@ -22,7 +22,10 @@ import {
   createStateSnapshot,
   restoreStateFromSnapshot,
 } from "../utils/snapshotManager";
-import { getThemeKeyForAtmosphere, Atmosphere } from "../utils/constants/atmosphere";
+import {
+  getThemeKeyForAtmosphere,
+  Atmosphere,
+} from "../utils/constants/atmosphere";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -144,7 +147,9 @@ export const useGameEngine = () => {
   useEffect(() => {
     const root = document.documentElement;
     const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
-    const envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere as Atmosphere);
+    const envThemeKey = getThemeKeyForAtmosphere(
+      gameState.atmosphere as Atmosphere,
+    );
     const themeConfig = ENV_THEMES[envThemeKey] || ENV_THEMES.fantasy;
 
     // Determine active mode
@@ -512,7 +517,9 @@ export const useGameEngine = () => {
       }
 
       // Resolve atmosphere from response (environment from finish_turn is actually atmosphere)
-      const responseAtmosphere = (response.atmosphere || gameStateRef.current.atmosphere || 'quiet') as Atmosphere;
+      const responseAtmosphere = (response.atmosphere ||
+        gameStateRef.current.atmosphere ||
+        "quiet") as Atmosphere;
 
       const modelNode: StorySegment = {
         id: modelNodeId,
@@ -641,13 +648,12 @@ export const useGameEngine = () => {
             status: finalState.character?.status || "Normal",
           },
           stateSnapshot,
-          activeNPCs: finalState.relationships
-            .map((r) => ({
-              name: r.visible.name,
-              description: r.visible.description,
-              appearance: r.visible.appearance || "Unknown",
-              status: r.visible.relationshipType,
-            })),
+          activeNPCs: finalState.relationships.map((r) => ({
+            name: r.visible.name,
+            description: r.visible.description,
+            appearance: r.visible.appearance || "Unknown",
+            status: r.visible.relationshipType,
+          })),
         };
 
         const imageTimeout = setTimeout(
@@ -842,7 +848,7 @@ export const useGameEngine = () => {
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
-        atmosphere: outline.initialAtmosphere || 'quiet', // Initial atmosphere
+        atmosphere: outline.initialAtmosphere || "quiet", // Initial atmosphere
         time: outline.initialTime || "Day 1",
       }));
 

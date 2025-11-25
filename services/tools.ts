@@ -999,8 +999,7 @@ export const UPDATE_CHARACTER_TOOL = {
 
 export const UPDATE_GLOBAL_TOOL = {
   name: "update_global",
-  description:
-    "Update global game state properties like time and atmosphere.",
+  description: "Update global game state properties like time and atmosphere.",
   parameters: {
     type: "object",
     properties: {
@@ -1025,7 +1024,8 @@ export const UPDATE_GLOBAL_TOOL = {
           "storm",
           "tavern",
         ],
-        description: "Unified atmosphere controlling visual theme, effects, and audio ambience.",
+        description:
+          "Unified atmosphere controlling visual theme, effects, and audio ambience.",
       },
     },
   },
@@ -1083,7 +1083,8 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
           "storm",
           "tavern",
         ],
-        description: "Unified atmosphere controlling visual theme, effects, and audio ambience for this scene.",
+        description:
+          "Unified atmosphere controlling visual theme, effects, and audio ambience for this scene.",
       },
       narrativeTone: {
         type: "string",

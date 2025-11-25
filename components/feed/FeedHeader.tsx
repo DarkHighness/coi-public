@@ -72,7 +72,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
               🎭
             </span>
             <span className="text-theme-text truncate text-xs md:text-sm max-w-[60px] sm:max-w-[100px] md:max-w-none">
-              {t(`${theme}.name`, { ns: 'themes' }) || theme}
+              {t(`${theme}.name`, { ns: "themes" }) || theme}
             </span>
           </div>
         )}

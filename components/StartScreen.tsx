@@ -173,7 +173,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     </div>
                     <div className="relative z-10 text-[10px] mt-2 text-theme-muted/70 uppercase tracking-wider">
                       {new Date(latestSave.timestamp).toLocaleString()} •{" "}
-                      {t(`${latestSave.theme}.name`, { ns: 'themes', defaultValue: latestSave.theme })}
+                      {t(`${latestSave.theme}.name`, {
+                        ns: "themes",
+                        defaultValue: latestSave.theme,
+                      })}
                     </div>
                   </button>
                 </div>

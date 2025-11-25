@@ -136,7 +136,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                           )}
                         </h3>
                         <p className="text-xs text-theme-muted/80 mt-0.5">
-                          {t(`${slot.theme}.name`, { ns: 'themes' })}
+                          {t(`${slot.theme}.name`, { ns: "themes" })}
                         </p>
                         <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
                           <MarkdownText content={slot.summary} />

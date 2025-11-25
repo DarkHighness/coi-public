@@ -57,7 +57,7 @@ export const parseModelCapabilities = (
     capabilities.parallelTools = true;
 
   // Check supported_parameters (OpenRouter/v1 standard)
-  if (info.supported_parameters &&  info.supported_parameters instanceof Array) {
+  if (info.supported_parameters && info.supported_parameters instanceof Array) {
     if (supported_parameters.includes("tools")) capabilities.tools = true;
     if (supported_parameters.includes("tool_choice")) capabilities.tools = true;
   }

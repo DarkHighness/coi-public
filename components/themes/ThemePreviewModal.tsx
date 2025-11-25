@@ -17,7 +17,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
   onSelect,
 }) => {
   const { t } = useTranslation();
-  const previewName = t(`${themeKey}.name`, { ns: 'themes' });
+  const previewName = t(`${themeKey}.name`, { ns: "themes" });
   const envTheme = ENV_THEMES[themeConfig.envTheme];
 
   return (
@@ -73,7 +73,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
               {t("narrativeStyle")}
             </h3>
             <p className="text-theme-muted text-sm leading-relaxed">
-              {t(`${themeKey}.narrativeStyle`, { ns: 'themes' })}
+              {t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                   : "font-sans text-sm"
               }`}
             >
-              {t(`${themeKey}.example`, { ns: 'themes' })}
+              {t(`${themeKey}.example`, { ns: "themes" })}
             </p>
             <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
               "

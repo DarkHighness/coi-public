@@ -628,10 +628,25 @@ export const storyOutlineSchema: JsonSchema = {
     initialAtmosphere: {
       type: "string",
       enum: [
-        "cave", "city", "combat", "desert", "dungeon", "forest", "horror",
-        "market", "mystical", "ocean", "quiet", "rain", "scifi", "snow", "storm", "tavern"
+        "cave",
+        "city",
+        "combat",
+        "desert",
+        "dungeon",
+        "forest",
+        "horror",
+        "market",
+        "mystical",
+        "ocean",
+        "quiet",
+        "rain",
+        "scifi",
+        "snow",
+        "storm",
+        "tavern",
       ],
-      description: "Initial atmosphere controlling visual theme, effects, and audio ambience.",
+      description:
+        "Initial atmosphere controlling visual theme, effects, and audio ambience.",
     },
   },
   required: [

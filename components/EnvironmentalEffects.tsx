@@ -1,5 +1,9 @@
 import { BACKGROUND_IMAGES } from "../utils/constants";
-import { getEffectForAtmosphere, resolveAtmosphere, type VisualEffect } from "../utils/constants/atmosphere";
+import {
+  getEffectForAtmosphere,
+  resolveAtmosphere,
+  type VisualEffect,
+} from "../utils/constants/atmosphere";
 import React, { useEffect, useState } from "react";
 
 interface EnvironmentalEffectsProps {
@@ -30,15 +34,18 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   const [loadedBgSource, setLoadedBgSource] = useState<string | null>(null);
 
   // Resolve the unified atmosphere from available props
-  const resolvedAtmosphere = resolveAtmosphere(atmosphere, environment, envTheme);
+  const resolvedAtmosphere = resolveAtmosphere(
+    atmosphere,
+    environment,
+    envTheme,
+  );
 
   useEffect(() => {
     // Get default effect from atmosphere
     const atmosphereEffect = getEffectForAtmosphere(resolvedAtmosphere);
 
     // Combine texts for additional analysis (can override atmosphere default)
-    const analysisText =
-      `${currentText} ${imagePrompt || ""}`.toLowerCase();
+    const analysisText = `${currentText} ${imagePrompt || ""}`.toLowerCase();
 
     // Priority Detection Logic - text-based overrides
     let detectedEffect: EffectType = atmosphereEffect;

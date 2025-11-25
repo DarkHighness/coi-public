@@ -415,9 +415,9 @@ export const generateStoryOutline = async (
   if (tFunc) {
     // Use dynamic translation function from React component
     themeDataBackgroundTemplate =
-      tFunc(`${theme}.backgroundTemplate`, { ns: 'themes' }) ||
-      tFunc(`fantasy.backgroundTemplate`, { ns: 'themes' });
-    themeDataExample = tFunc(`${theme}.example`, { ns: 'themes' });
+      tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
+      tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
+    themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
   } else {
     // Fallback to static translations
     // @ts-ignore
@@ -499,8 +499,8 @@ const resolveThemeConfig = (
 
   if (tFunc && themeKey) {
     narrativeStyle =
-      tFunc(`${themeKey}.narrativeStyle`, { ns: 'themes' }) || narrativeStyle;
-    example = tFunc(`${themeKey}.example`, { ns: 'themes' });
+      tFunc(`${themeKey}.narrativeStyle`, { ns: "themes" }) || narrativeStyle;
+    example = tFunc(`${themeKey}.example`, { ns: "themes" });
   } else {
     throw new Error("Unable to resolve theme configuration.");
   }
@@ -803,13 +803,17 @@ const runAgenticLoop = async (
         const errorMessage = e?.message || "";
 
         // Check if this is a retryable error (malformed function call)
-        if (errorMessage.includes("function call format error") ||
-            errorMessage.includes("MALFORMED_FUNCTION_CALL")) {
+        if (
+          errorMessage.includes("function call format error") ||
+          errorMessage.includes("MALFORMED_FUNCTION_CALL")
+        ) {
           retryCount++;
           if (retryCount <= maxRetries) {
-            console.warn(`[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`);
+            console.warn(
+              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`,
+            );
             // Small delay before retry
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
             continue;
           }
         }

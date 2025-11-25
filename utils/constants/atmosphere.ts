@@ -187,7 +187,7 @@ export function isValidAtmosphere(value: string): value is Atmosphere {
 export function resolveAtmosphere(
   atmosphere?: string,
   environment?: string,
-  envTheme?: string
+  envTheme?: string,
 ): Atmosphere {
   // 1. If atmosphere is directly set and valid, use it
   if (atmosphere && isValidAtmosphere(atmosphere)) {
@@ -272,7 +272,9 @@ export function envThemeToAtmosphere(envTheme: string): Atmosphere {
  * @param themeConfig The story theme configuration
  * @returns The resolved atmosphere value
  */
-export function getDefaultAtmosphereForTheme(defaultAtmosphere: string): Atmosphere {
+export function getDefaultAtmosphereForTheme(
+  defaultAtmosphere: string,
+): Atmosphere {
   // If it's already a valid atmosphere, return it directly
   if (isValidAtmosphere(defaultAtmosphere)) {
     return defaultAtmosphere as Atmosphere;
