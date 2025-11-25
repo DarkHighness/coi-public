@@ -41,7 +41,6 @@ import {
   validateConnection as validateOpenRouterConnection,
 } from "./providers/openRouterProvider";
 import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, THEMES } from "../utils/constants";
-import { TRANSLATIONS } from "../utils/constants/translations";
 import {
   gameResponseSchema,
   translationSchema,
@@ -405,7 +404,7 @@ export const generateStoryOutline = async (
   theme: string,
   language: string,
   customContext?: string,
-  tFunc?: (key: string) => string,
+  tFunc?: (key: string, options?: any) => string,
   onChunk?: (text: string) => void,
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
@@ -416,9 +415,9 @@ export const generateStoryOutline = async (
   if (tFunc) {
     // Use dynamic translation function from React component
     themeDataBackgroundTemplate =
-      tFunc(`themes.${theme}.backgroundTemplate`) ||
-      tFunc(`themes.fantasy.backgroundTemplate`);
-    themeDataExample = tFunc(`themes.${theme}.example`);
+      tFunc(`${theme}.backgroundTemplate`, { ns: 'themes' }) ||
+      tFunc(`fantasy.backgroundTemplate`, { ns: 'themes' });
+    themeDataExample = tFunc(`${theme}.example`, { ns: 'themes' });
   } else {
     // Fallback to static translations
     // @ts-ignore
@@ -493,20 +492,17 @@ export const summarizeContext = async (
 const resolveThemeConfig = (
   themeKey: string | undefined,
   language: string,
-  tFunc?: (key: string) => string,
+  tFunc?: (key: string, options?: any) => string,
 ) => {
   let narrativeStyle = "Standard adventure tone.";
   let example: string | undefined;
 
   if (tFunc && themeKey) {
     narrativeStyle =
-      tFunc(`themes.${themeKey}.narrativeStyle`) || narrativeStyle;
-    example = tFunc(`themes.${themeKey}.example`);
-  } else if (themeKey) {
-    const langCode = getLangCode(language);
-    const t = TRANSLATIONS[langCode];
-    narrativeStyle = t.themes[themeKey]?.narrativeStyle || narrativeStyle;
-    example = t.themes[themeKey]?.example;
+      tFunc(`${themeKey}.narrativeStyle`, { ns: 'themes' }) || narrativeStyle;
+    example = tFunc(`${themeKey}.example`, { ns: 'themes' });
+  } else {
+    throw new Error("Unable to resolve theme configuration.");
   }
 
   const themeConfig = THEMES[themeKey || "fantasy"];
@@ -777,27 +773,56 @@ const runAgenticLoop = async (
         ? toGeminiFormat(conversationHistory)
         : toOpenAIFormat(conversationHistory);
 
-    try {
-      const resultData = await generateContentUnified(
-        provider,
-        modelId,
-        systemInstruction,
-        providerContents,
-        undefined,
-        { tools: toolConfig },
-      );
+    // Retry logic for transient errors like MALFORMED_FUNCTION_CALL
+    const maxRetries = 2;
+    let retryCount = 0;
+    let lastError: Error | null = null;
 
-      result = resultData.result;
-      usage = resultData.usage;
-      raw = resultData.raw;
-      console.log(
-        `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
-        usage,
-        `HasFunctionCalls: ${!!result?.functionCalls}`,
-      );
-    } catch (e) {
-      console.error("[Agentic Loop] Error:", e);
-      throw e;
+    while (retryCount <= maxRetries) {
+      try {
+        const resultData = await generateContentUnified(
+          provider,
+          modelId,
+          systemInstruction,
+          providerContents,
+          undefined,
+          { tools: toolConfig },
+        );
+
+        result = resultData.result;
+        usage = resultData.usage;
+        raw = resultData.raw;
+        console.log(
+          `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
+          usage,
+          `HasFunctionCalls: ${!!result?.functionCalls}`,
+        );
+        break; // Success, exit retry loop
+      } catch (e: any) {
+        lastError = e;
+        const errorMessage = e?.message || "";
+
+        // Check if this is a retryable error (malformed function call)
+        if (errorMessage.includes("function call format error") ||
+            errorMessage.includes("MALFORMED_FUNCTION_CALL")) {
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            console.warn(`[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`);
+            // Small delay before retry
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+        }
+
+        // Non-retryable error or max retries exceeded
+        console.error("[Agentic Loop] Error:", e);
+        throw e;
+      }
+    }
+
+    // If we exhausted retries, throw the last error
+    if (retryCount > maxRetries && lastError) {
+      throw lastError;
     }
 
     // Update Usage with validation
@@ -1022,9 +1047,9 @@ const runAgenticLoop = async (
           accumulatedResponse.imagePrompt = args.imagePrompt as string;
           accumulatedResponse.generateImage = args.generateImage as boolean;
 
-          // Extract environment and narrative tone
-          if (args.environment) {
-            accumulatedResponse.environment = args.environment as string;
+          // Extract atmosphere (unified system)
+          if (args.atmosphere) {
+            accumulatedResponse.atmosphere = args.atmosphere as string;
           }
           if (args.narrativeTone) {
             accumulatedResponse.narrativeTone = args.narrativeTone as string;
@@ -1062,7 +1087,7 @@ const runAgenticLoop = async (
             input: {
               narrative: (args.narrative as string)?.substring(0, 100) + "...",
               choices: args.choices,
-              environment: args.environment,
+              atmosphere: args.atmosphere,
             },
             output: { success: true },
             timestamp: Date.now(),
@@ -1086,7 +1111,7 @@ const runAgenticLoop = async (
               narrative:
                 accumulatedResponse.narrative?.substring(0, 100) + "...",
               choices: accumulatedResponse.choices,
-              environment: accumulatedResponse.environment,
+              atmosphere: accumulatedResponse.atmosphere,
             },
             totalUsage,
           );

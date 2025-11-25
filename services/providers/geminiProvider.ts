@@ -288,6 +288,15 @@ export const generateContent = async (
       "Gemini content generation failed: Recitation check triggered.",
     );
   }
+  if (finishReason === "MALFORMED_FUNCTION_CALL") {
+    // Model tried to call a function but generated invalid syntax
+    // Include the finishMessage for debugging
+    const finishMessage = candidate?.finishMessage || "Unknown malformed call";
+    console.error(`[Gemini] Malformed function call: ${finishMessage}`);
+    throw new Error(
+      `Gemini function call format error. The model generated an invalid function call. Please retry. Details: ${finishMessage.substring(0, 200)}`,
+    );
+  }
   if (finishReason === "OTHER") {
     console.warn("Gemini content generation finished with reason: OTHER");
   }

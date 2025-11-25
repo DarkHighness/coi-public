@@ -188,7 +188,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             <StoryTimeline
               segments={currentHistory}
               theme={gameState.theme}
-              envTheme={gameState.envTheme}
               title={gameState.outline?.title}
               subtitle={gameState.outline?.premise}
             />

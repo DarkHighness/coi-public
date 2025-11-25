@@ -81,4 +81,5 @@ export const DEFAULTS: AISettings = {
   imageTimeout: 60, // 60 seconds
   manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
+  lockEnvTheme: false,
 };

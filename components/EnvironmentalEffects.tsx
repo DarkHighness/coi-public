@@ -1,27 +1,26 @@
 import { BACKGROUND_IMAGES } from "../utils/constants";
+import { getEffectForAtmosphere, resolveAtmosphere, type VisualEffect } from "../utils/constants/atmosphere";
 import React, { useEffect, useState } from "react";
 
 interface EnvironmentalEffectsProps {
   currentText: string;
   imagePrompt?: string;
-  envTheme: string;
+  /** Unified atmosphere value (e.g. "forest", "horror", "city") */
+  atmosphere?: string;
+  /** @deprecated Legacy: visual theme key - use atmosphere instead */
+  envTheme?: string;
+  /** @deprecated Legacy: environment for audio - use atmosphere instead */
   environment?: string;
   backgroundImage?: string;
   fallbackEnabled?: boolean;
 }
 
-type EffectType =
-  | "rain"
-  | "snow"
-  | "fog"
-  | "flicker"
-  | "embers"
-  | "sunny"
-  | null;
+type EffectType = VisualEffect;
 
 export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   currentText,
   imagePrompt,
+  atmosphere,
   envTheme,
   environment,
   backgroundImage,
@@ -30,13 +29,19 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   const [effect, setEffect] = useState<EffectType>(null);
   const [loadedBgSource, setLoadedBgSource] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Combine texts for analysis
-    const analysisText =
-      `${currentText} ${imagePrompt || ""} ${environment || ""} ${envTheme || ""}`.toLowerCase();
+  // Resolve the unified atmosphere from available props
+  const resolvedAtmosphere = resolveAtmosphere(atmosphere, environment, envTheme);
 
-    // Priority Detection Logic
-    let detectedEffect: EffectType = null;
+  useEffect(() => {
+    // Get default effect from atmosphere
+    const atmosphereEffect = getEffectForAtmosphere(resolvedAtmosphere);
+
+    // Combine texts for additional analysis (can override atmosphere default)
+    const analysisText =
+      `${currentText} ${imagePrompt || ""}`.toLowerCase();
+
+    // Priority Detection Logic - text-based overrides
+    let detectedEffect: EffectType = atmosphereEffect;
 
     // 1. Flicker (Horror/Dungeon settings mostly)
     if (
@@ -95,26 +100,26 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     }
 
     setEffect(detectedEffect);
-  }, [currentText, imagePrompt, environment]);
+  }, [currentText, imagePrompt, resolvedAtmosphere]);
 
   // Determine background source and preload
   useEffect(() => {
     let bgSource = backgroundImage;
     let isFallback = false;
 
-    if (!bgSource && fallbackEnabled && environment) {
+    if (!bgSource && fallbackEnabled && resolvedAtmosphere) {
       // Try to find a matching background from constants
       // First try exact match
-      if (BACKGROUND_IMAGES[environment]) {
-        bgSource = BACKGROUND_IMAGES[environment];
+      if (BACKGROUND_IMAGES[resolvedAtmosphere]) {
+        bgSource = BACKGROUND_IMAGES[resolvedAtmosphere];
         isFallback = true;
       }
       // If no exact match, try to find by partial match or default to fantasy
       else {
-        // Simple fallback logic: check if environment contains key words
-        const envLower = environment.toLowerCase();
+        // Simple fallback logic: check if atmosphere contains key words
+        const atmosphereLower = resolvedAtmosphere.toLowerCase();
         const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
-          envLower.includes(key),
+          atmosphereLower.includes(key),
         );
         if (foundKey) {
           bgSource = BACKGROUND_IMAGES[foundKey];
@@ -147,7 +152,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     } else {
       setLoadedBgSource(null);
     }
-  }, [backgroundImage, fallbackEnabled, environment]);
+  }, [backgroundImage, fallbackEnabled, resolvedAtmosphere]);
 
   // Double buffering for smooth transitions
   const [bg1, setBg1] = useState<string | null>(null);

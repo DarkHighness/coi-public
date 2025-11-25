@@ -18,7 +18,6 @@ export interface TimelineExportRef {
 interface TimelineExportProps {
   segments: StorySegment[];
   theme: string;
-  envTheme?: string;
   title?: string;
   subtitle?: string;
   onExportStart?: () => void;
@@ -30,7 +29,7 @@ export const TimelineExport = forwardRef<
   TimelineExportProps
 >(
   (
-    { segments, theme, envTheme, title, subtitle, onExportStart, onExportEnd },
+    { segments, theme, title, subtitle, onExportStart, onExportEnd },
     ref,
   ) => {
     const [exportChunk, setExportChunk] = useState<StorySegment[]>([]);
@@ -38,7 +37,8 @@ export const TimelineExport = forwardRef<
     const { t } = useTranslation();
 
     const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
-    const currentEnvThemeKey = envTheme || currentStoryTheme.defaultEnvTheme;
+    // Use envTheme directly from story theme for consistent visual styling
+    const currentEnvThemeKey = currentStoryTheme.envTheme;
     const currentThemeConfig =
       ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 

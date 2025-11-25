@@ -27,7 +27,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  let ambienceName = ambience ? t("ambienceNames." + ambience) : null;
+  let ambienceName = ambience ? t("environmentNames." + ambience) : null;
   let environmentName = environment
     ? t("environmentNames." + environment)
     : null;
@@ -36,7 +36,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   // If the translation key is the same as the input, it means no translation was found
   if (
     ambience &&
-    (!ambienceName || ambienceName == "ambienceNames." + ambience)
+    (!ambienceName || ambienceName == "environmentNames." + ambience)
   ) {
     ambienceName = ambience;
   }
@@ -72,7 +72,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
               🎭
             </span>
             <span className="text-theme-text truncate text-xs md:text-sm max-w-[60px] sm:max-w-[100px] md:max-w-none">
-              {t(`themes.${theme}.name`) || theme}
+              {t(`${theme}.name`, { ns: 'themes' }) || theme}
             </span>
           </div>
         )}

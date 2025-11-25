@@ -98,7 +98,8 @@ export interface GameState {
   isImageGenerating: boolean;
   generatingNodeId: string | null; // Track specifically which node is generating an image
   error: string | null;
-  envTheme: string; // Dynamic atmosphere (e.g. "Dark", "Tense")
+  // Unified Atmosphere (controls visual theme, effects, and audio)
+  atmosphere: string; // The current atmosphere (e.g. "forest", "horror", "city")
   theme: string; // Static game genre (e.g. "Cyberpunk", "Wuxia")
   time: string; // In-game time tracking
 
@@ -293,7 +294,8 @@ export interface StoryOutline {
   relationships?: Relationship[]; // Initial relationships
   knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
   timeline?: TimelineEvent[]; // Initial timeline events (Backstory)
-  initialEnvTheme: string; // Initial environment theme (e.g. "Dark", "Tense")
+  // Unified Atmosphere for initial state
+  initialAtmosphere: string; // Initial atmosphere (e.g. "forest", "horror", "city")
   // Unlocked flags - set by AI when player discovers hidden info
   worldSettingUnlocked?: boolean; // True when worldSetting.hidden is revealed
   mainGoalUnlocked?: boolean; // True when mainGoal.hidden is revealed
@@ -444,8 +446,10 @@ export interface StorySegment {
   // Fork-safe Summary State
   summaries?: StorySummary[]; // The total summary of the story up to this point (Dual-layer)
   summarizedIndex?: number; // The index in the history chain where the summary ends
-  environment?: string; // The environment ambience for this segment
-  envTheme?: string; // The visual theme for this segment
+
+  // Unified Atmosphere System (controls visual theme, effects, and audio)
+  atmosphere?: string; // The unified atmosphere (e.g. "forest", "horror", "city")
+
   narrativeTone?: string; // The tone of the narrative (e.g. "suspenseful", "cheerful")
   imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
   stateSnapshot?: GameStateSnapshot; // Snapshot of the game state at this point
@@ -501,7 +505,7 @@ export interface GameStateSnapshot {
 
   // UI & Meta
   uiState: UIState;
-  envTheme: string;
+  atmosphere: string; // Unified atmosphere identifier
   veoScript?: string;
 
   // Context Priority System
@@ -768,8 +772,8 @@ export interface GameResponse {
   questActions?: QuestAction[];
   knowledgeActions?: KnowledgeAction[]; // Player's accumulated knowledge
   imagePrompt?: string;
-  envTheme?: string; // Optional update for atmosphere
-  environment?: string; // The detected environment for audio ambience
+  // Unified Atmosphere System
+  atmosphere?: string; // The unified atmosphere for this segment (e.g. "forest", "horror", "city")
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
   timeUpdate?: string; // The new time string
@@ -881,7 +885,8 @@ export interface ThemeConfig {
 }
 
 export interface StoryThemeConfig {
-  defaultEnvTheme: string;
+  envTheme: string; // The visual theme key (ENV_THEMES key, e.g. "fantasy", "horror")
+  defaultAtmosphere: string; // The default atmosphere (ATMOSPHERES value, e.g. "forest", "cave")
   icon?: string;
   categories?: string[];
   restricted?: boolean;
@@ -943,6 +948,9 @@ export interface AISettings {
   imageTimeout: number; // Timeout in seconds
   manualImageGen: boolean; // Require manual click to generate
   enableFallbackBackground: boolean; // Enable fallback background images
+
+  // Visual Theme Settings
+  lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes
 }
 
 export interface ThemeData {

@@ -11,7 +11,7 @@ export interface SnapshotMetadata {
   lastSummarizedIndex: number;
   currentLocation: string;
   time: string;
-  envTheme: string;
+  atmosphere: string;
   veoScript?: string;
   uiState: GameState["uiState"];
   aliveEntities?: AliveEntities;
@@ -64,7 +64,7 @@ export function createStateSnapshot(
 
     // UI & Meta
     uiState: metadata.uiState,
-    envTheme: metadata.envTheme,
+    atmosphere: metadata.atmosphere,
     veoScript: metadata.veoScript,
 
     // Context Priority System
@@ -81,6 +81,8 @@ export function restoreStateFromSnapshot(
   currentState: GameState,
   snapshot: GameStateSnapshot,
 ): GameState {
+  const atmosphere = snapshot.atmosphere || currentState.atmosphere;
+
   return {
     ...currentState,
     inventory: snapshot.inventory,
@@ -98,7 +100,7 @@ export function restoreStateFromSnapshot(
     summaries: snapshot.summaries,
     lastSummarizedIndex: snapshot.lastSummarizedIndex,
     uiState: snapshot.uiState,
-    envTheme: snapshot.envTheme,
+    atmosphere,
     veoScript: snapshot.veoScript,
     aliveEntities: snapshot.aliveEntities,
     turnNumber: snapshot.turnNumber,

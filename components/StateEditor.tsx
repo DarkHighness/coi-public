@@ -95,7 +95,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     if (section === "global") {
       return {
         time: gameState.time,
-        envTheme: gameState.envTheme,
+        atmosphere: gameState.atmosphere,
         theme: gameState.theme,
         currentLocation: gameState.currentLocation,
         godMode: gameState.godMode,
@@ -146,7 +146,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           return {
             ...prev,
             time: parsed.time ?? prev.time,
-            envTheme: parsed.envTheme ?? prev.envTheme,
+            atmosphere: parsed.atmosphere ?? prev.atmosphere,
             theme: parsed.theme ?? prev.theme,
             currentLocation: parsed.currentLocation ?? prev.currentLocation,
             godMode: parsed.godMode ?? prev.godMode,

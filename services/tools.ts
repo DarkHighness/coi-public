@@ -1000,17 +1000,12 @@ export const UPDATE_CHARACTER_TOOL = {
 export const UPDATE_GLOBAL_TOOL = {
   name: "update_global",
   description:
-    "Update global game state properties like time and environment theme.",
+    "Update global game state properties like time and atmosphere.",
   parameters: {
     type: "object",
     properties: {
       time: { type: "string", description: "Update the in-game time." },
-      envTheme: {
-        type: "string",
-        description:
-          "Current visual atmosphere (e.g., 'Dark', 'Tense', 'Rainy').",
-      },
-      environment: {
+      atmosphere: {
         type: "string",
         enum: [
           "cave",
@@ -1030,7 +1025,7 @@ export const UPDATE_GLOBAL_TOOL = {
           "storm",
           "tavern",
         ],
-        description: "Audio ambience environment.",
+        description: "Unified atmosphere controlling visual theme, effects, and audio ambience.",
       },
     },
   },
@@ -1068,7 +1063,7 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
         type: "boolean",
         description: "Whether to generate an image for this turn.",
       },
-      environment: {
+      atmosphere: {
         type: "string",
         enum: [
           "cave",
@@ -1088,7 +1083,7 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
           "storm",
           "tavern",
         ],
-        description: "The audio ambience for this scene.",
+        description: "Unified atmosphere controlling visual theme, effects, and audio ambience for this scene.",
       },
       narrativeTone: {
         type: "string",

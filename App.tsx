@@ -11,6 +11,7 @@ import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
 import { Toast } from "./components/Toast";
 import { THEMES, ENV_THEMES } from "./utils/constants";
+import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
 import { validateConnection } from "./services/aiService";
 import { InitializingPage } from "./components/pages/InitializingPage";
@@ -130,20 +131,32 @@ export default function App() {
 
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
 
-  // Use viewed segment's envTheme if available, otherwise fall back to current game state
+  // Use viewed segment's atmosphere if available, otherwise fall back to current game state
   // Priority: Preview Theme (StartScreen) > Viewed Segment (History Scroll) > Current Game State
   const targetSegment =
     viewedSegment || currentHistory[currentHistory.length - 1];
 
-  let currentEnvThemeKey =
-    gameState.envTheme || currentStoryTheme.defaultEnvTheme;
-  let currentEnvironment = targetSegment?.environment || "";
+  // Get current atmosphere - unified system
+  let currentAtmosphere =
+    targetSegment?.atmosphere ||
+    gameState.atmosphere ||
+    currentStoryTheme.defaultAtmosphere;
+
+  // For visual theme:
+  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - Otherwise, derive from atmosphere using the mapping
+  let currentEnvThemeKey: string;
+  if (aiSettings.lockEnvTheme) {
+    currentEnvThemeKey = currentStoryTheme.envTheme;
+  } else {
+    currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
+  }
 
   if (previewTheme) {
     const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
-    currentEnvThemeKey = previewStoryTheme.defaultEnvTheme;
-  } else if (targetSegment?.envTheme) {
-    currentEnvThemeKey = targetSegment.envTheme;
+    currentAtmosphere = previewStoryTheme.defaultAtmosphere;
+    // For preview, always use the theme's envTheme
+    currentEnvThemeKey = previewStoryTheme.envTheme;
   }
 
   const currentThemeConfig =
@@ -324,9 +337,8 @@ export default function App() {
           <EnvironmentalEffects
             currentText={effectText}
             imagePrompt={effectPrompt}
-            envTheme={gameState.envTheme}
+            atmosphere={currentAtmosphere}
             backgroundImage={stickyBackground}
-            environment={currentEnvironment}
             fallbackEnabled={aiSettings.enableFallbackBackground}
           />
         </Suspense>

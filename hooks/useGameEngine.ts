@@ -22,6 +22,7 @@ import {
   createStateSnapshot,
   restoreStateFromSnapshot,
 } from "../utils/snapshotManager";
+import { getThemeKeyForAtmosphere, Atmosphere } from "../utils/constants/atmosphere";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -143,7 +144,7 @@ export const useGameEngine = () => {
   useEffect(() => {
     const root = document.documentElement;
     const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
-    const envThemeKey = gameState.envTheme || storyTheme.defaultEnvTheme;
+    const envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere as Atmosphere);
     const themeConfig = ENV_THEMES[envThemeKey] || ENV_THEMES.fantasy;
 
     // Determine active mode
@@ -510,6 +511,9 @@ export const useGameEngine = () => {
         toastMessage = t("toast.questUpd");
       }
 
+      // Resolve atmosphere from response (environment from finish_turn is actually atmosphere)
+      const responseAtmosphere = (response.atmosphere || gameStateRef.current.atmosphere || 'quiet') as Atmosphere;
+
       const modelNode: StorySegment = {
         id: modelNodeId,
         parentId: isInit ? null : effectiveUserNodeId,
@@ -522,10 +526,9 @@ export const useGameEngine = () => {
         usage: usage,
         summaries: effectiveSummaries,
         summarizedIndex: lastIndex,
-        environment: response.environment,
+        atmosphere: responseAtmosphere, // Unified atmosphere
         narrativeTone: response.narrativeTone,
         imageSkipped: !response.generateImage,
-        envTheme: response.envTheme,
         ending: response.ending || null, // Game ending type if story concludes
         forceEnd: response.forceEnd, // Whether game ends permanently
         stateSnapshot: createStateSnapshot(
@@ -535,8 +538,7 @@ export const useGameEngine = () => {
             lastSummarizedIndex: lastIndex,
             currentLocation: finalState.currentLocation,
             time: finalState.time,
-            envTheme:
-              response.envTheme || forceTheme || gameStateRef.current.envTheme,
+            atmosphere: responseAtmosphere,
             veoScript: gameStateRef.current.veoScript,
             uiState: gameStateRef.current.uiState,
           },
@@ -586,7 +588,7 @@ export const useGameEngine = () => {
         isProcessing: false,
         isImageGenerating: true,
         generatingNodeId: modelNodeId,
-        envTheme: response.envTheme || forceTheme || prev.envTheme,
+        atmosphere: responseAtmosphere,
         theme: prev.theme,
         logs: [...turnLogs, ...prev.logs].slice(0, 100),
         totalTokens: prev.totalTokens + usage.totalTokens,
@@ -605,7 +607,7 @@ export const useGameEngine = () => {
           summaries: effectiveSummaries, // Use previous summaries or updated ones if available
           lastSummarizedIndex: lastIndex,
           uiState: gameStateRef.current.uiState,
-          envTheme: finalState.envTheme,
+          atmosphere: responseAtmosphere,
           veoScript: gameStateRef.current.veoScript,
         });
 
@@ -640,12 +642,6 @@ export const useGameEngine = () => {
           },
           stateSnapshot,
           activeNPCs: finalState.relationships
-            .filter(
-              (r) =>
-                r.visible.name &&
-                r.visible.relationshipType !== "Absent" &&
-                r.visible.relationshipType !== "Dead",
-            )
             .map((r) => ({
               name: r.visible.name,
               description: r.visible.description,
@@ -846,7 +842,7 @@ export const useGameEngine = () => {
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
-        envTheme: outline.initialEnvTheme || selectedTheme, // Initial Env Theme
+        atmosphere: outline.initialAtmosphere || 'quiet', // Initial atmosphere
         time: outline.initialTime || "Day 1",
       }));
 
@@ -976,7 +972,7 @@ export const useGameEngine = () => {
     try {
       const snapshot = node.stateSnapshot || gameStateRef.current;
       const imageContext = {
-        theme: snapshot.envTheme || gameStateRef.current.theme,
+        theme: gameStateRef.current.theme,
         time: snapshot.time,
         location: {
           name: snapshot.currentLocation,

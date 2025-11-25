@@ -10,7 +10,6 @@ import { TimelineExport, TimelineExportRef } from "./TimelineExport";
 interface StoryTimelineProps {
   segments: StorySegment[];
   theme: string;
-  envTheme?: string;
   title?: string;
   subtitle?: string;
 }
@@ -18,7 +17,6 @@ interface StoryTimelineProps {
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   segments,
   theme,
-  envTheme,
   title,
   subtitle,
 }) => {
@@ -33,7 +31,8 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   // Filter for model segments to show the narrative flow
   const narrativeSegments = segments.filter((s) => s.role === "model");
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
-  const currentEnvThemeKey = envTheme || currentStoryTheme.defaultEnvTheme;
+  // Use envTheme directly from story theme for consistent visual styling
+  const currentEnvThemeKey = currentStoryTheme.envTheme;
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
   const { t } = useTranslation();
@@ -265,7 +264,6 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           ref={timelineExportRef}
           segments={narrativeSegments}
           theme={theme}
-          envTheme={envTheme}
           title={title}
           subtitle={subtitle}
           onExportStart={() => setIsExporting(true)}

@@ -93,7 +93,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
 
           {slots.map((slot) => {
             const themeConfig = THEMES[slot.theme];
-            const envTheme = themeConfig?.defaultEnvTheme;
+            const envTheme = themeConfig?.envTheme;
             const themeColor =
               (envTheme && ENV_THEMES[envTheme]?.vars["--theme-primary"]) ||
               "#ccc";
@@ -136,7 +136,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                           )}
                         </h3>
                         <p className="text-xs text-theme-muted/80 mt-0.5">
-                          {t(`themes.${slot.theme}.name`)}
+                          {t(`${slot.theme}.name`, { ns: 'themes' })}
                         </p>
                         <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
                           <MarkdownText content={slot.summary} />

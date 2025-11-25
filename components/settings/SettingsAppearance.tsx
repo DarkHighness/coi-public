@@ -84,6 +84,36 @@ export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
               />
             </button>
           </div>
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
+            <div>
+              <div className="font-bold text-theme-text">
+                {t("lockEnvTheme")}
+              </div>
+              <div className="text-xs text-theme-muted">
+                {t("lockEnvThemeDesc")}
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                onUpdateSettings({
+                  ...currentSettings,
+                  lockEnvTheme: !currentSettings.lockEnvTheme,
+                })
+              }
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                currentSettings.lockEnvTheme
+                  ? "bg-theme-primary"
+                  : "bg-theme-border"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  currentSettings.lockEnvTheme ? "left-7" : "left-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       )}
     </div>

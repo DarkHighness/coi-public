@@ -52,7 +52,7 @@ const INITIAL_STATE: GameState = {
   isImageGenerating: false,
   error: null,
   theme: "fantasy",
-  envTheme: "fantasy",
+  atmosphere: "quiet", // Unified atmosphere
   generatingNodeId: null,
   totalTokens: 0,
   logs: [],
@@ -87,7 +87,7 @@ export const useGameState = () => {
     setGameState({
       ...INITIAL_STATE,
       theme: theme,
-      envTheme: theme,
+      atmosphere: "quiet", // Default atmosphere
       // Ensure explicit reset of all accumulation fields
       summaries: [],
       nodes: {},

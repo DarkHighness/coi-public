@@ -395,7 +395,7 @@ export class GameDatabase {
           return createSuccess(
             {
               time: this.state.time,
-              envTheme: this.state.envTheme,
+              atmosphere: this.state.atmosphere,
               theme: this.state.theme,
               currentLocation: this.state.currentLocation,
             },
@@ -1511,8 +1511,7 @@ export class GameDatabase {
 
   private modifyGlobal(data: {
     time?: string;
-    envTheme?: string;
-    environment?: string;
+    atmosphere?: string;
   }): ToolCallResult<{ updated: string[]; values: Record<string, string> }> {
     const updated: string[] = [];
     const values: Record<string, string> = {};
@@ -1522,16 +1521,10 @@ export class GameDatabase {
       updated.push("time");
       values.time = data.time;
     }
-    if (data.envTheme) {
-      this.state.envTheme = data.envTheme;
-      updated.push("envTheme");
-      values.envTheme = data.envTheme;
-    }
-    if (data.environment) {
-      // Store environment in state for reference
-      (this.state as any).environment = data.environment;
-      updated.push("environment");
-      values.environment = data.environment;
+    if (data.atmosphere) {
+      this.state.atmosphere = data.atmosphere;
+      updated.push("atmosphere");
+      values.atmosphere = data.atmosphere;
     }
 
     if (updated.length === 0) {

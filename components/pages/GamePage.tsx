@@ -148,20 +148,20 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   const currentSegment = currentHistory[currentHistory.length - 1];
 
-  // Get environment from most recent segment with an environment
-  const activeEnvironment = currentHistory
+  // Get atmosphere from most recent segment (unified system)
+  const activeAtmosphere = currentHistory
     .slice()
     .reverse()
-    .find((seg) => seg.environment)?.environment;
+    .find((seg) => seg.atmosphere)?.atmosphere;
 
   useAmbience(
-    shouldPlayAmbience ? activeEnvironment : undefined,
+    shouldPlayAmbience ? activeAtmosphere : undefined,
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
     aiSettings.audioVolume?.bgmMuted ?? false,
     (env) => {
       setCurrentAmbience(env);
       if (env !== lastPlayedEnvRef.current) {
-        const envNameKey = "ambienceNames." + env;
+        const envNameKey = "environmentNames." + env;
         showToast(`${t("audioSettings.environment")}: ${t(envNameKey)}`);
         lastPlayedEnvRef.current = env;
       }

@@ -625,9 +625,13 @@ export const storyOutlineSchema: JsonSchema = {
       },
       description: "Initial relationships (1-2 NPCs).",
     },
-    initialEnvTheme: {
+    initialAtmosphere: {
       type: "string",
-      description: "Initial environment theme (e.g. 'Dark', 'Tense').",
+      enum: [
+        "cave", "city", "combat", "desert", "dungeon", "forest", "horror",
+        "market", "mystical", "ocean", "quiet", "rain", "scifi", "snow", "storm", "tavern"
+      ],
+      description: "Initial atmosphere controlling visual theme, effects, and audio ambience.",
     },
   },
   required: [
@@ -644,7 +648,7 @@ export const storyOutlineSchema: JsonSchema = {
     "character",
     "inventory",
     "relationships",
-    "initialEnvTheme",
+    "initialAtmosphere",
   ],
 };
 

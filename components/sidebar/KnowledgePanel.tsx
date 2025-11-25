@@ -142,7 +142,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
               {k.hidden.misconceptions &&
                 k.hidden.misconceptions.length > 0 && (
                   <div className="mt-2">
-                    <span className="text-[9px] uppercase tracking-wider text-red-400/70 block mb-0.5">
+                    <span className="text-[9px] uppercase tracking-wider text-theme-primary block mb-0.5">
                       {t("hidden.misconceptions")}:
                     </span>
                     <ul className="list-disc list-inside text-red-200/80 space-y-0.5">

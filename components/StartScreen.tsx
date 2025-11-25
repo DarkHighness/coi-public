@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
+import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomContextModal } from "./CustomContextModal";
 import { SaveSlot } from "../types";
@@ -69,10 +70,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   // Dynamic background style based on hovered theme
+  // Get the theme's default atmosphere, then get the visual theme for that atmosphere
+  const defaultAtmosphere = THEMES[hoveredTheme]?.defaultAtmosphere || "quiet";
+  const themeKey = getThemeKeyForAtmosphere(defaultAtmosphere);
   const activeThemeVar =
-    ENV_THEMES[THEMES[hoveredTheme]?.defaultEnvTheme]?.vars[
-      "--theme-primary"
-    ] || "#f59e0b";
+    ENV_THEMES[themeKey]?.vars["--theme-primary"] || "#f59e0b";
 
   return (
     <div
@@ -171,7 +173,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     </div>
                     <div className="relative z-10 text-[10px] mt-2 text-theme-muted/70 uppercase tracking-wider">
                       {new Date(latestSave.timestamp).toLocaleString()} •{" "}
-                      {t(`themes.${latestSave.theme}.name`, latestSave.theme)}
+                      {t(`${latestSave.theme}.name`, { ns: 'themes', defaultValue: latestSave.theme })}
                     </div>
                   </button>
                 </div>

@@ -32,6 +32,7 @@
     "i18next-cli": "^1.25.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.17",
+    "tsx": "^4.20.6",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

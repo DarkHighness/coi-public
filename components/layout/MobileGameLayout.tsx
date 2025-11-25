@@ -87,8 +87,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-  const currentEnvThemeKey =
-    gameState.envTheme || currentStoryTheme.defaultEnvTheme;
+  const currentEnvThemeKey = currentStoryTheme.envTheme;
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
@@ -137,7 +136,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         <StoryTimeline
           segments={currentHistory}
           theme={gameState.theme}
-          envTheme={gameState.envTheme}
           title={gameState.outline?.title}
           subtitle={gameState.outline?.premise}
         />
