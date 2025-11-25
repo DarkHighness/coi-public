@@ -68,7 +68,8 @@ export function createStateSnapshot(
     veoScript: metadata.veoScript,
 
     // Context Priority System
-    aliveEntities: metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
+    aliveEntities:
+      metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
     turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
   };
 }

@@ -62,7 +62,7 @@ export const getModels = async (
         video: false,
         audio: false,
         tools: false,
-        parallelTools: false
+        parallelTools: false,
       };
 
       // 1. Try to detect from OpenRouter-style fields
@@ -73,7 +73,6 @@ export const getModels = async (
       if (parsedCaps.video) capabilities.video = true;
       if (parsedCaps.tools) capabilities.tools = true;
       if (parsedCaps.parallelTools) capabilities.parallelTools = true;
-
 
       // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
       const hasExplicitInfo =
@@ -146,7 +145,9 @@ export const generateContent = async (
           return {
             role: "assistant",
             tool_calls: c.parts.map((p: any) => ({
-              id: p.functionCall.id || "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
+              id:
+                p.functionCall.id ||
+                "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
               type: "function",
               function: {
                 name: p.functionCall.name,

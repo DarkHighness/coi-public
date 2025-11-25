@@ -452,14 +452,16 @@ export const en = {
   // Command System
   commands: {
     godMode: {
-      confirmEnable: "⚠️ GOD MODE ⚠️\n\nThis will enable God Mode where:\n• All your actions succeed\n• All NPCs believe you unconditionally\n• You can change world rules and logic\n\nThis may significantly impact game balance.\n\nAre you sure you want to enable God Mode?",
+      confirmEnable:
+        "⚠️ GOD MODE ⚠️\n\nThis will enable God Mode where:\n• All your actions succeed\n• All NPCs believe you unconditionally\n• You can change world rules and logic\n\nThis may significantly impact game balance.\n\nAre you sure you want to enable God Mode?",
       confirmDisable: "Disable God Mode and return to normal gameplay?",
       enabled: "🔱 GOD MODE ENABLED",
       disabled: "God Mode disabled",
       indicator: "GOD MODE",
     },
     unlock: {
-      confirm: "⚠️ UNLOCK ALL ⚠️\n\nThis will reveal ALL hidden information:\n• Item secrets and true nature\n• NPC true personalities and motives\n• Location hidden features\n• Quest true objectives\n• Knowledge hidden truths\n\nThis cannot be undone and may spoil the story.\n\nAre you sure?",
+      confirm:
+        "⚠️ UNLOCK ALL ⚠️\n\nThis will reveal ALL hidden information:\n• Item secrets and true nature\n• NPC true personalities and motives\n• Location hidden features\n• Quest true objectives\n• Knowledge hidden truths\n\nThis cannot be undone and may spoil the story.\n\nAre you sure?",
       success: "🔓 All hidden information unlocked!",
     },
     help: "Available Commands:\n/god - Toggle God Mode (all actions succeed, NPCs obey)\n/unlock - Reveal all hidden information\n/edit - Open GameState editor\n/help - Show this help message",

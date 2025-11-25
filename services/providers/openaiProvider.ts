@@ -40,7 +40,7 @@ export const getModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
         video: false,
         audio: false,
         tools: false,
-        parallelTools: false
+        parallelTools: false,
       };
 
       // 1. Try to detect from OpenRouter-style fields
@@ -155,7 +155,9 @@ export const generateContent = async (
           return {
             role: "assistant",
             tool_calls: c.parts.map((p: any) => ({
-              id: p.functionCall.id || "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
+              id:
+                p.functionCall.id ||
+                "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
               type: "function",
               function: {
                 name: p.functionCall.name,

@@ -36,46 +36,52 @@ export const useAmbience = (
   }, []);
 
   // Fade out and stop helper
-  const fadeOutAndStop = useCallback((audio: HTMLAudioElement, callback?: () => void) => {
-    clearFadeInterval();
+  const fadeOutAndStop = useCallback(
+    (audio: HTMLAudioElement, callback?: () => void) => {
+      clearFadeInterval();
 
-    if (audio.volume <= 0.01) {
-      audio.pause();
-      audio.currentTime = 0;
-      callback?.();
-      return;
-    }
-
-    fadeIntervalRef.current = setInterval(() => {
-      if (audio.volume > 0.05) {
-        audio.volume = Math.max(0, audio.volume - 0.05);
-      } else {
-        audio.volume = 0;
+      if (audio.volume <= 0.01) {
         audio.pause();
         audio.currentTime = 0;
-        clearFadeInterval();
         callback?.();
-      }
-    }, 50);
-  }, [clearFadeInterval]);
-
-  // Fade in helper
-  const fadeIn = useCallback((audio: HTMLAudioElement, targetVolume: number) => {
-    clearFadeInterval();
-
-    fadeIntervalRef.current = setInterval(() => {
-      if (!isMountedRef.current) {
-        clearFadeInterval();
         return;
       }
-      if (audio.volume < targetVolume - 0.05) {
-        audio.volume = Math.min(targetVolume, audio.volume + 0.05);
-      } else {
-        audio.volume = targetVolume;
-        clearFadeInterval();
-      }
-    }, 50);
-  }, [clearFadeInterval]);
+
+      fadeIntervalRef.current = setInterval(() => {
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.05);
+        } else {
+          audio.volume = 0;
+          audio.pause();
+          audio.currentTime = 0;
+          clearFadeInterval();
+          callback?.();
+        }
+      }, 50);
+    },
+    [clearFadeInterval],
+  );
+
+  // Fade in helper
+  const fadeIn = useCallback(
+    (audio: HTMLAudioElement, targetVolume: number) => {
+      clearFadeInterval();
+
+      fadeIntervalRef.current = setInterval(() => {
+        if (!isMountedRef.current) {
+          clearFadeInterval();
+          return;
+        }
+        if (audio.volume < targetVolume - 0.05) {
+          audio.volume = Math.min(targetVolume, audio.volume + 0.05);
+        } else {
+          audio.volume = targetVolume;
+          clearFadeInterval();
+        }
+      }, 50);
+    },
+    [clearFadeInterval],
+  );
 
   // Handle volume changes (without restarting)
   useEffect(() => {
@@ -104,7 +110,7 @@ export const useAmbience = (
       // Resume and fade in when unmuted
       if (audioRef.current.paused) {
         audioRef.current.volume = 0;
-        audioRef.current.play().catch(e => console.warn("Resume failed:", e));
+        audioRef.current.play().catch((e) => console.warn("Resume failed:", e));
       }
       fadeIn(audioRef.current, volume);
     }

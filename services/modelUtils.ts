@@ -21,7 +21,8 @@ export const parseModelCapabilities = (
     if (architecture.modality.includes("->audio")) capabilities.audio = true;
     if (architecture.modality.includes("->video")) capabilities.video = true;
   } else if (architecture.output_modalities) {
-    if (architecture.output_modalities.includes("text")) capabilities.text = true;
+    if (architecture.output_modalities.includes("text"))
+      capabilities.text = true;
     if (architecture.output_modalities.includes("image"))
       capabilities.image = true;
     if (architecture.output_modalities.includes("audio"))
@@ -52,7 +53,8 @@ export const parseModelCapabilities = (
 
   // Explicit check if available in data
   if (info.supports_tools) capabilities.tools = true;
-  if (info.supports_parallel_function_calling) capabilities.parallelTools = true;
+  if (info.supports_parallel_function_calling)
+    capabilities.parallelTools = true;
 
   // Check supported_parameters (OpenRouter/v1 standard)
   if (supported_parameters) {

@@ -32,15 +32,47 @@ const SECTION_CONFIGS: Record<
   EditableSection,
   { icon: string; labelKey: string; stateKey: keyof GameState | "global" }
 > = {
-  character: { icon: "👤", labelKey: "stateEditor.character", stateKey: "character" },
-  inventory: { icon: "🎒", labelKey: "stateEditor.inventory", stateKey: "inventory" },
-  relationships: { icon: "👥", labelKey: "stateEditor.relationships", stateKey: "relationships" },
-  locations: { icon: "📍", labelKey: "stateEditor.locations", stateKey: "locations" },
+  character: {
+    icon: "👤",
+    labelKey: "stateEditor.character",
+    stateKey: "character",
+  },
+  inventory: {
+    icon: "🎒",
+    labelKey: "stateEditor.inventory",
+    stateKey: "inventory",
+  },
+  relationships: {
+    icon: "👥",
+    labelKey: "stateEditor.relationships",
+    stateKey: "relationships",
+  },
+  locations: {
+    icon: "📍",
+    labelKey: "stateEditor.locations",
+    stateKey: "locations",
+  },
   quests: { icon: "📜", labelKey: "stateEditor.quests", stateKey: "quests" },
-  knowledge: { icon: "📚", labelKey: "stateEditor.knowledge", stateKey: "knowledge" },
-  factions: { icon: "⚔️", labelKey: "stateEditor.factions", stateKey: "factions" },
-  timeline: { icon: "⏳", labelKey: "stateEditor.timeline", stateKey: "timeline" },
-  causalChains: { icon: "🔗", labelKey: "stateEditor.causalChains", stateKey: "causalChains" },
+  knowledge: {
+    icon: "📚",
+    labelKey: "stateEditor.knowledge",
+    stateKey: "knowledge",
+  },
+  factions: {
+    icon: "⚔️",
+    labelKey: "stateEditor.factions",
+    stateKey: "factions",
+  },
+  timeline: {
+    icon: "⏳",
+    labelKey: "stateEditor.timeline",
+    stateKey: "timeline",
+  },
+  causalChains: {
+    icon: "🔗",
+    labelKey: "stateEditor.causalChains",
+    stateKey: "causalChains",
+  },
   global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
 };
 
@@ -52,7 +84,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   onShowToast,
 }) => {
   const { t } = useTranslation();
-  const [activeSection, setActiveSection] = useState<EditableSection>("character");
+  const [activeSection, setActiveSection] =
+    useState<EditableSection>("character");
   const [jsonText, setJsonText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -98,7 +131,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   // Apply changes to GameState
   const handleApply = () => {
     if (error) {
-      onShowToast?.(t("stateEditor.fixErrors") || "Fix JSON errors before applying", "error");
+      onShowToast?.(
+        t("stateEditor.fixErrors") || "Fix JSON errors before applying",
+        "error",
+      );
       return;
     }
 
@@ -119,7 +155,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           };
         }
 
-        const stateKey = SECTION_CONFIGS[activeSection].stateKey as keyof GameState;
+        const stateKey = SECTION_CONFIGS[activeSection]
+          .stateKey as keyof GameState;
         return {
           ...prev,
           [stateKey]: parsed,
@@ -129,10 +166,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setHasChanges(false);
       onShowToast?.(
         t("stateEditor.applied") || `${activeSection} updated successfully`,
-        "success"
+        "success",
       );
     } catch (e) {
-      onShowToast?.(t("stateEditor.applyFailed") || "Failed to apply changes", "error");
+      onShowToast?.(
+        t("stateEditor.applyFailed") || "Failed to apply changes",
+        "error",
+      );
     }
   };
 
@@ -172,7 +212,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 {t("stateEditor.title") || "State Editor"}
               </h2>
               <p className="text-xs text-theme-muted">
-                {t("stateEditor.subtitle") || "Direct editing of game state (Developer Tool)"}
+                {t("stateEditor.subtitle") ||
+                  "Direct editing of game state (Developer Tool)"}
               </p>
             </div>
           </div>
@@ -180,8 +221,18 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             onClick={onClose}
             className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -190,26 +241,28 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         <div className="flex-1 flex overflow-hidden">
           {/* Section Tabs (Left) */}
           <div className="w-48 flex-none border-r border-theme-border bg-theme-bg/30 overflow-y-auto py-2">
-            {(Object.keys(SECTION_CONFIGS) as EditableSection[]).map((section) => {
-              const config = SECTION_CONFIGS[section];
-              const isActive = section === activeSection;
-              return (
-                <button
-                  key={section}
-                  onClick={() => setActiveSection(section)}
-                  className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                    isActive
-                      ? "bg-theme-primary/20 text-theme-primary border-r-2 border-theme-primary"
-                      : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
-                  }`}
-                >
-                  <span className="text-lg">{config.icon}</span>
-                  <span className="text-sm font-medium truncate">
-                    {t(config.labelKey) || section}
-                  </span>
-                </button>
-              );
-            })}
+            {(Object.keys(SECTION_CONFIGS) as EditableSection[]).map(
+              (section) => {
+                const config = SECTION_CONFIGS[section];
+                const isActive = section === activeSection;
+                return (
+                  <button
+                    key={section}
+                    onClick={() => setActiveSection(section)}
+                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                      isActive
+                        ? "bg-theme-primary/20 text-theme-primary border-r-2 border-theme-primary"
+                        : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+                    }`}
+                  >
+                    <span className="text-lg">{config.icon}</span>
+                    <span className="text-sm font-medium truncate">
+                      {t(config.labelKey) || section}
+                    </span>
+                  </button>
+                );
+              },
+            )}
           </div>
 
           {/* Editor Area */}
@@ -217,7 +270,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             {/* Toolbar */}
             <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{SECTION_CONFIGS[activeSection].icon}</span>
+                <span className="text-lg">
+                  {SECTION_CONFIGS[activeSection].icon}
+                </span>
                 <span className="font-medium text-theme-text">
                   {t(SECTION_CONFIGS[activeSection].labelKey) || activeSection}
                 </span>
@@ -272,7 +327,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Footer */}
         <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
           <div className="text-xs text-theme-muted">
-            ⚠️ {t("stateEditor.warning") || "Changes are applied immediately. Be careful!"}
+            ⚠️{" "}
+            {t("stateEditor.warning") ||
+              "Changes are applied immediately. Be careful!"}
           </div>
           <div className="flex items-center gap-3">
             <button

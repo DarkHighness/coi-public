@@ -57,157 +57,183 @@ export const useGamePersistence = (
    * Comprehensive state sanitization and repair.
    * Called when loading a save to fix any corrupted or incomplete state.
    */
-  const sanitizeState = useCallback((parsed: Record<string, any>): GameState => {
-    const repairLog: string[] = [];
+  const sanitizeState = useCallback(
+    (parsed: Record<string, any>): GameState => {
+      const repairLog: string[] = [];
 
-    // === 1. Reset transient processing states ===
-    parsed.isProcessing = false;
-    parsed.isImageGenerating = false;
-    parsed.generatingNodeId = null;
-    parsed.error = null;
+      // === 1. Reset transient processing states ===
+      parsed.isProcessing = false;
+      parsed.isImageGenerating = false;
+      parsed.generatingNodeId = null;
+      parsed.error = null;
 
-    // === 2. Fix missing or corrupted nextIds ===
-    if (!parsed.nextIds || typeof parsed.nextIds !== 'object') {
-      repairLog.push("Repaired: missing nextIds");
-      parsed.nextIds = { ...DEFAULT_NEXT_IDS };
-    } else {
-      // Ensure all fields exist
-      for (const [key, defaultVal] of Object.entries(DEFAULT_NEXT_IDS)) {
-        if (typeof parsed.nextIds[key] !== 'number') {
-          repairLog.push(`Repaired: nextIds.${key} was invalid`);
-          parsed.nextIds[key] = defaultVal;
+      // === 2. Fix missing or corrupted nextIds ===
+      if (!parsed.nextIds || typeof parsed.nextIds !== "object") {
+        repairLog.push("Repaired: missing nextIds");
+        parsed.nextIds = { ...DEFAULT_NEXT_IDS };
+      } else {
+        // Ensure all fields exist
+        for (const [key, defaultVal] of Object.entries(DEFAULT_NEXT_IDS)) {
+          if (typeof parsed.nextIds[key] !== "number") {
+            repairLog.push(`Repaired: nextIds.${key} was invalid`);
+            parsed.nextIds[key] = defaultVal;
+          }
         }
       }
-    }
 
-    // === 3. Recalculate nextIds based on actual data to prevent ID collisions ===
-    const recalculateNextId = (items: any[] | undefined, prefix: string, field: keyof typeof DEFAULT_NEXT_IDS) => {
-      if (!items || !Array.isArray(items)) return;
-      let maxId = 0;
-      for (const item of items) {
-        if (item.id && typeof item.id === 'string' && item.id.startsWith(`${prefix}:`)) {
-          const num = parseInt(item.id.split(':')[1], 10);
-          if (!isNaN(num) && num > maxId) maxId = num;
+      // === 3. Recalculate nextIds based on actual data to prevent ID collisions ===
+      const recalculateNextId = (
+        items: any[] | undefined,
+        prefix: string,
+        field: keyof typeof DEFAULT_NEXT_IDS,
+      ) => {
+        if (!items || !Array.isArray(items)) return;
+        let maxId = 0;
+        for (const item of items) {
+          if (
+            item.id &&
+            typeof item.id === "string" &&
+            item.id.startsWith(`${prefix}:`)
+          ) {
+            const num = parseInt(item.id.split(":")[1], 10);
+            if (!isNaN(num) && num > maxId) maxId = num;
+          }
         }
-      }
-      if (maxId >= parsed.nextIds[field]) {
-        parsed.nextIds[field] = maxId + 1;
-        repairLog.push(`Repaired: nextIds.${field} recalculated to ${maxId + 1}`);
-      }
-    };
-
-    recalculateNextId(parsed.inventory, 'inv', 'item');
-    recalculateNextId(parsed.relationships, 'npc', 'npc');
-    recalculateNextId(parsed.locations, 'loc', 'location');
-    recalculateNextId(parsed.knowledge, 'know', 'knowledge');
-    recalculateNextId(parsed.quests, 'quest', 'quest');
-    recalculateNextId(parsed.factions, 'fac', 'faction');
-    recalculateNextId(parsed.timeline, 'evt', 'timeline');
-    recalculateNextId(parsed.causalChains, 'chain', 'causalChain');
-
-    // Skills, conditions, and hiddenTraits are nested in character
-    if (parsed.character) {
-      recalculateNextId(parsed.character.skills, 'skill', 'skill');
-      recalculateNextId(parsed.character.conditions, 'cond', 'condition');
-      recalculateNextId(parsed.character.hiddenTraits, 'trait', 'hiddenTrait');
-    }
-
-    // === 4. Fix dangling user node (crash during generation) ===
-    if (parsed.activeNodeId && parsed.nodes && parsed.nodes[parsed.activeNodeId]) {
-      const lastNode = parsed.nodes[parsed.activeNodeId];
-      if (lastNode.role === "user") {
-        repairLog.push("Repaired: removed dangling user node");
-        if (lastNode.parentId && parsed.nodes[lastNode.parentId]) {
-          // Remove the dangling user node and revert to parent
-          delete parsed.nodes[parsed.activeNodeId];
-          parsed.activeNodeId = lastNode.parentId;
+        if (maxId >= parsed.nextIds[field]) {
+          parsed.nextIds[field] = maxId + 1;
+          repairLog.push(
+            `Repaired: nextIds.${field} recalculated to ${maxId + 1}`,
+          );
         }
-      }
-    }
-
-    // === 5. Ensure essential arrays exist ===
-    const ensureArray = (field: string) => {
-      if (!Array.isArray(parsed[field])) {
-        repairLog.push(`Repaired: ${field} was not an array`);
-        parsed[field] = [];
-      }
-    };
-
-    ensureArray('inventory');
-    ensureArray('relationships');
-    ensureArray('quests');
-    ensureArray('locations');
-    ensureArray('knowledge');
-    ensureArray('factions');
-    ensureArray('timeline');
-    ensureArray('causalChains');
-    ensureArray('summaries');
-    ensureArray('logs');
-
-    // === 6. Ensure nodes object exists ===
-    if (!parsed.nodes || typeof parsed.nodes !== 'object') {
-      repairLog.push("Repaired: nodes was invalid");
-      parsed.nodes = {};
-    }
-
-    // === 7. Fix character structure ===
-    if (!parsed.character || typeof parsed.character !== 'object') {
-      repairLog.push("Repaired: character was invalid");
-      parsed.character = {
-        name: "Unknown",
-        background: "",
-        motivation: "",
-        skills: [],
-        conditions: [],
-        hiddenTraits: [],
       };
-    } else {
-      // Ensure character sub-arrays exist
-      if (!Array.isArray(parsed.character.skills)) parsed.character.skills = [];
-      if (!Array.isArray(parsed.character.conditions)) parsed.character.conditions = [];
-      if (!Array.isArray(parsed.character.hiddenTraits)) parsed.character.hiddenTraits = [];
-    }
 
-    // === 8. Validate activeNodeId points to an existing node ===
-    if (parsed.activeNodeId && !parsed.nodes[parsed.activeNodeId]) {
-      repairLog.push("Repaired: activeNodeId pointed to non-existent node");
-      // Try to find any valid node
-      const nodeIds = Object.keys(parsed.nodes);
-      if (nodeIds.length > 0) {
-        // Find the most recent node
-        const sortedNodes = nodeIds
-          .map(id => parsed.nodes[id])
-          .filter(n => n && n.timestamp)
-          .sort((a, b) => b.timestamp - a.timestamp);
-        if (sortedNodes.length > 0) {
-          parsed.activeNodeId = sortedNodes[0].id;
-        } else {
-          parsed.activeNodeId = nodeIds[0];
+      recalculateNextId(parsed.inventory, "inv", "item");
+      recalculateNextId(parsed.relationships, "npc", "npc");
+      recalculateNextId(parsed.locations, "loc", "location");
+      recalculateNextId(parsed.knowledge, "know", "knowledge");
+      recalculateNextId(parsed.quests, "quest", "quest");
+      recalculateNextId(parsed.factions, "fac", "faction");
+      recalculateNextId(parsed.timeline, "evt", "timeline");
+      recalculateNextId(parsed.causalChains, "chain", "causalChain");
+
+      // Skills, conditions, and hiddenTraits are nested in character
+      if (parsed.character) {
+        recalculateNextId(parsed.character.skills, "skill", "skill");
+        recalculateNextId(parsed.character.conditions, "cond", "condition");
+        recalculateNextId(
+          parsed.character.hiddenTraits,
+          "trait",
+          "hiddenTrait",
+        );
+      }
+
+      // === 4. Fix dangling user node (crash during generation) ===
+      if (
+        parsed.activeNodeId &&
+        parsed.nodes &&
+        parsed.nodes[parsed.activeNodeId]
+      ) {
+        const lastNode = parsed.nodes[parsed.activeNodeId];
+        if (lastNode.role === "user") {
+          repairLog.push("Repaired: removed dangling user node");
+          if (lastNode.parentId && parsed.nodes[lastNode.parentId]) {
+            // Remove the dangling user node and revert to parent
+            delete parsed.nodes[parsed.activeNodeId];
+            parsed.activeNodeId = lastNode.parentId;
+          }
         }
-      } else {
-        parsed.activeNodeId = null;
       }
-    }
 
-    // === 9. Fix rootNodeId ===
-    if (parsed.rootNodeId && !parsed.nodes[parsed.rootNodeId]) {
-      repairLog.push("Repaired: rootNodeId pointed to non-existent node");
-      // Find a node with no parent
-      const rootCandidates = Object.values(parsed.nodes).filter((n: any) => !n.parentId);
-      if (rootCandidates.length > 0) {
-        parsed.rootNodeId = (rootCandidates[0] as any).id;
-      } else {
-        parsed.rootNodeId = null;
+      // === 5. Ensure essential arrays exist ===
+      const ensureArray = (field: string) => {
+        if (!Array.isArray(parsed[field])) {
+          repairLog.push(`Repaired: ${field} was not an array`);
+          parsed[field] = [];
+        }
+      };
+
+      ensureArray("inventory");
+      ensureArray("relationships");
+      ensureArray("quests");
+      ensureArray("locations");
+      ensureArray("knowledge");
+      ensureArray("factions");
+      ensureArray("timeline");
+      ensureArray("causalChains");
+      ensureArray("summaries");
+      ensureArray("logs");
+
+      // === 6. Ensure nodes object exists ===
+      if (!parsed.nodes || typeof parsed.nodes !== "object") {
+        repairLog.push("Repaired: nodes was invalid");
+        parsed.nodes = {};
       }
-    }
 
-    // Log repairs if any
-    if (repairLog.length > 0) {
-      console.warn("[Save Repair]", repairLog);
-    }
+      // === 7. Fix character structure ===
+      if (!parsed.character || typeof parsed.character !== "object") {
+        repairLog.push("Repaired: character was invalid");
+        parsed.character = {
+          name: "Unknown",
+          background: "",
+          motivation: "",
+          skills: [],
+          conditions: [],
+          hiddenTraits: [],
+        };
+      } else {
+        // Ensure character sub-arrays exist
+        if (!Array.isArray(parsed.character.skills))
+          parsed.character.skills = [];
+        if (!Array.isArray(parsed.character.conditions))
+          parsed.character.conditions = [];
+        if (!Array.isArray(parsed.character.hiddenTraits))
+          parsed.character.hiddenTraits = [];
+      }
 
-    return parsed as GameState;
-  }, []);
+      // === 8. Validate activeNodeId points to an existing node ===
+      if (parsed.activeNodeId && !parsed.nodes[parsed.activeNodeId]) {
+        repairLog.push("Repaired: activeNodeId pointed to non-existent node");
+        // Try to find any valid node
+        const nodeIds = Object.keys(parsed.nodes);
+        if (nodeIds.length > 0) {
+          // Find the most recent node
+          const sortedNodes = nodeIds
+            .map((id) => parsed.nodes[id])
+            .filter((n) => n && n.timestamp)
+            .sort((a, b) => b.timestamp - a.timestamp);
+          if (sortedNodes.length > 0) {
+            parsed.activeNodeId = sortedNodes[0].id;
+          } else {
+            parsed.activeNodeId = nodeIds[0];
+          }
+        } else {
+          parsed.activeNodeId = null;
+        }
+      }
+
+      // === 9. Fix rootNodeId ===
+      if (parsed.rootNodeId && !parsed.nodes[parsed.rootNodeId]) {
+        repairLog.push("Repaired: rootNodeId pointed to non-existent node");
+        // Find a node with no parent
+        const rootCandidates = Object.values(parsed.nodes).filter(
+          (n: any) => !n.parentId,
+        );
+        if (rootCandidates.length > 0) {
+          parsed.rootNodeId = (rootCandidates[0] as any).id;
+        } else {
+          parsed.rootNodeId = null;
+        }
+      }
+
+      // Log repairs if any
+      if (repairLog.length > 0) {
+        console.warn("[Save Repair]", repairLog);
+      }
+
+      return parsed as GameState;
+    },
+    [],
+  );
 
   /**
    * Manually save the current state to a slot.
@@ -394,7 +420,14 @@ export const useGamePersistence = (
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [gameState.activeNodeId, currentSlotId, view, skipNextSave, gameState, saveSlots]);
+  }, [
+    gameState.activeNodeId,
+    currentSlotId,
+    view,
+    skipNextSave,
+    gameState,
+    saveSlots,
+  ]);
 
   // Persist Current Slot ID to IndexedDB
   useEffect(() => {

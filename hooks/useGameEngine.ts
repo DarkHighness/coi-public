@@ -428,16 +428,17 @@ export const useGameEngine = () => {
       let segmentsToSend = contextNodes.slice(lastIndex);
 
       // Generate Turn - pass GameState directly with TurnContext
-      const { response, logs: turnLogs, usage } = await generateAdventureTurn(
-        gameStateRef.current,
-        {
-          recentHistory: segmentsToSend,
-          userAction: action,
-          language: LANG_MAP[language],
-          themeKey: gameStateRef.current.theme,
-          tFunc: t,
-        },
-      );
+      const {
+        response,
+        logs: turnLogs,
+        usage,
+      } = await generateAdventureTurn(gameStateRef.current, {
+        recentHistory: segmentsToSend,
+        userAction: action,
+        language: LANG_MAP[language],
+        themeKey: gameStateRef.current.theme,
+        tFunc: t,
+      });
 
       // Sanitize choices to ensure strict string array
       const sanitizedChoices = Array.isArray(response.choices)
@@ -470,24 +471,30 @@ export const useGameEngine = () => {
 
       // Collect state changes for toast notifications (with names)
       const stateChanges = {
-        itemsAdded: response.inventoryActions
-          ?.filter((a) => a.action === "add")
-          .map((a) => ({ name: a.name || "Unknown Item" })) || [],
-        itemsRemoved: response.inventoryActions
-          ?.filter((a) => a.action === "remove")
-          .map((a) => ({ name: a.name || "Unknown Item" })) || [],
-        npcsAdded: response.relationshipActions
-          ?.filter((a) => a.action === "add")
-          .map((a) => ({ name: a.visible?.name || "Unknown NPC" })) || [],
-        questsAdded: response.questActions
-          ?.filter((a) => a.action === "add")
-          .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
-        questsCompleted: response.questActions
-          ?.filter((a) => a.action === "complete")
-          .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
-        locationsDiscovered: response.locationActions
-          ?.filter((a) => a.action === "add")
-          .map((a) => ({ name: a.name || "Unknown Location" })) || [],
+        itemsAdded:
+          response.inventoryActions
+            ?.filter((a) => a.action === "add")
+            .map((a) => ({ name: a.name || "Unknown Item" })) || [],
+        itemsRemoved:
+          response.inventoryActions
+            ?.filter((a) => a.action === "remove")
+            .map((a) => ({ name: a.name || "Unknown Item" })) || [],
+        npcsAdded:
+          response.relationshipActions
+            ?.filter((a) => a.action === "add")
+            .map((a) => ({ name: a.visible?.name || "Unknown NPC" })) || [],
+        questsAdded:
+          response.questActions
+            ?.filter((a) => a.action === "add")
+            .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
+        questsCompleted:
+          response.questActions
+            ?.filter((a) => a.action === "complete")
+            .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
+        locationsDiscovered:
+          response.locationActions
+            ?.filter((a) => a.action === "add")
+            .map((a) => ({ name: a.name || "Unknown Location" })) || [],
       };
 
       // Legacy single toast message for backwards compatibility
@@ -496,7 +503,10 @@ export const useGameEngine = () => {
         toastMessage = t("toast.itemAdded");
       } else if (stateChanges.npcsAdded.length > 0) {
         toastMessage = t("toast.charMet");
-      } else if (stateChanges.questsAdded.length > 0 || stateChanges.questsCompleted.length > 0) {
+      } else if (
+        stateChanges.questsAdded.length > 0 ||
+        stateChanges.questsCompleted.length > 0
+      ) {
         toastMessage = t("toast.questUpd");
       }
 
@@ -601,22 +611,26 @@ export const useGameEngine = () => {
 
         // Build rich image context with all relevant details
         const currentLoc = finalState.locations?.find(
-          (l) => l.name === finalState.currentLocation || String(l.id) === String(finalState.currentLocation)
+          (l) =>
+            l.name === finalState.currentLocation ||
+            String(l.id) === String(finalState.currentLocation),
         );
 
         const imageContext = {
           theme: finalState.theme,
           worldSetting: finalState.outline?.worldSetting?.visible,
           time: finalState.time,
-          location: currentLoc ? {
-            name: currentLoc.name,
-            environment: currentLoc.environment || "Unknown",
-            details: currentLoc.visible?.description || "",
-          } : {
-            name: finalState.currentLocation,
-            environment: "Unknown",
-            details: "",
-          },
+          location: currentLoc
+            ? {
+                name: currentLoc.name,
+                environment: currentLoc.environment || "Unknown",
+                details: currentLoc.visible?.description || "",
+              }
+            : {
+                name: finalState.currentLocation,
+                environment: "Unknown",
+                details: "",
+              },
           character: {
             name: finalState.character?.name || "Unknown",
             race: finalState.character?.race || "Unknown",
@@ -626,7 +640,12 @@ export const useGameEngine = () => {
           },
           stateSnapshot,
           activeNPCs: finalState.relationships
-            .filter((r) => r.visible.name && r.visible.relationshipType !== "Absent" && r.visible.relationshipType !== "Dead")
+            .filter(
+              (r) =>
+                r.visible.name &&
+                r.visible.relationshipType !== "Absent" &&
+                r.visible.relationshipType !== "Dead",
+            )
             .map((r) => ({
               name: r.visible.name,
               description: r.visible.description,
@@ -693,7 +712,11 @@ export const useGameEngine = () => {
       processingRef.current = false;
 
       // Return state changes for toast notifications
-      return { success: true as const, stateChanges, legacyMessage: toastMessage };
+      return {
+        success: true as const,
+        stateChanges,
+        legacyMessage: toastMessage,
+      };
     } catch (error: any) {
       console.error(error);
       const errorMsg = error.message || "Error connecting to the universe...";
@@ -848,13 +871,9 @@ export const useGameEngine = () => {
           const prompt = `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`;
 
           // Store initial prompt for retry
-          setGameState(prev => ({ ...prev, initialPrompt: prompt }));
+          setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
 
-          const result = await handleAction(
-            prompt,
-            true,
-            selectedTheme,
-          );
+          const result = await handleAction(prompt, true, selectedTheme);
 
           // handleAction returns:
           // - { success: true, stateChanges, legacyMessage } on success

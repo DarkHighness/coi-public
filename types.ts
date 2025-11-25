@@ -56,17 +56,17 @@ export const RECENT_LIMITS = {
 
 // Alive Entities: entities marked by AI as needed for next turn
 export interface AliveEntities {
-  inventory: string[];      // inv:N IDs
-  relationships: string[];  // npc:N IDs
-  locations: string[];      // loc:N IDs
-  quests: string[];         // quest:N IDs
-  knowledge: string[];      // know:N IDs
-  timeline: string[];       // evt:N IDs
+  inventory: string[]; // inv:N IDs
+  relationships: string[]; // npc:N IDs
+  locations: string[]; // loc:N IDs
+  quests: string[]; // quest:N IDs
+  knowledge: string[]; // know:N IDs
+  timeline: string[]; // evt:N IDs
   // Character internal attributes (subset tracking)
-  skills: string[];         // Character skill IDs relevant to next turn
-  conditions: string[];     // Character condition IDs relevant to next turn
-  hiddenTraits: string[];   // Character hidden trait IDs relevant to next turn
-  causalChains: string[];   // CausalChain chainIds with pending consequences
+  skills: string[]; // Character skill IDs relevant to next turn
+  conditions: string[]; // Character condition IDs relevant to next turn
+  hiddenTraits: string[]; // Character hidden trait IDs relevant to next turn
+  causalChains: string[]; // CausalChain chainIds with pending consequences
 }
 
 export interface GameState {
@@ -198,14 +198,14 @@ export interface CausalChain {
    * NOTE: 'probability' has been REMOVED. AI makes the decision.
    */
   pendingConsequences?: Array<{
-    id: string;           // Unique ID for tracking
-    description: string;  // What could happen
+    id: string; // Unique ID for tracking
+    description: string; // What could happen
     readyAfterTurn: number; // Turn number AFTER which this consequence CAN trigger (not before)
-    createdAtTurn: number;  // Turn when this consequence was created
+    createdAtTurn: number; // Turn when this consequence was created
     conditions?: string[]; // Conditions that should be true for trigger (AI evaluates)
-    triggered?: boolean;   // True once consequence has been triggered
+    triggered?: boolean; // True once consequence has been triggered
     triggeredAtTurn?: number; // Turn when triggered
-    known?: boolean;       // True if player witnessed/knows about this consequence
+    known?: boolean; // True if player witnessed/knows about this consequence
   }>;
 }
 
@@ -457,10 +457,10 @@ export interface StorySegment {
 
 // Game Ending Types
 export type EndingType =
-  | "death"          // Player death / Game Over
-  | "victory"        // Main goal achieved
-  | "true_ending"    // Secret/True ending discovered
-  | "bad_ending"     // Bad outcome but not death
+  | "death" // Player death / Game Over
+  | "victory" // Main goal achieved
+  | "true_ending" // Secret/True ending discovered
+  | "bad_ending" // Bad outcome but not death
   | "neutral_ending" // Story concluded without clear win/loss
   | null;
 

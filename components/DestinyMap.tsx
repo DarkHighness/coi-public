@@ -326,12 +326,18 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             const getEndingColor = () => {
               if (!ending) return null;
               switch (ending) {
-                case "death": return "var(--ending-death, #ef4444)"; // red
-                case "victory": return "var(--ending-victory, #22c55e)"; // green
-                case "true_ending": return "var(--ending-true, #eab308)"; // gold
-                case "bad_ending": return "var(--ending-bad, #9333ea)"; // purple
-                case "neutral_ending": return "var(--ending-neutral, var(--theme-muted))"; // muted
-                default: return null;
+                case "death":
+                  return "var(--ending-death, #ef4444)"; // red
+                case "victory":
+                  return "var(--ending-victory, #22c55e)"; // green
+                case "true_ending":
+                  return "var(--ending-true, #eab308)"; // gold
+                case "bad_ending":
+                  return "var(--ending-bad, #9333ea)"; // purple
+                case "neutral_ending":
+                  return "var(--ending-neutral, var(--theme-muted))"; // muted
+                default:
+                  return null;
               }
             };
             const endingColor = getEndingColor();
@@ -340,12 +346,18 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             const getEndingIcon = () => {
               if (!ending) return null;
               switch (ending) {
-                case "death": return "💀";
-                case "victory": return "🏆";
-                case "true_ending": return "⭐";
-                case "bad_ending": return "💔";
-                case "neutral_ending": return "⚖️";
-                default: return null;
+                case "death":
+                  return "💀";
+                case "victory":
+                  return "🏆";
+                case "true_ending":
+                  return "⭐";
+                case "bad_ending":
+                  return "💔";
+                case "neutral_ending":
+                  return "⚖️";
+                default:
+                  return null;
               }
             };
             const endingIcon = getEndingIcon();
@@ -427,17 +439,27 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                     <div className="flex items-center gap-1 mb-1">
                       <span
                         className={`text-[9px] font-bold uppercase tracking-wider ${
-                          endingColor ? "" : isCurrent ? "text-theme-primary" : "text-theme-muted"
+                          endingColor
+                            ? ""
+                            : isCurrent
+                              ? "text-theme-primary"
+                              : "text-theme-muted"
                         }`}
                         style={endingColor ? { color: endingColor } : undefined}
                       >
                         {ending
-                          ? (ending === "death" ? t("gameOver") || "GAME OVER"
-                             : ending === "victory" ? t("victory") || "VICTORY"
-                             : ending === "true_ending" ? t("trueEnding") || "TRUE ENDING"
-                             : ending === "bad_ending" ? t("badEnding") || "BAD END"
-                             : t("ending") || "ENDING")
-                          : (isModel ? t("narrator") : t("you"))}
+                          ? ending === "death"
+                            ? t("gameOver") || "GAME OVER"
+                            : ending === "victory"
+                              ? t("victory") || "VICTORY"
+                              : ending === "true_ending"
+                                ? t("trueEnding") || "TRUE ENDING"
+                                : ending === "bad_ending"
+                                  ? t("badEnding") || "BAD END"
+                                  : t("ending") || "ENDING"
+                          : isModel
+                            ? t("narrator")
+                            : t("you")}
                       </span>
                       {endingIcon && (
                         <span className="text-xs">{endingIcon}</span>

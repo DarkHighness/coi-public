@@ -34,7 +34,7 @@ const COMMANDS: Record<string, CommandHandler> = {
 
 type CommandHandler = (
   args: string[],
-  context: CommandContext
+  context: CommandContext,
 ) => CommandResult;
 
 /**
@@ -42,7 +42,7 @@ type CommandHandler = (
  */
 export function parseCommand(
   input: string,
-  context: CommandContext
+  context: CommandContext,
 ): CommandResult {
   const trimmed = input.trim();
 
@@ -92,7 +92,10 @@ function handleGodMode(args: string[], context: CommandContext): CommandResult {
 /**
  * /unlock - Unlock all hidden information
  */
-function handleUnlockAll(args: string[], context: CommandContext): CommandResult {
+function handleUnlockAll(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
   const { t } = context;
 
   const confirmMessage =
@@ -110,7 +113,10 @@ function handleUnlockAll(args: string[], context: CommandContext): CommandResult
 /**
  * /edit - Open GameState Editor
  */
-function handleOpenEditor(args: string[], context: CommandContext): CommandResult {
+function handleOpenEditor(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
   return {
     handled: true,
     preventAction: true,
@@ -124,7 +130,9 @@ function handleOpenEditor(args: string[], context: CommandContext): CommandResul
 function handleHelp(args: string[], context: CommandContext): CommandResult {
   const { t } = context;
 
-  const helpText = t("commands.help") || `Available Commands:
+  const helpText =
+    t("commands.help") ||
+    `Available Commands:
 /god - Toggle God Mode (all actions succeed, NPCs obey)
 /unlock - Reveal all hidden information
 /edit - Open GameState editor
@@ -143,7 +151,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 export function executeCommandAction(
   action: CommandAction,
   gameState: GameState,
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>,
 ): void {
   switch (action.type) {
     case "god_mode":

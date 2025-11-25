@@ -121,17 +121,19 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
         {/* Ending Banner */}
         {segment.ending && (
-          <div className={`mx-6 my-4 p-4 rounded-lg border-2 text-center animate-fade-in ${
-            segment.ending === "death"
-              ? "bg-theme-surface border-red-500/60 text-red-400"
-              : segment.ending === "victory"
-              ? "bg-theme-surface border-green-500/60 text-green-400"
-              : segment.ending === "true_ending"
-              ? "bg-theme-surface border-yellow-500/60 text-yellow-400"
-              : segment.ending === "bad_ending"
-              ? "bg-theme-surface border-purple-500/60 text-purple-400"
-              : "bg-theme-surface border-theme-border text-theme-muted"
-          }`}>
+          <div
+            className={`mx-6 my-4 p-4 rounded-lg border-2 text-center animate-fade-in ${
+              segment.ending === "death"
+                ? "bg-theme-surface border-red-500/60 text-red-400"
+                : segment.ending === "victory"
+                  ? "bg-theme-surface border-green-500/60 text-green-400"
+                  : segment.ending === "true_ending"
+                    ? "bg-theme-surface border-yellow-500/60 text-yellow-400"
+                    : segment.ending === "bad_ending"
+                      ? "bg-theme-surface border-purple-500/60 text-purple-400"
+                      : "bg-theme-surface border-theme-border text-theme-muted"
+            }`}
+          >
             <div className="text-3xl mb-2">
               {segment.ending === "death" && "💀"}
               {segment.ending === "victory" && "🏆"}
@@ -142,14 +144,17 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             <div className="text-lg font-bold uppercase tracking-widest">
               {segment.ending === "death" && (t("gameOver") || "GAME OVER")}
               {segment.ending === "victory" && (t("victory") || "VICTORY")}
-              {segment.ending === "true_ending" && (t("trueEnding") || "TRUE ENDING")}
+              {segment.ending === "true_ending" &&
+                (t("trueEnding") || "TRUE ENDING")}
               {segment.ending === "bad_ending" && (t("badEnding") || "BAD END")}
-              {segment.ending === "neutral_ending" && (t("ending") || "THE END")}
+              {segment.ending === "neutral_ending" &&
+                (t("ending") || "THE END")}
             </div>
             <div className="text-xs mt-2 opacity-70">
               {segment.forceEnd
-                ? (t("endingFinal") || "This story has reached its conclusion")
-                : (t("endingHint") || "You can fork from an earlier point to try a different path")}
+                ? t("endingFinal") || "This story has reached its conclusion"
+                : t("endingHint") ||
+                  "You can fork from an earlier point to try a different path"}
             </div>
           </div>
         )}

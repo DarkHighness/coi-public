@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { GameState, StoryOutline, CharacterStatus, AliveEntities } from "../types";
+import {
+  GameState,
+  StoryOutline,
+  CharacterStatus,
+  AliveEntities,
+} from "../types";
 import { DEFAULT_CHARACTER } from "../utils/constants";
 
 // Default empty alive entities

@@ -8,7 +8,10 @@ interface LogPanelProps {
 }
 
 // Component to render a single tool call
-const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({ call, index }) => {
+const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
+  call,
+  index,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isQuery = call.name.startsWith("query_");
   const isFinish = call.name === "finish_turn";
@@ -29,8 +32,12 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({ call,
         className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] text-theme-muted opacity-50">#{index + 1}</span>
-          <span className={`text-xs font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}>
+          <span className="text-[10px] text-theme-muted opacity-50">
+            #{index + 1}
+          </span>
+          <span
+            className={`text-xs font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}
+          >
             {call.name}
           </span>
           <span className={`text-[10px] ${statusColor}`}>
@@ -43,23 +50,34 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({ call,
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
       {isExpanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-theme-border/20 pt-2">
           <div>
-            <label className="text-[9px] uppercase tracking-widest text-green-500 font-bold block mb-1">Input</label>
+            <label className="text-[9px] uppercase tracking-widest text-green-500 font-bold block mb-1">
+              Input
+            </label>
             <pre className="text-[10px] text-theme-muted/80 bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words">
               {JSON.stringify(call.input, null, 2)}
             </pre>
           </div>
           <div>
-            <label className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-blue-500" : "text-red-500"}`}>
+            <label
+              className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-blue-500" : "text-red-500"}`}
+            >
               Output
             </label>
-            <pre className={`text-[10px] bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words ${isSuccess ? "text-theme-muted/80" : "text-red-400"}`}>
+            <pre
+              className={`text-[10px] bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words ${isSuccess ? "text-theme-muted/80" : "text-red-400"}`}
+            >
               {JSON.stringify(call.output, null, 2)}
             </pre>
           </div>
@@ -74,7 +92,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
 
   const toggleLog = (logId: string) => {
-    setExpandedLogs(prev => {
+    setExpandedLogs((prev) => {
       const next = new Set(prev);
       if (next.has(logId)) {
         next.delete(logId);
@@ -86,8 +104,14 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
   };
 
   // Calculate total stats
-  const totalToolCalls = logs.reduce((sum, log) => sum + (log.toolCalls?.length || 0), 0);
-  const totalTokens = logs.reduce((sum, log) => sum + (log.usage?.totalTokens || 0), 0);
+  const totalToolCalls = logs.reduce(
+    (sum, log) => sum + (log.toolCalls?.length || 0),
+    0,
+  );
+  const totalTokens = logs.reduce(
+    (sum, log) => sum + (log.usage?.totalTokens || 0),
+    0,
+  );
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col animate-fade-in text-theme-text font-mono">
@@ -215,7 +239,12 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </div>
               </button>
@@ -256,11 +285,15 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       )}
                       {log.response && (
                         <div className="space-y-2 min-w-0">
-                          <label className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-red-500" : "text-blue-500"}`}>
+                          <label
+                            className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-red-500" : "text-blue-500"}`}
+                          >
                             Response
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
-                            <pre className={`text-xs whitespace-pre-wrap break-words ${isError ? "text-red-400" : "text-theme-muted/80"}`}>
+                            <pre
+                              className={`text-xs whitespace-pre-wrap break-words ${isError ? "text-red-400" : "text-theme-muted/80"}`}
+                            >
                               {typeof log.response === "string"
                                 ? log.response
                                 : JSON.stringify(log.response, null, 2)}
@@ -279,7 +312,9 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                         {log.usage.promptTokens}
                       </span>
                       <span>
-                        <strong className="text-theme-primary">Completion:</strong>{" "}
+                        <strong className="text-theme-primary">
+                          Completion:
+                        </strong>{" "}
                         {log.usage.completionTokens}
                       </span>
                       <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">

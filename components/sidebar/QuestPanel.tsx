@@ -80,9 +80,20 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             </span>
             {/* Unlocked indicator */}
             {q.unlocked && (
-              <span className="text-yellow-500" title={t("unlocked") || "Unlocked"}>
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              <span
+                className="text-yellow-500"
+                title={t("unlocked") || "Unlocked"}
+              >
+                <svg
+                  className="w-3 h-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </span>
             )}
@@ -116,8 +127,16 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           {q.unlocked && q.hidden && (
             <div className="mt-3 space-y-2 border-t border-yellow-500/20 pt-2">
               <div className="flex items-center gap-1 text-yellow-500 text-[10px] uppercase tracking-wider font-bold mb-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                <svg
+                  className="w-3 h-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 {t("hiddenTruth") || "Hidden Truth"}
               </div>
@@ -128,23 +147,26 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                   <span className="text-[10px] uppercase tracking-wider text-red-400/80 font-bold block mb-0.5">
                     {t("trueDescription") || "True Description"}
                   </span>
-                  <p className="text-red-300/80 not-italic">{q.hidden.trueDescription}</p>
+                  <p className="text-red-300/80 not-italic">
+                    {q.hidden.trueDescription}
+                  </p>
                 </div>
               )}
 
               {/* True Objectives */}
-              {q.hidden.trueObjectives && q.hidden.trueObjectives.length > 0 && (
-                <div className="pl-1">
-                  <span className="text-[10px] uppercase tracking-wider text-red-400/80 font-bold block mb-0.5">
-                    {t("trueObjectives") || "True Objectives"}
-                  </span>
-                  <ul className="list-disc list-inside text-red-300/80 not-italic">
-                    {q.hidden.trueObjectives.map((obj, idx) => (
-                      <li key={idx}>{obj}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {q.hidden.trueObjectives &&
+                q.hidden.trueObjectives.length > 0 && (
+                  <div className="pl-1">
+                    <span className="text-[10px] uppercase tracking-wider text-red-400/80 font-bold block mb-0.5">
+                      {t("trueObjectives") || "True Objectives"}
+                    </span>
+                    <ul className="list-disc list-inside text-red-300/80 not-italic">
+                      {q.hidden.trueObjectives.map((obj, idx) => (
+                        <li key={idx}>{obj}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {/* Secret Outcome */}
               {q.hidden.secretOutcome && (
@@ -152,7 +174,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                   <span className="text-[10px] uppercase tracking-wider text-purple-400/80 font-bold block mb-0.5">
                     {t("secretOutcome") || "Secret Outcome"}
                   </span>
-                  <p className="text-purple-300/80 not-italic">{q.hidden.secretOutcome}</p>
+                  <p className="text-purple-300/80 not-italic">
+                    {q.hidden.secretOutcome}
+                  </p>
                 </div>
               )}
             </div>

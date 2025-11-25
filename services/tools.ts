@@ -47,7 +47,9 @@ export const generateEntityId = (type: EntityType, num: number): string => {
 };
 
 // Helper to parse ID
-export const parseEntityId = (id: string): { type: string; num: number } | null => {
+export const parseEntityId = (
+  id: string,
+): { type: string; num: number } | null => {
   const match = id.match(/^([a-z]+):(\d+)$/);
   if (!match) return null;
   return { type: match[1], num: parseInt(match[2], 10) };
@@ -225,7 +227,14 @@ export const QUERY_CHARACTER_TOOL = {
     properties: {
       aspect: {
         type: "string",
-        enum: ["all", "profile", "attributes", "skills", "conditions", "hiddenTraits"],
+        enum: [
+          "all",
+          "profile",
+          "attributes",
+          "skills",
+          "conditions",
+          "hiddenTraits",
+        ],
         description: "The aspect of the character to query. Defaults to 'all'.",
       },
       query: {
@@ -252,7 +261,8 @@ export const UPDATE_INVENTORY_TOOL = {
       },
       id: {
         type: "string",
-        description: "Item ID (format: inv:N, e.g., 'inv:1'). Required for 'update' and 'remove' actions.",
+        description:
+          "Item ID (format: inv:N, e.g., 'inv:1'). Required for 'update' and 'remove' actions.",
       },
       name: {
         type: "string",
@@ -261,19 +271,38 @@ export const UPDATE_INVENTORY_TOOL = {
       visible: {
         type: "object",
         properties: {
-          description: { type: "string", description: "Visual description of the item." },
-          notes: { type: "string", description: "Player's notes about the item." },
+          description: {
+            type: "string",
+            description: "Visual description of the item.",
+          },
+          notes: {
+            type: "string",
+            description: "Player's notes about the item.",
+          },
         },
       },
       hidden: {
         type: "object",
         properties: {
-          truth: { type: "string", description: "True nature/power of the item." },
-          secrets: { type: "array", items: { type: "string" }, description: "Hidden secrets about the item." },
+          truth: {
+            type: "string",
+            description: "True nature/power of the item.",
+          },
+          secrets: {
+            type: "array",
+            items: { type: "string" },
+            description: "Hidden secrets about the item.",
+          },
         },
       },
-      lore: { type: "string", description: "Brief lore or history of the item." },
-      unlocked: { type: "boolean", description: "Whether the hidden truth is revealed to the player." },
+      lore: {
+        type: "string",
+        description: "Brief lore or history of the item.",
+      },
+      unlocked: {
+        type: "boolean",
+        description: "Whether the hidden truth is revealed to the player.",
+      },
     },
     required: ["action"],
   },
@@ -292,36 +321,84 @@ export const UPDATE_RELATIONSHIP_TOOL = {
       },
       id: {
         type: "string",
-        description: "NPC ID (format: npc:N, e.g., 'npc:1'). Required for 'update' and 'remove' actions.",
+        description:
+          "NPC ID (format: npc:N, e.g., 'npc:1'). Required for 'update' and 'remove' actions.",
       },
-      known: { type: "boolean", description: "Whether the player knows this character." },
+      known: {
+        type: "boolean",
+        description: "Whether the player knows this character.",
+      },
       visible: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Name the player knows them by." },
-          description: { type: "string", description: "Public perception of the NPC." },
+          name: {
+            type: "string",
+            description: "Name the player knows them by.",
+          },
+          description: {
+            type: "string",
+            description: "Public perception of the NPC.",
+          },
           appearance: { type: "string", description: "Physical appearance." },
-          relationshipType: { type: "string", description: "Relationship status from player's perspective." },
-          currentImpression: { type: "string", description: "NPC's current observable state." },
-          personality: { type: "string", description: "Public perception of personality." },
+          relationshipType: {
+            type: "string",
+            description: "Relationship status from player's perspective.",
+          },
+          currentImpression: {
+            type: "string",
+            description: "NPC's current observable state.",
+          },
+          personality: {
+            type: "string",
+            description: "Public perception of personality.",
+          },
           affinity: { type: "integer", description: "Affinity score 0-100." },
-          affinityKnown: { type: "boolean", description: "Whether the player knows the affinity level." },
+          affinityKnown: {
+            type: "boolean",
+            description: "Whether the player knows the affinity level.",
+          },
         },
       },
       hidden: {
         type: "object",
         properties: {
-          trueName: { type: "string", description: "The character's real name if different." },
+          trueName: {
+            type: "string",
+            description: "The character's real name if different.",
+          },
           realPersonality: { type: "string", description: "True personality." },
-          realMotives: { type: "string", description: "True underlying motives." },
-          secrets: { type: "array", items: { type: "string" }, description: "Character's secrets." },
-          trueAffinity: { type: "integer", description: "True affinity score." },
-          relationshipType: { type: "string", description: "NPC's true view of the relationship." },
-          status: { type: "string", description: "NPC's current state (e.g., 'plotting', 'injured')." },
+          realMotives: {
+            type: "string",
+            description: "True underlying motives.",
+          },
+          secrets: {
+            type: "array",
+            items: { type: "string" },
+            description: "Character's secrets.",
+          },
+          trueAffinity: {
+            type: "integer",
+            description: "True affinity score.",
+          },
+          relationshipType: {
+            type: "string",
+            description: "NPC's true view of the relationship.",
+          },
+          status: {
+            type: "string",
+            description: "NPC's current state (e.g., 'plotting', 'injured').",
+          },
         },
       },
-      notes: { type: "string", description: "NPC's observations of player's behavior." },
-      unlocked: { type: "boolean", description: "Whether hidden info is revealed (requires special ability)." },
+      notes: {
+        type: "string",
+        description: "NPC's observations of player's behavior.",
+      },
+      unlocked: {
+        type: "boolean",
+        description:
+          "Whether hidden info is revealed (requires special ability).",
+      },
     },
     required: ["action"],
   },
@@ -329,7 +406,8 @@ export const UPDATE_RELATIONSHIP_TOOL = {
 
 export const UPDATE_LOCATION_TOOL = {
   name: "update_location",
-  description: "Add, update, or remove locations. Use to track player movement and location discovery.",
+  description:
+    "Add, update, or remove locations. Use to track player movement and location discovery.",
   parameters: {
     type: "object",
     properties: {
@@ -340,7 +418,8 @@ export const UPDATE_LOCATION_TOOL = {
       },
       id: {
         type: "string",
-        description: "Location ID (format: loc:N, e.g., 'loc:1'). Required for 'update' and 'remove' actions.",
+        description:
+          "Location ID (format: loc:N, e.g., 'loc:1'). Required for 'update' and 'remove' actions.",
       },
       name: {
         type: "string",
@@ -349,22 +428,52 @@ export const UPDATE_LOCATION_TOOL = {
       visible: {
         type: "object",
         properties: {
-          description: { type: "string", description: "Visual description of the location." },
-          knownFeatures: { type: "array", items: { type: "string" }, description: "Known features." },
+          description: {
+            type: "string",
+            description: "Visual description of the location.",
+          },
+          knownFeatures: {
+            type: "array",
+            items: { type: "string" },
+            description: "Known features.",
+          },
         },
       },
       hidden: {
         type: "object",
         properties: {
-          fullDescription: { type: "string", description: "True nature of the location." },
-          hiddenFeatures: { type: "array", items: { type: "string" }, description: "Hidden features." },
-          secrets: { type: "array", items: { type: "string" }, description: "Location secrets." },
+          fullDescription: {
+            type: "string",
+            description: "True nature of the location.",
+          },
+          hiddenFeatures: {
+            type: "array",
+            items: { type: "string" },
+            description: "Hidden features.",
+          },
+          secrets: {
+            type: "array",
+            items: { type: "string" },
+            description: "Location secrets.",
+          },
         },
       },
-      environment: { type: "string", description: "Atmosphere/Environment tag." },
-      isCurrent: { type: "boolean", description: "Set to true if player moves here." },
-      isVisited: { type: "boolean", description: "Whether the location has been visited." },
-      unlocked: { type: "boolean", description: "Whether hidden secrets are discovered." },
+      environment: {
+        type: "string",
+        description: "Atmosphere/Environment tag.",
+      },
+      isCurrent: {
+        type: "boolean",
+        description: "Set to true if player moves here.",
+      },
+      isVisited: {
+        type: "boolean",
+        description: "Whether the location has been visited.",
+      },
+      unlocked: {
+        type: "boolean",
+        description: "Whether hidden secrets are discovered.",
+      },
     },
     required: ["action"],
   },
@@ -383,7 +492,8 @@ export const UPDATE_QUEST_TOOL = {
       },
       id: {
         type: "string",
-        description: "Quest ID (format: quest:N, e.g., 'quest:1'). Required for 'update', 'complete', 'fail', 'remove' actions.",
+        description:
+          "Quest ID (format: quest:N, e.g., 'quest:1'). Required for 'update', 'complete', 'fail', 'remove' actions.",
       },
       title: {
         type: "string",
@@ -397,19 +507,36 @@ export const UPDATE_QUEST_TOOL = {
       visible: {
         type: "object",
         properties: {
-          description: { type: "string", description: "The apparent objective." },
-          objectives: { type: "array", items: { type: "string" }, description: "Visible objectives." },
+          description: {
+            type: "string",
+            description: "The apparent objective.",
+          },
+          objectives: {
+            type: "array",
+            items: { type: "string" },
+            description: "Visible objectives.",
+          },
         },
       },
       hidden: {
         type: "object",
         properties: {
-          trueDescription: { type: "string", description: "The hidden truth or real purpose." },
-          trueObjectives: { type: "array", items: { type: "string" }, description: "True objectives." },
+          trueDescription: {
+            type: "string",
+            description: "The hidden truth or real purpose.",
+          },
+          trueObjectives: {
+            type: "array",
+            items: { type: "string" },
+            description: "True objectives.",
+          },
           secretOutcome: { type: "string", description: "Secret outcome." },
         },
       },
-      unlocked: { type: "boolean", description: "Whether true objectives are revealed." },
+      unlocked: {
+        type: "boolean",
+        description: "Whether true objectives are revealed.",
+      },
     },
     required: ["action"],
   },
@@ -417,7 +544,8 @@ export const UPDATE_QUEST_TOOL = {
 
 export const UPDATE_KNOWLEDGE_TOOL = {
   name: "update_knowledge",
-  description: "Add or update knowledge entries. Knowledge can only be added or updated, never removed.",
+  description:
+    "Add or update knowledge entries. Knowledge can only be added or updated, never removed.",
   parameters: {
     type: "object",
     properties: {
@@ -428,7 +556,8 @@ export const UPDATE_KNOWLEDGE_TOOL = {
       },
       id: {
         type: "string",
-        description: "Knowledge ID (format: know:N, e.g., 'know:1'). Required for 'update' action.",
+        description:
+          "Knowledge ID (format: know:N, e.g., 'know:1'). Required for 'update' action.",
       },
       title: {
         type: "string",
@@ -436,13 +565,26 @@ export const UPDATE_KNOWLEDGE_TOOL = {
       },
       category: {
         type: "string",
-        enum: ["landscape", "history", "item", "legend", "faction", "culture", "magic", "technology", "other"],
+        enum: [
+          "landscape",
+          "history",
+          "item",
+          "legend",
+          "faction",
+          "culture",
+          "magic",
+          "technology",
+          "other",
+        ],
         description: "Category of knowledge.",
       },
       visible: {
         type: "object",
         properties: {
-          description: { type: "string", description: "What is commonly known." },
+          description: {
+            type: "string",
+            description: "What is commonly known.",
+          },
           details: { type: "string", description: "Additional details." },
         },
       },
@@ -450,13 +592,31 @@ export const UPDATE_KNOWLEDGE_TOOL = {
         type: "object",
         properties: {
           fullTruth: { type: "string", description: "The complete truth." },
-          misconceptions: { type: "array", items: { type: "string" }, description: "Common misconceptions." },
-          toBeRevealed: { type: "array", items: { type: "string" }, description: "Info to be revealed later." },
+          misconceptions: {
+            type: "array",
+            items: { type: "string" },
+            description: "Common misconceptions.",
+          },
+          toBeRevealed: {
+            type: "array",
+            items: { type: "string" },
+            description: "Info to be revealed later.",
+          },
         },
       },
-      discoveredAt: { type: "string", description: "When this knowledge was discovered." },
-      relatedTo: { type: "array", items: { type: "string" }, description: "Related entity IDs." },
-      unlocked: { type: "boolean", description: "Whether full truth is revealed." },
+      discoveredAt: {
+        type: "string",
+        description: "When this knowledge was discovered.",
+      },
+      relatedTo: {
+        type: "array",
+        items: { type: "string" },
+        description: "Related entity IDs.",
+      },
+      unlocked: {
+        type: "boolean",
+        description: "Whether full truth is revealed.",
+      },
     },
     required: ["action"],
   },
@@ -464,7 +624,8 @@ export const UPDATE_KNOWLEDGE_TOOL = {
 
 export const UPDATE_TIMELINE_TOOL = {
   name: "update_timeline",
-  description: "Add or update timeline events (World Events, NPC Actions, Consequences).",
+  description:
+    "Add or update timeline events (World Events, NPC Actions, Consequences).",
   parameters: {
     type: "object",
     properties: {
@@ -475,9 +636,13 @@ export const UPDATE_TIMELINE_TOOL = {
       },
       id: {
         type: "string",
-        description: "Event ID (format: evt:N, e.g., 'evt:1'). Required for 'update' action.",
+        description:
+          "Event ID (format: evt:N, e.g., 'evt:1'). Required for 'update' action.",
       },
-      gameTime: { type: "string", description: "When the event happened in game time." },
+      gameTime: {
+        type: "string",
+        description: "When the event happened in game time.",
+      },
       category: {
         type: "string",
         enum: ["player_action", "npc_action", "world_event", "consequence"],
@@ -486,7 +651,10 @@ export const UPDATE_TIMELINE_TOOL = {
       visible: {
         type: "object",
         properties: {
-          description: { type: "string", description: "Public description of the event." },
+          description: {
+            type: "string",
+            description: "Public description of the event.",
+          },
           causedBy: { type: "string", description: "Publicly known cause." },
         },
         required: ["description"],
@@ -494,15 +662,35 @@ export const UPDATE_TIMELINE_TOOL = {
       hidden: {
         type: "object",
         properties: {
-          trueDescription: { type: "string", description: "The true nature of the event." },
+          trueDescription: {
+            type: "string",
+            description: "The true nature of the event.",
+          },
           trueCausedBy: { type: "string", description: "The real cause." },
-          consequences: { type: "array", items: { type: "string" }, description: "Hidden consequences." },
+          consequences: {
+            type: "array",
+            items: { type: "string" },
+            description: "Hidden consequences.",
+          },
         },
       },
-      involvedEntities: { type: "array", items: { type: "string" }, description: "IDs of involved entities." },
-      chainId: { type: "string", description: "Link to a CausalChain (format: chain:N)." },
-      known: { type: "boolean", description: "Whether the player knows about this event." },
-      unlocked: { type: "boolean", description: "Whether true cause is revealed." },
+      involvedEntities: {
+        type: "array",
+        items: { type: "string" },
+        description: "IDs of involved entities.",
+      },
+      chainId: {
+        type: "string",
+        description: "Link to a CausalChain (format: chain:N).",
+      },
+      known: {
+        type: "boolean",
+        description: "Whether the player knows about this event.",
+      },
+      unlocked: {
+        type: "boolean",
+        description: "Whether true cause is revealed.",
+      },
     },
     required: ["action"],
   },
@@ -522,17 +710,25 @@ IMPORTANT: The AI (you) decides WHEN consequences occur based on story context.
       action: {
         type: "string",
         enum: ["add", "update", "resolve", "interrupt", "trigger"],
-        description: "The action. Use 'trigger' when YOU decide a pending consequence should happen NOW.",
+        description:
+          "The action. Use 'trigger' when YOU decide a pending consequence should happen NOW.",
       },
       chainId: {
         type: "string",
-        description: "Chain ID (format: chain:N, e.g., 'chain:1'). Required for all actions.",
+        description:
+          "Chain ID (format: chain:N, e.g., 'chain:1'). Required for all actions.",
       },
       rootCause: {
         type: "object",
         properties: {
-          eventId: { type: "string", description: "ID of the root cause event." },
-          description: { type: "string", description: "Description of the root cause." },
+          eventId: {
+            type: "string",
+            description: "ID of the root cause event.",
+          },
+          description: {
+            type: "string",
+            description: "Description of the root cause.",
+          },
         },
         description: "Required for 'add' action.",
       },
@@ -546,19 +742,40 @@ IMPORTANT: The AI (you) decides WHEN consequences occur based on story context.
         items: {
           type: "object",
           properties: {
-            id: { type: "string", description: "Unique ID for tracking (e.g., 'conseq:1')." },
-            description: { type: "string", description: "What could happen if triggered." },
-            readyAfterTurn: { type: "integer", description: "The consequence CAN'T trigger UNTIL after this turn number. Use current turn + delay." },
-            conditions: { type: "array", items: { type: "string" }, description: "Narrative conditions you'll check when deciding to trigger." },
-            known: { type: "boolean", description: "Will the player know when this happens? Default false for hidden consequences." },
+            id: {
+              type: "string",
+              description: "Unique ID for tracking (e.g., 'conseq:1').",
+            },
+            description: {
+              type: "string",
+              description: "What could happen if triggered.",
+            },
+            readyAfterTurn: {
+              type: "integer",
+              description:
+                "The consequence CAN'T trigger UNTIL after this turn number. Use current turn + delay.",
+            },
+            conditions: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Narrative conditions you'll check when deciding to trigger.",
+            },
+            known: {
+              type: "boolean",
+              description:
+                "Will the player know when this happens? Default false for hidden consequences.",
+            },
           },
           required: ["id", "description", "readyAfterTurn"],
         },
-        description: "Future consequences. YOU decide when to trigger them based on story.",
+        description:
+          "Future consequences. YOU decide when to trigger them based on story.",
       },
       triggerConsequenceId: {
         type: "string",
-        description: "For 'trigger' action: the ID of the pending consequence to trigger NOW. You MUST narrate this in your response.",
+        description:
+          "For 'trigger' action: the ID of the pending consequence to trigger NOW. You MUST narrate this in your response.",
       },
     },
     required: ["action", "chainId"],
@@ -578,7 +795,8 @@ export const UPDATE_FACTION_TOOL = {
       },
       id: {
         type: "string",
-        description: "Faction ID (format: fac:N, e.g., 'fac:1'). Required for 'update' and 'remove' actions.",
+        description:
+          "Faction ID (format: fac:N, e.g., 'fac:1'). Required for 'update' and 'remove' actions.",
       },
       name: {
         type: "string",
@@ -588,7 +806,8 @@ export const UPDATE_FACTION_TOOL = {
       hidden: { type: "string", description: "Secret agenda/corruption." },
       unlocked: {
         type: "boolean",
-        description: "Set to true to reveal this faction's hidden agenda to the player. Only unlock when the player discovers the faction's secrets through story events (e.g., finding documents, overhearing conversations, betrayal reveal)."
+        description:
+          "Set to true to reveal this faction's hidden agenda to the player. Only unlock when the player discovers the faction's secrets through story events (e.g., finding documents, overhearing conversations, betrayal reveal).",
       },
     },
     required: ["action"],
@@ -608,15 +827,18 @@ IMPORTANT: Only unlock world info when the player achieves significant story mil
     properties: {
       unlockWorldSetting: {
         type: "boolean",
-        description: "Set to true to reveal the hidden world setting information (worldSetting.hidden) to the player.",
+        description:
+          "Set to true to reveal the hidden world setting information (worldSetting.hidden) to the player.",
       },
       unlockMainGoal: {
         type: "boolean",
-        description: "Set to true to reveal the hidden main goal information (mainGoal.hidden) - the true nature of the story's main objective.",
+        description:
+          "Set to true to reveal the hidden main goal information (mainGoal.hidden) - the true nature of the story's main objective.",
       },
       reason: {
         type: "string",
-        description: "Brief explanation of WHY this information is being revealed (for logging).",
+        description:
+          "Brief explanation of WHY this information is being revealed (for logging).",
       },
     },
     required: ["reason"],
@@ -625,17 +847,30 @@ IMPORTANT: Only unlock world info when the player achieves significant story mil
 
 export const UPDATE_CHARACTER_TOOL = {
   name: "update_character",
-  description: "Update character profile, attributes, skills, conditions, or hidden traits.",
+  description:
+    "Update character profile, attributes, skills, conditions, or hidden traits.",
   parameters: {
     type: "object",
     properties: {
       profile: {
         type: "object",
         properties: {
-          status: { type: "string", description: "Current condition (e.g., 'Healthy', 'Injured')." },
-          appearance: { type: "string", description: "Physical appearance description." },
-          profession: { type: "string", description: "Character's profession/class." },
-          background: { type: "string", description: "Character's background story." },
+          status: {
+            type: "string",
+            description: "Current condition (e.g., 'Healthy', 'Injured').",
+          },
+          appearance: {
+            type: "string",
+            description: "Physical appearance description.",
+          },
+          profession: {
+            type: "string",
+            description: "Character's profession/class.",
+          },
+          background: {
+            type: "string",
+            description: "Character's background story.",
+          },
           race: { type: "string", description: "Character's race." },
           title: { type: "string", description: "Character's title/role." },
         },
@@ -647,10 +882,16 @@ export const UPDATE_CHARACTER_TOOL = {
           type: "object",
           properties: {
             action: { type: "string", enum: ["add", "update", "remove"] },
-            name: { type: "string", description: "Attribute name (e.g., Health, Mana)." },
+            name: {
+              type: "string",
+              description: "Attribute name (e.g., Health, Mana).",
+            },
             value: { type: "integer", description: "New value." },
             maxValue: { type: "integer", description: "Maximum value." },
-            color: { type: "string", enum: ["red", "blue", "green", "yellow", "purple", "gray"] },
+            color: {
+              type: "string",
+              enum: ["red", "blue", "green", "yellow", "purple", "gray"],
+            },
           },
           required: ["action", "name"],
         },
@@ -664,7 +905,10 @@ export const UPDATE_CHARACTER_TOOL = {
             action: { type: "string", enum: ["add", "update", "remove"] },
             id: { type: "string", description: "Skill ID (format: skill:N)." },
             name: { type: "string", description: "Skill name." },
-            level: { type: "string", description: "Skill level (e.g., Novice, Master)." },
+            level: {
+              type: "string",
+              description: "Skill level (e.g., Novice, Master).",
+            },
             visible: {
               type: "object",
               properties: {
@@ -693,7 +937,10 @@ export const UPDATE_CHARACTER_TOOL = {
           type: "object",
           properties: {
             action: { type: "string", enum: ["add", "update", "remove"] },
-            id: { type: "string", description: "Condition ID (format: cond:N)." },
+            id: {
+              type: "string",
+              description: "Condition ID (format: cond:N).",
+            },
             name: { type: "string", description: "Condition name." },
             type: { type: "string", enum: ["buff", "debuff", "neutral"] },
             visible: {
@@ -737,7 +984,10 @@ export const UPDATE_CHARACTER_TOOL = {
             description: { type: "string", description: "Trait description." },
             effects: { type: "array", items: { type: "string" } },
             triggerConditions: { type: "array", items: { type: "string" } },
-            unlocked: { type: "boolean", description: "Whether the trait is revealed." },
+            unlocked: {
+              type: "boolean",
+              description: "Whether the trait is revealed.",
+            },
           },
           required: ["action", "name"],
         },
@@ -749,21 +999,36 @@ export const UPDATE_CHARACTER_TOOL = {
 
 export const UPDATE_GLOBAL_TOOL = {
   name: "update_global",
-  description: "Update global game state properties like time and environment theme.",
+  description:
+    "Update global game state properties like time and environment theme.",
   parameters: {
     type: "object",
     properties: {
       time: { type: "string", description: "Update the in-game time." },
       envTheme: {
         type: "string",
-        description: "Current visual atmosphere (e.g., 'Dark', 'Tense', 'Rainy').",
+        description:
+          "Current visual atmosphere (e.g., 'Dark', 'Tense', 'Rainy').",
       },
       environment: {
         type: "string",
         enum: [
-          "cave", "city", "combat", "desert", "dungeon", "forest", "horror",
-          "market", "mystical", "ocean", "quiet", "rain", "scifi", "snow",
-          "storm", "tavern"
+          "cave",
+          "city",
+          "combat",
+          "desert",
+          "dungeon",
+          "forest",
+          "horror",
+          "market",
+          "mystical",
+          "ocean",
+          "quiet",
+          "rain",
+          "scifi",
+          "snow",
+          "storm",
+          "tavern",
         ],
         description: "Audio ambience environment.",
       },
@@ -806,35 +1071,97 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
       environment: {
         type: "string",
         enum: [
-          "cave", "city", "combat", "desert", "dungeon", "forest", "horror",
-          "market", "mystical", "ocean", "quiet", "rain", "scifi", "snow",
-          "storm", "tavern"
+          "cave",
+          "city",
+          "combat",
+          "desert",
+          "dungeon",
+          "forest",
+          "horror",
+          "market",
+          "mystical",
+          "ocean",
+          "quiet",
+          "rain",
+          "scifi",
+          "snow",
+          "storm",
+          "tavern",
         ],
         description: "The audio ambience for this scene.",
       },
       narrativeTone: {
         type: "string",
-        description: "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+        description:
+          "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
       },
       aliveEntities: {
         type: "object",
-        description: "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately.",
+        description:
+          "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately.",
         properties: {
-          inventory: { type: "array", items: { type: "string" }, description: "Item IDs (inv:N) relevant for next turn." },
-          relationships: { type: "array", items: { type: "string" }, description: "NPC IDs (npc:N) relevant for next turn." },
-          locations: { type: "array", items: { type: "string" }, description: "Location IDs (loc:N) relevant for next turn." },
-          quests: { type: "array", items: { type: "string" }, description: "Quest IDs (quest:N) relevant for next turn." },
-          knowledge: { type: "array", items: { type: "string" }, description: "Knowledge IDs (know:N) relevant for next turn." },
-          timeline: { type: "array", items: { type: "string" }, description: "Event IDs (evt:N) relevant for next turn." },
-          skills: { type: "array", items: { type: "string" }, description: "Character skill IDs relevant for next turn." },
-          conditions: { type: "array", items: { type: "string" }, description: "Character condition IDs relevant for next turn." },
-          hiddenTraits: { type: "array", items: { type: "string" }, description: "Character hidden trait IDs relevant for next turn." },
-          causalChains: { type: "array", items: { type: "string" }, description: "CausalChain chainIds with pending consequences that may trigger soon." },
+          inventory: {
+            type: "array",
+            items: { type: "string" },
+            description: "Item IDs (inv:N) relevant for next turn.",
+          },
+          relationships: {
+            type: "array",
+            items: { type: "string" },
+            description: "NPC IDs (npc:N) relevant for next turn.",
+          },
+          locations: {
+            type: "array",
+            items: { type: "string" },
+            description: "Location IDs (loc:N) relevant for next turn.",
+          },
+          quests: {
+            type: "array",
+            items: { type: "string" },
+            description: "Quest IDs (quest:N) relevant for next turn.",
+          },
+          knowledge: {
+            type: "array",
+            items: { type: "string" },
+            description: "Knowledge IDs (know:N) relevant for next turn.",
+          },
+          timeline: {
+            type: "array",
+            items: { type: "string" },
+            description: "Event IDs (evt:N) relevant for next turn.",
+          },
+          skills: {
+            type: "array",
+            items: { type: "string" },
+            description: "Character skill IDs relevant for next turn.",
+          },
+          conditions: {
+            type: "array",
+            items: { type: "string" },
+            description: "Character condition IDs relevant for next turn.",
+          },
+          hiddenTraits: {
+            type: "array",
+            items: { type: "string" },
+            description: "Character hidden trait IDs relevant for next turn.",
+          },
+          causalChains: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "CausalChain chainIds with pending consequences that may trigger soon.",
+          },
         },
       },
       ending: {
         type: "string",
-        enum: ["death", "victory", "true_ending", "bad_ending", "neutral_ending"],
+        enum: [
+          "death",
+          "victory",
+          "true_ending",
+          "bad_ending",
+          "neutral_ending",
+        ],
         description: `ONLY set if the story reaches a definitive endpoint this turn:
 - "death": Player character dies or suffers irreversible fatal consequence
 - "victory": Main quest goal achieved, story concludes positively

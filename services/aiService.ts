@@ -566,9 +566,11 @@ const buildTurnContents = (
   );
 
   if (dynamicStoryContext) {
-    messages.push(createUserMessage(
-      `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicStoryContext}\n</story_memory>`
-    ));
+    messages.push(
+      createUserMessage(
+        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicStoryContext}\n</story_memory>`,
+      ),
+    );
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[Memory acknowledged.]" }],
@@ -579,13 +581,15 @@ const buildTurnContents = (
   // This represents the conversation flow LEADING UP TO the current turn
   if (recentHistory.length > 0) {
     // Group recent history into a context block
-    const historyText = recentHistory.map(seg =>
-      `[${seg.role.toUpperCase()}]: ${seg.text}`
-    ).join("\n\n");
+    const historyText = recentHistory
+      .map((seg) => `[${seg.role.toUpperCase()}]: ${seg.text}`)
+      .join("\n\n");
 
-    messages.push(createUserMessage(
-      `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`
-    ));
+    messages.push(
+      createUserMessage(
+        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`,
+      ),
+    );
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[History acknowledged.]" }],
@@ -593,12 +597,14 @@ const buildTurnContents = (
   }
 
   // === Message 3: Current State Hints (SEMI-STATIC - IDs and names) ===
-  messages.push(createUserMessage(
-    `[CONTEXT: Current State]\n${currentStateContext}`
-  ));
+  messages.push(
+    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`),
+  );
   messages.push({
     role: "assistant",
-    content: [{ type: "text", text: "[State acknowledged. Awaiting player action.]" }],
+    content: [
+      { type: "text", text: "[State acknowledged. Awaiting player action.]" },
+    ],
   });
 
   // === Final Message: User Action with Instructions ===
@@ -661,7 +667,13 @@ export const generateAdventureTurn = async (
     context.userAction,
   );
 
-  return runAgenticLoop(provider, modelId, systemInstruction, contents, gameState);
+  return runAgenticLoop(
+    provider,
+    modelId,
+    systemInstruction,
+    contents,
+    gameState,
+  );
 };
 
 const runAgenticLoop = async (
@@ -732,21 +744,26 @@ const runAgenticLoop = async (
   const readyConsequences = db.getReadyConsequences();
   if (readyConsequences.length > 0) {
     const readyList = readyConsequences
-      .map(rc => `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${rc.consequence.conditions?.length ? ` (conditions: ${rc.consequence.conditions.join(", ")})` : ""}${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`)
+      .map(
+        (rc) =>
+          `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${rc.consequence.conditions?.length ? ` (conditions: ${rc.consequence.conditions.join(", ")})` : ""}${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`,
+      )
       .join("\n");
 
     // Inject ready consequences as context for AI to consider
-    conversationHistory.push(createUserMessage(
-      `[SYSTEM: PENDING CONSEQUENCES READY FOR YOUR DECISION]\n` +
-      `The following consequences from past events are NOW READY to potentially trigger.\n` +
-      `Review each one and decide IF and WHEN to trigger based on:\n` +
-      `1. Does it fit the current story moment?\n` +
-      `2. Are the conditions met?\n` +
-      `3. Would triggering enhance the narrative?\n\n` +
-      `Ready consequences:\n${readyList}\n\n` +
-      `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
-      `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`
-    ));
+    conversationHistory.push(
+      createUserMessage(
+        `[SYSTEM: PENDING CONSEQUENCES READY FOR YOUR DECISION]\n` +
+          `The following consequences from past events are NOW READY to potentially trigger.\n` +
+          `Review each one and decide IF and WHEN to trigger based on:\n` +
+          `1. Does it fit the current story moment?\n` +
+          `2. Are the conditions met?\n` +
+          `3. Would triggering enhance the narrative?\n\n` +
+          `Ready consequences:\n${readyList}\n\n` +
+          `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
+          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`,
+      ),
+    );
   }
 
   while (turnCount < maxTurns) {
@@ -755,9 +772,10 @@ const runAgenticLoop = async (
     let result, usage, raw;
 
     // Convert unified messages to provider-specific format
-    const providerContents = provider === "gemini"
-      ? toGeminiFormat(conversationHistory)
-      : toOpenAIFormat(conversationHistory);
+    const providerContents =
+      provider === "gemini"
+        ? toGeminiFormat(conversationHistory)
+        : toOpenAIFormat(conversationHistory);
 
     try {
       const resultData = await generateContentUnified(
@@ -772,7 +790,11 @@ const runAgenticLoop = async (
       result = resultData.result;
       usage = resultData.usage;
       raw = resultData.raw;
-      console.log(`[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`, usage, `HasFunctionCalls: ${!!(result?.functionCalls)}`);
+      console.log(
+        `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
+        usage,
+        `HasFunctionCalls: ${!!result?.functionCalls}`,
+      );
     } catch (e) {
       console.error("[Agentic Loop] Error:", e);
       throw e;
@@ -793,7 +815,10 @@ const runAgenticLoop = async (
       modelId,
       `agentic_turn_${turnCount + 1}`,
       { turn: turnCount + 1 },
-      { hasToolCalls: !!(result?.functionCalls), toolCount: result?.functionCalls?.length || 0 },
+      {
+        hasToolCalls: !!result?.functionCalls,
+        toolCount: result?.functionCalls?.length || 0,
+      },
       usage,
     );
 
@@ -805,16 +830,22 @@ const runAgenticLoop = async (
       const turnToolCalls: ToolCallRecord[] = [];
 
       // Add model's tool call to history using unified format
-      conversationHistory.push(createToolCallMessage(
-        toolCalls.map((fc) => ({
-          id: fc.id,
-          name: fc.name,
-          arguments: fc.args,
-        }))
-      ));
+      conversationHistory.push(
+        createToolCallMessage(
+          toolCalls.map((fc) => ({
+            id: fc.id,
+            name: fc.name,
+            arguments: fc.args,
+          })),
+        ),
+      );
 
       // Execute Tools and collect responses
-      const toolResponses: Array<{ toolCallId: string; name: string; content: unknown }> = [];
+      const toolResponses: Array<{
+        toolCallId: string;
+        name: string;
+        content: unknown;
+      }> = [];
 
       for (const call of toolCalls) {
         const { id: callId, name, args } = call;
@@ -849,7 +880,11 @@ const runAgenticLoop = async (
         // We extract action separately and pass the rest as data
         else if (name === "update_inventory") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("inventory", actionType as string, data);
+          const modifyResult = db.modify(
+            "inventory",
+            actionType as string,
+            data,
+          );
           if (modifyResult.success) {
             if (!accumulatedResponse.inventoryActions)
               accumulatedResponse.inventoryActions = [];
@@ -861,7 +896,11 @@ const runAgenticLoop = async (
           output = modifyResult;
         } else if (name === "update_relationship") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("relationship", actionType as string, data);
+          const modifyResult = db.modify(
+            "relationship",
+            actionType as string,
+            data,
+          );
           if (modifyResult.success) {
             if (!accumulatedResponse.relationshipActions)
               accumulatedResponse.relationshipActions = [];
@@ -873,7 +912,11 @@ const runAgenticLoop = async (
           output = modifyResult;
         } else if (name === "update_location") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("location", actionType as string, data);
+          const modifyResult = db.modify(
+            "location",
+            actionType as string,
+            data,
+          );
           if (modifyResult.success) {
             if (!accumulatedResponse.locationActions)
               accumulatedResponse.locationActions = [];
@@ -898,7 +941,11 @@ const runAgenticLoop = async (
           output = modifyResult;
         } else if (name === "update_knowledge") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("knowledge", actionType as string, data);
+          const modifyResult = db.modify(
+            "knowledge",
+            actionType as string,
+            data,
+          );
           if (modifyResult.success) {
             if (!accumulatedResponse.knowledgeActions)
               accumulatedResponse.knowledgeActions = [];
@@ -910,11 +957,19 @@ const runAgenticLoop = async (
           output = modifyResult;
         } else if (name === "update_timeline") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("timeline", actionType as string, data);
+          const modifyResult = db.modify(
+            "timeline",
+            actionType as string,
+            data,
+          );
           output = modifyResult;
         } else if (name === "update_causal_chain") {
           const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("causal_chain", actionType as string, data);
+          const modifyResult = db.modify(
+            "causal_chain",
+            actionType as string,
+            data,
+          );
           output = modifyResult;
         } else if (name === "update_faction") {
           const { action: actionType, ...data } = args;
@@ -993,13 +1048,22 @@ const runAgenticLoop = async (
           // Attach the FINAL STATE from the DB
           (accumulatedResponse as any).finalState = db.getState();
 
-          console.log(`[Agentic Loop] finish_turn called. Final usage:`, totalUsage);
-          console.log(`[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`);
+          console.log(
+            `[Agentic Loop] finish_turn called. Final usage:`,
+            totalUsage,
+          );
+          console.log(
+            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`,
+          );
 
           // Record finish_turn as a tool call
           turnToolCalls.push({
             name: "finish_turn",
-            input: { narrative: (args.narrative as string)?.substring(0, 100) + "...", choices: args.choices, environment: args.environment },
+            input: {
+              narrative: (args.narrative as string)?.substring(0, 100) + "...",
+              choices: args.choices,
+              environment: args.environment,
+            },
             output: { success: true },
             timestamp: Date.now(),
           });
@@ -1015,8 +1079,12 @@ const runAgenticLoop = async (
             "agentic_complete",
             { turns: turnCount + 1 },
             {
-              totalToolCalls: allLogs.reduce((sum, log) => sum + (log.toolCalls?.length || 0), 0),
-              narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
+              totalToolCalls: allLogs.reduce(
+                (sum, log) => sum + (log.toolCalls?.length || 0),
+                0,
+              ),
+              narrative:
+                accumulatedResponse.narrative?.substring(0, 100) + "...",
               choices: accumulatedResponse.choices,
               environment: accumulatedResponse.environment,
             },

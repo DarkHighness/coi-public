@@ -41,7 +41,10 @@ export interface UnifiedMessage {
 
 // --- Helper Functions ---
 
-export const createTextMessage = (role: MessageRole, text: string): UnifiedMessage => ({
+export const createTextMessage = (
+  role: MessageRole,
+  text: string,
+): UnifiedMessage => ({
   role,
   content: [{ type: "text", text }],
 });
@@ -56,7 +59,11 @@ export const createSystemMessage = (text: string): UnifiedMessage =>
   createTextMessage("system", text);
 
 export const createToolCallMessage = (
-  toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>
+  toolCalls: Array<{
+    id: string;
+    name: string;
+    arguments: Record<string, unknown>;
+  }>,
 ): UnifiedMessage => ({
   role: "assistant",
   content: toolCalls.map((tc) => ({
@@ -68,7 +75,7 @@ export const createToolCallMessage = (
 });
 
 export const createToolResponseMessage = (
-  responses: Array<{ toolCallId: string; name: string; content: unknown }>
+  responses: Array<{ toolCallId: string; name: string; content: unknown }>,
 ): UnifiedMessage => ({
   role: "tool",
   content: responses.map((r) => ({
@@ -121,7 +128,10 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
       }
 
       // Handle assistant messages with tool calls
-      if (msg.role === "assistant" && msg.content.some((p) => p.type === "tool_call")) {
+      if (
+        msg.role === "assistant" &&
+        msg.content.some((p) => p.type === "tool_call")
+      ) {
         return {
           role: "model",
           parts: msg.content
@@ -162,9 +172,10 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
           result.push({
             role: "tool",
             tool_call_id: part.toolCallId,
-            content: typeof part.content === "string"
-              ? part.content
-              : JSON.stringify(part.content),
+            content:
+              typeof part.content === "string"
+                ? part.content
+                : JSON.stringify(part.content),
           });
         }
       }
@@ -172,7 +183,10 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
     }
 
     // Handle assistant messages with tool calls
-    if (msg.role === "assistant" && msg.content.some((p) => p.type === "tool_call")) {
+    if (
+      msg.role === "assistant" &&
+      msg.content.some((p) => p.type === "tool_call")
+    ) {
       const toolCalls = msg.content
         .filter((p): p is ToolCallPart => p.type === "tool_call")
         .map((p) => ({
@@ -218,9 +232,12 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
  */
 export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
   return geminiMessages.map((msg) => {
-    const role = msg.role === "model" ? "assistant" :
-                 msg.role === "function" ? "tool" :
-                 msg.role as MessageRole;
+    const role =
+      msg.role === "model"
+        ? "assistant"
+        : msg.role === "function"
+          ? "tool"
+          : (msg.role as MessageRole);
 
     const content: MessagePart[] = [];
 
@@ -240,7 +257,8 @@ export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
         if (part.functionResponse) {
           content.push({
             type: "tool_response",
-            toolCallId: part.functionResponse.id || `call_${part.functionResponse.name}`,
+            toolCallId:
+              part.functionResponse.id || `call_${part.functionResponse.name}`,
             name: part.functionResponse.name,
             content: part.functionResponse.response?.content,
           });
@@ -300,7 +318,9 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
 /**
  * Extract system instruction from UnifiedMessage array
  */
-export const extractSystemInstruction = (messages: UnifiedMessage[]): string => {
+export const extractSystemInstruction = (
+  messages: UnifiedMessage[],
+): string => {
   const systemMessages = messages.filter((m) => m.role === "system");
   return systemMessages
     .flatMap((m) => m.content)
@@ -312,6 +332,8 @@ export const extractSystemInstruction = (messages: UnifiedMessage[]): string => 
 /**
  * Get messages without system messages
  */
-export const getContentMessages = (messages: UnifiedMessage[]): UnifiedMessage[] => {
+export const getContentMessages = (
+  messages: UnifiedMessage[],
+): UnifiedMessage[] => {
   return messages.filter((m) => m.role !== "system");
 };

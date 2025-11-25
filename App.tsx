@@ -371,29 +371,29 @@ export default function App() {
           path="/game"
           element={
             <GamePage
-                gameState={gameState}
-                setGameState={setGameState}
-                currentHistory={currentHistory}
-                language={language}
-                setLanguage={setLanguage}
-                isTranslating={isTranslating}
-                handleAction={handleAction}
-                aiSettings={aiSettings}
-                handleSaveSettings={handleSaveSettings}
-                navigateToNode={navigateToNode}
-                generateImageForNode={generateImageForNode}
-                showToast={showToast}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                onOpenSaves={() => setIsSaveManagerOpen(true)}
-                themeFont={currentThemeConfig.fontClass}
-                saveSlots={saveSlots}
-                switchSlot={async (id) => {
-                  await loadSlot(id);
-                }}
-                deleteSlot={deleteSlot}
-                currentSlotId={currentSlotId}
-                onViewedSegmentChange={setViewedSegment}
-              />
+              gameState={gameState}
+              setGameState={setGameState}
+              currentHistory={currentHistory}
+              language={language}
+              setLanguage={setLanguage}
+              isTranslating={isTranslating}
+              handleAction={handleAction}
+              aiSettings={aiSettings}
+              handleSaveSettings={handleSaveSettings}
+              navigateToNode={navigateToNode}
+              generateImageForNode={generateImageForNode}
+              showToast={showToast}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenSaves={() => setIsSaveManagerOpen(true)}
+              themeFont={currentThemeConfig.fontClass}
+              saveSlots={saveSlots}
+              switchSlot={async (id) => {
+                await loadSlot(id);
+              }}
+              deleteSlot={deleteSlot}
+              currentSlotId={currentSlotId}
+              onViewedSegmentChange={setViewedSegment}
+            />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -142,8 +142,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             ? t("commands.godMode.enabled") || "🔱 GOD MODE ENABLED"
             : t("commands.godMode.disabled") || "God Mode disabled"
           : action.type === "unlock_all"
-          ? t("commands.unlock.success") || "🔓 All hidden information unlocked!"
-          : "";
+            ? t("commands.unlock.success") ||
+              "🔓 All hidden information unlocked!"
+            : "";
 
       if (successMessage) {
         onShowToast?.(successMessage, "success");

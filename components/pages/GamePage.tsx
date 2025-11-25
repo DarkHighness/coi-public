@@ -101,7 +101,8 @@ export const GamePage: React.FC<GamePageProps> = ({
   const navigate = useNavigate();
 
   // Toast Manager for multiple toast notifications
-  const { toasts, pushToast, removeToast, pushStateChangeToasts } = useToastManager();
+  const { toasts, pushToast, removeToast, pushStateChangeToasts } =
+    useToastManager();
 
   // Local State
   const [feedLayout, setFeedLayout] = useState<FeedLayout>("scroll");
@@ -135,7 +136,11 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   // Audio Ambience Logic
   const isAnyMenuOpen =
-    isDestinyMapOpen || isLogPanelOpen || isMagicMirrorOpen || isVeoScriptOpen || isStateEditorOpen;
+    isDestinyMapOpen ||
+    isLogPanelOpen ||
+    isMagicMirrorOpen ||
+    isVeoScriptOpen ||
+    isStateEditorOpen;
 
   // Play ambience when story is visible and no menus are blocking
   // FIXED: Don't tie ambience to isTyping - ambience should continue playing
@@ -147,7 +152,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const activeEnvironment = currentHistory
     .slice()
     .reverse()
-    .find(seg => seg.environment)?.environment;
+    .find((seg) => seg.environment)?.environment;
 
   useAmbience(
     shouldPlayAmbience ? activeEnvironment : undefined,

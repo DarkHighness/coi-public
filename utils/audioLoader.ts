@@ -87,7 +87,7 @@ export const getAudioTrack = (env: string): HTMLAudioElement | null => {
   // Check if it's a valid environment
   if (!ENVIRONMENTS.includes(normalizedEnv)) {
     console.warn(`Unknown environment: ${env}, falling back to 'quiet'`);
-    return audioCache.get('quiet') || null;
+    return audioCache.get("quiet") || null;
   }
 
   // Fallback if not preloaded (should rarely happen)
