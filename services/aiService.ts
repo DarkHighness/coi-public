@@ -703,6 +703,25 @@ const runAgenticLoop = async (
     parameters: t.parameters,
   }));
 
+  // Check for pending consequences that should trigger this turn
+  const triggeredConsequences = db.checkPendingConsequences();
+  if (triggeredConsequences.length > 0) {
+    const triggeredEvents = triggeredConsequences
+      .filter(tc => tc.consequence.triggered)
+      .map(tc => `- [${tc.chainId}] ${tc.consequence.description}`)
+      .join("\n");
+
+    if (triggeredEvents) {
+      // Inject triggered consequences into the conversation as a system notification
+      conversationHistory.push(createUserMessage(
+        `[SYSTEM: CAUSAL CHAIN CONSEQUENCES TRIGGERED THIS TURN]\n` +
+        `The following consequences from past events have now manifested:\n${triggeredEvents}\n` +
+        `You MUST weave these consequences into your narrative response. ` +
+        `They represent the inevitable results of previous actions/events.`
+      ));
+    }
+  }
+
   while (turnCount < maxTurns) {
     console.log(`[Agentic Loop] Turn ${turnCount + 1}`);
 
@@ -880,6 +899,11 @@ const runAgenticLoop = async (
           accumulatedResponse.choices = args.choices as string[];
           accumulatedResponse.imagePrompt = args.imagePrompt as string;
           accumulatedResponse.generateImage = args.generateImage as boolean;
+
+          // Extract alive entities for next turn context
+          if (args.aliveEntities) {
+            accumulatedResponse.aliveEntities = args.aliveEntities as any;
+          }
 
           // Attach the FINAL STATE from the DB
           (accumulatedResponse as any).finalState = db.getState();

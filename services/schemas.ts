@@ -749,12 +749,16 @@ export const causalChainProperties: Record<string, JsonSchema> = {
     items: {
       type: "object",
       properties: {
+        id: { type: "string", description: "Unique ID for tracking" },
         description: { type: "string" },
         delayTurns: { type: "number" },
+        createdAtTurn: { type: "number" },
         probability: { type: "number" },
         conditions: { type: "array", items: { type: "string" } },
+        triggered: { type: "boolean" },
+        triggeredAtTurn: { type: "number" },
       },
-      required: ["description", "delayTurns", "probability"],
+      required: ["id", "description", "delayTurns", "probability"],
     },
   },
 };

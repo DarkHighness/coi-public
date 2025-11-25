@@ -60,6 +60,7 @@ export default function App() {
     persistenceError,
     hardReset,
     navigateToNode,
+    generateImageForNode,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -380,6 +381,7 @@ export default function App() {
                 aiSettings={aiSettings}
                 handleSaveSettings={handleSaveSettings}
                 navigateToNode={navigateToNode}
+                generateImageForNode={generateImageForNode}
                 showToast={showToast}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenSaves={() => setIsSaveManagerOpen(true)}

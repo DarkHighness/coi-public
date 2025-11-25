@@ -55,6 +55,81 @@ export class GameDatabase {
     return this.state;
   }
 
+  // --- Pending Consequences Check ---
+
+  /**
+   * Check all causal chains for pending consequences that should trigger this turn.
+   * Returns a list of consequences that have triggered (either successfully or failed probability).
+   */
+  public checkPendingConsequences(): Array<{
+    chainId: string;
+    consequence: {
+      id: string;
+      description: string;
+      triggered: boolean;
+      reason: "delay_reached" | "probability_check" | "conditions_not_met";
+    };
+  }> {
+    const currentTurn = this.state.turnNumber || 0;
+    const results: Array<{
+      chainId: string;
+      consequence: {
+        id: string;
+        description: string;
+        triggered: boolean;
+        reason: "delay_reached" | "probability_check" | "conditions_not_met";
+      };
+    }> = [];
+
+    for (const chain of this.state.causalChains) {
+      if (chain.status !== "active" || !chain.pendingConsequences) continue;
+
+      for (const conseq of chain.pendingConsequences) {
+        // Skip already triggered consequences
+        if (conseq.triggered) continue;
+
+        // Check if delay has been reached
+        const createdAt = conseq.createdAtTurn ?? 0;
+        const turnsElapsed = currentTurn - createdAt;
+
+        if (turnsElapsed < conseq.delayTurns) continue;
+
+        // Delay reached - now check probability
+        const roll = Math.random();
+        if (roll > conseq.probability) {
+          // Failed probability check - mark as triggered but note it didn't happen
+          conseq.triggered = true;
+          conseq.triggeredAtTurn = currentTurn;
+          results.push({
+            chainId: chain.chainId,
+            consequence: {
+              id: conseq.id,
+              description: conseq.description,
+              triggered: false,
+              reason: "probability_check",
+            },
+          });
+          continue;
+        }
+
+        // Probability passed - consequence triggers!
+        conseq.triggered = true;
+        conseq.triggeredAtTurn = currentTurn;
+        results.push({
+          chainId: chain.chainId,
+          consequence: {
+            id: conseq.id,
+            description: conseq.description,
+            triggered: true,
+            reason: "delay_reached",
+          },
+        });
+      }
+    }
+
+    return results;
+  }
+
   // --- ID Generation ---
 
   private generateId(type: EntityType): string {
@@ -81,6 +156,15 @@ export class GameDatabase {
 
   // --- Query Methods ---
 
+  // Helper to update lastAccess for queried entities
+  private updateLastAccess<T extends { id: string; lastAccess?: number }>(items: T[]): T[] {
+    const turnNumber = this.state.turnNumber || 0;
+    items.forEach(item => {
+      item.lastAccess = turnNumber;
+    });
+    return items;
+  }
+
   public query(target: string, queryOrAspect?: string, extraQuery?: string): ToolCallResult<unknown> {
     const term = queryOrAspect?.toLowerCase();
 
@@ -97,16 +181,26 @@ export class GameDatabase {
 
     try {
       switch (target) {
-        case "inventory":
-          return createSuccess(filter(this.state.inventory), `Found ${filter(this.state.inventory).length} items`);
+        case "inventory": {
+          const results = filter(this.state.inventory);
+          this.updateLastAccess(results);
+          return createSuccess(results, `Found ${results.length} items`);
+        }
 
-        case "relationship":
-          return createSuccess(filter(this.state.relationships), `Found ${filter(this.state.relationships).length} NPCs`);
+        case "relationship": {
+          const results = filter(this.state.relationships);
+          this.updateLastAccess(results);
+          return createSuccess(results, `Found ${results.length} NPCs`);
+        }
 
         case "location":
           if (term) {
-            return createSuccess(filter(this.state.locations), `Found ${filter(this.state.locations).length} locations`);
+            const results = filter(this.state.locations);
+            this.updateLastAccess(results);
+            return createSuccess(results, `Found ${results.length} locations`);
           }
+          // For listing, still update lastAccess for all
+          this.updateLastAccess(this.state.locations);
           return createSuccess(
             this.state.locations.map((l) => ({
               id: l.id,
@@ -117,11 +211,17 @@ export class GameDatabase {
             `Listed ${this.state.locations.length} locations`
           );
 
-        case "quest":
-          return createSuccess(filter(this.state.quests), `Found ${filter(this.state.quests).length} quests`);
+        case "quest": {
+          const results = filter(this.state.quests);
+          this.updateLastAccess(results);
+          return createSuccess(results, `Found ${results.length} quests`);
+        }
 
-        case "knowledge":
-          return createSuccess(filter(this.state.knowledge || []), `Found ${filter(this.state.knowledge || []).length} knowledge entries`);
+        case "knowledge": {
+          const results = filter(this.state.knowledge || []);
+          this.updateLastAccess(results);
+          return createSuccess(results, `Found ${results.length} knowledge entries`);
+        }
 
         case "faction":
           return createSuccess(filter(this.state.factions || []), `Found ${filter(this.state.factions || []).length} factions`);
@@ -995,12 +1095,20 @@ export class GameDatabase {
         return createError(`Causal chain "${data.chainId}" already exists`, "ALREADY_EXISTS");
       }
 
+      // Auto-set createdAtTurn for new pending consequences
+      const processedConsequences = data.pendingConsequences?.map((c, idx) => ({
+        ...c,
+        id: c.id || `conseq:${data.chainId}:${idx}`,
+        createdAtTurn: c.createdAtTurn ?? this.state.turnNumber,
+        triggered: false,
+      }));
+
       const newChain: CausalChain = {
         chainId: data.chainId,
         rootCause: data.rootCause,
         events: [],
         status: data.status || "active",
-        pendingConsequences: data.pendingConsequences,
+        pendingConsequences: processedConsequences,
       };
       this.state.causalChains.push(newChain);
       return createSuccess(newChain, `Added causal chain: ${newChain.chainId}`);
@@ -1021,7 +1129,13 @@ export class GameDatabase {
       else if (data.status) chain.status = data.status;
 
       if (data.pendingConsequences) {
-        chain.pendingConsequences = data.pendingConsequences;
+        // Auto-set createdAtTurn for new pending consequences
+        chain.pendingConsequences = data.pendingConsequences.map((c, idx) => ({
+          ...c,
+          id: c.id || `conseq:${chain.chainId}:${idx}`,
+          createdAtTurn: c.createdAtTurn ?? this.state.turnNumber,
+          triggered: c.triggered ?? false,
+        }));
       }
 
       return createSuccess(chain, `Updated causal chain: ${chain.chainId} (${chain.status})`);

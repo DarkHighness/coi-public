@@ -1,6 +1,20 @@
 import { useState } from "react";
-import { GameState, StoryOutline, CharacterStatus } from "../types";
+import { GameState, StoryOutline, CharacterStatus, AliveEntities } from "../types";
 import { DEFAULT_CHARACTER } from "../utils/constants";
+
+// Default empty alive entities
+const EMPTY_ALIVE_ENTITIES: AliveEntities = {
+  inventory: [],
+  relationships: [],
+  locations: [],
+  quests: [],
+  knowledge: [],
+  timeline: [],
+  skills: [],
+  conditions: [],
+  hiddenTraits: [],
+  causalChains: [],
+};
 
 const INITIAL_STATE: GameState = {
   nodes: {},
@@ -47,9 +61,18 @@ const INITIAL_STATE: GameState = {
     knowledge: 1000,
     quest: 1000,
     faction: 1000,
+    timeline: 1,
+    causalChain: 1,
+    skill: 1,
+    condition: 1,
+    hiddenTrait: 1,
   },
   timeline: [],
   causalChains: [],
+
+  // Context Priority System
+  aliveEntities: EMPTY_ALIVE_ENTITIES,
+  turnNumber: 0,
 };
 
 export const useGameState = () => {
@@ -68,6 +91,9 @@ export const useGameState = () => {
       outline: null,
       totalTokens: 0,
       logs: [],
+      // Reset context priority system
+      aliveEntities: EMPTY_ALIVE_ENTITIES,
+      turnNumber: 0,
     });
   };
 

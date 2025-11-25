@@ -543,6 +543,21 @@ export const useGameEngine = () => {
         timeline: finalState.timeline,
         causalChains: finalState.causalChains,
 
+        // Context Priority System: update alive entities and increment turn
+        aliveEntities: response.aliveEntities || {
+          inventory: [],
+          relationships: [],
+          locations: [],
+          quests: [],
+          knowledge: [],
+          timeline: [],
+          skills: [],
+          conditions: [],
+          hiddenTraits: [],
+          causalChains: [],
+        },
+        turnNumber: prev.turnNumber + 1,
+
         summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
@@ -1020,5 +1035,7 @@ export const useGameEngine = () => {
     persistenceError,
     hardReset,
     navigateToNode,
+    generateImageForNode,
+    updateNodeAudio,
   };
 };

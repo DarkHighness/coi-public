@@ -3,6 +3,7 @@ import type {
   StorySummary,
   StorySegment,
   GameStateSnapshot,
+  AliveEntities,
 } from "../types";
 
 export interface SnapshotMetadata {
@@ -13,7 +14,23 @@ export interface SnapshotMetadata {
   envTheme: string;
   veoScript?: string;
   uiState: GameState["uiState"];
+  aliveEntities?: AliveEntities;
+  turnNumber?: number;
 }
+
+// Default empty alive entities
+const EMPTY_ALIVE_ENTITIES: AliveEntities = {
+  inventory: [],
+  relationships: [],
+  locations: [],
+  quests: [],
+  knowledge: [],
+  timeline: [],
+  skills: [],
+  conditions: [],
+  hiddenTraits: [],
+  causalChains: [],
+};
 
 /**
  * Create a comprehensive state snapshot for fork-safe persistence
@@ -49,6 +66,10 @@ export function createStateSnapshot(
     uiState: metadata.uiState,
     envTheme: metadata.envTheme,
     veoScript: metadata.veoScript,
+
+    // Context Priority System
+    aliveEntities: metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
+    turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
   };
 }
 
@@ -78,5 +99,7 @@ export function restoreStateFromSnapshot(
     uiState: snapshot.uiState,
     envTheme: snapshot.envTheme,
     veoScript: snapshot.veoScript,
+    aliveEntities: snapshot.aliveEntities,
+    turnNumber: snapshot.turnNumber,
   };
 }

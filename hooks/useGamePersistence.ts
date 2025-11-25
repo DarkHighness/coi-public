@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { GameState, SaveSlot } from "../types";
 import {
   saveGameState,
@@ -9,6 +9,11 @@ import {
   getStorageEstimate,
   clearDatabase,
 } from "../utils/indexedDB";
+
+// Auto-save debounce time in milliseconds
+const AUTO_SAVE_DEBOUNCE_MS = 3000;
+// Minimum interval between saves (to prevent too frequent saves)
+const MIN_SAVE_INTERVAL_MS = 5000;
 
 // Default nextIds structure for recovery
 const DEFAULT_NEXT_IDS = {
@@ -36,6 +41,10 @@ export const useGamePersistence = (
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
   // Track if we should skip the next auto-save (e.g., during error recovery)
   const [skipNextSave, setSkipNextSave] = useState(false);
+  // Refs for debounce and throttle
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
+  const lastSavedNodeIdRef = useRef<string | null>(null);
 
   // Use memo for latest slot ID
   const latestSlotId = useMemo(() => {
@@ -258,7 +267,7 @@ export const useGamePersistence = (
     loadInitialData();
   }, []);
 
-  // Auto-Save Logic using IndexedDB
+  // Auto-Save Logic using IndexedDB with debounce and throttle
   // IMPORTANT: Skip saving during processing to avoid corrupted state
   useEffect(() => {
     // Skip conditions:
@@ -280,20 +289,46 @@ export const useGamePersistence = (
       return;
     }
 
-    const performSave = async () => {
-      try {
-        // Additional safety check: ensure activeNodeId points to a model node
-        // If it's a user node, we're mid-generation and shouldn't save
-        if (gameState.activeNodeId) {
-          const activeNode = gameState.nodes[gameState.activeNodeId];
-          if (activeNode && activeNode.role === "user") {
-            console.log("[AutoSave] Skipping: active node is user node (mid-generation)");
-            return;
-          }
-        }
+    // Additional safety check: ensure activeNodeId points to a model node
+    // If it's a user node, we're mid-generation and shouldn't save
+    if (gameState.activeNodeId) {
+      const activeNode = gameState.nodes[gameState.activeNodeId];
+      if (activeNode && activeNode.role === "user") {
+        return;
+      }
+    }
 
+    // Only trigger save when activeNodeId changes (new turn completed)
+    // This prevents saving on every minor state change
+    const shouldSave = lastSavedNodeIdRef.current !== gameState.activeNodeId;
+    if (!shouldSave) {
+      return;
+    }
+
+    // Clear any pending debounce timer
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce the save operation
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Throttle: check if enough time has passed since last save
+      const now = Date.now();
+      const timeSinceLastSave = now - lastSaveTimeRef.current;
+      if (timeSinceLastSave < MIN_SAVE_INTERVAL_MS) {
+        // Schedule another attempt after the remaining time
+        saveTimeoutRef.current = setTimeout(() => {
+          // Re-trigger the effect by this point the state might have changed
+          lastSavedNodeIdRef.current = null;
+        }, MIN_SAVE_INTERVAL_MS - timeSinceLastSave);
+        return;
+      }
+
+      try {
         // Save game state to IndexedDB
         await saveGameState(currentSlotId, gameState);
+        lastSaveTimeRef.current = now;
+        lastSavedNodeIdRef.current = gameState.activeNodeId;
 
         // Update Slot Meta
         const activeNode = gameState.activeNodeId
@@ -341,9 +376,9 @@ export const useGamePersistence = (
           await saveMetadata("slots", updatedSlots);
         }
 
+        // Show saving indicator briefly
         setIsAutoSaving(true);
-        const timer = setTimeout(() => setIsAutoSaving(false), 2000);
-        return () => clearTimeout(timer);
+        setTimeout(() => setIsAutoSaving(false), 1500);
       } catch (error: unknown) {
         console.error("Failed to save game to IndexedDB:", error);
         // Show user-friendly error
@@ -351,10 +386,15 @@ export const useGamePersistence = (
           alert("QuotaExceededError");
         }
       }
-    };
+    }, AUTO_SAVE_DEBOUNCE_MS);
 
-    performSave();
-  }, [gameState, currentSlotId, view, skipNextSave, saveSlots]);
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [gameState.activeNodeId, currentSlotId, view, skipNextSave, gameState, saveSlots]);
 
   // Persist Current Slot ID to IndexedDB
   useEffect(() => {

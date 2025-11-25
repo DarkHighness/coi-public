@@ -58,6 +58,7 @@ interface GamePageProps {
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
   navigateToNode: (nodeId: string) => void;
+  generateImageForNode: (nodeId: string) => Promise<void>;
   showToast: (msg: string, type?: "info" | "error") => void;
   onOpenSettings: () => void;
   onOpenSaves: () => void;
@@ -80,6 +81,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   aiSettings,
   handleSaveSettings,
   navigateToNode,
+  generateImageForNode,
   showToast,
   onOpenSettings,
   onOpenSaves,
@@ -249,7 +251,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={async () => {}}
+          onGenerateImage={generateImageForNode}
           onRetry={() => {
             const lastUserAction = [...currentHistory]
               .reverse()
@@ -289,7 +291,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={async () => {}}
+          onGenerateImage={generateImageForNode}
           onRetry={() => {
             const lastUserAction = [...currentHistory]
               .reverse()

@@ -541,13 +541,14 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = {
         items: {
           type: "object",
           properties: {
+            id: { type: "string", description: "Unique ID for tracking (e.g., 'conseq:1')." },
             description: { type: "string" },
-            delayTurns: { type: "integer" },
-            probability: { type: "number" },
-            conditions: { type: "array", items: { type: "string" } },
+            delayTurns: { type: "integer", description: "Number of turns until this consequence may trigger." },
+            probability: { type: "number", description: "Probability (0-1) of triggering when delay is reached." },
+            conditions: { type: "array", items: { type: "string" }, description: "Optional conditions that must be true." },
           },
         },
-        description: "Future consequences that may occur.",
+        description: "Future consequences that may occur. The system will auto-track createdAtTurn.",
       },
     },
     required: ["action", "chainId"],
@@ -742,7 +743,13 @@ export const FINISH_TURN_TOOL = {
       },
       choices: {
         type: "array",
-        description: "2-4 options for the player's next action.",
+        description: `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
+1. **Knowledge/Cognition**: Only offer choices based on what the character KNOWS. If the player hasn't discovered a secret location, don't offer "Go to the hidden vault".
+2. **Personality/Background**: Choices should reflect the character's personality. A shy scholar might not have "Loudly challenge the guard" as an option.
+3. **Current Conditions**: If the character is injured, exhausted, or under a debuff, choices should reflect limitations. Don't offer "Sprint across the rooftops" if legs are broken.
+4. **Skills & Abilities**: Offer choices that utilize the character's skills. A mage should have magic-based options; a warrior should have combat options.
+5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types (e.g., "Use your latent psychic powers").
+DO NOT include meta-knowledge that only the player (not the character) would know.`,
         items: { type: "string" },
       },
       imagePrompt: {
@@ -766,6 +773,22 @@ export const FINISH_TURN_TOOL = {
       narrativeTone: {
         type: "string",
         description: "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+      },
+      aliveEntities: {
+        type: "object",
+        description: "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately.",
+        properties: {
+          inventory: { type: "array", items: { type: "string" }, description: "Item IDs (inv:N) relevant for next turn." },
+          relationships: { type: "array", items: { type: "string" }, description: "NPC IDs (npc:N) relevant for next turn." },
+          locations: { type: "array", items: { type: "string" }, description: "Location IDs (loc:N) relevant for next turn." },
+          quests: { type: "array", items: { type: "string" }, description: "Quest IDs (quest:N) relevant for next turn." },
+          knowledge: { type: "array", items: { type: "string" }, description: "Knowledge IDs (know:N) relevant for next turn." },
+          timeline: { type: "array", items: { type: "string" }, description: "Event IDs (evt:N) relevant for next turn." },
+          skills: { type: "array", items: { type: "string" }, description: "Character skill IDs relevant for next turn." },
+          conditions: { type: "array", items: { type: "string" }, description: "Character condition IDs relevant for next turn." },
+          hiddenTraits: { type: "array", items: { type: "string" }, description: "Character hidden trait IDs relevant for next turn." },
+          causalChains: { type: "array", items: { type: "string" }, description: "CausalChain chainIds with pending consequences that may trigger soon." },
+        },
       },
     },
     required: ["narrative", "choices"],

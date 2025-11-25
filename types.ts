@@ -15,6 +15,31 @@ export type ActionResult =
   | { success: true; stateChanges: StateChanges; legacyMessage: string }
   | { success: false; error: string };
 
+// Context Priority System: How many recent/alive entities to include in context
+export const RECENT_LIMITS = {
+  inventory: 5,
+  relationships: 4,
+  locations: 3,
+  quests: 3,
+  knowledge: 4,
+  timeline: 5,
+} as const;
+
+// Alive Entities: entities marked by AI as needed for next turn
+export interface AliveEntities {
+  inventory: string[];      // inv:N IDs
+  relationships: string[];  // npc:N IDs
+  locations: string[];      // loc:N IDs
+  quests: string[];         // quest:N IDs
+  knowledge: string[];      // know:N IDs
+  timeline: string[];       // evt:N IDs
+  // Character internal attributes (subset tracking)
+  skills: string[];         // Character skill IDs relevant to next turn
+  conditions: string[];     // Character condition IDs relevant to next turn
+  hiddenTraits: string[];   // Character hidden trait IDs relevant to next turn
+  causalChains: string[];   // CausalChain chainIds with pending consequences
+}
+
 export interface GameState {
   // Tree Structure: ID -> Segment
   nodes: Record<string, StorySegment>;
@@ -74,6 +99,12 @@ export interface GameState {
   };
   timeline: TimelineEvent[];
   causalChains: CausalChain[];
+
+  // Context Priority System: entities AI marked as relevant for next turn
+  // Cleared at start of each turn, populated by AI via finish_turn
+  aliveEntities: AliveEntities;
+  // Current turn number (incremented on each player action)
+  turnNumber: number;
 }
 
 // --- World System Interfaces ---
@@ -109,6 +140,7 @@ export interface TimelineEvent {
   };
   involvedEntities?: string[];
   chainId?: string; // Link to a CausalChain
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   unlocked?: boolean; // True when true cause/consequences are revealed
   highlight?: boolean; // True when updated in current turn (for UI)
   known?: boolean; // True if the player is aware of this event
@@ -123,10 +155,14 @@ export interface CausalChain {
   events: TimelineEvent[];
   status: "active" | "resolved" | "interrupted";
   pendingConsequences?: Array<{
+    id: string;           // Unique ID for tracking
     description: string;
-    delayTurns: number; // Changed from delayMinutes
-    probability: number;
-    conditions?: string[];
+    delayTurns: number;   // How many turns until trigger
+    createdAtTurn: number; // Turn number when this consequence was created
+    probability: number;  // 0-1 probability of triggering when delay is reached
+    conditions?: string[]; // Optional conditions that must be true for trigger
+    triggered?: boolean;  // True once consequence has been triggered
+    triggeredAtTurn?: number; // Turn when triggered
   }>;
 }
 
@@ -328,6 +364,7 @@ export interface Relationship {
   };
   createdAt: number;
   lastModified: number;
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   notes?: string; // NPC's observations of player's displayed knowledge/behavior
   unlocked?: boolean; // True when hidden personality/motives revealed (requires special ability)
   highlight?: boolean; // True when updated in current turn (for UI)
@@ -395,6 +432,10 @@ export interface GameStateSnapshot {
   uiState: UIState;
   envTheme: string;
   veoScript?: string;
+
+  // Context Priority System
+  aliveEntities: AliveEntities;
+  turnNumber: number;
 }
 
 export interface Location {
@@ -414,6 +455,7 @@ export interface Location {
   environment?: string;
   createdAt: number;
   discoveredAt?: number;
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   notes?: string;
   unlocked?: boolean; // True when hidden secrets are discovered
   highlight?: boolean; // True when updated in current turn (for UI)
@@ -445,6 +487,7 @@ export interface KnowledgeEntry {
   relatedTo?: string[];
   createdAt: number;
   lastModified: number;
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   unlocked?: boolean; // True when full truth is revealed
   highlight?: boolean; // True when updated in current turn (for UI)
 }
@@ -462,6 +505,7 @@ export interface InventoryItem {
   };
   createdAt: number;
   lastModified: number;
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   lore?: string;
   icon?: string;
   unlocked?: boolean; // True when hidden truth is revealed to player
@@ -484,6 +528,7 @@ export interface Quest {
   };
   createdAt: number;
   lastModified: number;
+  lastAccess?: number; // Turn number when last accessed/queried by AI
   unlocked?: boolean; // True when true objectives/outcome are revealed
   highlight?: boolean; // True when updated in current turn (for UI)
 }
@@ -682,6 +727,8 @@ export interface GameResponse {
     }>;
   }>;
   factionActions?: FactionAction[];
+  // Context Priority: entities AI marked as relevant for next turn
+  aliveEntities?: AliveEntities;
 }
 
 export interface FactionAction {
