@@ -117,6 +117,7 @@ export const generateContent = async (
     topK?: number;
     minP?: number;
     onChunk?: (text: string) => void;
+    tools?: any[]; // Added tools support
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   // Map contents to messages
@@ -126,6 +127,28 @@ export const generateContent = async (
       if (c.role && c.content) return c; // Already OpenAI format
       if (c.role && c.parts) {
         // Map Gemini format to OpenAI
+        // Handle function calls/responses in history if present
+        if (c.parts[0].functionCall) {
+            return {
+                role: "assistant",
+                tool_calls: c.parts.map((p: any) => ({
+                    id: "call_" + Math.random().toString(36).substr(2, 9),
+                    type: "function",
+                    function: {
+                        name: p.functionCall.name,
+                        arguments: JSON.stringify(p.functionCall.args)
+                    }
+                }))
+            };
+        }
+        if (c.parts[0].functionResponse) {
+             return {
+                 role: "tool",
+                 tool_call_id: "call_" + Math.random().toString(36).substr(2, 9),
+                 content: JSON.stringify(c.parts[0].functionResponse.response)
+             };
+        }
+
         return {
           role: c.role === "model" ? "assistant" : c.role,
           content: c.parts.map((p: any) => p.text).join("\n"),
@@ -135,6 +158,19 @@ export const generateContent = async (
     }),
   ];
 
+  // Map Tools to OpenAI Format
+  let openAITools: any[] | undefined;
+  if (options?.tools) {
+      openAITools = options.tools.map(t => ({
+          type: "function",
+          function: {
+              name: t.name,
+              description: t.description,
+              parameters: t.parameters
+          }
+      }));
+  }
+
   const body: any = {
     model: model,
     messages: messages,
@@ -143,6 +179,8 @@ export const generateContent = async (
     top_k: options?.topK,
     min_p: options?.minP,
     stream: !!options?.onChunk,
+    tools: openAITools,
+    tool_choice: openAITools ? "auto" : undefined
   };
 
   if (schema) {
@@ -193,6 +231,7 @@ export const generateContent = async (
     let content = "";
     let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     let rawResult: any = {};
+    let toolCalls: any[] = [];
 
     if (options?.onChunk) {
       const reader = response.body?.getReader();
@@ -236,7 +275,15 @@ export const generateContent = async (
       const result = await response.json();
       rawResult = result;
       const choice = result.choices[0];
-      content = choice?.message?.content || "";
+      const message = choice?.message;
+      content = message?.content || "";
+
+      if (message?.tool_calls) {
+          toolCalls = message.tool_calls.map((tc: any) => ({
+              name: tc.function.name,
+              args: JSON.parse(tc.function.arguments)
+          }));
+      }
 
       if (choice?.finish_reason === "content_filter") {
         throw new Error(
@@ -250,6 +297,11 @@ export const generateContent = async (
         completionTokens: result.usage?.completion_tokens || 0,
         totalTokens: result.usage?.total_tokens || 0,
       };
+    }
+
+    // If we have tool calls, return them
+    if (toolCalls.length > 0) {
+        return { result: { functionCalls: toolCalls }, usage, raw: rawResult };
     }
 
     if (schema) {

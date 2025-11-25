@@ -17,13 +17,13 @@ import {
   generateStoryOutline,
   summarizeContext,
 } from "../services/aiService";
-import { preloadAudio } from "../utils/audioLoader";
 import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
-import { processAllActions } from "./stateProcessors/processAllActions";
 import {
   createStateSnapshot,
   restoreStateFromSnapshot,
 } from "../utils/snapshotManager";
+
+import { preloadAudio } from "../utils/audioLoader";
 
 // Helper: Traverse tree
 const deriveHistory = (
@@ -38,6 +38,7 @@ const deriveHistory = (
   }
   return history;
 };
+
 
 export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
@@ -71,12 +72,9 @@ export const useGameEngine = () => {
 
   useEffect(() => {
     gameStateRef.current = gameState;
-    // Sync processing ref with state, but only if we're not in the middle of a locked operation
-    // actually, we should trust the state if it says we are processing
     if (gameState.isProcessing) processingRef.current = true;
-    // If state says NOT processing, we only clear ref if we are sure we're done?
-    // It's safer to just use the ref as a "local lock" for handleAction
   }, [gameState]);
+
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -468,10 +466,17 @@ export const useGameEngine = () => {
 
       const modelNodeId = `model-${newSegmentId}`;
 
-      // ===== PROCESS ALL STATE CHANGES USING MODULAR PROCESSORS =====
-      const processedState = processAllActions(gameStateRef.current, response);
+      // ===== STATE UPDATE =====
+      // We now use the finalState returned by the Agentic Loop (GameDatabase)
+      // If for some reason it's missing (legacy/fallback), we might need a backup,
+      // but for this refactor we assume it's there.
+      const finalState = response.finalState;
 
-      // Determine Toast Message based on state changes
+      if (!finalState) {
+          throw new Error("AI Service did not return a final state. Agentic loop failed?");
+      }
+
+      // Determine Toast Message based on state changes (using the accumulated actions in response)
       let toastMessage = "";
       if (response.inventoryActions?.some((a) => a.action === "add")) {
         toastMessage = t("toast.itemAdded");
@@ -504,18 +509,17 @@ export const useGameEngine = () => {
         imageSkipped: !response.generateImage,
         envTheme: response.envTheme,
         stateSnapshot: createStateSnapshot(
-          processedState,
+          finalState, // Use finalState for snapshot
           {
             summaries: effectiveSummaries,
             lastSummarizedIndex: lastIndex,
-            currentLocation: processedState.currentLocation,
-            time: processedState.time,
+            currentLocation: finalState.currentLocation,
+            time: finalState.time,
             envTheme:
               response.envTheme || forceTheme || gameStateRef.current.envTheme,
             veoScript: gameStateRef.current.veoScript,
             uiState: gameStateRef.current.uiState,
           },
-          gameStateRef.current,
         ),
       };
 
@@ -528,13 +532,21 @@ export const useGameEngine = () => {
         },
         activeNodeId: modelNodeId,
         rootNodeId: prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
-        inventory: processedState.inventory,
-        relationships: processedState.relationships,
-        quests: processedState.quests,
-        currentLocation: processedState.currentLocation,
-        locations: processedState.locations,
-        character: processedState.character,
-        knowledge: processedState.knowledge,
+
+        // Apply the full new state from the database
+        inventory: finalState.inventory,
+        relationships: finalState.relationships,
+        quests: finalState.quests,
+        currentLocation: finalState.currentLocation,
+        locations: finalState.locations,
+        character: finalState.character,
+        knowledge: finalState.knowledge,
+        factions: finalState.factions,
+        time: finalState.time,
+        nextIds: finalState.nextIds,
+        timeline: finalState.timeline,
+        causalChains: finalState.causalChains,
+
         summaries: effectiveSummaries,
         isProcessing: false,
         isImageGenerating: true,
@@ -544,10 +556,6 @@ export const useGameEngine = () => {
         logs: [log, ...prev.logs].slice(0, 50),
         totalTokens: prev.totalTokens + usage.totalTokens,
         generateImage: response.generateImage,
-        time: processedState.time, // Use AI-generated time string
-        nextIds: processedState.nextIds,
-        timeline: processedState.timeline,
-        causalChains: processedState.causalChains,
       }));
 
       // Async Image Gen with Timeout
@@ -556,39 +564,30 @@ export const useGameEngine = () => {
         response.imagePrompt &&
         !aiSettings.manualImageGen
       ) {
+        const stateSnapshot = createStateSnapshot(
+          finalState,
+          {
+            time: finalState.time,
+            currentLocation: finalState.currentLocation, // Added required field
+            summaries: effectiveSummaries, // Use previous summaries or updated ones if available
+            lastSummarizedIndex: lastIndex,
+            uiState: gameStateRef.current.uiState,
+            envTheme: finalState.envTheme,
+            veoScript: gameStateRef.current.veoScript,
+          }
+        );
+
         const imageContext = {
-          theme: response.envTheme || forceTheme || gameStateRef.current.theme,
-          time: processedState.time,
-          location: {
-            name: processedState.currentLocation,
-            environment:
-              processedState.locations.find(
-                (l) => l.name === processedState.currentLocation,
-              )?.environment || "Unknown",
-            details:
-              processedState.locations.find(
-                (l) => l.name === processedState.currentLocation,
-              )?.visible?.description || "",
-          },
-          character: {
-            name: processedState.character.name,
-            race: processedState.character.race,
-            profession: processedState.character.profession,
-            appearance: processedState.character.appearance,
-            status: processedState.character.status,
-          },
-          activeNPCs: processedState.relationships
-            .filter(
-              (r) =>
-                // Fallback: Pass all known relationships, the Prompt will filter based on the scene description.
-                r.hidden?.status !== "Absent" && r.hidden?.status !== "Dead",
-            )
-            .map((r) => ({
-              name: r.name,
-              description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
-              appearance: r.visible?.appearance || "No appearance available",
-              status: `${r.visible?.relationshipType || "Unknown"} (${r.hidden?.status || "Normal"})`,
-            })),
+            theme: finalState.theme, // Added theme
+            stateSnapshot,
+            activeNPCs: finalState.relationships
+                .filter((r) => r.visible.name)
+                .map((r) => ({
+                    name: r.visible.name,
+                    description: r.visible.description,
+                    appearance: r.visible.appearance || "Unknown",
+                    status: r.visible.relationshipType
+                })),
         };
 
         const imageTimeout = setTimeout(
@@ -972,6 +971,9 @@ export const useGameEngine = () => {
     }));
   };
 
+
+
+
   return {
     language,
     setLanguage,
@@ -993,12 +995,9 @@ export const useGameEngine = () => {
     handleSaveSettings,
     currentHistory,
     saveSlots,
-    switchSlot,
+    loadSlot,
     deleteSlot,
     currentSlotId,
-    navigateToNode,
-    generateImageForNode,
-    updateNodeAudio,
     themeMode,
     toggleThemeMode,
     setThemeMode: setThemeModeValue,
@@ -1006,5 +1005,6 @@ export const useGameEngine = () => {
     clearAllSaves,
     persistenceError,
     hardReset,
+    navigateToNode,
   };
 };

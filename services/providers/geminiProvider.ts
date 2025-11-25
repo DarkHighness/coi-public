@@ -1,5 +1,6 @@
 import { GoogleGenAI, Schema, Type, Modality } from "@google/genai";
 import { ModelInfo } from "../../types";
+import { convertJsonSchemaToGemini, JsonSchema } from "../schemaUtils";
 
 export interface GeminiConfig {
   apiKey?: string;
@@ -59,7 +60,7 @@ export const generateContent = async (
   model: string,
   systemInstruction: string,
   contents: any[],
-  schema?: Schema,
+  schema?: JsonSchema,
   options?: {
     thinkingLevel?: "low" | "medium" | "high";
     mediaResolution?: "low" | "medium" | "high";
@@ -68,6 +69,7 @@ export const generateContent = async (
     topK?: number;
     minP?: number;
     onChunk?: (text: string) => void;
+    tools?: any[]; // Added tools support
   },
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const ai = getGeminiClient(config);
@@ -90,11 +92,33 @@ export const generateContent = async (
       }))
     : contents;
 
+  // Convert standard JSON schema to Gemini schema if provided
+  const geminiSchema = schema ? convertJsonSchemaToGemini(schema) : undefined;
+
   const generationConfig: any = {
     systemInstruction: systemInstruction,
     responseMimeType: "application/json",
-    responseSchema: schema,
+    responseSchema: geminiSchema,
   };
+
+  // If tools are provided, we cannot enforce JSON schema on the top level response easily
+  // because the model might return a tool call instead of JSON.
+  // So if tools are present, we remove responseMimeType/responseSchema unless we are sure.
+  if (options?.tools) {
+      delete generationConfig.responseMimeType;
+      delete generationConfig.responseSchema;
+      // Convert tools if necessary?
+      // Tools in services/tools.ts are now standard JSON schema parameters.
+      // Gemini expects FunctionDeclaration with Schema.
+      // We need to map the tools to Gemini format.
+      generationConfig.tools = options.tools.map((tool: any) => ({
+        functionDeclarations: [{
+          name: tool.name,
+          description: tool.description,
+          parameters: convertJsonSchemaToGemini(tool.parameters)
+        }]
+      }));
+  }
 
   if (model.includes("thinking")) {
     generationConfig.thinkingConfig = { includeThoughts: true };
@@ -141,6 +165,18 @@ export const generateContent = async (
 
   const candidate = response.candidates?.[0];
   const finishReason = candidate?.finishReason;
+
+  // Check for tool calls
+  const functionCalls = candidate?.content?.parts?.filter((p: any) => p.functionCall).map((p: any) => p.functionCall);
+
+  if (functionCalls && functionCalls.length > 0) {
+      const usage = {
+        promptTokens: response.usageMetadata?.promptTokenCount || 0,
+        completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: response.usageMetadata?.totalTokenCount || 0,
+      };
+      return { result: { functionCalls }, usage, raw: response };
+  }
 
   if (finishReason === "SAFETY") {
     throw new Error(

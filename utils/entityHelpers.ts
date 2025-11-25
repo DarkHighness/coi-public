@@ -38,7 +38,13 @@ export const findRelationship = (
   if (typeof idOrName === "number") {
     return getEntityById(gameState.relationships, idOrName);
   }
-  return getEntityByName(gameState.relationships, idOrName);
+  // Relationships have name in visible.name
+  const found = gameState.relationships.find(
+    (r) =>
+      r.id === Number(idOrName) ||
+      r.visible.name.toLowerCase() === String(idOrName).toLowerCase(),
+  );
+  return found;
 };
 
 export const findLocation = (

@@ -1,5 +1,9 @@
-import { GameStateSnapshot, GameState, StorySummary } from "../types";
-import type { ProcessedState } from "../hooks/stateProcessors/processAllActions";
+import type {
+  GameState,
+  StorySummary,
+  StorySegment,
+  GameStateSnapshot,
+} from "../types";
 
 export interface SnapshotMetadata {
   summaries: StorySummary[];
@@ -15,28 +19,27 @@ export interface SnapshotMetadata {
  * Create a comprehensive state snapshot for fork-safe persistence
  */
 export function createStateSnapshot(
-  processedState: ProcessedState,
-  metadata: SnapshotMetadata,
   gameState: GameState,
+  metadata: SnapshotMetadata,
 ): GameStateSnapshot {
   return {
     // Entity State (Dual-layer)
-    inventory: processedState.inventory,
-    relationships: processedState.relationships,
-    quests: processedState.quests,
-    character: processedState.character,
-    knowledge: processedState.knowledge,
-    locations: processedState.locations,
-    currentLocation: processedState.currentLocation || metadata.currentLocation,
-    factions: processedState.factions,
+    inventory: gameState.inventory,
+    relationships: gameState.relationships,
+    quests: gameState.quests,
+    character: gameState.character,
+    knowledge: gameState.knowledge,
+    locations: gameState.locations,
+    currentLocation: gameState.currentLocation || metadata.currentLocation,
+    factions: gameState.factions,
 
     // ID Counters (Critical for forks)
-    nextIds: processedState.nextIds,
+    nextIds: gameState.nextIds,
 
     // World State
     time: metadata.time,
-    timeline: processedState.timeline,
-    causalChains: processedState.causalChains,
+    timeline: gameState.timeline,
+    causalChains: gameState.causalChains,
 
     // Summaries (Dual-layer)
     summaries: metadata.summaries,

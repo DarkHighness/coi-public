@@ -50,17 +50,16 @@ export default function App() {
     handleSaveSettings,
     currentHistory,
     saveSlots,
-    switchSlot,
+    loadSlot,
     deleteSlot,
     currentSlotId,
-    navigateToNode,
-    generateImageForNode,
     themeMode,
     setThemeMode,
     resetSettings,
     clearAllSaves,
     persistenceError,
     hardReset,
+    navigateToNode,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -297,7 +296,7 @@ export default function App() {
       } else if (saveSlots.length > 0) {
         const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
         const mostRecent = sorted[0];
-        await switchSlot(mostRecent.id);
+        await loadSlot(mostRecent.id);
       }
     }
   };
@@ -348,7 +347,7 @@ export default function App() {
               onThemePreview={setPreviewTheme}
               setLanguage={setLanguage}
               saveSlots={saveSlots}
-              onSwitchSlot={switchSlot}
+              onSwitchSlot={loadSlot}
               onDeleteSlot={deleteSlot}
             />
           }
@@ -382,13 +381,12 @@ export default function App() {
                 aiSettings={aiSettings}
                 handleSaveSettings={handleSaveSettings}
                 navigateToNode={navigateToNode}
-                generateImageForNode={generateImageForNode}
                 showToast={showToast}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenSaves={() => setIsSaveManagerOpen(true)}
                 themeFont={currentThemeConfig.fontClass}
                 saveSlots={saveSlots}
-                switchSlot={switchSlot}
+                switchSlot={async (id) => { await loadSlot(id); }}
                 deleteSlot={deleteSlot}
                 currentSlotId={currentSlotId}
                 onViewedSegmentChange={setViewedSegment}
@@ -417,7 +415,7 @@ export default function App() {
           <SaveManager
             slots={saveSlots}
             currentSlotId={null}
-            onSwitch={switchSlot}
+            onSwitch={loadSlot}
             onDelete={deleteSlot}
             onClose={() => setIsSaveManagerOpen(false)}
           />

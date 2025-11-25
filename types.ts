@@ -153,6 +153,7 @@ export interface Faction {
   name: string;
   visible: string; // Public agenda
   hidden: string; // Secret agenda
+  highlight?: boolean; // True when updated in current turn
 }
 
 export interface StoryOutline {
@@ -604,6 +605,8 @@ export interface CharacterAction {
   maxValue?: number;
   color?: string;
   unlocked?: boolean; // Set when hidden effects should be revealed (skills/conditions)
+  // New: Final State from Agentic Loop
+  finalState?: GameState;
 }
 
 export interface AdventureTurnInput {
@@ -641,6 +644,7 @@ export interface GameResponse {
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
   timeUpdate?: string; // The new time string
+  finalState?: GameState; // The full game state after processing
   timelineEvents?: Array<{
     category: "npc_action" | "world_event" | "consequence";
     visible: {
@@ -746,6 +750,8 @@ export interface StoryThemeConfig {
   icon?: string;
   categories?: string[];
   restricted?: boolean;
+  backgroundTemplate?: string;
+  example?: string;
 }
 
 export type LanguageCode = "en" | "zh";

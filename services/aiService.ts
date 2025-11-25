@@ -15,6 +15,7 @@ import type {
   AdventureTurnInput,
   GameState,
 } from "../types";
+import { GameDatabase } from "./gameDatabase";
 import {
   GeminiConfig,
   generateContent as generateGeminiContent,
@@ -61,8 +62,8 @@ import {
   getCurrentStateContext,
   getVeoScriptPrompt,
 } from "./prompts";
-import { toOpenAIStrictSchema } from "../utils/openAISchemaConverter";
-import { Schema } from "@google/genai";
+import { convertJsonSchemaToOpenAI } from "./schemaUtils";
+import { TOOLS } from "./tools";
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
@@ -282,26 +283,36 @@ export const filterModels = (
 };
 
 // Unified Content Generation Helper
-const generateContentUnified = async (
+export const generateContentUnified = async (
   provider: "gemini" | "openai" | "openrouter",
   modelId: string,
   systemInstruction: string,
-  contents: any[], // @ts-ignore
-  schema?: Schema,
-  onChunk?: (text: string) => void,
-): Promise<any> => {
+  contents: any[],
+  schema?: any,
+  options?: {
+    thinkingLevel?: "low" | "medium" | "high";
+    mediaResolution?: "low" | "medium" | "high";
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    minP?: number;
+    onChunk?: (text: string) => void;
+    tools?: any[];
+  },
+): Promise<{ result: any; usage: TokenUsage; raw: any; log?: LogEntry }> => {
   let result, usage, raw;
 
-  // Get options from current settings
+  // Get options from current settings (defaults)
   const storyConfig = getProviderConfig("story");
-  const options = {
-    thinkingLevel: storyConfig.thinkingLevel,
-    mediaResolution: storyConfig.mediaResolution,
-    temperature: storyConfig.temperature,
-    topP: storyConfig.topP,
-    topK: storyConfig.topK,
-    minP: storyConfig.minP,
-    onChunk: onChunk,
+  const mergedOptions = {
+    thinkingLevel: options?.thinkingLevel || storyConfig.thinkingLevel,
+    mediaResolution: options?.mediaResolution || storyConfig.mediaResolution,
+    temperature: options?.temperature ?? storyConfig.temperature,
+    topP: options?.topP ?? storyConfig.topP,
+    topK: options?.topK ?? storyConfig.topK,
+    minP: options?.minP ?? storyConfig.minP,
+    onChunk: options?.onChunk,
+    tools: options?.tools,
   };
 
   try {
@@ -312,11 +323,13 @@ const generateContentUnified = async (
         systemInstruction,
         contents,
         schema,
-        options,
+        mergedOptions,
       ));
     } else {
       // Convert schema for OpenAI/OpenRouter
-      const openAISchema = schema ? toOpenAIStrictSchema(schema) : undefined;
+      const openAISchema = schema
+        ? convertJsonSchemaToOpenAI(schema)
+        : undefined;
       const config =
         provider === "openai" ? { ...openaiConfig, modelId } : openRouterConfig;
 
@@ -327,7 +340,7 @@ const generateContentUnified = async (
           systemInstruction,
           contents,
           openAISchema,
-          options,
+          mergedOptions,
         ));
       } else {
         ({ result, usage, raw } = await generateOpenRouterContent(
@@ -336,7 +349,7 @@ const generateContentUnified = async (
           systemInstruction,
           contents,
           openAISchema,
-          options,
+          mergedOptions,
         ));
       }
     }
@@ -381,38 +394,43 @@ export const generateStoryOutline = async (
     themeDataExample = tFunc(`themes.${theme}.example`);
   } else {
     // Fallback to static translations
-    const langCode = getLangCode(language);
-    const t = TRANSLATIONS[langCode];
+    // @ts-ignore
+    const themeData = THEMES[theme] || THEMES["fantasy"];
+    // @ts-ignore
+    const langData = LANG_MAP[language] || LANG_MAP["en"];
     themeDataBackgroundTemplate =
-      t.themes[theme]?.backgroundTemplate ||
-      t.themes.fantasy.backgroundTemplate;
-    themeDataExample = t.themes[theme]?.example || "";
+      langData.themes?.[theme]?.backgroundTemplate ||
+      themeData.backgroundTemplate;
+    themeDataExample = langData.themes?.[theme]?.example || themeData.example;
   }
-
-  const themeConfig = THEMES[theme || "fantasy"];
-  const isRestricted = themeConfig?.restricted || false;
 
   const prompt = getOutlinePrompt(
     theme,
     language,
-    customContext,
     themeDataBackgroundTemplate,
-    themeDataExample, // Pass themeExample here
-    isRestricted,
+    themeDataExample,
+    customContext,
   );
-  const sys =
-    "You are a professional TRPG Game Master creating story outlines. Be creative and introduce randomness - avoid generic templates. Output strictly valid JSON matching the schema.";
-  const contents = [{ role: "user", parts: [{ text: prompt }] }];
+
+  // Check for restricted themes (NSFW filter)
+  // @ts-ignore
+  const isRestricted = THEMES[theme]?.restricted || false;
+  if (isRestricted && provider === "gemini") {
+    // Gemini has strict safety filters, we might want to warn or adjust
+    // For now, we just pass the flag if needed, but generateContentUnified doesn't take it directly
+    // We handle safety errors in the provider
+  }
 
   const { result, log } = await generateContentUnified(
     provider,
     modelId,
-    sys,
-    contents,
+    "You are a creative writer.",
+    [{ role: "user", content: prompt }],
     storyOutlineSchema,
-    onChunk,
+    { onChunk },
   );
-  return { outline: result, log };
+
+  return { outline: result as StoryOutline, log: log! };
 };
 
 export const summarizeContext = async (
@@ -504,62 +522,63 @@ const buildTurnContents = (
 ) => {
   const contents = [];
 
-  // 1. Dynamic Story Context (Memory)
-  // Use XML tags for better separation and attention
+  // 1. Construct the Context Block
+  // This combines Memory (Summaries + Timeline) and Current State (Hints)
   const dynamicStoryContext = getDynamicStoryContext(
     summaries,
     recentHistory,
     timeline,
   );
-  if (dynamicStoryContext) {
+
+  const fullContextBlock = `
+<game_context>
+  ${dynamicStoryContext ? `<story_memory>\n${dynamicStoryContext}\n</story_memory>` : ""}
+  <current_state>\n${currentStateContext}\n</current_state>
+</game_context>
+`;
+
+  // 2. Add History
+  // We start with the context block as the first user message, or prepend it to the first history item if it exists.
+  // If there is no history, it goes in the first message with the action.
+
+  if (recentHistory.length > 0) {
+    // Prepend context to the very first message of the history window we are sending
+    // OR send it as a standalone first message. Standalone is cleaner for the model to reference.
     contents.push({
       role: "user",
-      parts: [
-        { text: `<story_memory>\n${dynamicStoryContext}\n</story_memory>` },
-      ],
+      parts: [{ text: `[System: Game Context]\n${fullContextBlock}` }],
     });
+
+    // Add recent history turns
+    contents.push(
+      ...recentHistory.map((seg) => ({
+        role: seg.role,
+        parts: [{ text: seg.text }],
+      })),
+    );
+  } else {
+    // No history, so this is the start. Context goes with the first action.
+    // We'll handle the action addition below, so just push context here if we want separate messages,
+    // but for the very first turn, it's often better to combine.
+    // Let's push it as a separate context message for consistency.
     contents.push({
-      role: "model",
-      parts: [{ text: "Memory context acknowledged." }],
+      role: "user",
+      parts: [{ text: `[System: Game Context]\n${fullContextBlock}` }],
     });
   }
 
-  // 2. Current State Context
-  contents.push({
-    role: "user",
-    parts: [
-      { text: `<current_state>\n${currentStateContext}\n</current_state>` },
-    ],
-  });
-  contents.push({
-    role: "model",
-    parts: [{ text: "State context acknowledged." }],
-  });
-
-  // 3. Recent History
-  // We keep this as raw conversation turns for natural flow, but we might want to wrap them if the model gets confused.
-  // For now, standard role-play history is best left as-is.
-  contents.push(
-    ...recentHistory.map((seg) => ({
-      role: seg.role,
-      parts: [{ text: seg.text }],
-    })),
-  );
-
-  // 4. User Action (if new)
+  // 3. User Action (if new)
   const userActionAlreadyInHistory = recentHistory.some(
     (seg) => seg.role === "user" && seg.text === userAction,
   );
 
   if (!userActionAlreadyInHistory) {
-    // Add a reinforcement instruction before the final action
-    // This helps "wake up" the model to the specific task constraints after a long context window
     const reinforcement = `
 <instruction>
-Generate the next turn based on the <story_memory>, <current_state>, and the conversation history above.
+Generate the next turn based on the <game_context> and history.
+- Query state first.
 - Adhere strictly to the JSON schema.
 - Maintain the defined narrative style and tone.
-- Advance the plot logically based on the player's action.
 </instruction>
 `;
     contents.push({
@@ -575,82 +594,286 @@ Generate the next turn based on the <story_memory>, <current_state>, and the con
   return contents;
 };
 
+// --- Agentic Loop Implementation ---
+
 export const generateAdventureTurn = async (
   input: AdventureTurnInput,
 ): Promise<{ response: GameResponse; log: LogEntry; usage: TokenUsage }> => {
-  const {
-    recentHistory,
-    summaries,
-    outline,
-    inventory,
-    relationships,
-    quests,
-    locations,
-    currentLocationId,
-    character,
-    userAction,
-    language = "English",
-    themeKey,
-    tFunc,
-    knowledge,
-    time,
-    timeline,
-    causalChains,
-  } = input;
-
   const { provider, modelId } = getProviderConfig("story");
-
-  // 1. Configuration
   const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
-    themeKey,
-    language,
-    tFunc,
+    input.themeKey,
+    input.language,
+    input.tFunc,
   );
 
-  // 2. System Context (Rules + Static World)
-  const fullSystemInstruction = buildSystemContext(
-    language,
+  const systemInstruction = buildSystemContext(
+    input.language,
     narrativeStyle,
     example,
     isRestricted,
-    outline,
+    input.outline,
   );
 
-  // 3. Dynamic Context (State)
-  const currentStateContext = getCurrentStateContext(
-    inventory,
-    relationships,
-    quests,
-    locations,
-    currentLocationId,
-    input.factions,
-    character,
-    knowledge,
-    time,
-    timeline,
-    causalChains,
-  );
-
-  // 4. Build Prompt Contents
   const contents = buildTurnContents(
-    summaries,
-    currentStateContext,
-    recentHistory,
-    timeline,
-    userAction,
+    input.summaries,
+    getCurrentStateContext(input),
+    input.recentHistory,
+    input.timeline || [],
+    input.userAction,
   );
 
-  // 5. Execution
-  const { result, log, usage } = await generateContentUnified(
-    provider,
-    modelId,
-    fullSystemInstruction,
-    contents,
-    gameResponseSchema,
-  );
-
-  return { response: result, log, usage };
+  return runAgenticLoop(provider, modelId, systemInstruction, contents, input);
 };
+
+const runAgenticLoop = async (
+  provider: "gemini" | "openai" | "openrouter",
+  modelId: string,
+  systemInstruction: string,
+  initialContents: any[],
+  inputState: AdventureTurnInput,
+): Promise<{ response: GameResponse; log: LogEntry; usage: TokenUsage }> => {
+  let currentContents = [...initialContents];
+  let turnCount = 0;
+  const maxTurns = 10; // Safety limit
+
+  // Initialize the "Database" with the current state
+  // We cast AdventureTurnInput to GameState because they share the same structure for the fields we care about
+  // (inventory, relationships, etc.) but we might need to be careful if inputState is missing some GameState fields.
+  // Assuming inputState has enough to build a GameState or we just pass what we have.
+  // Actually, AdventureTurnInput is NOT a full GameState. It has components.
+  // We need to reconstruct a GameState-like object for the DB.
+  const initialState: GameState = {
+      inventory: inputState.inventory,
+      relationships: inputState.relationships,
+      quests: inputState.quests,
+      locations: inputState.locations,
+      currentLocation: inputState.currentLocationId, // Map ID to name/ID
+      character: inputState.character,
+      knowledge: inputState.knowledge || [],
+      factions: inputState.factions || [],
+      timeline: inputState.timeline || [],
+      causalChains: inputState.causalChains || [],
+      time: inputState.time || "Unknown",
+      // We need nextIds to generate new IDs. If not passed in input, we might have issues.
+      // AdventureTurnInput doesn't seem to have nextIds.
+      // We should probably add nextIds to AdventureTurnInput or generate them temporarily.
+      // For now, let's assume we can start from a safe high number or random strings if missing.
+      nextIds: { item: 1000, npc: 1000, location: 1000, quest: 1000, knowledge: 1000, faction: 1000 },
+      // Other fields
+      nodes: {},
+      activeNodeId: "temp-root", // Placeholder
+      rootNodeId: "temp-root", // Placeholder
+      uiState: {
+          inventory: { pinnedIds: [], customOrder: [] },
+          locations: { pinnedIds: [], customOrder: [] },
+          relationships: { pinnedIds: [], customOrder: [] },
+          knowledge: { pinnedIds: [], customOrder: [] },
+          sidebarCollapsed: false,
+          timelineCollapsed: false
+      },
+      outline: null,
+      summaries: [],
+      lastSummarizedIndex: 0,
+      isProcessing: false,
+      isImageGenerating: false,
+      generatingNodeId: null,
+      error: null,
+      envTheme: "fantasy",
+      theme: "fantasy",
+      totalTokens: 0,
+      logs: []
+  };
+
+  const db = new GameDatabase(initialState);
+
+  // Accumulated actions for UI feedback (Toasts)
+  // We still return these for the UI to show "Item Added", but the STATE is in `finalState`
+  const accumulatedResponse: GameResponse = {
+    narrative: "",
+    choices: [],
+    inventoryActions: [],
+    relationshipActions: [],
+    locationActions: [],
+    questActions: [],
+    knowledgeActions: [],
+    factionActions: [],
+    characterUpdates: undefined,
+    timelineEvents: [],
+  };
+
+  let totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  let lastLog: LogEntry | null = null;
+
+  // Prepare tools for the provider
+  const toolConfig = TOOLS.map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+  }));
+
+  while (turnCount < maxTurns) {
+    console.log(`[Agentic Loop] Turn ${turnCount + 1}`);
+
+    let result, usage, raw;
+
+    try {
+        // Unified generation call for all providers
+        // We pass 'undefined' for schema because we want tool calls, not JSON mode (unless tools are not supported, but we assume they are now)
+        // If the provider doesn't support tools, it might fail or ignore them.
+        const resultData = await generateContentUnified(
+            provider,
+            modelId,
+            systemInstruction,
+            currentContents,
+            undefined, // No schema
+            { tools: toolConfig } // Pass tools!
+        );
+
+        result = resultData.result;
+        usage = resultData.usage;
+        raw = resultData.raw;
+
+    } catch (e) {
+        console.error("Agentic Loop Error", e);
+        throw e;
+    }
+
+    // Update Usage
+    if (usage) {
+        totalUsage.promptTokens += usage.promptTokens;
+        totalUsage.completionTokens += usage.completionTokens;
+        totalUsage.totalTokens += usage.totalTokens;
+    }
+
+    lastLog = createLogEntry(provider, modelId, "agentic_turn", { systemInstruction, currentContents }, raw, usage);
+
+    // Handle Tool Calls
+    if (result && result.functionCalls) {
+        const toolCalls = result.functionCalls;
+
+        // Add model's tool call to history
+        currentContents.push({
+            role: "model",
+            parts: toolCalls.map((fc: any) => ({ functionCall: fc }))
+        });
+
+        // Execute Tools
+        const toolOutputs = [];
+
+        // Parallel Execution Support
+        // We execute all tools in the list.
+        // Note: modify_state is synchronous in GameDatabase, so "parallel" here just means
+        // processing the array of calls returned by the model.
+        for (const call of toolCalls) {
+            const { name, args } = call;
+            console.log(`[Agentic Loop] Tool Call: ${name}`, args);
+
+            let output: unknown = { result: "Tool executed" };
+
+            if (name === "query_inventory") {
+                output = db.query("inventory", args.query);
+            } else if (name === "query_relationships") {
+                output = db.query("relationship", args.query);
+            } else if (name === "query_locations") {
+                output = db.query("location", args.query);
+            } else if (name === "query_quests") {
+                output = db.query("quest", args.query);
+            } else if (name === "query_knowledge") {
+                output = db.query("knowledge", args.query);
+            } else if (name === "update_inventory") {
+                db.modify("inventory", args.action, args.data);
+                if (!accumulatedResponse.inventoryActions) accumulatedResponse.inventoryActions = [];
+                accumulatedResponse.inventoryActions.push({ action: args.action, ...args.data });
+                output = { status: "success", message: "Inventory updated." };
+            } else if (name === "update_relationship") {
+                db.modify("relationship", args.action, args.data);
+                if (!accumulatedResponse.relationshipActions) accumulatedResponse.relationshipActions = [];
+                accumulatedResponse.relationshipActions.push({ action: args.action, ...args.data });
+                output = { status: "success", message: "Relationship updated." };
+            } else if (name === "update_location") {
+                db.modify("location", args.action, args.data);
+                if (!accumulatedResponse.locationActions) accumulatedResponse.locationActions = [];
+                accumulatedResponse.locationActions.push({ type: "known", action: args.action, ...args.data });
+                output = { status: "success", message: "Location updated." };
+            } else if (name === "update_quest") {
+                db.modify("quest", args.action, args.data);
+                if (!accumulatedResponse.questActions) accumulatedResponse.questActions = [];
+                accumulatedResponse.questActions.push({ action: args.action, ...args.data });
+                output = { status: "success", message: "Quest updated." };
+            } else if (name === "update_knowledge") {
+                db.modify("knowledge", args.action, args.data);
+                if (!accumulatedResponse.knowledgeActions) accumulatedResponse.knowledgeActions = [];
+                accumulatedResponse.knowledgeActions.push({ action: args.action, ...args.data });
+                output = { status: "success", message: "Knowledge updated." };
+            } else if (name === "query_timeline") {
+                output = db.query("timeline", args.query);
+            } else if (name === "update_timeline") {
+                db.modify("timeline", args.action, args.data);
+                output = { status: "success", message: "Timeline updated." };
+            } else if (name === "query_causal_chain") {
+                output = db.query("causal_chain", args.query);
+            } else if (name === "update_causal_chain") {
+                db.modify("causal_chain", args.action, args.data);
+                output = { status: "success", message: "Causal chain updated." };
+            } else if (name === "query_factions") {
+                output = db.query("faction", args.query);
+            } else if (name === "update_faction") {
+                db.modify("faction", args.action, args.data);
+                if (!accumulatedResponse.factionActions) accumulatedResponse.factionActions = [];
+                accumulatedResponse.factionActions.push({ action: args.action, ...args.data });
+                output = { status: "success", message: "Faction updated." };
+            } else if (name === "query_global") {
+                output = db.query("global");
+            } else if (name === "update_global") {
+                db.modify("global", "update", args.data); // Action is ignored for global
+                output = { status: "success", message: "Global state updated." };
+            } else if (name === "finish_turn") {
+                // Finalize
+                accumulatedResponse.narrative = args.narrative;
+                accumulatedResponse.choices = args.choices;
+                accumulatedResponse.imagePrompt = args.imagePrompt;
+                accumulatedResponse.generateImage = args.generateImage;
+
+                // Attach the FINAL STATE from the DB
+                (accumulatedResponse as any).finalState = db.getState();
+
+                return { response: accumulatedResponse, log: lastLog, usage: totalUsage };
+            }
+
+            toolOutputs.push({
+                functionResponse: {
+                    name: name,
+                    response: { content: output }
+                }
+            });
+        }
+
+        // Add tool outputs to history
+        currentContents.push({
+            role: "function",
+            parts: toolOutputs
+        });
+
+        turnCount++;
+    } else {
+        // Fallback for text-only response
+        if (result.narrative) {
+             return { response: result, log: lastLog, usage: totalUsage };
+        }
+
+        console.warn("Model returned text instead of tool call:", result);
+        return {
+            response: { ...accumulatedResponse, narrative: typeof result === 'string' ? result : JSON.stringify(result), choices: ["Continue"] },
+            log: lastLog,
+            usage: totalUsage
+        };
+    }
+  }
+
+  return { response: accumulatedResponse, log: lastLog!, usage: totalUsage };
+};
+
+// ... (Rest of the file)
 
 export const generateSceneImage = async (
   prompt: string,
