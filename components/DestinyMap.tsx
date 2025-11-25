@@ -320,6 +320,35 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             const isCurrent = node.id === activeNodeId;
             const isModel = node.segment.role === "model";
             const isActivePath = node.isMainPath;
+            const ending = node.segment.ending;
+
+            // Determine ending-specific styling
+            const getEndingColor = () => {
+              if (!ending) return null;
+              switch (ending) {
+                case "death": return "var(--ending-death, #ef4444)"; // red
+                case "victory": return "var(--ending-victory, #22c55e)"; // green
+                case "true_ending": return "var(--ending-true, #eab308)"; // gold
+                case "bad_ending": return "var(--ending-bad, #9333ea)"; // purple
+                case "neutral_ending": return "var(--ending-neutral, var(--theme-muted))"; // muted
+                default: return null;
+              }
+            };
+            const endingColor = getEndingColor();
+
+            // Ending icon based on type
+            const getEndingIcon = () => {
+              if (!ending) return null;
+              switch (ending) {
+                case "death": return "💀";
+                case "victory": return "🏆";
+                case "true_ending": return "⭐";
+                case "bad_ending": return "💔";
+                case "neutral_ending": return "⚖️";
+                default: return null;
+              }
+            };
+            const endingIcon = getEndingIcon();
 
             return (
               <g
@@ -333,6 +362,22 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                 className="cursor-pointer hover:opacity-80"
                 style={{ transition: "transform 0.3s" }}
               >
+                {/* Ending Glow Effect */}
+                {ending && (
+                  <rect
+                    x="-4"
+                    y={-NODE_HEIGHT / 2 - 4}
+                    width={NODE_WIDTH + 8}
+                    height={NODE_HEIGHT + 8}
+                    rx="6"
+                    fill="none"
+                    stroke={endingColor || "transparent"}
+                    strokeWidth={2}
+                    opacity={0.6}
+                    className="animate-pulse"
+                  />
+                )}
+
                 {/* Node Content Box */}
                 <rect
                   x="0"
@@ -341,18 +386,22 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                   height={NODE_HEIGHT}
                   rx="4"
                   fill={
-                    isCurrent
+                    ending
                       ? "var(--theme-surface-highlight)"
-                      : "var(--theme-surface)"
+                      : isCurrent
+                        ? "var(--theme-surface-highlight)"
+                        : "var(--theme-surface)"
                   }
                   stroke={
-                    isCurrent
-                      ? "var(--theme-primary)"
-                      : isActivePath
-                        ? "var(--theme-border)"
-                        : "var(--theme-border)"
+                    endingColor
+                      ? endingColor
+                      : isCurrent
+                        ? "var(--theme-primary)"
+                        : isActivePath
+                          ? "var(--theme-border)"
+                          : "var(--theme-border)"
                   }
-                  strokeWidth={isCurrent ? 2 : 1}
+                  strokeWidth={ending ? 2 : isCurrent ? 2 : 1}
                   className="shadow-sm"
                 />
 
@@ -375,11 +424,25 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                   height={NODE_HEIGHT - 16}
                 >
                   <div className="flex flex-col h-full justify-center pointer-events-none">
-                    <span
-                      className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isCurrent ? "text-theme-primary" : "text-theme-muted"}`}
-                    >
-                      {isModel ? t("narrator") : t("you")}
-                    </span>
+                    <div className="flex items-center gap-1 mb-1">
+                      <span
+                        className={`text-[9px] font-bold uppercase tracking-wider ${
+                          endingColor ? "" : isCurrent ? "text-theme-primary" : "text-theme-muted"
+                        }`}
+                        style={endingColor ? { color: endingColor } : undefined}
+                      >
+                        {ending
+                          ? (ending === "death" ? t("gameOver") || "GAME OVER"
+                             : ending === "victory" ? t("victory") || "VICTORY"
+                             : ending === "true_ending" ? t("trueEnding") || "TRUE ENDING"
+                             : ending === "bad_ending" ? t("badEnding") || "BAD END"
+                             : t("ending") || "ENDING")
+                          : (isModel ? t("narrator") : t("you"))}
+                      </span>
+                      {endingIcon && (
+                        <span className="text-xs">{endingIcon}</span>
+                      )}
+                    </div>
                     <p className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80">
                       {node.segment.text}
                     </p>

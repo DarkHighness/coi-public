@@ -1,6 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { getAudioTrack } from "../utils/audioLoader";
 
+/**
+ * useAmbience - Manages background ambient audio with proper lifecycle handling
+ *
+ * FIXES:
+ * 1. Prevents multiple audio tracks from playing simultaneously
+ * 2. Properly handles mute/unmute without restarting track
+ * 3. Smooth fade transitions between environments
+ * 4. Mobile-friendly with proper cleanup
+ */
 export const useAmbience = (
   environment?: string,
   volume: number = 0.5,
@@ -10,164 +19,167 @@ export const useAmbience = (
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentEnv, setCurrentEnv] = useState<string | undefined>(undefined);
   const onPlayRef = useRef(onPlay);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Track latest values to handle async race conditions
-  const latestEnvRef = useRef(environment);
-  const latestMutedRef = useRef(muted);
-
+  // Keep callback ref updated
   useEffect(() => {
     onPlayRef.current = onPlay;
   }, [onPlay]);
 
-  useEffect(() => {
-    latestEnvRef.current = environment;
-  }, [environment]);
-
-  useEffect(() => {
-    latestMutedRef.current = muted;
-  }, [muted]);
-
-  // Update volume/mute for active track
-  useEffect(() => {
-    if (audioRef.current) {
-      if (muted) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.volume = volume;
-        // Only resume if it was supposed to be playing (i.e., we have an active environment)
-        // AND if the current environment matches what we expect
-        if (
-          currentEnv &&
-          audioRef.current.paused &&
-          currentEnv === latestEnvRef.current
-        ) {
-          audioRef.current.play().catch((e) => {
-            console.warn("Resume failed:", e);
-          });
-        }
-      }
+  // Cleanup fade interval helper
+  const clearFadeInterval = useCallback(() => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
-  }, [volume, muted, currentEnv]);
+  }, []);
 
-  useEffect(() => {
-    let isCancelled = false;
+  // Fade out and stop helper
+  const fadeOutAndStop = useCallback((audio: HTMLAudioElement, callback?: () => void) => {
+    clearFadeInterval();
 
-    // If environment is undefined or "Unknown", fade out current track and stop
-    if (!environment || environment === "Unknown") {
-      if (audioRef.current) {
-        const oldAudio = audioRef.current;
-        // Clear ref immediately to prevent race conditions
-        audioRef.current = null;
-
-        const fadeOutInterval = setInterval(() => {
-          if (oldAudio.volume > 0.05) {
-            oldAudio.volume -= 0.05;
-          } else {
-            oldAudio.volume = 0;
-            oldAudio.pause();
-            clearInterval(fadeOutInterval);
-          }
-        }, 100);
-      }
-
-      // Always reset currentEnv if environment is missing, even if audioRef was null
-      if (currentEnv !== undefined) {
-        setCurrentEnv(undefined);
-      }
+    if (audio.volume <= 0.01) {
+      audio.pause();
+      audio.currentTime = 0;
+      callback?.();
       return;
     }
 
-    // If it's the same as current, do nothing
+    fadeIntervalRef.current = setInterval(() => {
+      if (audio.volume > 0.05) {
+        audio.volume = Math.max(0, audio.volume - 0.05);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        audio.currentTime = 0;
+        clearFadeInterval();
+        callback?.();
+      }
+    }, 50);
+  }, [clearFadeInterval]);
+
+  // Fade in helper
+  const fadeIn = useCallback((audio: HTMLAudioElement, targetVolume: number) => {
+    clearFadeInterval();
+
+    fadeIntervalRef.current = setInterval(() => {
+      if (!isMountedRef.current) {
+        clearFadeInterval();
+        return;
+      }
+      if (audio.volume < targetVolume - 0.05) {
+        audio.volume = Math.min(targetVolume, audio.volume + 0.05);
+      } else {
+        audio.volume = targetVolume;
+        clearFadeInterval();
+      }
+    }, 50);
+  }, [clearFadeInterval]);
+
+  // Handle volume changes (without restarting)
+  useEffect(() => {
+    if (audioRef.current && !muted && currentEnv) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume, currentEnv, muted]);
+
+  // Handle mute/unmute
+  useEffect(() => {
+    if (!audioRef.current || !currentEnv) return;
+
+    if (muted) {
+      // Fade out when muted
+      clearFadeInterval();
+      fadeIntervalRef.current = setInterval(() => {
+        if (audioRef.current && audioRef.current.volume > 0.05) {
+          audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.1);
+        } else if (audioRef.current) {
+          audioRef.current.volume = 0;
+          audioRef.current.pause();
+          clearFadeInterval();
+        }
+      }, 50);
+    } else {
+      // Resume and fade in when unmuted
+      if (audioRef.current.paused) {
+        audioRef.current.volume = 0;
+        audioRef.current.play().catch(e => console.warn("Resume failed:", e));
+      }
+      fadeIn(audioRef.current, volume);
+    }
+  }, [muted, currentEnv, volume, fadeIn, clearFadeInterval]);
+
+  // Handle environment changes
+  useEffect(() => {
+    // Clean environment or "Unknown" means stop
+    if (!environment || environment === "Unknown") {
+      if (audioRef.current) {
+        fadeOutAndStop(audioRef.current, () => {
+          audioRef.current = null;
+        });
+      }
+      setCurrentEnv(undefined);
+      return;
+    }
+
+    // Same environment, do nothing
     if (environment === currentEnv) return;
 
     const playNewTrack = async () => {
-      try {
-        // 1. Get cached audio element
-        const newAudio = getAudioTrack(environment);
-        if (!newAudio) return; // Should not happen with fallback
+      // Get the new audio element
+      const newAudio = getAudioTrack(environment);
+      if (!newAudio || !isMountedRef.current) return;
 
-        // Reset volume just in case
-        newAudio.volume = 0;
+      // Prepare new audio
+      newAudio.volume = 0;
+      newAudio.currentTime = 0;
 
-        // 2. Start playing ONLY if not muted AND not cancelled
-        // We check latestMutedRef because 'muted' prop might have changed while we were setting up
-        if (!latestMutedRef.current && !isCancelled) {
-          try {
-            await newAudio.play();
-          } catch (e) {
-            console.warn("Audio autoplay blocked or failed:", e);
+      // Fade out old track first if exists
+      if (audioRef.current && audioRef.current !== newAudio) {
+        const oldAudio = audioRef.current;
+        fadeOutAndStop(oldAudio);
+      }
+
+      // Set new audio as current
+      audioRef.current = newAudio;
+
+      // Start playing if not muted
+      if (!muted) {
+        try {
+          await newAudio.play();
+          if (isMountedRef.current) {
+            fadeIn(newAudio, volume);
           }
+        } catch (e) {
+          console.warn("Audio autoplay blocked:", e);
         }
+      }
 
-        if (isCancelled) {
-          newAudio.pause();
-          return;
-        }
-
-        // 3. Fade out old track if it exists
-        if (audioRef.current) {
-          const oldAudio = audioRef.current;
-          const fadeOutInterval = setInterval(() => {
-            if (oldAudio.volume > 0.05) {
-              oldAudio.volume -= 0.05;
-            } else {
-              oldAudio.volume = 0;
-              oldAudio.pause();
-              clearInterval(fadeOutInterval);
-            }
-          }, 100);
-        }
-
-        // 4. Fade in new track (only if not muted)
-        if (!latestMutedRef.current && !isCancelled) {
-          const targetVolume = volume;
-          const fadeInInterval = setInterval(() => {
-            if (isCancelled) {
-              clearInterval(fadeInInterval);
-              return;
-            }
-            if (newAudio.volume < targetVolume - 0.05) {
-              newAudio.volume += 0.05;
-            } else {
-              newAudio.volume = targetVolume;
-              clearInterval(fadeInInterval);
-            }
-          }, 100);
-        }
-
-        // 5. Update ref and state
-        if (!isCancelled) {
-          audioRef.current = newAudio;
-          setCurrentEnv(environment);
-          if (onPlayRef.current) {
-            onPlayRef.current(environment);
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to play ambience for ${environment}:`, error);
+      // Update state and notify
+      if (isMountedRef.current) {
+        setCurrentEnv(environment);
+        onPlayRef.current?.(environment);
       }
     };
 
     playNewTrack();
+  }, [environment, currentEnv, muted, volume, fadeOutAndStop, fadeIn]);
 
-    // Cleanup on unmount or dependency change
-    return () => {
-      isCancelled = true;
-      // Note: We don't stop audioRef.current here immediately because we want the fade-out logic
-      // in the NEXT effect run to handle it (or the fade-out block above).
-      // However, if we are unmounting completely, we should stop it.
-      // But this cleanup runs on every dependency change (env change).
-      // The "fade out old track" logic in the next run handles the transition.
-    };
-  }, [environment, currentEnv]); // Removed volume/muted from dependency to avoid restarting track on volume change
-
-  // Cleanup on full unmount
+  // Cleanup on unmount
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
+      isMountedRef.current = false;
+      clearFadeInterval();
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.volume = 0;
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [clearFadeInterval]);
+
+  return { currentEnv };
 };

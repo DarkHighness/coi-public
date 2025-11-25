@@ -14,6 +14,7 @@ import { StoryTimeline } from "../StoryTimeline";
 
 interface DesktopGameLayoutProps {
   gameState: GameState;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   currentHistory: StorySegment[];
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
@@ -42,10 +43,13 @@ interface DesktopGameLayoutProps {
   onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;
   onVeoScript: () => void;
+  onShowToast?: (message: string, type: "success" | "error" | "info") => void;
+  onOpenStateEditor?: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   gameState,
+  setGameState,
   currentHistory,
   language,
   setLanguage,
@@ -71,6 +75,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onViewedSegmentChange,
   onAudioGenerated,
   onVeoScript,
+  onShowToast,
+  onOpenStateEditor,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -156,6 +162,9 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               currentHistory={currentHistory}
               isTranslating={isTranslating}
               onAction={onAction}
+              setGameState={setGameState}
+              onShowToast={onShowToast}
+              onOpenStateEditor={onOpenStateEditor}
             />
           </div>
         </div>

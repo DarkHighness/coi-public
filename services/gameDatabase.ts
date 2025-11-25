@@ -55,29 +55,36 @@ export class GameDatabase {
     return this.state;
   }
 
-  // --- Pending Consequences Check ---
+  // --- Pending Consequences Query ---
 
   /**
-   * Check all causal chains for pending consequences that should trigger this turn.
-   * Returns a list of consequences that have triggered (either successfully or failed probability).
+   * Get all pending consequences that are READY to potentially trigger.
+   * Returns consequences where readyAfterTurn < currentTurn and not yet triggered.
+   *
+   * NOTE: This does NOT auto-trigger anything. It provides context for AI to decide.
+   * The AI calls update_causal_chain with action='trigger' when it decides a consequence should happen.
    */
-  public checkPendingConsequences(): Array<{
+  public getReadyConsequences(): Array<{
     chainId: string;
+    chainDescription: string;
     consequence: {
       id: string;
       description: string;
-      triggered: boolean;
-      reason: "delay_reached" | "probability_check" | "conditions_not_met";
+      conditions?: string[];
+      readyAfterTurn: number;
+      known?: boolean;
     };
   }> {
     const currentTurn = this.state.turnNumber || 0;
     const results: Array<{
       chainId: string;
+      chainDescription: string;
       consequence: {
         id: string;
         description: string;
-        triggered: boolean;
-        reason: "delay_reached" | "probability_check" | "conditions_not_met";
+        conditions?: string[];
+        readyAfterTurn: number;
+        known?: boolean;
       };
     }> = [];
 
@@ -88,46 +95,75 @@ export class GameDatabase {
         // Skip already triggered consequences
         if (conseq.triggered) continue;
 
-        // Check if delay has been reached
-        const createdAt = conseq.createdAtTurn ?? 0;
-        const turnsElapsed = currentTurn - createdAt;
+        // Check if ready (current turn is AFTER readyAfterTurn)
+        if (currentTurn <= conseq.readyAfterTurn) continue;
 
-        if (turnsElapsed < conseq.delayTurns) continue;
-
-        // Delay reached - now check probability
-        const roll = Math.random();
-        if (roll > conseq.probability) {
-          // Failed probability check - mark as triggered but note it didn't happen
-          conseq.triggered = true;
-          conseq.triggeredAtTurn = currentTurn;
-          results.push({
-            chainId: chain.chainId,
-            consequence: {
-              id: conseq.id,
-              description: conseq.description,
-              triggered: false,
-              reason: "probability_check",
-            },
-          });
-          continue;
-        }
-
-        // Probability passed - consequence triggers!
-        conseq.triggered = true;
-        conseq.triggeredAtTurn = currentTurn;
+        // This consequence is READY for AI to potentially trigger
         results.push({
           chainId: chain.chainId,
+          chainDescription: chain.rootCause.description,
           consequence: {
             id: conseq.id,
             description: conseq.description,
-            triggered: true,
-            reason: "delay_reached",
+            conditions: conseq.conditions,
+            readyAfterTurn: conseq.readyAfterTurn,
+            known: conseq.known,
           },
         });
       }
     }
 
     return results;
+  }
+
+  /**
+   * Trigger a specific consequence (called by AI via update_causal_chain action='trigger')
+   */
+  public triggerConsequence(chainId: string, consequenceId: string): ToolCallResult<{ triggered: boolean; description: string }> {
+    const chain = this.state.causalChains.find(c => c.chainId === chainId);
+    if (!chain) {
+      return createError(`Chain ${chainId} not found`, "NOT_FOUND");
+    }
+
+    const conseq = chain.pendingConsequences?.find(c => c.id === consequenceId);
+    if (!conseq) {
+      return createError(`Consequence ${consequenceId} not found in chain ${chainId}`, "NOT_FOUND");
+    }
+
+    if (conseq.triggered) {
+      return createError(`Consequence ${consequenceId} already triggered`, "ALREADY_EXISTS");
+    }
+
+    // Mark as triggered
+    conseq.triggered = true;
+    conseq.triggeredAtTurn = this.state.turnNumber || 0;
+
+    return createSuccess(
+      { triggered: true, description: conseq.description },
+      `Triggered consequence: ${conseq.description}`
+    );
+  }
+
+  // Legacy method for backwards compatibility - now just returns ready consequences for context
+  public checkPendingConsequences(): Array<{
+    chainId: string;
+    consequence: {
+      id: string;
+      description: string;
+      triggered: boolean;
+      reason: string;
+    };
+  }> {
+    // Return ready consequences as context (not auto-triggered)
+    return this.getReadyConsequences().map(rc => ({
+      chainId: rc.chainId,
+      consequence: {
+        id: rc.consequence.id,
+        description: rc.consequence.description,
+        triggered: false, // Not triggered yet - AI will decide
+        reason: "ready_for_ai_decision",
+      },
+    }));
   }
 
   // --- ID Generation ---
@@ -322,6 +358,8 @@ export class GameDatabase {
           return this.modifyKnowledge(action, data as any);
         case "faction":
           return this.modifyFaction(action, data as any);
+        case "world_info":
+          return this.modifyWorldInfo(data as any);
         case "character":
           return this.modifyCharacter(data as any);
         case "timeline":
@@ -823,12 +861,49 @@ export class GameDatabase {
       if (data.name && data.name !== identifier) f.name = data.name;
       if (data.visible) f.visible = data.visible;
       if (data.hidden) f.hidden = data.hidden;
+      if (data.unlocked !== undefined) f.unlocked = data.unlocked;
       f.highlight = true;
 
       return createSuccess(f, `Updated faction: ${f.name}`);
     }
 
     return createError(`Invalid action: ${action}`, "INVALID_ACTION");
+  }
+
+  private modifyWorldInfo(
+    data: {
+      unlockWorldSetting?: boolean;
+      unlockMainGoal?: boolean;
+      reason: string;
+    },
+  ): ToolCallResult<{ updated: string[] }> {
+    const updated: string[] = [];
+
+    if (!this.state.outline) {
+      return createError("No story outline exists", "NOT_FOUND");
+    }
+
+    if (data.unlockWorldSetting) {
+      // Mark worldSetting as unlocked by adding an unlocked flag
+      if (!this.state.outline.worldSettingUnlocked) {
+        (this.state.outline as any).worldSettingUnlocked = true;
+        updated.push("worldSetting");
+      }
+    }
+
+    if (data.unlockMainGoal) {
+      // Mark mainGoal as unlocked
+      if (!this.state.outline.mainGoalUnlocked) {
+        (this.state.outline as any).mainGoalUnlocked = true;
+        updated.push("mainGoal");
+      }
+    }
+
+    if (updated.length === 0) {
+      return createSuccess({ updated: [] }, "No changes made");
+    }
+
+    return createSuccess({ updated }, `World info unlocked: ${updated.join(", ")} (${data.reason})`);
   }
 
   private modifyCharacter(
@@ -1080,8 +1155,8 @@ export class GameDatabase {
 
   private modifyCausalChain(
     action: string,
-    data: Partial<CausalChain>,
-  ): ToolCallResult<CausalChain> {
+    data: Partial<CausalChain> & { triggerConsequenceId?: string },
+  ): ToolCallResult<CausalChain | { triggered: boolean; description: string }> {
     if (action === "add") {
       if (!data.chainId) {
         return createError("Chain ID is required for 'add' action", "INVALID_DATA");
@@ -1096,10 +1171,11 @@ export class GameDatabase {
       }
 
       // Auto-set createdAtTurn for new pending consequences
+      const currentTurn = this.state.turnNumber || 0;
       const processedConsequences = data.pendingConsequences?.map((c, idx) => ({
         ...c,
         id: c.id || `conseq:${data.chainId}:${idx}`,
-        createdAtTurn: c.createdAtTurn ?? this.state.turnNumber,
+        createdAtTurn: currentTurn,
         triggered: false,
       }));
 
@@ -1112,6 +1188,18 @@ export class GameDatabase {
       };
       this.state.causalChains.push(newChain);
       return createSuccess(newChain, `Added causal chain: ${newChain.chainId}`);
+    }
+
+    // NEW: 'trigger' action - AI decides to trigger a pending consequence
+    if (action === "trigger") {
+      if (!data.chainId) {
+        return createError("Chain ID is required for 'trigger' action", "INVALID_DATA");
+      }
+      if (!data.triggerConsequenceId) {
+        return createError("triggerConsequenceId is required for 'trigger' action", "INVALID_DATA");
+      }
+
+      return this.triggerConsequence(data.chainId, data.triggerConsequenceId);
     }
 
     if (action === "update" || action === "resolve" || action === "interrupt") {
@@ -1130,10 +1218,11 @@ export class GameDatabase {
 
       if (data.pendingConsequences) {
         // Auto-set createdAtTurn for new pending consequences
+        const currentTurn = this.state.turnNumber || 0;
         chain.pendingConsequences = data.pendingConsequences.map((c, idx) => ({
           ...c,
           id: c.id || `conseq:${chain.chainId}:${idx}`,
-          createdAtTurn: c.createdAtTurn ?? this.state.turnNumber,
+          createdAtTurn: c.createdAtTurn ?? currentTurn,
           triggered: c.triggered ?? false,
         }));
       }
@@ -1146,22 +1235,31 @@ export class GameDatabase {
 
   private modifyGlobal(
     data: { time?: string; envTheme?: string; environment?: string },
-  ): ToolCallResult<{ updated: string[] }> {
+  ): ToolCallResult<{ updated: string[]; values: Record<string, string> }> {
     const updated: string[] = [];
+    const values: Record<string, string> = {};
 
     if (data.time) {
       this.state.time = data.time;
       updated.push("time");
+      values.time = data.time;
     }
     if (data.envTheme) {
       this.state.envTheme = data.envTheme;
       updated.push("envTheme");
+      values.envTheme = data.envTheme;
+    }
+    if (data.environment) {
+      // Store environment in state for reference
+      (this.state as any).environment = data.environment;
+      updated.push("environment");
+      values.environment = data.environment;
     }
 
     if (updated.length === 0) {
       return createError("No valid global updates provided", "INVALID_DATA");
     }
 
-    return createSuccess({ updated }, `Global state updated: ${updated.join(", ")}`);
+    return createSuccess({ updated, values }, `Global state updated: ${updated.join(", ")}`);
   }
 }

@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 interface MobileGameLayoutProps {
   gameState: GameState;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   currentHistory: StorySegment[];
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
@@ -47,10 +48,13 @@ interface MobileGameLayoutProps {
   onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;
   onVeoScript: () => void;
+  onShowToast?: (message: string, type: "success" | "error" | "info") => void;
+  onOpenStateEditor?: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   gameState,
+  setGameState,
   currentHistory,
   language,
   setLanguage,
@@ -78,6 +82,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onViewedSegmentChange,
   onAudioGenerated,
   onVeoScript,
+  onShowToast,
+  onOpenStateEditor,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -117,6 +123,9 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             currentHistory={currentHistory}
             isTranslating={isTranslating}
             onAction={onAction}
+            setGameState={setGameState}
+            onShowToast={onShowToast}
+            onOpenStateEditor={onOpenStateEditor}
           />
         </div>
       </div>

@@ -178,6 +178,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             factions={gameState.factions}
             worldSetting={gameState.outline?.worldSetting}
             themeFont={currentThemeConfig.fontClass}
+            outline={gameState.outline}
+            unlockMode={gameState.unlockMode}
           />
         </div>
       </div>

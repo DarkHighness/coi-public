@@ -60,6 +60,7 @@ import {
   getSummaryPrompt,
   getCurrentStateContext,
   getVeoScriptPrompt,
+  getGodModePrompt,
 } from "./prompts";
 import { convertJsonSchemaToOpenAI } from "./schemaUtils";
 import { TOOLS } from "./tools";
@@ -134,6 +135,8 @@ const getProviderConfig = (
 
 // --- Helpers ---
 
+import type { ToolCallRecord } from "../types";
+
 const createLogEntry = (
   provider: string,
   model: string,
@@ -141,16 +144,27 @@ const createLogEntry = (
   req: Record<string, unknown>,
   res: Record<string, unknown>,
   usage?: TokenUsage,
-): LogEntry => ({
-  id: Date.now().toString() + Math.random().toString(36).substring(7),
-  timestamp: Date.now(),
-  provider,
-  model,
-  endpoint,
-  request: req,
-  response: res,
-  usage,
-});
+  toolCalls?: ToolCallRecord[],
+): LogEntry => {
+  const entry: LogEntry = {
+    id: Date.now().toString() + Math.random().toString(36).substring(7),
+    timestamp: Date.now(),
+    provider,
+    model,
+    endpoint,
+    request: req,
+    response: res,
+    usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    toolCalls,
+  };
+  console.log(`[Log] ${provider}/${model} - ${endpoint}`, {
+    usage: entry.usage,
+    hasRequest: !!req,
+    hasResponse: !!res,
+    toolCallCount: toolCalls?.length || 0,
+  });
+  return entry;
+};
 
 const getLangCode = (language: string): "en" | "zh" => {
   if (
@@ -511,6 +525,7 @@ const buildSystemContext = (
   example: string | undefined,
   isRestricted: boolean,
   outline: StoryOutline | null,
+  godMode?: boolean,
 ) => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
@@ -518,7 +533,11 @@ const buildSystemContext = (
     isRestricted,
   );
   const staticWorldContext = getStaticWorldContext(outline);
-  return `${coreSystemInstruction}\n\n${staticWorldContext}`;
+
+  // Add God Mode prompt if active
+  const godModeSection = godMode ? getGodModePrompt() : "";
+
+  return `${coreSystemInstruction}\n\n${staticWorldContext}${godModeSection}`;
 };
 
 /**
@@ -526,9 +545,9 @@ const buildSystemContext = (
  *
  * Message Order (Static → Semi-Static → Dynamic):
  * 1. [STATIC] Story Memory (summaries) - changes infrequently
- * 2. [SEMI-STATIC] Current State Hints - changes each turn but is small
- * 3. [DYNAMIC] Recent History - conversation history
- * 4. [DYNAMIC] Current User Action
+ * 2. [DYNAMIC] Recent History - conversation context
+ * 3. [SEMI-STATIC] Current State Hints - changes each turn but is small
+ * 4. [DYNAMIC] Current User Action (MUST immediately follow "Awaiting player action")
  */
 const buildTurnContents = (
   summaries: StorySummary[],
@@ -550,14 +569,30 @@ const buildTurnContents = (
     messages.push(createUserMessage(
       `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicStoryContext}\n</story_memory>`
     ));
-    // Acknowledge to maintain turn structure
     messages.push({
       role: "assistant",
-      content: [{ type: "text", text: "[Memory acknowledged. Ready for current state.]" }],
+      content: [{ type: "text", text: "[Memory acknowledged.]" }],
     });
   }
 
-  // === Message 2: Current State Hints (SEMI-STATIC - IDs and names) ===
+  // === Message 2: Recent History (DYNAMIC - before current state) ===
+  // This represents the conversation flow LEADING UP TO the current turn
+  if (recentHistory.length > 0) {
+    // Group recent history into a context block
+    const historyText = recentHistory.map(seg =>
+      `[${seg.role.toUpperCase()}]: ${seg.text}`
+    ).join("\n\n");
+
+    messages.push(createUserMessage(
+      `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`
+    ));
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[History acknowledged.]" }],
+    });
+  }
+
+  // === Message 3: Current State Hints (SEMI-STATIC - IDs and names) ===
   messages.push(createUserMessage(
     `[CONTEXT: Current State]\n${currentStateContext}`
   ));
@@ -566,24 +601,10 @@ const buildTurnContents = (
     content: [{ type: "text", text: "[State acknowledged. Awaiting player action.]" }],
   });
 
-  // === Message 3+: Recent History (DYNAMIC - conversation turns) ===
-  if (recentHistory.length > 0) {
-    for (const seg of recentHistory) {
-      messages.push({
-        role: seg.role === "model" ? "assistant" : seg.role as any,
-        content: [{ type: "text", text: seg.text }],
-      });
-    }
-  }
-
   // === Final Message: User Action with Instructions ===
-  const userActionAlreadyInHistory = recentHistory.some(
-    (seg) => seg.role === "user" && seg.text === userAction,
-  );
-
-  if (!userActionAlreadyInHistory) {
-    const turnInstruction = `
-[NEW TURN]
+  // This MUST immediately follow "Awaiting player action"
+  const turnInstruction = `
+[NEW TURN - PLAYER ACTION]
 <instruction>
 Process the player's action below. Follow the workflow:
 1. Query only if needed (hints may suffice)
@@ -595,8 +616,7 @@ Process the player's action below. Follow the workflow:
 ${userAction}
 </player_action>
 `;
-    messages.push(createUserMessage(turnInstruction));
-  }
+  messages.push(createUserMessage(turnInstruction));
 
   return messages;
 };
@@ -616,7 +636,7 @@ export interface TurnContext {
 export const generateAdventureTurn = async (
   gameState: GameState,
   context: TurnContext,
-): Promise<{ response: GameResponse; log: LogEntry; usage: TokenUsage }> => {
+): Promise<{ response: GameResponse; logs: LogEntry[]; usage: TokenUsage }> => {
   const { provider, modelId } = getProviderConfig("story");
   const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
     context.themeKey,
@@ -630,6 +650,7 @@ export const generateAdventureTurn = async (
     example,
     isRestricted,
     gameState.outline,
+    gameState.godMode, // Pass God Mode flag
   );
 
   const contents = buildTurnContents(
@@ -649,11 +670,14 @@ const runAgenticLoop = async (
   systemInstruction: string,
   initialContents: UnifiedMessage[],
   inputState: GameState,
-): Promise<{ response: GameResponse; log: LogEntry; usage: TokenUsage }> => {
+): Promise<{ response: GameResponse; logs: LogEntry[]; usage: TokenUsage }> => {
   // Use unified message format internally
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   let turnCount = 0;
   const maxTurns = 10; // Safety limit
+
+  // Collect all logs from this agentic session
+  const allLogs: LogEntry[] = [];
 
   // Use the GameState directly as the database initial state
   const db = new GameDatabase({
@@ -703,23 +727,26 @@ const runAgenticLoop = async (
     parameters: t.parameters,
   }));
 
-  // Check for pending consequences that should trigger this turn
-  const triggeredConsequences = db.checkPendingConsequences();
-  if (triggeredConsequences.length > 0) {
-    const triggeredEvents = triggeredConsequences
-      .filter(tc => tc.consequence.triggered)
-      .map(tc => `- [${tc.chainId}] ${tc.consequence.description}`)
+  // Get pending consequences that are READY for AI to potentially trigger
+  // These are NOT auto-triggered - AI decides based on story context
+  const readyConsequences = db.getReadyConsequences();
+  if (readyConsequences.length > 0) {
+    const readyList = readyConsequences
+      .map(rc => `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${rc.consequence.conditions?.length ? ` (conditions: ${rc.consequence.conditions.join(", ")})` : ""}${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`)
       .join("\n");
 
-    if (triggeredEvents) {
-      // Inject triggered consequences into the conversation as a system notification
-      conversationHistory.push(createUserMessage(
-        `[SYSTEM: CAUSAL CHAIN CONSEQUENCES TRIGGERED THIS TURN]\n` +
-        `The following consequences from past events have now manifested:\n${triggeredEvents}\n` +
-        `You MUST weave these consequences into your narrative response. ` +
-        `They represent the inevitable results of previous actions/events.`
-      ));
-    }
+    // Inject ready consequences as context for AI to consider
+    conversationHistory.push(createUserMessage(
+      `[SYSTEM: PENDING CONSEQUENCES READY FOR YOUR DECISION]\n` +
+      `The following consequences from past events are NOW READY to potentially trigger.\n` +
+      `Review each one and decide IF and WHEN to trigger based on:\n` +
+      `1. Does it fit the current story moment?\n` +
+      `2. Are the conditions met?\n` +
+      `3. Would triggering enhance the narrative?\n\n` +
+      `Ready consequences:\n${readyList}\n\n` +
+      `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
+      `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`
+    ));
   }
 
   while (turnCount < maxTurns) {
@@ -745,30 +772,37 @@ const runAgenticLoop = async (
       result = resultData.result;
       usage = resultData.usage;
       raw = resultData.raw;
+      console.log(`[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`, usage, `HasFunctionCalls: ${!!(result?.functionCalls)}`);
     } catch (e) {
-      console.error("Agentic Loop Error", e);
+      console.error("[Agentic Loop] Error:", e);
       throw e;
     }
 
-    // Update Usage
+    // Update Usage with validation
     if (usage) {
-      totalUsage.promptTokens += usage.promptTokens;
-      totalUsage.completionTokens += usage.completionTokens;
-      totalUsage.totalTokens += usage.totalTokens;
+      totalUsage.promptTokens += usage.promptTokens || 0;
+      totalUsage.completionTokens += usage.completionTokens || 0;
+      totalUsage.totalTokens += usage.totalTokens || 0;
+      console.log(`[Agentic Loop] Cumulative usage:`, totalUsage);
+    } else {
+      console.warn(`[Agentic Loop] No usage data for turn ${turnCount + 1}`);
     }
 
     lastLog = createLogEntry(
       provider,
       modelId,
-      "agentic_turn",
-      { systemInstruction, conversationHistory },
-      raw,
+      `agentic_turn_${turnCount + 1}`,
+      { turn: turnCount + 1 },
+      { hasToolCalls: !!(result?.functionCalls), toolCount: result?.functionCalls?.length || 0 },
       usage,
     );
 
     // Handle Tool Calls
     if (result && result.functionCalls) {
       const toolCalls: UnifiedToolCallResult[] = result.functionCalls;
+
+      // Collect detailed tool call records for this turn
+      const turnToolCalls: ToolCallRecord[] = [];
 
       // Add model's tool call to history using unified format
       conversationHistory.push(createToolCallMessage(
@@ -811,81 +845,114 @@ const runAgenticLoop = async (
           output = db.query("character");
         }
         // Modify operations
+        // Note: Tool parameters are at top level (not wrapped in 'data')
+        // We extract action separately and pass the rest as data
         else if (name === "update_inventory") {
-          const modifyResult = db.modify("inventory", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("inventory", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.inventoryActions)
               accumulatedResponse.inventoryActions = [];
             accumulatedResponse.inventoryActions.push({
-              action: args.action as string,
-              ...(args.data as any),
-            });
+              action: actionType as "add" | "update" | "remove",
+              ...data,
+            } as any);
           }
           output = modifyResult;
         } else if (name === "update_relationship") {
-          const modifyResult = db.modify("relationship", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("relationship", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.relationshipActions)
               accumulatedResponse.relationshipActions = [];
             accumulatedResponse.relationshipActions.push({
-              action: args.action as string,
-              ...(args.data as any),
-            });
+              action: actionType as "add" | "update" | "remove",
+              ...data,
+            } as any);
           }
           output = modifyResult;
         } else if (name === "update_location") {
-          const modifyResult = db.modify("location", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("location", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.locationActions)
               accumulatedResponse.locationActions = [];
             accumulatedResponse.locationActions.push({
               type: "known",
-              action: args.action as string,
-              ...(args.data as any),
-            });
+              action: actionType as "add" | "update",
+              ...data,
+            } as any);
           }
           output = modifyResult;
         } else if (name === "update_quest") {
-          const modifyResult = db.modify("quest", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("quest", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.questActions)
               accumulatedResponse.questActions = [];
             accumulatedResponse.questActions.push({
-              action: args.action as string,
-              ...(args.data as any),
-            });
+              action: actionType as "add" | "update" | "complete" | "fail",
+              ...data,
+            } as any);
           }
           output = modifyResult;
         } else if (name === "update_knowledge") {
-          const modifyResult = db.modify("knowledge", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("knowledge", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.knowledgeActions)
               accumulatedResponse.knowledgeActions = [];
             accumulatedResponse.knowledgeActions.push({
-              action: args.action as string,
-              ...(args.data as any),
-            });
+              action: actionType as "add" | "update",
+              ...data,
+            } as any);
           }
           output = modifyResult;
         } else if (name === "update_timeline") {
-          const modifyResult = db.modify("timeline", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("timeline", actionType as string, data);
           output = modifyResult;
         } else if (name === "update_causal_chain") {
-          const modifyResult = db.modify("causal_chain", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("causal_chain", actionType as string, data);
           output = modifyResult;
         } else if (name === "update_faction") {
-          const modifyResult = db.modify("faction", args.action as string, args.data as any);
+          const { action: actionType, ...data } = args;
+          const modifyResult = db.modify("faction", actionType as string, data);
           if (modifyResult.success) {
             if (!accumulatedResponse.factionActions)
               accumulatedResponse.factionActions = [];
             accumulatedResponse.factionActions.push({
-              action: args.action as string,
-              ...(args.data as any),
+              action: actionType as "update",
+              ...data,
+            } as any);
+          }
+          output = modifyResult;
+        } else if (name === "update_world_info") {
+          // Handle world info unlocking
+          const { unlockWorldSetting, unlockMainGoal, reason } = args as {
+            unlockWorldSetting?: boolean;
+            unlockMainGoal?: boolean;
+            reason: string;
+          };
+          const modifyResult = db.modify("world_info", "update", {
+            unlockWorldSetting,
+            unlockMainGoal,
+            reason,
+          });
+          if (modifyResult.success) {
+            if (!accumulatedResponse.worldInfoUpdates)
+              accumulatedResponse.worldInfoUpdates = [];
+            accumulatedResponse.worldInfoUpdates.push({
+              unlockWorldSetting,
+              unlockMainGoal,
+              reason,
             });
           }
           output = modifyResult;
         } else if (name === "update_global") {
-          const modifyResult = db.modify("global", "update", args.data as any);
+          const { ...data } = args;
+          const modifyResult = db.modify("global", "update", data);
           output = modifyResult;
         } else if (name === "update_character") {
           const modifyResult = db.modify("character", "update", args);
@@ -900,20 +967,77 @@ const runAgenticLoop = async (
           accumulatedResponse.imagePrompt = args.imagePrompt as string;
           accumulatedResponse.generateImage = args.generateImage as boolean;
 
+          // Extract environment and narrative tone
+          if (args.environment) {
+            accumulatedResponse.environment = args.environment as string;
+          }
+          if (args.narrativeTone) {
+            accumulatedResponse.narrativeTone = args.narrativeTone as string;
+          }
+
           // Extract alive entities for next turn context
           if (args.aliveEntities) {
             accumulatedResponse.aliveEntities = args.aliveEntities as any;
           }
 
+          // Extract ending type if story has concluded
+          if (args.ending) {
+            accumulatedResponse.ending = args.ending as any;
+          }
+
+          // Extract forceEnd flag
+          if (args.forceEnd !== undefined) {
+            accumulatedResponse.forceEnd = args.forceEnd as boolean;
+          }
+
           // Attach the FINAL STATE from the DB
           (accumulatedResponse as any).finalState = db.getState();
 
+          console.log(`[Agentic Loop] finish_turn called. Final usage:`, totalUsage);
+          console.log(`[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`);
+
+          // Record finish_turn as a tool call
+          turnToolCalls.push({
+            name: "finish_turn",
+            input: { narrative: (args.narrative as string)?.substring(0, 100) + "...", choices: args.choices, environment: args.environment },
+            output: { success: true },
+            timestamp: Date.now(),
+          });
+
+          // Update lastLog with all tool calls from this turn
+          lastLog.toolCalls = turnToolCalls;
+          allLogs.push(lastLog);
+
+          // Create final summary log
+          const finalLog = createLogEntry(
+            provider,
+            modelId,
+            "agentic_complete",
+            { turns: turnCount + 1 },
+            {
+              totalToolCalls: allLogs.reduce((sum, log) => sum + (log.toolCalls?.length || 0), 0),
+              narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
+              choices: accumulatedResponse.choices,
+              environment: accumulatedResponse.environment,
+            },
+            totalUsage,
+          );
+          allLogs.push(finalLog);
+
           return {
             response: accumulatedResponse,
-            log: lastLog,
+            logs: allLogs,
             usage: totalUsage,
           };
         }
+
+        // Record this tool call with input/output
+        turnToolCalls.push({
+          name,
+          input: args,
+          output,
+          timestamp: Date.now(),
+        });
 
         // Collect tool response for this call
         toolResponses.push({
@@ -923,6 +1047,10 @@ const runAgenticLoop = async (
         });
       }
 
+      // Update the log entry with detailed tool calls
+      lastLog.toolCalls = turnToolCalls;
+      allLogs.push(lastLog);
+
       // Add all tool responses as a single message with multiple parts
       // This ensures proper correspondence between tool calls and responses
       conversationHistory.push(createToolResponseMessage(toolResponses));
@@ -931,10 +1059,12 @@ const runAgenticLoop = async (
     } else {
       // Fallback for text-only response
       if (result && result.narrative) {
-        return { response: result, log: lastLog, usage: totalUsage };
+        allLogs.push(lastLog);
+        return { response: result, logs: allLogs, usage: totalUsage };
       }
 
       console.warn("Model returned text instead of tool call:", result);
+      allLogs.push(lastLog);
       return {
         response: {
           ...accumulatedResponse,
@@ -942,13 +1072,13 @@ const runAgenticLoop = async (
             typeof result === "string" ? result : JSON.stringify(result),
           choices: ["Continue"],
         },
-        log: lastLog,
+        logs: allLogs,
         usage: totalUsage,
       };
     }
   }
 
-  return { response: accumulatedResponse, log: lastLog, usage: totalUsage };
+  return { response: accumulatedResponse, logs: allLogs, usage: totalUsage };
 };
 
 // ... (Rest of the file)

@@ -31,7 +31,7 @@ export const locationProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when player has discovered the location's hidden secrets through thorough exploration or revelation.",
+      "AI DECISION: Set true when story context reveals location's secrets (exploration, NPC info, discovery). Default false.",
   },
 };
 
@@ -64,7 +64,7 @@ export const questProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when the quest's true objectives and secret outcome are revealed to the player.",
+      "AI DECISION: Set true when quest's hidden purpose is revealed (clues, betrayal, completion). Default false.",
   },
 };
 
@@ -165,7 +165,7 @@ export const relationshipProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "SPECIAL: Set to true ONLY when player uses mind-reading magic, telepathy, or advanced technology to reveal NPC's true personality and motives. NOT through normal story progression.",
+      "AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, or psychic tech. NOT normal friendship/conversation. Default false.",
   },
 };
 
@@ -205,7 +205,7 @@ export const skillProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when player has deeply understood this skill's true nature through mastery, observation, or revelation.",
+      "AI DECISION: Set true when skill's hidden nature is understood (mastery, teaching, revelation). Default false.",
   },
 };
 
@@ -245,7 +245,7 @@ export const conditionProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when the true cause and cure are revealed (diagnosis from healer, scientific analysis, or player revelation).",
+      "AI DECISION: Set true when true cause/cure revealed (diagnosis, analysis, discovery). Default false.",
   },
 };
 
@@ -295,7 +295,7 @@ export const timelineEventProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when player has investigated and uncovered the event's true cause and consequences.",
+      "AI DECISION: Set true when event's true cause/consequences uncovered (investigation, witnessing). Default false.",
   },
   known: {
     type: "boolean",
@@ -351,7 +351,7 @@ export const knowledgeProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when player has discovered the full truth through research, investigation, or authoritative revelation.",
+      "AI DECISION: Set true when full truth discovered (research, authoritative source). Default false.",
   },
 };
 
@@ -377,7 +377,7 @@ export const inventoryItemProperties: Record<string, JsonSchema> = {
   unlocked: {
     type: "boolean",
     description:
-      "Set to true when player has discovered the item's hidden truth through close examination, analysis, or witnessing its true power.",
+      "AI DECISION: Set true when hidden truth discovered (examination, analysis, witnessing power). Default false.",
   },
 };
 

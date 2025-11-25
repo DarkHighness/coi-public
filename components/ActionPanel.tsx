@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, StorySegment } from "../types";
+import {
+  parseCommand,
+  executeCommandAction,
+  CommandResult,
+  CommandContext,
+  CommandAction,
+} from "../utils/commands";
 
 interface ActionPanelProps {
   gameState: GameState;
   currentHistory: StorySegment[];
   isTranslating: boolean;
   onAction: (action: string) => void;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  onShowToast?: (message: string, type: "success" | "error" | "info") => void;
+  onOpenStateEditor?: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -14,9 +24,16 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   currentHistory,
   isTranslating,
   onAction,
+  setGameState,
+  onShowToast,
+  onOpenStateEditor,
 }) => {
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
+  const [pendingCommand, setPendingCommand] = useState<{
+    message: string;
+    action: CommandAction;
+  } | null>(null);
   const { t } = useTranslation();
 
   const lastSegment = currentHistory
@@ -24,6 +41,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     .slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
   const isDisabled = gameState.isProcessing || isTranslating;
+
+  // Command context for command parsing
+  const commandContext: CommandContext = {
+    gameState,
+    setGameState,
+    t,
+  };
 
   // Helper to handle potential malformed choice objects (fixing React Error #31)
   const getChoiceLabel = (choice: any): string => {
@@ -60,10 +84,77 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customInput.trim()) {
-      onAction(customInput);
+    if (!customInput.trim()) return;
+
+    // Check for commands first
+    const commandResult = parseCommand(customInput, commandContext);
+    if (commandResult.handled) {
       setCustomInput("");
+
+      // If command needs confirmation, show confirmation dialog
+      if (commandResult.action && commandResult.message) {
+        setPendingCommand({
+          message: commandResult.message,
+          action: commandResult.action,
+        });
+        return;
+      }
+
+      // If command just shows a message (like /help), show it via toast
+      if (commandResult.message) {
+        onShowToast?.(commandResult.message, "info");
+        return;
+      }
+
+      // If command opens editor, trigger it
+      if (commandResult.action?.type === "open_editor") {
+        onOpenStateEditor?.();
+        return;
+      }
+
+      // If command doesn't prevent action, continue with normal flow
+      if (!commandResult.preventAction) {
+        onAction(customInput);
+      }
+      return;
     }
+
+    // Normal action
+    onAction(customInput);
+    setCustomInput("");
+  };
+
+  const handleConfirmCommand = () => {
+    if (!pendingCommand) return;
+
+    const { action } = pendingCommand;
+
+    // Handle editor separately since it doesn't modify state
+    if (action.type === "open_editor") {
+      onOpenStateEditor?.();
+    } else {
+      executeCommandAction(action, gameState, setGameState);
+
+      // Show success message
+      const successMessage =
+        action.type === "god_mode"
+          ? action.enable
+            ? t("commands.godMode.enabled") || "🔱 GOD MODE ENABLED"
+            : t("commands.godMode.disabled") || "God Mode disabled"
+          : action.type === "unlock_all"
+          ? t("commands.unlock.success") || "🔓 All hidden information unlocked!"
+          : "";
+
+      if (successMessage) {
+        onShowToast?.(successMessage, "success");
+      }
+    }
+
+    setPendingCommand(null);
+  };
+
+  const handleCancelCommand = () => {
+    setPendingCommand(null);
   };
 
   const calculateRoll = () => {
@@ -90,8 +181,44 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   return (
     <div className="flex-none w-full z-30">
+      {/* God Mode Indicator */}
+      {gameState.godMode && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-pulse">
+          <div className="px-4 py-1.5 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-yellow-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+            <span className="text-lg">🔱</span>
+            <span>{t("commands.godMode.indicator") || "GOD MODE"}</span>
+            <span className="text-lg">🔱</span>
+          </div>
+        </div>
+      )}
+
+      {/* Command Confirmation Modal */}
+      {pendingCommand && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
+            <div className="text-theme-text whitespace-pre-wrap text-sm mb-6">
+              {pendingCommand.message}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelCommand}
+                className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+              >
+                {t("cancel") || "Cancel"}
+              </button>
+              <button
+                onClick={handleConfirmCommand}
+                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors"
+              >
+                {t("confirm") || "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gradient fade to blend with content */}
-      <div className="h-8 bg-gradient-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
+      <div className="h-8 bg-linear-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
       <div className="bg-theme-bg/80 backdrop-blur-md p-4 pb-6 md:px-8">
         <div className="max-w-4xl mx-auto space-y-4">
@@ -237,7 +364,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 placeholder={t("placeholder")}
                 disabled={isDisabled}
                 rows={1}
-                className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-[44px] max-h-[120px] self-center"
+                className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-11 max-h-[120px] self-center"
                 style={{ height: "auto" }}
               />
 

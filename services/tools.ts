@@ -510,14 +510,19 @@ export const UPDATE_TIMELINE_TOOL = {
 
 export const UPDATE_CAUSAL_CHAIN_TOOL = {
   name: "update_causal_chain",
-  description: "Create, update, or resolve causal chains to track long-term consequences.",
+  description: `Create, update, resolve, or trigger causal chains.
+IMPORTANT: The AI (you) decides WHEN consequences occur based on story context.
+- Use 'add' to create a new chain with potential future consequences
+- Use 'trigger' to make a pending consequence happen NOW (narrate it in your response)
+- Use 'resolve' when a chain's story arc is complete
+- Use 'interrupt' when circumstances prevent the chain from continuing`,
   parameters: {
     type: "object",
     properties: {
       action: {
         type: "string",
-        enum: ["add", "update", "resolve", "interrupt"],
-        description: "The action to perform.",
+        enum: ["add", "update", "resolve", "interrupt", "trigger"],
+        description: "The action. Use 'trigger' when YOU decide a pending consequence should happen NOW.",
       },
       chainId: {
         type: "string",
@@ -542,13 +547,18 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = {
           type: "object",
           properties: {
             id: { type: "string", description: "Unique ID for tracking (e.g., 'conseq:1')." },
-            description: { type: "string" },
-            delayTurns: { type: "integer", description: "Number of turns until this consequence may trigger." },
-            probability: { type: "number", description: "Probability (0-1) of triggering when delay is reached." },
-            conditions: { type: "array", items: { type: "string" }, description: "Optional conditions that must be true." },
+            description: { type: "string", description: "What could happen if triggered." },
+            readyAfterTurn: { type: "integer", description: "The consequence CAN'T trigger UNTIL after this turn number. Use current turn + delay." },
+            conditions: { type: "array", items: { type: "string" }, description: "Narrative conditions you'll check when deciding to trigger." },
+            known: { type: "boolean", description: "Will the player know when this happens? Default false for hidden consequences." },
           },
+          required: ["id", "description", "readyAfterTurn"],
         },
-        description: "Future consequences that may occur. The system will auto-track createdAtTurn.",
+        description: "Future consequences. YOU decide when to trigger them based on story.",
+      },
+      triggerConsequenceId: {
+        type: "string",
+        description: "For 'trigger' action: the ID of the pending consequence to trigger NOW. You MUST narrate this in your response.",
       },
     },
     required: ["action", "chainId"],
@@ -576,8 +586,40 @@ export const UPDATE_FACTION_TOOL = {
       },
       visible: { type: "string", description: "Public agenda/reputation." },
       hidden: { type: "string", description: "Secret agenda/corruption." },
+      unlocked: {
+        type: "boolean",
+        description: "Set to true to reveal this faction's hidden agenda to the player. Only unlock when the player discovers the faction's secrets through story events (e.g., finding documents, overhearing conversations, betrayal reveal)."
+      },
     },
     required: ["action"],
+  },
+};
+
+export const UPDATE_WORLD_INFO_TOOL = {
+  name: "update_world_info",
+  description: `Update world-level information visibility. Use this to reveal hidden world secrets, story outlines, and main plot twists to the player.
+IMPORTANT: Only unlock world info when the player achieves significant story milestones:
+- Discovers a major truth about the world
+- Uncovers the main antagonist's true plan
+- Reaches a pivotal story moment
+- Achieves a quest that reveals world secrets`,
+  parameters: {
+    type: "object",
+    properties: {
+      unlockWorldSetting: {
+        type: "boolean",
+        description: "Set to true to reveal the hidden world setting information (worldSetting.hidden) to the player.",
+      },
+      unlockMainGoal: {
+        type: "boolean",
+        description: "Set to true to reveal the hidden main goal information (mainGoal.hidden) - the true nature of the story's main objective.",
+      },
+      reason: {
+        type: "string",
+        description: "Brief explanation of WHY this information is being revealed (for logging).",
+      },
+    },
+    required: ["reason"],
   },
 };
 
@@ -790,6 +832,30 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
           causalChains: { type: "array", items: { type: "string" }, description: "CausalChain chainIds with pending consequences that may trigger soon." },
         },
       },
+      ending: {
+        type: "string",
+        enum: ["death", "victory", "true_ending", "bad_ending", "neutral_ending"],
+        description: `ONLY set if the story reaches a definitive endpoint this turn:
+- "death": Player character dies or suffers irreversible fatal consequence
+- "victory": Main quest goal achieved, story concludes positively
+- "true_ending": Secret/best ending discovered (e.g., hidden path, full truth revealed)
+- "bad_ending": Story concludes with negative outcome (not death, but failure/tragedy)
+- "neutral_ending": Story concludes without clear win/loss
+
+IMPORTANT: Only set this if the narrative EXPLICITLY ends the story. Do NOT set for cliffhangers or temporary setbacks. If the player can still continue, do NOT set ending.`,
+      },
+      forceEnd: {
+        type: "boolean",
+        description: `Only relevant when 'ending' is set. Determines if the game ends permanently:
+- true: Game is OVER. Player cannot continue from this point. Use for death, true_ending, or definitive story conclusions.
+- false/omit: Player can choose to continue despite the ending (e.g., victory but story can continue with aftermath).
+Typical usage:
+- death → forceEnd: true (character is dead)
+- victory → forceEnd: false (player might want to explore aftermath)
+- true_ending → forceEnd: true (canonical ending reached)
+- bad_ending → forceEnd: true or false depending on severity
+- neutral_ending → forceEnd: false (open-ended)`,
+      },
     },
     required: ["narrative", "choices"],
   },
@@ -816,6 +882,7 @@ export const TOOLS = [
   UPDATE_TIMELINE_TOOL,
   UPDATE_CAUSAL_CHAIN_TOOL,
   UPDATE_FACTION_TOOL,
+  UPDATE_WORLD_INFO_TOOL,
   UPDATE_CHARACTER_TOOL,
   UPDATE_GLOBAL_TOOL,
   // Turn Control

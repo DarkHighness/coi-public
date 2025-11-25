@@ -163,7 +163,11 @@ export const generateContent = async (
   }
 
   let text = "";
-  let response;
+  let response: any;
+  let streamedFunctionCalls: any[] = [];
+  let streamedUsage: any = null;
+
+  console.log(`[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? 'yes' : 'no'}`);
 
   if (options?.onChunk) {
     const stream = await ai.models.generateContentStream({
@@ -172,50 +176,89 @@ export const generateContent = async (
       config: generationConfig,
     });
 
+    let lastChunk: any = null;
     for await (const chunk of stream) {
+      lastChunk = chunk;
+      // Collect text parts
       const chunkText = chunk.text;
       if (chunkText) {
         text += chunkText;
         options.onChunk(chunkText);
       }
+      // Collect function calls from streaming
+      const candidate = chunk.candidates?.[0];
+      if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.functionCall) {
+            streamedFunctionCalls.push(part.functionCall);
+          }
+        }
+      }
+      // Capture usage metadata from final chunk
+      if (chunk.usageMetadata) {
+        streamedUsage = chunk.usageMetadata;
+      }
     }
-    // For streaming, we might not get the full response object with usage metadata easily
-    // unless the generator yields it at the end or we can access it otherwise.
-    // We'll reconstruct a basic response object.
+    // Reconstruct response from streamed data
     response = {
       text: text,
-      candidates: [{ finishReason: "STOP" }], // Assumed
+      candidates: lastChunk?.candidates || [{ finishReason: "STOP" }],
+      usageMetadata: streamedUsage || lastChunk?.usageMetadata,
+      _streamedFunctionCalls: streamedFunctionCalls,
     };
+    console.log(`[Gemini] Streaming complete. Text length: ${text.length}, FunctionCalls: ${streamedFunctionCalls.length}, Usage:`, streamedUsage);
   } else {
     response = await ai.models.generateContent({
       model: model,
       contents: processedContents,
       config: generationConfig,
     });
-    text = response.text || "";
+    console.log(`[Gemini] Non-streaming response received. UsageMetadata:`, response.usageMetadata);
   }
 
   const candidate = response.candidates?.[0];
   const finishReason = candidate?.finishReason;
 
-  // Check for tool calls
-  const functionCalls = candidate?.content?.parts
-    ?.filter((p: any) => p.functionCall)
-    .map((p: any, index: number) => ({
-      // Gemini doesn't provide explicit IDs for function calls, so we generate deterministic ones
-      // using the function name and index to ensure consistency within a single response
-      id: `gemini_call_${p.functionCall.name}_${index}`,
-      name: p.functionCall.name,
-      args: p.functionCall.args,
-    }));
+  // Check for tool calls - handle both streaming and non-streaming
+  let functionCalls: any[] = [];
 
-  if (functionCalls && functionCalls.length > 0) {
+  // From streaming
+  if (response._streamedFunctionCalls && response._streamedFunctionCalls.length > 0) {
+    functionCalls = response._streamedFunctionCalls.map((fc: any, index: number) => ({
+      id: `gemini_call_${fc.name}_${index}`,
+      name: fc.name,
+      args: fc.args,
+    }));
+  }
+  // From non-streaming response
+  else if (candidate?.content?.parts) {
+    const fcParts = candidate.content.parts.filter((p: any) => p.functionCall);
+    if (fcParts.length > 0) {
+      functionCalls = fcParts.map((p: any, index: number) => ({
+        id: `gemini_call_${p.functionCall.name}_${index}`,
+        name: p.functionCall.name,
+        args: p.functionCall.args,
+      }));
+    }
+  }
+
+  // If we have function calls, return them immediately without trying to parse text
+  // This avoids the "non-text parts" warning
+  if (functionCalls.length > 0) {
     const usage = {
       promptTokens: response.usageMetadata?.promptTokenCount || 0,
       completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
       totalTokens: response.usageMetadata?.totalTokenCount || 0,
     };
+    console.log(`[Gemini] Returning ${functionCalls.length} function calls. Usage:`, usage);
     return { result: { functionCalls }, usage, raw: response };
+  }
+
+  // Only try to get text if no function calls (avoids the warning)
+  if (!text && !options?.onChunk) {
+    // For non-streaming, safely extract text from parts
+    const textParts = candidate?.content?.parts?.filter((p: any) => p.text) || [];
+    text = textParts.map((p: any) => p.text).join('');
   }
 
   if (finishReason === "SAFETY") {
@@ -232,11 +275,25 @@ export const generateContent = async (
     console.warn("Gemini content generation finished with reason: OTHER");
   }
 
-  if (!text && finishReason !== "STOP")
+  // For agentic loops, empty text with STOP is valid (model made tool calls)
+  // Only throw if we have no text AND no function calls AND finish reason is problematic
+  if (!text && finishReason !== "STOP") {
+    console.error(`[Gemini] No text response. FinishReason: ${finishReason}`);
     throw new Error(
       `No response from Gemini AI (Finish Reason: ${finishReason})`,
     );
-  if (!text) throw new Error("No response from Gemini AI");
+  }
+
+  // If text is empty but we have a valid STOP, return empty result (valid in agentic context)
+  if (!text) {
+    console.log(`[Gemini] Empty text response with STOP - returning empty result`);
+    const usage = {
+      promptTokens: response.usageMetadata?.promptTokenCount || 0,
+      completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+      totalTokens: response.usageMetadata?.totalTokenCount || 0,
+    };
+    return { result: {}, usage, raw: response };
+  }
 
   // Extract Usage
   const usage = {
@@ -244,25 +301,32 @@ export const generateContent = async (
     completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
     totalTokens: response.usageMetadata?.totalTokenCount || 0,
   };
+  console.log(`[Gemini] Text response. Length: ${text.length}, Usage:`, usage);
 
   try {
     // Clean JSON before parsing (remove markdown code blocks if present)
-    const cleanedText = text.replace(/```json\n?|```/g, "").trim();
-    return { result: JSON.parse(cleanedText), usage, raw: response };
+    let cleanedText = text.replace(/```json\n?|```/g, "").trim();
+    // Compact JSON: remove unnecessary whitespace
+    cleanedText = cleanedText.replace(/\n\s*/g, '').replace(/\s{2,}/g, ' ');
+    const parsed = JSON.parse(cleanedText);
+    console.log(`[Gemini] JSON parsed successfully`);
+    return { result: parsed, usage, raw: response };
   } catch (e) {
-    console.warn("Initial JSON parse failed, attempting repair...", e);
+    console.warn("[Gemini] Initial JSON parse failed, attempting repair...", e);
     try {
-      const cleanedText = text.replace(/```json\n?|```/g, "").trim();
-      // Attempt simple repairs
+      let cleanedText = text.replace(/```json\n?|```/g, "").trim();
+      // Compact and repair
       const repairedText = cleanedText
-        // Replace single quotes around keys: { 'key': -> { "key":
+        .replace(/\n\s*/g, '')
+        .replace(/\s{2,}/g, ' ')
         .replace(/([{,]\s*)'([^']+)'(\s*:)/g, '$1"$2"$3')
-        // Remove trailing commas: , } -> }
         .replace(/,(\s*[}\]])/g, "$1");
 
-      return { result: JSON.parse(repairedText), usage, raw: response };
+      const parsed = JSON.parse(repairedText);
+      console.log(`[Gemini] JSON repaired and parsed successfully`);
+      return { result: parsed, usage, raw: response };
     } catch (e2) {
-      console.error("JSON Parse Error", e2, "Text:", text);
+      console.error("[Gemini] JSON Parse Error", e2, "Text (first 500 chars):", text.substring(0, 500));
       throw new Error("Failed to parse AI response as JSON.");
     }
   }

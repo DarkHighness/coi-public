@@ -5,16 +5,19 @@ export const ENVIRONMENTS = [
   "desert",
   "dungeon",
   "forest",
+  "horror",
   "market",
   "mystical",
   "ocean",
   "quiet",
   "rain",
+  "scifi",
   "snow",
   "storm",
   "tavern",
 ];
 
+// Store preloaded audio elements - each environment has ONE dedicated audio element
 const audioCache = new Map<string, HTMLAudioElement>();
 
 let loadingPromise: Promise<void> | null = null;
@@ -68,19 +71,41 @@ export const preloadAudio = (
   return loadingPromise;
 };
 
+/**
+ * Get the audio track for an environment.
+ * Returns the SAME audio element for each environment to prevent duplicate playback.
+ * The caller is responsible for controlling play/pause state.
+ */
 export const getAudioTrack = (env: string): HTMLAudioElement | null => {
-  if (audioCache.has(env)) {
-    const audio = audioCache.get(env)!;
-    // Reset state just in case
-    audio.currentTime = 0;
-    audio.volume = 0;
-    return audio;
+  // Normalize environment name
+  const normalizedEnv = env.toLowerCase().trim();
+
+  if (audioCache.has(normalizedEnv)) {
+    return audioCache.get(normalizedEnv)!;
   }
 
-  // Fallback if not preloaded
-  console.warn(`Audio track for ${env} was not preloaded.`);
-  const audio = new Audio(`/audio/${env}/ambience.mp3`);
+  // Check if it's a valid environment
+  if (!ENVIRONMENTS.includes(normalizedEnv)) {
+    console.warn(`Unknown environment: ${env}, falling back to 'quiet'`);
+    return audioCache.get('quiet') || null;
+  }
+
+  // Fallback if not preloaded (should rarely happen)
+  console.warn(`Audio track for ${env} was not preloaded, loading now...`);
+  const audio = new Audio(`/audio/${normalizedEnv}/ambience.mp3`);
   audio.loop = true;
-  audioCache.set(env, audio);
+  audio.volume = 0;
+  audioCache.set(normalizedEnv, audio);
   return audio;
+};
+
+/**
+ * Stop all audio tracks - useful for cleanup
+ */
+export const stopAllAudio = () => {
+  audioCache.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = 0;
+  });
 };

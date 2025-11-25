@@ -36,6 +36,11 @@ const LogPanel = React.lazy(() =>
     default: module.LogPanel,
   })),
 );
+const StateEditor = React.lazy(() =>
+  import("../StateEditor").then((module) => ({
+    default: module.StateEditor,
+  })),
+);
 const MobileGameLayout = React.lazy(() =>
   import("../layout/MobileGameLayout").then((module) => ({
     default: module.MobileGameLayout,
@@ -105,6 +110,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
+  const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
@@ -129,15 +135,22 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   // Audio Ambience Logic
   const isAnyMenuOpen =
-    isDestinyMapOpen || isLogPanelOpen || isMagicMirrorOpen || isVeoScriptOpen;
+    isDestinyMapOpen || isLogPanelOpen || isMagicMirrorOpen || isVeoScriptOpen || isStateEditorOpen;
 
-  const shouldPlayAmbience =
-    isTyping && !isAnyMenuOpen && mobileTab === "story";
+  // Play ambience when story is visible and no menus are blocking
+  // FIXED: Don't tie ambience to isTyping - ambience should continue playing
+  const shouldPlayAmbience = !isAnyMenuOpen && mobileTab === "story";
 
   const currentSegment = currentHistory[currentHistory.length - 1];
 
+  // Get environment from most recent segment with an environment
+  const activeEnvironment = currentHistory
+    .slice()
+    .reverse()
+    .find(seg => seg.environment)?.environment;
+
   useAmbience(
-    shouldPlayAmbience ? currentSegment?.environment : undefined,
+    shouldPlayAmbience ? activeEnvironment : undefined,
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
     aiSettings.audioVolume?.bgmMuted ?? false,
     (env) => {
@@ -239,6 +252,7 @@ export const GamePage: React.FC<GamePageProps> = ({
       >
         <MobileGameLayout
           gameState={gameState}
+          setGameState={setGameState}
           currentHistory={currentHistory}
           language={language}
           setLanguage={setLanguage}
@@ -277,10 +291,13 @@ export const GamePage: React.FC<GamePageProps> = ({
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
           onViewedSegmentChange={onViewedSegmentChange}
+          onShowToast={(msg, type) => pushToast(msg, type)}
+          onOpenStateEditor={() => setIsStateEditorOpen(true)}
         />
 
         <DesktopGameLayout
           gameState={gameState}
+          setGameState={setGameState}
           currentHistory={currentHistory}
           language={language}
           setLanguage={setLanguage}
@@ -317,6 +334,8 @@ export const GamePage: React.FC<GamePageProps> = ({
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
           onViewedSegmentChange={onViewedSegmentChange}
+          onShowToast={(msg, type) => pushToast(msg, type)}
+          onOpenStateEditor={() => setIsStateEditorOpen(true)}
         />
 
         {/* Mobile Bottom Navigation */}
@@ -359,6 +378,16 @@ export const GamePage: React.FC<GamePageProps> = ({
           <LogPanel
             logs={gameState.logs}
             onClose={() => setIsLogPanelOpen(false)}
+          />
+        )}
+
+        {isStateEditorOpen && (
+          <StateEditor
+            isOpen={isStateEditorOpen}
+            onClose={() => setIsStateEditorOpen(false)}
+            gameState={gameState}
+            setGameState={setGameState}
+            onShowToast={(msg, type) => pushToast(msg, type)}
           />
         )}
       </Suspense>
