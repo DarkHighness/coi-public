@@ -21,7 +21,7 @@ export const QUERY_INVENTORY_TOOL = {
       query: {
         type: "string",
         description:
-          "Name, ID, or keyword to search for. If omitted, lists all items.",
+          "Name, ID (inv:1), or keyword to search for. If omitted, lists all items.",
       },
     },
   },
@@ -37,7 +37,7 @@ export const QUERY_RELATIONSHIPS_TOOL = {
       query: {
         type: "string",
         description:
-          "Name, ID, or keyword to search for. If omitted, lists all known NPCs.",
+          "Name, ID (npc:1), or keyword to search for. If omitted, lists all known NPCs.",
       },
     },
   },
@@ -53,7 +53,7 @@ export const QUERY_LOCATIONS_TOOL = {
       query: {
         type: "string",
         description:
-          "Name, ID, or keyword to search for. If omitted, lists all known locations.",
+          "Name, ID (loc:1), or keyword to search for. If omitted, lists all known locations.",
       },
     },
   },
@@ -69,7 +69,12 @@ export const QUERY_QUESTS_TOOL = {
       query: {
         type: "string",
         description:
-          "Title, ID, or keyword to search for. If omitted, lists all active quests.",
+          "Title, ID (quest:1), or keyword to search for. If omitted, lists all quests matching the status.",
+      },
+      status: {
+        type: "string",
+        enum: ["active", "completed", "failed", "all"],
+        description: "Filter by quest status. Defaults to 'active'.",
       },
     },
   },
@@ -85,7 +90,22 @@ export const QUERY_KNOWLEDGE_TOOL = {
       query: {
         type: "string",
         description:
-          "Title, ID, or keyword to search for. If omitted, lists all knowledge.",
+          "Title, ID (know:1), or keyword to search for. If omitted, lists all knowledge.",
+      },
+      category: {
+        type: "string",
+        enum: [
+          "landscape",
+          "history",
+          "item",
+          "legend",
+          "faction",
+          "culture",
+          "magic",
+          "technology",
+          "other",
+        ],
+        description: "Filter by category.",
       },
     },
   },
@@ -141,7 +161,14 @@ export const QUERY_GLOBAL_TOOL = {
     "Query global game state properties like time, theme, environment, etc.",
   parameters: {
     type: "object",
-    properties: {},
+    properties: {
+      category: {
+        type: "string",
+        enum: ["time", "theme", "environment", "all"],
+        description: "The category of global state to retrieve.",
+      },
+    },
+    required: ["category"],
   },
 };
 
@@ -161,7 +188,7 @@ export const UPDATE_INVENTORY_TOOL = {
         type: "object",
         description: "Item data. Must include 'name' or 'id'.",
         properties: {
-          id: { type: "number" },
+          id: { type: "string", description: "Format: inv:1" },
           ...inventoryItemProperties,
           unlocked: { type: "boolean" },
         },
@@ -186,7 +213,7 @@ export const UPDATE_RELATIONSHIP_TOOL = {
         type: "object",
         description: "NPC data. Must include 'name' or 'id'.",
         properties: {
-          id: { type: "number" },
+          id: { type: "string", description: "Format: npc:1" },
           ...relationshipProperties,
           known: { type: "boolean" },
           unlocked: { type: "boolean" },
@@ -212,7 +239,7 @@ export const UPDATE_LOCATION_TOOL = {
         type: "object",
         description: "Location data. Must include 'name' or 'id'.",
         properties: {
-          id: { type: "number" },
+          id: { type: "string", description: "Format: loc:1" },
           ...locationProperties,
           isCurrent: {
             type: "boolean",
@@ -241,7 +268,7 @@ export const UPDATE_QUEST_TOOL = {
         type: "object",
         description: "Quest data. Must include 'title' or 'id'.",
         properties: {
-          id: { type: "number" },
+          id: { type: "string", description: "Format: quest:1" },
           ...questProperties,
           status: { type: "string", enum: ["active", "completed", "failed"] },
         },
@@ -266,7 +293,7 @@ export const UPDATE_KNOWLEDGE_TOOL = {
         type: "object",
         description: "Knowledge data. Must include 'title' or 'id'.",
         properties: {
-          id: { type: "number" },
+          id: { type: "string", description: "Format: know:1" },
           ...knowledgeProperties,
         },
         required: ["title"],

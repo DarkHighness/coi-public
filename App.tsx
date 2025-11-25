@@ -291,6 +291,7 @@ export default function App() {
 
   const handleContinueGame = async () => {
     if (await performValidation()) {
+      console.log("continue game, currentSlotId:", currentSlotId);
       if (currentSlotId) {
         navigate("/game");
       } else if (saveSlots.length > 0) {
@@ -367,10 +368,7 @@ export default function App() {
         <Route
           path="/game"
           element={
-            !gameState.outline ? (
-              <Navigate to="/" replace />
-            ) : (
-              <GamePage
+            <GamePage
                 gameState={gameState}
                 setGameState={setGameState}
                 currentHistory={currentHistory}
@@ -393,7 +391,6 @@ export default function App() {
                 currentSlotId={currentSlotId}
                 onViewedSegmentChange={setViewedSegment}
               />
-            )
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

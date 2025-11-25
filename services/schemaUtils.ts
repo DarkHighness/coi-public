@@ -123,7 +123,10 @@ function mapTypeToGemini(type: JsonSchemaType, geminiSchema: Schema) {
  * Converts a Standard JSON Schema to OpenAI Strict Schema Object.
  * Throws error if schema contains unsupported features.
  */
-export const convertJsonSchemaToOpenAIObject = (s: JsonSchema): any => {
+export const convertJsonSchemaToOpenAIObject = (
+  s: JsonSchema,
+  strict: boolean = true,
+): any => {
   if (s.allOf || s.anyOf || s.oneOf) {
     throw new Error(
       "OpenAI Strict Schema conversion does not support allOf/anyOf/oneOf.",
@@ -143,31 +146,39 @@ export const convertJsonSchemaToOpenAIObject = (s: JsonSchema): any => {
   }
 
   if (!type) {
-    throw new Error("OpenAI Strict Schema requires a defined type.");
+    // Fallback for object without type (common in some schemas)
+    if (s.properties) {
+      type = "object";
+    } else {
+      throw new Error("OpenAI Strict Schema requires a defined type.");
+    }
   }
 
   if (type === "object") {
     const properties: Record<string, any> = {};
-    const required: string[] = [];
+    const required: string[] = strict ? [] : s.required || [];
 
     if (s.properties) {
       for (const [key, value] of Object.entries(s.properties)) {
-        properties[key] = convertJsonSchemaToOpenAIObject(value);
-        required.push(key); // Strict mode requires all properties to be required
+        properties[key] = convertJsonSchemaToOpenAIObject(value, strict);
+        if (strict) {
+          required.push(key); // Strict mode requires all properties to be required
+        }
       }
     }
 
-    // If original schema had required fields, we verify they are all present.
-    // But in strict mode, we MUST make EVERYTHING required that is defined in properties.
-    // So we ignore s.required and use Object.keys(properties).
-
-    return {
+    const result: any = {
       type: "object",
       properties,
       required,
-      additionalProperties: false,
       description: s.description,
     };
+
+    if (strict) {
+      result.additionalProperties = false;
+    }
+
+    return result;
   }
 
   if (type === "array") {
@@ -178,7 +189,7 @@ export const convertJsonSchemaToOpenAIObject = (s: JsonSchema): any => {
     }
     return {
       type: "array",
-      items: convertJsonSchemaToOpenAIObject(s.items),
+      items: convertJsonSchemaToOpenAIObject(s.items, strict),
       description: s.description,
     };
   }

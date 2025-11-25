@@ -39,14 +39,18 @@ export const getModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
         image: false,
         video: false,
         audio: false,
+        tools: false,
+        parallelTools: false
       };
 
-      // 1. Try to detect from OpenRouter-style 'architecture' fields
-      const parsedCaps = parseModelCapabilities(m.architecture);
+      // 1. Try to detect from OpenRouter-style fields
+      const parsedCaps = parseModelCapabilities(m);
       if (parsedCaps.text) capabilities.text = true;
       if (parsedCaps.image) capabilities.image = true;
       if (parsedCaps.audio) capabilities.audio = true;
       if (parsedCaps.video) capabilities.video = true;
+      if (parsedCaps.tools) capabilities.tools = true;
+      if (parsedCaps.parallelTools) capabilities.parallelTools = true;
 
       // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
       const hasExplicitInfo =

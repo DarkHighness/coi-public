@@ -155,6 +155,14 @@ export const GamePage: React.FC<GamePageProps> = ({
     localStorage.setItem("chronicles_feedlayout", feedLayout);
   }, [feedLayout]);
 
+  // Navigate back to / if there is no outline
+  useEffect(() => {
+    if (!gameState.outline) {
+      console.error("Illegal gameState detected, redirecting to /", gameState);
+      navigate("/");
+    }
+  }, [gameState.outline]);
+
   const handleFork = (nodeId: string) => {
     if (window.confirm(t("tree.forkConfirm"))) {
       navigateToNode(nodeId);
@@ -240,7 +248,11 @@ export const GamePage: React.FC<GamePageProps> = ({
             const lastUserAction = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(lastUserAction?.text || "Continue the story");
+            handleAction(
+              lastUserAction?.text ||
+                gameState.initialPrompt ||
+                "Continue the story",
+            );
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -276,7 +288,11 @@ export const GamePage: React.FC<GamePageProps> = ({
             const lastUserAction = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(lastUserAction?.text || "Continue the story");
+            handleAction(
+              lastUserAction?.text ||
+                gameState.initialPrompt ||
+                "Continue the story",
+            );
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}

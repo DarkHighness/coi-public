@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { GameState, SaveSlot } from "../types";
 import {
   saveGameState,
@@ -20,150 +20,15 @@ export const useGamePersistence = (
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
+  // Use memo for latest slot ID
+  const latestSlotId = useMemo(() => {
+    if (saveSlots.length === 0) return null;
+    const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
+    return sorted[0].id;
+  }, [saveSlots]);
+
   // Helper to sanitize and fix state on load
   const sanitizeState = (parsed: Record<string, any>): GameState => {
-    // Migrations
-    if (!parsed.logs) parsed.logs = [];
-    if (!parsed.totalTokens) parsed.totalTokens = 0;
-
-    // Migration: accumulatedSummary -> summaries
-    if (
-      parsed.accumulatedSummary &&
-      (!parsed.summaries || parsed.summaries.length === 0)
-    ) {
-      parsed.summaries = [parsed.accumulatedSummary];
-      delete parsed.accumulatedSummary;
-    }
-    if (!parsed.summaries) parsed.summaries = [];
-
-    // Ensure theme exists
-    if (!parsed.theme) {
-      parsed.theme = "fantasy";
-    }
-
-    // Migration: Dual-Layer System (Inventory, Relationships, Locations, Knowledge, Skills)
-    if (parsed.inventory) {
-      parsed.inventory = parsed.inventory.map((item: any) => {
-        if (!item.visible) {
-          return {
-            ...item,
-            visible: {
-              description: item.description || "No description available.",
-              quantity: item.quantity || 1,
-              condition: item.condition || "good",
-              knownProperties: item.properties || [],
-            },
-            hidden: {
-              trueDescription: item.description || "",
-              hiddenProperties: [],
-              cursed: false,
-              magical: false,
-            },
-          };
-        }
-        return item;
-      });
-    }
-
-    if (parsed.relationships) {
-      parsed.relationships = parsed.relationships.map((rel: any) => {
-        if (!rel.visible) {
-          return {
-            ...rel,
-            visible: {
-              description: rel.description || "No description available.",
-              status: rel.status || "neutral",
-              knownSecrets: [],
-            },
-            hidden: {
-              trueDescription: rel.description || "",
-              trueStatus: rel.status || "neutral", // Legacy field, kept for safety or mapped if needed
-              hiddenSecrets: [],
-              trueIntentions: "Unknown",
-              relationshipType: rel.status || "neutral",
-              status: "normal", // Default status
-            },
-          };
-        }
-        // Ensure new fields exist on existing objects
-        if (!rel.hidden.relationshipType) {
-          rel.hidden.relationshipType = rel.hidden.trueStatus || "neutral";
-        }
-        if (!rel.hidden.status) {
-          rel.hidden.status = "normal";
-        }
-        return rel;
-      });
-    }
-
-    if (parsed.locations) {
-      parsed.locations = parsed.locations.map((loc: any) => {
-        if (!loc.visible) {
-          return {
-            ...loc,
-            visible: {
-              description: loc.description || "No description available.",
-              features: loc.features || [],
-              inhabitants: loc.inhabitants || [],
-            },
-            hidden: {
-              trueDescription: loc.description || "",
-              hiddenFeatures: [],
-              secretInhabitants: [],
-              history: "",
-            },
-          };
-        }
-        return loc;
-      });
-    }
-
-    if (parsed.knowledge) {
-      parsed.knowledge = parsed.knowledge.map((k: any) => {
-        if (!k.visible) {
-          return {
-            ...k,
-            visible: {
-              description: k.description || "No description available.",
-              source: k.source || "unknown",
-              reliability: "high",
-            },
-            hidden: {
-              trueDescription: k.description || "",
-              implications: [],
-              relatedTruths: [],
-            },
-          };
-        }
-        return k;
-      });
-    }
-
-    if (parsed.character && parsed.character.skills) {
-      parsed.character.skills = parsed.character.skills.map((skill: any) => {
-        if (!skill.visible) {
-          return {
-            ...skill,
-            visible: {
-              description: skill.description || "No description available.",
-              knownEffects: [],
-            },
-            hidden: {
-              trueDescription: skill.description || "",
-              hiddenEffects: [],
-            },
-          };
-        }
-        return skill;
-      });
-    }
-
-    // Migration: Character Conditions and Hidden Traits
-    if (parsed.character) {
-      if (!parsed.character.conditions) parsed.character.conditions = [];
-      if (!parsed.character.hiddenTraits) parsed.character.hiddenTraits = [];
-    }
-
     // Reset processing state on load to prevent stuck state
     parsed.isProcessing = false;
     // Always clear image generation state on load
@@ -198,7 +63,13 @@ export const useGamePersistence = (
           setSaveSlots(slots);
 
           // Try to restore last active session
-          const lastSlotId = await loadMetadata("currentSlot");
+          let lastSlotId = await loadMetadata("currentSlot");
+
+          // If no last slot, select the latest
+          if (!lastSlotId) {
+            lastSlotId = latestSlotId;
+          }
+
           if (lastSlotId && typeof lastSlotId === "string") {
             const data = await loadGameState(lastSlotId);
             if (data) {
@@ -316,7 +187,7 @@ export const useGamePersistence = (
     const id = Date.now().toString();
     const newSlot: SaveSlot = {
       id,
-      name: `Chronicle ${saveSlots.length + 1}`,
+      name: `Save ${saveSlots.length + 1}`,
       timestamp: Date.now(),
       theme,
       summary: "New Game",
@@ -360,7 +231,7 @@ export const useGamePersistence = (
     );
 
     if (currentSlotId === id) {
-      setCurrentSlotId(null);
+      setCurrentSlotId(latestSlotId);
     }
   };
 

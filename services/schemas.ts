@@ -625,6 +625,10 @@ export const storyOutlineSchema: JsonSchema = {
       },
       description: "Initial relationships (1-2 NPCs).",
     },
+    initialEnvTheme: {
+      type: "string",
+      description: "Initial environment theme (e.g. 'Dark', 'Tense').",
+    },
   },
   required: [
     "title",
@@ -640,6 +644,7 @@ export const storyOutlineSchema: JsonSchema = {
     "character",
     "inventory",
     "relationships",
+    "initialEnvTheme",
   ],
 };
 
@@ -755,7 +760,7 @@ export const causalChainProperties: Record<string, JsonSchema> = {
 };
 
 export const factionProperties: Record<string, JsonSchema> = {
-  id: { type: "number" },
+  id: { type: "string", description: "Format: fac:1" },
   name: { type: "string" },
   visible: { type: "string", description: "Public agenda/reputation" },
   hidden: { type: "string", description: "Secret agenda/corruption" },
@@ -773,7 +778,7 @@ export const gameResponseSchema: JsonSchema = {
         type: "object",
         properties: {
           action: { type: "string", enum: ["add", "update"] },
-          id: { type: "string" },
+          id: { type: "string", description: "Format: know:1" },
           relatedTo: { type: "string" },
           discoveredAt: { type: "string" },
           category: { type: "string" },
@@ -876,7 +881,7 @@ export const gameResponseSchema: JsonSchema = {
         type: "object",
         properties: {
           action: { type: "string", enum: ["update"] },
-          id: { type: "number" },
+          id: { type: "string", description: "Format: fac:1" },
           name: { type: "string" },
           visible: { type: "string" },
           hidden: { type: "string" },
@@ -983,7 +988,7 @@ export const gameResponseSchema: JsonSchema = {
           },
           id: {
             type: "string",
-            description: "Unique ID for the quest (e.g. 'find_relic').",
+            description: "Unique ID for the quest (Format: quest:1).",
           },
           ...questProperties,
         },
@@ -997,7 +1002,7 @@ export const gameResponseSchema: JsonSchema = {
         type: "object",
         properties: {
           action: { type: "string", enum: ["add", "remove", "update"] },
-          id: { type: "number" },
+          id: { type: "string", description: "Format: inv:1" },
           name: { type: "string" },
           visible: {
             type: "object",
@@ -1027,7 +1032,7 @@ export const gameResponseSchema: JsonSchema = {
         type: "object",
         properties: {
           action: { type: "string", enum: ["add", "update", "remove"] },
-          id: { type: "number" },
+          id: { type: "string", description: "Format: npc:1" },
           known: { type: "boolean" },
           visible: {
             type: "object",
@@ -1066,7 +1071,7 @@ export const gameResponseSchema: JsonSchema = {
         properties: {
           type: { type: "string", enum: ["current", "known"] },
           action: { type: "string", enum: ["update", "add"] },
-          id: { type: "number" },
+          id: { type: "string", description: "Format: loc:1" },
           name: { type: "string" },
           visible: {
             type: "object",

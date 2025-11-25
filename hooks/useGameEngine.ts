@@ -71,7 +71,7 @@ export const useGameEngine = () => {
 
   useEffect(() => {
     gameStateRef.current = gameState;
-    if (gameState.isProcessing) processingRef.current = true;
+    processingRef.current = gameState.isProcessing;
   }, [gameState]);
 
   const [isTranslating, setIsTranslating] = useState(false);
@@ -705,50 +705,50 @@ export const useGameEngine = () => {
           conditions: (outline.character.conditions || []).map(
             (c: any, i: number) => ({
               ...c,
-              id: i + 1,
+              id: `cond:${i + 1}`,
             }),
           ),
           hiddenTraits: (outline.character.hiddenTraits || []).map(
             (t: any, i: number) => ({
               ...t,
-              id: i + 1,
+              id: `trait:${i + 1}`,
             }),
           ),
         },
         inventory: (outline.inventory || []).map(
           (item: any, index: number) => ({
             ...item,
-            id: index + 1,
+            id: `inv:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         relationships: (outline.relationships || []).map(
           (rel: any, index: number) => ({
             ...rel,
-            id: index + 1,
+            id: `npc:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
-          id: index + 1,
+          id: `quest:${index + 1}`,
           status: "active",
           createdAt: Date.now(),
         })),
         currentLocation: outline.locations?.[0]?.name || "Unknown",
         locations: (outline.locations || []).map((loc: any, index: number) => ({
           ...loc,
-          id: index + 1,
+          id: `loc:${index + 1}`,
           isVisited: index === 0,
           createdAt: Date.now(),
         })),
         knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
           ...k,
-          id: index + 1,
+          id: `know:${index + 1}`,
         })),
         factions: (outline.factions || []).map((f: any, index: number) => ({
           ...f,
-          id: index + 1,
+          id: `fac:${index + 1}`,
         })),
         timeline: (outline.timeline || []).map((e: any) => ({
           ...e,
@@ -768,7 +768,7 @@ export const useGameEngine = () => {
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
-        envTheme: selectedTheme, // Initial Env Theme
+        envTheme: outline.initialEnvTheme || selectedTheme, // Initial Env Theme
         time: outline.initialTime || "Day 1",
       }));
 
@@ -778,8 +778,13 @@ export const useGameEngine = () => {
       // Generate first turn in the game view
       setTimeout(async () => {
         try {
+          const prompt = `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`;
+
+          // Store initial prompt for retry
+          setGameState(prev => ({ ...prev, initialPrompt: prompt }));
+
           const result = await handleAction(
-            `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`,
+            prompt,
             true,
             selectedTheme,
           );

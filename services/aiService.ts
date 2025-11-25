@@ -275,6 +275,11 @@ export const filterModels = (
           !m.id.includes("tts") &&
           !m.id.includes("veo")),
     );
+
+    // For Story mode, we specifically require Tool support because the Agentic Loop relies on it.
+    if (type === "story") {
+      filtered = filtered.filter((m) => m.capabilities?.tools);
+    }
   }
 
   return filtered.sort((a, b) =>

@@ -2,6 +2,7 @@ import { OpenRouter } from "@openrouter/sdk";
 import { parseModelCapabilities } from "../modelUtils";
 import { ModelInfo } from "../../types";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
+import { convertJsonSchemaToOpenAIObject } from "../schemaUtils";
 
 export interface OpenRouterConfig {
   apiKey: string;
@@ -60,15 +61,28 @@ export const getModels = async (
         image: false,
         video: false,
         audio: false,
+        tools: false,
+        parallelTools: false
       };
 
-      // Parse architecture
-      const parsedCaps = parseModelCapabilities(m.architecture);
+      // 1. Try to detect from OpenRouter-style fields
+      const parsedCaps = parseModelCapabilities(m);
       if (parsedCaps.text) capabilities.text = true;
       if (parsedCaps.image) capabilities.image = true;
       if (parsedCaps.audio) capabilities.audio = true;
       if (parsedCaps.video) capabilities.video = true;
-      else {
+      if (parsedCaps.tools) capabilities.tools = true;
+      if (parsedCaps.parallelTools) capabilities.parallelTools = true;
+
+
+      // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
+      const hasExplicitInfo =
+        capabilities.text ||
+        capabilities.image ||
+        capabilities.video ||
+        capabilities.audio;
+
+      if (!hasExplicitInfo) {
         // Fallback to ID heuristics if architecture is missing
         const id = m.id.toLowerCase();
         if (
@@ -166,7 +180,7 @@ export const generateContent = async (
       function: {
         name: t.name,
         description: t.description,
-        parameters: t.parameters,
+        parameters: convertJsonSchemaToOpenAIObject(t.parameters, false),
       },
     }));
   }

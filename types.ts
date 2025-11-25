@@ -38,6 +38,9 @@ export interface GameState {
   // Cached Veo Script
   veoScript?: string;
 
+  // Initial Prompt (for retry)
+  initialPrompt?: string;
+
   // New World System Fields
   nextIds: {
     item: number;
@@ -149,7 +152,7 @@ export interface LogEntry {
 }
 
 export interface Faction {
-  id: number;
+  id: string;
   name: string;
   visible: string; // Public agenda
   hidden: string; // Secret agenda
@@ -177,6 +180,7 @@ export interface StoryOutline {
   relationships?: Relationship[]; // Initial relationships
   knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
   timeline?: TimelineEvent[]; // Initial timeline events (Backstory)
+  initialEnvTheme: string; // Initial environment theme (e.g. "Dark", "Tense")
 }
 
 export interface SaveSlot {
@@ -197,7 +201,7 @@ export interface CharacterAttribute {
 }
 
 export interface CharacterSkill {
-  id: number;
+  id: string;
   name: string;
   level: string | number;
   visible: {
@@ -216,7 +220,7 @@ export interface CharacterSkill {
 }
 
 export interface CharacterCondition {
-  id: number;
+  id: string;
   name: string;
   type: "buff" | "debuff" | "neutral";
   visible: {
@@ -240,7 +244,7 @@ export interface CharacterCondition {
 }
 
 export interface HiddenTrait {
-  id: number;
+  id: string;
   name: string;
   description: string;
   effects: string[];
@@ -279,7 +283,7 @@ export interface UIState {
 }
 
 export interface Relationship {
-  id: number;
+  id: string;
   known?: boolean; // Whether the player has met/knows this character
   visible: {
     name: string; // The name the player knows them by
@@ -367,7 +371,7 @@ export interface GameStateSnapshot {
 }
 
 export interface Location {
-  id: number;
+  id: string;
   name: string;
   visible: {
     description: string;
@@ -389,7 +393,7 @@ export interface Location {
 }
 
 export interface KnowledgeEntry {
-  id: number;
+  id: string;
   title: string;
   category:
     | "landscape"
@@ -419,7 +423,7 @@ export interface KnowledgeEntry {
 }
 
 export interface InventoryItem {
-  id: number;
+  id: string;
   name: string;
   visible: {
     description: string;
@@ -438,7 +442,7 @@ export interface InventoryItem {
 }
 
 export interface Quest {
-  id: number;
+  id: string;
   title: string;
   type: "main" | "side" | "hidden";
   status: "active" | "completed" | "failed";
@@ -459,7 +463,7 @@ export interface Quest {
 
 export interface InventoryAction {
   action: "add" | "remove" | "update";
-  id?: number; // Numeric ID
+  id?: string; // Numeric ID
   name: string; // Name is still useful for reference
 
   // Dual-layer support
@@ -479,7 +483,7 @@ export interface InventoryAction {
 
 export interface QuestAction {
   action: "add" | "update" | "complete" | "fail";
-  id: number | string;
+  id: string;
   title?: string;
   type?: "main" | "side" | "hidden";
   visible?: {
@@ -496,7 +500,7 @@ export interface QuestAction {
 
 export interface RelationshipAction {
   action: "add" | "update" | "remove";
-  id?: number;
+  id?: string;
   known?: boolean; // Update known status
 
   visible?: {
@@ -524,7 +528,7 @@ export interface RelationshipAction {
 export interface LocationAction {
   type: "current" | "known";
   action: "update" | "add";
-  id?: number;
+  id?: string;
   name: string;
 
   visible?: {
@@ -545,7 +549,7 @@ export interface LocationAction {
 
 export interface KnowledgeAction {
   action: "add" | "update";
-  id?: number;
+  id?: string;
   title: string;
   category:
     | "landscape"
@@ -585,7 +589,7 @@ export interface CharacterAction {
     | "condition" // New
     | "hiddenTrait"; // New
   action: "add" | "remove" | "update";
-  id?: number; // For skills/conditions
+  id?: string; // For skills/conditions
   name: string;
 
   // For skills/conditions
@@ -673,7 +677,7 @@ export interface GameResponse {
 
 export interface FactionAction {
   action: "update";
-  id: number;
+  id: string;
   name: string;
   visible?: string;
   hidden?: string;
@@ -696,7 +700,7 @@ export interface CharacterUpdates {
   }>;
   conditions?: Array<{
     action: "add" | "update" | "remove";
-    id?: number;
+    id?: string;
     name: string;
     type?: "buff" | "debuff" | "neutral";
     visible?: {
@@ -717,7 +721,7 @@ export interface CharacterUpdates {
   }>;
   hiddenTraits?: Array<{
     action: "add" | "update" | "remove";
-    id?: number;
+    id?: string;
     name: string;
     description?: string;
     effects?: string[];
@@ -731,12 +735,6 @@ export interface CharacterUpdates {
     background?: string;
     race?: string;
   };
-}
-
-export interface ItemExplanation {
-  name: string;
-  description: string;
-  lore: string;
 }
 
 export interface ThemeConfig {
@@ -826,6 +824,8 @@ export interface ModelInfo {
     video?: boolean;
     audio?: boolean;
     text?: boolean;
+    tools?: boolean;
+    parallelTools?: boolean;
   };
 }
 
