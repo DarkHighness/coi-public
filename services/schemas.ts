@@ -425,7 +425,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: questProperties,
-        required: ["title", "type", "visible"],
+        required: ["title", "type", "visible", "hidden"],
       },
       description: "Initial quests (at least one main quest is required).",
     },
@@ -553,7 +553,7 @@ export const storyOutlineSchema: JsonSchema = {
             required: ["agenda"],
           },
         },
-        required: ["name", "visible"],
+        required: ["name", "visible", "hidden"],
       },
       description: "List of 2-3 major power groups or factions.",
     },
@@ -562,7 +562,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: locationProperties,
-        required: ["name", "visible", "environment"],
+        required: ["name", "visible", "environment", "hidden"],
       },
       description: "A list of 1-2 starting locations with full details.",
     },
@@ -571,7 +571,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: knowledgeProperties,
-        required: ["title", "category", "visible"],
+        required: ["title", "category", "visible", "hidden"],
       },
       description: "Initial knowledge entries about the world.",
     },
@@ -580,7 +580,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: timelineEventProperties,
-        required: ["id", "gameTime", "visible", "category"],
+        required: ["id", "gameTime", "visible", "category", "hidden"],
       },
       description:
         "Initial timeline events representing the backstory or recent history.",
@@ -611,7 +611,7 @@ export const storyOutlineSchema: JsonSchema = {
                 description: "Visual color hint.",
               },
             },
-            required: ["label", "value", "maxValue"],
+            required: ["label", "value", "maxValue", "color"],
           },
           description: "Initial stats relevant to the theme.",
         },
@@ -620,7 +620,7 @@ export const storyOutlineSchema: JsonSchema = {
           items: {
             type: "object",
             properties: skillProperties,
-            required: ["name", "level", "visible"],
+            required: ["name", "level", "visible", "hidden"],
           },
           description: "Initial skills/abilities.",
         },
@@ -633,7 +633,7 @@ export const storyOutlineSchema: JsonSchema = {
           items: {
             type: "object",
             properties: conditionProperties,
-            required: ["name", "type", "visible", "effects"],
+            required: ["name", "type", "visible", "effects", "hidden"],
           },
           description: "Initial conditions (buffs/debuffs).",
         },
@@ -695,6 +695,8 @@ export const storyOutlineSchema: JsonSchema = {
         "appearance",
         "profession",
         "background",
+        "conditions",
+        "hiddenTraits",
       ],
       description: "The initialized character profile suited for this story.",
     },
@@ -703,7 +705,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: inventoryItemProperties,
-        required: ["name", "visible", "lore"],
+        required: ["name", "visible", "lore", "hidden"],
       },
       description: "Initial items in the inventory (1-3 items).",
     },
@@ -712,7 +714,7 @@ export const storyOutlineSchema: JsonSchema = {
       items: {
         type: "object",
         properties: relationshipProperties,
-        required: ["visible"],
+        required: ["visible", "hidden"],
       },
       description: "Initial relationships (1-2 NPCs).",
     },

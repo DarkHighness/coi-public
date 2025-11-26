@@ -250,6 +250,9 @@ export const GamePage: React.FC<GamePageProps> = ({
     navigate("/");
   };
 
+  const defaultContinuePrompt =
+    gameState.initialPrompt || `Continue the ${gameState.theme} story`;
+
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
       <Suspense
@@ -284,8 +287,7 @@ export const GamePage: React.FC<GamePageProps> = ({
               .find((seg) => seg.role === "user");
             handleAction(
               lastUserAction?.text ||
-                gameState.initialPrompt ||
-                "Continue the story",
+                defaultContinuePrompt,
             );
           }}
           onFork={handleFork}
@@ -328,8 +330,7 @@ export const GamePage: React.FC<GamePageProps> = ({
               .find((seg) => seg.role === "user");
             handleAction(
               lastUserAction?.text ||
-                gameState.initialPrompt ||
-                "Continue the story",
+              defaultContinuePrompt,
             );
           }}
           onFork={handleFork}

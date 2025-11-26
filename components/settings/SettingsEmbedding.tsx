@@ -156,7 +156,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             </label>
             {loadingModels[config.provider] && (
               <span className="text-[10px] text-theme-muted animate-pulse">
-                {t("embedding.loadingModels") || "Loading..."}
+                {t("loading") || "Loading..."}
               </span>
             )}
           </div>

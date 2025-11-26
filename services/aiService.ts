@@ -1,8 +1,20 @@
+/**
+ * ============================================================================
+ * AI Service - 统一的 AI 服务层
+ * ============================================================================
+ *
+ * 核心职责:
+ * - 配置管理和 Provider 切换
+ * - 统一的内容生成接口
+ * - Agentic Loop 实现（工具调用循环）
+ * - 图片/视频/语音生成
+ * - 嵌入向量生成
+ */
+
 import type {
   AISettings,
   LogEntry,
   StoryOutline,
-  LanguageCode,
   ModelInfo,
   TokenUsage,
   ImageGenerationContext,
@@ -14,11 +26,27 @@ import type {
   GameResponse,
   GameState,
   EmbeddingConfig,
+  ToolCallRecord,
+  ForkTree,
 } from "../types";
+
 import { GameDatabase } from "./gameDatabase";
-import { getEmbeddingManager, createEmbeddingManager } from "./embedding";
+import { getEmbeddingManager } from "./embedding";
+
+// Provider imports - 使用新的统一类型系统
 import {
   GeminiConfig,
+  OpenAIConfig,
+  OpenRouterConfig,
+  GenerateContentOptions,
+  ToolCallResult,
+  EmbeddingModelInfo,
+  AIProviderError,
+  JSONParseError,
+  MalformedToolCallError,
+} from "./providers/types";
+
+import {
   generateContent as generateGeminiContent,
   generateImage as generateGeminiImage,
   generateVideo as generateGeminiVideo,
@@ -27,10 +55,9 @@ import {
   validateConnection as validateGeminiConnection,
   getEmbeddingModels as getGeminiEmbeddingModels,
   generateEmbedding as generateGeminiEmbedding,
-  EmbeddingModelInfo,
 } from "./providers/geminiProvider";
+
 import {
-  OpenAIConfig,
   generateContent as generateOpenAIContent,
   generateImage as generateOpenAIImage,
   generateSpeech as generateOpenAISpeech,
@@ -39,8 +66,8 @@ import {
   getEmbeddingModels as getOpenAIEmbeddingModels,
   generateEmbedding as generateOpenAIEmbedding,
 } from "./providers/openaiProvider";
+
 import {
-  OpenRouterConfig,
   generateContent as generateOpenRouterContent,
   generateImage as generateOpenRouterImage,
   generateSpeech as generateOpenRouterSpeech,
@@ -49,6 +76,7 @@ import {
   getEmbeddingModels as getOpenRouterEmbeddingModels,
   generateEmbedding as generateOpenRouterEmbedding,
 } from "./providers/openRouterProvider";
+
 import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, THEMES } from "../utils/constants";
 import {
   gameResponseSchema,
@@ -79,16 +107,25 @@ import {
   createToolResponseMessage,
   toGeminiFormat,
   toOpenAIFormat,
+  fromGeminiFormat,
   ToolCallResult as UnifiedToolCallResult,
 } from "./messageTypes";
+
+// ============================================================================
+// Configuration
+// ============================================================================
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
 let openRouterConfig: OpenRouterConfig = { apiKey: "" };
 let currentSettings: AISettings = JSON.parse(JSON.stringify(DEFAULTS));
 
-export const updateAIConfig = (settings: AISettings) => {
+/**
+ * 更新 AI 配置
+ */
+export const updateAIConfig = (settings: AISettings): void => {
   currentSettings = settings;
+
   const geminiBase = settings.gemini.baseUrl
     ? settings.gemini.baseUrl.replace(/\/+$/, "")
     : undefined;
@@ -111,25 +148,35 @@ export const updateAIConfig = (settings: AISettings) => {
   };
 };
 
-const getProviderConfig = (
-  func:
-    | "story"
-    | "image"
-    | "video"
-    | "audio"
-    | "translation"
-    | "lore"
-    | "script",
-) => {
+// ============================================================================
+// Provider Configuration
+// ============================================================================
+
+type ProviderType = "gemini" | "openai" | "openrouter";
+type FunctionType = "story" | "image" | "video" | "audio" | "translation" | "lore" | "script";
+
+interface ProviderConfigResult {
+  provider: ProviderType;
+  modelId: string;
+  enabled: boolean;
+  resolution?: string;
+  thinkingLevel?: "low" | "medium" | "high";
+  mediaResolution?: "low" | "medium" | "high";
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+}
+
+const getProviderConfig = (func: FunctionType): ProviderConfigResult => {
   const config = currentSettings[func];
   return {
-    provider: config.provider,
+    provider: config.provider as ProviderType,
     modelId: config.modelId,
     enabled: config.enabled !== false,
     resolution: config.resolution,
     thinkingLevel: config.thinkingLevel,
     mediaResolution: config.mediaResolution,
-    // Advanced Parameters
     temperature: config.temperature,
     topP: config.topP,
     topK: config.topK,
@@ -137,19 +184,19 @@ const getProviderConfig = (
   };
 };
 
-// --- Helpers ---
-
-import type { ToolCallRecord } from "../types";
+// ============================================================================
+// Logging Helpers
+// ============================================================================
 
 const createLogEntry = (
   provider: string,
   model: string,
   endpoint: string,
   req: Record<string, unknown>,
-  res: Record<string, unknown>,
+  res: unknown,
   usage?: TokenUsage,
   toolCalls?: ToolCallRecord[],
-  generationDetails?: LogEntry["generationDetails"],
+  generationDetails?: LogEntry["generationDetails"]
 ): LogEntry => {
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -158,7 +205,7 @@ const createLogEntry = (
     model,
     endpoint,
     request: req,
-    response: res,
+    response: res as Record<string, unknown>,
     usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     toolCalls,
     generationDetails,
@@ -172,16 +219,10 @@ const createLogEntry = (
   return entry;
 };
 
-const getLangCode = (language: string): "en" | "zh" => {
-  if (
-    language.toLowerCase().includes("chinese") ||
-    language.toLowerCase().includes("zh")
-  )
-    return "zh";
-  return "en";
-};
+// ============================================================================
+// Model Cache
+// ============================================================================
 
-// --- Cache ---
 interface ModelCacheEntry {
   timestamp: number;
   data: ModelInfo[];
@@ -190,23 +231,30 @@ interface ModelCacheEntry {
 
 const modelCache: Record<string, ModelCacheEntry> = {};
 
-// --- API Functions ---
+// ============================================================================
+// API Functions
+// ============================================================================
 
+/**
+ * 获取可用模型列表
+ */
 export const getModels = async (
-  provider: "gemini" | "openai" | "openrouter",
-  forceRefresh: boolean = false,
+  provider: ProviderType,
+  forceRefresh: boolean = false
 ): Promise<ModelInfo[]> => {
-  let config;
-  if (provider === "gemini") config = geminiConfig;
-  else if (provider === "openrouter") config = openRouterConfig;
-  else
+  let config: GeminiConfig | OpenAIConfig | OpenRouterConfig;
+
+  if (provider === "gemini") {
+    config = geminiConfig;
+  } else if (provider === "openrouter") {
+    config = openRouterConfig;
+  } else {
     config = { ...openaiConfig, apiKey: currentSettings.openai.apiKey || "" };
+  }
 
   // Skip API request if API key is missing or empty
   if (!config.apiKey || config.apiKey.trim() === "") {
-    console.warn(
-      `Skipping model fetch for ${provider}: API key not configured`,
-    );
+    console.warn(`Skipping model fetch for ${provider}: API key not configured`);
     return [];
   }
 
@@ -214,19 +262,18 @@ export const getModels = async (
   const cacheKey = provider;
 
   // Check cache
-  if (
-    !forceRefresh &&
-    modelCache[cacheKey] &&
-    modelCache[cacheKey].configHash === configHash
-  ) {
+  if (!forceRefresh && modelCache[cacheKey] && modelCache[cacheKey].configHash === configHash) {
     return modelCache[cacheKey].data;
   }
 
   let models: ModelInfo[] = [];
-  if (provider === "gemini") models = await getGeminiModels(geminiConfig);
-  else if (provider === "openrouter")
+  if (provider === "gemini") {
+    models = await getGeminiModels(geminiConfig);
+  } else if (provider === "openrouter") {
     models = await getOpenRouterModels(openRouterConfig);
-  else models = await getOpenAIModels(config as OpenAIConfig);
+  } else {
+    models = await getOpenAIModels(config as OpenAIConfig);
+  }
 
   // Update cache
   modelCache[cacheKey] = {
@@ -238,8 +285,11 @@ export const getModels = async (
   return models;
 };
 
+/**
+ * 验证 Provider 连接
+ */
 export const validateConnection = async (
-  provider: "gemini" | "openai" | "openrouter",
+  provider: ProviderType
 ): Promise<{ isValid: boolean; error?: string }> => {
   try {
     if (provider === "gemini") {
@@ -253,22 +303,19 @@ export const validateConnection = async (
       });
     }
     return { isValid: true };
-  } catch (e: any) {
-    console.error(`Validation failed for ${provider}`, e);
-    return { isValid: false, error: e.message };
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.error(`Validation failed for ${provider}`, error);
+    return { isValid: false, error: error.message };
   }
 };
 
+/**
+ * 过滤模型列表
+ */
 export const filterModels = (
   models: ModelInfo[],
-  type:
-    | "story"
-    | "image"
-    | "video"
-    | "audio"
-    | "translation"
-    | "lore"
-    | "script",
+  type: FunctionType
 ): ModelInfo[] => {
   let filtered = models;
 
@@ -278,13 +325,13 @@ export const filterModels = (
         m.capabilities?.image ??
         (m.id.includes("imagen") ||
           m.id.includes("dall-e") ||
-          m.id.includes("vision")),
+          m.id.includes("vision"))
     );
   } else if (type === "video") {
     filtered = models.filter(
       (m) =>
         m.capabilities?.video ??
-        (m.id.includes("veo") || m.id.includes("sora")),
+        (m.id.includes("veo") || m.id.includes("sora"))
     );
   } else if (type === "audio") {
     filtered = models.filter(
@@ -292,7 +339,7 @@ export const filterModels = (
         m.capabilities?.audio ??
         (m.id.includes("gemini") ||
           m.id.includes("tts") ||
-          m.id.includes("audio")),
+          m.id.includes("audio"))
     );
   } else {
     // Text/Story/Lore/Translation
@@ -301,7 +348,7 @@ export const filterModels = (
         m.capabilities?.text ??
         (!m.id.includes("dall-e") &&
           !m.id.includes("tts") &&
-          !m.id.includes("veo")),
+          !m.id.includes("veo"))
     );
 
     // For Story mode, we specifically require Tool support because the Agentic Loop relies on it.
@@ -310,35 +357,56 @@ export const filterModels = (
     }
   }
 
-  return filtered.sort((a, b) =>
-    (a.name || a.id).localeCompare(b.name || b.id),
-  );
+  return filtered.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
 };
 
-// Unified Content Generation Helper
+// ============================================================================
+// Unified Content Generation
+// ============================================================================
+
+/** 内容生成结果类型 */
+type ContentGenerationResultType =
+  | { functionCalls?: ToolCallResult[] }
+  | Record<string, unknown>
+  | string;
+
+interface GenerateContentResult {
+  result: ContentGenerationResultType;
+  usage: TokenUsage;
+  raw: unknown;
+  log?: LogEntry;
+}
+
+interface GenerateContentUnifiedOptions {
+  thinkingLevel?: "low" | "medium" | "high";
+  mediaResolution?: "low" | "medium" | "high";
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+  onChunk?: (text: string) => void;
+  tools?: Array<{ name: string; description: string; parameters: unknown }>;
+  generationDetails?: LogEntry["generationDetails"];
+}
+
+/**
+ * 统一内容生成助手
+ */
 export const generateContentUnified = async (
-  provider: "gemini" | "openai" | "openrouter",
+  provider: ProviderType,
   modelId: string,
   systemInstruction: string,
-  contents: any[],
-  schema?: any,
-  options?: {
-    thinkingLevel?: "low" | "medium" | "high";
-    mediaResolution?: "low" | "medium" | "high";
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    minP?: number;
-    onChunk?: (text: string) => void;
-    tools?: any[];
-    generationDetails?: LogEntry["generationDetails"];
-  },
-): Promise<{ result: any; usage: TokenUsage; raw: any; log?: LogEntry }> => {
-  let result, usage, raw;
+  contents: unknown[],
+  schema?: unknown,
+  options?: GenerateContentUnifiedOptions
+): Promise<GenerateContentResult> => {
+  let result: GenerateContentResult["result"];
+  let usage: TokenUsage;
+  let raw: unknown;
 
   // Get options from current settings (defaults)
   const storyConfig = getProviderConfig("story");
-  const mergedOptions = {
+  const mergedOptions: GenerateContentOptions = {
     thinkingLevel: options?.thinkingLevel || storyConfig.thinkingLevel,
     mediaResolution: options?.mediaResolution || storyConfig.mediaResolution,
     temperature: options?.temperature ?? storyConfig.temperature,
@@ -346,76 +414,125 @@ export const generateContentUnified = async (
     topK: options?.topK ?? storyConfig.topK,
     minP: options?.minP ?? storyConfig.minP,
     onChunk: options?.onChunk,
-    tools: options?.tools,
+    tools: options?.tools as GenerateContentOptions["tools"],
   };
+
+  // Detect input format and convert as needed
+  // Format detection:
+  // - UnifiedMessage[]: has 'content' array with objects containing 'type'
+  // - Gemini format: has 'parts' array with objects containing 'text'
+  const isUnifiedFormat = Array.isArray(contents) &&
+    contents.length > 0 &&
+    typeof contents[0] === 'object' &&
+    'content' in contents[0] &&
+    Array.isArray((contents[0] as UnifiedMessage).content);
+
+  const isGeminiFormat = Array.isArray(contents) &&
+    contents.length > 0 &&
+    typeof contents[0] === 'object' &&
+    'parts' in contents[0];
 
   try {
     if (provider === "gemini") {
-      ({ result, usage, raw } = await generateGeminiContent(
+      // Gemini expects Content[] format (with 'parts')
+      let geminiContents: unknown[];
+      if (isUnifiedFormat) {
+        geminiContents = toGeminiFormat(contents as UnifiedMessage[]);
+      } else if (isGeminiFormat) {
+        geminiContents = contents; // Already in Gemini format
+      } else {
+        geminiContents = contents; // Assume it's already correct
+      }
+
+      const response = await generateGeminiContent(
         geminiConfig,
         modelId,
         systemInstruction,
-        contents,
-        schema,
-        mergedOptions,
-      ));
+        geminiContents as Parameters<typeof generateGeminiContent>[3],
+        schema as Parameters<typeof generateGeminiContent>[4],
+        mergedOptions
+      );
+      result = response.result;
+      usage = response.usage;
+      raw = response.raw;
     } else {
-      // Convert schema for OpenAI/OpenRouter
-      const openAISchema = schema
-        ? convertJsonSchemaToOpenAI(schema)
-        : undefined;
-      const config =
-        provider === "openai" ? { ...openaiConfig, modelId } : openRouterConfig;
+      // OpenAI/OpenRouter expect UnifiedMessage[] - convert from Gemini format if needed
+      let unifiedContents: UnifiedMessage[];
+      if (isUnifiedFormat) {
+        unifiedContents = contents as UnifiedMessage[];
+      } else if (isGeminiFormat) {
+        // Convert from Gemini format to UnifiedMessage[]
+        unifiedContents = fromGeminiFormat(contents as Array<{ role: string; parts: Array<{ text?: string }> }>);
+      } else {
+        // Fallback: try to use as-is (may fail)
+        console.warn('[generateContentUnified] Unknown message format, attempting to use as-is');
+        unifiedContents = contents as UnifiedMessage[];
+      }
 
       if (provider === "openai") {
-        ({ result, usage, raw } = await generateOpenAIContent(
-          config as OpenAIConfig,
+        const response = await generateOpenAIContent(
+          { ...openaiConfig, modelId },
           modelId,
           systemInstruction,
-          contents,
-          openAISchema,
-          mergedOptions,
-        ));
+          unifiedContents,
+          schema as Parameters<typeof generateOpenAIContent>[4],
+          mergedOptions
+        );
+        result = response.result;
+        usage = response.usage;
+        raw = response.raw;
       } else {
-        ({ result, usage, raw } = await generateOpenRouterContent(
-          config as OpenRouterConfig,
+        const response = await generateOpenRouterContent(
+          openRouterConfig,
           modelId,
           systemInstruction,
-          contents,
-          openAISchema,
-          mergedOptions,
-        ));
+          unifiedContents,
+          schema as Parameters<typeof generateOpenRouterContent>[4],
+          mergedOptions
+        );
+        result = response.result;
+        usage = response.usage;
+        raw = response.raw;
       }
     }
-  } catch (e: any) {
-    console.error("Generation failed", e);
-    if (e instanceof SyntaxError || e.message.includes("JSON")) {
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.error("Generation failed", error);
+
+    if (e instanceof JSONParseError || error.message.includes("JSON")) {
       throw new Error(
-        "The AI narrator stumbled over their words (Invalid JSON). Please try again.",
+        "The AI narrator stumbled over their words (Invalid JSON). Please try again."
       );
     }
-    throw e;
+    throw error;
   }
 
   const log = createLogEntry(
     provider,
     modelId,
     "generateContent",
-    { systemInstruction, contents },
+    { systemInstruction, contents: contents as Record<string, unknown>[] },
     raw,
     usage,
     undefined, // toolCalls
-    options?.generationDetails,
+    options?.generationDetails
   );
   return { result, usage, raw, log };
 };
 
+// ============================================================================
+// Story Generation
+// ============================================================================
+
+/**
+ * 生成故事大纲
+ */
 export const generateStoryOutline = async (
   theme: string,
   language: string,
   customContext?: string,
-  tFunc?: (key: string, options?: any) => string,
-  onChunk?: (text: string) => void,
+  tFunc?: (key: string, options?: Record<string, unknown>) => string,
+  onChunk?: (text: string) => void
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
 
@@ -430,14 +547,9 @@ export const generateStoryOutline = async (
     themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
   } else {
     // Fallback to static translations
-    // @ts-ignore
     const themeData = THEMES[theme] || THEMES["fantasy"];
-    // @ts-ignore
-    const langData = LANG_MAP[language] || LANG_MAP["en"];
-    themeDataBackgroundTemplate =
-      langData.themes?.[theme]?.backgroundTemplate ||
-      themeData.backgroundTemplate;
-    themeDataExample = langData.themes?.[theme]?.example || themeData.example;
+    themeDataBackgroundTemplate = themeData.backgroundTemplate;
+    themeDataExample = themeData.example;
   }
 
   const prompt = getOutlinePrompt(
@@ -445,7 +557,7 @@ export const generateStoryOutline = async (
     language,
     themeDataBackgroundTemplate,
     themeDataExample,
-    customContext,
+    customContext
   );
 
   const { result, log } = await generateContentUnified(
@@ -454,17 +566,20 @@ export const generateStoryOutline = async (
     "You are a creative writer.",
     [{ role: "user", parts: [{ text: prompt }] }],
     storyOutlineSchema,
-    { onChunk },
+    { onChunk }
   );
 
   return { outline: result as StoryOutline, log: log! };
 };
 
+/**
+ * 总结上下文
+ */
 export const summarizeContext = async (
   previousSummary: StorySummary,
   newTurns: string,
-  language: string,
-): Promise<{ summary: StorySummary; log: LogEntry }> => {
+  language: string
+): Promise<{ summary: StorySummary | null; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
   const prompt = getSummaryPrompt(previousSummary, newTurns, language);
   const sys =
@@ -477,33 +592,40 @@ export const summarizeContext = async (
       modelId,
       sys,
       contents,
-      summarySchema, // Ensure this schema supports the new dual-layer structure or is flexible enough
+      summarySchema
     );
-    // The result should now be the full JSON object (visible + hidden)
-    // We return it directly. The caller (useGameEngine) will handle storing it.
-    return { summary: result, log };
-  } catch (e: any) {
-    console.error("Summary failed", e);
+    return { summary: result as StorySummary, log: log! };
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.error("Summary failed", error);
     return {
       summary: null,
       log: createLogEntry(
         provider,
         modelId,
         "summary",
-        { error: e.message },
-        null,
+        { error: error.message },
+        null
       ),
     };
   }
 };
 
-// --- Refactored Helpers for generateAdventureTurn ---
+// ============================================================================
+// Theme Configuration
+// ============================================================================
+
+interface ThemeConfig {
+  narrativeStyle: string;
+  example: string | undefined;
+  isRestricted: boolean;
+}
 
 const resolveThemeConfig = (
   themeKey: string | undefined,
   language: string,
-  tFunc?: (key: string, options?: any) => string,
-) => {
+  tFunc?: (key: string, options?: Record<string, unknown>) => string
+): ThemeConfig => {
   let narrativeStyle = "Standard adventure tone.";
   let example: string | undefined;
 
@@ -531,12 +653,12 @@ const buildSystemContext = (
   example: string | undefined,
   isRestricted: boolean,
   outline: StoryOutline | null,
-  godMode?: boolean,
-) => {
+  godMode?: boolean
+): string => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
-    isRestricted,
+    isRestricted
   );
   const staticWorldContext = getStaticWorldContext(outline);
 
@@ -548,13 +670,6 @@ const buildSystemContext = (
 
 /**
  * Build turn contents with optimized message structure for KV Cache.
- *
- * Message Order (Static → Semi-Static → Dynamic):
- * 1. [STATIC] Story Memory (summaries) - changes infrequently
- * 2. [DYNAMIC] RAG Context (semantic search results) - optional
- * 3. [DYNAMIC] Recent History - conversation context
- * 4. [SEMI-STATIC] Current State Hints - changes each turn but is small
- * 5. [DYNAMIC] Current User Action (MUST immediately follow "Awaiting player action")
  */
 const buildTurnContents = (
   summaries: StorySummary[],
@@ -562,22 +677,18 @@ const buildTurnContents = (
   recentHistory: StorySegment[],
   timeline: TimelineEvent[],
   userAction: string,
-  ragContext?: string,
+  ragContext?: string
 ): { messages: UnifiedMessage[]; dynamicContext: string } => {
   const messages: UnifiedMessage[] = [];
 
   // === Message 1: Story Memory (STATIC - changes only after summarization) ===
-  const dynamicContext = getDynamicStoryContext(
-    summaries,
-    recentHistory,
-    timeline,
-  );
+  const dynamicContext = getDynamicStoryContext(summaries, recentHistory, timeline);
 
   if (dynamicContext) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`,
-      ),
+        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`
+      )
     );
     messages.push({
       role: "assistant",
@@ -589,8 +700,8 @@ const buildTurnContents = (
   if (ragContext && ragContext.trim()) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`,
-      ),
+        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`
+      )
     );
     messages.push({
       role: "assistant",
@@ -599,17 +710,15 @@ const buildTurnContents = (
   }
 
   // === Message 3: Recent History (DYNAMIC - before current state) ===
-  // This represents the conversation flow LEADING UP TO the current turn
   if (recentHistory.length > 0) {
-    // Group recent history into a context block
     const historyText = recentHistory
       .map((seg) => `[${seg.role.toUpperCase()}]: ${seg.text}`)
       .join("\n\n");
 
     messages.push(
       createUserMessage(
-        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`,
-      ),
+        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`
+      )
     );
     messages.push({
       role: "assistant",
@@ -617,45 +726,50 @@ const buildTurnContents = (
     });
   }
 
-  // === Message 3: Current State Hints (SEMI-STATIC - IDs and names) ===
+  // === Message 4: Current State Hints (SEMI-STATIC - IDs and names) ===
   messages.push(
-    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`),
+    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`)
   );
   messages.push({
     role: "assistant",
-    content: [
-      { type: "text", text: "[State acknowledged. Awaiting player action.]" },
-    ],
+    content: [{ type: "text", text: "[State acknowledged. Awaiting player action.]" }],
   });
 
   // === Final Message: User Action with Instructions ===
-  // This MUST immediately follow "Awaiting player action"
-
   messages.push(createUserMessage(userAction));
   return { messages, dynamicContext };
 };
 
-// --- Turn Context for Runtime Parameters ---
+// ============================================================================
+// Turn Context and Agentic Loop
+// ============================================================================
 
 export interface TurnContext {
   recentHistory: StorySegment[];
   userAction: string;
   language: string;
   themeKey?: string;
-  tFunc?: (key: string) => any;
+  tFunc?: (key: string) => unknown;
 }
 
-// --- Agentic Loop Implementation ---
+interface AgenticLoopResult {
+  response: GameResponse;
+  logs: LogEntry[];
+  usage: TokenUsage;
+}
 
+/**
+ * 生成冒险回合
+ */
 export const generateAdventureTurn = async (
   gameState: GameState,
-  context: TurnContext,
-): Promise<{ response: GameResponse; logs: LogEntry[]; usage: TokenUsage }> => {
+  context: TurnContext
+): Promise<AgenticLoopResult> => {
   const { provider, modelId } = getProviderConfig("story");
   const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
     context.themeKey,
     context.language,
-    context.tFunc,
+    context.tFunc as (key: string, options?: Record<string, unknown>) => string
   );
 
   const systemInstruction = buildSystemContext(
@@ -664,7 +778,7 @@ export const generateAdventureTurn = async (
     example,
     isRestricted,
     gameState.outline,
-    gameState.godMode, // Pass God Mode flag
+    gameState.godMode
   );
 
   // Try to get RAG context if embedding is enabled
@@ -677,7 +791,7 @@ export const generateAdventureTurn = async (
       // 1. Get context from current user action
       const actionRag = await embeddingManager.getContextForAction(
         context.userAction,
-        gameState,
+        gameState
       );
       if (actionRag.combinedContext) {
         ragContextParts.push(actionRag.combinedContext);
@@ -686,7 +800,7 @@ export const generateAdventureTurn = async (
       // 2. If there are ragQueries from the previous turn, execute them
       if (gameState.ragQueries && gameState.ragQueries.length > 0) {
         console.log(
-          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`,
+          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`
         );
         for (const query of gameState.ragQueries) {
           try {
@@ -695,13 +809,13 @@ export const generateAdventureTurn = async (
             });
             if (queryRag.combinedContext) {
               ragContextParts.push(
-                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`,
+                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`
               );
             }
           } catch (queryError) {
             console.warn(
               `[RAG] Failed to process pre-planned query "${query}":`,
-              queryError,
+              queryError
             );
           }
         }
@@ -710,7 +824,7 @@ export const generateAdventureTurn = async (
       if (ragContextParts.length > 0) {
         ragContext = ragContextParts.join("\n\n");
         console.log(
-          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`,
+          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`
         );
       }
     }
@@ -725,7 +839,7 @@ export const generateAdventureTurn = async (
     context.recentHistory,
     gameState.timeline || [],
     context.userAction,
-    ragContext,
+    ragContext
   );
 
   const generationDetails: LogEntry["generationDetails"] = {
@@ -742,30 +856,30 @@ export const generateAdventureTurn = async (
     systemInstruction,
     messages,
     gameState,
-    generationDetails,
+    generationDetails
   );
 };
 
+/**
+ * Agentic Loop 实现
+ */
 const runAgenticLoop = async (
-  provider: "gemini" | "openai" | "openrouter",
+  provider: ProviderType,
   modelId: string,
   systemInstruction: string,
   initialContents: UnifiedMessage[],
   inputState: GameState,
-  generationDetails?: LogEntry["generationDetails"],
-): Promise<{ response: GameResponse; logs: LogEntry[]; usage: TokenUsage }> => {
-  // Use unified message format internally
+  generationDetails?: LogEntry["generationDetails"]
+): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   let turnCount = 0;
   const maxTurns = 10; // Safety limit
 
-  // Collect all logs from this agentic session
   const allLogs: LogEntry[] = [];
 
   // Use the GameState directly as the database initial state
   const db = new GameDatabase({
     ...inputState,
-    // Ensure all required fields have defaults if missing
     knowledge: inputState.knowledge || [],
     factions: inputState.factions || [],
     timeline: inputState.timeline || [],
@@ -793,14 +907,14 @@ const runAgenticLoop = async (
     totalTokens: 0,
   };
 
-  // Initialize lastLog with a placeholder - will be overwritten on first API call
+  // Initialize lastLog with a placeholder
   let lastLog: LogEntry = createLogEntry(
     provider,
     modelId,
     "agentic_init",
     { initializing: true },
     {},
-    totalUsage,
+    totalUsage
   );
 
   // Prepare tools for the provider
@@ -811,13 +925,16 @@ const runAgenticLoop = async (
   }));
 
   // Get pending consequences that are READY for AI to potentially trigger
-  // These are NOT auto-triggered - AI decides based on story context
   const readyConsequences = db.getReadyConsequences();
   if (readyConsequences.length > 0) {
     const readyList = readyConsequences
       .map(
         (rc) =>
-          `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${rc.consequence.conditions?.length ? ` (conditions: ${rc.consequence.conditions.join(", ")})` : ""}${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`,
+          `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${
+            rc.consequence.conditions?.length
+              ? ` (conditions: ${rc.consequence.conditions.join(", ")})`
+              : ""
+          }${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`
       )
       .join("\n");
 
@@ -832,21 +949,17 @@ const runAgenticLoop = async (
           `3. Would triggering enhance the narrative?\n\n` +
           `Ready consequences:\n${readyList}\n\n` +
           `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
-          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`,
-      ),
+          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`
+      )
     );
   }
 
   while (turnCount < maxTurns) {
     console.log(`[Agentic Loop] Turn ${turnCount + 1}`);
 
-    let result, usage, raw;
-
-    // Convert unified messages to provider-specific format
-    const providerContents =
-      provider === "gemini"
-        ? toGeminiFormat(conversationHistory)
-        : toOpenAIFormat(conversationHistory);
+    let result: GenerateContentResult["result"];
+    let usage: TokenUsage;
+    let raw: unknown;
 
     // Retry logic for transient errors like MALFORMED_FUNCTION_CALL
     const maxRetries = 2;
@@ -855,13 +968,14 @@ const runAgenticLoop = async (
 
     while (retryCount <= maxRetries) {
       try {
+        // Pass UnifiedMessage[] directly - generateContentUnified handles format conversion
         const resultData = await generateContentUnified(
           provider,
           modelId,
           systemInstruction,
-          providerContents,
+          conversationHistory,
           undefined,
-          { tools: toolConfig, generationDetails },
+          { tools: toolConfig, generationDetails }
         );
 
         result = resultData.result;
@@ -870,22 +984,24 @@ const runAgenticLoop = async (
         console.log(
           `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
           usage,
-          `HasFunctionCalls: ${!!result?.functionCalls}`,
+          `HasFunctionCalls: ${!!(result as { functionCalls?: unknown }).functionCalls}`
         );
         break; // Success, exit retry loop
-      } catch (e: any) {
-        lastError = e;
-        const errorMessage = e?.message || "";
+      } catch (e) {
+        const error = e instanceof Error ? e : new Error(String(e));
+        lastError = error;
+        const errorMessage = error.message || "";
 
         // Check if this is a retryable error (malformed function call)
         if (
+          e instanceof MalformedToolCallError ||
           errorMessage.includes("function call format error") ||
           errorMessage.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
           if (retryCount <= maxRetries) {
             console.warn(
-              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`,
+              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`
             );
             // Small delay before retry
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -894,8 +1010,8 @@ const runAgenticLoop = async (
         }
 
         // Non-retryable error or max retries exceeded
-        console.error("[Agentic Loop] Error:", e);
-        throw e;
+        console.error("[Agentic Loop] Error:", error);
+        throw error;
       }
     }
 
@@ -905,10 +1021,10 @@ const runAgenticLoop = async (
     }
 
     // Update Usage with validation
-    if (usage) {
-      totalUsage.promptTokens += usage.promptTokens || 0;
-      totalUsage.completionTokens += usage.completionTokens || 0;
-      totalUsage.totalTokens += usage.totalTokens || 0;
+    if (usage!) {
+      totalUsage.promptTokens += usage!.promptTokens || 0;
+      totalUsage.completionTokens += usage!.completionTokens || 0;
+      totalUsage.totalTokens += usage!.totalTokens || 0;
       console.log(`[Agentic Loop] Cumulative usage:`, totalUsage);
     } else {
       console.warn(`[Agentic Loop] No usage data for turn ${turnCount + 1}`);
@@ -920,15 +1036,17 @@ const runAgenticLoop = async (
       `agentic_turn_${turnCount + 1}`,
       { turn: turnCount + 1 },
       {
-        hasToolCalls: !!result?.functionCalls,
-        toolCount: result?.functionCalls?.length || 0,
+        hasToolCalls: !!(result! as { functionCalls?: unknown }).functionCalls,
+        toolCount: ((result! as { functionCalls?: ToolCallResult[] }).functionCalls?.length) || 0,
       },
-      usage,
+      usage!
     );
 
     // Handle Tool Calls
-    if (result && result.functionCalls) {
-      const toolCalls: UnifiedToolCallResult[] = result.functionCalls;
+    const functionCalls = (result! as { functionCalls?: ToolCallResult[] }).functionCalls;
+
+    if (result && functionCalls) {
+      const toolCalls: UnifiedToolCallResult[] = functionCalls;
 
       // Collect detailed tool call records for this turn
       const turnToolCalls: ToolCallRecord[] = [];
@@ -940,8 +1058,8 @@ const runAgenticLoop = async (
             id: fc.id,
             name: fc.name,
             arguments: fc.args,
-          })),
-        ),
+          }))
+        )
       );
 
       // Execute Tools and collect responses
@@ -957,246 +1075,11 @@ const runAgenticLoop = async (
 
         let output: unknown = { success: false, error: "Unknown tool" };
 
-        // Query operations
-        if (name === "query_inventory") {
-          output = db.query("inventory", args.query as string);
-        } else if (name === "query_relationships") {
-          output = db.query("relationship", args.query as string);
-        } else if (name === "query_locations") {
-          output = db.query("location", args.query as string);
-        } else if (name === "query_quests") {
-          output = db.query("quest", args.query as string);
-        } else if (name === "query_knowledge") {
-          output = db.query("knowledge", args.query as string);
-        } else if (name === "query_timeline") {
-          output = db.query("timeline", args.query as string);
-        } else if (name === "query_causal_chain") {
-          output = db.query("causal_chain", args.query as string);
-        } else if (name === "query_factions") {
-          output = db.query("faction", args.query as string);
-        } else if (name === "query_global") {
-          output = db.query("global");
-        } else if (name === "query_character") {
-          output = db.query("character");
-        }
-        // RAG search operation
-        else if (name === "rag_search") {
-          const embeddingManager = getEmbeddingManager();
-          if (embeddingManager && embeddingManager.hasIndex()) {
-            try {
-              const query = args.query as string;
-              const types = args.types as string[] | undefined;
-              const topK = (args.topK as number) || 5;
-              const currentForkOnly = args.currentForkOnly as
-                | boolean
-                | undefined;
-              const beforeCurrentTurn = args.beforeCurrentTurn as
-                | boolean
-                | undefined;
+        // Execute tool
+        output = executeToolCall(name, args, db, accumulatedResponse);
 
-              // Build search options with fork/turn filtering
-              const searchOptions: any = {
-                topK,
-                types: types as any,
-              };
-
-              // Add fork filtering if requested
-              if (currentForkOnly) {
-                searchOptions.currentForkOnly = true;
-                searchOptions.forkId = db.getState().forkId;
-                searchOptions.forkTree = db.getState().forkTree;
-              }
-
-              // Add turn filtering if requested
-              if (beforeCurrentTurn) {
-                searchOptions.beforeCurrentTurn = true;
-                searchOptions.currentTurn = db.getState().turnNumber;
-              }
-
-              const ragContext = await embeddingManager.retrieveContext(
-                query,
-                searchOptions,
-              );
-
-              output = {
-                success: true,
-                query,
-                filters: {
-                  currentForkOnly: currentForkOnly || false,
-                  beforeCurrentTurn: beforeCurrentTurn || false,
-                  forkId: currentForkOnly ? db.getState().forkId : undefined,
-                  turnNumber: beforeCurrentTurn
-                    ? db.getState().turnNumber
-                    : undefined,
-                },
-                results: {
-                  story: ragContext.storyContext,
-                  npc: ragContext.npcContext,
-                  location: ragContext.locationContext,
-                  item: ragContext.itemContext,
-                  knowledge: ragContext.knowledgeContext,
-                  quest: ragContext.questContext,
-                  event: ragContext.eventContext,
-                },
-                combinedContext: ragContext.combinedContext,
-                message: `Found ${ragContext.storyContext.length + ragContext.npcContext.length + ragContext.locationContext.length + ragContext.itemContext.length + ragContext.knowledgeContext.length + ragContext.questContext.length + ragContext.eventContext.length} relevant entries`,
-              };
-            } catch (error) {
-              output = {
-                success: false,
-                error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-              };
-            }
-          } else {
-            output = {
-              success: false,
-              error:
-                "RAG search is not available. Embedding index has not been built.",
-              hint: "Use query_* tools to search specific entity types instead.",
-            };
-          }
-        }
-        // Modify operations
-        // Note: Tool parameters are at top level (not wrapped in 'data')
-        // We extract action separately and pass the rest as data
-        else if (name === "update_inventory") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "inventory",
-            actionType as string,
-            data,
-          );
-          if (modifyResult.success) {
-            if (!accumulatedResponse.inventoryActions)
-              accumulatedResponse.inventoryActions = [];
-            accumulatedResponse.inventoryActions.push({
-              action: actionType as "add" | "update" | "remove",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_relationship") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "relationship",
-            actionType as string,
-            data,
-          );
-          if (modifyResult.success) {
-            if (!accumulatedResponse.relationshipActions)
-              accumulatedResponse.relationshipActions = [];
-            accumulatedResponse.relationshipActions.push({
-              action: actionType as "add" | "update" | "remove",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_location") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "location",
-            actionType as string,
-            data,
-          );
-          if (modifyResult.success) {
-            if (!accumulatedResponse.locationActions)
-              accumulatedResponse.locationActions = [];
-            accumulatedResponse.locationActions.push({
-              type: "known",
-              action: actionType as "add" | "update",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_quest") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("quest", actionType as string, data);
-          if (modifyResult.success) {
-            if (!accumulatedResponse.questActions)
-              accumulatedResponse.questActions = [];
-            accumulatedResponse.questActions.push({
-              action: actionType as "add" | "update" | "complete" | "fail",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_knowledge") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "knowledge",
-            actionType as string,
-            data,
-          );
-          if (modifyResult.success) {
-            if (!accumulatedResponse.knowledgeActions)
-              accumulatedResponse.knowledgeActions = [];
-            accumulatedResponse.knowledgeActions.push({
-              action: actionType as "add" | "update",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_timeline") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "timeline",
-            actionType as string,
-            data,
-          );
-          output = modifyResult;
-        } else if (name === "update_causal_chain") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify(
-            "causal_chain",
-            actionType as string,
-            data,
-          );
-          output = modifyResult;
-        } else if (name === "update_faction") {
-          const { action: actionType, ...data } = args;
-          const modifyResult = db.modify("faction", actionType as string, data);
-          if (modifyResult.success) {
-            if (!accumulatedResponse.factionActions)
-              accumulatedResponse.factionActions = [];
-            accumulatedResponse.factionActions.push({
-              action: actionType as "update",
-              ...data,
-            } as any);
-          }
-          output = modifyResult;
-        } else if (name === "update_world_info") {
-          // Handle world info unlocking
-          const { unlockWorldSetting, unlockMainGoal, reason } = args as {
-            unlockWorldSetting?: boolean;
-            unlockMainGoal?: boolean;
-            reason: string;
-          };
-          const modifyResult = db.modify("world_info", "update", {
-            unlockWorldSetting,
-            unlockMainGoal,
-            reason,
-          });
-          if (modifyResult.success) {
-            if (!accumulatedResponse.worldInfoUpdates)
-              accumulatedResponse.worldInfoUpdates = [];
-            accumulatedResponse.worldInfoUpdates.push({
-              unlockWorldSetting,
-              unlockMainGoal,
-              reason,
-            });
-          }
-          output = modifyResult;
-        } else if (name === "update_global") {
-          const { ...data } = args;
-          const modifyResult = db.modify("global", "update", data);
-          output = modifyResult;
-        } else if (name === "update_character") {
-          const modifyResult = db.modify("character", "update", args);
-          if (modifyResult.success) {
-            accumulatedResponse.characterUpdates = args as any;
-          }
-          output = modifyResult;
-        } else if (name === "finish_turn") {
+        // Handle finish_turn specially
+        if (name === "finish_turn") {
           // Finalize
           accumulatedResponse.narrative = args.narrative as string;
           accumulatedResponse.choices = args.choices as string[];
@@ -1213,7 +1096,7 @@ const runAgenticLoop = async (
 
           // Extract alive entities for next turn context
           if (args.aliveEntities) {
-            accumulatedResponse.aliveEntities = args.aliveEntities as any;
+            accumulatedResponse.aliveEntities = args.aliveEntities as GameResponse["aliveEntities"];
           }
 
           // Extract RAG queries for next turn context
@@ -1223,7 +1106,7 @@ const runAgenticLoop = async (
 
           // Extract ending type if story has concluded
           if (args.ending) {
-            accumulatedResponse.ending = args.ending as any;
+            accumulatedResponse.ending = args.ending as GameResponse["ending"];
           }
 
           // Extract forceEnd flag
@@ -1232,14 +1115,11 @@ const runAgenticLoop = async (
           }
 
           // Attach the FINAL STATE from the DB
-          (accumulatedResponse as any).finalState = db.getState();
+          (accumulatedResponse as GameResponse & { finalState: unknown }).finalState = db.getState();
 
+          console.log(`[Agentic Loop] finish_turn called. Final usage:`, totalUsage);
           console.log(
-            `[Agentic Loop] finish_turn called. Final usage:`,
-            totalUsage,
-          );
-          console.log(
-            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`,
+            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`
           );
 
           // Record finish_turn as a tool call
@@ -1267,14 +1147,13 @@ const runAgenticLoop = async (
             {
               totalToolCalls: allLogs.reduce(
                 (sum, log) => sum + (log.toolCalls?.length || 0),
-                0,
+                0
               ),
-              narrative:
-                accumulatedResponse.narrative?.substring(0, 100) + "...",
+              narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
               choices: accumulatedResponse.choices,
               atmosphere: accumulatedResponse.atmosphere,
             },
-            totalUsage,
+            totalUsage
           );
           allLogs.push(finalLog);
 
@@ -1306,15 +1185,14 @@ const runAgenticLoop = async (
       allLogs.push(lastLog);
 
       // Add all tool responses as a single message with multiple parts
-      // This ensures proper correspondence between tool calls and responses
       conversationHistory.push(createToolResponseMessage(toolResponses));
 
       turnCount++;
     } else {
       // Fallback for text-only response
-      if (result && result.narrative) {
+      if (result && (result as GameResponse).narrative) {
         allLogs.push(lastLog);
-        return { response: result, logs: allLogs, usage: totalUsage };
+        return { response: result as GameResponse, logs: allLogs, usage: totalUsage };
       }
 
       console.warn("Model returned text instead of tool call:", result);
@@ -1322,8 +1200,7 @@ const runAgenticLoop = async (
       return {
         response: {
           ...accumulatedResponse,
-          narrative:
-            typeof result === "string" ? result : JSON.stringify(result),
+          narrative: typeof result === "string" ? result : JSON.stringify(result),
           choices: ["Continue"],
         },
         logs: allLogs,
@@ -1335,21 +1212,271 @@ const runAgenticLoop = async (
   return { response: accumulatedResponse, logs: allLogs, usage: totalUsage };
 };
 
-// ... (Rest of the file)
+// ============================================================================
+// Tool Execution
+// ============================================================================
 
+/**
+ * 执行工具调用
+ */
+function executeToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  db: GameDatabase,
+  accumulatedResponse: GameResponse
+): unknown {
+  // Query operations
+  if (name === "query_inventory") {
+    return db.query("inventory", args.query as string);
+  } else if (name === "query_relationships") {
+    return db.query("relationship", args.query as string);
+  } else if (name === "query_locations") {
+    return db.query("location", args.query as string);
+  } else if (name === "query_quests") {
+    return db.query("quest", args.query as string);
+  } else if (name === "query_knowledge") {
+    return db.query("knowledge", args.query as string);
+  } else if (name === "query_timeline") {
+    return db.query("timeline", args.query as string);
+  } else if (name === "query_causal_chain") {
+    return db.query("causal_chain", args.query as string);
+  } else if (name === "query_factions") {
+    return db.query("faction", args.query as string);
+  } else if (name === "query_global") {
+    return db.query("global");
+  } else if (name === "query_character") {
+    return db.query("character");
+  }
+  // RAG search operation
+  else if (name === "rag_search") {
+    return executeRagSearch(args, db);
+  }
+  // Modify operations
+  else if (name === "update_inventory") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("inventory", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.inventoryActions) accumulatedResponse.inventoryActions = [];
+      accumulatedResponse.inventoryActions.push({
+        action: actionType as "add" | "update" | "remove",
+        ...data,
+      } as GameResponse["inventoryActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_relationship") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("relationship", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.relationshipActions) accumulatedResponse.relationshipActions = [];
+      accumulatedResponse.relationshipActions.push({
+        action: actionType as "add" | "update" | "remove",
+        ...data,
+      } as GameResponse["relationshipActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_location") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("location", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.locationActions) accumulatedResponse.locationActions = [];
+      accumulatedResponse.locationActions.push({
+        type: "known",
+        action: actionType as "add" | "update",
+        ...data,
+      } as GameResponse["locationActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_quest") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("quest", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.questActions) accumulatedResponse.questActions = [];
+      accumulatedResponse.questActions.push({
+        action: actionType as "add" | "update" | "complete" | "fail",
+        ...data,
+      } as GameResponse["questActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_knowledge") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("knowledge", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.knowledgeActions) accumulatedResponse.knowledgeActions = [];
+      accumulatedResponse.knowledgeActions.push({
+        action: actionType as "add" | "update",
+        ...data,
+      } as GameResponse["knowledgeActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_timeline") {
+    const { action: actionType, ...data } = args;
+    return db.modify("timeline", actionType as string, data);
+  } else if (name === "update_causal_chain") {
+    const { action: actionType, ...data } = args;
+    return db.modify("causal_chain", actionType as string, data);
+  } else if (name === "update_faction") {
+    const { action: actionType, ...data } = args;
+    const modifyResult = db.modify("faction", actionType as string, data);
+    if (modifyResult.success) {
+      if (!accumulatedResponse.factionActions) accumulatedResponse.factionActions = [];
+      accumulatedResponse.factionActions.push({
+        action: actionType as "update",
+        ...data,
+      } as GameResponse["factionActions"][number]);
+    }
+    return modifyResult;
+  } else if (name === "update_world_info") {
+    // Handle world info unlocking
+    const { unlockWorldSetting, unlockMainGoal, reason } = args as {
+      unlockWorldSetting?: boolean;
+      unlockMainGoal?: boolean;
+      reason: string;
+    };
+    const modifyResult = db.modify("world_info", "update", {
+      unlockWorldSetting,
+      unlockMainGoal,
+      reason,
+    });
+    if (modifyResult.success) {
+      if (!accumulatedResponse.worldInfoUpdates) accumulatedResponse.worldInfoUpdates = [];
+      accumulatedResponse.worldInfoUpdates.push({
+        unlockWorldSetting,
+        unlockMainGoal,
+        reason,
+      });
+    }
+    return modifyResult;
+  } else if (name === "update_global") {
+    const { ...data } = args;
+    return db.modify("global", "update", data);
+  } else if (name === "update_character") {
+    const modifyResult = db.modify("character", "update", args);
+    if (modifyResult.success) {
+      accumulatedResponse.characterUpdates = args as GameResponse["characterUpdates"];
+    }
+    return modifyResult;
+  } else if (name === "finish_turn") {
+    // finish_turn is handled separately in the main loop
+    return { success: true };
+  }
+
+  return { success: false, error: "Unknown tool" };
+}
+
+/**
+ * 执行 RAG 搜索
+ */
+async function executeRagSearch(
+  args: Record<string, unknown>,
+  db: GameDatabase
+): Promise<unknown> {
+  const embeddingManager = getEmbeddingManager();
+  if (embeddingManager && embeddingManager.hasIndex()) {
+    try {
+      const query = args.query as string;
+      const types = args.types as ("story" | "location" | "quest" | "knowledge" | "npc" | "item" | "event")[] | undefined;
+      const topK = (args.topK as number) || 5;
+      const currentForkOnly = args.currentForkOnly as boolean | undefined;
+      const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
+
+      // Build search options with fork/turn filtering
+      interface SearchOptions {
+        topK: number;
+        types?: ("story" | "location" | "quest" | "knowledge" | "npc" | "item" | "event")[];
+        currentForkOnly?: boolean;
+        forkId?: number;
+        forkTree?: ForkTree;
+        beforeCurrentTurn?: boolean;
+        currentTurn?: number;
+      }
+
+      const searchOptions: SearchOptions = {
+        topK,
+        types,
+      };
+
+      // Add fork filtering if requested
+      if (currentForkOnly) {
+        searchOptions.currentForkOnly = true;
+        searchOptions.forkId = db.getState().forkId;
+        searchOptions.forkTree = db.getState().forkTree;
+      }
+
+      // Add turn filtering if requested
+      if (beforeCurrentTurn) {
+        searchOptions.beforeCurrentTurn = true;
+        searchOptions.currentTurn = db.getState().turnNumber;
+      }
+
+      const ragContext = await embeddingManager.retrieveContext(query, searchOptions);
+
+      return {
+        success: true,
+        query,
+        filters: {
+          currentForkOnly: currentForkOnly || false,
+          beforeCurrentTurn: beforeCurrentTurn || false,
+          forkId: currentForkOnly ? db.getState().forkId : undefined,
+          turnNumber: beforeCurrentTurn ? db.getState().turnNumber : undefined,
+        },
+        results: {
+          story: ragContext.storyContext,
+          npc: ragContext.npcContext,
+          location: ragContext.locationContext,
+          item: ragContext.itemContext,
+          knowledge: ragContext.knowledgeContext,
+          quest: ragContext.questContext,
+          event: ragContext.eventContext,
+        },
+        combinedContext: ragContext.combinedContext,
+        message: `Found ${
+          ragContext.storyContext.length +
+          ragContext.npcContext.length +
+          ragContext.locationContext.length +
+          ragContext.itemContext.length +
+          ragContext.knowledgeContext.length +
+          ragContext.questContext.length +
+          ragContext.eventContext.length
+        } relevant entries`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  } else {
+    return {
+      success: false,
+      error: "RAG search is not available. Embedding index has not been built.",
+      hint: "Use query_* tools to search specific entity types instead.",
+    };
+  }
+}
+
+// ============================================================================
+// Image/Video/Speech Generation
+// ============================================================================
+
+/**
+ * 生成场景图片
+ */
 export const generateSceneImage = async (
   prompt: string,
-  context: ImageGenerationContext,
+  context: ImageGenerationContext
 ): Promise<{ url: string | null; log: LogEntry }> => {
   const { provider, modelId, enabled, resolution } = getProviderConfig("image");
-  if (!enabled)
+  if (!enabled) {
     return {
       url: null,
       log: createLogEntry("none", "none", "image", { disabled: true }, null),
     };
+  }
 
   const styledPrompt = getSceneImagePrompt(prompt, context);
-  let url, usage, raw;
+  let url: string | null;
+  let usage: TokenUsage | undefined;
+  let raw: unknown;
 
   console.log(
     "Generating image for prompt:",
@@ -1357,30 +1484,39 @@ export const generateSceneImage = async (
     "with model:",
     modelId,
     "and resolution:",
-    resolution,
+    resolution
   );
 
   if (provider === "openai") {
-    ({ url, usage, raw } = await generateOpenAIImage(
+    const response = await generateOpenAIImage(
       { ...openaiConfig, modelId },
       modelId,
       styledPrompt,
-      resolution,
-    ));
+      resolution
+    );
+    url = response.url;
+    usage = response.usage;
+    raw = response.raw;
   } else if (provider === "openrouter") {
-    ({ url, usage, raw } = await generateOpenRouterImage(
+    const response = await generateOpenRouterImage(
       openRouterConfig,
       modelId,
       styledPrompt,
-      resolution,
-    ));
+      resolution
+    );
+    url = response.url;
+    usage = response.usage;
+    raw = response.raw;
   } else {
-    ({ url, usage, raw } = await generateGeminiImage(
+    const response = await generateGeminiImage(
       geminiConfig,
       modelId,
       styledPrompt,
-      resolution,
-    ));
+      resolution
+    );
+    url = response.url;
+    usage = response.usage;
+    raw = response.raw;
   }
 
   const log = createLogEntry(
@@ -1389,17 +1525,20 @@ export const generateSceneImage = async (
     "generateImage",
     { prompt: styledPrompt, resolution },
     raw,
-    usage,
+    usage
   );
   return { url, log };
 };
 
+/**
+ * 翻译游戏内容
+ */
 export const translateGameContent = async (
   segments: StorySegment[],
   inventory: string[],
   character: CharacterStatus,
   relationships: Relationship[],
-  targetLanguage: string,
+  targetLanguage: string
 ): Promise<{
   segments: StorySegment[];
   inventory: string[];
@@ -1407,16 +1546,21 @@ export const translateGameContent = async (
   relationships: Relationship[];
 }> => {
   const { provider, modelId } = getProviderConfig("translation");
+
+  // 提取需要翻译的文本字段
+  const segmentsToTranslate = segments.map((s) => ({
+    id: s.id,
+    text: s.text,
+    choices: s.choices,
+  }));
+
   const payload = {
-    segments: segments.map((s) => ({
-      id: s.id,
-      text: s.text,
-      choices: s.choices,
-    })),
+    segments: segmentsToTranslate,
     inventory,
     character,
     relationships,
   };
+
   const prompt = getTranslationPrompt(targetLanguage, JSON.stringify(payload));
   const sys =
     "Professional translator. Translate all text fields while preserving JSON structure and IDs. Maintain tone and style appropriate to the content. Output valid JSON.";
@@ -1428,18 +1572,47 @@ export const translateGameContent = async (
       modelId,
       sys,
       contents,
-      translationSchema,
+      translationSchema
     );
-    return result;
+
+    // 合并翻译结果和原始 segments
+    const translatedPayload = result as {
+      segments: Array<{ id: string; text: string; choices: string[] }>;
+      inventory: string[];
+      character: CharacterStatus;
+      relationships: Relationship[];
+    };
+
+    const mergedSegments = segments.map((originalSeg) => {
+      const translated = translatedPayload.segments.find((t) => t.id === originalSeg.id);
+      if (translated) {
+        return {
+          ...originalSeg,
+          text: translated.text,
+          choices: translated.choices,
+        };
+      }
+      return originalSeg;
+    });
+
+    return {
+      segments: mergedSegments,
+      inventory: translatedPayload.inventory,
+      character: translatedPayload.character,
+      relationships: translatedPayload.relationships,
+    };
   } catch (error) {
     // Fallback: return original
-    return payload as any;
+    return { segments, inventory, character, relationships };
   }
 };
 
+/**
+ * 生成 Veo 视频
+ */
 export const generateVeoVideo = async (
   imageBase64: string,
-  prompt: string,
+  prompt: string
 ): Promise<string> => {
   const { provider, modelId, enabled } = getProviderConfig("video");
   if (!enabled) throw new Error("Disabled");
@@ -1449,7 +1622,7 @@ export const generateVeoVideo = async (
       geminiConfig,
       modelId,
       imageBase64,
-      prompt,
+      prompt
     );
     return url;
   }
@@ -1457,10 +1630,13 @@ export const generateVeoVideo = async (
   throw new Error(`Video generation not supported by ${provider}`);
 };
 
+/**
+ * 生成语音
+ */
 export const generateSpeech = async (
   text: string,
   voiceName?: string,
-  narrativeTone?: string,
+  narrativeTone?: string
 ): Promise<ArrayBuffer | null> => {
   const { provider, modelId, enabled } = getProviderConfig("audio");
   const audioConfig = currentSettings.audio;
@@ -1468,18 +1644,19 @@ export const generateSpeech = async (
   if (!enabled) throw new Error("Disabled");
 
   // Default options from settings
-  const options: any = {
+  const options: {
+    speed: number;
+    format: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
+    instructions?: string;
+  } = {
     speed: audioConfig.speed || 1.0,
-    format: audioConfig.format || "mp3",
+    format: (audioConfig.format as "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm") || "mp3",
   };
 
   // Determine target voice
   let targetVoice = voiceName || audioConfig.voice || "alloy";
 
-  // Dynamic Voice Selection based on Tone (if provided and no specific voice forced)
-  // Only override if voiceName wasn't explicitly passed (e.g. from a character)
-  // If voiceName IS passed, we respect it.
-  // If voiceName is NOT passed, we use settings.voice OR dynamic tone.
+  // Dynamic Voice Selection based on Tone
   if (!voiceName) {
     if (narrativeTone && (provider === "openai" || provider === "openrouter")) {
       const tone = narrativeTone.toLowerCase();
@@ -1487,28 +1664,29 @@ export const generateSpeech = async (
         tone.includes("suspense") ||
         tone.includes("tense") ||
         tone.includes("danger")
-      )
+      ) {
         targetVoice = "onyx";
-      else if (
+      } else if (
         tone.includes("cheerful") ||
         tone.includes("happy") ||
         tone.includes("energetic")
-      )
+      ) {
         targetVoice = "nova";
-      else if (
+      } else if (
         tone.includes("melancholy") ||
         tone.includes("sad") ||
         tone.includes("quiet")
-      )
+      ) {
         targetVoice = "shimmer";
-      else if (
+      } else if (
         tone.includes("calm") ||
         tone.includes("peaceful") ||
         tone.includes("mystical")
-      )
+      ) {
         targetVoice = "alloy";
-      else if (tone.includes("royal") || tone.includes("authoritative"))
+      } else if (tone.includes("royal") || tone.includes("authoritative")) {
         targetVoice = "fable";
+      }
     }
   }
 
@@ -1527,7 +1705,7 @@ export const generateSpeech = async (
         modelId,
         text,
         targetVoice,
-        options,
+        options
       );
       return audio;
     } else if (provider === "openrouter") {
@@ -1536,14 +1714,11 @@ export const generateSpeech = async (
         modelId,
         text,
         targetVoice,
-        options,
+        options
       );
       return audio;
     } else {
       // Gemini
-      // Gemini doesn't support speed/format in the same way yet via this provider wrapper,
-      // but we pass what we can.
-      // We pass narrativeTone as instructions for Gemini's prompt engineering
       const geminiOptions = {
         ...options,
         instructions: narrativeTone, // Pass tone directly
@@ -1551,10 +1726,10 @@ export const generateSpeech = async (
 
       const { audio } = await generateGeminiSpeech(
         geminiConfig,
-        modelId, // This might be "gemini-1.5-flash" from settings, provider will override to TTS model if needed
+        modelId,
         text,
         targetVoice,
-        geminiOptions,
+        geminiOptions
       );
       return audio;
     }
@@ -1564,10 +1739,13 @@ export const generateSpeech = async (
   }
 };
 
+/**
+ * 生成 Veo 脚本
+ */
 export const generateVeoScript = async (
   gameState: GameState,
   history: StorySegment[],
-  language: string = "English",
+  language: string = "English"
 ): Promise<string> => {
   const prompt = getVeoScriptPrompt(gameState, history, language);
 
@@ -1577,12 +1755,7 @@ export const generateVeoScript = async (
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {
-    const { result, log } = await generateContentUnified(
-      provider,
-      modelId,
-      sys,
-      contents,
-    );
+    const { result } = await generateContentUnified(provider, modelId, sys, contents);
     // result should be the text string since no schema was provided
     return typeof result === "string" ? result : JSON.stringify(result);
   } catch (e: unknown) {
@@ -1591,14 +1764,15 @@ export const generateVeoScript = async (
   }
 };
 
-// ============ Embedding Functions ============
+// ============================================================================
+// Embedding Functions
+// ============================================================================
 
 /**
- * Get available embedding models from a provider.
- * Fetches from the provider's API and falls back to hardcoded defaults.
+ * 获取可用的嵌入模型列表
  */
 export const getEmbeddingModels = async (
-  provider: "gemini" | "openai" | "openrouter",
+  provider: ProviderType
 ): Promise<EmbeddingModelInfo[]> => {
   try {
     if (provider === "gemini") {
@@ -1614,13 +1788,18 @@ export const getEmbeddingModels = async (
   }
 };
 
+interface EmbeddingUsage {
+  promptTokens: number;
+  totalTokens: number;
+}
+
 /**
- * Generate embeddings for a list of texts using the configured embedding provider.
+ * 生成嵌入向量
  */
 export const generateEmbeddings = async (
   texts: string[],
-  config?: EmbeddingConfig,
-): Promise<{ embeddings: Float32Array[]; usage: any }> => {
+  config?: EmbeddingConfig
+): Promise<{ embeddings: Float32Array[]; usage: EmbeddingUsage }> => {
   const embeddingConfig = config || currentSettings.embedding;
 
   if (!embeddingConfig?.enabled) {

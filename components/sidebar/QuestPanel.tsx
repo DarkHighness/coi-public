@@ -121,7 +121,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
             {t("description") || "Description"}
           </span>
-          <p className="pl-1">{q.visible.description}</p>
+          <p className="pl-1">
+            {q.visible?.description || t("noDescription") || "No description"}
+          </p>
 
           {/* Hidden content - only shown when unlocked */}
           {q.unlocked && q.hidden && (
@@ -279,7 +281,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         themeFont={themeFont}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
-          (item.visible.description || "")
+          (item.visible?.description || "")
             .toLowerCase()
             .includes(query.toLowerCase())
         }

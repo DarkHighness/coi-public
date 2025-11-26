@@ -1,87 +1,180 @@
-import { OpenRouter } from "@openrouter/sdk";
-import {
-  ChatCompletion,
-  ChatCompletionChunk,
-  ChatCompletionMessageParam,
-  ChatCompletionCreateParams,
-  ChatCompletionTool,
-} from "openai/resources/chat/completions";
-import { parseModelCapabilities } from "../modelUtils";
-import { ModelInfo, EmbeddingTaskType } from "../../types";
-import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
-import { convertJsonSchemaToOpenAIObject } from "../schemaUtils";
+/**
+ * ============================================================================
+ * OpenRouter Provider - Fetch API Implementation
+ * ============================================================================
+ *
+ * Replaced @openrouter/sdk with native Fetch API to better support
+ * streaming and structured outputs.
+ */
 
-export interface OpenRouterConfig {
-  apiKey: string;
+import type { EmbeddingTaskType, TokenUsage } from "../../types";
+import { parseModelCapabilities } from "../modelUtils";
+import {
+  generateSpeech as generateOpenAISpeech,
+} from "./openaiProvider";
+
+import {
+  OpenRouterConfig,
+  OpenAIConfig,
+  ModelInfo,
+  ModelCapabilities,
+  GenerateContentOptions,
+  ImageGenerationResponse,
+  SpeechGenerationResponse,
+  SpeechGenerationOptions,
+  EmbeddingModelInfo,
+  EmbeddingResponse,
+  ToolCallResult,
+  JsonSchema,
+  UnifiedMessage,
+  TextContentPart,
+  ToolCallContentPart,
+  ToolResponseContentPart,
+  SafetyFilterError,
+  JSONParseError,
+  AIProviderError,
+  MalformedToolCallError,
+  getAspectRatio,
+} from "./types";
+import {
+  convertJsonSchemaToOpenAI,
+  convertJsonSchemaToOpenAIObject,
+} from "../schemaUtils";
+
+// ============================================================================
+// Response Types (Compatible with OpenAI API)
+// ============================================================================
+
+interface OpenRouterChatCompletion {
+  id: string;
+  choices: Array<{
+    message: {
+      role: string;
+      content: string | null;
+      tool_calls?: Array<{
+        id: string;
+        type: "function";
+        function: {
+          name: string;
+          arguments: string;
+        };
+      }>;
+    };
+    finish_reason: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
-const getClient = (config: OpenRouterConfig) => {
-  return new OpenRouter({
-    apiKey: config.apiKey,
-  });
-};
+interface OpenRouterChatChunk {
+  id: string;
+  choices: Array<{
+    delta: {
+      content?: string;
+      tool_calls?: Array<{
+        index: number;
+        id?: string;
+        function?: {
+          name?: string;
+          arguments?: string;
+        };
+      }>;
+    };
+    finish_reason?: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
 
-export const validateConnection = async (
-  config: OpenRouterConfig,
-): Promise<void> => {
+/** Content Generation Response (Compatible Format) */
+export interface OpenRouterContentGenerationResponse {
+  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown> | string;
+  usage: TokenUsage;
+  raw: unknown;
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function createHeaders(config: OpenRouterConfig): HeadersInit {
+  return {
+    "Authorization": `Bearer ${config.apiKey}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "",
+    "X-Title": "CoI Game", // Optional: Add your app name
+  };
+}
+
+// ============================================================================
+// Connection Validation
+// ============================================================================
+
+/**
+ * Validate OpenRouter API Connection
+ */
+export async function validateConnection(
+  config: OpenRouterConfig
+): Promise<void> {
   try {
-    const client = getClient(config);
-    await client.models.list();
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    throw new Error(message || "Failed to connect to OpenRouter API");
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: createHeaders(config),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AIProviderError(
+      `Failed to connect to OpenRouter API: ${message}`,
+      "openrouter",
+      undefined,
+      error
+    );
   }
-};
+}
 
-export const getModels = async (
-  config: OpenRouterConfig,
-): Promise<ModelInfo[]> => {
+// ============================================================================
+// Model Listing
+// ============================================================================
+
+interface OpenRouterModelData {
+  id: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+interface OpenRouterModelsResponse {
+  data: OpenRouterModelData[];
+}
+
+/**
+ * Get available OpenRouter models
+ */
+export async function getModels(config: OpenRouterConfig): Promise<ModelInfo[]> {
   try {
-    const client = getClient(config);
-    const response = await client.models.list();
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: createHeaders(config),
+    });
 
-    // The SDK response structure has a 'data' property which is the array of models
-    return response.data.map((m: any) => {
-      const parsedCaps = parseModelCapabilities(m);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
 
-      const capabilities = {
-        text: parsedCaps.text ?? true, // v1 models are generally text capable
-        image: parsedCaps.image ?? false,
-        video: parsedCaps.video ?? false,
-        audio: parsedCaps.audio ?? false,
-        tools: parsedCaps.tools ?? false,
-        parallelTools: parsedCaps.parallelTools ?? false,
-      };
+    const data = (await response.json()) as OpenRouterModelsResponse;
 
-      // Heuristics based on model ID (slug)
-      const id = m.id.toLowerCase();
-      const name = (m.name || "").toLowerCase();
-
-      // Image Capability (Augment if not detected by parseModelCapabilities)
-      if (
-        !capabilities.image &&
-        (id.includes("vision") ||
-          id.includes("claude-3") ||
-          id.includes("gpt-4") ||
-          id.includes("gemini") ||
-          id.includes("llava") ||
-          id.includes("vl"))
-      ) {
-        capabilities.image = true;
-      }
-
-      // Tools Capability (Augment if not detected)
-      if (
-        !capabilities.tools &&
-        (id.includes("gpt-4") ||
-          id.includes("gpt-3.5-turbo") ||
-          id.includes("claude-3") ||
-          id.includes("mistral-large") ||
-          id.includes("gemini-1.5") ||
-          id.includes("command-r"))
-      ) {
-        capabilities.tools = true;
-      }
+    return data.data.map((m) => {
+      const capabilities = inferModelCapabilities(m);
 
       return {
         id: m.id,
@@ -89,331 +182,411 @@ export const getModels = async (
         capabilities,
       };
     });
-  } catch (e: unknown) {
-    console.warn("Failed to list OpenRouter models", e);
+  } catch (error) {
+    console.warn("Failed to list OpenRouter models:", error);
     return [];
   }
-};
-
-interface Tool {
-  name: string;
-  description?: string;
-  parameters: any; // JSON Schema object
 }
 
-interface GenerateContentOptions {
-  thinkingLevel?: "low" | "medium" | "high";
-  mediaResolution?: "low" | "medium" | "high";
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  minP?: number;
-  onChunk?: (text: string) => void;
-  tools?: Tool[];
-}
+/**
+ * Infer model capabilities
+ */
+function inferModelCapabilities(modelData: OpenRouterModelData): ModelCapabilities {
+  const parsedCaps = parseModelCapabilities(modelData);
 
-interface ContentPart {
-  text?: string;
-  functionCall?: {
-    id?: string;
-    name: string;
-    args: Record<string, any>;
+  const capabilities: ModelCapabilities = {
+    text: parsedCaps.text ?? true,
+    image: parsedCaps.image ?? false,
+    video: parsedCaps.video ?? false,
+    audio: parsedCaps.audio ?? false,
+    tools: parsedCaps.tools ?? false,
+    parallelTools: parsedCaps.parallelTools ?? false,
   };
-  functionResponse?: {
-    id?: string;
-    response: Record<string, any>;
-  };
-  [key: string]: any; // For other potential parts like inline_data
+
+  const id = modelData.id.toLowerCase();
+
+  // Heuristic inference based on ID
+  if (
+    !capabilities.image &&
+    (id.includes("vision") ||
+      id.includes("claude-3") ||
+      id.includes("gpt-4") ||
+      id.includes("gemini") ||
+      id.includes("llava") ||
+      id.includes("vl"))
+  ) {
+    capabilities.image = true;
+  }
+
+  if (
+    !capabilities.tools &&
+    (id.includes("gpt-4") ||
+      id.includes("gpt-3.5-turbo") ||
+      id.includes("claude-3") ||
+      id.includes("mistral-large") ||
+      id.includes("gemini-1.5") ||
+      id.includes("command-r"))
+  ) {
+    capabilities.tools = true;
+  }
+
+  return capabilities;
 }
 
-interface ContentItem {
-  role: string;
-  content?: string;
-  parts?: ContentPart[];
-  [key: string]: any; // For other potential fields
-}
+// ============================================================================
+// Content Generation
+// ============================================================================
 
-interface CompletionUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-}
-
-export const generateContent = async (
+/**
+ * Generate content (chat/tool calls)
+ */
+export async function generateContent(
   config: OpenRouterConfig,
   model: string,
   systemInstruction: string,
-  contents: ContentItem[],
-  schema?: any, // Keeping schema as any for now due to its dynamic nature
-  options?: GenerateContentOptions,
-): Promise<{
-  result: any;
-  usage: CompletionUsage | undefined;
-  raw:
-    | ChatCompletion
-    | ChatCompletionChunk
-    | AsyncIterable<ChatCompletionChunk>;
-}> => {
-  const client = getClient(config);
+  contents: UnifiedMessage[],
+  schema?: JsonSchema,
+  options?: GenerateContentOptions
+): Promise<OpenRouterContentGenerationResponse> {
+  // Convert messages
+  const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-  // Map contents to messages
-  const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: systemInstruction },
-    ...contents.map((c: ContentItem) => {
-      if (c.role && c.content) return c as ChatCompletionMessageParam; // Already OpenAI format
-      if (c.role && c.parts) {
-        // Map Gemini format to OpenAI
-        // Handle function calls/responses in history if present
-        if (c.parts[0]?.functionCall) {
-          return {
-            role: "assistant",
-            tool_calls: c.parts.map((p: ContentPart) => ({
-              id:
-                p.functionCall?.id ||
-                "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
-              type: "function",
-              function: {
-                name: p.functionCall?.name || "",
-                arguments: JSON.stringify(p.functionCall?.args),
-              },
-            })),
-          } as ChatCompletionMessageParam;
-        }
-        if (c.parts[0]?.functionResponse) {
-          return {
-            role: "tool",
-            tool_call_id: c.parts[0].functionResponse.id || "call_unknown", // Use preserved ID from response
-            content: JSON.stringify(c.parts[0].functionResponse.response),
-          } as ChatCompletionMessageParam;
-        }
+  // Convert tools
+  const tools = options?.tools
+    ? convertToOpenAITools(options.tools)
+    : undefined;
 
-        return {
-          role: c.role === "model" ? "assistant" : (c.role as "user"),
-          content: c.parts.map((p: ContentPart) => p.text).join("\n"),
-        } as ChatCompletionMessageParam;
-      }
-      return c as ChatCompletionMessageParam;
-    }),
-  ];
-
-  // Map Tools to OpenAI Format
-  let openAITools: ChatCompletionTool[] | undefined;
-  if (options?.tools) {
-    openAITools = options.tools.map((t: Tool) => ({
-      type: "function",
-      function: {
-        name: t.name,
-        description: t.description,
-        parameters: convertJsonSchemaToOpenAIObject(t.parameters, false),
-      },
-    }));
-  }
-
-  // Prepare body for SDK
-  // The SDK's chat.send takes a body object similar to OpenAI's
-  const body: ChatCompletionCreateParams = {
-    model: model,
-    messages: messages,
+  // Build request body
+  const requestBody: Record<string, unknown> = {
+    model,
+    messages,
     temperature: options?.temperature,
     top_p: options?.topP,
-    // @ts-ignore - top_k/min_p might not be in standard OpenAI types but supported by OpenRouter
     top_k: options?.topK,
     min_p: options?.minP,
     stream: !!options?.onChunk,
-    tools: openAITools,
-    tool_choice: openAITools ? "auto" : undefined,
+    tools,
+    tool_choice: tools ? "auto" : undefined,
   };
 
+  // Add schema
   if (schema) {
-    if (!schema.type && schema.schema) {
-      body.response_format = {
-        type: "json_schema",
-        json_schema: schema,
-      };
+    requestBody.response_format = convertJsonSchemaToOpenAI(schema);
+  }
+
+  console.log(
+    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`
+  );
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: createHeaders(config),
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new AIProviderError(
+        errorData.error?.message || `OpenRouter API Error: ${response.status}`,
+        "openrouter"
+      );
+    }
+
+    if (options?.onChunk) {
+      return handleStreamingResponse(response, options.onChunk);
     } else {
-      body.response_format = {
-        type: "json_schema",
-        json_schema: {
-          name: "response",
-          strict: true,
-          schema: schema,
-        },
-      };
+      return handleNonStreamingResponse(response, schema);
+    }
+
+  } catch (error) {
+    if (error instanceof AIProviderError) throw error;
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AIProviderError(
+      `OpenRouter generation failed: ${message}`,
+      "openrouter",
+      undefined,
+      error
+    );
+  }
+}
+
+/**
+ * Handle non-streaming response
+ */
+async function handleNonStreamingResponse(
+  response: Response,
+  schema?: JsonSchema
+): Promise<OpenRouterContentGenerationResponse> {
+  const data = (await response.json()) as OpenRouterChatCompletion;
+  const choice = data.choices[0];
+  const message = choice?.message;
+  const content = message?.content || "";
+
+  let toolCalls: ToolCallResult[] = [];
+  if (message?.tool_calls) {
+    toolCalls = message.tool_calls.map((tc) => ({
+      id: tc.id,
+      name: tc.function.name,
+      args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+    }));
+  }
+
+  if (choice?.finish_reason === "content_filter") {
+    throw new SafetyFilterError("openrouter");
+  }
+
+  const usage: TokenUsage = {
+    promptTokens: data.usage?.prompt_tokens || 0,
+    completionTokens: data.usage?.completion_tokens || 0,
+    totalTokens: data.usage?.total_tokens || 0,
+  };
+
+  console.log(`[OpenRouter] Generation complete. Usage:`, usage);
+
+  if (toolCalls.length > 0) {
+    return {
+      result: { functionCalls: toolCalls },
+      usage,
+      raw: data,
+    };
+  }
+
+  if (schema && content) {
+    try {
+      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+      return { result: JSON.parse(cleanedContent), usage, raw: data };
+    } catch (error) {
+      throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }
 
+  return { result: content, usage, raw: data };
+}
+
+/**
+ * Handle streaming response
+ */
+async function handleStreamingResponse(
+  response: Response,
+  onChunk: (text: string) => void
+): Promise<OpenRouterContentGenerationResponse> {
+  if (!response.body) {
+    throw new Error("Response body is null");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  let content = "";
+  let usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  const accumulatedToolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map();
+
+  let buffer = "";
+
   try {
-    // Use the SDK to send the request
-    // @ts-ignore - SDK types might be slightly different or strict
-    const response = await client.chat.send(body);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    let content = "";
-    let usage: CompletionUsage = {
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      total_tokens: 0,
-    };
-    let rawResult:
-      | ChatCompletion
-      | ChatCompletionChunk
-      | AsyncIterable<ChatCompletionChunk> =
-      response as unknown as ChatCompletion;
-    let toolCalls: { id: string; name: string; args: Record<string, any> }[] =
-      [];
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
-    if (options?.onChunk) {
-      // Handle streaming response from SDK
-      // If the SDK returns a stream when stream: true is passed
-      // We need to check if response is iterable
-      if (Symbol.asyncIterator in response) {
-        const stream = response as AsyncIterable<ChatCompletionChunk>;
-        for await (const chunk of stream) {
-          const delta = chunk.choices?.[0]?.delta?.content || "";
-          if (delta) {
-            content += delta;
-            options.onChunk(delta);
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine.startsWith("data: ")) continue;
+
+        const dataStr = trimmedLine.slice(6);
+        if (dataStr === "[DONE]") continue;
+
+        try {
+          const chunk = JSON.parse(dataStr) as OpenRouterChatChunk;
+
+          const choice = chunk.choices[0];
+          const delta = choice?.delta;
+
+          if (delta?.content) {
+            content += delta.content;
+            onChunk(delta.content);
+          }
+
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const index = tc.index;
+              const existing = accumulatedToolCalls.get(index);
+
+              if (existing) {
+                if (tc.function?.arguments) {
+                  existing.arguments += tc.function.arguments;
+                }
+              } else {
+                accumulatedToolCalls.set(index, {
+                  id: tc.id || `tool_${index}`,
+                  name: tc.function?.name || "",
+                  arguments: tc.function?.arguments || "",
+                });
+              }
+            }
           }
 
           if (chunk.usage) {
             usage = {
-              prompt_tokens: chunk.usage.prompt_tokens || 0,
-              completion_tokens: chunk.usage.completion_tokens || 0,
-              total_tokens: chunk.usage.total_tokens || 0,
+              promptTokens: chunk.usage.prompt_tokens || 0,
+              completionTokens: chunk.usage.completion_tokens || 0,
+              totalTokens: chunk.usage.total_tokens || 0,
             };
           }
-          rawResult = chunk; // Keep the last chunk as rawResult for streaming
+        } catch (e) {
+          console.warn("Failed to parse SSE chunk:", e);
         }
-      } else {
-        // Fallback if SDK doesn't stream as expected or returns a non-stream response despite stream: true
-        // This might happen if SDK doesn't support streaming yet or handles it differently
-        // We'll treat it as a complete response
-        const result = response as unknown as ChatCompletion;
-        rawResult = result;
-        const choice = result.choices[0];
-        const message = choice?.message;
-        content = message?.content || "";
-        if (options.onChunk) options.onChunk(content);
-
-        if (message?.tool_calls) {
-          toolCalls = message.tool_calls.map((tc: any) => ({
-            id: tc.id || "",
-            name: tc.function.name,
-            args: JSON.parse(tc.function.arguments),
-          }));
-        }
-
-        usage = {
-          prompt_tokens: result.usage?.prompt_tokens || 0,
-          completion_tokens: result.usage?.completion_tokens || 0,
-          total_tokens: result.usage?.total_tokens || 0,
-        };
-      }
-    } else {
-      // Handle non-streaming response
-      const result = response as unknown as ChatCompletion;
-      rawResult = result;
-      const choice = result.choices[0];
-      const message = choice?.message;
-      content = message?.content || "";
-
-      if (message?.tool_calls) {
-        toolCalls = message.tool_calls.map((tc: any) => ({
-          id: tc.id || "",
-          name: tc.function.name,
-          args: JSON.parse(tc.function.arguments),
-        }));
-      }
-
-      if (choice?.finish_reason === "content_filter") {
-        throw new Error(
-          "OpenRouter content generation failed: Content filter triggered.",
-        );
-      }
-
-      usage = {
-        prompt_tokens: result.usage?.prompt_tokens || 0,
-        completion_tokens: result.usage?.completion_tokens || 0,
-        total_tokens: result.usage?.total_tokens || 0,
-      };
-    }
-
-    // If we have tool calls, return them
-    if (toolCalls.length > 0) {
-      return { result: { functionCalls: toolCalls }, usage, raw: rawResult };
-    }
-
-    if (schema) {
-      try {
-        const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-        return { result: JSON.parse(cleanedContent), usage, raw: rawResult };
-      } catch (e) {
-        console.error("Failed to parse OpenRouter JSON", content);
-        throw new Error("Failed to parse AI response as JSON.");
       }
     }
-
-    return { result: content, usage, raw: rawResult };
-  } catch (e: any) {
-    console.error("OpenRouter generation failed", e);
-    throw new Error(e.message || "OpenRouter generation failed");
+  } finally {
+    reader.releaseLock();
   }
-};
 
-export const generateImage = async (
+  const toolCalls: ToolCallResult[] = [];
+  for (const [, tc] of accumulatedToolCalls) {
+    try {
+      toolCalls.push({
+        id: tc.id,
+        name: tc.name,
+        args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
+      });
+    } catch (parseError) {
+      console.error(`[OpenRouter] Failed to parse tool call arguments:`, tc.arguments);
+      throw new MalformedToolCallError("openrouter", tc.name, tc.arguments);
+    }
+  }
+
+  console.log(`[OpenRouter] Stream complete. Usage:`, usage);
+
+  if (toolCalls.length > 0) {
+    return {
+      result: { functionCalls: toolCalls },
+      usage,
+      raw: null, // Raw stream not retained
+    };
+  }
+
+  return { result: content, usage, raw: null };
+}
+
+/**
+ * Convert messages to OpenAI format
+ */
+function convertToOpenAIMessages(
+  systemInstruction: string,
+  messages: UnifiedMessage[]
+): any[] {
+  const result: any[] = [
+    { role: "system", content: systemInstruction },
+  ];
+
+  for (const msg of messages) {
+    if (msg.role === "tool") {
+      for (const part of msg.content) {
+        if (part.type === "tool_response") {
+          const tr = part as ToolResponseContentPart;
+          result.push({
+            role: "tool",
+            tool_call_id: tr.toolCallId,
+            content: typeof tr.content === "string" ? tr.content : JSON.stringify(tr.content),
+          });
+        }
+      }
+      continue;
+    }
+
+    if (msg.role === "assistant") {
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_call"
+      );
+
+      if (toolCallParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\n");
+
+        result.push({
+          role: "assistant",
+          content: textContent || null,
+          tool_calls: toolCallParts.map((p) => ({
+            id: p.id,
+            type: "function",
+            function: {
+              name: p.name,
+              arguments: JSON.stringify(p.arguments),
+            },
+          })),
+        });
+        continue;
+      }
+    }
+
+    const textContent = msg.content
+      .filter((p): p is TextContentPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    result.push({
+      role: msg.role,
+      content: textContent,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Convert tools to OpenAI format
+ */
+function convertToOpenAITools(
+  tools: GenerateContentOptions["tools"]
+): any[] {
+  return (tools || []).map((tool) => ({
+    type: "function",
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: convertJsonSchemaToOpenAIObject(tool.parameters),
+    },
+  }));
+}
+
+// ============================================================================
+// Image Generation
+// ============================================================================
+
+interface OpenRouterImageResponse {
+  choices?: Array<{
+    message?: {
+      images?: Array<{ image_url: { url: string } }>;
+      content?: string;
+    };
+  }>;
+  data?: Array<{ url: string }>;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+}
+
+/**
+ * Generate Image
+ */
+export async function generateImage(
   config: OpenRouterConfig,
   model: string,
   prompt: string,
-  resolution: string = "1024x1024",
-): Promise<{ url: string | null; usage?: any; raw?: any }> => {
-  // Determine Aspect Ratio / Size based on resolution string
-  // Note: The OpenRouter SDK currently exposes `client.generations` which seems to be for retrieving past generations.
-  // Explicit image generation creation via SDK is not yet fully documented/verified.
-  // We continue to use fetch for now.
-  let size = resolution;
-  let aspectRatio = "1:1";
+  resolution: string = "1024x1024"
+): Promise<ImageGenerationResponse> {
+  const aspectRatio = getAspectRatio(resolution);
 
-  switch (resolution) {
-    case "1024x1024":
-      aspectRatio = "1:1";
-      break;
-    case "832x1248":
-      aspectRatio = "2:3";
-      break;
-    case "1248x832":
-      aspectRatio = "3:2";
-      break;
-    case "864x1184":
-      aspectRatio = "3:4";
-      break;
-    case "1184x864":
-      aspectRatio = "4:3";
-      break;
-    case "896x1152":
-      aspectRatio = "4:5";
-      break;
-    case "1152x896":
-      aspectRatio = "5:4";
-      break;
-    case "768x1344":
-      aspectRatio = "9:16";
-      break;
-    case "1344x768":
-      aspectRatio = "16:9";
-      break;
-    case "1536x672":
-      aspectRatio = "21:9";
-      break;
-    default:
-      aspectRatio = "1:1";
-      break;
-  }
-
-  // Provider-specific handling
+  // Gemini models use chat completion API for images
   if (model.toLowerCase().includes("gemini")) {
     const chatBody = {
-      model: model,
+      model,
       messages: [{ role: "user", content: prompt }],
-      // @ts-ignore
       image_config: { aspect_ratio: aspectRatio },
     };
 
@@ -421,299 +594,271 @@ export const generateImage = async (
       "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-        },
+        headers: createHeaders(config),
         body: JSON.stringify(chatBody),
-      },
-    );
-
-    if (!response.ok)
-      throw new Error(`OpenRouter API Error: ${response.status}`);
-    const result = await response.json();
-
-    if (
-      result.choices &&
-      result.choices[0].message.images &&
-      result.choices[0].message.images.length > 0
-    ) {
-      return {
-        url: result.choices[0].message.images[0].image_url.url,
-        raw: result,
-        usage: result.usage,
-      };
-    }
-    // Fallback if it returns text url
-    const content = result.choices[0]?.message?.content;
-    const urlMatch = content?.match(/https?:\/\/[^\s)]+/);
-    if (urlMatch) return { url: urlMatch[0], raw: result, usage: result.usage };
-
-    throw new Error("No image generated");
-  } else {
-    // Standard OpenAI/Other uses size
-    if (model.toLowerCase().includes("dall-e-3")) {
-      if (aspectRatio === "1:1") size = "1024x1024";
-      else if (["2:3", "3:4", "4:5", "9:16"].includes(aspectRatio))
-        size = "1024x1792";
-      else if (["3:2", "4:3", "5:4", "16:9", "21:9"].includes(aspectRatio))
-        size = "1792x1024";
-      else size = "1024x1024";
-    }
-
-    const imageBody: any = {
-      model: model,
-      prompt: prompt,
-      n: 1,
-      size: size,
-      // response_format: "b64_json" // OpenRouter might not support b64_json for all models
-    };
-
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/images/generations",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-        },
-        body: JSON.stringify(imageBody),
-      },
+      }
     );
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        err.error?.message || `OpenRouter Image API Error: ${response.status}`,
+      throw new AIProviderError(
+        `OpenRouter API Error: ${response.status}`,
+        "openrouter"
       );
     }
 
-    const result = await response.json();
-    return {
-      url: result.data[0].url,
-      raw: result,
-      usage: undefined,
-    };
+    const result = (await response.json()) as OpenRouterImageResponse;
+
+    if (result.choices?.[0]?.message?.images?.length) {
+      return {
+        url: result.choices[0].message.images[0].image_url.url,
+        raw: result,
+        usage: result.usage
+          ? {
+              promptTokens: result.usage.prompt_tokens,
+              completionTokens: result.usage.completion_tokens,
+              totalTokens: result.usage.total_tokens,
+            }
+          : undefined,
+      };
+    }
+
+    const content = result.choices?.[0]?.message?.content;
+    const urlMatch = content?.match(/https?:\/\/[^\s)]+/);
+    if (urlMatch) {
+      return { url: urlMatch[0], raw: result };
+    }
+
+    throw new AIProviderError("No image generated", "openrouter");
   }
-};
 
-export const generateVideo = async (
-  config: OpenRouterConfig,
-  model: string,
-  imageBase64: string,
-  prompt: string,
-): Promise<{ url: string; usage?: any; raw?: any }> => {
-  throw new Error(
-    "Video generation is not supported by OpenRouter provider yet.",
+  // Other models use images/generations API
+  let size = resolution;
+  if (model.toLowerCase().includes("dall-e-3")) {
+    if (["1:1"].includes(aspectRatio)) size = "1024x1024";
+    else if (["2:3", "3:4", "4:5", "9:16"].includes(aspectRatio))
+      size = "1024x1792";
+    else size = "1792x1024";
+  }
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/images/generations",
+    {
+      method: "POST",
+      headers: createHeaders(config),
+      body: JSON.stringify({
+        model,
+        prompt,
+        n: 1,
+        size,
+      }),
+    }
   );
-};
 
-export const generateSpeech = async (
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as {
+      error?: { message?: string };
+    };
+    throw new AIProviderError(
+      err.error?.message || `OpenRouter Image API Error: ${response.status}`,
+      "openrouter"
+    );
+  }
+
+  const result = (await response.json()) as OpenRouterImageResponse;
+  return {
+    url: result.data?.[0]?.url || null,
+    raw: result,
+  };
+}
+
+// ============================================================================
+// Video Generation (Not Supported)
+// ============================================================================
+
+export async function generateVideo(
+  _config: OpenRouterConfig,
+  _model: string,
+  _imageBase64: string,
+  _prompt: string
+): Promise<never> {
+  throw new AIProviderError(
+    "Video generation is not supported by OpenRouter provider",
+    "openrouter",
+    "UNSUPPORTED"
+  );
+}
+
+// ============================================================================
+// Speech Generation
+// ============================================================================
+
+export async function generateSpeech(
   config: OpenRouterConfig,
   model: string,
   text: string,
   voiceName: string = "alloy",
-  options?: {
-    speed?: number;
-    format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
-    instructions?: string;
-  },
-): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
-  // SDK doesn't seem to support audio yet, fallback to OpenAI provider
-  return generateOpenAISpeech(
-    {
-      apiKey: config.apiKey,
-      baseUrl: "https://openrouter.ai/api/v1",
-      modelId: model,
-    },
-    model,
-    text,
-    voiceName,
-    options,
-  );
-};
+  options?: SpeechGenerationOptions
+): Promise<SpeechGenerationResponse> {
+  const openaiConfig: OpenAIConfig = {
+    apiKey: config.apiKey,
+    baseUrl: "https://openrouter.ai/api/v1",
+  };
+
+  return generateOpenAISpeech(openaiConfig, model, text, voiceName, options);
+}
 
 // ============================================================================
-// Embedding Functions
+// Embedding Generation
 // ============================================================================
 
-export interface EmbeddingModelInfo {
-  id: string;
-  name: string;
-  dimensions?: number;
+interface EmbeddingAPIResponse {
+  data: Array<{ index: number; embedding: number[] }>;
+  usage?: { prompt_tokens?: number; total_tokens?: number };
 }
 
 /**
- * Get available embedding models from OpenRouter API
+ * Get embedding models
  */
-export const getEmbeddingModels = async (
-  config: OpenRouterConfig,
-): Promise<EmbeddingModelInfo[]> => {
+export async function getEmbeddingModels(
+  config: OpenRouterConfig
+): Promise<EmbeddingModelInfo[]> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/models", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createHeaders(config),
     });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
     }
 
-    const json = await response.json();
+    const json = (await response.json()) as OpenRouterModelsResponse;
     const embeddingModels: EmbeddingModelInfo[] = [];
 
     for (const model of json.data) {
       const id = model.id.toLowerCase();
-      // Check for embedding models
-      if (
-        id.includes("embed") ||
-        id.includes("bert") ||
-        id.includes("nomic") ||
-        id.includes("gecko") ||
-        id.includes("bge") ||
-        id.includes("gte") ||
-        id.includes("e5") ||
-        id.includes("paraphrase")
-      ) {
-        let dimensions = 1024; // Default
-
-        // Try to guess dimensions from name
-        if (id.includes("small") || id.includes("light")) dimensions = 384;
-        if (id.includes("base")) dimensions = 768;
-        if (id.includes("large")) dimensions = 1024;
-
-        // Specific overrides
-        if (id.includes("text-embedding-3-small")) dimensions = 1536;
-        if (id.includes("text-embedding-3-large")) dimensions = 3072;
-        if (
-          id.includes("embed-english-v3") ||
-          id.includes("embed-multilingual-v3")
-        )
-          dimensions = 1024;
-        if (
-          id.includes("embed-english-light-v3") ||
-          id.includes("embed-multilingual-light-v3")
-        )
-          dimensions = 384;
-        if (id.includes("nomic-embed")) dimensions = 768;
-        if (id.includes("gecko")) dimensions = 768;
-
+      if (isEmbeddingModel(id)) {
         embeddingModels.push({
           id: model.id,
           name: model.name || model.id,
-          dimensions,
+          dimensions: guessEmbeddingDimensions(id),
         });
       }
     }
 
     if (embeddingModels.length === 0) {
-      // Fallback to known embedding models
-      return [
-        {
-          id: "openai/text-embedding-3-small",
-          name: "OpenAI Text Embedding 3 Small",
-          dimensions: 1536,
-        },
-        {
-          id: "openai/text-embedding-3-large",
-          name: "OpenAI Text Embedding 3 Large",
-          dimensions: 3072,
-        },
-        {
-          id: "cohere/embed-english-v3.0",
-          name: "Cohere Embed English v3",
-          dimensions: 1024,
-        },
-        {
-          id: "cohere/embed-multilingual-v3.0",
-          name: "Cohere Embed Multilingual v3",
-          dimensions: 1024,
-        },
-      ];
+      return getDefaultEmbeddingModels();
     }
 
     return embeddingModels;
-  } catch (e) {
-    console.warn("Failed to list OpenRouter embedding models", e);
-    return [
-      {
-        id: "openai/text-embedding-3-small",
-        name: "OpenAI Text Embedding 3 Small",
-        dimensions: 1536,
-      },
-      {
-        id: "openai/text-embedding-3-large",
-        name: "OpenAI Text Embedding 3 Large",
-        dimensions: 3072,
-      },
-      {
-        id: "cohere/embed-english-v3.0",
-        name: "Cohere Embed English v3",
-        dimensions: 1024,
-      },
-      {
-        id: "cohere/embed-multilingual-v3.0",
-        name: "Cohere Embed Multilingual v3",
-        dimensions: 1024,
-      },
-    ];
+  } catch (error) {
+    console.warn("Failed to list OpenRouter embedding models:", error);
+    return getDefaultEmbeddingModels();
   }
-};
+}
 
-export interface EmbeddingResult {
-  embeddings: Float32Array[];
-  usage: {
-    promptTokens: number;
-    totalTokens: number;
-  };
+function isEmbeddingModel(id: string): boolean {
+  return (
+    id.includes("embed") ||
+    id.includes("bert") ||
+    id.includes("nomic") ||
+    id.includes("gecko") ||
+    id.includes("bge") ||
+    id.includes("gte") ||
+    id.includes("e5") ||
+    id.includes("paraphrase")
+  );
+}
+
+function guessEmbeddingDimensions(id: string): number {
+  if (id.includes("text-embedding-3-small")) return 1536;
+  if (id.includes("text-embedding-3-large")) return 3072;
+  if (id.includes("embed-english-v3") || id.includes("embed-multilingual-v3"))
+    return 1024;
+  if (
+    id.includes("embed-english-light-v3") ||
+    id.includes("embed-multilingual-light-v3")
+  )
+    return 384;
+  if (id.includes("small") || id.includes("light")) return 384;
+  if (id.includes("base")) return 768;
+  if (id.includes("large")) return 1024;
+  if (id.includes("nomic-embed")) return 768;
+  if (id.includes("gecko")) return 768;
+  return 1024;
+}
+
+function getDefaultEmbeddingModels(): EmbeddingModelInfo[] {
+  return [
+    {
+      id: "openai/text-embedding-3-small",
+      name: "OpenAI Text Embedding 3 Small",
+      dimensions: 1536,
+    },
+    {
+      id: "openai/text-embedding-3-large",
+      name: "OpenAI Text Embedding 3 Large",
+      dimensions: 3072,
+    },
+    {
+      id: "cohere/embed-english-v3.0",
+      name: "Cohere Embed English v3",
+      dimensions: 1024,
+    },
+    {
+      id: "cohere/embed-multilingual-v3.0",
+      name: "Cohere Embed Multilingual v3",
+      dimensions: 1024,
+    },
+  ];
 }
 
 /**
- * Generate embeddings using OpenRouter API (OpenAI-compatible)
+ * Generate embeddings
  */
-export const generateEmbedding = async (
+export async function generateEmbedding(
   config: OpenRouterConfig,
   modelId: string,
   texts: string[],
   dimensions?: number,
-  taskType?: EmbeddingTaskType,
-): Promise<EmbeddingResult> => {
-  const client = getClient(config);
-
+  _taskType?: EmbeddingTaskType
+): Promise<EmbeddingResponse> {
   try {
-    const response = await client.embeddings.generate({
-      model: modelId,
-      input: texts,
-      encodingFormat: "float" as any, // Cast to match SDK enum if needed
-      dimensions: dimensions,
+    const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+      method: "POST",
+      headers: createHeaders(config),
+      body: JSON.stringify({
+        model: modelId,
+        input: texts,
+        dimensions,
+      }),
     });
 
-    // The SDK response structure matches the API response
-    // response.data is an array of embedding objects
-    // @ts-ignore - SDK types might need adjustment
-    const data = response.data;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+    }
 
-    const embeddings = data
-      .sort((a: any, b: any) => a.index - b.index)
-      .map((item: any) => new Float32Array(item.embedding));
+    const data = (await response.json()) as EmbeddingAPIResponse;
+
+    const embeddings = data.data
+      .sort((a, b) => a.index - b.index)
+      .map((item) => new Float32Array(item.embedding));
 
     return {
       embeddings,
       usage: {
-        // @ts-ignore
-        promptTokens:
-          response.usage?.promptTokens || response.usage?.prompt_tokens || 0,
-        // @ts-ignore
-        totalTokens:
-          response.usage?.totalTokens || response.usage?.total_tokens || 0,
+        promptTokens: data.usage?.prompt_tokens || 0,
+        totalTokens: data.usage?.total_tokens || 0,
       },
     };
-  } catch (e: any) {
-    console.error("OpenRouter embedding failed", e);
-    throw new Error(e.message || "OpenRouter embedding failed");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AIProviderError(
+      `OpenRouter embedding failed: ${message}`,
+      "openrouter",
+      undefined,
+      error
+    );
   }
-};
+}

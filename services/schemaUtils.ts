@@ -134,19 +134,24 @@ export const convertJsonSchemaToOpenAIObject = (
   }
 
   let type = s.type;
+  let isNullable = s.nullable === true;
 
-  // Handle array of types (e.g. ["string", "null"])
+  // Handle array types (e.g. ["string", "null"])
   if (Array.isArray(type)) {
-    // OpenAI strict mode generally wants a single type.
-    // If it's nullable, we might need to handle it, but strict mode is... strict.
-    // For now, let's enforce single type to be safe, or throw.
-    throw new Error(
-      `OpenAI Strict Schema requires a single type, found: ${JSON.stringify(type)}`,
-    );
+    if (type.length === 2 && type.includes("null")) {
+      isNullable = true;
+      type = type.find((t) => t !== "null") as JsonSchemaType;
+    } else if (type.length === 1) {
+      type = type[0];
+    } else {
+      throw new Error(
+        `OpenAI Strict Schema requires a single type (or type + null), found: ${JSON.stringify(type)}`,
+      );
+    }
   }
 
   if (!type) {
-    // Fallback for object without type (common in some schemas)
+    // Fallback for object without type
     if (s.properties) {
       type = "object";
     } else {
@@ -154,54 +159,66 @@ export const convertJsonSchemaToOpenAIObject = (
     }
   }
 
-  if (type === "object") {
-    const properties: Record<string, any> = {};
-    const required: string[] = strict ? [] : s.required || [];
-
-    if (s.properties) {
-      for (const [key, value] of Object.entries(s.properties)) {
-        properties[key] = convertJsonSchemaToOpenAIObject(value, strict);
-        if (strict) {
-          required.push(key); // Strict mode requires all properties to be required
-        }
-      }
-    }
-
-    const result: any = {
-      type: "object",
-      properties,
-      required,
-      description: s.description,
-    };
-
-    if (strict) {
-      result.additionalProperties = false;
-    }
-
-    return result;
-  }
-
-  if (type === "array") {
-    if (!s.items) {
-      throw new Error(
-        "OpenAI Strict Schema array requires 'items' definition.",
-      );
-    }
-    return {
-      type: "array",
-      items: convertJsonSchemaToOpenAIObject(s.items, strict),
-      description: s.description,
-    };
-  }
-
-  // Primitive types
   const result: any = {
-    type,
     description: s.description,
   };
 
   if (s.enum) {
     result.enum = s.enum;
+  }
+
+  if (type === "object") {
+    result.type = "object";
+    result.properties = {};
+    const originalRequired = new Set(s.required || []);
+    const required: string[] = [];
+
+    if (s.properties) {
+      for (const [key, value] of Object.entries(s.properties)) {
+        const converted = convertJsonSchemaToOpenAIObject(value, strict);
+
+        if (strict) {
+          required.push(key);
+          // If not originally required, make it nullable
+          if (!originalRequired.has(key)) {
+            if (Array.isArray(converted.type)) {
+              if (!converted.type.includes("null")) {
+                converted.type.push("null");
+              }
+            } else {
+              converted.type = [converted.type, "null"];
+            }
+          }
+        } else {
+          if (originalRequired.has(key)) {
+            required.push(key);
+          }
+        }
+
+        result.properties[key] = converted;
+      }
+    }
+
+    result.required = required;
+    result.additionalProperties = false;
+  } else if (type === "array") {
+    if (!s.items) {
+      throw new Error(
+        "OpenAI Strict Schema array requires 'items' definition.",
+      );
+    }
+    result.type = "array";
+    result.items = convertJsonSchemaToOpenAIObject(s.items, strict);
+  } else {
+    // Primitive types
+    result.type = type;
+  }
+
+  // Handle nullability at the top level if needed (though usually handled by parent property)
+  // But if this is the root or an item in array, we might need to reflect nullability.
+  // However, OpenAI Strict Mode handles nullability via ["type", "null"].
+  if (isNullable && !Array.isArray(result.type) && result.type !== "null") {
+     result.type = [result.type, "null"];
   }
 
   return result;
@@ -212,8 +229,11 @@ export const convertJsonSchemaToOpenAIObject = (
  */
 export const convertJsonSchemaToOpenAI = (schema: JsonSchema): any => {
   return {
-    name: "response",
-    strict: true,
-    schema: convertJsonSchemaToOpenAIObject(schema),
+    type: "json_schema",
+    json_schema: {
+      name: "response",
+      strict: true,
+      schema: convertJsonSchemaToOpenAIObject(schema),
+    },
   };
 };

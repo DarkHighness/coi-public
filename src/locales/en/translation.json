@@ -51,6 +51,8 @@
   "unavailable": "Image Unavailable",
   "generationFailed": "Generation Failed - Click to Retry",
   "tryAgain": "Try Again",
+  "storyNotStarted": "The story hasn't started yet. Click below to begin your adventure.",
+  "startAdventure": "Start Adventure",
   "error": "The connection to the universe was interrupted... (API Error, please try again)",
   "builtWith": "Built with Gemini 3 Pro",
   "magicMirror": {
@@ -71,6 +73,7 @@
     "audioPreload": "Audio Preload",
     "timeElapsed": "Time Elapsed"
   },
+  "noDescription": "No description available.",
   "translating": "Translating chronicles...",
   "system": "System",
   "newGame": "New Game",
@@ -524,6 +527,11 @@
     "noEvents": "No recent events recorded.",
     "hiddenTruth": "Hidden Truth",
     "secretObjective": "Secret Objective"
+  },
+  "faction": {
+    "members": "Members",
+    "influence": "Influence",
+    "relations": "Relations"
   },
   "tokenStats": {
     "promptTokens": "Prompt Tokens",

@@ -1,477 +1,600 @@
+/**
+ * ============================================================================
+ * Gemini Provider - Google GenAI SDK 实现
+ * ============================================================================
+ *
+ * 使用官方 @google/genai SDK，提供完整的类型安全支持。
+ * 包括：内容生成、图片生成、视频生成、语音合成、嵌入向量生成
+ */
+
 import {
   GoogleGenAI,
-  Schema,
-  Type,
   Modality,
   Content,
   Part,
-  GenerateContentResponse,
   FunctionCall,
-  FunctionResponse,
-  Tool,
-  FunctionDeclaration,
+  GenerateContentConfig,
+  Schema,
+  Type,
 } from "@google/genai";
-import { ModelInfo, EmbeddingTaskType } from "../../types";
-import { convertJsonSchemaToGemini, JsonSchema } from "../schemaUtils";
 
-export interface GeminiConfig {
-  apiKey?: string;
-  baseUrl?: string;
+import type { EmbeddingTaskType, TokenUsage } from "../../types";
+
+import {
+  GeminiConfig,
+  ModelInfo,
+  ModelCapabilities,
+  GenerateContentOptions,
+  ImageGenerationResponse,
+  VideoGenerationResponse,
+  SpeechGenerationResponse,
+  SpeechGenerationOptions,
+  EmbeddingModelInfo,
+  EmbeddingResponse,
+  ToolCallResult,
+  JsonSchema,
+  UnifiedMessage,
+  TextContentPart,
+  ToolCallContentPart,
+  ToolResponseContentPart,
+  SafetyFilterError,
+  MalformedToolCallError,
+  JSONParseError,
+  AIProviderError,
+  getAspectRatio,
+} from "./types";
+import { convertJsonSchemaToGemini } from "../schemaUtils";
+
+// ============================================================================
+// Response Types (兼容旧 API)
+// ============================================================================
+
+/** 内容生成响应 (兼容格式) */
+export interface GeminiContentGenerationResponse {
+  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
+  usage: TokenUsage;
+  raw: unknown;
 }
 
-export const getGeminiClient = (config: GeminiConfig) =>
-  new GoogleGenAI({
-    apiKey: config.apiKey,
-  });
+// ============================================================================
+// Client Factory
+// ============================================================================
 
-export const validateConnection = async (
-  config: GeminiConfig,
-): Promise<void> => {
-  try {
-    const ai = getGeminiClient(config);
-    await ai.models.list();
-  } catch (e: any) {
-    throw new Error(e.message || "Failed to connect to Gemini API");
+/**
+ * 创建 Gemini 客户端实例
+ */
+export function createGeminiClient(config: GeminiConfig): GoogleGenAI {
+  if (!config.apiKey) {
+    throw new AIProviderError("Gemini API key is required", "gemini");
   }
-};
+  return new GoogleGenAI({ apiKey: config.apiKey });
+}
 
-export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
+/** 兼容旧 API 的别名 */
+export const getGeminiClient = createGeminiClient;
+
+// ============================================================================
+// Connection Validation
+// ============================================================================
+
+/**
+ * 验证 Gemini API 连接
+ */
+export async function validateConnection(config: GeminiConfig): Promise<void> {
   try {
-    const ai = getGeminiClient(config);
-    const response = await ai.models.list();
+    const client = createGeminiClient(config);
+    await client.models.list();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AIProviderError(
+      `Failed to connect to Gemini API: ${message}`,
+      "gemini",
+      undefined,
+      error
+    );
+  }
+}
 
-    const models = [];
+// ============================================================================
+// Model Listing
+// ============================================================================
+
+/**
+ * 获取可用的 Gemini 模型列表
+ */
+export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
+  try {
+    const client = createGeminiClient(config);
+    const response = await client.models.list();
+
+    const models: ModelInfo[] = [];
+
     for await (const model of response) {
-      const capabilities = {
-        text: false,
+      const capabilities = inferModelCapabilities(model.name);
+      models.push({
+        id: model.name.replace("models/", ""),
+        name: model.displayName || model.name,
+        capabilities,
+      });
+    }
+
+    // 只返回支持的模型类型
+    return models.filter(
+      (m) =>
+        m.id.includes("gemini") ||
+        m.id.includes("imagen") ||
+        m.id.includes("veo")
+    );
+  } catch (error) {
+    console.warn("Failed to list Gemini models:", error);
+    // 返回默认模型列表
+    return getDefaultModels();
+  }
+}
+
+/**
+ * 根据模型名称推断能力
+ */
+function inferModelCapabilities(name: string): ModelCapabilities {
+  const lowercaseName = name.toLowerCase();
+
+  return {
+    text: lowercaseName.includes("gemini"),
+    image: lowercaseName.includes("image") || lowercaseName.includes("imagen"),
+    video: lowercaseName.includes("veo") || lowercaseName.includes("video"),
+    audio: lowercaseName.includes("audio") || lowercaseName.includes("tts"),
+    tools: lowercaseName.includes("gemini"),
+    parallelTools: lowercaseName.includes("gemini"),
+  };
+}
+
+/**
+ * 默认模型列表
+ */
+function getDefaultModels(): ModelInfo[] {
+  return [
+    {
+      id: "gemini-2.0-flash",
+      name: "Gemini 2.0 Flash",
+      capabilities: {
+        text: true,
         image: false,
         video: false,
         audio: false,
         tools: true,
         parallelTools: true,
-      };
-
-      const name = model.name.toLowerCase();
-      if (name.includes("image")) {
-        capabilities.image = true;
-      }
-
-      if (name.includes("veo") || name.includes("video")) {
-        capabilities.video = true;
-      }
-
-      if (name.includes("audio") || name.includes("tts")) {
-        capabilities.audio = true;
-      }
-
-      if (name.includes("text") || name.includes("gemini")) {
-        capabilities.text = true;
-      }
-
-      // @ts-ignore
-      model.capabilities = capabilities;
-
-      models.push(model);
-    }
-
-    return models
-      .filter(
-        (m) =>
-          m.name.includes("gemini") ||
-          m.name.includes("imagen") ||
-          m.name.includes("veo"),
-      )
-      .map((m) => ({
-        id: m.name.replace("models/", ""),
-        name: m.displayName || m.name,
-        capabilities: (m as any).capabilities,
-      }));
-  } catch (e) {
-    console.warn("Failed to list Gemini models", e);
-    return [
-      { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash" },
-      { id: "gemini-2.0-pro-exp-02-05", name: "Gemini 2.0 Pro" },
-      { id: "imagen-3.0-generate-002", name: "Imagen 3" },
-      { id: "veo-2.0-generate-001", name: "Veo 2" },
-    ];
-  }
-};
-
-interface GenerateContentOptions {
-  thinkingLevel?: "low" | "medium" | "high";
-  mediaResolution?: "low" | "medium" | "high";
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  minP?: number;
-  onChunk?: (text: string) => void;
-  tools?: any[]; // Keep as any[] for now as we map from internal tool schema
+      },
+    },
+    {
+      id: "gemini-2.0-pro-exp-02-05",
+      name: "Gemini 2.0 Pro",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "imagen-3.0-generate-002",
+      name: "Imagen 3",
+      capabilities: {
+        text: false,
+        image: true,
+        video: false,
+        audio: false,
+        tools: false,
+        parallelTools: false,
+      },
+    },
+    {
+      id: "veo-2.0-generate-001",
+      name: "Veo 2",
+      capabilities: {
+        text: false,
+        image: false,
+        video: true,
+        audio: false,
+        tools: false,
+        parallelTools: false,
+      },
+    },
+  ];
 }
 
-export const generateContent = async (
+// ============================================================================
+// Content Generation
+// ============================================================================
+
+/**
+ * 生成内容（对话/工具调用）
+ *
+ * 注意: 返回格式兼容旧 API，result 可能是:
+ * - { functionCalls: ToolCallResult[] } 如果有工具调用
+ * - 解析后的 JSON 对象 如果有 schema
+ * - { narrative: string } 如果是纯文本
+ */
+export async function generateContent(
   config: GeminiConfig,
   model: string,
   systemInstruction: string,
   contents: Content[],
   schema?: JsonSchema,
-  options?: GenerateContentOptions,
-): Promise<{ result: any; usage: any; raw: any }> => {
-  const ai = getGeminiClient(config);
+  options?: GenerateContentOptions
+): Promise<GeminiContentGenerationResponse> {
+  const client = createGeminiClient(config);
 
-  // Apply media resolution to image parts if specified
-  const processedContents = options?.mediaResolution
-    ? contents.map((content) => ({
-        ...content,
-        parts: content.parts?.map((part: Part) => {
-          if (part.inlineData) {
-            return {
-              ...part,
-              mediaResolution: {
-                level: `media_resolution_${options.mediaResolution}`,
-              },
-            };
-          }
-          return part;
-        }),
-      }))
-    : contents;
-
-  // Convert standard JSON schema to Gemini schema if provided
-  const geminiSchema = schema ? convertJsonSchemaToGemini(schema) : undefined;
-
-  const generationConfig: any = {
-    systemInstruction: systemInstruction,
-    responseMimeType: "application/json",
-    responseSchema: geminiSchema,
-  };
-
-  // If tools are provided, we cannot enforce JSON schema on the top level response easily
-  // because the model might return a tool call instead of JSON.
-  // So if tools are present, we remove responseMimeType/responseSchema unless we are sure.
-  if (options?.tools) {
-    delete generationConfig.responseMimeType;
-    delete generationConfig.responseSchema;
-    // Convert tools if necessary?
-    // Tools in services/tools.ts are now standard JSON schema parameters.
-    // Gemini expects FunctionDeclaration with Schema.
-    // We need to map the tools to Gemini format.
-    generationConfig.tools = options.tools.map((tool: any) => ({
-      functionDeclarations: [
-        {
-          name: tool.name,
-          description: tool.description,
-          parameters: convertJsonSchemaToGemini(tool.parameters),
-        },
-      ],
-    }));
-  }
-
-  if (model.includes("thinking")) {
-    generationConfig.thinkingConfig = { includeThoughts: true };
-  } else {
-    // Standard params
-    if (options?.temperature !== undefined)
-      generationConfig.temperature = options.temperature;
-    if (options?.topP !== undefined) generationConfig.topP = options.topP;
-    if (options?.topK !== undefined) generationConfig.topK = options.topK;
-  }
+  // 构建生成配置
+  const generationConfig = buildGenerationConfig(
+    systemInstruction,
+    schema,
+    options
+  );
 
   let text = "";
-  let response: any; // GenerateContentResult or similar
-  let streamedFunctionCalls: FunctionCall[] = [];
-  let streamedUsage: any = null;
+  let functionCalls: ToolCallResult[] = [];
+  let usageMetadata: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  } | null = null;
+  let rawResponse: unknown;
 
   console.log(
-    `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`,
+    `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`
   );
 
   if (options?.onChunk) {
-    const stream = await ai.models.generateContentStream({
-      model: model,
-      contents: processedContents as Content[],
+    // 流式生成
+    const {
+      text: streamText,
+      functionCalls: streamCalls,
+      usage,
+      raw,
+    } = await streamGeneration(
+      client,
+      model,
+      contents,
+      generationConfig,
+      options.onChunk
+    );
+    text = streamText;
+    functionCalls = streamCalls;
+    usageMetadata = usage;
+    rawResponse = raw;
+  } else {
+    // 非流式生成
+    const response = await client.models.generateContent({
+      model,
+      contents,
       config: generationConfig,
     });
 
-    let lastChunk: any = null;
-    for await (const chunk of stream) {
-      lastChunk = chunk;
-      // Collect text parts
-      const chunkText = chunk.text;
-      if (chunkText) {
-        text += chunkText;
-        options.onChunk(chunkText);
+    rawResponse = response;
+    usageMetadata = response.usageMetadata || null;
+
+    // 处理响应
+    const candidate = response.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+
+    // 检查错误原因
+    handleFinishReason(finishReason, candidate?.finishMessage);
+
+    // 提取工具调用
+    if (candidate?.content?.parts) {
+      const fcParts = candidate.content.parts.filter(
+        (p: Part): p is Part & { functionCall: FunctionCall } =>
+          p.functionCall !== undefined
+      );
+
+      if (fcParts.length > 0) {
+        functionCalls = fcParts.map((p, index) => ({
+          id: `gemini_call_${p.functionCall.name}_${index}`,
+          name: p.functionCall.name || "",
+          args: (p.functionCall.args as Record<string, unknown>) || {},
+        }));
       }
-      // Collect function calls from streaming
-      const candidate = chunk.candidates?.[0];
-      if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.functionCall) {
-            streamedFunctionCalls.push(part.functionCall);
-          }
+    }
+
+    // 如果没有工具调用，提取文本
+    if (functionCalls.length === 0 && candidate?.content?.parts) {
+      const textParts = candidate.content.parts.filter(
+        (p: Part): p is Part & { text: string } => p.text !== undefined
+      );
+      text = textParts.map((p) => p.text).join("");
+    }
+  }
+
+  const usage: TokenUsage = {
+    promptTokens: usageMetadata?.promptTokenCount || 0,
+    completionTokens: usageMetadata?.candidatesTokenCount || 0,
+    totalTokens: usageMetadata?.totalTokenCount || 0,
+  };
+
+  console.log(`[Gemini] Generation complete. Usage:`, usage);
+
+  // 如果有工具调用，返回工具调用结果
+  if (functionCalls.length > 0) {
+    return {
+      result: { functionCalls },
+      usage,
+      raw: rawResponse,
+    };
+  }
+
+  // 解析文本为 JSON (如果有 schema)
+  if (text && schema) {
+    const parsedResult = parseJSONResponse(text);
+    return {
+      result: parsedResult as Record<string, unknown>,
+      usage,
+      raw: rawResponse,
+    };
+  }
+
+  // 返回纯文本或空结果
+  return {
+    result: text ? { narrative: text } : {},
+    usage,
+    raw: rawResponse,
+  };
+}
+
+/**
+ * 流式生成
+ */
+async function streamGeneration(
+  client: GoogleGenAI,
+  model: string,
+  contents: Content[],
+  config: GenerateContentConfig,
+  onChunk: (text: string) => void
+): Promise<{
+  text: string;
+  functionCalls: ToolCallResult[];
+  usage: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  } | null;
+  raw: unknown;
+}> {
+  const stream = await client.models.generateContentStream({
+    model,
+    contents,
+    config,
+  });
+
+  let text = "";
+  const functionCalls: ToolCallResult[] = [];
+  let usage: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  } | null = null;
+  let lastChunk: unknown = null;
+  let lastTextLength = 0; // 跟踪上次文本长度，用于计算增量
+
+  for await (const chunk of stream) {
+    lastChunk = chunk;
+
+    // 收集文本 - 注意: chunk.text 返回的是累积的完整文本，不是增量
+    // 我们需要计算增量来正确调用 onChunk
+    const fullText = chunk.text || "";
+    if (fullText.length > lastTextLength) {
+      const deltaText = fullText.slice(lastTextLength);
+      text = fullText; // 使用完整文本，不是累加
+      lastTextLength = fullText.length;
+      if (deltaText) {
+        onChunk(deltaText);
+      }
+    }
+
+    // 收集工具调用
+    const candidate = chunk.candidates?.[0];
+    if (candidate?.content?.parts) {
+      for (const part of candidate.content.parts) {
+        if (part.functionCall) {
+          functionCalls.push({
+            id: `gemini_call_${part.functionCall.name}_${functionCalls.length}`,
+            name: part.functionCall.name || "",
+            args: (part.functionCall.args as Record<string, unknown>) || {},
+          });
         }
       }
-      // Capture usage metadata from final chunk
-      if (chunk.usageMetadata) {
-        streamedUsage = chunk.usageMetadata;
-      }
     }
-    // Reconstruct response from streamed data
-    response = {
-      text: text,
-      candidates: lastChunk?.candidates || [{ finishReason: "STOP" }],
-      usageMetadata: streamedUsage || lastChunk?.usageMetadata,
-      _streamedFunctionCalls: streamedFunctionCalls,
-    };
-    console.log(
-      `[Gemini] Streaming complete. Text length: ${text.length}, FunctionCalls: ${streamedFunctionCalls.length}, Usage:`,
-      streamedUsage,
-    );
-  } else {
-    response = await ai.models.generateContent({
-      model: model,
-      contents: processedContents as Content[],
-      config: generationConfig,
-    });
-    console.log(
-      `[Gemini] Non-streaming response received. UsageMetadata:`,
-      response.usageMetadata,
-    );
-  }
 
-  const candidate = response.candidates?.[0];
-  const finishReason = candidate?.finishReason;
-
-  // Check for tool calls - handle both streaming and non-streaming
-  let functionCalls: any[] = [];
-
-  // From streaming
-  if (
-    response._streamedFunctionCalls &&
-    response._streamedFunctionCalls.length > 0
-  ) {
-    functionCalls = response._streamedFunctionCalls.map(
-      (fc: FunctionCall, index: number) => ({
-        id: `gemini_call_${fc.name}_${index}`,
-        name: fc.name,
-        args: fc.args,
-      }),
-    );
-  }
-  // From non-streaming response
-  else if (candidate?.content?.parts) {
-    const fcParts = candidate.content.parts.filter((p: Part) => p.functionCall);
-    if (fcParts.length > 0) {
-      functionCalls = fcParts.map((p: Part, index: number) => ({
-        id: `gemini_call_${p.functionCall?.name}_${index}`,
-        name: p.functionCall?.name,
-        args: p.functionCall?.args,
-      }));
+    // 捕获使用量
+    if (chunk.usageMetadata) {
+      usage = chunk.usageMetadata;
     }
   }
 
-  // If we have function calls, return them immediately without trying to parse text
-  // This avoids the "non-text parts" warning
-  if (functionCalls.length > 0) {
-    const usage = {
-      promptTokens: response.usageMetadata?.promptTokenCount || 0,
-      completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: response.usageMetadata?.totalTokenCount || 0,
-    };
-    console.log(
-      `[Gemini] Returning ${functionCalls.length} function calls. Usage:`,
-      usage,
-    );
-    return { result: { functionCalls }, usage, raw: response };
-  }
+  console.log(
+    `[Gemini] Streaming complete. Text length: ${text.length}, FunctionCalls: ${functionCalls.length}`
+  );
 
-  // Only try to get text if no function calls (avoids the warning)
-  if (!text && !options?.onChunk) {
-    // For non-streaming, safely extract text from parts
-    const textParts =
-      candidate?.content?.parts?.filter((p: Part) => p.text) || [];
-    text = textParts.map((p: Part) => p.text).join("");
-  }
+  return { text, functionCalls, usage, raw: lastChunk };
+}
 
-  if (finishReason === "SAFETY") {
-    throw new Error(
-      "Gemini content generation failed: Safety filter triggered.",
-    );
+/**
+ * 处理完成原因
+ */
+function handleFinishReason(
+  finishReason: string | undefined,
+  finishMessage?: string
+): void {
+  switch (finishReason) {
+    case "SAFETY":
+      throw new SafetyFilterError("gemini");
+    case "RECITATION":
+      throw new AIProviderError(
+        "Content generation failed: Recitation check triggered",
+        "gemini",
+        "RECITATION"
+      );
+    case "MALFORMED_FUNCTION_CALL":
+      throw new MalformedToolCallError(
+        "gemini",
+        finishMessage?.substring(0, 200)
+      );
+    case "OTHER":
+      console.warn("Gemini generation finished with reason: OTHER");
+      break;
   }
-  if (finishReason === "RECITATION") {
-    throw new Error(
-      "Gemini content generation failed: Recitation check triggered.",
-    );
-  }
-  if (finishReason === "MALFORMED_FUNCTION_CALL") {
-    // Model tried to call a function but generated invalid syntax
-    // Include the finishMessage for debugging
-    const finishMessage = candidate?.finishMessage || "Unknown malformed call";
-    console.error(`[Gemini] Malformed function call: ${finishMessage}`);
-    throw new Error(
-      `Gemini function call format error. The model generated an invalid function call. Please retry. Details: ${finishMessage.substring(0, 200)}`,
-    );
-  }
-  if (finishReason === "OTHER") {
-    console.warn("Gemini content generation finished with reason: OTHER");
-  }
+}
 
-  // For agentic loops, empty text with STOP is valid (model made tool calls)
-  // Only throw if we have no text AND no function calls AND finish reason is problematic
-  if (!text && finishReason !== "STOP") {
-    console.error(`[Gemini] No text response. FinishReason: ${finishReason}`);
-    throw new Error(
-      `No response from Gemini AI (Finish Reason: ${finishReason})`,
-    );
-  }
-
-  // If text is empty but we have a valid STOP, return empty result (valid in agentic context)
-  if (!text) {
-    console.log(
-      `[Gemini] Empty text response with STOP - returning empty result`,
-    );
-    const usage = {
-      promptTokens: response.usageMetadata?.promptTokenCount || 0,
-      completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: response.usageMetadata?.totalTokenCount || 0,
-    };
-    return { result: {}, usage, raw: response };
-  }
-
-  // Extract Usage
-  const usage = {
-    promptTokens: response.usageMetadata?.promptTokenCount || 0,
-    completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-    totalTokens: response.usageMetadata?.totalTokenCount || 0,
+/**
+ * 构建生成配置
+ */
+function buildGenerationConfig(
+  systemInstruction: string,
+  schema?: JsonSchema,
+  options?: GenerateContentOptions
+): GenerateContentConfig {
+  const config: GenerateContentConfig = {
+    systemInstruction,
   };
-  console.log(`[Gemini] Text response. Length: ${text.length}, Usage:`, usage);
 
+  // JSON 模式配置
+  if (schema && !options?.tools) {
+    config.responseMimeType = "application/json";
+    config.responseSchema = convertJsonSchemaToGemini(schema);
+  }
+
+  // 工具配置
+  if (options?.tools && options.tools.length > 0) {
+    config.tools = [
+      {
+        functionDeclarations: options.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: convertJsonSchemaToGemini(tool.parameters),
+        })),
+      },
+    ];
+  }
+
+  // 温度等参数 (非 thinking 模式)
+  if (options?.temperature !== undefined) {
+    config.temperature = options.temperature;
+  }
+  if (options?.topP !== undefined) {
+    config.topP = options.topP;
+  }
+  if (options?.topK !== undefined) {
+    config.topK = options.topK;
+  }
+
+  return config;
+}
+
+
+
+/**
+ * 解析 JSON 响应
+ */
+function parseJSONResponse(text: string): unknown {
   try {
-    // Clean JSON before parsing (remove markdown code blocks if present)
-    let cleanedText = text.replace(/```json\n?|```/g, "").trim();
-    // Compact JSON: remove unnecessary whitespace
-    cleanedText = cleanedText.replace(/\n\s*/g, "").replace(/\s{2,}/g, " ");
-    const parsed = JSON.parse(cleanedText);
-    console.log(`[Gemini] JSON parsed successfully`);
-    return { result: parsed, usage, raw: response };
-  } catch (e) {
-    console.warn("[Gemini] Initial JSON parse failed, attempting repair...", e);
+    // 清理 markdown 代码块
+    let cleaned = text.replace(/```json\n?|```/g, "").trim();
+    // 压缩 JSON
+    cleaned = cleaned.replace(/\n\s*/g, "").replace(/\s{2,}/g, " ");
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.warn("[Gemini] Initial JSON parse failed, attempting repair...");
+
     try {
-      let cleanedText = text.replace(/```json\n?|```/g, "").trim();
-      // Compact and repair
-      const repairedText = cleanedText
+      let cleaned = text.replace(/```json\n?|```/g, "").trim();
+      // 修复常见问题
+      const repaired = cleaned
         .replace(/\n\s*/g, "")
         .replace(/\s{2,}/g, " ")
         .replace(/([{,]\s*)'([^']+)'(\s*:)/g, '$1"$2"$3')
         .replace(/,(\s*[}\]])/g, "$1");
-
-      const parsed = JSON.parse(repairedText);
-      console.log(`[Gemini] JSON repaired and parsed successfully`);
-      return { result: parsed, usage, raw: response };
-    } catch (e2) {
-      console.error(
-        "[Gemini] JSON Parse Error",
-        e2,
-        "Text (first 500 chars):",
-        text.substring(0, 500),
-      );
-      throw new Error("Failed to parse AI response as JSON.");
+      return JSON.parse(repaired);
+    } catch (error2) {
+      throw new JSONParseError("gemini", text.substring(0, 500), error2);
     }
   }
-};
+}
 
-export const generateImage = async (
+// ============================================================================
+// Image Generation
+// ============================================================================
+
+/**
+ * 生成图片
+ */
+export async function generateImage(
   config: GeminiConfig,
   model: string,
   prompt: string,
-  resolution: string = "1024x1024",
-): Promise<{ url: string | null; usage?: any; raw?: any }> => {
-  const ai = getGeminiClient(config);
-
-  // Map resolution to aspect ratio
-  let aspectRatio = "1:1";
-  switch (resolution) {
-    case "1024x1024":
-      aspectRatio = "1:1";
-      break;
-    case "832x1248":
-      aspectRatio = "2:3";
-      break;
-    case "1248x832":
-      aspectRatio = "3:2";
-      break;
-    case "864x1184":
-      aspectRatio = "3:4";
-      break;
-    case "1184x864":
-      aspectRatio = "4:3";
-      break;
-    case "896x1152":
-      aspectRatio = "4:5";
-      break;
-    case "1152x896":
-      aspectRatio = "5:4";
-      break;
-    case "768x1344":
-      aspectRatio = "9:16";
-      break;
-    case "1344x768":
-      aspectRatio = "16:9";
-      break;
-    case "1536x672":
-      aspectRatio = "21:9";
-      break;
-    default:
-      aspectRatio = "1:1";
-      break;
-  }
+  resolution: string = "1024x1024"
+): Promise<ImageGenerationResponse> {
+  const client = createGeminiClient(config);
+  const aspectRatio = getAspectRatio(resolution);
 
   try {
-    const response = await ai.models.generateImages({
-      model: model,
-      prompt: prompt,
+    const response = await client.models.generateImages({
+      model,
+      prompt,
       config: {
         numberOfImages: 1,
-        aspectRatio: aspectRatio,
+        aspectRatio,
         outputMimeType: "image/jpeg",
-        personGeneration: "allow_adult" as any,
+        personGeneration: "allow_adult" as unknown as undefined,
       },
     });
 
     const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     const url = imageBytes ? `data:image/jpeg;base64,${imageBytes}` : null;
+
     return {
       url,
       usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       raw: response,
     };
-  } catch (error: any) {
-    if (
-      error.message?.includes("429") ||
-      error.status === "RESOURCE_EXHAUSTED"
-    ) {
-      console.warn("Gemini Image Generation Quota Exceeded (429).");
-      return { url: null, usage: undefined, raw: error };
+  } catch (error) {
+    if (error instanceof Error) {
+      if (
+        error.message.includes("429") ||
+        error.message.includes("RESOURCE_EXHAUSTED")
+      ) {
+        console.warn("Gemini Image Generation Quota Exceeded");
+        return { url: null, raw: error };
+      }
     }
     throw error;
   }
-};
+}
 
-export const generateVideo = async (
+// ============================================================================
+// Video Generation
+// ============================================================================
+
+/**
+ * 生成视频
+ */
+export async function generateVideo(
   config: GeminiConfig,
   model: string,
   imageBase64: string,
-  prompt: string,
-): Promise<{ url: string; usage?: any; raw?: any }> => {
-  const ai = getGeminiClient(config);
+  prompt: string
+): Promise<VideoGenerationResponse> {
+  const client = createGeminiClient(config);
+
   const [header, data] = imageBase64.split(",");
   const mimeType = header.match(/:(.*?);/)?.[1] || "image/jpeg";
 
-  let operation = await ai.models.generateVideos({
-    model: model,
-    prompt: prompt,
+  let operation = await client.models.generateVideos({
+    model,
+    prompt,
     image: {
       imageBytes: data,
-      mimeType: mimeType,
+      mimeType,
     },
     config: {
       numberOfVideos: 1,
@@ -480,54 +603,55 @@ export const generateVideo = async (
     },
   });
 
+  // 轮询等待完成
   while (!operation.done) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    operation = await ai.operations.getVideosOperation({
-      operation: operation,
-    });
+    operation = await client.operations.getVideosOperation({ operation });
   }
 
   const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-  if (!videoUri) throw new Error("No video URI returned");
+  if (!videoUri) {
+    throw new AIProviderError("No video URI returned", "gemini");
+  }
 
   const response = await fetch(`${videoUri}&key=${config.apiKey}`);
   const blob = await response.blob();
+
   return {
     url: URL.createObjectURL(blob),
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     raw: operation,
   };
-};
+}
 
-export const generateSpeech = async (
+// ============================================================================
+// Speech Generation
+// ============================================================================
+
+/**
+ * 生成语音
+ */
+export async function generateSpeech(
   config: GeminiConfig,
   model: string,
   text: string,
   voiceName: string = "Kore",
-  options?: {
-    speed?: number;
-    format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
-    instructions?: string; // Used for narrative tone
-  },
-): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
-  const ai = getGeminiClient(config);
+  options?: SpeechGenerationOptions
+): Promise<SpeechGenerationResponse> {
+  const client = createGeminiClient(config);
 
-  // Gemini TTS Control via Prompting
-  // Docs: "Say in an spooky whisper: ..."
+  // 构建带语气的文本
   let processedText = text;
   if (options?.instructions) {
-    // If instructions (tone) are provided, prepend them
-    // Clean up instructions to ensure it fits the pattern "Say in a [tone] tone:" or similar
-    // The user passes "cheerful", "sad", etc.
     processedText = `Say in a ${options.instructions} tone: "${text}"`;
   }
 
-  // Use the specific TTS model if the generic one is passed, or respect the passed model if it's already a TTS model
+  // 使用 TTS 模型
   const ttsModel = model.includes("tts")
     ? model
     : "gemini-2.5-flash-preview-tts";
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: ttsModel,
     contents: [{ parts: [{ text: processedText }] }],
     config: {
@@ -542,168 +666,155 @@ export const generateSpeech = async (
 
   const base64Audio =
     response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) throw new Error("No audio content generated");
+  if (!base64Audio) {
+    throw new AIProviderError("No audio content generated", "gemini");
+  }
 
-  const usage = {
+  const usage: TokenUsage = {
     promptTokens: response.usageMetadata?.promptTokenCount || 0,
     completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
     totalTokens: response.usageMetadata?.totalTokenCount || 0,
   };
 
-  // Convert base64 to Uint8Array
-  const binaryString = atob(base64Audio);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
+  // 将 base64 转换为 ArrayBuffer
+  const audioBuffer = decodeBase64ToBuffer(base64Audio);
+
+  return { audio: audioBuffer, usage, raw: response };
+}
+
+/**
+ * 解码 base64 到 ArrayBuffer，自动处理 PCM -> WAV 转换
+ */
+function decodeBase64ToBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  // Check for WAV or MP3 header
-  // WAV: RIFF (52 49 46 46)
-  // MP3: ID3 (49 44 33) or Sync Word (FF FB / FF F3 etc)
+  // 检查是否为 WAV 或 MP3
   const isWav =
     bytes[0] === 0x52 &&
     bytes[1] === 0x49 &&
     bytes[2] === 0x46 &&
     bytes[3] === 0x46;
   const isMp3 =
-    (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) || // ID3
-    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0); // Sync word
+    (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) ||
+    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
 
   if (isWav || isMp3) {
-    return { audio: bytes.buffer, usage, raw: response };
+    return bytes.buffer;
   }
 
-  // If raw PCM, wrap in WAV header
-  // Default Gemini PCM is 24kHz, 1 channel, 16-bit
-  const wavHeader = new ArrayBuffer(44);
-  const view = new DataView(wavHeader);
+  // 如果是 PCM，添加 WAV 头
+  return wrapPCMInWAV(bytes);
+}
 
+/**
+ * 为 PCM 数据添加 WAV 头
+ */
+function wrapPCMInWAV(pcmData: Uint8Array): ArrayBuffer {
   const sampleRate = 24000;
   const numChannels = 1;
   const bitsPerSample = 16;
 
-  /* RIFF identifier */
+  const wavHeader = new ArrayBuffer(44);
+  const view = new DataView(wavHeader);
+
+  // RIFF header
   writeString(view, 0, "RIFF");
-  /* file length */
-  view.setUint32(4, 36 + bytes.length, true);
-  /* RIFF type */
+  view.setUint32(4, 36 + pcmData.length, true);
   writeString(view, 8, "WAVE");
-  /* format chunk identifier */
+
+  // fmt chunk
   writeString(view, 12, "fmt ");
-  /* format chunk length */
   view.setUint32(16, 16, true);
-  /* sample format (raw) */
-  view.setUint16(20, 1, true);
-  /* channel count */
+  view.setUint16(20, 1, true); // PCM
   view.setUint16(22, numChannels, true);
-  /* sample rate */
   view.setUint32(24, sampleRate, true);
-  /* byte rate (sample rate * block align) */
   view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
-  /* block align (channel count * bytes per sample) */
   view.setUint16(32, numChannels * (bitsPerSample / 8), true);
-  /* bits per sample */
   view.setUint16(34, bitsPerSample, true);
-  /* data chunk identifier */
+
+  // data chunk
   writeString(view, 36, "data");
-  /* data chunk length */
-  view.setUint32(40, bytes.length, true);
+  view.setUint32(40, pcmData.length, true);
 
-  const wavBytes = new Uint8Array(wavHeader.byteLength + bytes.byteLength);
+  // 合并 header 和 data
+  const wavBytes = new Uint8Array(wavHeader.byteLength + pcmData.byteLength);
   wavBytes.set(new Uint8Array(wavHeader), 0);
-  wavBytes.set(bytes, wavHeader.byteLength);
+  wavBytes.set(pcmData, wavHeader.byteLength);
 
-  return { audio: wavBytes.buffer, usage, raw: response };
-};
+  return wavBytes.buffer;
+}
 
-function writeString(view: DataView, offset: number, string: string) {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
+function writeString(view: DataView, offset: number, str: string): void {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
   }
 }
 
 // ============================================================================
-// Embedding Functions
+// Embedding Generation
 // ============================================================================
 
-export interface EmbeddingModelInfo {
-  id: string;
-  name: string;
-  dimensions?: number;
-}
-
 /**
- * Get available embedding models from Gemini API
+ * 获取嵌入模型列表
  */
-export const getEmbeddingModels = async (
-  config: GeminiConfig,
-): Promise<EmbeddingModelInfo[]> => {
+export async function getEmbeddingModels(
+  config: GeminiConfig
+): Promise<EmbeddingModelInfo[]> {
   try {
-    const ai = getGeminiClient(config);
-    const response = await ai.models.list();
+    const client = createGeminiClient(config);
+    const response = await client.models.list();
 
     const embeddingModels: EmbeddingModelInfo[] = [];
     for await (const model of response) {
       const name = model.name.toLowerCase();
-      // Filter for embedding models
       if (name.includes("embed") || name.includes("text-embedding")) {
         embeddingModels.push({
           id: model.name.replace("models/", ""),
           name: model.displayName || model.name,
-          dimensions: 768, // Gemini embedding default
+          dimensions: 768, // Gemini 默认维度
         });
       }
     }
 
     if (embeddingModels.length === 0) {
-      // Fallback to known embedding models
-      return [
-        {
-          id: "text-embedding-004",
-          name: "Text Embedding 004",
-          dimensions: 768,
-        },
-        { id: "embedding-001", name: "Embedding 001", dimensions: 768 },
-      ];
+      return getDefaultEmbeddingModels();
     }
 
     return embeddingModels;
-  } catch (e) {
-    console.warn("Failed to list Gemini embedding models", e);
-    return [
-      { id: "text-embedding-004", name: "Text Embedding 004", dimensions: 768 },
-      { id: "embedding-001", name: "Embedding 001", dimensions: 768 },
-    ];
+  } catch (error) {
+    console.warn("Failed to list Gemini embedding models:", error);
+    return getDefaultEmbeddingModels();
   }
-};
-
-export interface EmbeddingResult {
-  embeddings: Float32Array[];
-  usage: {
-    promptTokens: number;
-    totalTokens: number;
-  };
 }
 
 /**
- * Generate embeddings using Gemini API
+ * 默认嵌入模型列表
  */
-export const generateEmbedding = async (
+function getDefaultEmbeddingModels(): EmbeddingModelInfo[] {
+  return [
+    { id: "gemini-embedding-001", name: "Gemini Embedding 001", dimensions: 768 },
+  ];
+}
+
+/**
+ * 生成嵌入向量
+ */
+export async function generateEmbedding(
   config: GeminiConfig,
   modelId: string,
   texts: string[],
   dimensions?: number,
-  taskType?: EmbeddingTaskType,
-): Promise<EmbeddingResult> => {
-  const ai = getGeminiClient(config);
+  _taskType?: EmbeddingTaskType
+): Promise<EmbeddingResponse> {
+  const client = createGeminiClient(config);
 
-  // The SDK's embedContent takes a single content or string.
-  // We need to map over texts and use Promise.all for batch processing if the SDK doesn't expose batchEmbedContents directly.
-  // Note: The raw API supports batchEmbedContents, but if it's not on the SDK client, we parallelize.
-
+  // Gemini SDK 需要逐个处理文本
   const promises = texts.map(async (text) => {
-    const result = await ai.models.embedContent({
+    const result = await client.models.embedContent({
       model: modelId,
       contents: [{ parts: [{ text }] }],
       config: {
@@ -715,17 +826,35 @@ export const generateEmbedding = async (
 
   const embeddingsResult = await Promise.all(promises);
 
-  const embeddings = embeddingsResult.map((e: any) => {
-    // e.values is likely the array
-    return new Float32Array(e.values);
+  const embeddings = embeddingsResult.map((e) => {
+    const values = (e as { values?: number[] })?.values || [];
+    return new Float32Array(values);
   });
 
   return {
     embeddings,
     usage: {
-      // SDK doesn't always return usage for embeddings, so we estimate or leave 0
       promptTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
       totalTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
     },
   };
+}
+
+// ============================================================================
+// Re-exports for Backward Compatibility
+// ============================================================================
+
+export type {
+  GeminiConfig,
+  ModelInfo,
+  GenerateContentOptions,
+  ImageGenerationResponse,
+  VideoGenerationResponse,
+  SpeechGenerationResponse,
+  SpeechGenerationOptions,
+  EmbeddingModelInfo,
+  EmbeddingResponse,
 };
+
+// Alias for backward compatibility
+export type { EmbeddingResponse as EmbeddingResult };

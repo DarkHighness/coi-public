@@ -50,7 +50,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
   getAffinityColor,
   t,
 }) => {
-  const isUnknown = rel.visible.affinityKnown === false;
+  const isUnknown = rel.visible?.affinityKnown === false;
   const pinned = isPinned(rel.id);
   const isDragging = draggedId === rel.id;
   const isExpanded = expandedItems.has(rel.id);
@@ -104,9 +104,9 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
             </svg>
             <span
               className="font-bold text-theme-text text-sm flex items-center gap-1 break-words whitespace-normal"
-              title={rel.visible.name}
+              title={rel.visible?.name || t("unknown") || "Unknown"}
             >
-              {rel.visible.name}
+              {rel.visible?.name || t("unknown") || "Unknown"}
               {rel.unlocked && (
                 <svg
                   className="w-3 h-3 text-yellow-400"
@@ -258,7 +258,15 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         {t("hidden.affinity")}:
                       </span>
                       <span
-                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-theme-success" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-theme-error" : "text-theme-text"}`}
+                        className={`font-mono font-bold ${
+                          (rel.hidden.trueAffinity || 0) >
+                          (rel.visible?.affinity || 0)
+                            ? "text-theme-success"
+                            : (rel.hidden.trueAffinity || 0) <
+                                (rel.visible?.affinity || 0)
+                              ? "text-theme-error"
+                              : "text-theme-text"
+                        }`}
                       >
                         {rel.hidden.trueAffinity}%
                       </span>
@@ -278,13 +286,13 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                   <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
                 ) : (
                   <div
-                    className={`h-full ${getAffinityColor(rel.visible.affinity)} transition-all duration-500`}
-                    style={{ width: `${rel.visible.affinity}%` }}
+                    className={`h-full ${getAffinityColor(rel.visible?.affinity || 0)} transition-all duration-500`}
+                    style={{ width: `${rel.visible?.affinity || 0}%` }}
                   ></div>
                 )}
               </div>
               <span className="text-theme-text w-8 text-right font-mono">
-                {isUnknown ? t("unknown") : `${rel.visible.affinity}%`}
+                {isUnknown ? t("unknown") : `${rel.visible?.affinity || 0}%`}
               </span>
             </div>
           </div>
@@ -349,7 +357,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   const relationshipsWithId = useMemo(() => {
     return safeRelationships
       .filter((r) => r.known !== false) // Filter out unknown characters
-      .map((r) => ({ ...r, id: r.id || r.visible.name }));
+      .map((r) => ({ ...r, id: r.id || r.visible?.name || "unknown" }));
   }, [safeRelationships]);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -558,7 +566,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         items={allItems}
         themeFont={themeFont}
         searchFilter={(item, query) =>
-          item.visible.name.toLowerCase().includes(query.toLowerCase()) ||
+          (item.visible?.name || "").toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
             .toLowerCase()
             .includes(query.toLowerCase())

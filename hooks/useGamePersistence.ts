@@ -231,6 +231,11 @@ export const useGamePersistence = (
         console.warn("[Save Repair]", repairLog);
       }
 
+      // Fix initial prompt if missing
+      if (typeof parsed.initialPrompt !== "string") {
+        parsed.initialPrompt = "Continue the story";
+      }
+
       return parsed as GameState;
     },
     [],
@@ -294,6 +299,12 @@ export const useGamePersistence = (
     loadInitialData();
   }, []);
 
+  const [triggerSaveCount, setTriggerSaveCount] = useState(0);
+
+  const triggerSave = useCallback(() => {
+    setTriggerSaveCount((prev) => prev + 1);
+  }, []);
+
   // Auto-Save Logic using IndexedDB with debounce and throttle
   // IMPORTANT: Skip saving during processing to avoid corrupted state
   useEffect(() => {
@@ -318,16 +329,22 @@ export const useGamePersistence = (
 
     // Additional safety check: ensure activeNodeId points to a model node
     // If it's a user node, we're mid-generation and shouldn't save
-    if (gameState.activeNodeId) {
+    // EXCEPTION: If triggered manually via triggerSaveCount, we save anyway (e.g. after image gen)
+    // But we still want to avoid saving PURE user nodes if processing is happening.
+    // However, triggerSave is usually called AFTER processing is done.
+    if (gameState.activeNodeId && triggerSaveCount === 0) {
       const activeNode = gameState.nodes[gameState.activeNodeId];
       if (activeNode && activeNode.role === "user") {
         return;
       }
     }
 
-    // Only trigger save when activeNodeId changes (new turn completed)
+    // Only trigger save when activeNodeId changes (new turn completed) OR triggered manually
     // This prevents saving on every minor state change
-    const shouldSave = lastSavedNodeIdRef.current !== gameState.activeNodeId;
+    const shouldSave =
+      lastSavedNodeIdRef.current !== gameState.activeNodeId ||
+      triggerSaveCount > 0;
+
     if (!shouldSave) {
       return;
     }
@@ -342,7 +359,10 @@ export const useGamePersistence = (
       // Throttle: check if enough time has passed since last save
       const now = Date.now();
       const timeSinceLastSave = now - lastSaveTimeRef.current;
-      if (timeSinceLastSave < MIN_SAVE_INTERVAL_MS) {
+
+      // If triggered manually, we might want to bypass throttle, but for safety let's keep it
+      // unless it's been a reasonable amount of time.
+      if (timeSinceLastSave < MIN_SAVE_INTERVAL_MS && triggerSaveCount === 0) {
         // Schedule another attempt after the remaining time
         saveTimeoutRef.current = setTimeout(() => {
           // Re-trigger the effect by this point the state might have changed
@@ -428,6 +448,7 @@ export const useGamePersistence = (
     skipNextSave,
     gameState,
     saveSlots,
+    triggerSaveCount, // Added dependency
   ]);
 
   // Persist Current Slot ID to IndexedDB
@@ -550,5 +571,6 @@ export const useGamePersistence = (
     hardReset,
     saveToSlot, // Manual save for explicit save points
     setSkipNextSave, // Skip next auto-save (for error recovery)
+    triggerSave, // Force save
   };
 };

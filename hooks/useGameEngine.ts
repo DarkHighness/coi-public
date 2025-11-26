@@ -72,6 +72,7 @@ export const useGameEngine = () => {
     hardReset,
     saveToSlot,
     setSkipNextSave,
+    triggerSave,
   } = useGamePersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -713,6 +714,9 @@ export const useGameEngine = () => {
                 : prev.nodes,
             }));
           })
+          .then(() => {
+            triggerSave();
+          })
           .catch((error) => {
             clearTimeout(imageTimeout);
             console.error("Image generation failed:", error);
@@ -734,6 +738,9 @@ export const useGameEngine = () => {
       processingRef.current = false;
 
       // Return state changes for toast notifications
+      // Trigger save immediately after generation
+      triggerSave();
+
       return {
         success: true as const,
         stateChanges,
@@ -798,6 +805,9 @@ export const useGameEngine = () => {
         t,
         onStream,
       );
+
+      console.log("[StartNewGame] Outline generated", outline);
+
       setGameState((prev) => ({
         ...prev,
         outline,
@@ -1105,6 +1115,7 @@ export const useGameEngine = () => {
             [nodeId]: { ...prev.nodes[nodeId], imageUrl: url },
           },
         }));
+        triggerSave();
       } else {
         console.warn("Image generation returned empty URL for node:", nodeId);
         setGameState((prev) => ({

@@ -280,7 +280,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                             faction.hidden.members.length > 0 && (
                               <div className="text-[10px] text-theme-danger/60">
                                 <span className="text-theme-unlocked/80 font-bold block mb-1">
-                                  {t("members") || "Members"}:
+                                  {t("faction.members") || "Members"}:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
                                   {faction.hidden.members.map((member, idx) => (
@@ -303,7 +303,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           {faction.hidden.influence && (
                             <div className="text-[10px] text-theme-danger/60 flex items-start gap-1">
                               <span className="text-theme-unlocked/80 font-bold whitespace-nowrap">
-                                {t("influence") || "Influence"}:
+                                {t("faction.influence") || "Influence"}:
                               </span>
                               <span>{faction.hidden.influence}</span>
                             </div>
@@ -312,7 +312,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                             faction.hidden.relations.length > 0 && (
                               <div className="text-[10px] text-theme-danger/60">
                                 <span className="text-theme-unlocked/80 font-bold block mb-0.5">
-                                  {t("relations") || "Relations"}:
+                                  {t("faction.relations") || "Relations"}:
                                 </span>
                                 <div className="grid grid-cols-1 gap-0.5 pl-1">
                                   {faction.hidden.relations.map((rel, idx) => (
