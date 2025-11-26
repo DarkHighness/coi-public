@@ -13,8 +13,10 @@ import type {
   TimelineEvent,
   GameResponse,
   GameState,
+  EmbeddingConfig,
 } from "../types";
 import { GameDatabase } from "./gameDatabase";
+import { getEmbeddingManager, createEmbeddingManager } from "./embedding";
 import {
   GeminiConfig,
   generateContent as generateGeminiContent,
@@ -23,6 +25,9 @@ import {
   generateSpeech as generateGeminiSpeech,
   getModels as getGeminiModels,
   validateConnection as validateGeminiConnection,
+  getEmbeddingModels as getGeminiEmbeddingModels,
+  generateEmbedding as generateGeminiEmbedding,
+  EmbeddingModelInfo,
 } from "./providers/geminiProvider";
 import {
   OpenAIConfig,
@@ -31,6 +36,8 @@ import {
   generateSpeech as generateOpenAISpeech,
   getModels as getOpenAIModels,
   validateConnection as validateOpenAIConnection,
+  getEmbeddingModels as getOpenAIEmbeddingModels,
+  generateEmbedding as generateOpenAIEmbedding,
 } from "./providers/openaiProvider";
 import {
   OpenRouterConfig,
@@ -39,6 +46,8 @@ import {
   generateSpeech as generateOpenRouterSpeech,
   getModels as getOpenRouterModels,
   validateConnection as validateOpenRouterConnection,
+  getEmbeddingModels as getOpenRouterEmbeddingModels,
+  generateEmbedding as generateOpenRouterEmbedding,
 } from "./providers/openRouterProvider";
 import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, THEMES } from "../utils/constants";
 import {
@@ -541,9 +550,10 @@ const buildSystemContext = (
  *
  * Message Order (Static → Semi-Static → Dynamic):
  * 1. [STATIC] Story Memory (summaries) - changes infrequently
- * 2. [DYNAMIC] Recent History - conversation context
- * 3. [SEMI-STATIC] Current State Hints - changes each turn but is small
- * 4. [DYNAMIC] Current User Action (MUST immediately follow "Awaiting player action")
+ * 2. [DYNAMIC] RAG Context (semantic search results) - optional
+ * 3. [DYNAMIC] Recent History - conversation context
+ * 4. [SEMI-STATIC] Current State Hints - changes each turn but is small
+ * 5. [DYNAMIC] Current User Action (MUST immediately follow "Awaiting player action")
  */
 const buildTurnContents = (
   summaries: StorySummary[],
@@ -551,6 +561,7 @@ const buildTurnContents = (
   recentHistory: StorySegment[],
   timeline: TimelineEvent[],
   userAction: string,
+  ragContext?: string,
 ): UnifiedMessage[] => {
   const messages: UnifiedMessage[] = [];
 
@@ -573,7 +584,20 @@ const buildTurnContents = (
     });
   }
 
-  // === Message 2: Recent History (DYNAMIC - before current state) ===
+  // === Message 2: RAG Context (DYNAMIC - semantic search results) ===
+  if (ragContext && ragContext.trim()) {
+    messages.push(
+      createUserMessage(
+        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`,
+      ),
+    );
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[Background context acknowledged.]" }],
+    });
+  }
+
+  // === Message 3: Recent History (DYNAMIC - before current state) ===
   // This represents the conversation flow LEADING UP TO the current turn
   if (recentHistory.length > 0) {
     // Group recent history into a context block
@@ -655,12 +679,65 @@ export const generateAdventureTurn = async (
     gameState.godMode, // Pass God Mode flag
   );
 
+  // Try to get RAG context if embedding is enabled
+  let ragContext: string | undefined;
+  try {
+    const embeddingManager = getEmbeddingManager();
+    if (embeddingManager && embeddingManager.hasIndex()) {
+      const ragContextParts: string[] = [];
+
+      // 1. Get context from current user action
+      const actionRag = await embeddingManager.getContextForAction(
+        context.userAction,
+        gameState,
+      );
+      if (actionRag.combinedContext) {
+        ragContextParts.push(actionRag.combinedContext);
+      }
+
+      // 2. If there are ragQueries from the previous turn, execute them
+      if (gameState.ragQueries && gameState.ragQueries.length > 0) {
+        console.log(
+          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`,
+        );
+        for (const query of gameState.ragQueries) {
+          try {
+            const queryRag = await embeddingManager.retrieveContext(query, {
+              topK: 3,
+            });
+            if (queryRag.combinedContext) {
+              ragContextParts.push(
+                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`,
+              );
+            }
+          } catch (queryError) {
+            console.warn(
+              `[RAG] Failed to process pre-planned query "${query}":`,
+              queryError,
+            );
+          }
+        }
+      }
+
+      if (ragContextParts.length > 0) {
+        ragContext = ragContextParts.join("\n\n");
+        console.log(
+          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`,
+        );
+      }
+    }
+  } catch (error) {
+    console.warn("[RAG] Failed to retrieve context:", error);
+    // Continue without RAG context
+  }
+
   const contents = buildTurnContents(
     gameState.summaries,
     getCurrentStateContext(gameState, context.recentHistory),
     context.recentHistory,
     gameState.timeline || [],
     context.userAction,
+    ragContext,
   );
 
   return runAgenticLoop(
@@ -904,6 +981,50 @@ const runAgenticLoop = async (
         } else if (name === "query_character") {
           output = db.query("character");
         }
+        // RAG search operation
+        else if (name === "rag_search") {
+          const embeddingManager = getEmbeddingManager();
+          if (embeddingManager && embeddingManager.hasIndex()) {
+            try {
+              const query = args.query as string;
+              const types = args.types as string[] | undefined;
+              const topK = (args.topK as number) || 5;
+
+              const ragContext = await embeddingManager.retrieveContext(query, {
+                topK,
+                types: types as any,
+              });
+
+              output = {
+                success: true,
+                query,
+                results: {
+                  story: ragContext.storyContext,
+                  npc: ragContext.npcContext,
+                  location: ragContext.locationContext,
+                  item: ragContext.itemContext,
+                  knowledge: ragContext.knowledgeContext,
+                  quest: ragContext.questContext,
+                  event: ragContext.eventContext,
+                },
+                combinedContext: ragContext.combinedContext,
+                message: `Found ${ragContext.storyContext.length + ragContext.npcContext.length + ragContext.locationContext.length + ragContext.itemContext.length + ragContext.knowledgeContext.length + ragContext.questContext.length + ragContext.eventContext.length} relevant entries`,
+              };
+            } catch (error) {
+              output = {
+                success: false,
+                error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+              };
+            }
+          } else {
+            output = {
+              success: false,
+              error:
+                "RAG search is not available. Embedding index has not been built.",
+              hint: "Use query_* tools to search specific entity types instead.",
+            };
+          }
+        }
         // Modify operations
         // Note: Tool parameters are at top level (not wrapped in 'data')
         // We extract action separately and pass the rest as data
@@ -1062,6 +1183,11 @@ const runAgenticLoop = async (
           // Extract alive entities for next turn context
           if (args.aliveEntities) {
             accumulatedResponse.aliveEntities = args.aliveEntities as any;
+          }
+
+          // Extract RAG queries for next turn context
+          if (args.ragQueries && Array.isArray(args.ragQueries)) {
+            accumulatedResponse.ragQueries = args.ragQueries as string[];
           }
 
           // Extract ending type if story has concluded
@@ -1433,3 +1559,53 @@ export const generateVeoScript = async (
     return "Failed to generate script.";
   }
 };
+
+// ============ Embedding Functions ============
+
+/**
+ * Get available embedding models from a provider.
+ * Fetches from the provider's API and falls back to hardcoded defaults.
+ */
+export const getEmbeddingModels = async (
+  provider: "gemini" | "openai" | "openrouter",
+): Promise<EmbeddingModelInfo[]> => {
+  try {
+    if (provider === "gemini") {
+      return await getGeminiEmbeddingModels(geminiConfig);
+    } else if (provider === "openai") {
+      return await getOpenAIEmbeddingModels(openaiConfig);
+    } else {
+      return await getOpenRouterEmbeddingModels(openRouterConfig);
+    }
+  } catch (error) {
+    console.error(`Failed to get embedding models from ${provider}:`, error);
+    return [];
+  }
+};
+
+/**
+ * Generate embeddings for a list of texts using the configured embedding provider.
+ */
+export const generateEmbeddings = async (
+  texts: string[],
+  config?: EmbeddingConfig,
+): Promise<{ embeddings: Float32Array[]; usage: any }> => {
+  const embeddingConfig = config || currentSettings.embedding;
+
+  if (!embeddingConfig?.enabled) {
+    throw new Error("Embedding is disabled");
+  }
+
+  const { provider, modelId } = embeddingConfig;
+
+  if (provider === "gemini") {
+    return await generateGeminiEmbedding(geminiConfig, modelId, texts);
+  } else if (provider === "openai") {
+    return await generateOpenAIEmbedding(openaiConfig, modelId, texts);
+  } else {
+    return await generateOpenRouterEmbedding(openRouterConfig, modelId, texts);
+  }
+};
+
+// Re-export the EmbeddingModelInfo type for consumers
+export type { EmbeddingModelInfo };

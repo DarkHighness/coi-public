@@ -387,3 +387,127 @@ export const generateSpeech = async (
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
   };
 };
+
+// ============================================================================
+// Embedding Functions
+// ============================================================================
+
+export interface EmbeddingModelInfo {
+  id: string;
+  name: string;
+  dimensions?: number;
+}
+
+/**
+ * Get available embedding models from OpenAI API
+ */
+export const getEmbeddingModels = async (
+  config: OpenAIConfig,
+): Promise<EmbeddingModelInfo[]> => {
+  try {
+    const client = getClient(config);
+    const list = await client.models.list();
+
+    const embeddingModels: EmbeddingModelInfo[] = [];
+    for (const model of list.data) {
+      const id = model.id.toLowerCase();
+      if (id.includes("embed") || id.includes("text-embedding")) {
+        let dimensions = 1536; // Default for text-embedding-ada-002
+        if (id.includes("text-embedding-3-small")) dimensions = 1536;
+        if (id.includes("text-embedding-3-large")) dimensions = 3072;
+
+        embeddingModels.push({
+          id: model.id,
+          name: model.id,
+          dimensions,
+        });
+      }
+    }
+
+    if (embeddingModels.length === 0) {
+      // Fallback to known embedding models
+      return [
+        {
+          id: "text-embedding-3-small",
+          name: "Text Embedding 3 Small",
+          dimensions: 1536,
+        },
+        {
+          id: "text-embedding-3-large",
+          name: "Text Embedding 3 Large",
+          dimensions: 3072,
+        },
+        {
+          id: "text-embedding-ada-002",
+          name: "Text Embedding Ada 002",
+          dimensions: 1536,
+        },
+      ];
+    }
+
+    return embeddingModels;
+  } catch (e) {
+    console.warn("Failed to list OpenAI embedding models", e);
+    return [
+      {
+        id: "text-embedding-3-small",
+        name: "Text Embedding 3 Small",
+        dimensions: 1536,
+      },
+      {
+        id: "text-embedding-3-large",
+        name: "Text Embedding 3 Large",
+        dimensions: 3072,
+      },
+      {
+        id: "text-embedding-ada-002",
+        name: "Text Embedding Ada 002",
+        dimensions: 1536,
+      },
+    ];
+  }
+};
+
+export interface EmbeddingResult {
+  embeddings: Float32Array[];
+  usage: {
+    promptTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * Generate embeddings using OpenAI API
+ */
+export const generateEmbedding = async (
+  config: OpenAIConfig,
+  modelId: string,
+  texts: string[],
+  dimensions?: number,
+): Promise<EmbeddingResult> => {
+  const client = getClient(config);
+
+  const body: any = {
+    model: modelId,
+    input: texts,
+    encoding_format: "float",
+  };
+
+  if (dimensions) {
+    body.dimensions = dimensions;
+  }
+
+  const response = await client.embeddings.create(body);
+
+  const embeddings = response.data
+    .sort((a: any, b: any) => a.index - b.index)
+    .map((item: any) => new Float32Array(item.embedding));
+
+  return {
+    embeddings,
+    usage: {
+      promptTokens: response.usage?.prompt_tokens || 0,
+      totalTokens: response.usage?.total_tokens || 0,
+    },
+  };
+};

@@ -7,15 +7,22 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
   setActiveTab,
 }) => {
   const { t } = useTranslation();
-  const tabs: Tab[] = ["credentials", "models", "audio", "appearance", "data"];
+  const tabs: Tab[] = [
+    "credentials",
+    "models",
+    "embedding",
+    "audio",
+    "appearance",
+    "data",
+  ];
 
   return (
-    <div className="flex border-b border-theme-border bg-theme-bg">
+    <div className="flex border-b border-theme-border bg-theme-bg overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab}
           onClick={() => setActiveTab(tab)}
-          className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${
+          className={`flex-1 min-w-max py-3 px-2 text-sm font-bold uppercase tracking-widest transition-colors ${
             activeTab === tab
               ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
               : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"

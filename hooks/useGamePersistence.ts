@@ -9,6 +9,7 @@ import {
   getStorageEstimate,
   clearDatabase,
 } from "../utils/indexedDB";
+import { resetEmbeddingManager } from "../services/embedding/embeddingManager";
 
 // Auto-save debounce time in milliseconds
 const AUTO_SAVE_DEBOUNCE_MS = 3000;
@@ -470,6 +471,10 @@ export const useGamePersistence = (
     try {
       const data = await loadGameState(id);
       if (data) {
+        // Reset embedding manager when switching saves
+        // The embedding index will be rebuilt for the new game state
+        resetEmbeddingManager();
+
         const sanitized = sanitizeState(data);
         setGameState(sanitized);
         setCurrentSlotId(id);

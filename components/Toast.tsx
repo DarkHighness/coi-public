@@ -52,8 +52,8 @@ const SingleToast: React.FC<SingleToastProps> = ({ toast, onRemove }) => {
   }, [toast.id, toast.duration, onRemove]);
 
   const bgColor = {
-    error: "bg-red-900/90 text-red-100 border-red-700",
-    success: "bg-green-900/90 text-green-100 border-green-700",
+    error: "bg-theme-error/20 text-theme-error border-theme-error",
+    success: "bg-theme-success/20 text-theme-success border-theme-success",
     info: "bg-theme-surface-highlight text-theme-primary border-theme-primary",
   }[toast.type];
 
@@ -338,7 +338,7 @@ export const Toast: React.FC<ToastProps> = ({
           : "opacity-0 translate-x-4 pointer-events-none"
       } ${
         type === "error"
-          ? "bg-red-900/90 text-red-100 border border-red-700"
+          ? "bg-theme-error/20 text-theme-error border border-theme-error"
           : "bg-theme-surface-highlight text-theme-primary border border-theme-primary"
       }`}
     >

@@ -172,9 +172,27 @@
   "tabs": {
     "credentials": "API Keys",
     "models": "Models",
+    "embedding": "RAG",
     "audio": "Audio",
     "appearance": "Appearance",
     "data": "Data"
+  },
+  "embedding": {
+    "title": "RAG Embedding",
+    "description": "Enable semantic search for story context retrieval",
+    "provider": "Provider",
+    "model": "Embedding Model",
+    "dimensions": "Dimensions",
+    "advanced": "Advanced Settings",
+    "chunkSize": "Chunk Size",
+    "chunkSizeHelp": "Characters per text chunk for embedding",
+    "chunkOverlap": "Chunk Overlap",
+    "chunkOverlapHelp": "Overlap between adjacent chunks",
+    "topK": "Top K Results",
+    "topKHelp": "Number of similar results to retrieve",
+    "threshold": "Similarity Threshold",
+    "thresholdHelp": "Minimum similarity score (0-1) for results",
+    "statusInfo": "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."
   },
   "themeMode": "Theme Mode",
   "settings": "Settings",

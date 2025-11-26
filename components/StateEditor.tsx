@@ -280,7 +280,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
                 {hasChanges && (
-                  <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full flex-none">
+                  <span className="px-2 py-0.5 bg-theme-warning/20 text-theme-warning text-xs rounded-full flex-none">
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
@@ -309,14 +309,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 value={jsonText}
                 onChange={(e) => handleJsonChange(e.target.value)}
                 className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
-                  error ? "border-2 border-red-500/50" : ""
+                  error ? "border-2 border-theme-error/50" : ""
                 }`}
                 spellCheck={false}
                 placeholder="Loading..."
               />
               {/* Error indicator */}
               {error && (
-                <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-red-500/20 border-t border-red-500/50 text-red-400 text-xs">
+                <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
                   ⚠️ {error}
                 </div>
               )}

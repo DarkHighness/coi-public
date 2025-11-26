@@ -69,7 +69,7 @@ export const ImagePlaceholder: React.FC<ImagePlaceholderProps> = ({
             </div>
           </div>
           <span
-            className={`text-xs uppercase tracking-widest transition-colors ${hasFailed ? "text-red-400 group-hover:text-red-500" : "text-theme-muted group-hover:text-theme-primary"}`}
+            className={`text-xs uppercase tracking-widest transition-colors ${hasFailed ? "text-theme-error group-hover:text-theme-error-muted" : "text-theme-muted group-hover:text-theme-primary"}`}
           >
             {hasFailed
               ? labelFailed || t("generationFailed")

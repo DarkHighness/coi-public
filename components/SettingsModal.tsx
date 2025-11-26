@@ -9,6 +9,7 @@ import { SettingsData } from "./settings/SettingsData";
 import { SettingsCredentials } from "./settings/SettingsCredentials";
 import { SettingsModels } from "./settings/SettingsModels";
 import { SettingsAudio } from "./settings/SettingsAudio";
+import { SettingsEmbedding } from "./settings/SettingsEmbedding";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -156,6 +157,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <SettingsAudio
               currentSettings={currentSettings}
               onUpdateSettings={updateSettings}
+            />
+          )}
+
+          {activeTab === "embedding" && (
+            <SettingsEmbedding
+              currentSettings={currentSettings}
+              onUpdateSettings={updateSettings}
+              showToast={showToast}
             />
           )}
         </div>

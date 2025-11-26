@@ -247,10 +247,16 @@ export const QUERY_CHARACTER_TOOL = {
 };
 
 // --- Update Tools (Using Unified Schemas) ---
+// IMPORTANT: For all update tools, to REMOVE an optional property, set its value to null.
+// Example: To remove an NPC's notes, set notes: null
+// Example: To remove a skill's level, set level: null
+// The system will delete these properties from the entity when it sees null values.
 
 export const UPDATE_INVENTORY_TOOL = {
   name: "update_inventory",
-  description: "Add, remove, or update items in the player's inventory.",
+  description: `Add, remove, or update items in the player's inventory.
+IMPORTANT: To REMOVE an optional property from an existing item, set it to null.
+Example: To clear an item's lore, set lore: null`,
   parameters: {
     type: "object",
     properties: {
@@ -310,7 +316,13 @@ export const UPDATE_INVENTORY_TOOL = {
 
 export const UPDATE_RELATIONSHIP_TOOL = {
   name: "update_relationship",
-  description: "Add, update, or remove NPC relationships.",
+  description: `Add, update, or remove NPC relationships.
+IMPORTANT:
+- To REMOVE an optional property, set it to null.
+- Use 'currentLocation' to track NPC's location (e.g., 'loc:1'). NPCs at the same location as the player are considered "nearby".
+- When NPC moves, update their currentLocation accordingly.
+Example: To clear an NPC's notes, set notes: null
+Example: To move NPC to player's location, set currentLocation: "loc:3"`,
   parameters: {
     type: "object",
     properties: {
@@ -323,6 +335,11 @@ export const UPDATE_RELATIONSHIP_TOOL = {
         type: "string",
         description:
           "NPC ID (format: npc:N, e.g., 'npc:1'). Required for 'update' and 'remove' actions.",
+      },
+      currentLocation: {
+        type: "string",
+        description:
+          "NPC's current location ID (e.g., 'loc:1'). Update when NPC moves. NPCs at player's location are 'nearby'.",
       },
       known: {
         type: "boolean",
@@ -406,8 +423,9 @@ export const UPDATE_RELATIONSHIP_TOOL = {
 
 export const UPDATE_LOCATION_TOOL = {
   name: "update_location",
-  description:
-    "Add, update, or remove locations. Use to track player movement and location discovery.",
+  description: `Add, update, or remove locations. Use to track player movement and location discovery.
+IMPORTANT: To REMOVE an optional property, set it to null.
+Example: To clear a location's environment, set environment: null`,
   parameters: {
     type: "object",
     properties: {
@@ -812,12 +830,14 @@ export const UPDATE_FACTION_TOOL = {
               type: "object",
               properties: {
                 name: { type: "string", description: "Name of the member" },
-                title: { type: "string", description: "Optional title or role" },
+                title: {
+                  type: "string",
+                  description: "Optional title or role",
+                },
               },
               required: ["name"],
             },
-            description:
-              "Publicly known members. NOT relationship keys.",
+            description: "Publicly known members. NOT relationship keys.",
           },
           influence: {
             type: "string",
@@ -840,12 +860,14 @@ export const UPDATE_FACTION_TOOL = {
               type: "object",
               properties: {
                 name: { type: "string", description: "Name of the member" },
-                title: { type: "string", description: "Optional title or role" },
+                title: {
+                  type: "string",
+                  description: "Optional title or role",
+                },
               },
               required: ["name"],
             },
-            description:
-              "Secret members/leaders. NOT relationship keys.",
+            description: "Secret members/leaders. NOT relationship keys.",
           },
           influence: {
             type: "string",
@@ -1085,6 +1107,51 @@ export const UPDATE_GLOBAL_TOOL = {
   },
 };
 
+export const RAG_SEARCH_TOOL = {
+  name: "rag_search",
+  description: `Perform a semantic search across the game world to retrieve relevant context. Use this when you need to recall information that might be relevant to the current situation but is not immediately in context. This searches through:
+- Story history (past events and narratives)
+- NPCs (visible AND hidden information)
+- Locations (including undiscovered secrets)
+- Items (including hidden properties)
+- Knowledge/Lore entries
+- Quest information
+- Timeline events
+
+The search returns both visible player knowledge and [AI_ONLY] hidden information to help maintain world consistency.`,
+  parameters: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description:
+          "Natural language search query. Be specific about what you're looking for. Examples: 'NPCs who know about the ancient prophecy', 'locations with hidden magical artifacts', 'events involving the fallen kingdom'",
+      },
+      types: {
+        type: "array",
+        items: {
+          type: "string",
+          enum: [
+            "story",
+            "npc",
+            "location",
+            "item",
+            "knowledge",
+            "quest",
+            "event",
+          ],
+        },
+        description: "Optional: Filter results to specific entity types.",
+      },
+      topK: {
+        type: "number",
+        description: "Maximum number of results to return. Default is 5.",
+      },
+    },
+    required: ["query"],
+  },
+};
+
 export const FINISH_TURN_TOOL = {
   name: "finish_turn",
   description:
@@ -1233,6 +1300,15 @@ Typical usage:
 - bad_ending → forceEnd: true or false depending on severity
 - neutral_ending → forceEnd: false (open-ended)`,
       },
+      ragQueries: {
+        type: "array",
+        items: { type: "string" },
+        description: `Semantic search queries to pre-fetch relevant context for the NEXT turn. Use this to prepare important information that might be needed based on the narrative direction. Examples:
+- After mentioning a mysterious artifact: ["ancient artifacts with hidden powers", "cursed items in the kingdom"]
+- Before entering a dungeon: ["dungeon traps and hazards", "creatures that live in underground caves"]
+- When an NPC mentions their past: ["NPC's history and secrets", "related events from timeline"]
+These queries will be used for semantic search to retrieve relevant world knowledge.`,
+      },
     },
     required: ["narrative", "choices"],
   },
@@ -1250,6 +1326,8 @@ export const TOOLS = [
   QUERY_FACTIONS_TOOL,
   QUERY_GLOBAL_TOOL,
   QUERY_CHARACTER_TOOL,
+  // RAG Tools
+  RAG_SEARCH_TOOL,
   // Update Tools
   UPDATE_INVENTORY_TOOL,
   UPDATE_RELATIONSHIP_TOOL,

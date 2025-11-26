@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
@@ -9,7 +9,13 @@ import { SaveSlot } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
-import { SaveManager } from "./SaveManager";
+
+// Lazy load SaveManager to enable proper code splitting (also dynamically imported in App.tsx)
+const SaveManager = lazy(() =>
+  import("./SaveManager").then((module) => ({
+    default: module.SaveManager,
+  })),
+);
 
 interface StartScreenProps {
   onStart: (theme: string, customContext?: string) => void;
@@ -331,16 +337,24 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
       {/* Save Manager Modal */}
       {isSaveManagerOpen && (
-        <SaveManager
-          slots={saveSlots}
-          currentSlotId={null}
-          onSwitch={(id) => {
-            onSwitchSlot?.(id);
-            setIsSaveManagerOpen(false);
-          }}
-          onDelete={onDeleteSlot || (() => {})}
-          onClose={() => setIsSaveManagerOpen(false)}
-        />
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-white rounded-full" />
+            </div>
+          }
+        >
+          <SaveManager
+            slots={saveSlots}
+            currentSlotId={null}
+            onSwitch={(id) => {
+              onSwitchSlot?.(id);
+              setIsSaveManagerOpen(false);
+            }}
+            onDelete={onDeleteSlot || (() => {})}
+            onClose={() => setIsSaveManagerOpen(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

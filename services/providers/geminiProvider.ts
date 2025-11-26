@@ -608,3 +608,111 @@ function writeString(view: DataView, offset: number, string: string) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
+
+// ============================================================================
+// Embedding Functions
+// ============================================================================
+
+export interface EmbeddingModelInfo {
+  id: string;
+  name: string;
+  dimensions?: number;
+}
+
+/**
+ * Get available embedding models from Gemini API
+ */
+export const getEmbeddingModels = async (
+  config: GeminiConfig,
+): Promise<EmbeddingModelInfo[]> => {
+  try {
+    const ai = getGeminiClient(config);
+    const response = await ai.models.list();
+
+    const embeddingModels: EmbeddingModelInfo[] = [];
+    for await (const model of response) {
+      const name = model.name.toLowerCase();
+      // Filter for embedding models
+      if (name.includes("embed") || name.includes("text-embedding")) {
+        embeddingModels.push({
+          id: model.name.replace("models/", ""),
+          name: model.displayName || model.name,
+          dimensions: 768, // Gemini embedding default
+        });
+      }
+    }
+
+    if (embeddingModels.length === 0) {
+      // Fallback to known embedding models
+      return [
+        {
+          id: "text-embedding-004",
+          name: "Text Embedding 004",
+          dimensions: 768,
+        },
+        { id: "embedding-001", name: "Embedding 001", dimensions: 768 },
+      ];
+    }
+
+    return embeddingModels;
+  } catch (e) {
+    console.warn("Failed to list Gemini embedding models", e);
+    return [
+      { id: "text-embedding-004", name: "Text Embedding 004", dimensions: 768 },
+      { id: "embedding-001", name: "Embedding 001", dimensions: 768 },
+    ];
+  }
+};
+
+export interface EmbeddingResult {
+  embeddings: Float32Array[];
+  usage: {
+    promptTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * Generate embeddings using Gemini API
+ */
+export const generateEmbedding = async (
+  config: GeminiConfig,
+  modelId: string,
+  texts: string[],
+  dimensions?: number,
+): Promise<EmbeddingResult> => {
+  const apiKey = config.apiKey;
+  if (!apiKey) throw new Error("Gemini API key not configured");
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:batchEmbedContents?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: texts.map((text) => ({
+        model: `models/${modelId}`,
+        content: { parts: [{ text }] },
+        outputDimensionality: dimensions,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gemini embedding failed: ${error}`);
+  }
+
+  const data = await response.json();
+  const embeddings = data.embeddings.map(
+    (e: any) => new Float32Array(e.values),
+  );
+
+  return {
+    embeddings,
+    usage: {
+      promptTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
+      totalTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
+    },
+  };
+};

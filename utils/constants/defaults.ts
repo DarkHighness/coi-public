@@ -1,4 +1,9 @@
-import { CharacterStatus, AISettings, LanguageCode } from "../../types";
+import {
+  CharacterStatus,
+  AISettings,
+  LanguageCode,
+  EmbeddingConfig,
+} from "../../types";
 
 export const INITIAL_PROMPT =
   "Begin the adventure. Create a setting and character introduction.";
@@ -82,4 +87,15 @@ export const DEFAULTS: AISettings = {
   manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
   lockEnvTheme: false,
+  // RAG Embedding Settings
+  embedding: {
+    enabled: false,
+    provider: "gemini",
+    modelId: "text-embedding-004",
+    dimensions: 768,
+    chunkSize: 512,
+    chunkOverlap: 64,
+    topK: 5,
+    similarityThreshold: 0.7,
+  },
 };

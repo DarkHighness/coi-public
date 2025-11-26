@@ -185,7 +185,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* God Mode Indicator */}
       {gameState.godMode && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-pulse">
-          <div className="px-4 py-1.5 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-yellow-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+          <div className="px-4 py-1.5 bg-theme-warning/20 border border-theme-warning/50 rounded-full text-theme-warning text-xs font-bold uppercase tracking-widest flex items-center gap-2">
             <span className="text-lg">🔱</span>
             <span>{t("commands.godMode.indicator") || "GOD MODE"}</span>
             <span className="text-lg">🔱</span>

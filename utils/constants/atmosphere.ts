@@ -15,7 +15,7 @@
  * - When not present, we derive from environment (audio) or envTheme (visual)
  */
 
-import { ENV_THEMES } from "./themes";
+import { ENV_THEMES } from "./envThemes";
 import type { ThemeConfig } from "../../types";
 
 // All available atmosphere types (matches audio folder names)

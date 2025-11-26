@@ -133,6 +133,9 @@ export interface GameState {
   // Context Priority System: entities AI marked as relevant for next turn
   // Cleared at start of each turn, populated by AI via finish_turn
   aliveEntities: AliveEntities;
+  // RAG Queries: semantic search queries for next turn context
+  // Populated by AI via finish_turn, used at start of next turn
+  ragQueries?: string[];
   // Current turn number (incremented on each player action)
   turnNumber: number;
 
@@ -413,6 +416,7 @@ export interface UIState {
 export interface Relationship {
   id: string;
   known?: boolean; // Whether the player has met/knows this character
+  currentLocation?: string; // NPC's current location ID (e.g., "loc:1"), used to determine if NPC is nearby
   visible: {
     name: string; // The name the player knows them by
     description: string;
@@ -520,6 +524,7 @@ export interface GameStateSnapshot {
 
   // Context Priority System
   aliveEntities: AliveEntities;
+  ragQueries?: string[];
   turnNumber: number;
 }
 
@@ -820,6 +825,8 @@ export interface GameResponse {
   }>;
   // Context Priority: entities AI marked as relevant for next turn
   aliveEntities?: AliveEntities;
+  // RAG Queries: semantic search queries for next turn context
+  ragQueries?: string[];
   // Game Ending: if this response concludes the game
   ending?: EndingType;
   // Force End: if true, game ends permanently (no continue option)
@@ -961,6 +968,64 @@ export interface AISettings {
 
   // Visual Theme Settings
   lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes
+
+  // RAG Embedding Settings
+  embedding: EmbeddingConfig;
+}
+
+// ============================================================================
+// RAG Embedding System Types
+// ============================================================================
+
+export interface EmbeddingConfig extends FunctionConfig {
+  enabled: boolean;
+  provider: "gemini" | "openai" | "openrouter";
+  modelId: string;
+  dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)
+  chunkSize?: number; // Text chunk size for embedding
+  chunkOverlap?: number; // Overlap between chunks
+  topK?: number; // Number of results to retrieve
+  similarityThreshold?: number; // Minimum similarity score (0-1)
+}
+
+export interface EmbeddingDocument {
+  id: string; // Unique document ID
+  type: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event";
+  entityId: string; // Reference to the entity (e.g., npc:1, loc:2)
+  content: string; // Original text content
+  embedding?: Float32Array; // Compressed embedding vector (stored separately)
+  metadata?: {
+    turnNumber?: number;
+    timestamp?: number;
+    importance?: number; // 0-1 score for retrieval priority
+  };
+}
+
+export interface EmbeddingIndex {
+  version: number;
+  dimensions: number;
+  modelId: string;
+  documents: EmbeddingDocument[];
+  // Embeddings stored as compressed Float32Array chunks
+  embeddings?: ArrayBuffer;
+}
+
+// ============================================================================
+// Save Version Management Types
+// ============================================================================
+
+export const CURRENT_SAVE_VERSION = 1;
+
+export interface SaveVersionInfo {
+  version: number;
+  createdAt: number;
+  migratedFrom?: number;
+  migrationLog?: string[];
+}
+
+export interface VersionedGameState extends GameState {
+  _saveVersion: SaveVersionInfo;
+  _embeddingIndex?: EmbeddingIndex;
 }
 
 export interface ThemeData {

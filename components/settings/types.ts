@@ -1,6 +1,12 @@
 import { AISettings, ModelInfo } from "../../types";
 
-export type Tab = "credentials" | "models" | "audio" | "appearance" | "data";
+export type Tab =
+  | "credentials"
+  | "models"
+  | "embedding"
+  | "audio"
+  | "appearance"
+  | "data";
 
 export type FunctionKey =
   | "story"
@@ -51,4 +57,10 @@ export interface SettingsModelsProps {
 export interface SettingsAudioProps {
   currentSettings: AISettings;
   onUpdateSettings: (settings: AISettings) => void;
+}
+
+export interface SettingsEmbeddingProps {
+  currentSettings: AISettings;
+  onUpdateSettings: (settings: AISettings) => void;
+  showToast: (msg: string, type?: "info" | "error") => void;
 }

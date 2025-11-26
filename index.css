@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Base theme colors */
   --color-theme-bg: var(--theme-bg);
   --color-theme-surface: var(--theme-surface);
   --color-theme-surface-highlight: var(--theme-surface-highlight);
@@ -10,6 +11,25 @@
   --color-theme-text: var(--theme-text);
   --color-theme-muted: var(--theme-muted);
 
+  /* State colors - for status indicators, toasts, and unlocked content */
+  --color-theme-success: var(--theme-success);
+  --color-theme-success-muted: var(--theme-success-muted);
+  --color-theme-warning: var(--theme-warning);
+  --color-theme-warning-muted: var(--theme-warning-muted);
+  --color-theme-error: var(--theme-error);
+  --color-theme-error-muted: var(--theme-error-muted);
+  --color-theme-info: var(--theme-info);
+  --color-theme-info-muted: var(--theme-info-muted);
+
+  /* Special semantic colors - for unlocked/hidden content */
+  --color-theme-unlocked: var(--theme-unlocked);
+  --color-theme-unlocked-muted: var(--theme-unlocked-muted);
+  --color-theme-secret: var(--theme-secret);
+  --color-theme-secret-muted: var(--theme-secret-muted);
+  --color-theme-danger: var(--theme-danger);
+  --color-theme-danger-muted: var(--theme-danger-muted);
+
+  /* Theme fonts */
   --font-fantasy: "Cinzel", serif;
   --font-scifi: "Orbitron", sans-serif;
   --font-horror: "Creepster", cursive;

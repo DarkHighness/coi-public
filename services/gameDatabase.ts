@@ -51,6 +51,38 @@ const createError = (
   code,
 });
 
+/**
+ * Merge source into target, handling null values as deletions.
+ * - If a value is null, the key is deleted from the target.
+ * - If a value is an object (not array), recursively merge.
+ * - Otherwise, the value is copied to the target.
+ */
+const mergeWithNullDeletion = <T extends Record<string, any>>(
+  target: T,
+  source: Record<string, any>,
+): void => {
+  for (const key of Object.keys(source)) {
+    const value = source[key];
+    if (value === null) {
+      // null means delete this optional property
+      delete (target as any)[key];
+    } else if (
+      value !== undefined &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      target[key] !== undefined &&
+      typeof target[key] === "object" &&
+      !Array.isArray(target[key])
+    ) {
+      // Recursively merge nested objects
+      mergeWithNullDeletion(target[key], value);
+    } else if (value !== undefined) {
+      // Copy the value
+      (target as any)[key] = value;
+    }
+  }
+};
+
 export class GameDatabase {
   private state: GameState;
 
@@ -544,8 +576,8 @@ export class GameDatabase {
       }
 
       if (data.name && data.name !== identifier) item.name = data.name;
-      if (data.visible) Object.assign(item.visible, data.visible);
-      if (data.hidden) Object.assign(item.hidden, data.hidden);
+      if (data.visible) mergeWithNullDeletion(item.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(item.hidden, data.hidden);
       if (data.lore !== undefined) item.lore = data.lore;
       if (data.unlocked !== undefined) item.unlocked = data.unlocked;
       item.highlight = true;
@@ -659,10 +691,16 @@ export class GameDatabase {
         return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
       }
 
-      if (data.visible) Object.assign(npc.visible, data.visible);
-      if (data.hidden) Object.assign(npc.hidden, data.hidden);
+      if (data.visible) mergeWithNullDeletion(npc.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(npc.hidden, data.hidden);
       if (data.known !== undefined) npc.known = data.known;
-      if (data.notes !== undefined) npc.notes = data.notes;
+      if (data.notes !== undefined) {
+        if (data.notes === null) {
+          delete npc.notes;
+        } else {
+          npc.notes = data.notes;
+        }
+      }
       if (data.unlocked !== undefined) npc.unlocked = data.unlocked;
       npc.highlight = true;
       npc.lastModified = Date.now();
@@ -776,9 +814,15 @@ export class GameDatabase {
         return createError(`Location "${identifier}" not found`, "NOT_FOUND");
       }
 
-      if (data.visible) Object.assign(loc.visible, data.visible);
-      if (data.hidden) Object.assign(loc.hidden, data.hidden);
-      if (data.environment) loc.environment = data.environment;
+      if (data.visible) mergeWithNullDeletion(loc.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(loc.hidden, data.hidden);
+      if (data.environment !== undefined) {
+        if (data.environment === null) {
+          delete loc.environment;
+        } else {
+          loc.environment = data.environment;
+        }
+      }
       if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
       if (data.unlocked !== undefined) loc.unlocked = data.unlocked;
       loc.highlight = true;
@@ -881,8 +925,8 @@ export class GameDatabase {
       else if (action === "fail") quest.status = "failed";
       else if (data.status) quest.status = data.status;
 
-      if (data.visible) Object.assign(quest.visible, data.visible);
-      if (data.hidden) Object.assign(quest.hidden, data.hidden);
+      if (data.visible) mergeWithNullDeletion(quest.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(quest.hidden, data.hidden);
       if (data.unlocked !== undefined) quest.unlocked = data.unlocked;
       quest.highlight = true;
       quest.lastModified = Date.now();
@@ -960,9 +1004,15 @@ export class GameDatabase {
         return createError(`Knowledge "${identifier}" not found`, "NOT_FOUND");
       }
 
-      if (data.visible) Object.assign(k.visible, data.visible);
-      if (data.hidden) Object.assign(k.hidden, data.hidden);
-      if (data.category) k.category = data.category;
+      if (data.visible) mergeWithNullDeletion(k.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(k.hidden, data.hidden);
+      if (data.category !== undefined) {
+        if (data.category === null) {
+          delete k.category;
+        } else {
+          k.category = data.category;
+        }
+      }
       if (data.unlocked !== undefined) k.unlocked = data.unlocked;
       k.highlight = true;
       k.lastModified = Date.now();
@@ -1000,9 +1050,10 @@ export class GameDatabase {
       const newFaction: Faction = {
         id: newId,
         name: data.name,
-        visible: data.visible || "Neutral",
-        hidden: data.hidden || "Unknown",
+        visible: data.visible || { agenda: "Neutral" },
+        hidden: data.hidden || { agenda: "Unknown" },
         highlight: true,
+        unlocked: data.unlocked ?? false,
       };
       this.state.factions.push(newFaction);
       return createSuccess(
@@ -1051,8 +1102,8 @@ export class GameDatabase {
       }
 
       if (data.name && data.name !== identifier) f.name = data.name;
-      if (data.visible) f.visible = data.visible;
-      if (data.hidden) f.hidden = data.hidden;
+      if (data.visible) mergeWithNullDeletion(f.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(f.hidden, data.hidden);
       if (data.unlocked !== undefined) f.unlocked = data.unlocked;
       f.highlight = true;
 
@@ -1212,9 +1263,17 @@ export class GameDatabase {
             (s) => s.id === skill.id || s.name === skill.name,
           );
           if (existing) {
-            if (skill.level) existing.level = skill.level;
-            if (skill.visible) Object.assign(existing.visible, skill.visible);
-            if (skill.hidden) Object.assign(existing.hidden, skill.hidden);
+            if (skill.level !== undefined) {
+              if (skill.level === null) {
+                delete existing.level;
+              } else {
+                existing.level = skill.level;
+              }
+            }
+            if (skill.visible)
+              mergeWithNullDeletion(existing.visible, skill.visible);
+            if (skill.hidden)
+              mergeWithNullDeletion(existing.hidden, skill.hidden);
             if (skill.unlocked !== undefined)
               existing.unlocked = skill.unlocked;
             existing.highlight = true;
@@ -1266,11 +1325,31 @@ export class GameDatabase {
             (c) => c.id === cond.id || c.name === cond.name,
           );
           if (existing) {
-            if (cond.type) existing.type = cond.type;
-            if (cond.visible) Object.assign(existing.visible, cond.visible);
-            if (cond.hidden) Object.assign(existing.hidden, cond.hidden);
-            if (cond.effects) existing.effects = cond.effects;
-            if (cond.duration !== undefined) existing.duration = cond.duration;
+            if (cond.type !== undefined) {
+              if (cond.type === null) {
+                delete (existing as any).type;
+              } else {
+                existing.type = cond.type;
+              }
+            }
+            if (cond.visible)
+              mergeWithNullDeletion(existing.visible, cond.visible);
+            if (cond.hidden)
+              mergeWithNullDeletion(existing.hidden, cond.hidden);
+            if (cond.effects !== undefined) {
+              if (cond.effects === null) {
+                delete (existing as any).effects;
+              } else {
+                existing.effects = cond.effects;
+              }
+            }
+            if (cond.duration !== undefined) {
+              if (cond.duration === null) {
+                delete existing.duration;
+              } else {
+                existing.duration = cond.duration;
+              }
+            }
             if (cond.unlocked !== undefined) existing.unlocked = cond.unlocked;
             existing.highlight = true;
             updated.push(`condition:${cond.name}:updated`);
@@ -1392,8 +1471,8 @@ export class GameDatabase {
         );
       }
 
-      if (data.visible) Object.assign(event.visible, data.visible);
-      if (data.hidden) Object.assign(event.hidden, data.hidden);
+      if (data.visible) mergeWithNullDeletion(event.visible, data.visible);
+      if (data.hidden) mergeWithNullDeletion(event.hidden, data.hidden);
       if (data.unlocked !== undefined) event.unlocked = data.unlocked;
       if (data.known !== undefined) event.known = data.known;
       event.highlight = true;

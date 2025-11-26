@@ -15,6 +15,7 @@ export interface SnapshotMetadata {
   veoScript?: string;
   uiState: GameState["uiState"];
   aliveEntities?: AliveEntities;
+  ragQueries?: string[];
   turnNumber?: number;
 }
 
@@ -70,6 +71,7 @@ export function createStateSnapshot(
     // Context Priority System
     aliveEntities:
       metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
+    ragQueries: metadata.ragQueries || gameState.ragQueries,
     turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
   };
 }
@@ -103,6 +105,7 @@ export function restoreStateFromSnapshot(
     atmosphere,
     veoScript: snapshot.veoScript,
     aliveEntities: snapshot.aliveEntities,
+    ragQueries: snapshot.ragQueries,
     turnNumber: snapshot.turnNumber,
   };
 }

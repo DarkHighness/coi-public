@@ -18,7 +18,7 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
 
   // Determine status color
   const isSuccess = call.output?.success !== false;
-  const statusColor = isSuccess ? "text-green-400" : "text-red-400";
+  const statusColor = isSuccess ? "text-theme-success" : "text-theme-error";
   const bgColor = isFinish
     ? "bg-theme-primary/10 border-theme-primary/30"
     : isQuery
@@ -71,12 +71,12 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
           </div>
           <div>
             <label
-              className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-blue-500" : "text-red-500"}`}
+              className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-theme-info" : "text-theme-error"}`}
             >
               Output
             </label>
             <pre
-              className={`text-[10px] bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words ${isSuccess ? "text-theme-muted/80" : "text-red-400"}`}
+              className={`text-[10px] bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words ${isSuccess ? "text-theme-muted/80" : "text-theme-error"}`}
             >
               {JSON.stringify(call.output, null, 2)}
             </pre>
@@ -171,7 +171,9 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
               ></path>
             </svg>
-            <p>{t("logs.noLogsInSession") || "No logs recorded in this session."}</p>
+            <p>
+              {t("logs.noLogsInSession") || "No logs recorded in this session."}
+            </p>
           </div>
         )}
 
@@ -186,7 +188,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
               key={log.id}
               className={`border rounded-lg overflow-hidden shadow-sm transition-all ${
                 isError
-                  ? "border-red-900/50 bg-red-900/5"
+                  ? "border-theme-error/50 bg-theme-error/5"
                   : isComplete
                     ? "border-theme-primary/50 bg-theme-primary/5"
                     : "border-theme-border bg-theme-surface"
@@ -197,7 +199,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 onClick={() => toggleLog(log.id)}
                 className={`w-full px-4 py-3 flex flex-wrap justify-between items-center border-b text-left hover:bg-white/5 transition-colors ${
                   isError
-                    ? "border-red-900/30 bg-red-900/20"
+                    ? "border-theme-error/30 bg-theme-error/20"
                     : isComplete
                       ? "border-theme-primary/30 bg-theme-primary/10"
                       : "border-theme-border/50 bg-theme-surface-highlight/30"
@@ -207,7 +209,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                       isError
-                        ? "bg-red-500 text-white"
+                        ? "bg-theme-error text-white"
                         : isComplete
                           ? "bg-theme-primary text-theme-bg"
                           : "bg-theme-surface-highlight text-theme-text"
@@ -286,13 +288,13 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       {log.response && (
                         <div className="space-y-2 min-w-0">
                           <label
-                            className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-red-500" : "text-blue-500"}`}
+                            className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-theme-error" : "text-theme-info"}`}
                           >
                             Response
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
                             <pre
-                              className={`text-xs whitespace-pre-wrap break-words ${isError ? "text-red-400" : "text-theme-muted/80"}`}
+                              className={`text-xs whitespace-pre-wrap break-words ${isError ? "text-theme-error" : "text-theme-muted/80"}`}
                             >
                               {typeof log.response === "string"
                                 ? log.response

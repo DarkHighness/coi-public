@@ -26,6 +26,7 @@ import {
   getThemeKeyForAtmosphere,
   Atmosphere,
 } from "../utils/constants/atmosphere";
+import { resetEmbeddingManager } from "../services/embedding/embeddingManager";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -190,7 +191,7 @@ export const useGameEngine = () => {
   // Dynamic Title Update
   useEffect(() => {
     if (view === "start" || view === "initializing") {
-      document.title = "Chronicles of Infinity";
+      document.title = t("title");
     } else if (view === "game" && gameState.activeNodeId) {
       const activeNode = gameState.nodes[gameState.activeNodeId];
       if (activeNode && activeNode.text) {
@@ -198,7 +199,7 @@ export const useGameEngine = () => {
         const text = activeNode.text.replace(/\s+/g, " ").trim();
         const truncated =
           text.length > 60 ? text.substring(0, 60) + "..." : text;
-        document.title = `${truncated} - Chronicles`;
+        document.title = `${truncated} - ${t("title")}`;
       }
     }
   }, [view, gameState.activeNodeId, gameState.nodes]);
@@ -756,6 +757,9 @@ export const useGameEngine = () => {
 
     const slotId = createSaveSlot(selectedTheme);
     setCurrentSlotId(slotId);
+
+    // Reset embedding manager when starting a new game
+    resetEmbeddingManager();
 
     // Strict Reset
     resetState(selectedTheme);

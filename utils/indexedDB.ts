@@ -18,6 +18,8 @@ const decompress = async (buffer: ArrayBuffer): Promise<string> => {
  * Provides much larger storage capacity than localStorage
  */
 
+import { getMigrationManager } from "../services/migrationManager";
+
 const DB_NAME = "ChroniclesOfInfinity";
 const DB_VERSION = 2;
 const SAVES_STORE = "saves";
@@ -99,8 +101,12 @@ export const saveGameState = async <T>(id: string, data: T): Promise<void> => {
 
 /**
  * Load game state from IndexedDB
+ * Automatically applies version migrations if needed
  */
-export const loadGameState = async <T = any>(id: string): Promise<T | null> => {
+export const loadGameState = async <T = any>(
+  id: string,
+  options?: { skipMigration?: boolean },
+): Promise<T | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([SAVES_STORE], "readonly");
@@ -134,6 +140,26 @@ export const loadGameState = async <T = any>(id: string): Promise<T | null> => {
             }
           } else if (typeof result.data === "string") {
             finalData = JSON.parse(result.data);
+          }
+        }
+
+        // Apply version migrations if needed
+        if (!options?.skipMigration && finalData) {
+          const migrationManager = getMigrationManager();
+          if (migrationManager.needsMigration(finalData)) {
+            console.log(`[IndexedDB] Save ${id} needs migration`);
+            try {
+              finalData = await migrationManager.migrate(finalData);
+              // Auto-save the migrated state
+              await saveGameState(id, finalData);
+              console.log(`[IndexedDB] Save ${id} migrated and saved`);
+            } catch (migrationError) {
+              console.error(
+                `[IndexedDB] Migration failed for ${id}:`,
+                migrationError,
+              );
+              // Continue with unmigrated data
+            }
           }
         }
 

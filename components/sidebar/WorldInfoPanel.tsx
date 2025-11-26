@@ -103,8 +103,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
               {/* Hidden World Setting - shown when unlocked */}
               {isWorldSettingUnlocked && worldSetting.hidden && (
-                <div className="mt-2 pt-2 border-t border-yellow-500/20">
-                  <div className="flex items-center gap-1 text-yellow-500 text-[9px] uppercase tracking-wider font-bold mb-1">
+                <div className="mt-2 pt-2 border-t border-theme-unlocked/20">
+                  <div className="flex items-center gap-1 text-theme-unlocked text-[9px] uppercase tracking-wider font-bold mb-1">
                     <svg
                       className="w-2.5 h-2.5"
                       fill="currentColor"
@@ -118,7 +118,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                     </svg>
                     {t("worldInfo.hiddenTruth") || "Hidden Truth"}
                   </div>
-                  <div className="text-[10px] text-red-300/80 italic">
+                  <div className="text-[10px] text-theme-danger/80 italic">
                     <MarkdownText content={worldSetting.hidden} />
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
           {isMainGoalUnlocked && outline?.mainGoal?.hidden && (
             <div className="space-y-1">
               <h4
-                className={`text-[10px] text-yellow-500/90 uppercase tracking-wider ${themeFont} flex items-center gap-1`}
+                className={`text-[10px] text-theme-unlocked/90 uppercase tracking-wider ${themeFont} flex items-center gap-1`}
               >
                 <svg
                   className="w-2.5 h-2.5"
@@ -145,7 +145,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 </svg>
                 {t("worldInfo.secretObjective") || "Secret Objective"}
               </h4>
-              <div className="text-xs text-red-300/80 font-serif leading-relaxed italic bg-red-500/5 p-2 rounded border border-red-500/20">
+              <div className="text-xs text-theme-danger/80 font-serif leading-relaxed italic bg-theme-danger/5 p-2 rounded border border-theme-danger/20">
                 <MarkdownText content={outline.mainGoal.hidden} />
               </div>
             </div>
@@ -165,7 +165,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                     key={idx}
                     className={`bg-theme-surface/40 border border-theme-border/50 rounded p-2 transition-all ${
                       faction.highlight
-                        ? "ring-1 ring-yellow-400/50 bg-yellow-500/5"
+                        ? "ring-1 ring-theme-unlocked/50 bg-theme-unlocked/5"
                         : ""
                     }`}
                   >
@@ -176,7 +176,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       {/* Unlocked indicator */}
                       {faction.unlocked && (
                         <span
-                          className="text-yellow-500"
+                          className="text-theme-unlocked"
                           title={t("unlocked") || "Unlocked"}
                         >
                           <svg
@@ -260,8 +260,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
                     {/* Hidden content - only shown when unlocked */}
                     {faction.unlocked && faction.hidden && (
-                      <div className="mt-2 pt-2 border-t border-yellow-500/20">
-                        <div className="flex items-center gap-1 text-yellow-500 text-[9px] uppercase tracking-wider font-bold mb-1">
+                      <div className="mt-2 pt-2 border-t border-theme-unlocked/20">
+                        <div className="flex items-center gap-1 text-theme-unlocked text-[9px] uppercase tracking-wider font-bold mb-1">
                           <svg
                             className="w-2.5 h-2.5"
                             fill="currentColor"
@@ -275,7 +275,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           </svg>
                           {t("secretAgenda") || "Secret Agenda"}
                         </div>
-                        <div className="text-[10px] text-red-300/80 not-italic mb-2">
+                        <div className="text-[10px] text-theme-danger/80 not-italic mb-2">
                           {faction.hidden.agenda}
                         </div>
 
@@ -283,20 +283,20 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                         <div className="space-y-1">
                           {faction.hidden.members &&
                             faction.hidden.members.length > 0 && (
-                              <div className="text-[10px] text-red-300/60">
-                                <span className="text-yellow-500/80 font-bold block mb-1">
+                              <div className="text-[10px] text-theme-danger/60">
+                                <span className="text-theme-unlocked/80 font-bold block mb-1">
                                   {t("members") || "Members"}:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
                                   {faction.hidden.members.map((member, idx) => (
                                     <span
                                       key={idx}
-                                      className="px-1.5 py-0.5 bg-red-900/30 rounded text-red-200/90 border border-red-500/30 flex items-center gap-1"
+                                      className="px-1.5 py-0.5 bg-theme-danger/10 rounded text-theme-danger/90 border border-theme-danger/30 flex items-center gap-1"
                                       title={member.title}
                                     >
                                       {member.name}
                                       {member.title && (
-                                        <span className="text-[9px] text-red-300/60 opacity-75">
+                                        <span className="text-[9px] text-theme-danger/60 opacity-75">
                                           ({member.title})
                                         </span>
                                       )}
@@ -306,8 +306,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                               </div>
                             )}
                           {faction.hidden.influence && (
-                            <div className="text-[10px] text-red-300/60 flex items-start gap-1">
-                              <span className="text-yellow-500/80 font-bold whitespace-nowrap">
+                            <div className="text-[10px] text-theme-danger/60 flex items-start gap-1">
+                              <span className="text-theme-unlocked/80 font-bold whitespace-nowrap">
                                 {t("influence") || "Influence"}:
                               </span>
                               <span>{faction.hidden.influence}</span>
@@ -316,8 +316,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           {faction.hidden.relations &&
                             Object.keys(faction.hidden.relations).length >
                               0 && (
-                              <div className="text-[10px] text-red-300/60">
-                                <span className="text-yellow-500/80 font-bold block mb-0.5">
+                              <div className="text-[10px] text-theme-danger/60">
+                                <span className="text-theme-unlocked/80 font-bold block mb-0.5">
                                   {t("relations") || "Relations"}:
                                 </span>
                                 <div className="grid grid-cols-1 gap-0.5 pl-1">

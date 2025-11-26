@@ -124,13 +124,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           <div
             className={`mx-6 my-4 p-4 rounded-lg border-2 text-center animate-fade-in ${
               segment.ending === "death"
-                ? "bg-theme-surface border-red-500/60 text-red-400"
+                ? "bg-theme-surface border-theme-error/60 text-theme-error"
                 : segment.ending === "victory"
-                  ? "bg-theme-surface border-green-500/60 text-green-400"
+                  ? "bg-theme-surface border-theme-success/60 text-theme-success"
                   : segment.ending === "true_ending"
-                    ? "bg-theme-surface border-yellow-500/60 text-yellow-400"
+                    ? "bg-theme-surface border-theme-unlocked/60 text-theme-unlocked"
                     : segment.ending === "bad_ending"
-                      ? "bg-theme-surface border-purple-500/60 text-purple-400"
+                      ? "bg-theme-surface border-theme-secret/60 text-theme-secret"
                       : "bg-theme-surface border-theme-border text-theme-muted"
             }`}
           >

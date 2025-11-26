@@ -104,7 +104,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
               </p>
             </div>
           ) : error ? (
-            <div className="text-center text-red-400 p-8 border border-red-900/30 bg-red-900/10 rounded">
+            <div className="text-center text-theme-error p-8 border border-theme-error/30 bg-theme-error/10 rounded">
               <p>{error}</p>
               <button
                 onClick={generate}

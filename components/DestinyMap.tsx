@@ -451,11 +451,11 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                             ? t("gameOver") || "GAME OVER"
                             : ending === "victory"
                               ? t("victory") || "VICTORY"
-                            : ending === "true_ending"
-                              ? t("trueEnding") || "TRUE ENDING"
-                            : ending === "bad_ending"
-                              ? t("badEnding") || "BAD END"
-                              : t("ending") || "ENDING"
+                              : ending === "true_ending"
+                                ? t("trueEnding") || "TRUE ENDING"
+                                : ending === "bad_ending"
+                                  ? t("badEnding") || "BAD END"
+                                  : t("ending") || "ENDING"
                           : isModel
                             ? t("narrator")
                             : t("you")}

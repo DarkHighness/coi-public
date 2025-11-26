@@ -520,3 +520,175 @@ export const generateSpeech = async (
     options,
   );
 };
+
+// ============================================================================
+// Embedding Functions
+// ============================================================================
+
+export interface EmbeddingModelInfo {
+  id: string;
+  name: string;
+  dimensions?: number;
+}
+
+/**
+ * Get available embedding models from OpenRouter API
+ */
+export const getEmbeddingModels = async (
+  config: OpenRouterConfig,
+): Promise<EmbeddingModelInfo[]> => {
+  try {
+    const response = await fetch(
+      `${config.baseUrl || "https://openrouter.ai/api/v1"}/models`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch models: ${response.statusText}`);
+    }
+
+    const json = await response.json();
+    const embeddingModels: EmbeddingModelInfo[] = [];
+
+    for (const model of json.data) {
+      const id = model.id.toLowerCase();
+      // Check for embedding models
+      if (id.includes("embed") || id.includes("embedding")) {
+        let dimensions = 1024; // Default
+        if (id.includes("text-embedding-3-small")) dimensions = 1536;
+        if (id.includes("text-embedding-3-large")) dimensions = 3072;
+        if (
+          id.includes("embed-english-v3") ||
+          id.includes("embed-multilingual-v3")
+        )
+          dimensions = 1024;
+        if (
+          id.includes("embed-english-light-v3") ||
+          id.includes("embed-multilingual-light-v3")
+        )
+          dimensions = 384;
+
+        embeddingModels.push({
+          id: model.id,
+          name: model.name || model.id,
+          dimensions,
+        });
+      }
+    }
+
+    if (embeddingModels.length === 0) {
+      // Fallback to known embedding models
+      return [
+        {
+          id: "openai/text-embedding-3-small",
+          name: "OpenAI Text Embedding 3 Small",
+          dimensions: 1536,
+        },
+        {
+          id: "openai/text-embedding-3-large",
+          name: "OpenAI Text Embedding 3 Large",
+          dimensions: 3072,
+        },
+        {
+          id: "cohere/embed-english-v3.0",
+          name: "Cohere Embed English v3",
+          dimensions: 1024,
+        },
+        {
+          id: "cohere/embed-multilingual-v3.0",
+          name: "Cohere Embed Multilingual v3",
+          dimensions: 1024,
+        },
+      ];
+    }
+
+    return embeddingModels;
+  } catch (e) {
+    console.warn("Failed to list OpenRouter embedding models", e);
+    return [
+      {
+        id: "openai/text-embedding-3-small",
+        name: "OpenAI Text Embedding 3 Small",
+        dimensions: 1536,
+      },
+      {
+        id: "openai/text-embedding-3-large",
+        name: "OpenAI Text Embedding 3 Large",
+        dimensions: 3072,
+      },
+      {
+        id: "cohere/embed-english-v3.0",
+        name: "Cohere Embed English v3",
+        dimensions: 1024,
+      },
+      {
+        id: "cohere/embed-multilingual-v3.0",
+        name: "Cohere Embed Multilingual v3",
+        dimensions: 1024,
+      },
+    ];
+  }
+};
+
+export interface EmbeddingResult {
+  embeddings: Float32Array[];
+  usage: {
+    promptTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * Generate embeddings using OpenRouter API (OpenAI-compatible)
+ */
+export const generateEmbedding = async (
+  config: OpenRouterConfig,
+  modelId: string,
+  texts: string[],
+  dimensions?: number,
+): Promise<EmbeddingResult> => {
+  const url = `${config.baseUrl || "https://openrouter.ai/api/v1"}/embeddings`;
+
+  const body: any = {
+    model: modelId,
+    input: texts,
+    encoding_format: "float",
+  };
+
+  if (dimensions) {
+    body.dimensions = dimensions;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenRouter embedding failed: ${error}`);
+  }
+
+  const data = await response.json();
+  const embeddings = data.data
+    .sort((a: any, b: any) => a.index - b.index)
+    .map((item: any) => new Float32Array(item.embedding));
+
+  return {
+    embeddings,
+    usage: {
+      promptTokens: data.usage?.prompt_tokens || 0,
+      totalTokens: data.usage?.total_tokens || 0,
+    },
+  };
+};

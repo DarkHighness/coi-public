@@ -382,7 +382,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
             )}
 
             {error && (
-              <div className="text-red-400 text-sm text-center animate-pulse italic border border-red-900/30 p-2 bg-red-900/10">
+              <div className="text-theme-error text-sm text-center animate-pulse italic border border-theme-error/30 p-2 bg-theme-error/10">
                 {error}
               </div>
             )}

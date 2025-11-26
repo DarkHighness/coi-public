@@ -238,7 +238,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         {t("hidden.affinity")}:
                       </span>
                       <span
-                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-green-400" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-red-400" : "text-theme-text"}`}
+                        className={`font-mono font-bold ${rel.hidden.trueAffinity > rel.visible.affinity ? "text-theme-success" : rel.hidden.trueAffinity < rel.visible.affinity ? "text-theme-error" : "text-theme-text"}`}
                       >
                         {rel.hidden.trueAffinity}%
                       </span>

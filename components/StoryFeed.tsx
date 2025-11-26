@@ -406,11 +406,11 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
           )}
 
           {gameState.error && (
-            <div className="p-4 bg-red-900/20 border border-red-800 text-red-400 rounded text-center mb-8">
+            <div className="p-4 bg-theme-error/20 border border-theme-error text-theme-error rounded text-center mb-8">
               {gameState.error}
               <button
                 onClick={onRetry}
-                className="block mx-auto mt-2 text-sm underline hover:text-red-300"
+                className="block mx-auto mt-2 text-sm underline hover:text-theme-error-muted"
               >
                 {t("tryAgain")}
               </button>

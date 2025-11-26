@@ -73,6 +73,11 @@ export const relationshipProperties: Record<string, JsonSchema> = {
     type: "boolean",
     description: "Whether the player knows this character.",
   },
+  currentLocation: {
+    type: "string",
+    description:
+      "The NPC's current location ID (e.g., 'loc:1'). Used to determine if NPC is nearby (same location as player). Update when NPC moves to a different location.",
+  },
   visible: {
     type: "object",
     properties: {
@@ -473,8 +478,7 @@ export const storyOutlineSchema: JsonSchema = {
                   },
                   required: ["name"],
                 },
-                description:
-                  "Publicly known members. NOT relationship keys.",
+                description: "Publicly known members. NOT relationship keys.",
               },
               influence: {
                 type: "string",
@@ -507,8 +511,7 @@ export const storyOutlineSchema: JsonSchema = {
                   },
                   required: ["name"],
                 },
-                description:
-                  "Secret members/leaders. NOT relationship keys.",
+                description: "Secret members/leaders. NOT relationship keys.",
               },
               influence: {
                 type: "string",
