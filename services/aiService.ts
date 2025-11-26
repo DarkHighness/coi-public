@@ -153,7 +153,14 @@ export const updateAIConfig = (settings: AISettings): void => {
 // ============================================================================
 
 type ProviderType = "gemini" | "openai" | "openrouter";
-type FunctionType = "story" | "image" | "video" | "audio" | "translation" | "lore" | "script";
+type FunctionType =
+  | "story"
+  | "image"
+  | "video"
+  | "audio"
+  | "translation"
+  | "lore"
+  | "script";
 
 interface ProviderConfigResult {
   provider: ProviderType;
@@ -196,7 +203,7 @@ const createLogEntry = (
   res: unknown,
   usage?: TokenUsage,
   toolCalls?: ToolCallRecord[],
-  generationDetails?: LogEntry["generationDetails"]
+  generationDetails?: LogEntry["generationDetails"],
 ): LogEntry => {
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -240,7 +247,7 @@ const modelCache: Record<string, ModelCacheEntry> = {};
  */
 export const getModels = async (
   provider: ProviderType,
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
 ): Promise<ModelInfo[]> => {
   let config: GeminiConfig | OpenAIConfig | OpenRouterConfig;
 
@@ -254,7 +261,9 @@ export const getModels = async (
 
   // Skip API request if API key is missing or empty
   if (!config.apiKey || config.apiKey.trim() === "") {
-    console.warn(`Skipping model fetch for ${provider}: API key not configured`);
+    console.warn(
+      `Skipping model fetch for ${provider}: API key not configured`,
+    );
     return [];
   }
 
@@ -262,7 +271,11 @@ export const getModels = async (
   const cacheKey = provider;
 
   // Check cache
-  if (!forceRefresh && modelCache[cacheKey] && modelCache[cacheKey].configHash === configHash) {
+  if (
+    !forceRefresh &&
+    modelCache[cacheKey] &&
+    modelCache[cacheKey].configHash === configHash
+  ) {
     return modelCache[cacheKey].data;
   }
 
@@ -289,7 +302,7 @@ export const getModels = async (
  * 验证 Provider 连接
  */
 export const validateConnection = async (
-  provider: ProviderType
+  provider: ProviderType,
 ): Promise<{ isValid: boolean; error?: string }> => {
   try {
     if (provider === "gemini") {
@@ -315,7 +328,7 @@ export const validateConnection = async (
  */
 export const filterModels = (
   models: ModelInfo[],
-  type: FunctionType
+  type: FunctionType,
 ): ModelInfo[] => {
   let filtered = models;
 
@@ -325,13 +338,13 @@ export const filterModels = (
         m.capabilities?.image ??
         (m.id.includes("imagen") ||
           m.id.includes("dall-e") ||
-          m.id.includes("vision"))
+          m.id.includes("vision")),
     );
   } else if (type === "video") {
     filtered = models.filter(
       (m) =>
         m.capabilities?.video ??
-        (m.id.includes("veo") || m.id.includes("sora"))
+        (m.id.includes("veo") || m.id.includes("sora")),
     );
   } else if (type === "audio") {
     filtered = models.filter(
@@ -339,7 +352,7 @@ export const filterModels = (
         m.capabilities?.audio ??
         (m.id.includes("gemini") ||
           m.id.includes("tts") ||
-          m.id.includes("audio"))
+          m.id.includes("audio")),
     );
   } else {
     // Text/Story/Lore/Translation
@@ -348,7 +361,7 @@ export const filterModels = (
         m.capabilities?.text ??
         (!m.id.includes("dall-e") &&
           !m.id.includes("tts") &&
-          !m.id.includes("veo"))
+          !m.id.includes("veo")),
     );
 
     // For Story mode, we specifically require Tool support because the Agentic Loop relies on it.
@@ -357,7 +370,9 @@ export const filterModels = (
     }
   }
 
-  return filtered.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+  return filtered.sort((a, b) =>
+    (a.name || a.id).localeCompare(b.name || b.id),
+  );
 };
 
 // ============================================================================
@@ -398,7 +413,7 @@ export const generateContentUnified = async (
   systemInstruction: string,
   contents: unknown[],
   schema?: unknown,
-  options?: GenerateContentUnifiedOptions
+  options?: GenerateContentUnifiedOptions,
 ): Promise<GenerateContentResult> => {
   let result: GenerateContentResult["result"];
   let usage: TokenUsage;
@@ -421,16 +436,18 @@ export const generateContentUnified = async (
   // Format detection:
   // - UnifiedMessage[]: has 'content' array with objects containing 'type'
   // - Gemini format: has 'parts' array with objects containing 'text'
-  const isUnifiedFormat = Array.isArray(contents) &&
+  const isUnifiedFormat =
+    Array.isArray(contents) &&
     contents.length > 0 &&
-    typeof contents[0] === 'object' &&
-    'content' in contents[0] &&
+    typeof contents[0] === "object" &&
+    "content" in contents[0] &&
     Array.isArray((contents[0] as UnifiedMessage).content);
 
-  const isGeminiFormat = Array.isArray(contents) &&
+  const isGeminiFormat =
+    Array.isArray(contents) &&
     contents.length > 0 &&
-    typeof contents[0] === 'object' &&
-    'parts' in contents[0];
+    typeof contents[0] === "object" &&
+    "parts" in contents[0];
 
   try {
     if (provider === "gemini") {
@@ -450,7 +467,7 @@ export const generateContentUnified = async (
         systemInstruction,
         geminiContents as Parameters<typeof generateGeminiContent>[3],
         schema as Parameters<typeof generateGeminiContent>[4],
-        mergedOptions
+        mergedOptions,
       );
       result = response.result;
       usage = response.usage;
@@ -462,10 +479,14 @@ export const generateContentUnified = async (
         unifiedContents = contents as UnifiedMessage[];
       } else if (isGeminiFormat) {
         // Convert from Gemini format to UnifiedMessage[]
-        unifiedContents = fromGeminiFormat(contents as Array<{ role: string; parts: Array<{ text?: string }> }>);
+        unifiedContents = fromGeminiFormat(
+          contents as Array<{ role: string; parts: Array<{ text?: string }> }>,
+        );
       } else {
         // Fallback: try to use as-is (may fail)
-        console.warn('[generateContentUnified] Unknown message format, attempting to use as-is');
+        console.warn(
+          "[generateContentUnified] Unknown message format, attempting to use as-is",
+        );
         unifiedContents = contents as UnifiedMessage[];
       }
 
@@ -476,7 +497,7 @@ export const generateContentUnified = async (
           systemInstruction,
           unifiedContents,
           schema as Parameters<typeof generateOpenAIContent>[4],
-          mergedOptions
+          mergedOptions,
         );
         result = response.result;
         usage = response.usage;
@@ -488,7 +509,7 @@ export const generateContentUnified = async (
           systemInstruction,
           unifiedContents,
           schema as Parameters<typeof generateOpenRouterContent>[4],
-          mergedOptions
+          mergedOptions,
         );
         result = response.result;
         usage = response.usage;
@@ -501,7 +522,7 @@ export const generateContentUnified = async (
 
     if (e instanceof JSONParseError || error.message.includes("JSON")) {
       throw new Error(
-        "The AI narrator stumbled over their words (Invalid JSON). Please try again."
+        "The AI narrator stumbled over their words (Invalid JSON). Please try again.",
       );
     }
     throw error;
@@ -515,7 +536,7 @@ export const generateContentUnified = async (
     raw,
     usage,
     undefined, // toolCalls
-    options?.generationDetails
+    options?.generationDetails,
   );
   return { result, usage, raw, log };
 };
@@ -532,7 +553,7 @@ export const generateStoryOutline = async (
   language: string,
   customContext?: string,
   tFunc?: (key: string, options?: Record<string, unknown>) => string,
-  onChunk?: (text: string) => void
+  onChunk?: (text: string) => void,
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
 
@@ -557,7 +578,7 @@ export const generateStoryOutline = async (
     language,
     themeDataBackgroundTemplate,
     themeDataExample,
-    customContext
+    customContext,
   );
 
   const { result, log } = await generateContentUnified(
@@ -566,7 +587,7 @@ export const generateStoryOutline = async (
     "You are a creative writer.",
     [{ role: "user", parts: [{ text: prompt }] }],
     storyOutlineSchema,
-    { onChunk }
+    { onChunk },
   );
 
   return { outline: result as StoryOutline, log: log! };
@@ -578,7 +599,7 @@ export const generateStoryOutline = async (
 export const summarizeContext = async (
   previousSummary: StorySummary,
   newTurns: string,
-  language: string
+  language: string,
 ): Promise<{ summary: StorySummary | null; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
   const prompt = getSummaryPrompt(previousSummary, newTurns, language);
@@ -592,7 +613,7 @@ export const summarizeContext = async (
       modelId,
       sys,
       contents,
-      summarySchema
+      summarySchema,
     );
     return { summary: result as StorySummary, log: log! };
   } catch (e) {
@@ -605,7 +626,7 @@ export const summarizeContext = async (
         modelId,
         "summary",
         { error: error.message },
-        null
+        null,
       ),
     };
   }
@@ -624,7 +645,7 @@ interface ThemeConfig {
 const resolveThemeConfig = (
   themeKey: string | undefined,
   language: string,
-  tFunc?: (key: string, options?: Record<string, unknown>) => string
+  tFunc?: (key: string, options?: Record<string, unknown>) => string,
 ): ThemeConfig => {
   let narrativeStyle = "Standard adventure tone.";
   let example: string | undefined;
@@ -653,12 +674,12 @@ const buildSystemContext = (
   example: string | undefined,
   isRestricted: boolean,
   outline: StoryOutline | null,
-  godMode?: boolean
+  godMode?: boolean,
 ): string => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
-    isRestricted
+    isRestricted,
   );
   const staticWorldContext = getStaticWorldContext(outline);
 
@@ -677,18 +698,22 @@ const buildTurnContents = (
   recentHistory: StorySegment[],
   timeline: TimelineEvent[],
   userAction: string,
-  ragContext?: string
+  ragContext?: string,
 ): { messages: UnifiedMessage[]; dynamicContext: string } => {
   const messages: UnifiedMessage[] = [];
 
   // === Message 1: Story Memory (STATIC - changes only after summarization) ===
-  const dynamicContext = getDynamicStoryContext(summaries, recentHistory, timeline);
+  const dynamicContext = getDynamicStoryContext(
+    summaries,
+    recentHistory,
+    timeline,
+  );
 
   if (dynamicContext) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`
-      )
+        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`,
+      ),
     );
     messages.push({
       role: "assistant",
@@ -700,8 +725,8 @@ const buildTurnContents = (
   if (ragContext && ragContext.trim()) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`
-      )
+        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`,
+      ),
     );
     messages.push({
       role: "assistant",
@@ -717,8 +742,8 @@ const buildTurnContents = (
 
     messages.push(
       createUserMessage(
-        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`
-      )
+        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`,
+      ),
     );
     messages.push({
       role: "assistant",
@@ -728,11 +753,13 @@ const buildTurnContents = (
 
   // === Message 4: Current State Hints (SEMI-STATIC - IDs and names) ===
   messages.push(
-    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`)
+    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`),
   );
   messages.push({
     role: "assistant",
-    content: [{ type: "text", text: "[State acknowledged. Awaiting player action.]" }],
+    content: [
+      { type: "text", text: "[State acknowledged. Awaiting player action.]" },
+    ],
   });
 
   // === Final Message: User Action with Instructions ===
@@ -763,13 +790,13 @@ interface AgenticLoopResult {
  */
 export const generateAdventureTurn = async (
   gameState: GameState,
-  context: TurnContext
+  context: TurnContext,
 ): Promise<AgenticLoopResult> => {
   const { provider, modelId } = getProviderConfig("story");
   const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
     context.themeKey,
     context.language,
-    context.tFunc as (key: string, options?: Record<string, unknown>) => string
+    context.tFunc as (key: string, options?: Record<string, unknown>) => string,
   );
 
   const systemInstruction = buildSystemContext(
@@ -778,7 +805,7 @@ export const generateAdventureTurn = async (
     example,
     isRestricted,
     gameState.outline,
-    gameState.godMode
+    gameState.godMode,
   );
 
   // Try to get RAG context if embedding is enabled
@@ -791,7 +818,7 @@ export const generateAdventureTurn = async (
       // 1. Get context from current user action
       const actionRag = await embeddingManager.getContextForAction(
         context.userAction,
-        gameState
+        gameState,
       );
       if (actionRag.combinedContext) {
         ragContextParts.push(actionRag.combinedContext);
@@ -800,7 +827,7 @@ export const generateAdventureTurn = async (
       // 2. If there are ragQueries from the previous turn, execute them
       if (gameState.ragQueries && gameState.ragQueries.length > 0) {
         console.log(
-          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`
+          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`,
         );
         for (const query of gameState.ragQueries) {
           try {
@@ -809,13 +836,13 @@ export const generateAdventureTurn = async (
             });
             if (queryRag.combinedContext) {
               ragContextParts.push(
-                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`
+                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`,
               );
             }
           } catch (queryError) {
             console.warn(
               `[RAG] Failed to process pre-planned query "${query}":`,
-              queryError
+              queryError,
             );
           }
         }
@@ -824,7 +851,7 @@ export const generateAdventureTurn = async (
       if (ragContextParts.length > 0) {
         ragContext = ragContextParts.join("\n\n");
         console.log(
-          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`
+          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`,
         );
       }
     }
@@ -839,7 +866,7 @@ export const generateAdventureTurn = async (
     context.recentHistory,
     gameState.timeline || [],
     context.userAction,
-    ragContext
+    ragContext,
   );
 
   const generationDetails: LogEntry["generationDetails"] = {
@@ -856,7 +883,7 @@ export const generateAdventureTurn = async (
     systemInstruction,
     messages,
     gameState,
-    generationDetails
+    generationDetails,
   );
 };
 
@@ -869,7 +896,7 @@ const runAgenticLoop = async (
   systemInstruction: string,
   initialContents: UnifiedMessage[],
   inputState: GameState,
-  generationDetails?: LogEntry["generationDetails"]
+  generationDetails?: LogEntry["generationDetails"],
 ): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   let turnCount = 0;
@@ -914,7 +941,7 @@ const runAgenticLoop = async (
     "agentic_init",
     { initializing: true },
     {},
-    totalUsage
+    totalUsage,
   );
 
   // Prepare tools for the provider
@@ -934,7 +961,7 @@ const runAgenticLoop = async (
             rc.consequence.conditions?.length
               ? ` (conditions: ${rc.consequence.conditions.join(", ")})`
               : ""
-          }${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`
+          }${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`,
       )
       .join("\n");
 
@@ -949,8 +976,8 @@ const runAgenticLoop = async (
           `3. Would triggering enhance the narrative?\n\n` +
           `Ready consequences:\n${readyList}\n\n` +
           `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
-          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`
-      )
+          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`,
+      ),
     );
   }
 
@@ -975,7 +1002,7 @@ const runAgenticLoop = async (
           systemInstruction,
           conversationHistory,
           undefined,
-          { tools: toolConfig, generationDetails }
+          { tools: toolConfig, generationDetails },
         );
 
         result = resultData.result;
@@ -984,7 +1011,7 @@ const runAgenticLoop = async (
         console.log(
           `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
           usage,
-          `HasFunctionCalls: ${!!(result as { functionCalls?: unknown }).functionCalls}`
+          `HasFunctionCalls: ${!!(result as { functionCalls?: unknown }).functionCalls}`,
         );
         break; // Success, exit retry loop
       } catch (e) {
@@ -1001,7 +1028,7 @@ const runAgenticLoop = async (
           retryCount++;
           if (retryCount <= maxRetries) {
             console.warn(
-              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`
+              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`,
             );
             // Small delay before retry
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1037,13 +1064,16 @@ const runAgenticLoop = async (
       { turn: turnCount + 1 },
       {
         hasToolCalls: !!(result! as { functionCalls?: unknown }).functionCalls,
-        toolCount: ((result! as { functionCalls?: ToolCallResult[] }).functionCalls?.length) || 0,
+        toolCount:
+          (result! as { functionCalls?: ToolCallResult[] }).functionCalls
+            ?.length || 0,
       },
-      usage!
+      usage!,
     );
 
     // Handle Tool Calls
-    const functionCalls = (result! as { functionCalls?: ToolCallResult[] }).functionCalls;
+    const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
+      .functionCalls;
 
     if (result && functionCalls) {
       const toolCalls: UnifiedToolCallResult[] = functionCalls;
@@ -1058,8 +1088,8 @@ const runAgenticLoop = async (
             id: fc.id,
             name: fc.name,
             arguments: fc.args,
-          }))
-        )
+          })),
+        ),
       );
 
       // Execute Tools and collect responses
@@ -1096,7 +1126,8 @@ const runAgenticLoop = async (
 
           // Extract alive entities for next turn context
           if (args.aliveEntities) {
-            accumulatedResponse.aliveEntities = args.aliveEntities as GameResponse["aliveEntities"];
+            accumulatedResponse.aliveEntities =
+              args.aliveEntities as GameResponse["aliveEntities"];
           }
 
           // Extract RAG queries for next turn context
@@ -1115,11 +1146,16 @@ const runAgenticLoop = async (
           }
 
           // Attach the FINAL STATE from the DB
-          (accumulatedResponse as GameResponse & { finalState: unknown }).finalState = db.getState();
+          (
+            accumulatedResponse as GameResponse & { finalState: unknown }
+          ).finalState = db.getState();
 
-          console.log(`[Agentic Loop] finish_turn called. Final usage:`, totalUsage);
           console.log(
-            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`
+            `[Agentic Loop] finish_turn called. Final usage:`,
+            totalUsage,
+          );
+          console.log(
+            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`,
           );
 
           // Record finish_turn as a tool call
@@ -1147,13 +1183,14 @@ const runAgenticLoop = async (
             {
               totalToolCalls: allLogs.reduce(
                 (sum, log) => sum + (log.toolCalls?.length || 0),
-                0
+                0,
               ),
-              narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
+              narrative:
+                accumulatedResponse.narrative?.substring(0, 100) + "...",
               choices: accumulatedResponse.choices,
               atmosphere: accumulatedResponse.atmosphere,
             },
-            totalUsage
+            totalUsage,
           );
           allLogs.push(finalLog);
 
@@ -1192,7 +1229,11 @@ const runAgenticLoop = async (
       // Fallback for text-only response
       if (result && (result as GameResponse).narrative) {
         allLogs.push(lastLog);
-        return { response: result as GameResponse, logs: allLogs, usage: totalUsage };
+        return {
+          response: result as GameResponse,
+          logs: allLogs,
+          usage: totalUsage,
+        };
       }
 
       console.warn("Model returned text instead of tool call:", result);
@@ -1200,7 +1241,8 @@ const runAgenticLoop = async (
       return {
         response: {
           ...accumulatedResponse,
-          narrative: typeof result === "string" ? result : JSON.stringify(result),
+          narrative:
+            typeof result === "string" ? result : JSON.stringify(result),
           choices: ["Continue"],
         },
         logs: allLogs,
@@ -1223,7 +1265,7 @@ function executeToolCall(
   name: string,
   args: Record<string, unknown>,
   db: GameDatabase,
-  accumulatedResponse: GameResponse
+  accumulatedResponse: GameResponse,
 ): unknown {
   // Query operations
   if (name === "query_inventory") {
@@ -1256,7 +1298,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("inventory", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.inventoryActions) accumulatedResponse.inventoryActions = [];
+      if (!accumulatedResponse.inventoryActions)
+        accumulatedResponse.inventoryActions = [];
       accumulatedResponse.inventoryActions.push({
         action: actionType as "add" | "update" | "remove",
         ...data,
@@ -1267,7 +1310,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("relationship", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.relationshipActions) accumulatedResponse.relationshipActions = [];
+      if (!accumulatedResponse.relationshipActions)
+        accumulatedResponse.relationshipActions = [];
       accumulatedResponse.relationshipActions.push({
         action: actionType as "add" | "update" | "remove",
         ...data,
@@ -1278,7 +1322,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("location", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.locationActions) accumulatedResponse.locationActions = [];
+      if (!accumulatedResponse.locationActions)
+        accumulatedResponse.locationActions = [];
       accumulatedResponse.locationActions.push({
         type: "known",
         action: actionType as "add" | "update",
@@ -1290,7 +1335,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("quest", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.questActions) accumulatedResponse.questActions = [];
+      if (!accumulatedResponse.questActions)
+        accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: actionType as "add" | "update" | "complete" | "fail",
         ...data,
@@ -1301,7 +1347,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("knowledge", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.knowledgeActions) accumulatedResponse.knowledgeActions = [];
+      if (!accumulatedResponse.knowledgeActions)
+        accumulatedResponse.knowledgeActions = [];
       accumulatedResponse.knowledgeActions.push({
         action: actionType as "add" | "update",
         ...data,
@@ -1318,7 +1365,8 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("faction", actionType as string, data);
     if (modifyResult.success) {
-      if (!accumulatedResponse.factionActions) accumulatedResponse.factionActions = [];
+      if (!accumulatedResponse.factionActions)
+        accumulatedResponse.factionActions = [];
       accumulatedResponse.factionActions.push({
         action: actionType as "update",
         ...data,
@@ -1338,7 +1386,8 @@ function executeToolCall(
       reason,
     });
     if (modifyResult.success) {
-      if (!accumulatedResponse.worldInfoUpdates) accumulatedResponse.worldInfoUpdates = [];
+      if (!accumulatedResponse.worldInfoUpdates)
+        accumulatedResponse.worldInfoUpdates = [];
       accumulatedResponse.worldInfoUpdates.push({
         unlockWorldSetting,
         unlockMainGoal,
@@ -1352,7 +1401,8 @@ function executeToolCall(
   } else if (name === "update_character") {
     const modifyResult = db.modify("character", "update", args);
     if (modifyResult.success) {
-      accumulatedResponse.characterUpdates = args as GameResponse["characterUpdates"];
+      accumulatedResponse.characterUpdates =
+        args as GameResponse["characterUpdates"];
     }
     return modifyResult;
   } else if (name === "finish_turn") {
@@ -1368,13 +1418,23 @@ function executeToolCall(
  */
 async function executeRagSearch(
   args: Record<string, unknown>,
-  db: GameDatabase
+  db: GameDatabase,
 ): Promise<unknown> {
   const embeddingManager = getEmbeddingManager();
   if (embeddingManager && embeddingManager.hasIndex()) {
     try {
       const query = args.query as string;
-      const types = args.types as ("story" | "location" | "quest" | "knowledge" | "npc" | "item" | "event")[] | undefined;
+      const types = args.types as
+        | (
+            | "story"
+            | "location"
+            | "quest"
+            | "knowledge"
+            | "npc"
+            | "item"
+            | "event"
+          )[]
+        | undefined;
       const topK = (args.topK as number) || 5;
       const currentForkOnly = args.currentForkOnly as boolean | undefined;
       const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
@@ -1382,7 +1442,15 @@ async function executeRagSearch(
       // Build search options with fork/turn filtering
       interface SearchOptions {
         topK: number;
-        types?: ("story" | "location" | "quest" | "knowledge" | "npc" | "item" | "event")[];
+        types?: (
+          | "story"
+          | "location"
+          | "quest"
+          | "knowledge"
+          | "npc"
+          | "item"
+          | "event"
+        )[];
         currentForkOnly?: boolean;
         forkId?: number;
         forkTree?: ForkTree;
@@ -1408,7 +1476,10 @@ async function executeRagSearch(
         searchOptions.currentTurn = db.getState().turnNumber;
       }
 
-      const ragContext = await embeddingManager.retrieveContext(query, searchOptions);
+      const ragContext = await embeddingManager.retrieveContext(
+        query,
+        searchOptions,
+      );
 
       return {
         success: true,
@@ -1463,7 +1534,7 @@ async function executeRagSearch(
  */
 export const generateSceneImage = async (
   prompt: string,
-  context: ImageGenerationContext
+  context: ImageGenerationContext,
 ): Promise<{ url: string | null; log: LogEntry }> => {
   const { provider, modelId, enabled, resolution } = getProviderConfig("image");
   if (!enabled) {
@@ -1484,7 +1555,7 @@ export const generateSceneImage = async (
     "with model:",
     modelId,
     "and resolution:",
-    resolution
+    resolution,
   );
 
   if (provider === "openai") {
@@ -1492,7 +1563,7 @@ export const generateSceneImage = async (
       { ...openaiConfig, modelId },
       modelId,
       styledPrompt,
-      resolution
+      resolution,
     );
     url = response.url;
     usage = response.usage;
@@ -1502,7 +1573,7 @@ export const generateSceneImage = async (
       openRouterConfig,
       modelId,
       styledPrompt,
-      resolution
+      resolution,
     );
     url = response.url;
     usage = response.usage;
@@ -1512,7 +1583,7 @@ export const generateSceneImage = async (
       geminiConfig,
       modelId,
       styledPrompt,
-      resolution
+      resolution,
     );
     url = response.url;
     usage = response.usage;
@@ -1525,7 +1596,7 @@ export const generateSceneImage = async (
     "generateImage",
     { prompt: styledPrompt, resolution },
     raw,
-    usage
+    usage,
   );
   return { url, log };
 };
@@ -1538,7 +1609,7 @@ export const translateGameContent = async (
   inventory: string[],
   character: CharacterStatus,
   relationships: Relationship[],
-  targetLanguage: string
+  targetLanguage: string,
 ): Promise<{
   segments: StorySegment[];
   inventory: string[];
@@ -1572,7 +1643,7 @@ export const translateGameContent = async (
       modelId,
       sys,
       contents,
-      translationSchema
+      translationSchema,
     );
 
     // 合并翻译结果和原始 segments
@@ -1584,7 +1655,9 @@ export const translateGameContent = async (
     };
 
     const mergedSegments = segments.map((originalSeg) => {
-      const translated = translatedPayload.segments.find((t) => t.id === originalSeg.id);
+      const translated = translatedPayload.segments.find(
+        (t) => t.id === originalSeg.id,
+      );
       if (translated) {
         return {
           ...originalSeg,
@@ -1612,7 +1685,7 @@ export const translateGameContent = async (
  */
 export const generateVeoVideo = async (
   imageBase64: string,
-  prompt: string
+  prompt: string,
 ): Promise<string> => {
   const { provider, modelId, enabled } = getProviderConfig("video");
   if (!enabled) throw new Error("Disabled");
@@ -1622,7 +1695,7 @@ export const generateVeoVideo = async (
       geminiConfig,
       modelId,
       imageBase64,
-      prompt
+      prompt,
     );
     return url;
   }
@@ -1636,7 +1709,7 @@ export const generateVeoVideo = async (
 export const generateSpeech = async (
   text: string,
   voiceName?: string,
-  narrativeTone?: string
+  narrativeTone?: string,
 ): Promise<ArrayBuffer | null> => {
   const { provider, modelId, enabled } = getProviderConfig("audio");
   const audioConfig = currentSettings.audio;
@@ -1650,7 +1723,9 @@ export const generateSpeech = async (
     instructions?: string;
   } = {
     speed: audioConfig.speed || 1.0,
-    format: (audioConfig.format as "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm") || "mp3",
+    format:
+      (audioConfig.format as "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm") ||
+      "mp3",
   };
 
   // Determine target voice
@@ -1705,7 +1780,7 @@ export const generateSpeech = async (
         modelId,
         text,
         targetVoice,
-        options
+        options,
       );
       return audio;
     } else if (provider === "openrouter") {
@@ -1714,7 +1789,7 @@ export const generateSpeech = async (
         modelId,
         text,
         targetVoice,
-        options
+        options,
       );
       return audio;
     } else {
@@ -1729,7 +1804,7 @@ export const generateSpeech = async (
         modelId,
         text,
         targetVoice,
-        geminiOptions
+        geminiOptions,
       );
       return audio;
     }
@@ -1745,7 +1820,7 @@ export const generateSpeech = async (
 export const generateVeoScript = async (
   gameState: GameState,
   history: StorySegment[],
-  language: string = "English"
+  language: string = "English",
 ): Promise<string> => {
   const prompt = getVeoScriptPrompt(gameState, history, language);
 
@@ -1755,7 +1830,12 @@ export const generateVeoScript = async (
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {
-    const { result } = await generateContentUnified(provider, modelId, sys, contents);
+    const { result } = await generateContentUnified(
+      provider,
+      modelId,
+      sys,
+      contents,
+    );
     // result should be the text string since no schema was provided
     return typeof result === "string" ? result : JSON.stringify(result);
   } catch (e: unknown) {
@@ -1772,7 +1852,7 @@ export const generateVeoScript = async (
  * 获取可用的嵌入模型列表
  */
 export const getEmbeddingModels = async (
-  provider: ProviderType
+  provider: ProviderType,
 ): Promise<EmbeddingModelInfo[]> => {
   try {
     if (provider === "gemini") {
@@ -1798,7 +1878,7 @@ interface EmbeddingUsage {
  */
 export const generateEmbeddings = async (
   texts: string[],
-  config?: EmbeddingConfig
+  config?: EmbeddingConfig,
 ): Promise<{ embeddings: Float32Array[]; usage: EmbeddingUsage }> => {
   const embeddingConfig = config || currentSettings.embedding;
 

@@ -55,7 +55,10 @@ import {
 export interface OpenAIContentGenerationResponse {
   result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
   usage: TokenUsage;
-  raw: ChatCompletion | ChatCompletionChunk | AsyncIterable<ChatCompletionChunk>;
+  raw:
+    | ChatCompletion
+    | ChatCompletionChunk
+    | AsyncIterable<ChatCompletionChunk>;
 }
 
 // ============================================================================
@@ -90,7 +93,7 @@ export async function validateConnection(config: OpenAIConfig): Promise<void> {
       `Failed to connect to OpenAI API: ${message}`,
       "openai",
       undefined,
-      error
+      error,
     );
   }
 }
@@ -109,7 +112,10 @@ export async function getModels(config: OpenAIConfig): Promise<ModelInfo[]> {
 
     return list.data.map((m) => {
       const id = m.id.toLowerCase();
-      const capabilities = inferModelCapabilities(id, m as unknown as { id: string; [key: string]: unknown });
+      const capabilities = inferModelCapabilities(
+        id,
+        m as unknown as { id: string; [key: string]: unknown },
+      );
 
       return {
         id: m.id,
@@ -128,7 +134,7 @@ export async function getModels(config: OpenAIConfig): Promise<ModelInfo[]> {
  */
 function inferModelCapabilities(
   id: string,
-  modelData: { id: string; [key: string]: unknown }
+  modelData: { id: string; [key: string]: unknown },
 ): ModelCapabilities {
   const capabilities: ModelCapabilities = {
     text: false,
@@ -187,7 +193,11 @@ function inferModelCapabilities(
     else {
       capabilities.text = true;
       // GPT 模型支持工具
-      if (id.startsWith("gpt") || id.includes("claude") || id.includes("gemini")) {
+      if (
+        id.startsWith("gpt") ||
+        id.includes("claude") ||
+        id.includes("gemini")
+      ) {
         capabilities.tools = true;
         capabilities.parallelTools = true;
       }
@@ -254,7 +264,7 @@ export async function generateContent(
   systemInstruction: string,
   contents: UnifiedMessage[],
   schema?: JsonSchema,
-  options?: GenerateContentOptions
+  options?: GenerateContentOptions,
 ): Promise<OpenAIContentGenerationResponse> {
   const client = createOpenAIClient(config);
 
@@ -283,11 +293,18 @@ export async function generateContent(
 
   let content = "";
   let toolCalls: ToolCallResult[] = [];
-  let usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-  let rawResponse: ChatCompletion | ChatCompletionChunk | AsyncIterable<ChatCompletionChunk>;
+  let usage: TokenUsage = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+  };
+  let rawResponse:
+    | ChatCompletion
+    | ChatCompletionChunk
+    | AsyncIterable<ChatCompletionChunk>;
 
   console.log(
-    `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`
+    `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
   );
 
   if (options?.onChunk) {
@@ -300,7 +317,10 @@ export async function generateContent(
     rawResponse = response;
 
     // 累积工具调用信息
-    const accumulatedToolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map();
+    const accumulatedToolCalls: Map<
+      number,
+      { id: string; name: string; arguments: string }
+    > = new Map();
 
     for await (const chunk of response) {
       const choice = chunk.choices[0];
@@ -352,7 +372,10 @@ export async function generateContent(
           args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
         });
       } catch (parseError) {
-        console.error(`[OpenAI] Failed to parse tool call arguments:`, tc.arguments);
+        console.error(
+          `[OpenAI] Failed to parse tool call arguments:`,
+          tc.arguments,
+        );
         throw new MalformedToolCallError("openai", tc.name, tc.arguments);
       }
     }
@@ -425,7 +448,7 @@ export async function generateContent(
  */
 function convertToOpenAIMessages(
   systemInstruction: string,
-  messages: UnifiedMessage[]
+  messages: UnifiedMessage[],
 ): ChatCompletionMessageParam[] {
   const result: ChatCompletionMessageParam[] = [
     { role: "system", content: systemInstruction },
@@ -454,7 +477,7 @@ function convertToOpenAIMessages(
     // 处理助手消息（可能包含工具调用）
     if (msg.role === "assistant") {
       const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_call"
+        (p): p is ToolCallContentPart => p.type === "tool_call",
       );
 
       if (toolCallParts.length > 0) {
@@ -499,7 +522,7 @@ function convertToOpenAIMessages(
  * 转换工具定义到 OpenAI 格式
  */
 function convertToOpenAITools(
-  tools: GenerateContentOptions["tools"]
+  tools: GenerateContentOptions["tools"],
 ): ChatCompletionTool[] {
   return (tools || []).map((tool) => ({
     type: "function" as const,
@@ -510,8 +533,6 @@ function convertToOpenAITools(
     },
   }));
 }
-
-
 
 // ============================================================================
 // Image Generation
@@ -524,7 +545,7 @@ export async function generateImage(
   config: OpenAIConfig,
   model: string,
   prompt: string,
-  resolution: string = "1024x1024"
+  resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
   const client = createOpenAIClient(config);
 
@@ -535,7 +556,12 @@ export async function generateImage(
     model: model || "dall-e-3",
     prompt,
     n: 1,
-    size: size as "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792",
+    size: size as
+      | "256x256"
+      | "512x512"
+      | "1024x1024"
+      | "1792x1024"
+      | "1024x1792",
     response_format: "b64_json",
   });
 
@@ -561,7 +587,7 @@ function determineImageSize(model: string, resolution: string): string {
     // 横向
     if (
       ["1248x832", "1184x864", "1152x896", "1344x768", "1536x672"].includes(
-        resolution
+        resolution,
       )
     ) {
       return "1792x1024";
@@ -585,12 +611,12 @@ export async function generateVideo(
   _config: OpenAIConfig,
   _model: string,
   _imageBase64: string,
-  _prompt: string
+  _prompt: string,
 ): Promise<never> {
   throw new AIProviderError(
     "Video generation is not supported by OpenAI provider",
     "openai",
-    "UNSUPPORTED"
+    "UNSUPPORTED",
   );
 }
 
@@ -606,14 +632,20 @@ export async function generateSpeech(
   model: string,
   text: string,
   voiceName: string = "alloy",
-  options?: SpeechGenerationOptions
+  options?: SpeechGenerationOptions,
 ): Promise<SpeechGenerationResponse> {
   const client = createOpenAIClient(config);
 
   const requestBody: OpenAI.Audio.SpeechCreateParams = {
     model: model || "tts-1",
     input: text,
-    voice: voiceName as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
+    voice: voiceName as
+      | "alloy"
+      | "echo"
+      | "fable"
+      | "onyx"
+      | "nova"
+      | "shimmer",
     response_format: options?.format || "mp3",
     speed: options?.speed || 1.0,
   };
@@ -636,7 +668,7 @@ export async function generateSpeech(
  * 获取嵌入模型列表
  */
 export async function getEmbeddingModels(
-  config: OpenAIConfig
+  config: OpenAIConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
     const client = createOpenAIClient(config);
@@ -727,7 +759,7 @@ export async function generateEmbedding(
   modelId: string,
   texts: string[],
   dimensions?: number,
-  _taskType?: EmbeddingTaskType
+  _taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResponse> {
   const client = createOpenAIClient(config);
 

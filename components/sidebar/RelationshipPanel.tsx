@@ -566,7 +566,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         items={allItems}
         themeFont={themeFont}
         searchFilter={(item, query) =>
-          (item.visible?.name || "").toLowerCase().includes(query.toLowerCase()) ||
+          (item.visible?.name || "")
+            .toLowerCase()
+            .includes(query.toLowerCase()) ||
           (item.visible?.description || "")
             .toLowerCase()
             .includes(query.toLowerCase())

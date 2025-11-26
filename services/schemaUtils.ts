@@ -218,7 +218,7 @@ export const convertJsonSchemaToOpenAIObject = (
   // But if this is the root or an item in array, we might need to reflect nullability.
   // However, OpenAI Strict Mode handles nullability via ["type", "null"].
   if (isNullable && !Array.isArray(result.type) && result.type !== "null") {
-     result.type = [result.type, "null"];
+    result.type = [result.type, "null"];
   }
 
   return result;

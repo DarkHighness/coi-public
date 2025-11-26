@@ -287,7 +287,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     systemInstruction: string,
     messages: UnifiedMessage[],
     schema?: JsonSchema,
-    options?: GenerateContentOptions
+    options?: GenerateContentOptions,
   ): Promise<ContentGenerationResponse>;
 
   /** 生成图片 */
@@ -295,7 +295,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     config: TConfig,
     model: string,
     prompt: string,
-    resolution?: string
+    resolution?: string,
   ): Promise<ImageGenerationResponse>;
 
   /** 生成视频 */
@@ -303,7 +303,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     config: TConfig,
     model: string,
     imageBase64: string,
-    prompt: string
+    prompt: string,
   ): Promise<VideoGenerationResponse>;
 
   /** 生成语音 */
@@ -312,7 +312,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     model: string,
     text: string,
     voiceName?: string,
-    options?: SpeechGenerationOptions
+    options?: SpeechGenerationOptions,
   ): Promise<SpeechGenerationResponse>;
 
   /** 获取嵌入模型列表 */
@@ -324,7 +324,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     model: string,
     texts: string[],
     dimensions?: number,
-    taskType?: EmbeddingTaskType
+    taskType?: EmbeddingTaskType,
   ): Promise<EmbeddingResponse>;
 }
 
@@ -387,7 +387,7 @@ export class AIProviderError extends Error {
     message: string,
     public readonly provider: string,
     public readonly code?: string,
-    public readonly cause?: unknown
+    public readonly cause?: unknown,
   ) {
     super(message);
     this.name = "AIProviderError";
@@ -397,7 +397,12 @@ export class AIProviderError extends Error {
 /** 安全过滤器错误 */
 export class SafetyFilterError extends AIProviderError {
   constructor(provider: string, cause?: unknown) {
-    super("Content generation blocked by safety filter", provider, "SAFETY", cause);
+    super(
+      "Content generation blocked by safety filter",
+      provider,
+      "SAFETY",
+      cause,
+    );
     this.name = "SafetyFilterError";
   }
 }
@@ -409,7 +414,7 @@ export class MalformedToolCallError extends AIProviderError {
       `Malformed function call${details ? `: ${details}` : ""}`,
       provider,
       "MALFORMED_TOOL_CALL",
-      cause
+      cause,
     );
     this.name = "MalformedToolCallError";
   }
@@ -430,7 +435,7 @@ export class JSONParseError extends AIProviderError {
       "Failed to parse AI response as JSON",
       provider,
       "JSON_PARSE_ERROR",
-      cause
+      cause,
     );
     this.name = "JSONParseError";
   }

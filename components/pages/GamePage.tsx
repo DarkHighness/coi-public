@@ -285,10 +285,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             const lastUserAction = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(
-              lastUserAction?.text ||
-                defaultContinuePrompt,
-            );
+            handleAction(lastUserAction?.text || defaultContinuePrompt);
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -328,10 +325,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             const lastUserAction = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(
-              lastUserAction?.text ||
-              defaultContinuePrompt,
-            );
+            handleAction(lastUserAction?.text || defaultContinuePrompt);
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}

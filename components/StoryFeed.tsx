@@ -240,19 +240,27 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
           )}
 
           {/* Empty History State - Show retry when outline exists but no story generated yet */}
-          {gameState.outline && currentHistory.length === 0 && !gameState.isProcessing && !gameState.error && (
-            <div className={`mb-8 p-6 bg-theme-surface border border-theme-border rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in`}>
-              <p className="text-theme-muted mb-4">
-                {t("storyNotStarted", "The story hasn't started yet. Click below to begin your adventure.")}
-              </p>
-              <button
-                onClick={onRetry}
-                className="px-6 py-2 bg-theme-primary text-theme-surface rounded-lg hover:bg-theme-primary-muted transition-colors"
+          {gameState.outline &&
+            currentHistory.length === 0 &&
+            !gameState.isProcessing &&
+            !gameState.error && (
+              <div
+                className={`mb-8 p-6 bg-theme-surface border border-theme-border rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in`}
               >
-                {t("startAdventure", "Start Adventure")}
-              </button>
-            </div>
-          )}
+                <p className="text-theme-muted mb-4">
+                  {t(
+                    "storyNotStarted",
+                    "The story hasn't started yet. Click below to begin your adventure.",
+                  )}
+                </p>
+                <button
+                  onClick={onRetry}
+                  className="px-6 py-2 bg-theme-primary text-theme-surface rounded-lg hover:bg-theme-primary-muted transition-colors"
+                >
+                  {t("startAdventure", "Start Adventure")}
+                </button>
+              </div>
+            )}
 
           {layout === "scroll" ? (
             <>

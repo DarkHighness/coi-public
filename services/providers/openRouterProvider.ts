@@ -9,9 +9,7 @@
 
 import type { EmbeddingTaskType, TokenUsage } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
-import {
-  generateSpeech as generateOpenAISpeech,
-} from "./openaiProvider";
+import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
 
 import {
   OpenRouterConfig,
@@ -94,7 +92,10 @@ interface OpenRouterChatChunk {
 
 /** Content Generation Response (Compatible Format) */
 export interface OpenRouterContentGenerationResponse {
-  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown> | string;
+  result:
+    | { functionCalls?: ToolCallResult[] }
+    | Record<string, unknown>
+    | string;
   usage: TokenUsage;
   raw: unknown;
 }
@@ -105,7 +106,7 @@ export interface OpenRouterContentGenerationResponse {
 
 function createHeaders(config: OpenRouterConfig): HeadersInit {
   return {
-    "Authorization": `Bearer ${config.apiKey}`,
+    Authorization: `Bearer ${config.apiKey}`,
     "Content-Type": "application/json",
     "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "",
     "X-Title": "CoI Game", // Optional: Add your app name
@@ -120,7 +121,7 @@ function createHeaders(config: OpenRouterConfig): HeadersInit {
  * Validate OpenRouter API Connection
  */
 export async function validateConnection(
-  config: OpenRouterConfig
+  config: OpenRouterConfig,
 ): Promise<void> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/models", {
@@ -138,7 +139,7 @@ export async function validateConnection(
       `Failed to connect to OpenRouter API: ${message}`,
       "openrouter",
       undefined,
-      error
+      error,
     );
   }
 }
@@ -160,7 +161,9 @@ interface OpenRouterModelsResponse {
 /**
  * Get available OpenRouter models
  */
-export async function getModels(config: OpenRouterConfig): Promise<ModelInfo[]> {
+export async function getModels(
+  config: OpenRouterConfig,
+): Promise<ModelInfo[]> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/models", {
       method: "GET",
@@ -191,7 +194,9 @@ export async function getModels(config: OpenRouterConfig): Promise<ModelInfo[]> 
 /**
  * Infer model capabilities
  */
-function inferModelCapabilities(modelData: OpenRouterModelData): ModelCapabilities {
+function inferModelCapabilities(
+  modelData: OpenRouterModelData,
+): ModelCapabilities {
   const parsedCaps = parseModelCapabilities(modelData);
 
   const capabilities: ModelCapabilities = {
@@ -246,7 +251,7 @@ export async function generateContent(
   systemInstruction: string,
   contents: UnifiedMessage[],
   schema?: JsonSchema,
-  options?: GenerateContentOptions
+  options?: GenerateContentOptions,
 ): Promise<OpenRouterContentGenerationResponse> {
   // Convert messages
   const messages = convertToOpenAIMessages(systemInstruction, contents);
@@ -275,21 +280,24 @@ export async function generateContent(
   }
 
   console.log(
-    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`
+    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
   );
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: createHeaders(config),
-      body: JSON.stringify(requestBody),
-    });
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: createHeaders(config),
+        body: JSON.stringify(requestBody),
+      },
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new AIProviderError(
         errorData.error?.message || `OpenRouter API Error: ${response.status}`,
-        "openrouter"
+        "openrouter",
       );
     }
 
@@ -298,7 +306,6 @@ export async function generateContent(
     } else {
       return handleNonStreamingResponse(response, schema);
     }
-
   } catch (error) {
     if (error instanceof AIProviderError) throw error;
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -306,7 +313,7 @@ export async function generateContent(
       `OpenRouter generation failed: ${message}`,
       "openrouter",
       undefined,
-      error
+      error,
     );
   }
 }
@@ -316,7 +323,7 @@ export async function generateContent(
  */
 async function handleNonStreamingResponse(
   response: Response,
-  schema?: JsonSchema
+  schema?: JsonSchema,
 ): Promise<OpenRouterContentGenerationResponse> {
   const data = (await response.json()) as OpenRouterChatCompletion;
   const choice = data.choices[0];
@@ -369,7 +376,7 @@ async function handleNonStreamingResponse(
  */
 async function handleStreamingResponse(
   response: Response,
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
 ): Promise<OpenRouterContentGenerationResponse> {
   if (!response.body) {
     throw new Error("Response body is null");
@@ -379,8 +386,15 @@ async function handleStreamingResponse(
   const decoder = new TextDecoder();
 
   let content = "";
-  let usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-  const accumulatedToolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map();
+  let usage: TokenUsage = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+  };
+  const accumulatedToolCalls: Map<
+    number,
+    { id: string; name: string; arguments: string }
+  > = new Map();
 
   let buffer = "";
 
@@ -455,7 +469,10 @@ async function handleStreamingResponse(
         args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
       });
     } catch (parseError) {
-      console.error(`[OpenRouter] Failed to parse tool call arguments:`, tc.arguments);
+      console.error(
+        `[OpenRouter] Failed to parse tool call arguments:`,
+        tc.arguments,
+      );
       throw new MalformedToolCallError("openrouter", tc.name, tc.arguments);
     }
   }
@@ -478,11 +495,9 @@ async function handleStreamingResponse(
  */
 function convertToOpenAIMessages(
   systemInstruction: string,
-  messages: UnifiedMessage[]
+  messages: UnifiedMessage[],
 ): any[] {
-  const result: any[] = [
-    { role: "system", content: systemInstruction },
-  ];
+  const result: any[] = [{ role: "system", content: systemInstruction }];
 
   for (const msg of messages) {
     if (msg.role === "tool") {
@@ -492,7 +507,10 @@ function convertToOpenAIMessages(
           result.push({
             role: "tool",
             tool_call_id: tr.toolCallId,
-            content: typeof tr.content === "string" ? tr.content : JSON.stringify(tr.content),
+            content:
+              typeof tr.content === "string"
+                ? tr.content
+                : JSON.stringify(tr.content),
           });
         }
       }
@@ -501,7 +519,7 @@ function convertToOpenAIMessages(
 
     if (msg.role === "assistant") {
       const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_call"
+        (p): p is ToolCallContentPart => p.type === "tool_call",
       );
 
       if (toolCallParts.length > 0) {
@@ -543,9 +561,7 @@ function convertToOpenAIMessages(
 /**
  * Convert tools to OpenAI format
  */
-function convertToOpenAITools(
-  tools: GenerateContentOptions["tools"]
-): any[] {
+function convertToOpenAITools(tools: GenerateContentOptions["tools"]): any[] {
   return (tools || []).map((tool) => ({
     type: "function",
     function: {
@@ -568,7 +584,11 @@ interface OpenRouterImageResponse {
     };
   }>;
   data?: Array<{ url: string }>;
-  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 /**
@@ -578,7 +598,7 @@ export async function generateImage(
   config: OpenRouterConfig,
   model: string,
   prompt: string,
-  resolution: string = "1024x1024"
+  resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
   const aspectRatio = getAspectRatio(resolution);
 
@@ -596,13 +616,13 @@ export async function generateImage(
         method: "POST",
         headers: createHeaders(config),
         body: JSON.stringify(chatBody),
-      }
+      },
     );
 
     if (!response.ok) {
       throw new AIProviderError(
         `OpenRouter API Error: ${response.status}`,
-        "openrouter"
+        "openrouter",
       );
     }
 
@@ -651,7 +671,7 @@ export async function generateImage(
         n: 1,
         size,
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -660,7 +680,7 @@ export async function generateImage(
     };
     throw new AIProviderError(
       err.error?.message || `OpenRouter Image API Error: ${response.status}`,
-      "openrouter"
+      "openrouter",
     );
   }
 
@@ -679,12 +699,12 @@ export async function generateVideo(
   _config: OpenRouterConfig,
   _model: string,
   _imageBase64: string,
-  _prompt: string
+  _prompt: string,
 ): Promise<never> {
   throw new AIProviderError(
     "Video generation is not supported by OpenRouter provider",
     "openrouter",
-    "UNSUPPORTED"
+    "UNSUPPORTED",
   );
 }
 
@@ -697,7 +717,7 @@ export async function generateSpeech(
   model: string,
   text: string,
   voiceName: string = "alloy",
-  options?: SpeechGenerationOptions
+  options?: SpeechGenerationOptions,
 ): Promise<SpeechGenerationResponse> {
   const openaiConfig: OpenAIConfig = {
     apiKey: config.apiKey,
@@ -720,7 +740,7 @@ interface EmbeddingAPIResponse {
  * Get embedding models
  */
 export async function getEmbeddingModels(
-  config: OpenRouterConfig
+  config: OpenRouterConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/models", {
@@ -821,7 +841,7 @@ export async function generateEmbedding(
   modelId: string,
   texts: string[],
   dimensions?: number,
-  _taskType?: EmbeddingTaskType
+  _taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResponse> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
@@ -858,7 +878,7 @@ export async function generateEmbedding(
       `OpenRouter embedding failed: ${message}`,
       "openrouter",
       undefined,
-      error
+      error,
     );
   }
 }

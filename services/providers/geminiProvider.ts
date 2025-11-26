@@ -90,7 +90,7 @@ export async function validateConnection(config: GeminiConfig): Promise<void> {
       `Failed to connect to Gemini API: ${message}`,
       "gemini",
       undefined,
-      error
+      error,
     );
   }
 }
@@ -123,7 +123,7 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
       (m) =>
         m.id.includes("gemini") ||
         m.id.includes("imagen") ||
-        m.id.includes("veo")
+        m.id.includes("veo"),
     );
   } catch (error) {
     console.warn("Failed to list Gemini models:", error);
@@ -222,7 +222,7 @@ export async function generateContent(
   systemInstruction: string,
   contents: Content[],
   schema?: JsonSchema,
-  options?: GenerateContentOptions
+  options?: GenerateContentOptions,
 ): Promise<GeminiContentGenerationResponse> {
   const client = createGeminiClient(config);
 
@@ -230,7 +230,7 @@ export async function generateContent(
   const generationConfig = buildGenerationConfig(
     systemInstruction,
     schema,
-    options
+    options,
   );
 
   let text = "";
@@ -243,7 +243,7 @@ export async function generateContent(
   let rawResponse: unknown;
 
   console.log(
-    `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`
+    `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`,
   );
 
   if (options?.onChunk) {
@@ -258,7 +258,7 @@ export async function generateContent(
       model,
       contents,
       generationConfig,
-      options.onChunk
+      options.onChunk,
     );
     text = streamText;
     functionCalls = streamCalls;
@@ -286,7 +286,7 @@ export async function generateContent(
     if (candidate?.content?.parts) {
       const fcParts = candidate.content.parts.filter(
         (p: Part): p is Part & { functionCall: FunctionCall } =>
-          p.functionCall !== undefined
+          p.functionCall !== undefined,
       );
 
       if (fcParts.length > 0) {
@@ -301,7 +301,7 @@ export async function generateContent(
     // 如果没有工具调用，提取文本
     if (functionCalls.length === 0 && candidate?.content?.parts) {
       const textParts = candidate.content.parts.filter(
-        (p: Part): p is Part & { text: string } => p.text !== undefined
+        (p: Part): p is Part & { text: string } => p.text !== undefined,
       );
       text = textParts.map((p) => p.text).join("");
     }
@@ -350,7 +350,7 @@ async function streamGeneration(
   model: string,
   contents: Content[],
   config: GenerateContentConfig,
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
 ): Promise<{
   text: string;
   functionCalls: ToolCallResult[];
@@ -413,7 +413,7 @@ async function streamGeneration(
   }
 
   console.log(
-    `[Gemini] Streaming complete. Text length: ${text.length}, FunctionCalls: ${functionCalls.length}`
+    `[Gemini] Streaming complete. Text length: ${text.length}, FunctionCalls: ${functionCalls.length}`,
   );
 
   return { text, functionCalls, usage, raw: lastChunk };
@@ -424,7 +424,7 @@ async function streamGeneration(
  */
 function handleFinishReason(
   finishReason: string | undefined,
-  finishMessage?: string
+  finishMessage?: string,
 ): void {
   switch (finishReason) {
     case "SAFETY":
@@ -433,12 +433,12 @@ function handleFinishReason(
       throw new AIProviderError(
         "Content generation failed: Recitation check triggered",
         "gemini",
-        "RECITATION"
+        "RECITATION",
       );
     case "MALFORMED_FUNCTION_CALL":
       throw new MalformedToolCallError(
         "gemini",
-        finishMessage?.substring(0, 200)
+        finishMessage?.substring(0, 200),
       );
     case "OTHER":
       console.warn("Gemini generation finished with reason: OTHER");
@@ -452,7 +452,7 @@ function handleFinishReason(
 function buildGenerationConfig(
   systemInstruction: string,
   schema?: JsonSchema,
-  options?: GenerateContentOptions
+  options?: GenerateContentOptions,
 ): GenerateContentConfig {
   const config: GenerateContentConfig = {
     systemInstruction,
@@ -490,8 +490,6 @@ function buildGenerationConfig(
 
   return config;
 }
-
-
 
 /**
  * 解析 JSON 响应
@@ -532,7 +530,7 @@ export async function generateImage(
   config: GeminiConfig,
   model: string,
   prompt: string,
-  resolution: string = "1024x1024"
+  resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
   const client = createGeminiClient(config);
   const aspectRatio = getAspectRatio(resolution);
@@ -582,7 +580,7 @@ export async function generateVideo(
   config: GeminiConfig,
   model: string,
   imageBase64: string,
-  prompt: string
+  prompt: string,
 ): Promise<VideoGenerationResponse> {
   const client = createGeminiClient(config);
 
@@ -636,7 +634,7 @@ export async function generateSpeech(
   model: string,
   text: string,
   voiceName: string = "Kore",
-  options?: SpeechGenerationOptions
+  options?: SpeechGenerationOptions,
 ): Promise<SpeechGenerationResponse> {
   const client = createGeminiClient(config);
 
@@ -762,7 +760,7 @@ function writeString(view: DataView, offset: number, str: string): void {
  * 获取嵌入模型列表
  */
 export async function getEmbeddingModels(
-  config: GeminiConfig
+  config: GeminiConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
     const client = createGeminiClient(config);
@@ -796,7 +794,11 @@ export async function getEmbeddingModels(
  */
 function getDefaultEmbeddingModels(): EmbeddingModelInfo[] {
   return [
-    { id: "gemini-embedding-001", name: "Gemini Embedding 001", dimensions: 768 },
+    {
+      id: "gemini-embedding-001",
+      name: "Gemini Embedding 001",
+      dimensions: 768,
+    },
   ];
 }
 
@@ -808,7 +810,7 @@ export async function generateEmbedding(
   modelId: string,
   texts: string[],
   dimensions?: number,
-  _taskType?: EmbeddingTaskType
+  _taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResponse> {
   const client = createGeminiClient(config);
 
