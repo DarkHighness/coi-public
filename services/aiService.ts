@@ -153,6 +153,7 @@ const createLogEntry = (
   res: Record<string, unknown>,
   usage?: TokenUsage,
   toolCalls?: ToolCallRecord[],
+  generationDetails?: LogEntry["generationDetails"],
 ): LogEntry => {
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -164,6 +165,7 @@ const createLogEntry = (
     response: res,
     usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     toolCalls,
+    generationDetails,
   };
   console.log(`[Log] ${provider}/${model} - ${endpoint}`, {
     usage: entry.usage,
@@ -333,6 +335,7 @@ export const generateContentUnified = async (
     minP?: number;
     onChunk?: (text: string) => void;
     tools?: any[];
+    generationDetails?: LogEntry["generationDetails"];
   },
 ): Promise<{ result: any; usage: TokenUsage; raw: any; log?: LogEntry }> => {
   let result, usage, raw;
@@ -405,6 +408,8 @@ export const generateContentUnified = async (
     { systemInstruction, contents },
     raw,
     usage,
+    undefined, // toolCalls
+    options?.generationDetails,
   );
   return { result, usage, raw, log };
 };
@@ -562,20 +567,20 @@ const buildTurnContents = (
   timeline: TimelineEvent[],
   userAction: string,
   ragContext?: string,
-): UnifiedMessage[] => {
+): { messages: UnifiedMessage[]; dynamicContext: string } => {
   const messages: UnifiedMessage[] = [];
 
   // === Message 1: Story Memory (STATIC - changes only after summarization) ===
-  const dynamicStoryContext = getDynamicStoryContext(
+  const dynamicContext = getDynamicStoryContext(
     summaries,
     recentHistory,
     timeline,
   );
 
-  if (dynamicStoryContext) {
+  if (dynamicContext) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicStoryContext}\n</story_memory>`,
+        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`,
       ),
     );
     messages.push({
@@ -629,22 +634,9 @@ const buildTurnContents = (
 
   // === Final Message: User Action with Instructions ===
   // This MUST immediately follow "Awaiting player action"
-  const turnInstruction = `
-[NEW TURN - PLAYER ACTION]
-<instruction>
-Process the player's action below. Follow the workflow:
-1. Query only if needed (hints may suffice)
-2. Apply all updates in causal order
-3. Call finish_turn with narrative and choices
-</instruction>
 
-<player_action>
-${userAction}
-</player_action>
-`;
-  messages.push(createUserMessage(turnInstruction));
-
-  return messages;
+  messages.push(createUserMessage(userAction));
+  return { messages, dynamicContext };
 };
 
 // --- Turn Context for Runtime Parameters ---
@@ -731,7 +723,7 @@ export const generateAdventureTurn = async (
     // Continue without RAG context
   }
 
-  const contents = buildTurnContents(
+  const { messages, dynamicContext } = buildTurnContents(
     gameState.summaries,
     getCurrentStateContext(gameState, context.recentHistory),
     context.recentHistory,
@@ -740,12 +732,21 @@ export const generateAdventureTurn = async (
     ragContext,
   );
 
+  const generationDetails: LogEntry["generationDetails"] = {
+    dynamicContext,
+    ragContext,
+    ragQueries: gameState.ragQueries,
+    systemPrompt: systemInstruction,
+    userPrompt: context.userAction,
+  };
+
   return runAgenticLoop(
     provider,
     modelId,
     systemInstruction,
-    contents,
+    messages,
     gameState,
+    generationDetails,
   );
 };
 
@@ -755,6 +756,7 @@ const runAgenticLoop = async (
   systemInstruction: string,
   initialContents: UnifiedMessage[],
   inputState: GameState,
+  generationDetails?: LogEntry["generationDetails"],
 ): Promise<{ response: GameResponse; logs: LogEntry[]; usage: TokenUsage }> => {
   // Use unified message format internally
   let conversationHistory: UnifiedMessage[] = [...initialContents];
@@ -863,7 +865,7 @@ const runAgenticLoop = async (
           systemInstruction,
           providerContents,
           undefined,
-          { tools: toolConfig },
+          { tools: toolConfig, generationDetails },
         );
 
         result = resultData.result;

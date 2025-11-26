@@ -243,7 +243,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                 ></path>
               </svg>
               <span className="text-sm font-bold uppercase">
-                {t("settings")}
+                {t("settings.title")}
               </span>
             </button>
             <button
@@ -285,7 +285,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                 ></path>
               </svg>
               <span className="text-sm font-bold uppercase">
-                {t("magicMirror")}
+                {t("magicMirror.title")}
               </span>
             </button>
             <button

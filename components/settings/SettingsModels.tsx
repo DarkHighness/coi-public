@@ -244,66 +244,68 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   : ""
               }`}
             >
-              <select
-                value={config.provider}
-                onChange={(e) =>
-                  updateFunction(sectionKey, "provider", e.target.value)
-                }
-                className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-full"
-              >
-                <option value="gemini" className="text-black dark:text-white">
-                  Gemini
-                </option>
-                <option value="openai" className="text-black dark:text-white">
-                  OpenAI
-                </option>
-                <option
-                  value="openrouter"
-                  className="text-black dark:text-white"
-                >
-                  OpenRouter
-                </option>
-              </select>
-
-              <div className="col-span-2 relative">
+              <div className="flex flex-col md:flex-row gap-3 col-span-1 md:col-span-3">
                 <select
-                  value={config.modelId}
+                  value={config.provider}
                   onChange={(e) =>
-                    updateFunction(sectionKey, "modelId", e.target.value)
+                    updateFunction(sectionKey, "provider", e.target.value)
                   }
-                  className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
-                    !isModelValid && !loadingModels
-                      ? "border-red-500 text-red-500"
-                      : "border-theme-border"
-                  }`}
-                  disabled={loadingModels}
+                  className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-full md:w-1/3"
                 >
+                  <option value="gemini" className="text-black dark:text-white">
+                    Gemini
+                  </option>
+                  <option value="openai" className="text-black dark:text-white">
+                    OpenAI
+                  </option>
                   <option
-                    value={config.modelId}
+                    value="openrouter"
                     className="text-black dark:text-white"
                   >
-                    {config.modelId} (Current)
+                    OpenRouter
                   </option>
-                  {modelList.map((m) => (
+                </select>
+
+                <div className="relative w-full md:w-2/3">
+                  <select
+                    value={config.modelId}
+                    onChange={(e) =>
+                      updateFunction(sectionKey, "modelId", e.target.value)
+                    }
+                    className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
+                      !isModelValid && !loadingModels
+                        ? "border-red-500 text-red-500"
+                        : "border-theme-border"
+                    }`}
+                    disabled={loadingModels}
+                  >
                     <option
-                      key={m.id}
-                      value={m.id}
+                      value={config.modelId}
                       className="text-black dark:text-white"
                     >
-                      {m.name || m.id}
+                      {config.modelId} ({t("saveManager.current") || "Current"})
                     </option>
-                  ))}
-                </select>
-                {loadingModels && (
-                  <div className="absolute right-2 top-2 text-theme-muted text-xs">
-                    {t("loadingGeneric")}
-                  </div>
-                )}
-                {!isModelValid && !loadingModels && (
-                  <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-                    Model not found in list. Please select a valid model.
-                  </div>
-                )}
+                    {modelList.map((m) => (
+                      <option
+                        key={m.id}
+                        value={m.id}
+                        className="text-black dark:text-white"
+                      >
+                        {m.name || m.id}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingModels && (
+                    <div className="absolute right-2 top-2 text-theme-muted text-xs">
+                      {t("loadingGeneric")}
+                    </div>
+                  )}
+                  {!isModelValid && !loadingModels && (
+                    <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+                      {t("settings.modelNotFound")}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {sectionKey === "image" && (

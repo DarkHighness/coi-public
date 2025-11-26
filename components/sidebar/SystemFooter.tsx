@@ -36,7 +36,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               onCloseMobile();
             }}
             className="flex-1 py-2 px-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative border-r border-theme-border"
-            title={t("magicMirror")}
+            title={t("magicMirror.title")}
           >
             <svg
               className="w-5 h-5 mr-2 text-theme-primary group-hover:scale-110 transition-transform"
@@ -51,7 +51,9 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
                 d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
               ></path>
             </svg>
-            <span className="text-sm font-medium">{t("magicMirror")}</span>
+            <span className="text-sm font-medium">
+              {t("magicMirror.title")}
+            </span>
           </button>
           <button
             onClick={() => {
@@ -145,7 +147,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
                 d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
               ></path>
             </svg>
-            {t("settings")}
+            {t("settings.title")}
           </button>
         </div>
 

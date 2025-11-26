@@ -63,7 +63,8 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
         <div className="px-3 pb-3 space-y-2 border-t border-theme-border/20 pt-2">
           <div>
             <label className="text-[9px] uppercase tracking-widest text-green-500 font-bold block mb-1">
-              Input
+              {/* @ts-ignore */}
+              {t("logPanel.input") || "Input"}
             </label>
             <pre className="text-[10px] text-theme-muted/80 bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words">
               {JSON.stringify(call.input, null, 2)}
@@ -73,7 +74,8 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
             <label
               className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-theme-info" : "text-theme-error"}`}
             >
-              Output
+              {/* @ts-ignore */}
+              {t("logPanel.output") || "Output"}
             </label>
             <pre
               className={`text-[10px] bg-black/20 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap break-words ${isSuccess ? "text-theme-muted/80" : "text-theme-error"}`}
@@ -139,10 +141,10 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
               {logs.length} {t("turns") || "turns"}
             </span>
             <span className="text-xs text-theme-primary">
-              {totalToolCalls} {t("toolCalls") || "tool calls"}
+              {totalToolCalls} {t("logPanel.calls") || "tool calls"}
             </span>
             <span className="text-xs text-theme-muted">
-              {totalTokens.toLocaleString()} tokens
+              {totalTokens.toLocaleString()} {t("logPanel.tokens") || "tokens"}
             </span>
           </div>
         </div>
@@ -171,9 +173,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                 d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
               ></path>
             </svg>
-            <p>
-              {t("logs.noLogsInSession") || "No logs recorded in this session."}
-            </p>
+            <p>{t("logPanel.noLogs") || "No logs recorded in this session."}</p>
           </div>
         )}
 
@@ -222,14 +222,14 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   </span>
                   {hasToolCalls && (
                     <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 py-0.5 rounded">
-                      {log.toolCalls!.length} calls
+                      {log.toolCalls!.length} {t("logPanel.calls") || "calls"}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
                   {log.usage && (
                     <span className="text-[10px] text-theme-muted hidden md:inline">
-                      {log.usage.totalTokens} tokens
+                      {log.usage.totalTokens} {t("logPanel.tokens") || "tokens"}
                     </span>
                   )}
                   <span className="text-[10px] text-theme-muted">
@@ -254,11 +254,102 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
               {/* Log Body - Expanded */}
               {isExpanded && (
                 <div className="p-4 space-y-4">
+                  {/* Generation Details Section */}
+                  {log.generationDetails && (
+                    <div className="space-y-4 border-b border-theme-border/30 pb-4">
+                      <label className="text-[10px] uppercase tracking-widest text-theme-primary font-bold block mb-2">
+                        {t("logPanel.generationContext") ||
+                          "Generation Context"}
+                      </label>
+
+                      {log.generationDetails.userPrompt && (
+                        <div className="space-y-1">
+                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                            {t("logPanel.userAction") || "User Action"}
+                          </span>
+                          <div className="bg-black/10 rounded border border-theme-border/30 p-2">
+                            <pre className="text-[10px] text-theme-text whitespace-pre-wrap break-words">
+                              {log.generationDetails.userPrompt}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {log.generationDetails.dynamicContext && (
+                        <div className="space-y-1">
+                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                            {t("logPanel.dynamicStoryMemory") ||
+                              "Dynamic Story Memory"}
+                          </span>
+                          <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
+                            <pre className="text-[10px] text-theme-muted/80 whitespace-pre-wrap break-words">
+                              {log.generationDetails.dynamicContext}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {log.generationDetails.ragContext && (
+                        <div className="space-y-1">
+                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                            {t("logPanel.ragContext") || "RAG Context"}
+                          </span>
+                          <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
+                            <pre className="text-[10px] text-theme-muted/80 whitespace-pre-wrap break-words">
+                              {log.generationDetails.ragContext}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {log.generationDetails.ragQueries &&
+                        log.generationDetails.ragQueries.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-[9px] text-theme-muted uppercase font-bold">
+                              {t("logPanel.ragQueries") || "RAG Queries"}
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {log.generationDetails.ragQueries.map((q, i) => (
+                                <span
+                                  key={i}
+                                  className="text-[10px] bg-theme-surface-highlight border border-theme-border/50 px-2 py-1 rounded text-theme-muted"
+                                >
+                                  {q}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {log.generationDetails.systemPrompt && (
+                        <div className="space-y-1">
+                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                            {t("logPanel.systemPrompt") || "System Prompt"}
+                          </span>
+                          <details className="group">
+                            <summary className="text-[10px] cursor-pointer hover:text-theme-primary transition-colors select-none">
+                              {t("logPanel.showSystemPrompt") ||
+                                "Show System Prompt"}{" "}
+                              ({log.generationDetails.systemPrompt.length}{" "}
+                              {t("logPanel.chars") || "chars"})
+                            </summary>
+                            <div className="bg-black/10 rounded border border-theme-border/30 p-2 mt-2 max-h-[200px] overflow-auto">
+                              <pre className="text-[10px] text-theme-muted/60 whitespace-pre-wrap break-words">
+                                {log.generationDetails.systemPrompt}
+                              </pre>
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Tool Calls Section */}
                   {hasToolCalls && (
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-widest text-theme-primary font-bold block">
-                        Tool Calls ({log.toolCalls!.length})
+                        {t("logPanel.toolCalls") || "Tool Calls"} (
+                        {log.toolCalls!.length})
                       </label>
                       <div className="space-y-2">
                         {log.toolCalls!.map((call, idx) => (
@@ -274,7 +365,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       {log.request && (
                         <div className="space-y-2 min-w-0">
                           <label className="text-[10px] uppercase tracking-widest text-green-500 font-bold block">
-                            Request
+                            {t("logPanel.request") || "Request"}
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
                             <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap break-words">
@@ -290,7 +381,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                           <label
                             className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-theme-error" : "text-theme-info"}`}
                           >
-                            Response
+                            {t("logPanel.response") || "Response"}
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
                             <pre
@@ -310,17 +401,21 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   {log.usage && (
                     <div className="pt-2 border-t border-theme-border/30 flex flex-wrap justify-end gap-4 text-xs text-theme-primary/80 items-center">
                       <span>
-                        <strong className="text-theme-primary">Prompt:</strong>{" "}
+                        <strong className="text-theme-primary">
+                          {t("logPanel.prompt") || "Prompt:"}
+                        </strong>{" "}
                         {log.usage.promptTokens}
                       </span>
                       <span>
                         <strong className="text-theme-primary">
-                          Completion:
+                          {t("logPanel.completion") || "Completion:"}
                         </strong>{" "}
                         {log.usage.completionTokens}
                       </span>
                       <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">
-                        <strong className="text-theme-primary">Total:</strong>{" "}
+                        <strong className="text-theme-primary">
+                          {t("logPanel.total") || "Total:"}
+                        </strong>{" "}
                         {log.usage.totalTokens}
                       </span>
                     </div>

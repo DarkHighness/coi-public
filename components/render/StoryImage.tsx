@@ -2,6 +2,7 @@ import React from "react";
 import { MagicMirrorButton } from "./MagicMirrorButton";
 import { ImagePlaceholder } from "./ImagePlaceholder";
 import { ImageLightbox } from "./ImageLightbox";
+import { useTranslation } from "react-i18next";
 
 interface StoryImageProps {
   imageUrl?: string;
@@ -32,6 +33,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   themeFont,
   imageSkipped,
 }) => {
+  const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
 
   if (disableImages) return null;
@@ -49,7 +51,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
         >
           <img
             src={imageUrl}
-            alt="Scene visualization"
+            alt={t("storyImage.sceneVisualization")}
             className="w-full h-full object-cover transition-transform duration-[2000ms] ease-in-out group-hover:scale-105 opacity-90 hover:opacity-100 animate-[blur-in_1s_ease-out]"
             style={{
               animation: "blur-in 1s ease-out forwards",
@@ -67,7 +69,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                   onRegenerate();
                 }}
                 className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-                title="Regenerate Image"
+                title={t("storyImage.regenerate")}
               >
                 <svg
                   className="w-5 h-5"

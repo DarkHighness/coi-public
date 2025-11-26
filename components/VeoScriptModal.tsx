@@ -108,9 +108,9 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
               <p>{error}</p>
               <button
                 onClick={generate}
-                className="mt-4 px-4 py-2 bg-theme-surface border border-theme-border hover:border-theme-primary text-theme-text rounded transition-colors"
+                className="px-4 py-2 bg-theme-primary text-theme-bg rounded hover:bg-theme-primary/90 transition-colors"
               >
-                Retry
+                {t("common.retry") || "Retry"}
               </button>
             </div>
           ) : (

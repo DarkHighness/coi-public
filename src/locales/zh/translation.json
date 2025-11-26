@@ -56,7 +56,11 @@
   "tryAgain": "重试",
   "error": "与宇宙的连接中断了... (API 错误，请重试)",
   "builtWith": "由 Gemini 3 Pro 驱动",
-  "magicMirror": "魔镜 (Veo 动画)",
+  "magicMirror": {
+    "title": "生成视频 (Veo)",
+    "artifact": "神器",
+    "prompt": "提示词"
+  },
   "veoScript": {
     "title": "Veo 脚本生成",
     "generate": "生成 Veo 脚本",
@@ -112,13 +116,19 @@
   "narrativeStyle": "叙事风格",
   "startThisAdventure": "开始这个冒险",
   "validate-connection": "正在尝试与世界连接...",
-  "timeline": "旅程时间轴",
-  "timeline.empty": "旅程尚未开始...",
-  "timeline.export": "导出时间轴",
-  "timeline.exportTitle": "无尽编年史",
-  "timeline.exportSubtitle": "旅程时间轴导出",
-  "timeline.generatedBy": "由无尽编年史生成",
-  "character": "角色状态",
+  "timeline": {
+    "title": "旅程时间轴",
+    "moment": "时刻",
+    "empty": "编年史等待书写...",
+    "export": "导出时间轴",
+    "exportTitle": "无尽编年史",
+    "exportSubtitle": "时间轴导出",
+    "generatedBy": "由无尽编年史生成"
+  },
+  "character": {
+    "title": "角色状态",
+    "severity": "严重程度："
+  },
   "showChoices": "显示选项",
   "hideChoices": "隐藏选项",
   "skills": "技能",
@@ -200,7 +210,10 @@
   },
   "narrator": "讲述者",
   "you": "你",
-  "settings": "设置",
+  "settings": {
+    "title": "设置",
+    "modelNotFound": "列表中未找到模型。请选择一个有效的模型。"
+  },
   "themeMode": "主题模式",
   "hideSystem": "隐藏系统",
   "showSystem": "显示系统",
@@ -224,7 +237,6 @@
   },
   "search": "搜索",
   "noResults": "未找到结果",
-  "locations": "地点",
   "environmentNames": {
     "cave": "洞穴",
     "city": "城市",
@@ -341,9 +353,10 @@
     "timeline": "时间轴"
   },
   "location": {
-    "title": "当前位置",
+    "current": "当前位置",
     "known": "已知地点",
-    "details": "地点详情"
+    "details": "地点详情",
+    "title": "地点"
   },
   "toast": {
     "itemAdded": "获得新物品",
@@ -508,5 +521,67 @@
   "endingHint": "你可以从之前的节点分支尝试不同的路线",
   "endingFinal": "这个故事已经结束了",
   "unlocked": "已解锁",
-  "secretAgenda": "隐藏议程"
+  "secretAgenda": "隐藏议程",
+  "tokenStats": {
+    "promptTokens": "提示词 Token",
+    "completionTokens": "生成 Token",
+    "totalTokens": "总 Token",
+    "in": "输入:",
+    "out": "输出:",
+    "total": "总计:"
+  },
+  "storyImage": {
+    "sceneVisualization": "场景可视化",
+    "regenerate": "重新生成图片"
+  },
+  "magicMirrorAction": {
+    "animate": "动画化"
+  },
+  "feedHeader": {
+    "theme": "主题",
+    "location": "地点",
+    "music": "音乐"
+  },
+  "logPanel": {
+    "input": "输入",
+    "output": "输出",
+    "tokens": "Token",
+    "calls": "调用",
+    "generationContext": "生成上下文",
+    "userAction": "用户行动",
+    "dynamicStoryMemory": "动态故事记忆",
+    "ragContext": "RAG 上下文",
+    "ragQueries": "RAG 查询",
+    "systemPrompt": "系统提示词",
+    "showSystemPrompt": "显示系统提示词",
+    "chars": "字符",
+    "toolCalls": "工具调用",
+    "request": "请求",
+    "response": "响应",
+    "prompt": "提示词:",
+    "completion": "生成:",
+    "total": "总计:",
+    "noLogs": "本次会话暂无日志记录。"
+  },
+  "saveManager": {
+    "startPrompt": "开始新游戏以创建第一个存档",
+    "current": "当前",
+    "export": "导出",
+    "delete": "删除"
+  },
+  "sidebar": {
+    "tokens": "Token:"
+  },
+  "common": {
+    "retry": "重试"
+  },
+  "app": {
+    "errors": {
+      "critical": "检测到严重错误",
+      "description": "游戏遇到严重错误。这可能是由于数据损坏、PWA 更新问题或网络故障引起的。",
+      "label": "错误:",
+      "resetDescription": "要解决此问题，您需要重置游戏数据。这将清除所有存档和设置。",
+      "resetButton": "清除数据并重置游戏"
+    }
+  }
 }

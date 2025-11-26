@@ -191,11 +191,17 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
                 className="w-full h-full object-contain"
               />
             ) : image ? (
-              <img
-                src={image}
-                alt="Artifact"
-                className="w-full h-full object-contain"
-              />
+              <>
+                <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
+                  <span className="text-xl">🔮</span>{" "}
+                  {t("magicMirror.artifact") || "Artifact"}
+                </h3>
+                <img
+                  src={image}
+                  alt={t("magicMirror.artifact") || "Artifact"}
+                  className="w-full h-full object-contain"
+                />
+              </>
             ) : (
               <div className="text-center p-8 text-theme-muted/40">
                 <svg
@@ -280,10 +286,8 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
 
           {/* Prompt Input */}
           <div className="relative z-10">
-            <label className="block text-xs uppercase tracking-widest text-theme-primary mb-2 font-bold flex items-center gap-2">
-              <span className="w-1 h-1 bg-theme-primary rounded-full"></span>
-              Prompt
-              <span className="w-1 h-1 bg-theme-primary rounded-full"></span>
+            <label className="text-xs font-bold text-theme-primary uppercase tracking-widest block mb-2">
+              {t("magicMirror.prompt") || "Prompt"}
             </label>
             <textarea
               value={prompt}

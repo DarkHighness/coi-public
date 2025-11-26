@@ -265,6 +265,14 @@ export interface LogEntry {
   request?: any;
   response?: any;
   usage?: TokenUsage;
+  generationDetails?: {
+    dynamicContext?: string;
+    ragContext?: string;
+    ragQueries?: string[];
+    systemPrompt?: string;
+    userPrompt?: string;
+    modelConfig?: any;
+  };
 }
 
 export interface Faction {

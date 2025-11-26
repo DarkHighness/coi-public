@@ -67,7 +67,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             <span
               className="text-base md:text-lg leading-none"
               role="img"
-              aria-label="theme"
+              aria-label={t("feedHeader.theme")}
             >
               🎭
             </span>
@@ -87,7 +87,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                 <span
                   className="text-base md:text-lg leading-none shrink-0"
                   role="img"
-                  aria-label="location"
+                  aria-label={t("feedHeader.location")}
                 >
                   📍
                 </span>
@@ -107,7 +107,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                 <span
                   className="text-base md:text-lg leading-none shrink-0"
                   role="img"
-                  aria-label="music"
+                  aria-label={t("feedHeader.music")}
                 >
                   {isMuted ? "🔇" : "🎵"}
                 </span>

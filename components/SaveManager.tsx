@@ -85,9 +85,10 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                 ></path>
               </svg>
               <p className="text-theme-muted text-lg">{t("saves.empty")}</p>
-              <p className="text-theme-muted/60 text-sm mt-2">
-                Start a new game to create your first save
-              </p>
+              <div className="text-center py-8 text-theme-muted italic">
+                {t("saveManager.startPrompt") ||
+                  "Start a new game to create your first save"}
+              </div>
             </div>
           )}
 
@@ -130,8 +131,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                         <h3 className="font-bold text-theme-text text-base flex items-center gap-2">
                           {slot.name}
                           {isCurrent && (
-                            <span className="text-[10px] px-2 py-0.5 bg-theme-primary text-theme-bg rounded-full uppercase tracking-wider">
-                              Current
+                            <span className="text-[10px] bg-theme-primary text-theme-bg px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                              {t("saveManager.current") || "Current"}
                             </span>
                           )}
                         </h3>
@@ -176,9 +177,12 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                           </button>
                         )}
                         <button
-                          onClick={() => handleExport(slot)}
-                          className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded transition-colors"
-                          title="Export"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExport(slot);
+                          }}
+                          className="p-1.5 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
+                          title={t("saveManager.export") || "Export"}
                         >
                           <svg
                             className="w-5 h-5"
@@ -195,7 +199,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                           </svg>
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (
                               window.confirm(
                                 t("saves.confirmDelete") || "Delete this save?",
@@ -204,8 +209,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                               onDelete(slot.id);
                             }
                           }}
-                          className="p-2 text-theme-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
-                          title="Delete"
+                          className="p-1.5 text-theme-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                          title={t("saveManager.delete") || "Delete"}
                         >
                           <svg
                             className="w-5 h-5"

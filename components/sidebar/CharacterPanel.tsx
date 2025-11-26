@@ -422,7 +422,9 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
           <div className="mt-2 pt-2 border-t border-current/20">
             {condition.visible?.perceivedSeverity && (
               <p className="text-[10px] opacity-70">
-                <span className="font-semibold">Severity:</span>{" "}
+                <span className="font-semibold">
+                  {t("character.severity") || "Severity:"}
+                </span>{" "}
                 {condition.visible.perceivedSeverity}
               </p>
             )}
@@ -522,7 +524,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             ></path>
           </svg>
-          {t("character")}
+          {t("character.title")}
         </div>
         <svg
           className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -550,9 +552,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 >
                   {character.name}
                 </h3>
-                <p className="text-xs text-theme-muted uppercase tracking-wider">
-                  {character.title}
-                </p>
+                <span className="text-xs font-bold text-theme-muted uppercase tracking-wider">
+                  {t("character.severity") || "Severity:"}
+                </span>
               </div>
               {character.race && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">

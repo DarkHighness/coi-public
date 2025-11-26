@@ -469,13 +469,12 @@ export const useGameEngine = () => {
       const sanitizedChoices = Array.isArray(response.choices)
         ? response.choices.map((c) => {
             if (typeof c === "object" && c !== null) {
-              const obj = c as { choice?: string; text?: string; label?: string };
-              return (
-                obj.choice ||
-                obj.text ||
-                obj.label ||
-                JSON.stringify(c)
-              );
+              const obj = c as {
+                choice?: string;
+                text?: string;
+                label?: string;
+              };
+              return obj.choice || obj.text || obj.label || JSON.stringify(c);
             }
             return String(c);
           })

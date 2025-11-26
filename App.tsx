@@ -445,27 +445,30 @@ export default function App() {
       {/* Critical Error Modal */}
       {(persistenceError || appError) && (
         <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-          <div className="bg-gray-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-2xl shadow-red-900/20 text-center">
-            <div className="text-5xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-red-500 mb-4">
-              Critical Error Detected
+          <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 max-w-md w-full text-center space-y-4">
+            <div className="text-4xl">⚠️</div>
+            <h2 className="text-xl font-bold text-red-500">
+              {t("app.errors.critical") || "Critical Error Detected"}
             </h2>
-            <p className="text-gray-300 mb-6">
-              The game encountered a critical error. This is likely due to data
-              corruption, a PWA update issue, or network failure.
+            <p className="text-sm text-theme-muted">
+              {t("app.errors.description") ||
+                "The game encountered a critical error. This is likely due to data corruption, a PWA update issue, or network failure."}
             </p>
-            <div className="bg-black/50 p-3 rounded mb-6 font-mono text-xs text-red-300 overflow-auto max-h-32 text-left border border-red-900/30">
-              Error: {persistenceError || appError}
+            <div className="bg-black/30 p-3 rounded text-left overflow-auto max-h-32">
+              <p className="text-xs text-red-400 font-mono">
+                {t("app.errors.label") || "Error:"}{" "}
+                {persistenceError || appError}
+              </p>
             </div>
-            <p className="text-gray-400 text-sm mb-6">
-              To fix this, you need to reset the game data. This will clear all
-              saves and settings.
+            <p className="text-xs text-theme-muted/80">
+              {t("app.errors.resetDescription") ||
+                "To fix this, you need to reset the game data. This will clear all saves and settings."}
             </p>
             <button
               onClick={hardReset}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition-colors uppercase tracking-widest"
+              className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors uppercase tracking-wider text-xs"
             >
-              Clear Data & Reset Game
+              {t("app.errors.resetButton") || "Clear Data & Reset Game"}
             </button>
           </div>
         </div>

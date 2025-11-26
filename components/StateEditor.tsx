@@ -206,7 +206,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Header */}
         <div className="flex-none p-4 border-b border-theme-border flex items-center justify-between bg-theme-bg/50">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🛠️</span>
+            <span className="text-2xl" aria-hidden="true">
+              🛠️
+            </span>
             <div>
               <h2 className="text-xl font-bold text-theme-primary">
                 {t("stateEditor.title") || "State Editor"}
@@ -312,12 +314,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                   error ? "border-2 border-theme-error/50" : ""
                 }`}
                 spellCheck={false}
-                placeholder="Loading..."
+                placeholder={t("loadingGeneric") || "Loading..."}
               />
               {/* Error indicator */}
               {error && (
                 <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
-                  ⚠️ {error}
+                  <span aria-hidden="true">⚠️</span> {error}
                 </div>
               )}
             </div>
@@ -327,7 +329,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Footer */}
         <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
           <div className="text-xs text-theme-muted">
-            ⚠️{" "}
+            <span aria-hidden="true">⚠️</span>{" "}
             {t("stateEditor.warning") ||
               "Changes are applied immediately. Be careful!"}
           </div>

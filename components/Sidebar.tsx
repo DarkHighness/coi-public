@@ -66,9 +66,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider drop-shadow-sm text-center`}
         >
           {t("titlePart1")}
-          <span className="block text-sm text-theme-muted font-sans tracking-normal mt-1">
-            {t("titlePart2")}
-          </span>
+          <div className="text-[10px] text-theme-muted/50 font-mono text-center mt-2">
+            {t("sidebar.tokens") || "Tokens:"}{" "}
+            {gameState.totalTokens.toLocaleString()}
+          </div>
         </h1>
 
         <div className="absolute right-6 top-6 hidden md:block">

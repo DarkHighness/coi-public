@@ -192,7 +192,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               {/* Location Display */}
               <div className="mt-2">
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                  {t("location") || "Location"}
+                  {t("location.current") || "Location"}
                 </span>
                 <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
                   {getLocationName(rel.currentLocation)}

@@ -68,7 +68,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 mt-2 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2 relative group`}
         >
           <span className="w-8 h-px bg-theme-primary/50"></span>
-          {t("timeline")}
+          {t("timeline.title")}
           <span className="w-8 h-px bg-theme-primary/50"></span>
 
           {/* Export Button */}
@@ -184,11 +184,16 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                       className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}
                     >
                       <span className="font-mono text-theme-primary/70">
-                        {seg.stateSnapshot?.time || "Unknown Time"}
+                        {seg.stateSnapshot?.time ||
+                          t("timeline.unknown_time") ||
+                          "Unknown Time"}
                       </span>
                       {seg.stateSnapshot?.currentLocation && (
                         <>
                           <span className="text-theme-muted/50">•</span>
+                          <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold">
+                            {t("timeline.moment") || "Moment"} {index + 1}
+                          </span>
                           <span className="text-theme-muted/80">
                             {seg.stateSnapshot.currentLocation}
                           </span>

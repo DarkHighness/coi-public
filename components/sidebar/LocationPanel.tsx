@@ -352,7 +352,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
             ></path>
           </svg>
-          {t("locations")}
+          {t("location.known")}
           <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
             {locations.length}
           </span>
