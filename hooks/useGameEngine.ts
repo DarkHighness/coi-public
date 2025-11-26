@@ -7,6 +7,7 @@ import {
   LanguageCode,
   StorySummary,
   Relationship,
+  Location as GameLocation,
 } from "../types";
 import { useGameState } from "./useGameState";
 import { useGamePersistence } from "./useGamePersistence";
@@ -288,7 +289,7 @@ export const useGameEngine = () => {
     }
 
     // --- Fork-Safe Summary Retrieval ---
-    let baseSummaries: any[] = []; // Will be StorySummary[] once fully migrated
+    let baseSummaries: StorySummary[] = []; // Will be StorySummary[] once fully migrated
     let baseIndex = 0;
 
     // Use effectiveParentId for context
@@ -378,13 +379,30 @@ export const useGameEngine = () => {
           .join("\n");
 
         // Get previous summary text for context
-        const previousSummary =
+        // Get previous summary text for context
+        const lastSummary =
           effectiveSummaries.length > 0
-            ? typeof effectiveSummaries[effectiveSummaries.length - 1] ===
-              "string"
-              ? effectiveSummaries[effectiveSummaries.length - 1]
-              : effectiveSummaries[effectiveSummaries.length - 1].displayText
-            : "";
+            ? effectiveSummaries[effectiveSummaries.length - 1]
+            : undefined;
+        const previousSummary = lastSummary || {
+          id: 0,
+          displayText: "",
+          visible: {
+            narrative: "",
+            majorEvents: [],
+            characterDevelopment: "",
+            worldState: "",
+          },
+          hidden: {
+            truthNarrative: "",
+            hiddenPlots: [],
+            npcActions: [],
+            worldTruth: "",
+            unrevealed: [],
+          },
+          timeRange: { from: "", to: "" },
+          nodeRange: { fromIndex: 0, toIndex: 0 },
+        };
 
         // Call Summary Service
         const sumResult = await summarizeContext(
@@ -451,10 +469,11 @@ export const useGameEngine = () => {
       const sanitizedChoices = Array.isArray(response.choices)
         ? response.choices.map((c) => {
             if (typeof c === "object" && c !== null) {
+              const obj = c as { choice?: string; text?: string; label?: string };
               return (
-                (c as any).choice ||
-                (c as any).text ||
-                (c as any).label ||
+                obj.choice ||
+                obj.text ||
+                obj.label ||
                 JSON.stringify(c)
               );
             }
@@ -720,9 +739,12 @@ export const useGameEngine = () => {
         stateChanges,
         legacyMessage: toastMessage,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      const errorMsg = error.message || "Error connecting to the universe...";
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Error connecting to the universe...";
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
@@ -1003,11 +1025,30 @@ export const useGameEngine = () => {
           status: snapshot.character?.status || "Normal",
         },
         activeNPCs: (snapshot.relationships || [])
-          .filter(
-            (r: any) =>
+          .filter((r: Relationship) => {
+            // Resolve player location ID
+            const playerLoc = snapshot.locations?.find(
+              (l: GameLocation) =>
+                l.name === snapshot.currentLocation ||
+                l.id === snapshot.currentLocation,
+            );
+            const playerLocId = playerLoc?.id;
+            const playerLocName = playerLoc?.name;
+
+            // Check if NPC is in the same location
+            const isAtLocation =
+              r.currentLocation &&
+              r.currentLocation !== "unknown" &&
+              (r.currentLocation === playerLocId ||
+                r.currentLocation === playerLocName ||
+                r.currentLocation === snapshot.currentLocation);
+
+            return (
               r.visible?.relationshipType !== "Absent" &&
-              r.visible?.relationshipType !== "Dead",
-          )
+              r.visible?.relationshipType !== "Dead" &&
+              isAtLocation
+            );
+          })
           .map((r: any) => ({
             name: r.name,
             description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,

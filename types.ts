@@ -416,7 +416,7 @@ export interface UIState {
 export interface Relationship {
   id: string;
   known?: boolean; // Whether the player has met/knows this character
-  currentLocation?: string; // NPC's current location ID (e.g., "loc:1"), used to determine if NPC is nearby
+  currentLocation?: string | "unknown"; // NPC's current location ID (e.g., "loc:1") or "unknown"
   visible: {
     name: string; // The name the player knows them by
     description: string;
@@ -765,7 +765,7 @@ export interface CharacterAction {
     trueCause?: string; // For conditions
   };
 
-  value?: any;
+  value?: string | number | boolean | null;
   intValue?: number;
   strValue?: string;
   maxValue?: number;

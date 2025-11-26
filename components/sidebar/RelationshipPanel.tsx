@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Relationship, ListState } from "../../types";
+import { TFunction } from "i18next";
+import { Relationship, ListState, Location } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 
 interface RelationshipPanelProps {
   relationships: Relationship[];
+  locations?: Location[];
   themeFont: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
@@ -13,6 +15,7 @@ interface RelationshipPanelProps {
 
 interface RelationshipItemProps {
   rel: Omit<Relationship, "id"> & { id: string | number };
+  locations?: Location[];
   enableDrag: boolean;
   expandedItems: Set<string | number>;
   isEditMode: boolean;
@@ -26,11 +29,12 @@ interface RelationshipItemProps {
   onTogglePin: (id: string | number) => void;
   isPinned: (id: string | number) => boolean;
   getAffinityColor: (val: number) => string;
-  t: any;
+  t: TFunction;
 }
 
 const RelationshipItem: React.FC<RelationshipItemProps> = ({
   rel,
+  locations,
   enableDrag,
   expandedItems,
   isEditMode,
@@ -57,6 +61,12 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
     if (isHighlight) {
       setIsHighlight(false);
     }
+  };
+
+  const getLocationName = (locId?: string) => {
+    if (!locId || locId === "unknown") return t("unknown") || "Unknown";
+    const loc = locations?.find((l) => l.id === locId || l.name === locId);
+    return loc ? loc.name : locId;
   };
 
   return (
@@ -179,6 +189,16 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 </div>
               )}
 
+              {/* Location Display */}
+              <div className="mt-2">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                  {t("location") || "Location"}
+                </span>
+                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
+                  {getLocationName(rel.currentLocation)}
+                </p>
+              </div>
+
               {/* Unlocked Hidden Truth */}
               {rel.unlocked && (
                 <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
@@ -300,6 +320,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
 export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   relationships = [],
+  locations = [],
   themeFont,
   listState,
   onUpdateList,
@@ -510,6 +531,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               <RelationshipItem
                 key={rel.id}
                 rel={rel}
+                locations={locations}
                 enableDrag={true}
                 expandedItems={expandedItems}
                 isEditMode={isEditMode}
@@ -545,6 +567,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           <RelationshipItem
             key={item.id}
             rel={item}
+            locations={locations}
             enableDrag={false}
             expandedItems={expandedItems}
             isEditMode={false}

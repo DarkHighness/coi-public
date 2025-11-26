@@ -147,6 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
           <RelationshipPanel
             relationships={gameState.relationships || []}
+            locations={gameState.locations || []}
             themeFont={currentThemeConfig.fontClass}
             listState={gameState.uiState?.relationships}
             onUpdateList={(newState) =>
