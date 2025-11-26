@@ -194,7 +194,68 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       )}
                     </div>
                     <div className="text-[10px] text-theme-text/70 italic">
-                      {faction.visible}
+                      {faction.visible.agenda}
+                    </div>
+
+                    {/* Visible Extended Info */}
+                    <div className="mt-2 space-y-1 border-t border-theme-border/30 pt-1">
+                      {faction.visible.members &&
+                        faction.visible.members.length > 0 && (
+                          <div className="text-[10px] text-theme-muted">
+                            <span className="text-theme-primary/80 font-bold block mb-1">
+                              {t("members") || "Members"}:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {faction.visible.members.map((member, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-1.5 py-0.5 bg-theme-surface-highlight rounded text-theme-text/90 border border-theme-border/50 flex items-center gap-1"
+                                  title={member.title}
+                                >
+                                  {member.name}
+                                  {member.title && (
+                                    <span className="text-[9px] text-theme-muted opacity-75">
+                                      ({member.title})
+                                    </span>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      {faction.visible.influence && (
+                        <div className="text-[10px] text-theme-muted flex items-start gap-1">
+                          <span className="text-theme-primary/80 font-bold whitespace-nowrap">
+                            {t("influence") || "Influence"}:
+                          </span>
+                          <span className="text-theme-text/80">
+                            {faction.visible.influence}
+                          </span>
+                        </div>
+                      )}
+                      {faction.visible.relations &&
+                        Object.keys(faction.visible.relations).length > 0 && (
+                          <div className="text-[10px] text-theme-muted">
+                            <span className="text-theme-primary/80 font-bold block mb-0.5">
+                              {t("relations") || "Relations"}:
+                            </span>
+                            <div className="grid grid-cols-1 gap-0.5 pl-1">
+                              {Object.entries(faction.visible.relations).map(
+                                ([key, val]) => (
+                                  <div
+                                    key={key}
+                                    className="flex justify-between"
+                                  >
+                                    <span>{key}</span>
+                                    <span className="text-theme-text/70 italic">
+                                      {val}
+                                    </span>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
                     </div>
 
                     {/* Hidden content - only shown when unlocked */}
@@ -214,8 +275,66 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           </svg>
                           {t("secretAgenda") || "Secret Agenda"}
                         </div>
-                        <div className="text-[10px] text-red-300/80 not-italic">
-                          {faction.hidden}
+                        <div className="text-[10px] text-red-300/80 not-italic mb-2">
+                          {faction.hidden.agenda}
+                        </div>
+
+                        {/* Hidden Extended Info */}
+                        <div className="space-y-1">
+                          {faction.hidden.members &&
+                            faction.hidden.members.length > 0 && (
+                              <div className="text-[10px] text-red-300/60">
+                                <span className="text-yellow-500/80 font-bold block mb-1">
+                                  {t("members") || "Members"}:
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {faction.hidden.members.map((member, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-1.5 py-0.5 bg-red-900/30 rounded text-red-200/90 border border-red-500/30 flex items-center gap-1"
+                                      title={member.title}
+                                    >
+                                      {member.name}
+                                      {member.title && (
+                                        <span className="text-[9px] text-red-300/60 opacity-75">
+                                          ({member.title})
+                                        </span>
+                                      )}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          {faction.hidden.influence && (
+                            <div className="text-[10px] text-red-300/60 flex items-start gap-1">
+                              <span className="text-yellow-500/80 font-bold whitespace-nowrap">
+                                {t("influence") || "Influence"}:
+                              </span>
+                              <span>{faction.hidden.influence}</span>
+                            </div>
+                          )}
+                          {faction.hidden.relations &&
+                            Object.keys(faction.hidden.relations).length >
+                              0 && (
+                              <div className="text-[10px] text-red-300/60">
+                                <span className="text-yellow-500/80 font-bold block mb-0.5">
+                                  {t("relations") || "Relations"}:
+                                </span>
+                                <div className="grid grid-cols-1 gap-0.5 pl-1">
+                                  {Object.entries(faction.hidden.relations).map(
+                                    ([key, val]) => (
+                                      <div
+                                        key={key}
+                                        className="flex justify-between"
+                                      >
+                                        <span>{key}</span>
+                                        <span className="italic">{val}</span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </div>
+                            )}
                         </div>
                       </div>
                     )}

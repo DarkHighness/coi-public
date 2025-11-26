@@ -238,9 +238,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Section Tabs (Left) */}
-          <div className="w-48 flex-none border-r border-theme-border bg-theme-bg/30 overflow-y-auto py-2">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Section Tabs (Left on Desktop, Top on Mobile) */}
+          <div className="w-full md:w-48 flex-none border-b md:border-b-0 md:border-r border-theme-border bg-theme-bg/30 overflow-x-auto md:overflow-y-auto flex md:flex-col scrollbar-hide">
             {(Object.keys(SECTION_CONFIGS) as EditableSection[]).map(
               (section) => {
                 const config = SECTION_CONFIGS[section];
@@ -249,14 +249,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                   <button
                     key={section}
                     onClick={() => setActiveSection(section)}
-                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                    className={`flex-none md:w-full px-4 py-3 text-left flex items-center gap-3 transition-colors whitespace-nowrap ${
                       isActive
-                        ? "bg-theme-primary/20 text-theme-primary border-r-2 border-theme-primary"
+                        ? "bg-theme-primary/20 text-theme-primary border-b-2 md:border-b-0 md:border-r-2 border-theme-primary"
                         : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                     }`}
                   >
                     <span className="text-lg">{config.icon}</span>
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-sm font-medium md:truncate">
                       {t(config.labelKey) || section}
                     </span>
                   </button>
@@ -266,26 +266,26 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
 
           {/* Editor Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* Toolbar */}
             <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="text-lg flex-none">
                   {SECTION_CONFIGS[activeSection].icon}
                 </span>
-                <span className="font-medium text-theme-text">
+                <span className="font-medium text-theme-text truncate">
                   {t(SECTION_CONFIGS[activeSection].labelKey) || activeSection}
                 </span>
-                <span className="text-xs text-theme-muted">
+                <span className="text-xs text-theme-muted flex-none hidden sm:inline">
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
                 {hasChanges && (
-                  <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
+                  <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full flex-none">
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-none">
                 <button
                   onClick={handleFormat}
                   className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"

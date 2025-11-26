@@ -274,7 +274,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
       {isEditMode && (
         <div
           className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none self-stretch flex items-center justify-center"
-          title="Drag to reorder"
+          title={t("dragToReorder") || "Drag to reorder"}
           draggable={true}
           onDragStart={(e) => onDragStart(e, rel.id)}
           onClick={(e) => e.stopPropagation()}

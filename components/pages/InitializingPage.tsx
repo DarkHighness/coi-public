@@ -108,9 +108,11 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
             </div>
 
             <div className="flex flex-col items-center gap-1 text-[10px] text-theme-muted font-mono">
-              <div>Audio Preload: {audioProgress}%</div>
+              <div>
+                {t("initializing.audioPreload")}: {audioProgress}%
+              </div>
               <div className="flex items-center gap-2">
-                <span>Time Elapsed:</span>
+                <span>{t("initializing.timeElapsed")}:</span>
                 <GenerationTimer isActive={true} />
               </div>
             </div>

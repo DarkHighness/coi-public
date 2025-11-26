@@ -242,8 +242,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             {t("tree.map")}
           </h2>
           <p className="text-xs text-theme-muted mt-1">
-            Timeline Browser • {Object.keys(nodes).length} Moments • Drag to Pan
-            • Scroll to Zoom
+            {t("tree.subtitle", { count: Object.keys(nodes).length })}
           </p>
         </div>
         <button
@@ -452,11 +451,11 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                             ? t("gameOver") || "GAME OVER"
                             : ending === "victory"
                               ? t("victory") || "VICTORY"
-                              : ending === "true_ending"
-                                ? t("trueEnding") || "TRUE ENDING"
-                                : ending === "bad_ending"
-                                  ? t("badEnding") || "BAD END"
-                                  : t("ending") || "ENDING"
+                            : ending === "true_ending"
+                              ? t("trueEnding") || "TRUE ENDING"
+                            : ending === "bad_ending"
+                              ? t("badEnding") || "BAD END"
+                              : t("ending") || "ENDING"
                           : isModel
                             ? t("narrator")
                             : t("you")}
@@ -495,7 +494,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             <button
               onClick={() => centerNode(rootNodeId)}
               className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
-              title="Go to Start"
+              title={t("tree.goToStart") || "Go to Start"}
             >
               <svg
                 className="w-4 h-4"
@@ -514,7 +513,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             <button
               onClick={() => centerNode(activeNodeId)}
               className="p-2 hover:bg-theme-surface rounded-full hover:text-theme-primary transition-colors"
-              title="Go to Current"
+              title={t("tree.goToCurrent") || "Go to Current"}
             >
               <svg
                 className="w-4 h-4"

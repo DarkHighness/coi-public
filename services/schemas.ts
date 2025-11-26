@@ -454,12 +454,72 @@ export const storyOutlineSchema: JsonSchema = {
         properties: {
           name: { type: "string", description: "Name of the faction." },
           visible: {
-            type: "string",
-            description: "Public agenda or reputation.",
+            type: "object",
+            properties: {
+              agenda: {
+                type: "string",
+                description: "Public agenda or reputation.",
+              },
+              members: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string", description: "Name of the member" },
+                    title: {
+                      type: "string",
+                      description: "Optional title or role",
+                    },
+                  },
+                  required: ["name"],
+                },
+                description:
+                  "Publicly known members. NOT relationship keys.",
+              },
+              influence: {
+                type: "string",
+                description: "Perceived influence description.",
+              },
+              relations: {
+                type: "object",
+                description: "Public alliances/rivalries.",
+              },
+            },
+            required: ["agenda"],
           },
           hidden: {
-            type: "string",
-            description: "Secret agenda or corruption.",
+            type: "object",
+            properties: {
+              agenda: {
+                type: "string",
+                description: "Secret agenda or corruption.",
+              },
+              members: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string", description: "Name of the member" },
+                    title: {
+                      type: "string",
+                      description: "Optional title or role",
+                    },
+                  },
+                  required: ["name"],
+                },
+                description:
+                  "Secret members/leaders. NOT relationship keys.",
+              },
+              influence: {
+                type: "string",
+                description: "True influence description.",
+              },
+              relations: {
+                type: "object",
+                description: "Secret alliances/rivalries.",
+              },
+            },
+            required: ["agenda"],
           },
         },
         required: ["name", "visible"],

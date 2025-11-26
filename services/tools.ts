@@ -802,8 +802,62 @@ export const UPDATE_FACTION_TOOL = {
         type: "string",
         description: "Faction name. Required for 'add' action.",
       },
-      visible: { type: "string", description: "Public agenda/reputation." },
-      hidden: { type: "string", description: "Secret agenda/corruption." },
+      visible: {
+        type: "object",
+        properties: {
+          agenda: { type: "string", description: "Public agenda/reputation." },
+          members: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Name of the member" },
+                title: { type: "string", description: "Optional title or role" },
+              },
+              required: ["name"],
+            },
+            description:
+              "Publicly known members. NOT relationship keys.",
+          },
+          influence: {
+            type: "string",
+            description: "Perceived influence description.",
+          },
+          relations: {
+            type: "object",
+            description: "Public alliances/rivalries.",
+          },
+        },
+        description: "Publicly known information.",
+      },
+      hidden: {
+        type: "object",
+        properties: {
+          agenda: { type: "string", description: "Secret agenda/corruption." },
+          members: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Name of the member" },
+                title: { type: "string", description: "Optional title or role" },
+              },
+              required: ["name"],
+            },
+            description:
+              "Secret members/leaders. NOT relationship keys.",
+          },
+          influence: {
+            type: "string",
+            description: "True influence description.",
+          },
+          relations: {
+            type: "object",
+            description: "Secret alliances/rivalries.",
+          },
+        },
+        description: "Secret information (GM knowledge).",
+      },
       unlocked: {
         type: "boolean",
         description:

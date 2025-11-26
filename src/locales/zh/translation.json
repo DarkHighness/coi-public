@@ -66,6 +66,10 @@
     "error": "生成脚本失败，请重试。",
     "copied": "已复制到剪贴板！"
   },
+  "initializing": {
+    "audioPreload": "音频预加载",
+    "timeElapsed": "已用时间"
+  },
   "translating": "正在翻译编年史...",
   "system": "系统",
   "newGame": "新游戏",
@@ -163,7 +167,11 @@
   "success": "成功",
   "fail": "失败",
   "critFail": "大失败！",
-  "logs": "日志",
+  "logs": {
+    "title": "日志",
+    "noLogsInSession": "本次会话暂无日志记录。"
+  },
+  "dragToReorder": "拖拽排序",
   "import": "导入",
   "tabs": {
     "credentials": "API 密钥",

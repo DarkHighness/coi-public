@@ -267,8 +267,18 @@ export interface LogEntry {
 export interface Faction {
   id: string;
   name: string;
-  visible: string; // Public agenda
-  hidden: string; // Secret agenda
+  visible: {
+    agenda: string; // Public agenda
+    members?: { name: string; title?: string }[]; // Publicly known members
+    influence?: string; // Perceived influence description
+    relations?: Record<string, string>; // Public alliances/rivalries
+  };
+  hidden: {
+    agenda: string; // Secret agenda
+    members?: { name: string; title?: string }[]; // Secret members/leaders
+    influence?: string; // True influence description
+    relations?: Record<string, string>; // Secret alliances/rivalries
+  };
   highlight?: boolean; // True when updated in current turn
   unlocked?: boolean; // True when secret agenda is revealed to player
 }
@@ -321,7 +331,7 @@ export interface CharacterAttribute {
 export interface CharacterSkill {
   id: string;
   name: string;
-  level: string | number;
+  level: string;
   visible: {
     description: string;
     knownEffects: string[];
@@ -594,7 +604,7 @@ export interface Quest {
   status: "active" | "completed" | "failed";
   visible: {
     description: string;
-    objectives?: string[];
+    objectives: string[];
   };
   hidden: {
     trueDescription?: string;

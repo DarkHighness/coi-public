@@ -63,6 +63,10 @@
     "error": "Failed to generate script. Please try again.",
     "copied": "Copied to clipboard!"
   },
+  "initializing": {
+    "audioPreload": "Audio Preload",
+    "timeElapsed": "Time Elapsed"
+  },
   "translating": "Translating chronicles...",
   "system": "System",
   "newGame": "New Game",
@@ -160,7 +164,11 @@
   "success": "Success",
   "fail": "Failure",
   "critFail": "Critical Failure!",
-  "logs": "Logs",
+  "logs": {
+    "title": "Logs",
+    "noLogsInSession": "No logs recorded in this session."
+  },
+  "dragToReorder": "Drag to reorder",
   "tabs": {
     "credentials": "API Keys",
     "models": "Models",
@@ -216,11 +224,7 @@
   "viewLogs": "View Logs",
   "viewAll": "View All",
   "clickToCycle": "Click to Cycle",
-  "creds": {
-    "geminiTitle": "Google Gemini Configuration",
-    "openaiTitle": "OpenAI / OpenRouter Configuration",
-    "apiKeyPlaceholder": "Paste API Key here..."
-  },
+
   "models": {
     "story": "Story Generation",
     "script": "Veo Script Generation",
@@ -291,7 +295,10 @@
     "map": "Destiny Map",
     "fork": "Fork from Here",
     "forkConfirm": "Create a new timeline from this moment?",
-    "viewMap": "View Tree"
+    "viewMap": "View Destiny Map",
+    "subtitle": "Timeline Browser • {{count}} Moments • Drag to Pan • Scroll to Zoom",
+    "goToStart": "Go to Start",
+    "goToCurrent": "Go to Current"
   },
   "saves": {
     "title": "Save Slots",
@@ -300,7 +307,8 @@
     "delete": "Delete",
     "load": "Load",
     "current": "Current",
-    "empty": "No chronicles found."
+    "empty": "No chronicles found.",
+    "confirmDelete": "Delete this save?"
   },
   "summary": {
     "divider": "Chronicles Summarized",
@@ -312,10 +320,27 @@
     "menu": "Menu",
     "timeline": "Timeline"
   },
-  "location": {
-    "title": "Location",
-    "known": "Known Places",
-    "details": "Location Details"
+  "refresh": "Refresh",
+  "languageLabel": "Language",
+  "connectionSuccess": "Connection Successful!",
+  "connectionFailed": "Connection Failed",
+  "testConnection": "Test Connection",
+  "loadedFromEnv": "Loaded from Environment",
+  "creds": {
+    "geminiTitle": "Google Gemini Configuration",
+    "openaiTitle": "OpenAI / OpenRouter Configuration",
+    "apiKeyPlaceholder": "Paste API Key here...",
+    "baseUrlPlaceholder": "Base URL (Optional)"
+  },
+  "audioSettings": {
+    "environment": "Environment Audio",
+    "muted": "Muted",
+    "active": "Active",
+    "volume": "Volume",
+    "voice": "Voice (TTS)",
+    "ttsVolume": "TTS Volume",
+    "speed": "Speed",
+    "format": "Audio Format"
   },
   "toast": {
     "itemAdded": "Item Acquired",
@@ -335,27 +360,8 @@
     "autoSavedSettings": "Settings saved automatically",
     "stateUpdated": "State Updated"
   },
-  "refresh": "Refresh",
   "showMore": "Show More",
   "showLess": "Show Less",
-  "languageLabel": "Language",
-  "connectionSuccess": "Connection Successful",
-  "connectionFailed": "Connection Failed",
-  "testConnection": "Test Connection",
-  "audioSettings": {
-    "environment": "Environment Ambience",
-    "voice": "Voice / TTS",
-    "volume": "Volume",
-    "muted": "Muted",
-    "unmuted": "Unmuted",
-    "active": "Active",
-    "mute": "Mute",
-    "unmute": "Unmute",
-    "ttsVolume": "TTS Volume",
-    "speed": "Speed",
-    "format": "Format"
-  },
-  "loadedFromEnv": "Loaded from ENV",
   "loadingGeneric": "Loading...",
   "failedToLoadInfo": "Failed to retrieve information from the archives.",
   "noInfoAvailable": "No detailed information available.",
@@ -375,7 +381,13 @@
     "storageUsed": "Storage Used",
     "storageQuota": "Storage Quota",
     "storageUsage": "Storage Usage",
-    "storageUnavailable": "Storage information unavailable"
+    "storageUnavailable": "Storage information unavailable",
+    "export": "Export Data",
+    "exportDesc": "Download all game data as a JSON file",
+    "import": "Import Data",
+    "importDesc": "Restore game data from a JSON file",
+    "importSuccess": "Game data imported successfully",
+    "importError": "Failed to import data: Invalid format"
   },
   "customTips": "Add details to guide your adventure's story",
   "tip": "Tips",

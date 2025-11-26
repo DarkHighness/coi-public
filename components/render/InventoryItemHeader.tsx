@@ -1,4 +1,4 @@
-import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface InventoryItemHeaderProps {
   name: string;
@@ -20,7 +20,9 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
   onPin,
   dragHandleProps,
   isEditMode,
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <div className="flex items-center gap-1">
     <button
       onClick={onClick}
@@ -76,7 +78,7 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
       <div
         {...dragHandleProps}
         className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded ml-1 touch-none"
-        title="Drag to reorder"
+        title={t("dragToReorder") || "Drag to reorder"}
       >
         <svg
           className="w-4 h-4"
@@ -95,3 +97,4 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
     )}
   </div>
 );
+};
