@@ -4,6 +4,7 @@ import type {
   StorySegment,
   GameStateSnapshot,
   AliveEntities,
+  ForkTree,
 } from "../types";
 
 export interface SnapshotMetadata {
@@ -17,6 +18,8 @@ export interface SnapshotMetadata {
   aliveEntities?: AliveEntities;
   ragQueries?: string[];
   turnNumber?: number;
+  forkId?: number;
+  forkTree?: ForkTree;
 }
 
 // Default empty alive entities
@@ -31,6 +34,20 @@ const EMPTY_ALIVE_ENTITIES: AliveEntities = {
   conditions: [],
   hiddenTraits: [],
   causalChains: [],
+};
+
+// Default empty fork tree
+const EMPTY_FORK_TREE: ForkTree = {
+  nodes: {
+    0: {
+      id: 0,
+      parentId: null,
+      createdAt: 0,
+      createdAtTurn: 0,
+      sourceNodeId: "",
+    },
+  },
+  nextForkId: 1,
 };
 
 /**
@@ -73,11 +90,17 @@ export function createStateSnapshot(
       metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
     ragQueries: metadata.ragQueries || gameState.ragQueries,
     turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
+
+    // Fork System
+    forkId: metadata.forkId ?? gameState.forkId ?? 0,
+    forkTree: metadata.forkTree || gameState.forkTree || EMPTY_FORK_TREE,
   };
 }
 
 /**
  * Restore game state from a snapshot
+ * NOTE: When restoring, we DON'T restore forkId/forkTree - these are managed
+ * by the fork logic in useGameEngine which will increment forkId when forking
  */
 export function restoreStateFromSnapshot(
   currentState: GameState,
@@ -107,5 +130,60 @@ export function restoreStateFromSnapshot(
     aliveEntities: snapshot.aliveEntities,
     ragQueries: snapshot.ragQueries,
     turnNumber: snapshot.turnNumber,
+    // Note: forkId and forkTree are NOT restored here - they're managed by fork logic
+    // When navigating to a node (forking), the caller should increment forkId and update forkTree
   };
+}
+
+/**
+ * Create a new fork from the current state
+ * Returns the new forkId and updated forkTree
+ */
+export function createFork(
+  currentForkId: number,
+  currentForkTree: ForkTree,
+  sourceNodeId: string,
+  currentTurn: number,
+): { newForkId: number; newForkTree: ForkTree } {
+  const newForkId = currentForkTree.nextForkId;
+
+  const newForkNode = {
+    id: newForkId,
+    parentId: currentForkId,
+    createdAt: Date.now(),
+    createdAtTurn: currentTurn,
+    sourceNodeId,
+  };
+
+  return {
+    newForkId,
+    newForkTree: {
+      nodes: {
+        ...currentForkTree.nodes,
+        [newForkId]: newForkNode,
+      },
+      nextForkId: newForkId + 1,
+    },
+  };
+}
+
+/**
+ * Get all ancestor fork IDs for a given fork (including itself)
+ * Used to filter RAG results to only include current fork and its ancestors
+ */
+export function getAncestorForkIds(
+  forkId: number,
+  forkTree: ForkTree,
+): number[] {
+  const ancestors: number[] = [forkId];
+  let currentId: number | null = forkId;
+
+  while (currentId !== null) {
+    const node = forkTree.nodes[currentId];
+    if (!node || node.parentId === null) break;
+    ancestors.push(node.parentId);
+    currentId = node.parentId;
+  }
+
+  return ancestors;
 }

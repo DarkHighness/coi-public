@@ -171,16 +171,6 @@ export const SettingsCredentials: React.FC<SettingsCredentialsProps> = ({
               updateCreds("openrouter", "apiKey", e.target.value)
             }
             placeholder={t("creds.apiKeyPlaceholder")}
-            className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none mb-2"
-            onBlur={() => onLoadModels(false)}
-          />
-          <input
-            type="text"
-            value={currentSettings.openrouter.baseUrl || ""}
-            onChange={(e) =>
-              updateCreds("openrouter", "baseUrl", e.target.value)
-            }
-            placeholder="https://openrouter.ai/api/v1"
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none"
             onBlur={() => onLoadModels(false)}
           />

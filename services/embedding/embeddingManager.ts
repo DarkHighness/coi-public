@@ -17,9 +17,11 @@ import type {
   TimelineEvent,
   Faction,
   AISettings,
+  ForkTree,
 } from "../../types";
 import { EmbeddingService, createEmbeddingIndex } from "./embeddingService";
 import { SimilaritySearchManager, type SearchResult } from "./similaritySearch";
+import { getAncestorForkIds } from "../../utils/snapshotManager";
 
 // ============================================================================
 // Types
@@ -430,6 +432,7 @@ export class EmbeddingManager {
       openai: {
         apiKey: settings.openai.apiKey,
         baseUrl: settings.openai.baseUrl,
+        modelId: settings.embedding.modelId,
       },
       openrouter: { apiKey: settings.openrouter.apiKey },
     });
@@ -486,22 +489,37 @@ export class EmbeddingManager {
       });
     }
 
+    // Add forkId and turnNumber to all entities metadata
+    const forkId = state.forkId ?? 0;
+    const turnNumber = state.turnNumber ?? 0;
+    const entitiesWithForkInfo = allEntities.map((entity) => ({
+      ...entity,
+      metadata: {
+        ...entity.metadata,
+        forkId,
+        turnNumber: entity.metadata?.turnNumber ?? turnNumber,
+      },
+    }));
+
     console.log(
-      `[EmbeddingManager] Extracted ${allEntities.length} entities for embedding`,
+      `[EmbeddingManager] Extracted ${entitiesWithForkInfo.length} entities for embedding (forkId: ${forkId}, turnNumber: ${turnNumber})`,
     );
 
     // Generate embeddings
     this.reportProgress({
       phase: "embedding",
       current: 0,
-      total: allEntities.length,
+      total: entitiesWithForkInfo.length,
     });
-    const documents = await this.embeddingService!.createDocuments(allEntities);
+    const documents = await this.embeddingService!.createDocuments(
+      entitiesWithForkInfo,
+      "retrieval_document",
+    );
 
     this.reportProgress({
       phase: "embedding",
-      current: allEntities.length,
-      total: allEntities.length,
+      current: entitiesWithForkInfo.length,
+      total: entitiesWithForkInfo.length,
       message: `Generated ${documents.length} embeddings`,
     });
 
@@ -589,8 +607,10 @@ export class EmbeddingManager {
     }
 
     // Generate embeddings for changed entities
-    const newDocuments =
-      await this.embeddingService!.createDocuments(entitiesToUpdate);
+    const newDocuments = await this.embeddingService!.createDocuments(
+      entitiesToUpdate,
+      "retrieval_document",
+    );
 
     // Merge with existing documents
     const existingDocs = this.currentIndex.documents.filter(
@@ -617,6 +637,9 @@ export class EmbeddingManager {
 
   /**
    * Retrieve relevant context for a query
+   * Supports filtering by fork (timeline branch) and turn number
+   * Results are sorted with priority: current fork > ancestor forks > other forks
+   *                                   past events > current turn > future events
    */
   async retrieveContext(
     query: string,
@@ -624,6 +647,13 @@ export class EmbeddingManager {
       topK?: number;
       threshold?: number;
       types?: EmbeddingDocument["type"][];
+      // Fork filtering options
+      currentForkOnly?: boolean; // Only search current fork and its ancestors
+      forkId?: number; // Current fork ID (required if currentForkOnly is true)
+      forkTree?: ForkTree; // Fork tree structure (required if currentForkOnly is true)
+      // Turn filtering options
+      beforeCurrentTurn?: boolean; // Only search content before current turn
+      currentTurn?: number; // Current turn number (required if beforeCurrentTurn is true)
     },
   ): Promise<RAGContext> {
     if (!this.searchManager || !this.embeddingService || !this.currentIndex) {
@@ -632,24 +662,93 @@ export class EmbeddingManager {
 
     // Generate query embedding
     const { embedding: queryEmbedding } =
-      await this.embeddingService.generateEmbedding(query);
+      await this.embeddingService.generateEmbedding(query, "retrieval_query");
 
-    // Search for similar documents
+    // Search for similar documents (get more results initially for filtering and re-ranking)
+    const initialTopK = options?.topK || this.config.settings.embedding.topK || 10;
+    const fetchMultiplier = 3; // Always fetch more for re-ranking
+
     const results = await this.searchManager.search(queryEmbedding, {
-      topK: options?.topK || this.config.settings.embedding.topK || 10,
+      topK: initialTopK * fetchMultiplier,
       threshold:
         options?.threshold ||
         this.config.settings.embedding.similarityThreshold ||
         0.5,
     });
 
-    // Filter by type if specified
+    // Get ancestor fork IDs for priority ranking
+    const allowedForkIds = (options?.forkId !== undefined && options?.forkTree)
+      ? getAncestorForkIds(options.forkId, options.forkTree)
+      : [];
+    const currentForkId = options?.forkId ?? 0;
+    const currentTurn = options?.currentTurn ?? 0;
+
+    // Apply filters
     let filteredResults = results;
+
+    // Filter by fork (timeline branch) if requested
+    if (options?.currentForkOnly && options.forkId !== undefined && options.forkTree) {
+      filteredResults = filteredResults.filter((r) => {
+        const docForkId = r.document.metadata?.forkId;
+        // Include documents without forkId (legacy) or from allowed forks
+        return docForkId === undefined || allowedForkIds.includes(docForkId);
+      });
+    }
+
+    // Filter by turn number (exclude future content) if requested
+    if (options?.beforeCurrentTurn && options.currentTurn !== undefined) {
+      filteredResults = filteredResults.filter((r) => {
+        const docTurnNumber = r.document.metadata?.turnNumber;
+        // Include documents without turnNumber or from before current turn
+        return docTurnNumber === undefined || docTurnNumber < options.currentTurn!;
+      });
+    }
+
+    // Filter by type if specified
     if (options?.types && options.types.length > 0) {
-      filteredResults = results.filter((r) =>
+      filteredResults = filteredResults.filter((r) =>
         options.types!.includes(r.document.type),
       );
     }
+
+    // Re-rank results with priority scoring
+    // Priority: current fork > ancestor forks > other forks
+    //           past events > current turn > future events
+    const rankedResults = filteredResults.map((r) => {
+      const docForkId = r.document.metadata?.forkId ?? 0;
+      const docTurnNumber = r.document.metadata?.turnNumber ?? 0;
+
+      // Calculate priority bonus (small adjustment to preserve similarity ordering)
+      let priorityBonus = 0;
+
+      // Fork priority: current fork gets highest bonus, ancestors get medium, others get penalty
+      if (docForkId === currentForkId) {
+        priorityBonus += 0.02; // Current fork: +2%
+      } else if (allowedForkIds.includes(docForkId)) {
+        priorityBonus += 0.01; // Ancestor fork: +1%
+      } else {
+        priorityBonus -= 0.01; // Other fork: -1%
+      }
+
+      // Turn priority: past events get bonus, future events get penalty
+      if (docTurnNumber < currentTurn) {
+        priorityBonus += 0.01; // Past: +1%
+      } else if (docTurnNumber > currentTurn) {
+        priorityBonus -= 0.02; // Future: -2%
+      }
+      // Current turn: no adjustment
+
+      return {
+        ...r,
+        adjustedScore: Math.min(1.0, Math.max(0, r.score + priorityBonus)),
+      };
+    });
+
+    // Sort by adjusted score
+    rankedResults.sort((a, b) => b.adjustedScore - a.adjustedScore);
+
+    // Limit to requested topK after filtering and ranking
+    const finalResults = rankedResults.slice(0, initialTopK);
 
     // Group results by type
     const contextByType: Record<EmbeddingDocument["type"], string[]> = {
@@ -662,10 +761,22 @@ export class EmbeddingManager {
       event: [],
     };
 
-    for (const result of filteredResults) {
+    for (const result of finalResults) {
       const doc = result.document;
+      const docForkId = doc.metadata?.forkId ?? 0;
+      const docTurnNumber = doc.metadata?.turnNumber ?? 0;
+
+      // Build source annotation header
+      const sourceAnnotation = this.buildSourceAnnotation(
+        docForkId,
+        docTurnNumber,
+        currentForkId,
+        currentTurn,
+        allowedForkIds,
+      );
+
       contextByType[doc.type].push(
-        `[${doc.type.toUpperCase()}:${doc.entityId}] (relevance: ${(result.score * 100).toFixed(1)}%)\n${doc.content}`,
+        `[${doc.type.toUpperCase()}:${doc.entityId}] (relevance: ${(result.score * 100).toFixed(1)}%)\n${sourceAnnotation}\n${doc.content}`,
       );
     }
 
@@ -689,6 +800,40 @@ export class EmbeddingManager {
       eventContext: contextByType.event,
       combinedContext: combinedParts.join("\n"),
     };
+  }
+
+  /**
+   * Build a clear source annotation for RAG results
+   * Helps AI understand where the content comes from relative to current context
+   */
+  private buildSourceAnnotation(
+    docForkId: number,
+    docTurnNumber: number,
+    currentForkId: number,
+    currentTurn: number,
+    allowedForkIds: number[],
+  ): string {
+    const parts: string[] = [];
+
+    // Timeline annotation
+    if (docForkId === currentForkId) {
+      parts.push(`[TIMELINE: Current (fork:${docForkId})]`);
+    } else if (allowedForkIds.includes(docForkId)) {
+      parts.push(`[TIMELINE: Ancestor (fork:${docForkId})]`);
+    } else {
+      parts.push(`[TIMELINE: ⚠️ Alternate (fork:${docForkId}) - This content is from a different timeline branch!]`);
+    }
+
+    // Turn annotation
+    if (docTurnNumber < currentTurn) {
+      parts.push(`[TIME: Past (turn:${docTurnNumber}, current:${currentTurn})]`);
+    } else if (docTurnNumber === currentTurn) {
+      parts.push(`[TIME: Current Turn (turn:${docTurnNumber})]`);
+    } else {
+      parts.push(`[TIME: ⚠️ Future (turn:${docTurnNumber}, current:${currentTurn}) - This event has not occurred yet in current timeline!]`);
+    }
+
+    return parts.join(" ");
   }
 
   /**

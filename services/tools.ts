@@ -844,7 +844,15 @@ export const UPDATE_FACTION_TOOL = {
             description: "Perceived influence description.",
           },
           relations: {
-            type: "object",
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                target: { type: "string", description: "Target faction name" },
+                status: { type: "string", description: "Relationship status" },
+              },
+              required: ["target", "status"],
+            },
             description: "Public alliances/rivalries.",
           },
         },
@@ -874,7 +882,15 @@ export const UPDATE_FACTION_TOOL = {
             description: "True influence description.",
           },
           relations: {
-            type: "object",
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                target: { type: "string", description: "Target faction name" },
+                status: { type: "string", description: "Relationship status" },
+              },
+              required: ["target", "status"],
+            },
             description: "Secret alliances/rivalries.",
           },
         },
@@ -1118,7 +1134,15 @@ export const RAG_SEARCH_TOOL = {
 - Quest information
 - Timeline events
 
-The search returns both visible player knowledge and [AI_ONLY] hidden information to help maintain world consistency.`,
+The search returns both visible player knowledge and [AI_ONLY] hidden information to help maintain world consistency.
+
+IMPORTANT: RAG may return results from:
+1. **Different timeline forks** - Content from alternative story branches the player explored before
+2. **Future events** - If the player forked from a later point to an earlier one, you may see "future" events
+
+Use the filtering options to control search scope:
+- \`currentForkOnly\`: Only search within the current timeline branch (excludes other forks)
+- \`beforeCurrentTurn\`: Only search content from before the current turn (excludes "future" events)`,
   parameters: {
     type: "object",
     properties: {
@@ -1146,6 +1170,16 @@ The search returns both visible player knowledge and [AI_ONLY] hidden informatio
       topK: {
         type: "number",
         description: "Maximum number of results to return. Default is 5.",
+      },
+      currentForkOnly: {
+        type: "boolean",
+        description:
+          "If true, only return results from the current timeline branch and its ancestors. Excludes content from other fork branches. Default is false (searches all forks).",
+      },
+      beforeCurrentTurn: {
+        type: "boolean",
+        description:
+          "If true, only return results from before the current turn number. Useful to exclude 'future' content when player forked from a later point. Default is false.",
       },
     },
     required: ["query"],
@@ -1307,7 +1341,19 @@ Typical usage:
 - After mentioning a mysterious artifact: ["ancient artifacts with hidden powers", "cursed items in the kingdom"]
 - Before entering a dungeon: ["dungeon traps and hazards", "creatures that live in underground caves"]
 - When an NPC mentions their past: ["NPC's history and secrets", "related events from timeline"]
-These queries will be used for semantic search to retrieve relevant world knowledge.`,
+These queries will be used for semantic search to retrieve relevant world knowledge.
+
+NOTE: RAG results may include content from other timeline forks or "future" events (if player forked from a later point). Use ragCurrentForkOnly and ragBeforeCurrentTurn to filter if needed.`,
+      },
+      ragCurrentForkOnly: {
+        type: "boolean",
+        description:
+          "If true, next turn's RAG queries will only search within the current timeline branch. Default is false.",
+      },
+      ragBeforeCurrentTurn: {
+        type: "boolean",
+        description:
+          "If true, next turn's RAG queries will only search content from before the current turn. Default is false.",
       },
     },
     required: ["narrative", "choices"],

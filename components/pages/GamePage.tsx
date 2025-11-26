@@ -51,6 +51,11 @@ const DesktopGameLayout = React.lazy(() =>
     default: module.DesktopGameLayout,
   })),
 );
+const RAGDebugger = React.lazy(() =>
+  import("../RAGDebugger").then((module) => ({
+    default: module.RAGDebugger,
+  })),
+);
 
 interface GamePageProps {
   gameState: GameState;
@@ -62,7 +67,7 @@ interface GamePageProps {
   handleAction: (action: string) => Promise<ActionResult | null>;
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
-  navigateToNode: (nodeId: string) => void;
+  navigateToNode: (nodeId: string, isFork?: boolean) => void;
   generateImageForNode: (nodeId: string) => Promise<void>;
   showToast: (msg: string, type?: "info" | "error") => void;
   onOpenSettings: () => void;
@@ -112,6 +117,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
+  const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
@@ -140,7 +146,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     isLogPanelOpen ||
     isMagicMirrorOpen ||
     isVeoScriptOpen ||
-    isStateEditorOpen;
+    isStateEditorOpen ||
+    isRAGDebuggerOpen;
 
   // Play ambience when story is visible and no menus are blocking
   // FIXED: Don't tie ambience to isTyping - ambience should continue playing
@@ -189,7 +196,7 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   const handleFork = (nodeId: string) => {
     if (window.confirm(t("tree.forkConfirm"))) {
-      navigateToNode(nodeId);
+      navigateToNode(nodeId, true); // Pass isFork=true to create a new timeline branch
       setMobileTab("story"); // Switch back to story on fork
     }
   };
@@ -298,6 +305,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onViewedSegmentChange={onViewedSegmentChange}
           onShowToast={(msg, type) => pushToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
+          onOpenRAG={() => setIsRAGDebuggerOpen(true)}
         />
 
         <DesktopGameLayout
@@ -341,6 +349,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onViewedSegmentChange={onViewedSegmentChange}
           onShowToast={(msg, type) => pushToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
+          onOpenRAG={() => setIsRAGDebuggerOpen(true)}
         />
 
         {/* Mobile Bottom Navigation */}
@@ -393,6 +402,15 @@ export const GamePage: React.FC<GamePageProps> = ({
             gameState={gameState}
             setGameState={setGameState}
             onShowToast={(msg, type) => pushToast(msg, type)}
+          />
+        )}
+
+        {isRAGDebuggerOpen && (
+          <RAGDebugger
+            isOpen={isRAGDebuggerOpen}
+            onClose={() => setIsRAGDebuggerOpen(false)}
+            themeFont={themeFont}
+            gameState={gameState}
           />
         )}
       </Suspense>

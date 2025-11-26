@@ -139,12 +139,30 @@ export interface GameState {
   // Current turn number (incremented on each player action)
   turnNumber: number;
 
+  // Fork System: Track timeline branches for RAG filtering
+  forkId: number; // Current fork ID (0 = original timeline, incremented on each fork)
+  forkTree: ForkTree; // Tree structure tracking fork parent-child relationships
+
   // Developer Mode Flags
   godMode?: boolean; // God mode: bypass all restrictions and dangers
   unlockMode?: boolean; // Unlock mode: show all hidden info
 }
 
 // --- World System Interfaces ---
+
+// Fork Tree: Track parent-child relationships between timeline forks
+export interface ForkNode {
+  id: number; // Fork ID
+  parentId: number | null; // Parent fork ID (null for root/original timeline)
+  createdAt: number; // Timestamp when fork was created
+  createdAtTurn: number; // Turn number when fork was created
+  sourceNodeId: string; // The story node ID from which this fork was created
+}
+
+export interface ForkTree {
+  nodes: Record<number, ForkNode>; // forkId -> ForkNode
+  nextForkId: number; // Counter for generating new fork IDs
+}
 
 export interface VisibleInfo {
   description: string;
@@ -282,13 +300,13 @@ export interface Faction {
     agenda: string; // Public agenda
     members?: { name: string; title?: string }[]; // Publicly known members
     influence?: string; // Perceived influence description
-    relations?: Record<string, string>; // Public alliances/rivalries
+    relations?: { target: string; status: string }[]; // Public alliances/rivalries
   };
   hidden: {
     agenda: string; // Secret agenda
     members?: { name: string; title?: string }[]; // Secret members/leaders
     influence?: string; // True influence description
-    relations?: Record<string, string>; // Secret alliances/rivalries
+    relations?: { target: string; status: string }[]; // Secret alliances/rivalries
   };
   highlight?: boolean; // True when updated in current turn
   unlocked?: boolean; // True when secret agenda is revealed to player
@@ -534,6 +552,10 @@ export interface GameStateSnapshot {
   aliveEntities: AliveEntities;
   ragQueries?: string[];
   turnNumber: number;
+
+  // Fork System (Critical for RAG filtering across timelines)
+  forkId: number;
+  forkTree: ForkTree;
 }
 
 export interface Location {
@@ -985,13 +1007,25 @@ export interface AISettings {
 // RAG Embedding System Types
 // ============================================================================
 
-export interface EmbeddingConfig extends FunctionConfig {
-  enabled: boolean;
+export interface EmbeddingModelInfo {
+  id: string;
+  name: string;
+  dimensions?: number;
+  maxBatchSize?: number;
+}
+
+export type EmbeddingTaskType =
+  | "retrieval_document"
+  | "retrieval_query"
+  | "semantic_similarity"
+  | "classification"
+  | "clustering";
+
+export interface EmbeddingConfig {
   provider: "gemini" | "openai" | "openrouter";
   modelId: string;
+  enabled: boolean;
   dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)
-  chunkSize?: number; // Text chunk size for embedding
-  chunkOverlap?: number; // Overlap between chunks
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)
 }
@@ -1006,6 +1040,8 @@ export interface EmbeddingDocument {
     turnNumber?: number;
     timestamp?: number;
     importance?: number; // 0-1 score for retrieval priority
+    forkId?: number; // Fork ID when this document was created (for filtering)
+    unlocked?: boolean; // Whether hidden info is unlocked
   };
 }
 

@@ -86,7 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded w-full max-w-2xl shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] relative overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center">
+        <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center relative z-10">
           <h2 className={`text-2xl font-bold text-theme-primary ${themeFont}`}>
             {t("settings.title")}
           </h2>
@@ -110,7 +110,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="relative z-10">
+          <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {activeTab === "appearance" && (

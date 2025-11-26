@@ -16,6 +16,7 @@ export type CommandAction =
   | { type: "god_mode"; enable: boolean }
   | { type: "unlock_all" }
   | { type: "open_editor" }
+  | { type: "open_rag" }
   | { type: "none" };
 
 export interface CommandContext {
@@ -29,6 +30,7 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/god": handleGodMode,
   "/unlock": handleUnlockAll,
   "/edit": handleOpenEditor,
+  "/rag": handleOpenRAG,
   "/help": handleHelp,
 };
 
@@ -122,6 +124,21 @@ function handleOpenEditor(
     preventAction: true,
     action: { type: "open_editor" },
   };
+
+}
+
+/**
+ * /rag - Open RAG Debugger
+ */
+function handleOpenRAG(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
+  return {
+    handled: true,
+    preventAction: true,
+    action: { type: "open_rag" },
+  };
 }
 
 /**
@@ -136,6 +153,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 /god - Toggle God Mode (all actions succeed, NPCs obey)
 /unlock - Reveal all hidden information
 /edit - Open GameState editor
+/rag - Open RAG Debugger
 /help - Show this help message`;
 
   return {
@@ -227,6 +245,7 @@ export function executeCommandAction(
       break;
 
     case "open_editor":
+    case "open_rag":
       // This is handled by the UI component
       break;
 

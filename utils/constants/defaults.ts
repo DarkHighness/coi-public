@@ -37,8 +37,7 @@ export const DEFAULTS: AISettings = {
     baseUrl: DEFAULT_OPENAI_BASE_URL,
   },
   openrouter: {
-    apiKey: undefined,
-    baseUrl: "https://openrouter.ai/api/v1",
+    apiKey: "",
   },
   contextLen: 10, // Summarize after 10 turns
   story: {
@@ -93,9 +92,7 @@ export const DEFAULTS: AISettings = {
     provider: "gemini",
     modelId: "text-embedding-004",
     dimensions: 768,
-    chunkSize: 512,
-    chunkOverlap: 64,
-    topK: 5,
-    similarityThreshold: 0.7,
+    topK: 10,
+    similarityThreshold: 0.65,
   },
 };

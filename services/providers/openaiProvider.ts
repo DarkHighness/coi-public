@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { ModelInfo } from "../../types";
+import { ModelInfo, EmbeddingTaskType } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { convertJsonSchemaToOpenAIObject } from "../schemaUtils";
 
@@ -411,10 +411,28 @@ export const getEmbeddingModels = async (
     const embeddingModels: EmbeddingModelInfo[] = [];
     for (const model of list.data) {
       const id = model.id.toLowerCase();
-      if (id.includes("embed") || id.includes("text-embedding")) {
+      if (
+        id.includes("embed") ||
+        id.includes("bert") ||
+        id.includes("nomic") ||
+        id.includes("gecko") ||
+        id.includes("bge") ||
+        id.includes("gte") ||
+        id.includes("e5") ||
+        id.includes("paraphrase")
+      ) {
         let dimensions = 1536; // Default for text-embedding-ada-002
+
+        // Try to guess dimensions from name
+        if (id.includes("small") || id.includes("light")) dimensions = 384; // Common for small models
+        if (id.includes("base")) dimensions = 768; // Common for base models
+        if (id.includes("large")) dimensions = 1024; // Common for large models
+
+        // Specific overrides
         if (id.includes("text-embedding-3-small")) dimensions = 1536;
         if (id.includes("text-embedding-3-large")) dimensions = 3072;
+        if (id.includes("nomic-embed")) dimensions = 768;
+        if (id.includes("gecko")) dimensions = 768;
 
         embeddingModels.push({
           id: model.id,
@@ -484,6 +502,7 @@ export const generateEmbedding = async (
   modelId: string,
   texts: string[],
   dimensions?: number,
+  taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResult> => {
   const client = getClient(config);
 

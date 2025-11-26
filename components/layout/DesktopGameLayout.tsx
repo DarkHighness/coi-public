@@ -45,6 +45,7 @@ interface DesktopGameLayoutProps {
   onVeoScript: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
+  onOpenRAG?: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -77,6 +78,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onVeoScript,
   onShowToast,
   onOpenStateEditor,
+  onOpenRAG,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -165,6 +167,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               setGameState={setGameState}
               onShowToast={onShowToast}
               onOpenStateEditor={onOpenStateEditor}
+              onOpenRAG={onOpenRAG}
             />
           </div>
         </div>

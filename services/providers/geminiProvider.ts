@@ -1,5 +1,5 @@
 import { GoogleGenAI, Schema, Type, Modality } from "@google/genai";
-import { ModelInfo } from "../../types";
+import { ModelInfo, EmbeddingTaskType } from "../../types";
 import { convertJsonSchemaToGemini, JsonSchema } from "../schemaUtils";
 
 export interface GeminiConfig {
@@ -680,6 +680,7 @@ export const generateEmbedding = async (
   modelId: string,
   texts: string[],
   dimensions?: number,
+  taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResult> => {
   const apiKey = config.apiKey;
   if (!apiKey) throw new Error("Gemini API key not configured");
@@ -690,11 +691,19 @@ export const generateEmbedding = async (
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      requests: texts.map((text) => ({
-        model: `models/${modelId}`,
-        content: { parts: [{ text }] },
-        outputDimensionality: dimensions,
-      })),
+      requests: texts.map((text) => {
+        const req: any = {
+          model: `models/${modelId}`,
+          content: { parts: [{ text }] },
+          outputDimensionality: dimensions,
+        };
+
+        if (taskType) {
+          req.taskType = taskType.toUpperCase();
+        }
+
+        return req;
+      }),
     }),
   });
 

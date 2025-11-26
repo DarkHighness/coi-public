@@ -1,5 +1,5 @@
 {
-  "titile": "Chronicles of Infinity",
+  "title": "Chronicles of Infinity",
   "titlePart1": "Chronicles",
   "titlePart2": "of Infinity",
   "time": {
@@ -194,10 +194,6 @@
     "model": "Embedding Model",
     "dimensions": "Dimensions",
     "advanced": "Advanced Settings",
-    "chunkSize": "Chunk Size",
-    "chunkSizeHelp": "Characters per text chunk for embedding",
-    "chunkOverlap": "Chunk Overlap",
-    "chunkOverlapHelp": "Overlap between adjacent chunks",
     "topK": "Top K Results",
     "topKHelp": "Number of similar results to retrieve",
     "threshold": "Similarity Threshold",
@@ -590,5 +586,20 @@
       "resetDescription": "To fix this, you need to reset the game data. This will clear all saves and settings.",
       "resetButton": "Clear Data & Reset Game"
     }
+  },
+  "ragDebugger": {
+    "title": "RAG Debugger",
+    "searchPlaceholder": "Enter search query...",
+    "search": "Search",
+    "searching": "Searching...",
+    "noIndex": "No embedding index found. Try starting a game first.",
+    "noResults": "Enter a query to search the embedding index.",
+    "score": "Score",
+    "error": "Search failed",
+    "currentForkOnly": "Current Fork Only",
+    "beforeCurrentTurn": "Before Current Turn",
+    "noEmbeddingManager": "Embedding manager not initialized.",
+    "rawDocsError": "Could not retrieve raw search results.",
+    "searchFailed": "Search failed. Please try again."
   }
 }

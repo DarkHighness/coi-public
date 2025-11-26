@@ -17,6 +17,7 @@ interface ActionPanelProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
+  onOpenRAG?: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -27,6 +28,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   setGameState,
   onShowToast,
   onOpenStateEditor,
+  onOpenRAG,
 }) => {
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
@@ -112,6 +114,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         return;
       }
 
+      if (commandResult.action?.type === "open_rag") {
+        onOpenRAG?.();
+        return;
+      }
+
       // If command doesn't prevent action, continue with normal flow
       if (!commandResult.preventAction) {
         onAction(customInput);
@@ -132,6 +139,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     // Handle editor separately since it doesn't modify state
     if (action.type === "open_editor") {
       onOpenStateEditor?.();
+    } else if (action.type === "open_rag") {
+      onOpenRAG?.();
     } else {
       executeCommandAction(action, gameState, setGameState);
 

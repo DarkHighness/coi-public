@@ -50,6 +50,7 @@ interface MobileGameLayoutProps {
   onVeoScript: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
+  onOpenRAG?: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -84,6 +85,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onVeoScript,
   onShowToast,
   onOpenStateEditor,
+  onOpenRAG,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -125,6 +127,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             setGameState={setGameState}
             onShowToast={onShowToast}
             onOpenStateEditor={onOpenStateEditor}
+            onOpenRAG={onOpenRAG}
           />
         </div>
       </div>

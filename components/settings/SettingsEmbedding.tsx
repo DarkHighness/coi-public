@@ -204,60 +204,6 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           </summary>
 
           <div className="mt-4 space-y-4 pl-4 border-l-2 border-theme-border/30">
-            {/* Chunk Size */}
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                  {t("embedding.chunkSize") || "Chunk Size"}
-                </label>
-                <span className="text-[10px] font-mono text-theme-text">
-                  {config.chunkSize || 512}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="128"
-                max="2048"
-                step="128"
-                value={config.chunkSize || 512}
-                onChange={(e) =>
-                  updateEmbedding("chunkSize", parseInt(e.target.value))
-                }
-                className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-              />
-              <p className="text-[9px] text-theme-muted/70 italic">
-                {t("embedding.chunkSizeHelp") ||
-                  "Characters per text chunk for embedding"}
-              </p>
-            </div>
-
-            {/* Chunk Overlap */}
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                  {t("embedding.chunkOverlap") || "Chunk Overlap"}
-                </label>
-                <span className="text-[10px] font-mono text-theme-text">
-                  {config.chunkOverlap || 64}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="256"
-                step="16"
-                value={config.chunkOverlap || 64}
-                onChange={(e) =>
-                  updateEmbedding("chunkOverlap", parseInt(e.target.value))
-                }
-                className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-              />
-              <p className="text-[9px] text-theme-muted/70 italic">
-                {t("embedding.chunkOverlapHelp") ||
-                  "Overlap between adjacent chunks"}
-              </p>
-            </div>
-
             {/* Top K */}
             <div className="space-y-1">
               <div className="flex justify-between">

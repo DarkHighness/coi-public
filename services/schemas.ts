@@ -485,7 +485,15 @@ export const storyOutlineSchema: JsonSchema = {
                 description: "Perceived influence description.",
               },
               relations: {
-                type: "object",
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    target: { type: "string", description: "Target faction name" },
+                    status: { type: "string", description: "Relationship status" },
+                  },
+                  required: ["target", "status"],
+                },
                 description: "Public alliances/rivalries.",
               },
             },
@@ -518,7 +526,15 @@ export const storyOutlineSchema: JsonSchema = {
                 description: "True influence description.",
               },
               relations: {
-                type: "object",
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    target: { type: "string", description: "Target faction name" },
+                    status: { type: "string", description: "Relationship status" },
+                  },
+                  required: ["target", "status"],
+                },
                 description: "Secret alliances/rivalries.",
               },
             },
@@ -852,7 +868,18 @@ export const factionProperties: Record<string, JsonSchema> = {
   hidden: { type: "string", description: "Secret agenda/corruption" },
   members: { type: "array", items: { type: "string" } },
   influence: { type: "number" },
-  relations: { type: "object", description: "Relations with other factions" },
+  relations: {
+    type: "array",
+    items: {
+      type: "object",
+      properties: {
+        target: { type: "string", description: "Target faction name" },
+        status: { type: "string", description: "Relationship status" },
+      },
+      required: ["target", "status"],
+    },
+    description: "Relations with other factions",
+  },
 };
 
 export const gameResponseSchema: JsonSchema = {

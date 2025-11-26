@@ -1,20 +1,27 @@
+
 /**
  * Embedding Service
  * Provides text embedding generation using various AI providers
  */
 
-import type {
+import {
   EmbeddingConfig,
   EmbeddingDocument,
+  EmbeddingTaskType,
   EmbeddingIndex,
 } from "../../types";
-import { getEnvApiKey } from "../../utils/env";
-
-// Provider-specific configurations
-interface ProviderCredentials {
-  apiKey?: string;
-  baseUrl?: string;
-}
+import {
+  GeminiConfig,
+  generateEmbedding as generateGeminiEmbedding,
+} from "../providers/geminiProvider";
+import {
+  OpenAIConfig,
+  generateEmbedding as generateOpenAIEmbedding,
+} from "../providers/openaiProvider";
+import {
+  OpenRouterConfig,
+  generateEmbedding as generateOpenRouterEmbedding,
+} from "../providers/openRouterProvider";
 
 interface EmbeddingResult {
   embedding: Float32Array;
@@ -33,138 +40,23 @@ interface EmbeddingBatchResult {
 }
 
 // ============================================================================
-// Provider Implementations
-// ============================================================================
-
-/**
- * Generate embeddings using Gemini API
- */
-async function generateGeminiEmbedding(
-  apiKey: string,
-  modelId: string,
-  texts: string[],
-  dimensions?: number,
-): Promise<EmbeddingBatchResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:batchEmbedContents?key=${apiKey}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      requests: texts.map((text) => ({
-        model: `models/${modelId}`,
-        content: { parts: [{ text }] },
-        outputDimensionality: dimensions,
-      })),
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini embedding failed: ${error}`);
-  }
-
-  const data = await response.json();
-  const embeddings = data.embeddings.map(
-    (e: any) => new Float32Array(e.values),
-  );
-
-  return {
-    embeddings,
-    usage: {
-      promptTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
-      totalTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
-    },
-  };
-}
-
-/**
- * Generate embeddings using OpenAI API
- */
-async function generateOpenAIEmbedding(
-  apiKey: string,
-  baseUrl: string,
-  modelId: string,
-  texts: string[],
-  dimensions?: number,
-): Promise<EmbeddingBatchResult> {
-  const url = `${baseUrl}/embeddings`;
-
-  const body: any = {
-    model: modelId,
-    input: texts,
-    encoding_format: "float",
-  };
-
-  if (dimensions) {
-    body.dimensions = dimensions;
-  }
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI embedding failed: ${error}`);
-  }
-
-  const data = await response.json();
-  const embeddings = data.data
-    .sort((a: any, b: any) => a.index - b.index)
-    .map((item: any) => new Float32Array(item.embedding));
-
-  return {
-    embeddings,
-    usage: {
-      promptTokens: data.usage?.prompt_tokens || 0,
-      totalTokens: data.usage?.total_tokens || 0,
-    },
-  };
-}
-
-/**
- * Generate embeddings using OpenRouter API
- * OpenRouter uses OpenAI-compatible API
- */
-async function generateOpenRouterEmbedding(
-  apiKey: string,
-  modelId: string,
-  texts: string[],
-  dimensions?: number,
-): Promise<EmbeddingBatchResult> {
-  return generateOpenAIEmbedding(
-    apiKey,
-    "https://openrouter.ai/api/v1",
-    modelId,
-    texts,
-    dimensions,
-  );
-}
-
-// ============================================================================
 // Main Embedding Service Class
 // ============================================================================
 
 export class EmbeddingService {
   private config: EmbeddingConfig;
   private credentials: {
-    gemini: ProviderCredentials;
-    openai: ProviderCredentials;
-    openrouter: ProviderCredentials;
+    gemini: GeminiConfig;
+    openai: OpenAIConfig;
+    openrouter: OpenRouterConfig;
   };
 
   constructor(
     config: EmbeddingConfig,
     credentials: {
-      gemini: ProviderCredentials;
-      openai: ProviderCredentials;
-      openrouter: ProviderCredentials;
+      gemini: GeminiConfig;
+      openai: OpenAIConfig;
+      openrouter: OpenRouterConfig;
     },
   ) {
     this.config = config;
@@ -174,7 +66,10 @@ export class EmbeddingService {
   /**
    * Generate embeddings for a batch of texts
    */
-  async generateEmbeddings(texts: string[]): Promise<EmbeddingBatchResult> {
+  async generateEmbeddings(
+    texts: string[],
+    taskType: EmbeddingTaskType = "retrieval_document",
+  ): Promise<EmbeddingBatchResult> {
     if (!this.config.enabled) {
       throw new Error("Embedding service is disabled");
     }
@@ -183,25 +78,31 @@ export class EmbeddingService {
 
     switch (provider) {
       case "gemini": {
-        const apiKey = this.credentials.gemini.apiKey || getEnvApiKey();
-        if (!apiKey) throw new Error("Gemini API key not configured");
-        return generateGeminiEmbedding(apiKey, modelId, texts, dimensions);
-      }
-      case "openai": {
-        const { apiKey, baseUrl } = this.credentials.openai;
-        if (!apiKey) throw new Error("OpenAI API key not configured");
-        return generateOpenAIEmbedding(
-          apiKey,
-          baseUrl || "https://api.openai.com/v1",
+        return generateGeminiEmbedding(
+          this.credentials.gemini,
           modelId,
           texts,
           dimensions,
+          taskType,
+        );
+      }
+      case "openai": {
+        return generateOpenAIEmbedding(
+          this.credentials.openai,
+          modelId,
+          texts,
+          dimensions,
+          taskType,
         );
       }
       case "openrouter": {
-        const apiKey = this.credentials.openrouter.apiKey;
-        if (!apiKey) throw new Error("OpenRouter API key not configured");
-        return generateOpenRouterEmbedding(apiKey, modelId, texts, dimensions);
+        return generateOpenRouterEmbedding(
+          this.credentials.openrouter,
+          modelId,
+          texts,
+          dimensions,
+          taskType,
+        );
       }
       default:
         throw new Error(`Unknown embedding provider: ${provider}`);
@@ -209,62 +110,53 @@ export class EmbeddingService {
   }
 
   /**
-   * Generate embedding for a single text
+   * Generate embedding for a single text (usually a query)
    */
-  async generateEmbedding(text: string): Promise<EmbeddingResult> {
-    const result = await this.generateEmbeddings([text]);
+  async generateEmbedding(
+    text: string,
+    taskType: EmbeddingTaskType = "retrieval_query",
+  ): Promise<{ embedding: Float32Array; usage: any }> {
+    const { provider, modelId, dimensions } = this.config;
+
+    let result;
+    if (provider === "gemini") {
+      result = await generateGeminiEmbedding(
+        this.credentials.gemini,
+        modelId,
+        [text],
+        dimensions,
+        taskType,
+      );
+    } else if (provider === "openrouter") {
+      result = await generateOpenRouterEmbedding(
+        this.credentials.openrouter,
+        modelId,
+        [text],
+        dimensions,
+        taskType,
+      );
+    } else {
+      result = await generateOpenAIEmbedding(
+        this.credentials.openai,
+        modelId,
+        [text],
+        dimensions,
+        taskType,
+      );
+    }
+
     return {
       embedding: result.embeddings[0],
       usage: result.usage,
     };
   }
 
-  /**
-   * Split text into chunks for embedding
-   */
-  chunkText(text: string): string[] {
-    const { chunkSize = 512, chunkOverlap = 64 } = this.config;
-    const chunks: string[] = [];
-
-    // Split by sentences first
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    let currentChunk = "";
-
-    for (const sentence of sentences) {
-      if ((currentChunk + sentence).length <= chunkSize) {
-        currentChunk += sentence;
-      } else {
-        if (currentChunk) {
-          chunks.push(currentChunk.trim());
-          // Keep overlap from end of previous chunk
-          const overlapText = currentChunk.slice(-chunkOverlap);
-          currentChunk = overlapText + sentence;
-        } else {
-          // Single sentence is too long, split by words
-          const words = sentence.split(/\s+/);
-          let wordChunk = "";
-          for (const word of words) {
-            if ((wordChunk + " " + word).length <= chunkSize) {
-              wordChunk += (wordChunk ? " " : "") + word;
-            } else {
-              if (wordChunk) chunks.push(wordChunk.trim());
-              wordChunk = word;
-            }
-          }
-          if (wordChunk) currentChunk = wordChunk;
-        }
-      }
-    }
-
-    if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim());
-    }
-
-    return chunks.length > 0 ? chunks : [text];
-  }
+  // NOTE: Text chunking has been removed.
+  // For game RAG, each entity (story segment, NPC, item, etc.) is embedded as a complete unit
+  // without splitting. This preserves semantic integrity of each game entity.
 
   /**
-   * Create embedding documents from game entities
+   * Create documents with embeddings for a list of entities
    */
   async createDocuments(
     entities: Array<{
@@ -273,40 +165,55 @@ export class EmbeddingService {
       content: string;
       metadata?: EmbeddingDocument["metadata"];
     }>,
+    taskType: EmbeddingTaskType = "retrieval_document",
   ): Promise<EmbeddingDocument[]> {
+    const { provider, modelId, dimensions } = this.config;
     const documents: EmbeddingDocument[] = [];
-    const textsToEmbed: string[] = [];
-    const docMappings: Array<{ docIndex: number; entityIndex: number }> = [];
+    const texts = entities.map((e) => e.content);
 
-    // Collect all texts to embed
-    for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      const chunks = this.chunkText(entity.content);
+    // Process in batches (e.g., 100 at a time)
+    const BATCH_SIZE = 20; // Conservative batch size
+    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+      const batchTexts = texts.slice(i, i + BATCH_SIZE);
+      const batchEntities = entities.slice(i, i + BATCH_SIZE);
 
-      for (let j = 0; j < chunks.length; j++) {
-        const docId = `${entity.id}_chunk_${j}`;
+      let result;
+      if (provider === "gemini") {
+        result = await generateGeminiEmbedding(
+          this.credentials.gemini,
+          modelId,
+          batchTexts,
+          dimensions,
+          taskType,
+        );
+      } else if (provider === "openrouter") {
+        result = await generateOpenRouterEmbedding(
+          this.credentials.openrouter,
+          modelId,
+          batchTexts,
+          dimensions,
+          taskType,
+        );
+      } else {
+        result = await generateOpenAIEmbedding(
+          this.credentials.openai,
+          modelId,
+          batchTexts,
+          dimensions,
+          taskType,
+        );
+      }
+
+      batchEntities.forEach((entity, index) => {
         documents.push({
-          id: docId,
-          type: entity.type,
+          id: `${entity.id}_doc`, // Simple ID for now, since we aren't chunking yet
           entityId: entity.id,
-          content: chunks[j],
+          type: entity.type,
+          content: entity.content,
+          embedding: result.embeddings[index],
           metadata: entity.metadata,
         });
-        textsToEmbed.push(chunks[j]);
-        docMappings.push({ docIndex: documents.length - 1, entityIndex: i });
-      }
-    }
-
-    // Generate embeddings in batches
-    const batchSize = 100;
-    for (let i = 0; i < textsToEmbed.length; i += batchSize) {
-      const batch = textsToEmbed.slice(i, i + batchSize);
-      const result = await this.generateEmbeddings(batch);
-
-      for (let j = 0; j < result.embeddings.length; j++) {
-        const docIndex = i + j;
-        documents[docIndex].embedding = result.embeddings[j];
-      }
+      });
     }
 
     return documents;
@@ -461,6 +368,21 @@ export const EMBEDDING_MODELS: Record<
       id: "cohere/embed-multilingual-v3.0",
       name: "Cohere Embed Multilingual v3",
       dimensions: 1024,
+    },
+    {
+      id: "google/gecko",
+      name: "Google Gecko",
+      dimensions: 768,
+    },
+    {
+      id: "voyage/voyage-large-2",
+      name: "Voyage Large 2",
+      dimensions: 1536,
+    },
+    {
+      id: "nomic-ai/nomic-embed-text-v1.5",
+      name: "Nomic Embed Text v1.5",
+      dimensions: 768,
     },
   ],
 };

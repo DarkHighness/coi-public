@@ -22,6 +22,7 @@ import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
 import {
   createStateSnapshot,
   restoreStateFromSnapshot,
+  createFork,
 } from "../utils/snapshotManager";
 import {
   getThemeKeyForAtmosphere,
@@ -952,7 +953,12 @@ export const useGameEngine = () => {
     }
   };
 
-  const navigateToNode = (nodeId: string) => {
+  /**
+   * Navigate to a node, optionally creating a fork (new timeline branch)
+   * @param nodeId - The node to navigate to
+   * @param isFork - If true, creates a new fork branch from this node
+   */
+  const navigateToNode = (nodeId: string, isFork: boolean = false) => {
     setGameState((prev) => {
       const targetNode = prev.nodes[nodeId];
       let newState = { ...prev, activeNodeId: nodeId };
@@ -961,6 +967,26 @@ export const useGameEngine = () => {
         // Restore state from snapshot
         newState = restoreStateFromSnapshot(newState, targetNode.stateSnapshot);
       }
+
+      // If this is a fork operation (going back to an earlier point to diverge),
+      // create a new fork branch
+      if (isFork && nodeId !== prev.activeNodeId) {
+        const { newForkId, newForkTree } = createFork(
+          prev.forkId,
+          prev.forkTree,
+          nodeId,
+          newState.turnNumber,
+        );
+        newState = {
+          ...newState,
+          forkId: newForkId,
+          forkTree: newForkTree,
+        };
+        console.log(
+          `[Fork] Created new fork ${newForkId} from node ${nodeId}, parent fork: ${prev.forkId}`,
+        );
+      }
+
       return newState;
     });
   };

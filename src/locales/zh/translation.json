@@ -198,10 +198,6 @@
     "model": "嵌入模型",
     "dimensions": "向量维度",
     "advanced": "高级设置",
-    "chunkSize": "分块大小",
-    "chunkSizeHelp": "每个嵌入文本块的字符数",
-    "chunkOverlap": "分块重叠",
-    "chunkOverlapHelp": "相邻块之间的重叠字符数",
     "topK": "检索数量",
     "topKHelp": "检索的相似结果数量",
     "threshold": "相似度阈值",
@@ -583,5 +579,20 @@
       "resetDescription": "要解决此问题，您需要重置游戏数据。这将清除所有存档和设置。",
       "resetButton": "清除数据并重置游戏"
     }
+  },
+  "ragDebugger": {
+    "title": "RAG 调试器",
+    "searchPlaceholder": "输入搜索查询...",
+    "search": "搜索",
+    "searching": "搜索中...",
+    "noIndex": "未找到嵌入索引。请先开始游戏。",
+    "noResults": "输入查询以搜索嵌入索引。",
+    "score": "分数",
+    "error": "搜索失败",
+    "currentForkOnly": "仅当前分支",
+    "beforeCurrentTurn": "仅当前回合之前",
+    "noEmbeddingManager": "嵌入管理器未初始化。",
+    "rawDocsError": "无法获取原始搜索结果。",
+    "searchFailed": "搜索失败，请重试。"
   }
 }

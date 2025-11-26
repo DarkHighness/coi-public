@@ -84,7 +84,7 @@ import {
 
 let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
 let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
-let openRouterConfig: OpenRouterConfig = { apiKey: "", baseUrl: "" };
+let openRouterConfig: OpenRouterConfig = { apiKey: "" };
 let currentSettings: AISettings = JSON.parse(JSON.stringify(DEFAULTS));
 
 export const updateAIConfig = (settings: AISettings) => {
@@ -106,12 +106,8 @@ export const updateAIConfig = (settings: AISettings) => {
     modelId: "",
   };
 
-  const openRouterBase = settings.openrouter?.baseUrl
-    ? settings.openrouter.baseUrl.replace(/\/+$/, "")
-    : "https://openrouter.ai/api/v1";
   openRouterConfig = {
     apiKey: settings.openrouter?.apiKey || "",
-    baseUrl: openRouterBase,
   };
 };
 
@@ -991,15 +987,39 @@ const runAgenticLoop = async (
               const query = args.query as string;
               const types = args.types as string[] | undefined;
               const topK = (args.topK as number) || 5;
+              const currentForkOnly = args.currentForkOnly as boolean | undefined;
+              const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
 
-              const ragContext = await embeddingManager.retrieveContext(query, {
+              // Build search options with fork/turn filtering
+              const searchOptions: any = {
                 topK,
                 types: types as any,
-              });
+              };
+
+              // Add fork filtering if requested
+              if (currentForkOnly) {
+                searchOptions.currentForkOnly = true;
+                searchOptions.forkId = db.getState().forkId;
+                searchOptions.forkTree = db.getState().forkTree;
+              }
+
+              // Add turn filtering if requested
+              if (beforeCurrentTurn) {
+                searchOptions.beforeCurrentTurn = true;
+                searchOptions.currentTurn = db.getState().turnNumber;
+              }
+
+              const ragContext = await embeddingManager.retrieveContext(query, searchOptions);
 
               output = {
                 success: true,
                 query,
+                filters: {
+                  currentForkOnly: currentForkOnly || false,
+                  beforeCurrentTurn: beforeCurrentTurn || false,
+                  forkId: currentForkOnly ? db.getState().forkId : undefined,
+                  turnNumber: beforeCurrentTurn ? db.getState().turnNumber : undefined,
+                },
                 results: {
                   story: ragContext.storyContext,
                   npc: ragContext.npcContext,

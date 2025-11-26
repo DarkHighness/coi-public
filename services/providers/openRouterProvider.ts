@@ -1,28 +1,23 @@
 import { OpenRouter } from "@openrouter/sdk";
 import { parseModelCapabilities } from "../modelUtils";
-import { ModelInfo } from "../../types";
+import { ModelInfo, EmbeddingTaskType } from "../../types";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
 import { convertJsonSchemaToOpenAIObject } from "../schemaUtils";
 
 export interface OpenRouterConfig {
   apiKey: string;
-  baseUrl?: string;
 }
 
 export const validateConnection = async (
   config: OpenRouterConfig,
 ): Promise<void> => {
   try {
-    const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/models`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -38,16 +33,12 @@ export const getModels = async (
   config: OpenRouterConfig,
 ): Promise<ModelInfo[]> => {
   try {
-    const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/models`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
@@ -57,7 +48,7 @@ export const getModels = async (
 
     return json.data.map((m: any) => {
       const capabilities = {
-        text: false,
+        text: true, // v1 models are generally text capable
         image: false,
         video: false,
         audio: false,
@@ -65,43 +56,32 @@ export const getModels = async (
         parallelTools: false,
       };
 
-      // 1. Try to detect from OpenRouter-style fields
-      const parsedCaps = parseModelCapabilities(m);
-      if (parsedCaps.text) capabilities.text = true;
-      if (parsedCaps.image) capabilities.image = true;
-      if (parsedCaps.audio) capabilities.audio = true;
-      if (parsedCaps.video) capabilities.video = true;
-      if (parsedCaps.tools) capabilities.tools = true;
-      if (parsedCaps.parallelTools) capabilities.parallelTools = true;
+      // Heuristics based on model ID (slug)
+      const id = m.id.toLowerCase();
+      const name = (m.name || "").toLowerCase();
 
-      // 2. Fallback to ID heuristics if no capabilities detected yet (or to augment)
-      const hasExplicitInfo =
-        capabilities.text ||
-        capabilities.image ||
-        capabilities.video ||
-        capabilities.audio;
-
-      if (!hasExplicitInfo) {
-        // Fallback to ID heuristics if architecture is missing
-        const id = m.id.toLowerCase();
-        if (
-          id.includes("dall-e") ||
-          id.includes("stable-diffusion") ||
-          id.includes("flux") ||
-          id.includes("midjourney")
-        )
-          capabilities.image = true;
-        else capabilities.text = true; // Default to text
+      // Image Capability
+      if (
+        id.includes("vision") ||
+        id.includes("claude-3") ||
+        id.includes("gpt-4") ||
+        id.includes("gemini") ||
+        id.includes("llava") ||
+        id.includes("vl")
+      ) {
+        capabilities.image = true;
       }
 
-      // Ensure at least one capability is true (default to text if nothing else found)
+      // Tools Capability
       if (
-        !capabilities.text &&
-        !capabilities.image &&
-        !capabilities.video &&
-        !capabilities.audio
+        id.includes("gpt-4") ||
+        id.includes("gpt-3.5-turbo") ||
+        id.includes("claude-3") ||
+        id.includes("mistral-large") ||
+        id.includes("gemini-1.5") ||
+        id.includes("command-r")
       ) {
-        capabilities.text = true;
+        capabilities.tools = true;
       }
 
       return {
@@ -224,7 +204,7 @@ export const generateContent = async (
 
   try {
     const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/chat/completions`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -404,7 +384,7 @@ export const generateImage = async (
     };
 
     const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/chat/completions`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -457,7 +437,7 @@ export const generateImage = async (
     };
 
     const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/images/generations`,
+      "https://openrouter.ai/api/v1/images/generations",
       {
         method: "POST",
         headers: {
@@ -511,7 +491,7 @@ export const generateSpeech = async (
   return generateOpenAISpeech(
     {
       apiKey: config.apiKey,
-      baseUrl: config.baseUrl || "https://openrouter.ai/api/v1",
+      baseUrl: "https://openrouter.ai/api/v1",
       modelId: model,
     },
     model,
@@ -538,16 +518,12 @@ export const getEmbeddingModels = async (
   config: OpenRouterConfig,
 ): Promise<EmbeddingModelInfo[]> => {
   try {
-    const response = await fetch(
-      `${config.baseUrl || "https://openrouter.ai/api/v1"}/models`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          "Content-Type": "application/json",
-        },
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
@@ -559,8 +535,24 @@ export const getEmbeddingModels = async (
     for (const model of json.data) {
       const id = model.id.toLowerCase();
       // Check for embedding models
-      if (id.includes("embed") || id.includes("embedding")) {
+      if (
+        id.includes("embed") ||
+        id.includes("bert") ||
+        id.includes("nomic") ||
+        id.includes("gecko") ||
+        id.includes("bge") ||
+        id.includes("gte") ||
+        id.includes("e5") ||
+        id.includes("paraphrase")
+      ) {
         let dimensions = 1024; // Default
+
+        // Try to guess dimensions from name
+        if (id.includes("small") || id.includes("light")) dimensions = 384;
+        if (id.includes("base")) dimensions = 768;
+        if (id.includes("large")) dimensions = 1024;
+
+        // Specific overrides
         if (id.includes("text-embedding-3-small")) dimensions = 1536;
         if (id.includes("text-embedding-3-large")) dimensions = 3072;
         if (
@@ -573,6 +565,8 @@ export const getEmbeddingModels = async (
           id.includes("embed-multilingual-light-v3")
         )
           dimensions = 384;
+        if (id.includes("nomic-embed")) dimensions = 768;
+        if (id.includes("gecko")) dimensions = 768;
 
         embeddingModels.push({
           id: model.id,
@@ -652,8 +646,9 @@ export const generateEmbedding = async (
   modelId: string,
   texts: string[],
   dimensions?: number,
+  taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResult> => {
-  const url = `${config.baseUrl || "https://openrouter.ai/api/v1"}/embeddings`;
+  const url = "https://openrouter.ai/api/v1/embeddings";
 
   const body: any = {
     model: modelId,

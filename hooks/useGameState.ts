@@ -4,6 +4,7 @@ import {
   StoryOutline,
   CharacterStatus,
   AliveEntities,
+  ForkTree,
 } from "../types";
 import { DEFAULT_CHARACTER } from "../utils/constants";
 
@@ -19,6 +20,20 @@ const EMPTY_ALIVE_ENTITIES: AliveEntities = {
   conditions: [],
   hiddenTraits: [],
   causalChains: [],
+};
+
+// Default fork tree (original timeline)
+const INITIAL_FORK_TREE: ForkTree = {
+  nodes: {
+    0: {
+      id: 0,
+      parentId: null,
+      createdAt: 0,
+      createdAtTurn: 0,
+      sourceNodeId: "",
+    },
+  },
+  nextForkId: 1,
 };
 
 const INITIAL_STATE: GameState = {
@@ -78,6 +93,10 @@ const INITIAL_STATE: GameState = {
   // Context Priority System
   aliveEntities: EMPTY_ALIVE_ENTITIES,
   turnNumber: 0,
+
+  // Fork System
+  forkId: 0,
+  forkTree: INITIAL_FORK_TREE,
 };
 
 export const useGameState = () => {
@@ -99,6 +118,9 @@ export const useGameState = () => {
       // Reset context priority system
       aliveEntities: EMPTY_ALIVE_ENTITIES,
       turnNumber: 0,
+      // Reset fork system
+      forkId: 0,
+      forkTree: INITIAL_FORK_TREE,
     });
   };
 

@@ -130,7 +130,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <button
             onClick={onSettings}
             className="p-2 text-theme-muted hover:text-theme-primary transition-colors rounded-full hover:bg-theme-surface-highlight/50"
-            title={t("settings")}
+            title={t("settings.title")}
           >
             <svg
               className="w-6 h-6"
