@@ -124,16 +124,12 @@ function handleOpenEditor(
     preventAction: true,
     action: { type: "open_editor" },
   };
-
 }
 
 /**
  * /rag - Open RAG Debugger
  */
-function handleOpenRAG(
-  args: string[],
-  context: CommandContext,
-): CommandResult {
+function handleOpenRAG(args: string[], context: CommandContext): CommandResult {
   return {
     handled: true,
     preventAction: true,

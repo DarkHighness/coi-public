@@ -75,16 +75,18 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
         searchOptions.currentTurn = gameState.turnNumber;
       }
 
-      const response = await embeddingManager.retrieveContext(query, searchOptions);
+      const response = await embeddingManager.retrieveContext(
+        query,
+        searchOptions,
+      );
 
       // We need to map the results back to our display format
       if (response && (response as any).relevantDocs) {
-         setResults((response as any).relevantDocs);
+        setResults((response as any).relevantDocs);
       } else {
-         // Fallback if we can't get raw docs
-         setError(t("ragDebugger.rawDocsError"));
+        // Fallback if we can't get raw docs
+        setError(t("ragDebugger.rawDocsError"));
       }
-
     } catch (err: any) {
       console.error("RAG Search failed:", err);
       setError(t("ragDebugger.searchFailed"));
@@ -97,23 +99,43 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className={`bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col ${themeFont}`}>
+      <div
+        className={`bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col ${themeFont}`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-theme-border">
-          <h2 className="text-xl font-bold text-theme-primary">{t("ragDebugger.title")}</h2>
+          <h2 className="text-xl font-bold text-theme-primary">
+            {t("ragDebugger.title")}
+          </h2>
           <button
             onClick={onClose}
             className="text-theme-muted hover:text-theme-text transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         {/* Search Bar */}
         <div className="p-4 border-b border-theme-border bg-theme-bg/50">
-          <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-2">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch();
+            }}
+            className="flex gap-2"
+          >
             <input
               type="text"
               value={query}
@@ -127,7 +149,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
               disabled={isSearching || !query.trim()}
               className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors disabled:opacity-50"
             >
-              {isSearching ? t("ragDebugger.searching") : t("ragDebugger.search")}
+              {isSearching
+                ? t("ragDebugger.searching")
+                : t("ragDebugger.search")}
             </button>
           </form>
 
@@ -141,8 +165,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   onChange={(e) => setCurrentForkOnly(e.target.checked)}
                   className="w-4 h-4 rounded border-theme-border text-theme-primary focus:ring-theme-primary"
                 />
-                <span>{t("ragDebugger.currentForkOnly", "Current Fork Only")}</span>
-                <span className="text-theme-muted text-xs">(fork: {gameState.forkId})</span>
+                <span>
+                  {t("ragDebugger.currentForkOnly", "Current Fork Only")}
+                </span>
+                <span className="text-theme-muted text-xs">
+                  (fork: {gameState.forkId})
+                </span>
               </label>
               <label className="flex items-center gap-2 text-theme-text cursor-pointer">
                 <input
@@ -151,8 +179,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   onChange={(e) => setBeforeCurrentTurn(e.target.checked)}
                   className="w-4 h-4 rounded border-theme-border text-theme-primary focus:ring-theme-primary"
                 />
-                <span>{t("ragDebugger.beforeCurrentTurn", "Before Current Turn")}</span>
-                <span className="text-theme-muted text-xs">(turn: {gameState.turnNumber})</span>
+                <span>
+                  {t("ragDebugger.beforeCurrentTurn", "Before Current Turn")}
+                </span>
+                <span className="text-theme-muted text-xs">
+                  (turn: {gameState.turnNumber})
+                </span>
               </label>
             </div>
           )}
@@ -169,7 +201,10 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
           )}
 
           {results.map((result, idx) => (
-            <div key={idx} className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-3 hover:border-theme-primary/50 transition-colors">
+            <div
+              key={idx}
+              className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-3 hover:border-theme-primary/50 transition-colors"
+            >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 bg-theme-primary/20 text-theme-primary text-xs rounded-full uppercase font-bold">

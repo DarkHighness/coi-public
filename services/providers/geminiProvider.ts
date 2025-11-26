@@ -1,4 +1,16 @@
-import { GoogleGenAI, Schema, Type, Modality } from "@google/genai";
+import {
+  GoogleGenAI,
+  Schema,
+  Type,
+  Modality,
+  Content,
+  Part,
+  GenerateContentResponse,
+  FunctionCall,
+  FunctionResponse,
+  Tool,
+  FunctionDeclaration,
+} from "@google/genai";
 import { ModelInfo, EmbeddingTaskType } from "../../types";
 import { convertJsonSchemaToGemini, JsonSchema } from "../schemaUtils";
 
@@ -72,7 +84,7 @@ export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
       .map((m) => ({
         id: m.name.replace("models/", ""),
         name: m.displayName || m.name,
-        capabilities: m.capabilities,
+        capabilities: (m as any).capabilities,
       }));
   } catch (e) {
     console.warn("Failed to list Gemini models", e);
@@ -85,22 +97,24 @@ export const getModels = async (config: GeminiConfig): Promise<ModelInfo[]> => {
   }
 };
 
+interface GenerateContentOptions {
+  thinkingLevel?: "low" | "medium" | "high";
+  mediaResolution?: "low" | "medium" | "high";
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+  onChunk?: (text: string) => void;
+  tools?: any[]; // Keep as any[] for now as we map from internal tool schema
+}
+
 export const generateContent = async (
   config: GeminiConfig,
   model: string,
   systemInstruction: string,
-  contents: any[],
+  contents: Content[],
   schema?: JsonSchema,
-  options?: {
-    thinkingLevel?: "low" | "medium" | "high";
-    mediaResolution?: "low" | "medium" | "high";
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    minP?: number;
-    onChunk?: (text: string) => void;
-    tools?: any[]; // Added tools support
-  },
+  options?: GenerateContentOptions,
 ): Promise<{ result: any; usage: any; raw: any }> => {
   const ai = getGeminiClient(config);
 
@@ -108,7 +122,7 @@ export const generateContent = async (
   const processedContents = options?.mediaResolution
     ? contents.map((content) => ({
         ...content,
-        parts: content.parts.map((part: any) => {
+        parts: content.parts?.map((part: Part) => {
           if (part.inlineData) {
             return {
               ...part,
@@ -163,8 +177,8 @@ export const generateContent = async (
   }
 
   let text = "";
-  let response: any;
-  let streamedFunctionCalls: any[] = [];
+  let response: any; // GenerateContentResult or similar
+  let streamedFunctionCalls: FunctionCall[] = [];
   let streamedUsage: any = null;
 
   console.log(
@@ -174,7 +188,7 @@ export const generateContent = async (
   if (options?.onChunk) {
     const stream = await ai.models.generateContentStream({
       model: model,
-      contents: processedContents,
+      contents: processedContents as Content[],
       config: generationConfig,
     });
 
@@ -215,7 +229,7 @@ export const generateContent = async (
   } else {
     response = await ai.models.generateContent({
       model: model,
-      contents: processedContents,
+      contents: processedContents as Content[],
       config: generationConfig,
     });
     console.log(
@@ -236,7 +250,7 @@ export const generateContent = async (
     response._streamedFunctionCalls.length > 0
   ) {
     functionCalls = response._streamedFunctionCalls.map(
-      (fc: any, index: number) => ({
+      (fc: FunctionCall, index: number) => ({
         id: `gemini_call_${fc.name}_${index}`,
         name: fc.name,
         args: fc.args,
@@ -245,12 +259,12 @@ export const generateContent = async (
   }
   // From non-streaming response
   else if (candidate?.content?.parts) {
-    const fcParts = candidate.content.parts.filter((p: any) => p.functionCall);
+    const fcParts = candidate.content.parts.filter((p: Part) => p.functionCall);
     if (fcParts.length > 0) {
-      functionCalls = fcParts.map((p: any, index: number) => ({
-        id: `gemini_call_${p.functionCall.name}_${index}`,
-        name: p.functionCall.name,
-        args: p.functionCall.args,
+      functionCalls = fcParts.map((p: Part, index: number) => ({
+        id: `gemini_call_${p.functionCall?.name}_${index}`,
+        name: p.functionCall?.name,
+        args: p.functionCall?.args,
       }));
     }
   }
@@ -274,8 +288,8 @@ export const generateContent = async (
   if (!text && !options?.onChunk) {
     // For non-streaming, safely extract text from parts
     const textParts =
-      candidate?.content?.parts?.filter((p: any) => p.text) || [];
-    text = textParts.map((p: any) => p.text).join("");
+      candidate?.content?.parts?.filter((p: Part) => p.text) || [];
+    text = textParts.map((p: Part) => p.text).join("");
   }
 
   if (finishReason === "SAFETY") {
@@ -682,44 +696,34 @@ export const generateEmbedding = async (
   dimensions?: number,
   taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResult> => {
-  const apiKey = config.apiKey;
-  if (!apiKey) throw new Error("Gemini API key not configured");
+  const ai = getGeminiClient(config);
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:batchEmbedContents?key=${apiKey}`;
+  // The SDK's embedContent takes a single content or string.
+  // We need to map over texts and use Promise.all for batch processing if the SDK doesn't expose batchEmbedContents directly.
+  // Note: The raw API supports batchEmbedContents, but if it's not on the SDK client, we parallelize.
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      requests: texts.map((text) => {
-        const req: any = {
-          model: `models/${modelId}`,
-          content: { parts: [{ text }] },
-          outputDimensionality: dimensions,
-        };
-
-        if (taskType) {
-          req.taskType = taskType.toUpperCase();
-        }
-
-        return req;
-      }),
-    }),
+  const promises = texts.map(async (text) => {
+    const result = await ai.models.embedContent({
+      model: modelId,
+      contents: [{ parts: [{ text }] }],
+      config: {
+        outputDimensionality: dimensions,
+      },
+    });
+    return result.embeddings?.[0];
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini embedding failed: ${error}`);
-  }
+  const embeddingsResult = await Promise.all(promises);
 
-  const data = await response.json();
-  const embeddings = data.embeddings.map(
-    (e: any) => new Float32Array(e.values),
-  );
+  const embeddings = embeddingsResult.map((e: any) => {
+    // e.values is likely the array
+    return new Float32Array(e.values);
+  });
 
   return {
     embeddings,
     usage: {
+      // SDK doesn't always return usage for embeddings, so we estimate or leave 0
       promptTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
       totalTokens: texts.reduce((acc, t) => acc + Math.ceil(t.length / 4), 0),
     },

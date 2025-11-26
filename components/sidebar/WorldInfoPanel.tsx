@@ -234,25 +234,20 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                         </div>
                       )}
                       {faction.visible.relations &&
-                        Object.keys(faction.visible.relations).length > 0 && (
+                        faction.visible.relations.length > 0 && (
                           <div className="text-[10px] text-theme-muted">
                             <span className="text-theme-primary/80 font-bold block mb-0.5">
                               {t("relations") || "Relations"}:
                             </span>
                             <div className="grid grid-cols-1 gap-0.5 pl-1">
-                              {Object.entries(faction.visible.relations).map(
-                                ([key, val]) => (
-                                  <div
-                                    key={key}
-                                    className="flex justify-between"
-                                  >
-                                    <span>{key}</span>
-                                    <span className="text-theme-text/70 italic">
-                                      {val}
-                                    </span>
-                                  </div>
-                                ),
-                              )}
+                              {faction.visible.relations.map((rel, idx) => (
+                                <div key={idx} className="flex justify-between">
+                                  <span>{rel.target}</span>
+                                  <span className="text-theme-text/70 italic">
+                                    {rel.status}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}
@@ -314,24 +309,23 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                             </div>
                           )}
                           {faction.hidden.relations &&
-                            Object.keys(faction.hidden.relations).length >
-                              0 && (
+                            faction.hidden.relations.length > 0 && (
                               <div className="text-[10px] text-theme-danger/60">
                                 <span className="text-theme-unlocked/80 font-bold block mb-0.5">
                                   {t("relations") || "Relations"}:
                                 </span>
                                 <div className="grid grid-cols-1 gap-0.5 pl-1">
-                                  {Object.entries(faction.hidden.relations).map(
-                                    ([key, val]) => (
-                                      <div
-                                        key={key}
-                                        className="flex justify-between"
-                                      >
-                                        <span>{key}</span>
-                                        <span className="italic">{val}</span>
-                                      </div>
-                                    ),
-                                  )}
+                                  {faction.hidden.relations.map((rel, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex justify-between"
+                                    >
+                                      <span>{rel.target}</span>
+                                      <span className="italic">
+                                        {rel.status}
+                                      </span>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}

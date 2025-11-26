@@ -987,8 +987,12 @@ const runAgenticLoop = async (
               const query = args.query as string;
               const types = args.types as string[] | undefined;
               const topK = (args.topK as number) || 5;
-              const currentForkOnly = args.currentForkOnly as boolean | undefined;
-              const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
+              const currentForkOnly = args.currentForkOnly as
+                | boolean
+                | undefined;
+              const beforeCurrentTurn = args.beforeCurrentTurn as
+                | boolean
+                | undefined;
 
               // Build search options with fork/turn filtering
               const searchOptions: any = {
@@ -1009,7 +1013,10 @@ const runAgenticLoop = async (
                 searchOptions.currentTurn = db.getState().turnNumber;
               }
 
-              const ragContext = await embeddingManager.retrieveContext(query, searchOptions);
+              const ragContext = await embeddingManager.retrieveContext(
+                query,
+                searchOptions,
+              );
 
               output = {
                 success: true,
@@ -1018,7 +1025,9 @@ const runAgenticLoop = async (
                   currentForkOnly: currentForkOnly || false,
                   beforeCurrentTurn: beforeCurrentTurn || false,
                   forkId: currentForkOnly ? db.getState().forkId : undefined,
-                  turnNumber: beforeCurrentTurn ? db.getState().turnNumber : undefined,
+                  turnNumber: beforeCurrentTurn
+                    ? db.getState().turnNumber
+                    : undefined,
                 },
                 results: {
                   story: ragContext.storyContext,

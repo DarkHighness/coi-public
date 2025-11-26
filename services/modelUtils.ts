@@ -12,7 +12,8 @@ export const parseModelCapabilities = (
 ): Partial<ModelCapabilities> => {
   const capabilities: Partial<ModelCapabilities> = {};
   const architecture = info.architecture || {};
-  const supported_parameters = info.supported_parameters || {};
+  const supportedParameters =
+    info.supported_parameters || info.supportedParameters || [];
 
   // Check modalities
   if (architecture.modality) {
@@ -20,15 +21,15 @@ export const parseModelCapabilities = (
     if (architecture.modality.includes("->image")) capabilities.image = true;
     if (architecture.modality.includes("->audio")) capabilities.audio = true;
     if (architecture.modality.includes("->video")) capabilities.video = true;
-  } else if (architecture.output_modalities) {
-    if (architecture.output_modalities.includes("text"))
-      capabilities.text = true;
-    if (architecture.output_modalities.includes("image"))
-      capabilities.image = true;
-    if (architecture.output_modalities.includes("audio"))
-      capabilities.audio = true;
-    if (architecture.output_modalities.includes("video"))
-      capabilities.video = true;
+  } else {
+    const outputModalities =
+      architecture.output_modalities || architecture.outputModalities;
+    if (outputModalities) {
+      if (outputModalities.includes("text")) capabilities.text = true;
+      if (outputModalities.includes("image")) capabilities.image = true;
+      if (outputModalities.includes("audio")) capabilities.audio = true;
+      if (outputModalities.includes("video")) capabilities.video = true;
+    }
   }
 
   // Check description or tags for tool support (heuristic)
@@ -39,11 +40,8 @@ export const parseModelCapabilities = (
     description.includes("tool") ||
     description.includes("function calling") ||
     name.includes("tool") ||
-    info.context_length > 4000 // Basic heuristic: larger context often implies better capability
+    (info.context_length || info.contextLength) > 4000 // Basic heuristic
   ) {
-    // Most modern large models support tools, but let's be specific if possible.
-    // OpenRouter often doesn't explicitly flag tools in architecture.
-    // We'll assume true for known providers/models if not explicitly denied.
     capabilities.tools = true;
   }
 
@@ -57,9 +55,9 @@ export const parseModelCapabilities = (
     capabilities.parallelTools = true;
 
   // Check supported_parameters (OpenRouter/v1 standard)
-  if (info.supported_parameters && info.supported_parameters instanceof Array) {
-    if (supported_parameters.includes("tools")) capabilities.tools = true;
-    if (supported_parameters.includes("tool_choice")) capabilities.tools = true;
+  if (supportedParameters && supportedParameters instanceof Array) {
+    if (supportedParameters.includes("tools")) capabilities.tools = true;
+    if (supportedParameters.includes("tool_choice")) capabilities.tools = true;
   }
 
   return capabilities;

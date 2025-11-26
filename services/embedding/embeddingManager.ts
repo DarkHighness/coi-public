@@ -665,7 +665,8 @@ export class EmbeddingManager {
       await this.embeddingService.generateEmbedding(query, "retrieval_query");
 
     // Search for similar documents (get more results initially for filtering and re-ranking)
-    const initialTopK = options?.topK || this.config.settings.embedding.topK || 10;
+    const initialTopK =
+      options?.topK || this.config.settings.embedding.topK || 10;
     const fetchMultiplier = 3; // Always fetch more for re-ranking
 
     const results = await this.searchManager.search(queryEmbedding, {
@@ -677,9 +678,10 @@ export class EmbeddingManager {
     });
 
     // Get ancestor fork IDs for priority ranking
-    const allowedForkIds = (options?.forkId !== undefined && options?.forkTree)
-      ? getAncestorForkIds(options.forkId, options.forkTree)
-      : [];
+    const allowedForkIds =
+      options?.forkId !== undefined && options?.forkTree
+        ? getAncestorForkIds(options.forkId, options.forkTree)
+        : [];
     const currentForkId = options?.forkId ?? 0;
     const currentTurn = options?.currentTurn ?? 0;
 
@@ -687,7 +689,11 @@ export class EmbeddingManager {
     let filteredResults = results;
 
     // Filter by fork (timeline branch) if requested
-    if (options?.currentForkOnly && options.forkId !== undefined && options.forkTree) {
+    if (
+      options?.currentForkOnly &&
+      options.forkId !== undefined &&
+      options.forkTree
+    ) {
       filteredResults = filteredResults.filter((r) => {
         const docForkId = r.document.metadata?.forkId;
         // Include documents without forkId (legacy) or from allowed forks
@@ -700,7 +706,9 @@ export class EmbeddingManager {
       filteredResults = filteredResults.filter((r) => {
         const docTurnNumber = r.document.metadata?.turnNumber;
         // Include documents without turnNumber or from before current turn
-        return docTurnNumber === undefined || docTurnNumber < options.currentTurn!;
+        return (
+          docTurnNumber === undefined || docTurnNumber < options.currentTurn!
+        );
       });
     }
 
@@ -821,16 +829,22 @@ export class EmbeddingManager {
     } else if (allowedForkIds.includes(docForkId)) {
       parts.push(`[TIMELINE: Ancestor (fork:${docForkId})]`);
     } else {
-      parts.push(`[TIMELINE: ⚠️ Alternate (fork:${docForkId}) - This content is from a different timeline branch!]`);
+      parts.push(
+        `[TIMELINE: ⚠️ Alternate (fork:${docForkId}) - This content is from a different timeline branch!]`,
+      );
     }
 
     // Turn annotation
     if (docTurnNumber < currentTurn) {
-      parts.push(`[TIME: Past (turn:${docTurnNumber}, current:${currentTurn})]`);
+      parts.push(
+        `[TIME: Past (turn:${docTurnNumber}, current:${currentTurn})]`,
+      );
     } else if (docTurnNumber === currentTurn) {
       parts.push(`[TIME: Current Turn (turn:${docTurnNumber})]`);
     } else {
-      parts.push(`[TIME: ⚠️ Future (turn:${docTurnNumber}, current:${currentTurn}) - This event has not occurred yet in current timeline!]`);
+      parts.push(
+        `[TIME: ⚠️ Future (turn:${docTurnNumber}, current:${currentTurn}) - This event has not occurred yet in current timeline!]`,
+      );
     }
 
     return parts.join(" ");

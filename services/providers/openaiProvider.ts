@@ -1,4 +1,11 @@
 import OpenAI from "openai";
+import {
+  ChatCompletion,
+  ChatCompletionChunk,
+  ChatCompletionMessageParam,
+  ChatCompletionCreateParams,
+  ChatCompletionTool,
+} from "openai/resources/chat/completions";
 import { ModelInfo, EmbeddingTaskType } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { convertJsonSchemaToOpenAIObject } from "../schemaUtils";
@@ -124,74 +131,116 @@ export const getModels = async (config: OpenAIConfig): Promise<ModelInfo[]> => {
   }
 };
 
+interface Tool {
+  name: string;
+  description?: string;
+  parameters: any; // JSON Schema object
+}
+
+interface GenerateContentOptions {
+  thinkingLevel?: "low" | "medium" | "high";
+  mediaResolution?: "low" | "medium" | "high";
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+  onChunk?: (text: string) => void;
+  tools?: Tool[];
+}
+
+interface ContentPart {
+  text?: string;
+  functionCall?: {
+    id?: string;
+    name: string;
+    args: Record<string, any>;
+  };
+  functionResponse?: {
+    id?: string;
+    response: Record<string, any>;
+  };
+  [key: string]: any; // For other potential parts like inline_data
+}
+
+interface ContentItem {
+  role: string;
+  content?: string;
+  parts?: ContentPart[];
+  [key: string]: any; // For other potential fields
+}
+
+interface CompletionUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
 export const generateContent = async (
   config: OpenAIConfig,
   model: string,
   systemInstruction: string,
-  contents: any[],
+  contents: ContentItem[],
   schema?: any,
-  options?: {
-    thinkingLevel?: "low" | "medium" | "high";
-    mediaResolution?: "low" | "medium" | "high";
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    minP?: number;
-    onChunk?: (text: string) => void;
-    tools?: any[]; // Added tools support
-  },
-): Promise<{ result: any; usage: any; raw: any }> => {
+  options?: GenerateContentOptions,
+): Promise<{
+  result: any;
+  usage: CompletionUsage | undefined;
+  raw:
+    | ChatCompletion
+    | ChatCompletionChunk
+    | AsyncIterable<ChatCompletionChunk>;
+}> => {
   const client = getClient(config);
 
   // Format messages for OpenAI SDK
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+  const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: systemInstruction },
-    ...contents.map((c: any) => {
-      if (c.role && c.content) return c; // Already OpenAI format
+    ...contents.map((c: ContentItem) => {
+      if (c.role && c.content) return c as ChatCompletionMessageParam; // Already OpenAI format
       if (c.role && c.parts) {
         // Map Gemini format to OpenAI
         // Handle function calls/responses in history if present
-        if (c.parts[0].functionCall) {
+        if (c.parts[0]?.functionCall) {
           return {
             role: "assistant",
-            tool_calls: c.parts.map((p: any) => ({
+            tool_calls: c.parts.map((p: ContentPart) => ({
               id:
-                p.functionCall.id ||
+                p.functionCall?.id ||
                 "call_" + Math.random().toString(36).substr(2, 9), // Use preserved ID or fallback
               type: "function",
               function: {
-                name: p.functionCall.name,
-                arguments: JSON.stringify(p.functionCall.args),
+                name: p.functionCall?.name || "",
+                arguments: JSON.stringify(p.functionCall?.args),
               },
             })),
-          };
+          } as ChatCompletionMessageParam;
         }
-        if (c.parts[0].functionResponse) {
+        if (c.parts[0]?.functionResponse) {
           return {
             role: "tool",
             tool_call_id: c.parts[0].functionResponse.id || "call_unknown", // Use preserved ID from response
             content: JSON.stringify(c.parts[0].functionResponse.response),
-          };
+          } as ChatCompletionMessageParam;
         }
 
         return {
-          role: c.role === "model" ? "assistant" : c.role,
-          content: c.parts.map((p: any) => p.text).join("\n"),
-        };
+          role: c.role === "model" ? "assistant" : (c.role as "user"),
+          content: c.parts.map((p: ContentPart) => p.text).join("\n"),
+        } as ChatCompletionMessageParam;
       }
-      return c;
+      return c as ChatCompletionMessageParam;
     }),
   ];
 
   // Map Tools to OpenAI Format
-  let openAITools: OpenAI.Chat.ChatCompletionTool[] | undefined;
+  let openAITools: ChatCompletionTool[] | undefined;
   if (options?.tools) {
-    openAITools = options.tools.map((t) => ({
+    openAITools = options.tools.map((t: Tool) => ({
       type: "function",
       function: {
         name: t.name,
         description: t.description,
-        parameters: convertJsonSchemaToOpenAIObject(t.parameters),
+        parameters: convertJsonSchemaToOpenAIObject(t.parameters, false),
       },
     }));
   }
@@ -210,12 +259,14 @@ export const generateContent = async (
   });
 
   let content = "";
-  let responseObj: any = {};
-  let toolCalls: any[] = [];
+  let responseObj:
+    | ChatCompletion
+    | ChatCompletionChunk
+    | AsyncIterable<ChatCompletionChunk> = response;
+  let toolCalls: { id: string; name: string; args: Record<string, any> }[] = [];
 
   if (options?.onChunk) {
-    const stream =
-      response as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+    const stream = response as AsyncIterable<ChatCompletionChunk>;
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content || "";
       if (delta) {
@@ -225,16 +276,16 @@ export const generateContent = async (
       // Note: Streaming tool calls is complex, usually we don't stream tool calls in this simple loop
       // If tool_calls are present in delta, we'd need to accumulate them.
       // For now, assuming non-streaming for tool use or basic streaming for text.
-      responseObj = chunk;
+      responseObj = chunk; // Keep last chunk
     }
   } else {
-    const completion = response as OpenAI.Chat.Completions.ChatCompletion;
+    const completion = response as ChatCompletion;
     responseObj = completion;
     const message = completion.choices[0]?.message;
     content = message?.content || "";
 
     if (message?.tool_calls) {
-      toolCalls = message.tool_calls.map((tc) => ({
+      toolCalls = message.tool_calls.map((tc: any) => ({
         id: tc.id, // Preserve the tool call ID for proper request/response matching
         name: tc.function.name,
         args: JSON.parse(tc.function.arguments),
@@ -245,16 +296,17 @@ export const generateContent = async (
   // If streaming, we might not get full usage stats easily from the last chunk in all providers,
   // but OpenAI sometimes sends it in a final chunk with usage field.
   // For now, we'll construct a mock usage if missing or try to extract it.
-  const usage = {
-    promptTokens: responseObj.usage?.prompt_tokens || 0,
-    completionTokens: responseObj.usage?.completion_tokens || 0,
-    totalTokens: responseObj.usage?.total_tokens || 0,
+  // @ts-ignore
+  const usageData = responseObj.usage;
+  const usage: CompletionUsage = {
+    prompt_tokens: usageData?.prompt_tokens || 0,
+    completion_tokens: usageData?.completion_tokens || 0,
+    total_tokens: usageData?.total_tokens || 0,
   };
 
   // Basic validation for non-streaming (or if we reconstructed full content)
   if (!options?.onChunk) {
-    const choice = (responseObj as OpenAI.Chat.Completions.ChatCompletion)
-      .choices[0];
+    const choice = (responseObj as ChatCompletion).choices[0];
     if (choice.finish_reason === "content_filter") {
       throw new Error(
         "OpenAI content generation failed: Content filter triggered.",
@@ -291,7 +343,7 @@ export const generateImage = async (
   model: string,
   prompt: string,
   resolution: string = "1024x1024",
-): Promise<{ url: string | null; usage?: any; raw?: any }> => {
+): Promise<{ url: string | null; usage?: CompletionUsage; raw?: any }> => {
   const client = getClient(config);
 
   let size: any = resolution;
@@ -335,7 +387,7 @@ export const generateImage = async (
   // OpenAI Image generation doesn't return standard token usage, but we can log the request
   return {
     url,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
     raw: response,
   };
 };
@@ -359,7 +411,7 @@ export const generateSpeech = async (
     format?: "mp3" | "opus" | "aac" | "flac" | "wav" | "pcm";
     instructions?: string; // For gpt-4o-mini-tts
   },
-): Promise<{ audio: ArrayBuffer; usage?: any; raw?: any }> => {
+): Promise<{ audio: ArrayBuffer; usage?: CompletionUsage; raw?: any }> => {
   const client = getClient(config);
 
   const requestBody: any = {
@@ -384,7 +436,7 @@ export const generateSpeech = async (
   const buffer = await response.arrayBuffer();
   return {
     audio: buffer,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
   };
 };
 

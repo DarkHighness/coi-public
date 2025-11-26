@@ -489,8 +489,14 @@ export const storyOutlineSchema: JsonSchema = {
                 items: {
                   type: "object",
                   properties: {
-                    target: { type: "string", description: "Target faction name" },
-                    status: { type: "string", description: "Relationship status" },
+                    target: {
+                      type: "string",
+                      description: "Target faction name",
+                    },
+                    status: {
+                      type: "string",
+                      description: "Relationship status",
+                    },
                   },
                   required: ["target", "status"],
                 },
@@ -530,8 +536,14 @@ export const storyOutlineSchema: JsonSchema = {
                 items: {
                   type: "object",
                   properties: {
-                    target: { type: "string", description: "Target faction name" },
-                    status: { type: "string", description: "Relationship status" },
+                    target: {
+                      type: "string",
+                      description: "Target faction name",
+                    },
+                    status: {
+                      type: "string",
+                      description: "Relationship status",
+                    },
                   },
                   required: ["target", "status"],
                 },

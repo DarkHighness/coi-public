@@ -1,4 +1,3 @@
-
 /**
  * Embedding Service
  * Provides text embedding generation using various AI providers
