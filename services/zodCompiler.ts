@@ -639,6 +639,15 @@ export interface OpenAIToolDefinition {
   };
 }
 
+export interface OpenRouterToolDefinition {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: OpenAISchema;
+  };
+}
+
 /**
  * 从 Zod Schema 创建 Gemini 工具定义
  */
@@ -655,13 +664,31 @@ export function createGeminiTool(
 }
 
 /**
- * 从 Zod Schema 创建 OpenAI 工具定义
+ * 从 Zod Schema 创建 OpenAI 工具定义 (Flattened, Strict)
  */
 export function createOpenAITool(
   name: string,
   description: string,
   parameters: ZodTypeAny,
 ): OpenAIToolDefinition {
+  return {
+    type: "function",
+    function: {
+      name,
+      description,
+      parameters: zodToOpenAISchema(parameters, true),
+    },
+  };
+}
+
+/**
+ * 从 Zod Schema 创建 OpenRouter 工具定义 (Nested, Standard)
+ */
+export function createOpenRouterTool(
+  name: string,
+  description: string,
+  parameters: ZodTypeAny,
+): OpenRouterToolDefinition {
   return {
     type: "function",
     function: {
@@ -695,5 +722,16 @@ export function compileToolsForOpenAI(
 ): OpenAIToolDefinition[] {
   return tools.map((t) =>
     createOpenAITool(t.name, t.description, t.parameters),
+  );
+}
+
+/**
+ * 批量编译工具定义到 OpenRouter 格式
+ */
+export function compileToolsForOpenRouter(
+  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
+): OpenRouterToolDefinition[] {
+  return tools.map((t) =>
+    createOpenRouterTool(t.name, t.description, t.parameters),
   );
 }

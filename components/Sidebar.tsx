@@ -12,6 +12,8 @@ import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { SystemFooter } from "./sidebar/SystemFooter";
 import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
 import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
+import { EmbeddingStatusPanel } from "./sidebar/EmbeddingStatusPanel";
+import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 
 interface SidebarProps {
   gameState: GameState;
@@ -60,6 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
   const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${gameState.currentLocation}.`;
+
+  const embeddingProgress = useEmbeddingStatus();
 
   return (
     <div className="flex flex-col h-full relative">
@@ -156,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onUpdateList={(newState) =>
               onUpdateUIState("relationships", newState)
             }
+            unlockMode={gameState.unlockMode}
           />
         </div>
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
@@ -185,6 +190,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             unlockMode={gameState.unlockMode}
           />
         </div>
+
+        {/* Embedding Status Panel (New) */}
+        {embeddingProgress && (
+          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg shadow-sm overflow-hidden">
+            <EmbeddingStatusPanel
+              progress={embeddingProgress}
+              isExpanded={gameState.uiState?.embeddingExpanded !== false}
+              onToggle={() =>
+                onUpdateUIState(
+                  "embeddingExpanded",
+                  gameState.uiState?.embeddingExpanded === false,
+                )
+              }
+            />
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}

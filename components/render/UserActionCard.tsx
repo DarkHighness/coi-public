@@ -1,4 +1,5 @@
-import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface UserActionCardProps {
   text: string;
@@ -14,7 +15,9 @@ export const UserActionCard: React.FC<UserActionCardProps> = ({
       <span className="text-xs uppercase tracking-widest text-theme-primary font-bold block mb-1 opacity-70">
         {labelDecided}
       </span>
-      <p className="font-medium text-lg">{text}</p>
+      <div className="font-medium text-lg prose prose-invert max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      </div>
     </div>
   </div>
 );

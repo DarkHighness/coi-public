@@ -140,10 +140,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
         {/* Inline Details */}
         <div
-          className={`overflow-hidden transition-all duration-500 ease-in-out ${
-            isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+          className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
+            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
           }`}
         >
+          <div className="overflow-hidden">
           <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
             {locationData ? (
               <div className="space-y-3 text-xs animate-fade-in">
@@ -231,7 +232,8 @@ const LocationItem: React.FC<LocationItemProps> = ({
             )}
           </div>
         </div>
-      </div>
+          </div>
+        </div>
 
       {isEditMode && (
         <div
@@ -426,10 +428,11 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
       </div>
 
       <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${
-          isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
+        <div className="overflow-hidden">
         <div className="space-y-3">
           {visibleItems.length === 0 ? (
             <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
@@ -454,6 +457,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               />
             ))
           )}
+        </div>
         </div>
       </div>
     </div>

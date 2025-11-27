@@ -375,6 +375,7 @@ export interface UIState {
   showSystemFooter?: boolean; // Persisted state for system footer
   sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
+  embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
 }
 
 // Relationship 从 zodSchemas.ts 导入
@@ -762,6 +763,12 @@ export interface AISettings {
 
   // RAG Embedding Settings
   embedding: EmbeddingConfig;
+
+  // Extra Settings
+  extra?: {
+    detailedDescription?: boolean;
+    promptInjectionEnabled?: boolean;
+  };
 }
 
 // ============================================================================

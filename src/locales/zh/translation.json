@@ -205,7 +205,8 @@
     "embedding": "RAG",
     "audio": "音频",
     "appearance": "外观",
-    "data": "数据"
+    "data": "数据",
+    "extra": "额外"
   },
   "embedding": {
     "title": "RAG 嵌入",
@@ -218,14 +219,30 @@
     "topKHelp": "检索的相似结果数量",
     "threshold": "相似度阈值",
     "thresholdHelp": "结果的最低相似度分数 (0-1)",
-    "statusInfo": "嵌入将在创建故事内容时生成。这使得在故事生成期间能够进行语义搜索以检索相关上下文。"
+    "lruLimits": "资源限制 (LRU)",
+    "maxTotal": "最大文档总数",
+    "maxPerType": "每类最大文档数",
+    "maxVersions": "每个实体最大版本数",
+    "statusInfo": "嵌入将在创建故事内容时生成。这使得在故事生成期间能够进行语义搜索以检索相关上下文。",
+    "status": "RAG 状态",
+    "phase": {
+      "complete": "完成"
+    }
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
   "you": "你",
   "settings": {
     "title": "设置",
-    "modelNotFound": "列表中未找到模型。请选择一个有效的模型。"
+    "modelNotFound": "列表中未找到模型。请选择一个有效的模型。",
+    "extra": {
+      "title": "额外设置",
+      "description": "其他配置选项",
+      "detailedDescription": "详细描述",
+      "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
+      "promptInjection": "提示词注入",
+      "promptInjectionHelp": "基于模型关键词从 prompt.toml 注入自定义提示词。"
+    }
   },
   "themeMode": "主题模式",
   "hideSystem": "隐藏系统",
@@ -378,7 +395,8 @@
     "map": "命运地图",
     "fork": "从此分叉",
     "forkConfirm": "确定要从这个时刻创造新的时间线吗？",
-    "viewMap": "查看树状图"
+    "viewMap": "查看树状图",
+    "subtitle": "命运地图 • {{count}} 个节点 • 拖动来移动 • 滚动来缩放"
   },
   "veoScriptModal": {
     "title": "Veo 脚本生成器",
@@ -630,7 +648,36 @@
     "noEvents": "暂无已知事件。",
     "inventory": "物品栏",
     "noItems": "暂无物品。",
-    "turnInfo": "第 {{turn}} 回合"
+    "turnInfo": "第 {{turn}} 回合",
+    "embedding": "RAG",
+    "embeddingStatus": "RAG 状态",
+    "embeddingDescription": "RAG 说明",
+    "noEmbeddingActivity": "暂无运行中的 Embedding 进程...",
+    "misconceptions":"常见误解",
+    "trueObjectives":"真实目标",
+    "secretOutcome":"隐藏收获",
+    "realPersonality": "真实性格",
+    "realMotives": "真实动机",
+    "trueAffinity": "真实好感度",
+    "secrets":"秘密",
+    "drawbacks":"副作用",
+    "trueCause": "真实起因",
+    "progression":"演变",
+    "cure":"治愈方法",
+    "personality":"性格",
+    "motives":"动机",
+    "affinity":"好感度",
+    "secretAgenda":"隐藏议程",
+    "trueInfluence": "真实影响",
+    "hiddenFeatures": "隐藏特性",
+    "hiddenEffects": "潜在影响",
+    "hiddenTraits": "隐藏特质",
+    "hidden": "隐藏",
+    "effects": "效果",
+    "noHiddenTraitsRevealed": "暂无已揭示的隐藏特质。",
+    "trueName": "真实姓名",
+    "trueRelationship": "真实关系",
+    "trueStatus": "真实状态"
   },
   "gameOver": "游戏结束",
   "victory": "胜利",
@@ -694,7 +741,8 @@
     "tokens": "Token:"
   },
   "common": {
-    "retry": "重试"
+    "retry": "重试",
+    "done": "完成"
   },
   "app": {
     "errors": {
@@ -718,6 +766,31 @@
     "beforeCurrentTurn": "仅当前回合之前",
     "noEmbeddingManager": "嵌入管理器未初始化。",
     "rawDocsError": "无法获取原始搜索结果。",
-    "searchFailed": "搜索失败，请重试。"
+    "searchFailed": "搜索失败，请重试。",
+    "statusActive": "活跃",
+    "statusNoIndex": "无索引",
+    "statusDisabled": "已禁用",
+    "tabSearch": "搜索",
+    "tabStats": "统计",
+    "embeddingDisabled": "RAG/嵌入功能已在设置中禁用",
+    "enableInSettings": "请在 设置 → RAG 中启用",
+    "noIndexYet": "暂无嵌入索引",
+    "indexWillBuild": "继续游戏时将自动构建索引",
+    "building": "构建中...",
+    "buildNow": "立即构建索引",
+    "rebuilding": "重建中...",
+    "rebuildIndex": "重建索引",
+    "totalDocs": "文档总数",
+    "types": "文档类型",
+    "model": "嵌入模型",
+    "webgpu": "WebGPU",
+    "typeBreakdown": "文档类型分布",
+    "refresh": "刷新统计",
+    "showMetadata": "显示元数据",
+    "noIndexStats": "暂无索引统计信息",
+    "rebuildFailed": "重建索引失败",
+    "fork": "分支",
+    "turn": "回合",
+    "importance": "权重"
   }
 }

@@ -592,15 +592,15 @@ function convertToOpenAIMessages(
 /**
  * Convert tools to OpenAI format
  */
+import { createOpenRouterTool } from "../zodCompiler";
+
+/**
+ * Convert tools to OpenAI format (actually OpenRouter format now)
+ */
 function convertToOpenAITools(tools: GenerateContentOptions["tools"]): any[] {
-  return (tools || []).map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: zodToOpenAISchema(tool.parameters),
-    },
-  }));
+  return (tools || []).map((tool) =>
+    createOpenRouterTool(tool.name, tool.description, tool.parameters)
+  );
 }
 
 // ============================================================================

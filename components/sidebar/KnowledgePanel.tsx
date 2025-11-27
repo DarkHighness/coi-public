@@ -95,12 +95,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
       </div>
 
       <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          expandedSet.has(k.id)
-            ? "max-h-[800px] opacity-100"
-            : "max-h-0 opacity-0"
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+          expandedSet.has(k.id) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
+        <div className="overflow-hidden">
         <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
           <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
             {t("description") || "Description"}
@@ -178,6 +177,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
               </span>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

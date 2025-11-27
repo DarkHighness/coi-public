@@ -307,11 +307,14 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
       </div>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+        className={`grid transition-[grid-template-rows] duration-300 ${
+          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
       >
+        <div className="overflow-hidden">
         <div className="px-2 pb-2 pt-0">
           <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
-            {skill.visible?.description || "No description"}
+            {skill.visible?.description || t("noDescription") || "No description"}
           </p>
 
           {/* Unlocked Hidden Truth */}
@@ -361,6 +364,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
               )}
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
@@ -655,7 +659,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             character.hiddenTraits.length > 0 &&
             character.hiddenTraits.some((t) => t.unlocked) && (
               <div>
-                <h4 className="text-[10px] text-theme-primary uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1 truncate">
+                <h4 className="text-[10px] text-theme-primary uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
                   <svg
                     className="w-3 h-3 shrink-0"
                     fill="none"

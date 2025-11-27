@@ -34,6 +34,7 @@ import type {
 
 import { GameDatabase } from "./gameDatabase";
 import { getEmbeddingManager } from "./embedding";
+import promptInjectionData from "../src/prompt/prompt.toml";
 
 // Provider imports - 使用新的统一类型系统
 import {
@@ -166,6 +167,12 @@ export const updateAIConfig = (settings: AISettings): void => {
   openRouterConfig = {
     apiKey: settings.openrouter?.apiKey || "",
   };
+
+  // Update Embedding Manager config
+  const embeddingManager = getEmbeddingManager();
+  if (embeddingManager) {
+    embeddingManager.updateConfig(settings);
+  }
 };
 
 // ============================================================================
@@ -245,6 +252,8 @@ const createLogEntry = (
     hasResponse: !!res,
     hasParsedResult: !!parsedResult,
     toolCallCount: toolCalls?.length || 0,
+    requestData: req,
+    responseData: res,
   });
   return entry;
 };
@@ -567,68 +576,6 @@ export const generateContentUnified = async (
 };
 
 // ============================================================================
-// Story Generation
-// ============================================================================
-
-/**
- * 生成故事大纲
- */
-export const generateStoryOutline = async (
-  theme: string,
-  language: string,
-  customContext?: string,
-  tFunc?: (key: string, options?: Record<string, unknown>) => string,
-  onChunk?: (text: string) => void,
-): Promise<{ outline: StoryOutline; log: LogEntry }> => {
-  const { provider, modelId } = getProviderConfig("story");
-
-  let themeDataWorldSetting: string | undefined;
-  let themeDataBackgroundTemplate: string | undefined;
-  let themeDataExample: string | undefined;
-  let themeDataNarrativeStyle: string | undefined;
-
-  if (tFunc) {
-    // Use dynamic translation function from React component
-    themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
-    themeDataBackgroundTemplate =
-      tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
-      tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
-    themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
-    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, {
-      ns: "themes",
-    });
-  } else {
-    // Fallback to static config (text content is only in translation files)
-    const themeData = THEMES[theme] || THEMES["fantasy"];
-    // These text fields are only available in translation files, not in THEMES constant
-    themeDataBackgroundTemplate = themeData.backgroundTemplate;
-    themeDataExample = themeData.example;
-  }
-
-  const prompt = getOutlinePrompt(
-    theme,
-    language,
-    customContext, // customContext (user-provided context)
-    themeDataWorldSetting, // worldSetting (theme's world description)
-    themeDataBackgroundTemplate, // backgroundTemplate (character setup template)
-    themeDataExample, // themeExample (style reference)
-    false, // isRestricted (allow creative freedom)
-    themeDataNarrativeStyle, // narrativeStyle (writing style guidance)
-  );
-
-  const { result, log } = await generateContentUnified(
-    provider,
-    modelId,
-    "You are a creative writer.",
-    [{ role: "user", parts: [{ text: prompt }] }],
-    storyOutlineSchema,
-    { onChunk },
-  );
-
-  return { outline: result as StoryOutline, log: log! };
-};
-
-// ============================================================================
 // Phased Story Outline Generation
 // ============================================================================
 
@@ -719,6 +666,18 @@ export const generateStoryOutlinePhased = async (
   } else {
     // Build fresh system instruction
     systemInstruction = getOutlineSystemInstruction(language, isRestricted);
+
+    // Inject prompt injections from config
+    const promptInjectionEnabled = currentSettings.extra?.promptInjectionEnabled;
+    if (promptInjectionEnabled && promptInjectionData) {
+      const loweredModelId = modelId.toLowerCase();
+      console.log(`[PromptInjection] Checking for prompts to inject for model ${modelId}`);
+      const matchedPrompt = promptInjectionData.prompts.find((p) => p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())));
+      if (matchedPrompt) {
+        systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
+        console.warn(`[PromptInjection] Injecting outline prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")})`);
+      }
+    }
   }
 
   // Helper to save conversation state
@@ -1078,11 +1037,13 @@ const buildSystemContext = (
   isRestricted: boolean,
   outline: StoryOutline | null,
   godMode?: boolean,
+  detailedDescription?: boolean,
 ): string => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
     isRestricted,
+    detailedDescription,
   );
   const staticWorldContext = getStaticWorldContext(outline);
 
@@ -1202,14 +1163,26 @@ export const generateAdventureTurn = async (
     context.tFunc as (key: string, options?: Record<string, unknown>) => string,
   );
 
-  const systemInstruction = buildSystemContext(
+  let systemInstruction = buildSystemContext(
     context.language,
     narrativeStyle,
     example,
     isRestricted,
     gameState.outline,
     gameState.godMode,
+    currentSettings.extra?.detailedDescription,
   );
+
+  const promptInjectionEnabled = currentSettings.extra?.promptInjectionEnabled;
+  if (promptInjectionEnabled && promptInjectionData) {
+    const loweredModelId = modelId.toLowerCase();
+    console.log(`[PromptInjection] Checking for prompts to inject for model ${modelId}`);
+    const matchedPrompt = promptInjectionData.prompts.find((p) => p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())));
+    if (matchedPrompt) {
+      systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
+      console.warn(`[PromptInjection] Injecting prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")}`);
+    }
+  }
 
   // Try to get RAG context if embedding is enabled
   let ragContext: string | undefined;
@@ -1348,7 +1321,16 @@ const runAgenticLoop = async (
   );
 
   // Prepare tools for the provider
-  const toolConfig = TOOLS.map((t) => ({
+  const toolConfig = TOOLS.filter((t) => {
+    // Hide RAG tools if embedding is disabled
+    if (
+      !currentSettings.embedding?.enabled &&
+      (t.name === "search_memory" || t.name === "search_knowledge")
+    ) {
+      return false;
+    }
+    return true;
+  }).map((t) => ({
     name: t.name,
     description: t.description,
     parameters: t.parameters,
@@ -1514,7 +1496,9 @@ const runAgenticLoop = async (
         // Handle finish_turn specially
         if (name === "finish_turn") {
           // Finalize
-          accumulatedResponse.narrative = args.narrative as string;
+          accumulatedResponse.narrative = (args.narrative as string)
+            ?.replace(/\\n/g, "\n")
+            .replace(/\\"/g, '"');
           accumulatedResponse.choices = args.choices as string[];
           accumulatedResponse.imagePrompt = args.imagePrompt as string;
           accumulatedResponse.generateImage = args.generateImage as boolean;

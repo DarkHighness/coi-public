@@ -63,6 +63,35 @@ export class EmbeddingService {
   }
 
   /**
+   * Helper: Execute a function with retry logic for rate limits
+   */
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    retries = 3,
+    baseDelay = 1000,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (error: any) {
+      if (
+        retries > 0 &&
+        (error?.status === 429 ||
+          error?.message?.includes("429") ||
+          error?.message?.includes("Too Many Requests") ||
+          error?.error?.code === 429)
+      ) {
+        const delay = baseDelay * Math.pow(2, 3 - retries);
+        console.warn(
+          `[EmbeddingService] Rate limited (429). Retrying in ${delay}ms... (${retries} retries left)`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.withRetry(fn, retries - 1, baseDelay);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Generate embeddings for a batch of texts
    */
   async generateEmbeddings(
@@ -75,37 +104,39 @@ export class EmbeddingService {
 
     const { provider, modelId, dimensions } = this.config;
 
-    switch (provider) {
-      case "gemini": {
-        return generateGeminiEmbedding(
-          this.credentials.gemini,
-          modelId,
-          texts,
-          dimensions,
-          taskType,
-        );
+    return this.withRetry(async () => {
+      switch (provider) {
+        case "gemini": {
+          return generateGeminiEmbedding(
+            this.credentials.gemini,
+            modelId,
+            texts,
+            dimensions,
+            taskType,
+          );
+        }
+        case "openai": {
+          return generateOpenAIEmbedding(
+            this.credentials.openai,
+            modelId,
+            texts,
+            dimensions,
+            taskType,
+          );
+        }
+        case "openrouter": {
+          return generateOpenRouterEmbedding(
+            this.credentials.openrouter,
+            modelId,
+            texts,
+            dimensions,
+            taskType,
+          );
+        }
+        default:
+          throw new Error(`Unknown embedding provider: ${provider}`);
       }
-      case "openai": {
-        return generateOpenAIEmbedding(
-          this.credentials.openai,
-          modelId,
-          texts,
-          dimensions,
-          taskType,
-        );
-      }
-      case "openrouter": {
-        return generateOpenRouterEmbedding(
-          this.credentials.openrouter,
-          modelId,
-          texts,
-          dimensions,
-          taskType,
-        );
-      }
-      default:
-        throw new Error(`Unknown embedding provider: ${provider}`);
-    }
+    });
   }
 
   /**
@@ -118,31 +149,33 @@ export class EmbeddingService {
     const { provider, modelId, dimensions } = this.config;
 
     let result;
-    if (provider === "gemini") {
-      result = await generateGeminiEmbedding(
-        this.credentials.gemini,
-        modelId,
-        [text],
-        dimensions,
-        taskType,
-      );
-    } else if (provider === "openrouter") {
-      result = await generateOpenRouterEmbedding(
-        this.credentials.openrouter,
-        modelId,
-        [text],
-        dimensions,
-        taskType,
-      );
-    } else {
-      result = await generateOpenAIEmbedding(
-        this.credentials.openai,
-        modelId,
-        [text],
-        dimensions,
-        taskType,
-      );
-    }
+    await this.withRetry(async () => {
+      if (provider === "gemini") {
+        result = await generateGeminiEmbedding(
+          this.credentials.gemini,
+          modelId,
+          [text],
+          dimensions,
+          taskType,
+        );
+      } else if (provider === "openrouter") {
+        result = await generateOpenRouterEmbedding(
+          this.credentials.openrouter,
+          modelId,
+          [text],
+          dimensions,
+          taskType,
+        );
+      } else {
+        result = await generateOpenAIEmbedding(
+          this.credentials.openai,
+          modelId,
+          [text],
+          dimensions,
+          taskType,
+        );
+      }
+    });
 
     return {
       embedding: result.embeddings[0],
@@ -177,31 +210,33 @@ export class EmbeddingService {
       const batchEntities = entities.slice(i, i + BATCH_SIZE);
 
       let result;
-      if (provider === "gemini") {
-        result = await generateGeminiEmbedding(
-          this.credentials.gemini,
-          modelId,
-          batchTexts,
-          dimensions,
-          taskType,
-        );
-      } else if (provider === "openrouter") {
-        result = await generateOpenRouterEmbedding(
-          this.credentials.openrouter,
-          modelId,
-          batchTexts,
-          dimensions,
-          taskType,
-        );
-      } else {
-        result = await generateOpenAIEmbedding(
-          this.credentials.openai,
-          modelId,
-          batchTexts,
-          dimensions,
-          taskType,
-        );
-      }
+      await this.withRetry(async () => {
+        if (provider === "gemini") {
+          result = await generateGeminiEmbedding(
+            this.credentials.gemini,
+            modelId,
+            batchTexts,
+            dimensions,
+            taskType,
+          );
+        } else if (provider === "openrouter") {
+          result = await generateOpenRouterEmbedding(
+            this.credentials.openrouter,
+            modelId,
+            batchTexts,
+            dimensions,
+            taskType,
+          );
+        } else {
+          result = await generateOpenAIEmbedding(
+            this.credentials.openai,
+            modelId,
+            batchTexts,
+            dimensions,
+            taskType,
+          );
+        }
+      });
 
       batchEntities.forEach((entity, index) => {
         documents.push({

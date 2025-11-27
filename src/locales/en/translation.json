@@ -217,7 +217,8 @@
     "embedding": "RAG",
     "audio": "Audio",
     "appearance": "Appearance",
-    "data": "Data"
+    "data": "Data",
+    "extra": "Extra"
   },
   "embedding": {
     "title": "RAG Embedding",
@@ -230,12 +231,28 @@
     "topKHelp": "Number of similar results to retrieve",
     "threshold": "Similarity Threshold",
     "thresholdHelp": "Minimum similarity score (0-1) for results",
-    "statusInfo": "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."
+    "lruLimits": "Resource Limits (LRU)",
+    "maxTotal": "Max Total Documents",
+    "maxPerType": "Max Per Type",
+    "maxVersions": "Versions Per Entity",
+    "statusInfo": "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation.",
+    "status": "RAG Status",
+    "phase": {
+      "complete": "Completed"
+    }
   },
   "themeMode": "Theme Mode",
   "settings": {
     "title": "Settings",
-    "modelNotFound": "Model not found in list. Please select a valid model."
+    "modelNotFound": "Model not found in list. Please select a valid model.",
+    "extra": {
+      "title": "Extra Settings",
+      "description": "Additional configuration options",
+      "detailedDescription": "Detailed Descriptions",
+      "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
+      "promptInjection": "Prompt Injection",
+      "promptInjectionHelp": "Inject custom prompts based on model keywords from prompt.toml."
+    }
   },
   "narrator": "Narrator",
   "you": "You",
@@ -630,7 +647,36 @@
     "noEvents": "No known events.",
     "inventory": "Inventory",
     "noItems": "No items.",
-    "turnInfo": "Turn {{turn}}"
+    "turnInfo": "Turn {{turn}}",
+    "embedding": "RAG",
+    "embeddingStatus": "RAG Status",
+    "embeddingDescription": "RAG description",
+    "noEmbeddingActivity": "No Embedding process running...",
+    "misconceptions":"Common Misconceptions",
+    "trueObjectives":"True Objectives",
+    "secretOutcome":"Secret Outcome",
+    "realPersonality": "Real Personality",
+    "realMotives": "Real Motives",
+    "trueAffinity": "True Affinity",
+    "secrets":"Secrets",
+    "drawbacks":"Drawbacks",
+    "trueCause": "True Cause",
+    "progression":"Progression",
+    "cure":"Cure",
+    "personality":"Personality",
+    "motives":"Motives",
+    "affinity":"Affinity",
+    "secretAgenda":"Secret Agenda",
+    "trueInfluence": "True Influence",
+    "hiddenFeatures": "Hidden Features",
+    "hiddenEffects": "Hidden Effects",
+    "hiddenTraits": "Hidden Traits",
+    "hidden": "Hidden",
+    "effects": "Effects",
+    "noHiddenTraitsRevealed": "No hidden traits revealed.",
+    "trueName": "True Name",
+    "trueRelationship": "True Relationship",
+    "trueStatus": "True Status"
   },
   "gameOver": "GAME OVER",
   "victory": "VICTORY",
@@ -716,7 +762,8 @@
     "tokens": "Tokens:"
   },
   "common": {
-    "retry": "Retry"
+    "retry": "Retry",
+    "done": "Done"
   },
   "app": {
     "errors": {
@@ -740,6 +787,31 @@
     "beforeCurrentTurn": "Before Current Turn",
     "noEmbeddingManager": "Embedding manager not initialized.",
     "rawDocsError": "Could not retrieve raw search results.",
-    "searchFailed": "Search failed. Please try again."
+    "searchFailed": "Search failed. Please try again.",
+    "statusActive": "Active",
+    "statusNoIndex": "No Index",
+    "statusDisabled": "Disabled",
+    "tabSearch": "Search",
+    "tabStats": "Statistics",
+    "embeddingDisabled": "RAG/Embedding is disabled in settings",
+    "enableInSettings": "Enable it in Settings → Embedding",
+    "noIndexYet": "No embedding index available",
+    "indexWillBuild": "Index will be built when you continue playing",
+    "building": "Building...",
+    "buildNow": "Build Index Now",
+    "rebuilding": "Rebuilding...",
+    "rebuildIndex": "Rebuild Index",
+    "totalDocs": "Total Documents",
+    "types": "Document Types",
+    "model": "Embedding Model",
+    "webgpu": "WebGPU",
+    "typeBreakdown": "Documents by Type",
+    "refresh": "Refresh Stats",
+    "showMetadata": "Show metadata",
+    "noIndexStats": "No index statistics available",
+    "rebuildFailed": "Failed to rebuild index",
+    "fork": "fork",
+    "turn": "turn",
+    "importance": "imp"
   }
 }

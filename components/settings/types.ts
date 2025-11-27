@@ -6,7 +6,8 @@ export type Tab =
   | "embedding"
   | "audio"
   | "appearance"
-  | "data";
+  | "data"
+  | "extra";
 
 export type FunctionKey =
   | "story"

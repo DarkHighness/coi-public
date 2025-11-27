@@ -582,9 +582,45 @@ export class EmbeddingManager {
   private embeddingService: EmbeddingService | null = null;
   private searchManager: SimilaritySearchManager | null = null;
   private currentIndex: EmbeddingIndex | null = null;
+  private progressObservers: Array<(progress: EmbeddingProgress) => void> = [];
 
   constructor(config: EmbeddingManagerConfig) {
     this.config = config;
+  }
+
+  /**
+   * Add a progress observer
+   */
+  public addProgressObserver(
+    callback: (progress: EmbeddingProgress) => void,
+  ): void {
+    this.progressObservers.push(callback);
+  }
+
+  /**
+   * Update configuration with new settings
+   */
+  public updateConfig(settings: AISettings): void {
+    this.config.settings = settings;
+    // Reset service so it gets re-initialized with new settings on next use
+    this.embeddingService = null;
+
+    // Re-initialize search manager with new settings
+    this.searchManager = new SimilaritySearchManager(settings.embedding);
+    if (this.currentIndex) {
+      this.searchManager.loadIndex(this.currentIndex);
+    }
+  }
+
+  /**
+   * Remove a progress observer
+   */
+  public removeProgressObserver(
+    callback: (progress: EmbeddingProgress) => void,
+  ): void {
+    this.progressObservers = this.progressObservers.filter(
+      (cb) => cb !== callback,
+    );
   }
 
   /**
@@ -610,10 +646,11 @@ export class EmbeddingManager {
   }
 
   /**
-   * Report progress to callback
+   * Report progress to callback and observers
    */
   private reportProgress(progress: EmbeddingProgress): void {
     this.config.onProgress?.(progress);
+    this.progressObservers.forEach((observer) => observer(progress));
   }
 
   /**
@@ -735,7 +772,87 @@ export class EmbeddingManager {
     console.log(
       `[EmbeddingManager] Built index with ${documents.length} documents`,
     );
+    console.log(
+      `[EmbeddingManager] Built index with ${documents.length} documents`,
+    );
+
+    // Save index to persistent storage
+    await this.saveIndexToDB(this.currentIndex);
+
     return this.currentIndex;
+  }
+
+  /**
+   * Restore index from persistent storage
+   */
+  async restoreIndex(): Promise<boolean> {
+    try {
+      const index = await this.loadIndexFromDB();
+      if (index) {
+        this.currentIndex = index;
+        if (!this.searchManager) {
+          this.initializeService();
+        }
+        await this.searchManager!.loadIndex(this.currentIndex);
+        console.log(
+          `[EmbeddingManager] Restored index with ${index.documents.length} documents`,
+        );
+        return true;
+      }
+    } catch (err) {
+      console.error("[EmbeddingManager] Failed to restore index:", err);
+    }
+    return false;
+  }
+
+  // ============================================================================
+  // Persistence (IndexedDB)
+  // ============================================================================
+
+  private getDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("coi_rag_db", 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains("indices")) {
+          db.createObjectStore("indices");
+        }
+      };
+    });
+  }
+
+  private async saveIndexToDB(index: EmbeddingIndex): Promise<void> {
+    try {
+      const db = await this.getDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("indices", "readwrite");
+        const store = transaction.objectStore("indices");
+        // We only store one index for now, key "main"
+        const request = store.put(index, "main");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+    } catch (err) {
+      console.error("[EmbeddingManager] Error saving index to DB:", err);
+    }
+  }
+
+  private async loadIndexFromDB(): Promise<EmbeddingIndex | null> {
+    try {
+      const db = await this.getDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("indices", "readonly");
+        const store = transaction.objectStore("indices");
+        const request = store.get("main");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || null);
+      });
+    } catch (err) {
+      console.error("[EmbeddingManager] Error loading index from DB:", err);
+      return null;
+    }
   }
 
   /**
@@ -832,6 +949,10 @@ export class EmbeddingManager {
     console.log(
       `[EmbeddingManager] Updated index with ${newDocuments.length} new documents (total after LRU: ${allDocs.length})`,
     );
+
+    // Save updated index to persistent storage
+    await this.saveIndexToDB(this.currentIndex);
+
     return this.currentIndex;
   }
 
@@ -1087,7 +1208,15 @@ export class EmbeddingManager {
 
     // Get semantic search results
     const query = queryParts.join("\n");
-    const ragContext = await this.retrieveContext(query);
+    const ragContext = await this.retrieveContext(query, {
+      forkId: state.forkId,
+      forkTree: state.forkTree,
+      currentTurn: state.turnNumber,
+      // We don't strictly enforce currentForkOnly to allow some cross-timeline context if relevant,
+      // but the ranking logic in retrieveContext will prioritize the current fork.
+      // We also don't enforce beforeCurrentTurn to allow "future" knowledge if it exists (e.g. premonitions),
+      // but it will be flagged as warning in the source annotation.
+    });
 
     // Enhance with direct alive entity context
     // These entities were marked as relevant by the AI in the previous turn
@@ -1160,6 +1289,14 @@ export class EmbeddingManager {
    */
   hasIndex(): boolean {
     return this.currentIndex !== null;
+  }
+
+  /**
+   * Check if the loaded index's model matches the current configuration
+   */
+  checkModelMismatch(): boolean {
+    if (!this.currentIndex) return false;
+    return this.currentIndex.modelId !== this.config.settings.embedding.modelId;
   }
 
   /**

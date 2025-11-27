@@ -123,6 +123,9 @@ export const useGameState = () => {
       forkTree: INITIAL_FORK_TREE,
       // Reset outline conversation state (important for new game isolation)
       outlineConversation: undefined,
+      // God mode and unlocked mode
+      godMode: false,
+      unlockMode: false
     });
   };
 

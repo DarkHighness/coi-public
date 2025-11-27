@@ -405,17 +405,20 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       </span>
                       {result.doc.metadata?.forkId !== undefined && (
                         <span className="text-xs text-theme-secondary font-mono">
-                          fork:{result.doc.metadata.forkId}
+                          {t("ragDebugger.fork", "fork")}:
+                          {result.doc.metadata.forkId}
                         </span>
                       )}
                       {result.doc.metadata?.turnNumber !== undefined && (
                         <span className="text-xs text-theme-secondary font-mono">
-                          turn:{result.doc.metadata.turnNumber}
+                          {t("ragDebugger.turn", "turn")}:
+                          {result.doc.metadata.turnNumber}
                         </span>
                       )}
                       {result.doc.metadata?.importance !== undefined && (
                         <span className="text-xs text-amber-400 font-mono">
-                          imp:{result.doc.metadata.importance.toFixed(2)}
+                          {t("ragDebugger.importance", "imp")}:
+                          {result.doc.metadata.importance.toFixed(2)}
                         </span>
                       )}
                     </div>

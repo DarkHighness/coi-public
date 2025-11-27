@@ -41,7 +41,7 @@ import {
   AIProviderError,
   MalformedToolCallError,
 } from "./types";
-import { zodToOpenAIResponseFormat, zodToOpenAISchema } from "../zodCompiler";
+import { compileToolsForOpenAI, createOpenAITool, zodToOpenAIResponseFormat, zodToOpenAISchema } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
 // ============================================================================
@@ -270,14 +270,14 @@ export async function generateContent(
 
   // 转换工具定义
   const tools = options?.tools
-    ? convertToOpenAITools(options.tools)
+    ? compileToolsForOpenAI(options.tools)
     : undefined;
 
   // 构建请求参数
   const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
     model,
     messages,
-    temperature: options?.temperature ?? 0.8,
+    temperature: options?.temperature ?? 1.0,
     top_p: options?.topP,
     stream: !!options?.onChunk,
     tools,
@@ -285,7 +285,7 @@ export async function generateContent(
 
     response_format: schema
       ? zodToOpenAIResponseFormat(schema)
-      : { type: "json_object" },
+      : undefined,
   };
 
   let content = "";
@@ -513,22 +513,6 @@ function convertToOpenAIMessages(
   }
 
   return result;
-}
-
-/**
- * 转换工具定义到 OpenAI 格式
- */
-function convertToOpenAITools(
-  tools: GenerateContentOptions["tools"],
-): ChatCompletionTool[] {
-  return (tools || []).map((tool) => ({
-    type: "function" as const,
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: zodToOpenAISchema(tool.parameters),
-    },
-  }));
 }
 
 // ============================================================================

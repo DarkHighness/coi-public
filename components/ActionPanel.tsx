@@ -8,6 +8,8 @@ import {
   CommandContext,
   CommandAction,
 } from "../utils/commands";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ActionPanelProps {
   gameState: GameState;
@@ -308,14 +310,28 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         key={idx}
                         className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
                       >
+
                         <button
                           onClick={() => onAction(label)}
-                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300"
+                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left"
                         >
                           <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             {idx + 1}
                           </span>
-                          {label}
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <span className="inline">{children}</span>,
+                              strong: ({ children }) => (
+                                <span className="font-bold">{children}</span>
+                              ),
+                              em: ({ children }) => (
+                                <span className="italic">{children}</span>
+                              ),
+                            }}
+                          >
+                            {label}
+                          </ReactMarkdown>
                         </button>
                         <button
                           onClick={(e) => handleRollClick(e, label)}

@@ -260,8 +260,93 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   "Minimum similarity score (0-1) for results"}
               </p>
             </div>
-          </div>
-        </details>
+
+            {/* LRU Resource Limits */}
+            <div className="pt-4 border-t border-theme-border/30 space-y-4">
+              <div className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                {t("embedding.lruLimits") || "Resource Limits (LRU)"}
+              </div>
+
+              {/* Max Total Documents */}
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("embedding.maxTotal") || "Max Total Documents"}
+                  </label>
+                  <span className="text-[10px] font-mono text-theme-text">
+                    {config.lru?.maxTotalDocuments || 5000}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1000"
+                  max="20000"
+                  step="500"
+                  value={config.lru?.maxTotalDocuments || 5000}
+                  onChange={(e) =>
+                    updateEmbedding("lru", {
+                      ...config.lru,
+                      maxTotalDocuments: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                />
+              </div>
+
+              {/* Max Docs Per Type */}
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("embedding.maxPerType") || "Max Per Type"}
+                  </label>
+                  <span className="text-[10px] font-mono text-theme-text">
+                    {config.lru?.maxDocumentsPerType || 1000}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="100"
+                  max="5000"
+                  step="100"
+                  value={config.lru?.maxDocumentsPerType || 1000}
+                  onChange={(e) =>
+                    updateEmbedding("lru", {
+                      ...config.lru,
+                      maxDocumentsPerType: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                />
+              </div>
+
+              {/* Max Versions Per Entity */}
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("embedding.maxVersions") || "Versions Per Entity"}
+                  </label>
+                  <span className="text-[10px] font-mono text-theme-text">
+                    {config.lru?.maxVersionsPerEntity || 5}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  step="1"
+                  value={config.lru?.maxVersionsPerEntity || 5}
+                  onChange={(e) =>
+                    updateEmbedding("lru", {
+                      ...config.lru,
+                      maxVersionsPerEntity: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                />
+            </div>
+            </div>
+        </div>
+      </details>
 
         {/* Status Info */}
         <div className="mt-4 p-3 bg-theme-surface-highlight rounded border border-theme-border">

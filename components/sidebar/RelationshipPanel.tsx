@@ -11,6 +11,7 @@ interface RelationshipPanelProps {
   themeFont: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
+  unlockMode?: boolean;
 }
 
 interface RelationshipItemProps {
@@ -118,7 +119,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               )}
             </span>
             <span
-              className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-20 truncate cursor-help"
+              className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-[120px] truncate cursor-help"
               title={rel.visible?.relationshipType || "Unknown"}
             >
               {rel.visible?.relationshipType || "Unknown"}
@@ -332,6 +333,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   themeFont,
   listState,
   onUpdateList,
+  unlockMode = false,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -356,9 +358,12 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   // Map relationships to include ID for useListManagement
   const relationshipsWithId = useMemo(() => {
     return safeRelationships
-      .filter((r) => r.known !== false) // Filter out unknown characters
-      .map((r) => ({ ...r, id: r.id || r.visible?.name || "unknown" }));
-  }, [safeRelationships]);
+      .filter((r) => unlockMode || r.known !== false) // Show all if unlockMode is true
+      .map((r, idx) => ({
+        ...r,
+        id: r.id || r.visible?.name || `unknown-${idx}`,
+      }));
+  }, [safeRelationships, unlockMode]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
@@ -527,36 +532,40 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         </div>
       </div>
       <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}
+        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
       >
-        <div className="space-y-3">
-          {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
-              {t("emptyRelationships")}
-            </div>
-          ) : (
-            visibleItems.map((rel, idx) => (
-              <RelationshipItem
-                key={rel.id}
-                rel={rel}
-                locations={locations}
-                enableDrag={true}
-                expandedItems={expandedItems}
-                isEditMode={isEditMode}
-                draggedId={draggedId}
-                onToggle={toggleItem}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                onTogglePin={togglePin}
-                isPinned={isPinned}
-                getAffinityColor={getAffinityColor}
-                t={t}
-              />
-            ))
-          )}
+        <div className="overflow-hidden">
+          <div className="space-y-3 pt-1">
+            {visibleItems.length === 0 ? (
+              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+                {t("emptyRelationships")}
+              </div>
+            ) : (
+              visibleItems.map((rel, idx) => (
+                <RelationshipItem
+                  key={rel.id}
+                  rel={rel}
+                  locations={locations}
+                  enableDrag={true}
+                  expandedItems={expandedItems}
+                  isEditMode={isEditMode}
+                  draggedId={draggedId}
+                  onToggle={toggleItem}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                  onDrop={handleDrop}
+                  onTogglePin={togglePin}
+                  isPinned={isPinned}
+                  getAffinityColor={getAffinityColor}
+                  t={t}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>{" "}
       <DetailedListModal

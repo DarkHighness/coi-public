@@ -366,6 +366,45 @@ export default function App() {
         const mostRecent = sorted[0];
         const result = await loadSlot(mostRecent.id);
         if (result.success) {
+          // Initialize Embedding Manager if enabled
+          if (aiSettings.embedding?.enabled) {
+            try {
+              // Try to restore from result or DB
+              let indexRestored = false;
+              const manager = initializeEmbeddingManager({
+                settings: aiSettings,
+              });
+
+              if (result.embeddingIndex) {
+                await manager.loadIndex(result.embeddingIndex);
+                indexRestored = true;
+                console.log(
+                  `[ContinueGame] Restored index from save with ${result.embeddingIndex.documents.length} docs`,
+                );
+              } else {
+                // Try persistent storage
+                const restored = await manager.restoreIndex();
+                if (restored) {
+                  indexRestored = true;
+                  console.log(
+                    "[ContinueGame] Restored index from persistent storage",
+                  );
+                }
+              }
+
+              if (!indexRestored) {
+                console.log(
+                  "[ContinueGame] No index found, will build on first action",
+                );
+              }
+            } catch (err) {
+              console.error(
+                "[ContinueGame] Failed to initialize embedding manager:",
+                err,
+              );
+            }
+          }
+
           // After loading, check the game state and handle appropriately
           // Note: gameState may not be updated yet due to React's async state updates
           // So we navigate to /game and let GamePage handle the routing
@@ -414,6 +453,23 @@ export default function App() {
           } catch (error) {
             console.error("[Embedding] Failed to restore index:", error);
           }
+        }
+      } else {
+        // Try to restore from separate DB (new persistence method)
+        try {
+          const manager = initializeEmbeddingManager({
+            settings: aiSettings,
+          });
+          const restored = await manager.restoreIndex();
+          if (restored) {
+            indexRestored = true;
+            console.log("[Embedding] Restored index from persistent storage");
+          }
+        } catch (error) {
+          console.error(
+            "[Embedding] Failed to restore index from persistent storage:",
+            error,
+          );
         }
       }
 

@@ -163,7 +163,16 @@ export const TimelineExport = forwardRef<
           {exportChunk.map((seg, index) => (
             <div key={seg.id} className="relative pl-16">
               {/* Timeline Node */}
-              <div className="absolute left-[11px] top-1 w-4 h-4 rounded-full bg-theme-bg border-[3px] border-theme-primary z-10 shadow-sm ring-4 ring-theme-bg"></div>
+              <div
+                className="absolute left-[11px] top-1 w-4 h-4 rounded-full bg-theme-bg border-[3px] border-theme-primary z-10"
+                style={{
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", // shadow-sm replacement
+                  // ring-4 replacement (using box-shadow to simulate ring)
+                  // We combine the shadow-sm and the ring
+                  // ring-theme-bg is usually the background color
+                  // We can just use a transparent border or a box-shadow ring
+                }}
+              ></div>
 
               <div className="space-y-5">
                 {/* Metadata Header */}
@@ -177,7 +186,13 @@ export const TimelineExport = forwardRef<
 
                 {/* Image */}
                 {seg.imageUrl && (
-                  <div className="rounded-lg overflow-hidden border border-theme-border shadow-lg">
+                  <div
+                    className="rounded-lg overflow-hidden border border-theme-border"
+                    style={{
+                      boxShadow:
+                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", // shadow-lg replacement
+                    }}
+                  >
                     <img
                       src={seg.imageUrl}
                       className="w-full h-auto object-cover"

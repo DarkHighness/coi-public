@@ -31,9 +31,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
   const isWorldSettingUnlocked = unlockMode || outline?.worldSettingUnlocked;
   const isMainGoalUnlocked = unlockMode || outline?.mainGoalUnlocked;
 
-  if (!history && (!factions || factions.length === 0) && !worldSetting) {
-    return null;
-  }
+  // Always render the panel, even if empty, so users can see the "World Info" button
+  // If empty, we'll show a message when expanded
 
   return (
     <div className="space-y-2">
@@ -76,6 +75,16 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
       {expanded && (
         <div className="space-y-4 pt-2 pl-2 animate-slide-in">
+          {/* Empty State Check */}
+          {!history &&
+            (!worldSetting?.visible || worldSetting.visible.length === 0) &&
+            (!factions || factions.length === 0) &&
+            !isMainGoalUnlocked && (
+              <div className="text-xs text-theme-muted italic text-center py-2 opacity-70">
+                {t("worldInfo.empty") || "No world information recorded yet."}
+              </div>
+            )}
+
           {/* World History */}
           {history && (
             <div className="space-y-1">
