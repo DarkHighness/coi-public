@@ -9,11 +9,15 @@ import {
 import { useTranslation } from "react-i18next";
 import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
+import {
+  initializeEmbeddingManager,
+  getEmbeddingManager,
+} from "./services/embedding";
 import { Toast } from "./components/Toast";
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
-import { validateConnection } from "./services/aiService";
+import { validateConnection, type OutlinePhaseProgress } from "./services/aiService";
 import { InitializingPage } from "./components/pages/InitializingPage";
 import { GamePage } from "./components/pages/GamePage";
 import { GlobalStyles } from "./components/GlobalStyles";
@@ -48,6 +52,7 @@ export default function App() {
     setGameState,
     handleAction,
     startNewGame,
+    resumeOutlineGeneration,
     isAutoSaving,
     isSettingsOpen,
     setIsSettingsOpen,
@@ -66,6 +71,7 @@ export default function App() {
     hardReset,
     navigateToNode,
     generateImageForNode,
+    triggerSave,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -87,6 +93,9 @@ export default function App() {
 
   // Streaming text for initialization
   const [streamedText, setStreamedText] = useState("");
+
+  // Outline generation phase progress
+  const [phaseProgress, setPhaseProgress] = useState<OutlinePhaseProgress | null>(null);
 
   // Global Error Handling (PWA/Chunk/Network errors)
   const [appError, setAppError] = useState<string | null>(null);
@@ -309,8 +318,12 @@ export default function App() {
   const handleStartGame = async (theme: string, customContext?: string) => {
     if (await performValidation()) {
       setStreamedText("");
-      startNewGame(theme, customContext, (text) =>
-        setStreamedText((prev) => prev + text),
+      setPhaseProgress(null);
+      startNewGame(
+        theme,
+        customContext,
+        (text) => setStreamedText((prev) => prev + text),
+        (progress) => setPhaseProgress(progress),
       );
     }
   };
@@ -318,14 +331,110 @@ export default function App() {
   const handleContinueGame = async () => {
     if (await performValidation()) {
       console.log("continue game, currentSlotId:", currentSlotId);
+
+      // Helper to handle continuation based on game state
+      const handleContinuation = async () => {
+        if (gameState.outline) {
+          // Outline complete, go directly to game
+          navigate("/game");
+        } else if (gameState.outlineConversation) {
+          // Has partial outline progress, resume generation
+          console.log("[ContinueGame] Resuming outline generation from saved state");
+          setStreamedText("");
+          setPhaseProgress(null);
+          await resumeOutlineGeneration(
+            (text) => setStreamedText((prev) => prev + text),
+            (progress) => setPhaseProgress(progress),
+          );
+        } else {
+          // No valid state to continue from - this shouldn't happen
+          console.warn("[ContinueGame] No valid state to continue from");
+          navigate("/");
+        }
+      };
+
       if (currentSlotId) {
-        navigate("/game");
+        await handleContinuation();
       } else if (saveSlots.length > 0) {
         const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
         const mostRecent = sorted[0];
-        await loadSlot(mostRecent.id);
-        navigate("/game");
+        const result = await loadSlot(mostRecent.id);
+        if (result.success) {
+          // After loading, check the game state and handle appropriately
+          // Note: gameState may not be updated yet due to React's async state updates
+          // So we navigate to /game and let GamePage handle the routing
+          navigate("/game");
+        }
       }
+    }
+  };
+
+  /**
+   * Handle loading a slot from SaveManager.
+   * This properly handles partial outline states by checking the loaded state
+   * and either navigating to game or resuming outline generation.
+   * Also handles embedding index restoration.
+   */
+  const handleLoadSlot = async (id: string) => {
+    if (!(await performValidation())) return;
+
+    const result = await loadSlot(id);
+    if (!result.success) {
+      showToast(t("saves.loadFailed") || "Failed to load save", "error");
+      return;
+    }
+
+    // Restore embedding index if available and embedding is enabled
+    if (aiSettings.embedding?.enabled && result.hasOutline) {
+      const currentModelId = aiSettings.embedding.modelId;
+      let indexRestored = false;
+
+      if (result.embeddingIndex) {
+        if (result.savedModelId && result.savedModelId !== currentModelId) {
+          console.warn(
+            `[Embedding] Model mismatch: saved=${result.savedModelId}, current=${currentModelId}. ` +
+            `RAG index will be rebuilt on first action.`
+          );
+        } else {
+          try {
+            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            await manager.loadIndex(result.embeddingIndex);
+            console.log(
+              `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`
+            );
+            indexRestored = true;
+          } catch (error) {
+            console.error("[Embedding] Failed to restore index:", error);
+          }
+        }
+      }
+
+      // If no index was restored, it will be rebuilt on first action
+      if (!indexRestored && !result.embeddingIndex) {
+        console.log("[Embedding] No saved index found, will build on first action");
+      }
+    }
+
+    // Close the save manager
+    setIsSaveManagerOpen(false);
+
+    // Check loaded state and handle appropriately
+    if (result.hasOutline) {
+      // Complete outline, go to game
+      navigate("/game");
+    } else if (result.hasOutlineConversation) {
+      // Partial outline, resume generation
+      console.log("[LoadSlot] Resuming outline generation from loaded save");
+      setStreamedText("");
+      setPhaseProgress(null);
+      await resumeOutlineGeneration(
+        (text) => setStreamedText((prev) => prev + text),
+        (progress) => setPhaseProgress(progress),
+      );
+    } else {
+      // No valid state - shouldn't happen for valid saves
+      console.warn("[LoadSlot] Loaded save has no outline or conversation state");
+      showToast(t("saves.invalidState") || "Save appears to be corrupted", "error");
     }
   };
 
@@ -397,6 +506,7 @@ export default function App() {
                   themeFont={currentThemeConfig.fontClass}
                   isProcessing={gameState.isProcessing}
                   streamedText={streamedText}
+                  phaseProgress={phaseProgress}
                 />
               </SectionErrorBoundary>
             }
@@ -429,6 +539,7 @@ export default function App() {
                   deleteSlot={deleteSlot}
                   currentSlotId={currentSlotId}
                   onViewedSegmentChange={setViewedSegment}
+                  triggerSave={triggerSave}
                 />
               </SectionErrorBoundary>
             }
@@ -455,7 +566,7 @@ export default function App() {
           <SaveManager
             slots={saveSlots}
             currentSlotId={null}
-            onSwitch={loadSlot}
+            onSwitch={handleLoadSlot}
             onDelete={deleteSlot}
             onClose={() => setIsSaveManagerOpen(false)}
           />

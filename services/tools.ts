@@ -696,7 +696,22 @@ export const FINISH_TURN_TOOL: ZodToolDefinition = {
     "Finish the turn and generate the final narrative response. Call this ONLY when you have completed all necessary state queries and modifications.",
   parameters: z.object({
     narrative: z.string().describe(
-      "The final story text to present to the player. Use the defined narrative style. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions."
+      `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
+
+**MARKDOWN FORMATTING RULES:**
+Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
+Use *italics* for character thoughts, internal monologue, and emphasis.
+Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
+Use --- horizontal rules to separate distinct scenes or time jumps.
+Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
+Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.
+
+**EXAMPLE:**
+> "Who goes there?" the guard challenged.
+
+You step forward into the *flickering torchlight*, revealing yourself. The **Silver Gate** looms before you—the legendary entrance to the forgotten catacombs.
+
+*This is it*, you think. *The moment I've been preparing for.*`
     ),
     choices: z.array(z.string()).min(2).max(4).describe(
       `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:

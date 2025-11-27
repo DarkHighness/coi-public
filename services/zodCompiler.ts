@@ -42,6 +42,8 @@ export interface OpenAISchema {
   items?: OpenAISchema;
   enum?: string[];
   additionalProperties?: boolean;
+  // Index signature to satisfy Record<string, unknown> constraint
+  [key: string]: unknown;
 }
 
 export interface OpenAIResponseFormat {

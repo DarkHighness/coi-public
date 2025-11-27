@@ -121,6 +121,8 @@ export const useGameState = () => {
       // Reset fork system
       forkId: 0,
       forkTree: INITIAL_FORK_TREE,
+      // Reset outline conversation state (important for new game isolation)
+      outlineConversation: undefined,
     });
   };
 

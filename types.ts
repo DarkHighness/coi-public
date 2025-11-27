@@ -1,5 +1,83 @@
 import type { AtmosphereObject } from "./utils/constants/atmosphere";
 
+// ============================================================================
+// 从 zodSchemas.ts 导入统一的类型
+// ============================================================================
+// 这些类型由 Zod schema 推导而来，确保 AI 生成验证和 TypeScript 类型的一致性
+// zodSchemas.ts 中的 schema 允许某些字段 optional（因为 AI 可能不生成），
+// 但在 GameState 中使用时这些字段会被系统填充
+
+import type {
+  InventoryItem as ZodInventoryItem,
+  Relationship as ZodRelationship,
+  Location as ZodLocation,
+  Quest as ZodQuest,
+  KnowledgeEntry as ZodKnowledgeEntry,
+  TimelineEvent as ZodTimelineEvent,
+  CausalChain as ZodCausalChain,
+  Faction as ZodFaction,
+  CharacterAttribute as ZodCharacterAttribute,
+  HiddenTrait as ZodHiddenTrait,
+  CharacterStatus as ZodCharacterStatus,
+  StoryOutline as ZodStoryOutline,
+  StorySummary as ZodStorySummary,
+  GameResponse as ZodGameResponse,
+  Atmosphere,
+  EnvTheme,
+  Ambience,
+  Skill,
+  Condition,
+  OutlinePhase1,
+  OutlinePhase2,
+  OutlinePhase3,
+  OutlinePhase4,
+  OutlinePhase5,
+} from "./services/zodSchemas";
+
+// ============================================================================
+// 应用层类型 - 使用 Required<> 确保必需字段
+// ============================================================================
+// AI 生成时某些字段可能是 optional，但存储到 GameState 后系统会填充它们
+// 这里创建应用层类型，将关键字段标记为必需
+
+/** 辅助类型：确保 id 和 createdAt 等系统字段是必需的 */
+type WithRequiredId<T> = T & { id: string };
+type WithRequiredTimestamps<T> = T & { createdAt: number; lastModified: number };
+
+// 导出应用层类型（带必需的系统字段）
+export type InventoryItem = WithRequiredId<WithRequiredTimestamps<ZodInventoryItem>>;
+export type Relationship = WithRequiredId<WithRequiredTimestamps<ZodRelationship>>;
+export type Location = WithRequiredId<ZodLocation> & { isVisited: boolean; createdAt: number };
+export type Quest = WithRequiredId<WithRequiredTimestamps<ZodQuest>>;
+export type KnowledgeEntry = WithRequiredId<WithRequiredTimestamps<ZodKnowledgeEntry>>;
+export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
+export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
+export type Faction = WithRequiredId<ZodFaction>;
+
+// 以下类型直接使用 Zod 类型（不需要额外的必需字段）
+export type CharacterAttribute = ZodCharacterAttribute;
+export type HiddenTrait = ZodHiddenTrait;
+export type CharacterStatus = ZodCharacterStatus;
+export type StoryOutline = ZodStoryOutline;
+export type StorySummary = ZodStorySummary;
+// GameResponse extends ZodGameResponse with system-populated fields
+export type GameResponse = ZodGameResponse & {
+  finalState?: GameState; // System-populated after agentic loop processing
+};
+export type { Atmosphere, EnvTheme, Ambience, Skill, Condition };
+export type { OutlinePhase1, OutlinePhase2, OutlinePhase3, OutlinePhase4, OutlinePhase5 };
+
+// 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
+export type {
+  ZodInventoryItem,
+  ZodRelationship,
+  ZodLocation,
+  ZodQuest,
+  ZodKnowledgeEntry,
+  ZodTimelineEvent,
+  ZodFaction,
+};
+
 /**
  * ============================================================================
  * FIELD RESPONSIBILITY GUIDE
@@ -148,6 +226,31 @@ export interface GameState {
   // Developer Mode Flags
   godMode?: boolean; // God mode: bypass all restrictions and dangers
   unlockMode?: boolean; // Unlock mode: show all hidden info
+
+  // Outline Generation State (for fault recovery)
+  // This stores the conversation history during phased outline generation
+  // Cleared once outline is fully generated
+  outlineConversation?: OutlineConversationState;
+}
+
+/** State for resuming outline generation after failure */
+export interface OutlineConversationState {
+  theme: string;
+  language: string;
+  customContext?: string;
+  systemInstruction: string;
+  messages: Array<{ role: "user" | "model"; parts: { text: string }[] }>;
+  partial: PartialStoryOutline;
+  currentPhase: number; // 1-5, indicates which phase to resume from
+}
+
+/** Partial results from phased outline generation */
+export interface PartialStoryOutline {
+  phase1?: object;
+  phase2?: object;
+  phase3?: object;
+  phase4?: object;
+  phase5?: object;
 }
 
 // --- World System Interfaces ---
@@ -182,82 +285,7 @@ export interface HiddenInfo {
   [key: string]: any;
 }
 
-export interface TimelineEvent {
-  id: string;
-  gameTime: string;
-  category: "player_action" | "npc_action" | "world_event" | "consequence";
-  visible: {
-    description: string;
-    causedBy?: string;
-  };
-  hidden: {
-    trueDescription: string;
-    trueCausedBy?: string;
-    consequences?: string[];
-  };
-  involvedEntities?: string[];
-  chainId?: string; // Link to a CausalChain
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  unlocked?: boolean; // True when true cause/consequences are revealed
-  highlight?: boolean; // True when updated in current turn (for UI)
-  known?: boolean; // True if the player is aware of this event
-}
-
-export interface CausalChain {
-  chainId: string;
-  rootCause: {
-    eventId: string;
-    description: string;
-  };
-  events: TimelineEvent[];
-  status: "active" | "resolved" | "interrupted";
-  /**
-   * PENDING CONSEQUENCES (AI-DECIDED SYSTEM)
-   *
-   * The AI decides when consequences occur based on:
-   * 1. Story context and player actions
-   * 2. The 'readyAfterTurn' field (earliest possible trigger)
-   * 3. Narrative appropriateness
-   *
-   * NOTE: 'probability' has been REMOVED. AI makes the decision.
-   */
-  pendingConsequences?: Array<{
-    id: string; // Unique ID for tracking
-    description: string; // What could happen
-    readyAfterTurn: number; // Turn number AFTER which this consequence CAN trigger (not before)
-    createdAtTurn: number; // Turn when this consequence was created
-    conditions?: string[]; // Conditions that should be true for trigger (AI evaluates)
-    triggered?: boolean; // True once consequence has been triggered
-    triggeredAtTurn?: number; // Turn when triggered
-    known?: boolean; // True if player witnessed/knows about this consequence
-  }>;
-}
-
-export interface StorySummary {
-  id: number;
-  displayText: string; // Concise summary for UI display (visible layer only)
-  visible: {
-    narrative: string;
-    majorEvents: string[];
-    characterDevelopment: string;
-    worldState: string;
-  };
-  hidden: {
-    truthNarrative: string;
-    hiddenPlots: string[];
-    npcActions: string[];
-    worldTruth: string;
-    unrevealed: string[];
-  };
-  timeRange: {
-    from: string;
-    to: string;
-  };
-  nodeRange: {
-    fromIndex: number;
-    toIndex: number;
-  };
-}
+// TimelineEvent, CausalChain 从 zodSchemas.ts 导入
 
 export interface TokenUsage {
   promptTokens: number;
@@ -297,52 +325,7 @@ export interface LogEntry {
   };
 }
 
-export interface Faction {
-  id: string;
-  name: string;
-  visible: {
-    agenda: string; // Public agenda
-    members?: { name: string; title?: string }[]; // Publicly known members
-    influence?: string; // Perceived influence description
-    relations?: { target: string; status: string }[]; // Public alliances/rivalries
-  };
-  hidden: {
-    agenda: string; // Secret agenda
-    members?: { name: string; title?: string }[]; // Secret members/leaders
-    influence?: string; // True influence description
-    relations?: { target: string; status: string }[]; // Secret alliances/rivalries
-  };
-  highlight?: boolean; // True when updated in current turn
-  unlocked?: boolean; // True when secret agenda is revealed to player
-}
-
-export interface StoryOutline {
-  title: string;
-  initialTime: string;
-  premise: string;
-  mainGoal: {
-    visible: string; // The apparent main motivation/task
-    hidden: string; // The hidden event logic or true nature of the goal
-  };
-  quests: Quest[]; // Initial quests (replaces mainGoal/goals)
-  worldSetting: {
-    visible: string;
-    hidden: string;
-    history: string; // Ancient events that shape the present
-  };
-  factions: Omit<Faction, "id">[]; // Major power groups
-  locations: Omit<Location, "id" | "isVisited" | "createdAt">[]; // Initial locations (Detailed structure)
-  character: CharacterStatus; // Initial character state
-  inventory?: InventoryItem[]; // Initial inventory
-  relationships?: Relationship[]; // Initial relationships
-  knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
-  timeline?: TimelineEvent[]; // Initial timeline events (Backstory)
-  // Unified Atmosphere for initial state
-  initialAtmosphere: AtmosphereObject; // Initial atmosphere { envTheme, ambience }
-  // Unlocked flags - set by AI when player discovers hidden info
-  worldSettingUnlocked?: boolean; // True when worldSetting.hidden is revealed
-  mainGoalUnlocked?: boolean; // True when mainGoal.hidden is revealed
-}
+// Faction, StoryOutline 从 zodSchemas.ts 导入
 
 export interface SaveSlot {
   id: string;
@@ -354,79 +337,12 @@ export interface SaveSlot {
   // No need to store full state here, just metadata
 }
 
-export interface CharacterAttribute {
-  label: string;
-  value: number;
-  maxValue: number;
-  color: "red" | "blue" | "green" | "yellow" | "purple" | "gray";
-}
+// CharacterAttribute, CharacterSkill (as Skill), CharacterCondition (as Condition),
+// HiddenTrait, CharacterStatus 从 zodSchemas.ts 导入
 
-export interface CharacterSkill {
-  id: string;
-  name: string;
-  level: string;
-  visible: {
-    description: string;
-    knownEffects: string[];
-  };
-  hidden: {
-    trueDescription: string;
-    hiddenEffects: string[];
-    drawbacks?: string[];
-  };
-  category?: string;
-  experience?: number;
-  unlocked?: boolean; // True when hidden effects are revealed to player
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface CharacterCondition {
-  id: string;
-  name: string;
-  type: "buff" | "debuff" | "neutral";
-  visible: {
-    description: string;
-    perceivedSeverity: string;
-  };
-  hidden: {
-    trueCause: string;
-    actualSeverity: number;
-    progression: string;
-    cure?: string;
-  };
-  duration?: number;
-  startTime?: number;
-  effects: {
-    visible: string[];
-    hidden: string[];
-  };
-  unlocked?: boolean; // True when true cause/cure are revealed
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface HiddenTrait {
-  id: string;
-  name: string;
-  description: string;
-  effects: string[];
-  triggerConditions?: string[];
-  unlocked: boolean; // True when triggerConditions are met and trait is revealed
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface CharacterStatus {
-  name: string;
-  title: string;
-  status: string;
-  attributes: CharacterAttribute[];
-  skills: CharacterSkill[];
-  conditions: CharacterCondition[];
-  hiddenTraits?: HiddenTrait[];
-  appearance: string;
-  profession?: string;
-  background?: string;
-  race?: string;
-}
+// 为兼容性保留别名
+export type CharacterSkill = Skill;
+export type CharacterCondition = Condition;
 
 export interface ListState {
   pinnedIds: string[];
@@ -443,36 +359,7 @@ export interface UIState {
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
 }
 
-export interface Relationship {
-  id: string;
-  known?: boolean; // Whether the player has met/knows this character
-  currentLocation?: string | "unknown"; // NPC's current location ID (e.g., "loc:1") or "unknown"
-  visible: {
-    name: string; // The name the player knows them by
-    description: string;
-    appearance?: string;
-    relationshipType: string; // Was status
-    currentImpression?: string;
-    personality?: string; // Public perception of personality (may differ from hidden truth)
-    affinity: number; // Moved from root
-    affinityKnown: boolean; // Moved from root
-  };
-  hidden: {
-    trueName?: string; // The character's real name (if different from visible)
-    realPersonality: string;
-    realMotives: string;
-    secrets: string[];
-    trueAffinity: number;
-    relationshipType: string; // Added
-    status: string; // Current state (e.g. "plotting", "injured")
-  };
-  createdAt: number;
-  lastModified: number;
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  notes?: string; // NPC's observations of player's displayed knowledge/behavior
-  unlocked?: boolean; // True when hidden personality/motives revealed (requires special ability)
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
+// Relationship 从 zodSchemas.ts 导入
 
 export interface StorySegment {
   id: string;
@@ -562,100 +449,7 @@ export interface GameStateSnapshot {
   forkTree: ForkTree;
 }
 
-export interface Location {
-  id: string;
-  name: string;
-  visible: {
-    description: string;
-    knownFeatures: string[];
-  };
-  hidden: {
-    fullDescription: string;
-    hiddenFeatures: string[];
-    secrets: string[];
-  };
-  lore?: string;
-  isVisited: boolean;
-  environment?: string;
-  createdAt: number;
-  discoveredAt?: number;
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  notes?: string;
-  unlocked?: boolean; // True when hidden secrets are discovered
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface KnowledgeEntry {
-  id: string;
-  title: string;
-  category:
-    | "landscape"
-    | "history"
-    | "item"
-    | "legend"
-    | "faction"
-    | "culture"
-    | "magic"
-    | "technology"
-    | "other";
-  visible: {
-    description: string;
-    details?: string;
-  };
-  hidden: {
-    fullTruth: string;
-    misconceptions?: string[];
-    toBeRevealed?: string[];
-  };
-  discoveredAt?: string;
-  relatedTo?: string[];
-  createdAt: number;
-  lastModified: number;
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  unlocked?: boolean; // True when full truth is revealed
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface InventoryItem {
-  id: string;
-  name: string;
-  visible: {
-    description: string;
-    notes?: string;
-  };
-  hidden: {
-    truth: string;
-    secrets?: string[];
-  };
-  createdAt: number;
-  lastModified: number;
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  lore?: string;
-  icon?: string;
-  unlocked?: boolean; // True when hidden truth is revealed to player
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
-
-export interface Quest {
-  id: string;
-  title: string;
-  type: "main" | "side" | "hidden";
-  status: "active" | "completed" | "failed";
-  visible: {
-    description: string;
-    objectives: string[];
-  };
-  hidden: {
-    trueDescription?: string;
-    trueObjectives?: string[];
-    secretOutcome?: string;
-  };
-  createdAt: number;
-  lastModified: number;
-  lastAccess?: number; // Turn number when last accessed/queried by AI
-  unlocked?: boolean; // True when true objectives/outcome are revealed
-  highlight?: boolean; // True when updated in current turn (for UI)
-}
+// Location, KnowledgeEntry, InventoryItem, Quest 从 zodSchemas.ts 导入
 
 export interface InventoryAction {
   action: "add" | "remove" | "update";
@@ -810,62 +604,7 @@ export interface CharacterAction {
 }
 
 // Note: AdventureTurnInput has been removed. Use GameState directly with TurnContext from aiService.ts
-
-export interface GameResponse {
-  narrative: string;
-  choices: string[];
-  inventoryActions?: InventoryAction[];
-  relationshipActions?: RelationshipAction[];
-  locationActions?: LocationAction[];
-  characterUpdates?: CharacterUpdates;
-  questActions?: QuestAction[];
-  knowledgeActions?: KnowledgeAction[]; // Player's accumulated knowledge
-  imagePrompt?: string;
-  // Unified Atmosphere System
-  atmosphere?: AtmosphereObject; // The unified atmosphere { envTheme, ambience }
-  narrativeTone?: string; // The tone of the narrative
-  generateImage?: boolean;
-  timeUpdate?: string; // The new time string
-  finalState?: GameState; // The full game state after processing
-  timelineEvents?: Array<{
-    category: "npc_action" | "world_event" | "consequence";
-    visible: {
-      description: string;
-      causedBy?: string;
-    };
-    hidden: {
-      trueDescription: string;
-      trueCausedBy?: string;
-      consequences?: string[];
-    };
-    involvedEntities?: string[];
-    // Causal Chain Logic
-    chainId?: string; // Link to existing chain
-    newChain?: {
-      description: string; // Description of the chain's theme/cause
-    };
-    projectedConsequences?: Array<{
-      description: string;
-      delayTurns: number;
-      probability: number;
-    }>;
-  }>;
-  factionActions?: FactionAction[];
-  // World Info Updates: track when world-level secrets are unlocked
-  worldInfoUpdates?: Array<{
-    unlockWorldSetting?: boolean;
-    unlockMainGoal?: boolean;
-    reason: string;
-  }>;
-  // Context Priority: entities AI marked as relevant for next turn
-  aliveEntities?: AliveEntities;
-  // RAG Queries: semantic search queries for next turn context
-  ragQueries?: string[];
-  // Game Ending: story continuation status
-  ending?: EndingType;
-  // Force End: if true, game ends permanently (no continue option)
-  forceEnd?: boolean;
-}
+// GameResponse 从 zodSchemas.ts 导入
 
 export interface FactionAction {
   action: "update";
@@ -1032,12 +771,25 @@ export interface EmbeddingConfig {
   dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)
+
+  // LRU Eviction Settings
+  lru?: {
+    // Global limits
+    maxTotalDocuments?: number;     // Maximum total documents in index (default: 5000)
+    maxDocumentsPerType?: number;   // Max documents per type (default: 1000)
+    maxVersionsPerEntity?: number;  // Max versions per entity ID (default: 5)
+
+    // Priority settings
+    currentForkBonus?: number;      // Priority bonus for current fork (default: 0.5)
+    ancestorForkBonus?: number;     // Priority bonus for ancestor forks (default: 0.25)
+    turnDecayFactor?: number;       // Priority loss per turn difference (default: 0.01)
+  };
 }
 
 export interface EmbeddingDocument {
   id: string; // Unique document ID
-  type: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event";
-  entityId: string; // Reference to the entity (e.g., npc:1, loc:2)
+  type: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event" | "outline";
+  entityId: string; // Reference to the entity (e.g., npc:1, loc:2, outline:world)
   content: string; // Original text content
   embedding?: Float32Array; // Compressed embedding vector (stored separately)
   metadata?: {

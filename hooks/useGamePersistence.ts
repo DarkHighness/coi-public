@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { GameState, SaveSlot } from "../types";
+import { GameState, SaveSlot, VersionedGameState, EmbeddingIndex } from "../types";
 import {
   saveGameState,
   loadGameState,
@@ -9,12 +9,11 @@ import {
   getStorageEstimate,
   clearDatabase,
 } from "../utils/indexedDB";
-import { resetEmbeddingManager } from "../services/embedding/embeddingManager";
-
-// Auto-save debounce time in milliseconds
-const AUTO_SAVE_DEBOUNCE_MS = 3000;
-// Minimum interval between saves (to prevent too frequent saves)
-const MIN_SAVE_INTERVAL_MS = 5000;
+import {
+  resetEmbeddingManager,
+  getEmbeddingManager,
+  initializeEmbeddingManager,
+} from "../services/embedding/embeddingManager";
 
 // Default nextIds structure for recovery
 const DEFAULT_NEXT_IDS = {
@@ -274,8 +273,22 @@ export const useGamePersistence = (
    */
   const saveToSlot = useCallback(async (slotId: string, state: GameState) => {
     try {
-      await saveGameState(slotId, state);
-      console.log(`[Persistence] Saved to slot ${slotId}`);
+      // Get embedding index if available
+      const embeddingManager = getEmbeddingManager();
+      const embeddingIndex = embeddingManager?.getIndex();
+
+      // Create versioned state with embedding index
+      const stateToSave: VersionedGameState = {
+        ...state,
+        _saveVersion: {
+          version: 1,
+          createdAt: Date.now(),
+        },
+        _embeddingIndex: embeddingIndex || undefined,
+      };
+
+      await saveGameState(slotId, stateToSave);
+      console.log(`[Persistence] Saved to slot ${slotId}${embeddingIndex ? ` (with ${embeddingIndex.documents.length} embedding docs)` : ""}`);
       return true;
     } catch (error) {
       console.error("[Persistence] Manual save failed:", error);
@@ -295,17 +308,29 @@ export const useGamePersistence = (
           // Try to restore last active session
           let lastSlotId = await loadMetadata("currentSlot");
 
-          // If no last slot, select the latest
-          if (!lastSlotId) {
-            lastSlotId = latestSlotId;
+          // If no last slot, select the latest from loaded slots (not from memo)
+          if (!lastSlotId && slots.length > 0) {
+            const sorted = [...slots].sort((a, b) => b.timestamp - a.timestamp);
+            lastSlotId = sorted[0].id;
           }
 
           if (lastSlotId && typeof lastSlotId === "string") {
-            const data = await loadGameState(lastSlotId);
+            const data = await loadGameState(lastSlotId) as VersionedGameState | null;
             if (data) {
+              // Extract embedding index before sanitizing
+              const embeddingIndex = data._embeddingIndex;
+
               const sanitized = sanitizeState(data);
               setGameState(sanitized);
               setCurrentSlotId(lastSlotId);
+
+              // Log embedding index availability for debugging
+              if (embeddingIndex) {
+                console.log(
+                  `[Persistence] Save has embedding index with ${embeddingIndex.documents.length} documents, ` +
+                  `model: ${embeddingIndex.modelId}`
+                );
+              }
             }
           }
         }
@@ -337,10 +362,12 @@ export const useGamePersistence = (
 
   // Auto-Save Logic using IndexedDB
   // SAVE ONLY IN THESE SCENARIOS:
-  // 1. Story Outline generation complete (outline exists but rootNodeId just appeared)
+  // 1. Manual trigger (outline phase complete, outline fully parsed, /god commands, etc.)
   // 2. AI turn complete (activeNodeId changed to a model node)
-  // 3. User action complete (triggerSave called manually after user choice)
-  // 4. /god or /unlock commands (triggerSave called manually)
+  //
+  // IMPORTANT: Do NOT save when user makes a choice!
+  // If user action is the last saved state and game crashes, the save repair tool
+  // should rollback to the previous AI turn so user can re-choose.
   useEffect(() => {
     // Basic skip conditions - must be in game with a valid slot and game started
     if (
@@ -365,17 +392,20 @@ export const useGamePersistence = (
     let saveReason = "";
 
     // Case 1: Manual trigger (from triggerSave callback)
+    // Used for: outline phase saves, outline complete, /god commands
     if (triggerSaveCount > 0) {
       shouldSave = true;
       saveReason = "manual trigger";
     }
     // Case 2: Active node changed to a model node (AI turn complete)
+    // Only save after AI responds, NOT after user chooses
     else if (
       gameState.activeNodeId &&
       gameState.activeNodeId !== lastSavedActiveNodeRef.current
     ) {
       const activeNode = gameState.nodes[gameState.activeNodeId];
       // Only save if it's a model node (AI response)
+      // User choice creates a "user" role node - we explicitly skip saving that
       if (activeNode && activeNode.role === "model") {
         shouldSave = true;
         saveReason = "AI turn complete";
@@ -386,32 +416,28 @@ export const useGamePersistence = (
       return;
     }
 
-    // Clear any pending debounce timer
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Debounce the save operation
-    saveTimeoutRef.current = setTimeout(async () => {
-      // Throttle: check if enough time has passed since last save
-      const now = Date.now();
-      const timeSinceLastSave = now - lastSaveTimeRef.current;
-
-      // Apply throttle only for non-manual saves
-      if (timeSinceLastSave < MIN_SAVE_INTERVAL_MS && triggerSaveCount === 0) {
-        // Schedule another attempt
-        saveTimeoutRef.current = setTimeout(() => {
-          lastSavedActiveNodeRef.current = null; // Reset to allow retry
-        }, MIN_SAVE_INTERVAL_MS - timeSinceLastSave);
-        return;
-      }
-
+    // Execute save immediately (no debounce needed - we only trigger on specific events)
+    const executeSave = async () => {
       try {
         console.log(`[AutoSave] Saving game state (reason: ${saveReason})`);
 
+        // Get embedding index if available
+        const embeddingManager = getEmbeddingManager();
+        const embeddingIndex = embeddingManager?.getIndex();
+
+        // Create versioned state with embedding index
+        const stateToSave: VersionedGameState = {
+          ...gameState,
+          _saveVersion: {
+            version: 1,
+            createdAt: Date.now(),
+          },
+          _embeddingIndex: embeddingIndex || undefined,
+        };
+
         // Save game state to IndexedDB
-        await saveGameState(currentSlotId, gameState);
-        lastSaveTimeRef.current = now;
+        await saveGameState(currentSlotId, stateToSave);
+        lastSaveTimeRef.current = Date.now();
         lastSavedActiveNodeRef.current = gameState.activeNodeId;
         lastSavedNodeIdRef.current = gameState.activeNodeId;
 
@@ -473,13 +499,9 @@ export const useGamePersistence = (
           alert("QuotaExceededError");
         }
       }
-    }, AUTO_SAVE_DEBOUNCE_MS);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
     };
+
+    executeSave();
   }, [
     gameState.activeNodeId,
     gameState.isProcessing,
@@ -529,23 +551,43 @@ export const useGamePersistence = (
     return id;
   };
 
-  const loadSlot = async (id: string): Promise<boolean> => {
+  /**
+   * Load a save slot and restore embedding index if available.
+   * Returns an object with success status and optional embedding index.
+   */
+  const loadSlot = async (id: string): Promise<{
+    success: boolean;
+    embeddingIndex?: EmbeddingIndex;
+    embeddingModelMismatch?: boolean;
+    savedModelId?: string;
+    hasOutline?: boolean;
+    hasOutlineConversation?: boolean;
+  }> => {
     try {
-      const data = await loadGameState(id);
+      const data = await loadGameState(id) as VersionedGameState | null;
       if (data) {
         // Reset embedding manager when switching saves
-        // The embedding index will be rebuilt for the new game state
         resetEmbeddingManager();
+
+        // Extract embedding index before sanitizing (it will be stripped)
+        const embeddingIndex = data._embeddingIndex;
 
         const sanitized = sanitizeState(data);
         setGameState(sanitized);
         setCurrentSlotId(id);
-        return true;
+
+        return {
+          success: true,
+          embeddingIndex,
+          savedModelId: embeddingIndex?.modelId,
+          hasOutline: !!sanitized.outline,
+          hasOutlineConversation: !!sanitized.outlineConversation,
+        };
       }
-      return false;
+      return { success: false };
     } catch (error) {
       console.error("Failed to load slot:", error);
-      return false;
+      return { success: false };
     }
   };
 

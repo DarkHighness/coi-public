@@ -46,6 +46,8 @@ interface DesktopGameLayoutProps {
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
+  onOpenViewer?: () => void;
+  onTriggerSave?: () => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -79,6 +81,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onShowToast,
   onOpenStateEditor,
   onOpenRAG,
+  onOpenViewer,
+  onTriggerSave,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -103,6 +107,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onOpenSaves={onOpenSaves}
             onOpenMap={onOpenMap}
             onOpenLogs={onOpenLogs}
+            onOpenViewer={onOpenViewer}
             currentAmbience={currentAmbience}
             onUpdateUIState={onUpdateUIState}
             onVeoScript={onVeoScript}
@@ -168,6 +173,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onShowToast={onShowToast}
               onOpenStateEditor={onOpenStateEditor}
               onOpenRAG={onOpenRAG}
+              onOpenViewer={onOpenViewer}
+              onTriggerSave={onTriggerSave}
             />
           </div>
         </div>

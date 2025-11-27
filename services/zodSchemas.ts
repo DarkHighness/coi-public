@@ -57,6 +57,7 @@ export const inventoryItemSchema = z.object({
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.optional(),
   lore: z.string().optional().describe("Brief lore or history of the item."),
+  icon: z.string().optional().describe("Icon identifier for the item."),
   unlocked: z.boolean().optional().describe(
     "AI DECISION: Set true when hidden truth discovered (examination, analysis, witnessing power). Default false."
   ),
@@ -576,7 +577,7 @@ export const atmosphereSchema = z.object({
   ambience: ambienceSchema.describe("The audio ambience/environment for sound effects and music."),
 });
 
-/** 故事大纲 Schema */
+/** 故事大纲 Schema (完整版 - 用于类型定义和最终验证) */
 export const storyOutlineSchema = z.object({
   title: z.string().describe("A creative title for the adventure."),
   initialTime: z.string().describe(
@@ -606,7 +607,91 @@ export const storyOutlineSchema = z.object({
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience."
   ),
+  // Unlocked flags - set by AI when player discovers hidden info
+  worldSettingUnlocked: z.boolean().optional().describe("True when worldSetting.hidden is revealed."),
+  mainGoalUnlocked: z.boolean().optional().describe("True when mainGoal.hidden is revealed."),
 });
+
+// ============================================================================
+// 分阶段故事大纲 Schemas (用于规避 Gemini schema 状态限制)
+// ============================================================================
+
+/**
+ * Phase 1: 世界基础设定
+ * 包含故事的基本框架：标题、前提、世界观、时间、主要目标
+ */
+export const outlinePhase1Schema = z.object({
+  title: z.string().describe("A creative title for the adventure."),
+  initialTime: z.string().describe(
+    "The starting time of the story (e.g., 'Year 2024', 'Day 1', 'The 3rd Era')."
+  ),
+  premise: z.string().describe("The inciting incident and setting setup (2-3 paragraphs)."),
+  worldSetting: worldSettingSchema.describe("Dual-layer world setting with visible and hidden truths."),
+  mainGoal: mainGoalSchema.describe("The primary driving force of the story."),
+});
+
+/**
+ * Phase 2: 主角角色
+ * 完整的角色信息，包括属性、技能、状态、外貌等
+ */
+export const outlinePhase2Schema = z.object({
+  character: characterStatusSchema.describe("The fully initialized protagonist profile."),
+});
+
+/**
+ * Phase 3: 世界实体 - 地点与阵营
+ * 初始地点和主要势力
+ */
+export const outlinePhase3Schema = z.object({
+  locations: z.array(locationSchema.omit({ id: true, isVisited: true, createdAt: true })).describe(
+    "1-2 initial locations with detailed visible and hidden layers."
+  ),
+  factions: z.array(factionSchema.omit({ id: true })).describe(
+    "2-3 major power groups with visible and hidden agendas."
+  ),
+});
+
+/**
+ * Phase 4: 关系与物品
+ * NPC关系和初始物品
+ */
+export const outlinePhase4Schema = z.object({
+  relationships: z.array(relationshipSchema.omit({ id: true })).describe(
+    "1-2 initial NPCs with full visible and hidden relationship details."
+  ),
+  inventory: z.array(inventoryItemSchema.omit({ id: true })).describe(
+    "1-3 starting items with detailed lore and hidden properties."
+  ),
+});
+
+/**
+ * Phase 5: 任务、知识与氛围
+ * 任务、世界知识、时间线事件和初始氛围
+ */
+export const outlinePhase5Schema = z.object({
+  quests: z.array(questSchema).describe(
+    "1-2 initial quests (at least one main quest). Include visible and hidden objectives."
+  ),
+  knowledge: z.array(knowledgeEntrySchema.omit({ id: true })).describe(
+    "2-3 initial knowledge entries about the world."
+  ),
+  timeline: z.array(timelineEventSchema).describe(
+    "3-5 backstory timeline events with visible and hidden layers."
+  ),
+  initialAtmosphere: atmosphereSchema.describe(
+    "Initial atmosphere with visual theme (envTheme) and audio ambience."
+  ),
+});
+
+/** 分阶段 Schema 类型定义 */
+export type OutlinePhase1 = z.infer<typeof outlinePhase1Schema>;
+export type OutlinePhase2 = z.infer<typeof outlinePhase2Schema>;
+export type OutlinePhase3 = z.infer<typeof outlinePhase3Schema>;
+export type OutlinePhase4 = z.infer<typeof outlinePhase4Schema>;
+export type OutlinePhase5 = z.infer<typeof outlinePhase5Schema>;
+
+// Note: PartialStoryOutline is now defined in types.ts to support GameState integration
+// The phase types above are re-exported for type-safe phase result handling
 
 // ============================================================================
 // 摘要 Schemas
@@ -789,6 +874,35 @@ export const gameResponseSchema = z.object({
     })).optional(),
     known: z.boolean().optional(),
   })).optional().describe("New timeline events."),
+  timeUpdate: z.string().optional().describe("The new time string if time has passed."),
+  worldInfoUpdates: z.array(z.object({
+    unlockWorldSetting: z.boolean().optional(),
+    unlockMainGoal: z.boolean().optional(),
+    reason: z.string(),
+  })).optional().describe("Track when world-level secrets are unlocked."),
+  aliveEntities: z.object({
+    inventory: z.array(z.string()).optional(),
+    relationships: z.array(z.string()).optional(),
+    locations: z.array(z.string()).optional(),
+    quests: z.array(z.string()).optional(),
+    knowledge: z.array(z.string()).optional(),
+    timeline: z.array(z.string()).optional(),
+    skills: z.array(z.string()).optional(),
+    conditions: z.array(z.string()).optional(),
+    hiddenTraits: z.array(z.string()).optional(),
+    causalChains: z.array(z.string()).optional(),
+  }).optional().describe("IDs of entities relevant for next turn context."),
+  ragQueries: z.array(z.string()).optional().describe("Semantic search queries for next turn context."),
+  ending: z.enum([
+    "continue",
+    "death",
+    "victory",
+    "true_ending",
+    "bad_ending",
+    "neutral_ending",
+  ]).optional().describe("Story continuation status."),
+  forceEnd: z.boolean().optional().describe("If true, game ends permanently (no continue option)."),
+  // Note: finalState is NOT included in AI schema - it's system-populated after processing
 });
 
 // ============================================================================
@@ -831,6 +945,8 @@ export type KnowledgeEntry = z.infer<typeof knowledgeEntrySchema>;
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;
 export type CausalChain = z.infer<typeof causalChainSchema>;
 export type Faction = z.infer<typeof factionSchema>;
+export type CharacterAttribute = z.infer<typeof characterAttributeSchema>;
+export type HiddenTrait = z.infer<typeof hiddenTraitSchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type StoryOutline = z.infer<typeof storyOutlineSchema>;
 export type StorySummary = z.infer<typeof storySummarySchema>;
@@ -849,6 +965,12 @@ export const GEMINI_SCHEMAS = {
   storySummary: zodToGemini(storySummarySchema),
   gameResponse: zodToGemini(gameResponseSchema),
   translation: zodToGemini(translationSchema),
+  // 分阶段 Outline Schemas
+  outlinePhase1: zodToGemini(outlinePhase1Schema),
+  outlinePhase2: zodToGemini(outlinePhase2Schema),
+  outlinePhase3: zodToGemini(outlinePhase3Schema),
+  outlinePhase4: zodToGemini(outlinePhase4Schema),
+  outlinePhase5: zodToGemini(outlinePhase5Schema),
 } as const;
 
 /** 预编译的 OpenAI Response Formats */
@@ -857,6 +979,12 @@ export const OPENAI_RESPONSE_FORMATS = {
   storySummary: zodToOpenAIResponseFormat(storySummarySchema, "story_summary"),
   gameResponse: zodToOpenAIResponseFormat(gameResponseSchema, "game_response"),
   translation: zodToOpenAIResponseFormat(translationSchema, "translation"),
+  // 分阶段 Outline Response Formats
+  outlinePhase1: zodToOpenAIResponseFormat(outlinePhase1Schema, "outline_phase1"),
+  outlinePhase2: zodToOpenAIResponseFormat(outlinePhase2Schema, "outline_phase2"),
+  outlinePhase3: zodToOpenAIResponseFormat(outlinePhase3Schema, "outline_phase3"),
+  outlinePhase4: zodToOpenAIResponseFormat(outlinePhase4Schema, "outline_phase4"),
+  outlinePhase5: zodToOpenAIResponseFormat(outlinePhase5Schema, "outline_phase5"),
 } as const;
 
 /** 预编译的 OpenAI Schema 对象 (用于工具参数等) */
@@ -865,6 +993,12 @@ export const OPENAI_SCHEMAS = {
   storySummary: zodToOpenAISchema(storySummarySchema),
   gameResponse: zodToOpenAISchema(gameResponseSchema),
   translation: zodToOpenAISchema(translationSchema),
+  // 分阶段 Outline Schemas
+  outlinePhase1: zodToOpenAISchema(outlinePhase1Schema),
+  outlinePhase2: zodToOpenAISchema(outlinePhase2Schema),
+  outlinePhase3: zodToOpenAISchema(outlinePhase3Schema),
+  outlinePhase4: zodToOpenAISchema(outlinePhase4Schema),
+  outlinePhase5: zodToOpenAISchema(outlinePhase5Schema),
 } as const;
 
 // ============================================================================

@@ -120,7 +120,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         />
 
         {/* Ending Banner */}
-        {segment.ending && (
+        {segment.ending && segment.ending !== "continue" && (
           <div
             className={`mx-6 my-4 p-4 rounded-lg border-2 text-center animate-fade-in ${
               segment.ending === "death"

@@ -7,7 +7,7 @@ import { MarkdownText } from "./render/MarkdownText";
 interface SaveManagerProps {
   slots: SaveSlot[];
   currentSlotId: string | null;
-  onSwitch: (id: string) => void;
+  onSwitch: (id: string) => void | Promise<void> | Promise<any>;
   onDelete: (id: string) => void;
   onClose: () => void;
 }

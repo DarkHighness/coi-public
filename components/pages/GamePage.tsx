@@ -56,6 +56,11 @@ const RAGDebugger = React.lazy(() =>
     default: module.RAGDebugger,
   })),
 );
+const GameStateViewer = React.lazy(() =>
+  import("../GameStateViewer").then((module) => ({
+    default: module.GameStateViewer,
+  })),
+);
 
 interface GamePageProps {
   gameState: GameState;
@@ -78,6 +83,7 @@ interface GamePageProps {
   deleteSlot: (id: string) => void;
   currentSlotId: string | null;
   onViewedSegmentChange: (segment: StorySegment) => void;
+  triggerSave?: () => void;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
@@ -101,6 +107,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   deleteSlot,
   currentSlotId,
   onViewedSegmentChange,
+  triggerSave,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -118,6 +125,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
   const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
+  const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
@@ -147,7 +155,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     isMagicMirrorOpen ||
     isVeoScriptOpen ||
     isStateEditorOpen ||
-    isRAGDebuggerOpen;
+    isRAGDebuggerOpen ||
+    isGameStateViewerOpen;
 
   // Play ambience when story is visible and no menus are blocking
   // FIXED: Don't tie ambience to isTyping - ambience should continue playing
@@ -187,12 +196,18 @@ export const GamePage: React.FC<GamePageProps> = ({
   }, [feedLayout]);
 
   // Navigate back to / if there is no outline
+  // But if there's a saved conversation state, navigate to / so user can click Continue to resume
   useEffect(() => {
     if (!gameState.outline) {
-      console.error("Illegal gameState detected, redirecting to /", gameState);
+      if (gameState.outlineConversation) {
+        // Has partial progress - navigate to home so user can click "Continue" to resume
+        console.log("[GamePage] Outline incomplete but has conversation state, redirecting to / for resume");
+      } else {
+        console.error("Illegal gameState detected, redirecting to /", gameState);
+      }
       navigate("/");
     }
-  }, [gameState.outline]);
+  }, [gameState.outline, gameState.outlineConversation]);
 
   const handleFork = (nodeId: string) => {
     if (window.confirm(t("tree.forkConfirm"))) {
@@ -305,6 +320,8 @@ export const GamePage: React.FC<GamePageProps> = ({
           onShowToast={(msg, type) => pushToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
+          onOpenViewer={() => setIsGameStateViewerOpen(true)}
+          onTriggerSave={triggerSave}
         />
 
         <DesktopGameLayout
@@ -345,6 +362,8 @@ export const GamePage: React.FC<GamePageProps> = ({
           onShowToast={(msg, type) => pushToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
+          onOpenViewer={() => setIsGameStateViewerOpen(true)}
+          onTriggerSave={triggerSave}
         />
 
         {/* Mobile Bottom Navigation */}
@@ -405,6 +424,14 @@ export const GamePage: React.FC<GamePageProps> = ({
             isOpen={isRAGDebuggerOpen}
             onClose={() => setIsRAGDebuggerOpen(false)}
             themeFont={themeFont}
+            gameState={gameState}
+          />
+        )}
+
+        {isGameStateViewerOpen && (
+          <GameStateViewer
+            isOpen={isGameStateViewerOpen}
+            onClose={() => setIsGameStateViewerOpen(false)}
             gameState={gameState}
           />
         )}

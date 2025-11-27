@@ -168,18 +168,27 @@ export interface AtmosphereConfig {
 /**
  * Normalize atmosphere input to AtmosphereObject
  * Ensures all fields are valid, providing defaults if needed
+ * Accepts both old string format and new AtmosphereObject format (including partial)
  */
 export function normalizeAtmosphere(
-  atmosphere: AtmosphereObject | undefined
+  atmosphere: AtmosphereObject | Partial<AtmosphereObject> | string | undefined | null
 ): AtmosphereObject {
+  // Handle null/undefined
   if (!atmosphere) {
     return { envTheme: "fantasy", ambience: "quiet" };
   }
 
-  return {
-    envTheme: isValidEnvTheme(atmosphere.envTheme) ? atmosphere.envTheme : "fantasy",
-    ambience: isValidAmbience(atmosphere.ambience) ? atmosphere.ambience : "quiet",
-  };
+  // Handle legacy string format (old ambience string)
+  if (typeof atmosphere === "string") {
+    const ambience = isValidAmbience(atmosphere) ? atmosphere : "quiet";
+    const envTheme = AMBIENCE_TO_THEME[ambience] || "fantasy";
+    return { envTheme, ambience };
+  }
+
+  // Handle object format (including partial)
+  const envTheme = isValidEnvTheme(atmosphere.envTheme) ? atmosphere.envTheme : "fantasy";
+  const ambience = isValidAmbience(atmosphere.ambience) ? atmosphere.ambience : "quiet";
+  return { envTheme, ambience };
 }
 
 /**
@@ -216,9 +225,9 @@ export function getThemeForAtmosphere(
  * Get the theme key for an atmosphere (for looking up in ENV_THEMES)
  */
 export function getThemeKeyForAtmosphere(
-  atmosphere: AtmosphereObject | undefined
+  atmosphere: AtmosphereObject | Partial<AtmosphereObject> | string | undefined | null
 ): string {
-  return getAtmosphereConfig(atmosphere).themeKey;
+  return getAtmosphereConfig(normalizeAtmosphere(atmosphere)).themeKey;
 }
 
 /**

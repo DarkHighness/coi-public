@@ -51,6 +51,8 @@ interface MobileGameLayoutProps {
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
+  onOpenViewer?: () => void;
+  onTriggerSave?: () => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -86,6 +88,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onShowToast,
   onOpenStateEditor,
   onOpenRAG,
+  onOpenViewer,
+  onTriggerSave,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -128,6 +132,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onShowToast={onShowToast}
             onOpenStateEditor={onOpenStateEditor}
             onOpenRAG={onOpenRAG}
+            onOpenViewer={onOpenViewer}
+            onTriggerSave={onTriggerSave}
           />
         </div>
       </div>
@@ -160,6 +166,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onOpenSaves={onOpenSaves}
           onOpenMap={onOpenMap}
           onOpenLogs={onOpenLogs}
+          onOpenViewer={onOpenViewer}
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
           onVeoScript={onVeoScript}
@@ -312,6 +319,29 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                 {t("veoScript.title")}
               </span>
             </button>
+            {onOpenViewer && (
+              <button
+                onClick={onOpenViewer}
+                className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
+              >
+                <svg
+                  className="w-8 h-8 text-theme-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  ></path>
+                </svg>
+                <span className="text-sm font-bold uppercase">
+                  {t("gameViewer.title") || "State"}
+                </span>
+              </button>
+            )}
             <button
               onClick={() => {
                 if (window.confirm(t("confirmNewGame"))) onNewGame();

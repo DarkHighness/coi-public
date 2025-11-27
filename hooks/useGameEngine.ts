@@ -8,6 +8,7 @@ import {
   StorySummary,
   Relationship,
   Location as GameLocation,
+  OutlineConversationState,
 } from "../types";
 import { useGameState } from "./useGameState";
 import { useGamePersistence } from "./useGamePersistence";
@@ -16,13 +17,16 @@ import {
   generateSceneImage,
   updateAIConfig,
   generateStoryOutline,
+  generateStoryOutlinePhased,
   summarizeContext,
+  type OutlinePhaseProgress,
 } from "../services/aiService";
 import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
 import {
   createStateSnapshot,
   restoreStateFromSnapshot,
   createFork,
+  normalizeAliveEntities,
 } from "../utils/snapshotManager";
 import {
   getThemeKeyForAtmosphere,
@@ -612,18 +616,7 @@ export const useGameEngine = () => {
         causalChains: finalState.causalChains,
 
         // Context Priority System: update alive entities and increment turn
-        aliveEntities: response.aliveEntities || {
-          inventory: [],
-          relationships: [],
-          locations: [],
-          quests: [],
-          knowledge: [],
-          timeline: [],
-          skills: [],
-          conditions: [],
-          hiddenTraits: [],
-          causalChains: [],
-        },
+        aliveEntities: normalizeAliveEntities(response.aliveEntities),
         turnNumber: prev.turnNumber + 1,
 
         summaries: effectiveSummaries,
@@ -781,6 +774,7 @@ export const useGameEngine = () => {
     initialTheme?: string,
     customContext?: string,
     onStream?: (text: string) => void,
+    onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
   ) => {
     let selectedTheme =
       initialTheme ||
@@ -812,19 +806,49 @@ export const useGameEngine = () => {
 
     navigate("/initializing");
     try {
-      const { outline, log } = await generateStoryOutline(
+      // NOTE: startNewGame creates a completely NEW game, so we don't resume from
+      // any previous conversation state. resumeOutlineGeneration should be used
+      // to resume from a saved conversation state.
+
+      // Use phased generation to avoid "schema produces a constraint that has too many states" errors
+      const { outline, logs } = await generateStoryOutlinePhased(
         selectedTheme,
         LANG_MAP[language],
         customContext,
         t,
-        onStream,
+        {
+          onChunk: onStream,
+          onPhaseProgress,
+          // Do NOT resume from saved conversation - this is a fresh new game
+          resumeFromConversation: undefined,
+          // Save conversation state after each phase for fault recovery
+          onSaveConversation: async (conversationState: OutlineConversationState) => {
+            // Update state and get the new state for saving
+            const updatedState = {
+              ...gameStateRef.current,
+              outlineConversation: conversationState,
+            };
+            setGameState(updatedState);
+            // Persist immediately with the updated state
+            await saveToSlot(slotId, updatedState);
+            console.log(`[StartNewGame] Saved conversation state at phase ${conversationState.currentPhase}`);
+          },
+        },
       );
 
-      console.log("[StartNewGame] Outline generated", outline);
+      console.log("[StartNewGame] Outline generated (phased)", outline);
+
+      // Calculate total tokens from all phase logs
+      const totalPhaseTokens = logs.reduce(
+        (sum, log) => sum + (log.usage?.totalTokens || 0),
+        0
+      );
 
       setGameState((prev) => ({
         ...prev,
         outline,
+        // Clear conversation state after successful generation
+        outlineConversation: undefined,
         character: {
           ...outline.character,
           conditions: (outline.character.conditions || []).map(
@@ -893,8 +917,8 @@ export const useGameEngine = () => {
           hiddenTrait: (outline.character?.hiddenTraits?.length || 0) + 1,
         },
         isProcessing: true, // Keep processing true while generating first turn
-        logs: [log, ...prev.logs],
-        totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+        logs: [...logs, ...prev.logs],
+        totalTokens: prev.totalTokens + totalPhaseTokens,
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
@@ -920,6 +944,20 @@ export const useGameEngine = () => {
       // Generate first turn in the game view
       setTimeout(async () => {
         try {
+          // Initialize RAG embedding manager and build initial index BEFORE first turn
+          if (aiSettings.embedding?.enabled) {
+            console.log("[StartNewGame] Initializing RAG for first turn...");
+            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            try {
+              // Build index from current game state (which now has the outline)
+              await manager.buildIndex(gameStateRef.current);
+              console.log("[StartNewGame] RAG index built successfully");
+            } catch (ragError) {
+              console.warn("[StartNewGame] Failed to build RAG index, continuing without RAG:", ragError);
+              // Continue without RAG - it's not critical for game to function
+            }
+          }
+
           const prompt = `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`;
 
           // Store initial prompt for retry
@@ -966,12 +1004,217 @@ export const useGameEngine = () => {
     }
   };
 
+  /**
+   * Resume an incomplete outline generation from saved conversation state
+   * Called when loading a save that has outlineConversation but no outline
+   */
+  const resumeOutlineGeneration = async (
+    onStream?: (text: string) => void,
+    onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
+  ) => {
+    const savedConversation = gameStateRef.current.outlineConversation;
+    if (!savedConversation) {
+      console.warn("[ResumeOutline] No saved conversation to resume from");
+      return;
+    }
+
+    const { theme, customContext } = savedConversation;
+    console.log(`[ResumeOutline] Resuming from phase ${savedConversation.currentPhase} for theme ${theme}`);
+
+    // Set processing state
+    setGameState((prev) => ({ ...prev, isProcessing: true }));
+    navigate("/initializing");
+
+    try {
+      const { outline, logs } = await generateStoryOutlinePhased(
+        theme,
+        savedConversation.language,
+        customContext,
+        t,
+        {
+          onChunk: onStream,
+          onPhaseProgress,
+          resumeFromConversation: savedConversation,
+          onSaveConversation: async (conversationState: OutlineConversationState) => {
+            const updatedState = {
+              ...gameStateRef.current,
+              outlineConversation: conversationState,
+            };
+            setGameState(updatedState);
+            await saveToSlot(currentSlotId!, updatedState);
+            console.log(`[ResumeOutline] Saved conversation state at phase ${conversationState.currentPhase}`);
+          },
+        },
+      );
+
+      console.log("[ResumeOutline] Outline generation completed", outline);
+
+      const totalPhaseTokens = logs.reduce(
+        (sum, log) => sum + (log.usage?.totalTokens || 0),
+        0
+      );
+
+      setGameState((prev) => ({
+        ...prev,
+        outline,
+        outlineConversation: undefined,
+        character: {
+          ...outline.character,
+          conditions: (outline.character.conditions || []).map(
+            (c: any, i: number) => ({ ...c, id: `cond:${i + 1}` }),
+          ),
+          hiddenTraits: (outline.character.hiddenTraits || []).map(
+            (t: any, i: number) => ({ ...t, id: `trait:${i + 1}` }),
+          ),
+        },
+        inventory: (outline.inventory || []).map((item: any, index: number) => ({
+          ...item,
+          id: `inv:${index + 1}`,
+          createdAt: Date.now(),
+        })),
+        relationships: (outline.relationships || []).map((rel: any, index: number) => ({
+          ...rel,
+          id: `npc:${index + 1}`,
+          createdAt: Date.now(),
+        })),
+        quests: (outline.quests || []).map((q: any, index: number) => ({
+          ...q,
+          id: `quest:${index + 1}`,
+          status: "active",
+          createdAt: Date.now(),
+        })),
+        currentLocation: outline.locations?.[0]?.name || "Unknown",
+        locations: (outline.locations || []).map((loc: any, index: number) => ({
+          ...loc,
+          id: `loc:${index + 1}`,
+          isVisited: index === 0,
+          createdAt: Date.now(),
+        })),
+        knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
+          ...k,
+          id: `know:${index + 1}`,
+        })),
+        factions: (outline.factions || []).map((f: any, index: number) => ({
+          ...f,
+          id: `fac:${index + 1}`,
+        })),
+        timeline: (outline.timeline || []).map((e: any) => ({
+          ...e,
+          category: e.category || "world_event",
+        })),
+        nextIds: {
+          item: (outline.inventory?.length || 0) + 1,
+          npc: (outline.relationships?.length || 0) + 1,
+          location: (outline.locations?.length || 0) + 1,
+          knowledge: (outline.knowledge?.length || 0) + 1,
+          quest: (outline.quests?.length || 0) + 1,
+          faction: (outline.factions?.length || 0) + 1,
+          timeline: (outline.timeline?.length || 0) + 1,
+          causalChain: 1,
+          skill: (outline.character?.skills?.length || 0) + 1,
+          condition: (outline.character?.conditions?.length || 0) + 1,
+          hiddenTrait: (outline.character?.hiddenTraits?.length || 0) + 1,
+        },
+        isProcessing: true,
+        logs: [...logs, ...gameStateRef.current.logs],
+        totalTokens: gameStateRef.current.totalTokens + totalPhaseTokens,
+        generateImage: false,
+        summaries: [],
+        atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
+        time: outline.initialTime || "Day 1",
+      }));
+
+      // Save checkpoint
+      setTimeout(async () => {
+        await saveToSlot(currentSlotId!, gameStateRef.current);
+        console.log("[ResumeOutline] Outline checkpoint saved");
+      }, 50);
+
+      navigate("/game");
+
+      // Generate first turn
+      setTimeout(async () => {
+        try {
+          if (aiSettings.embedding?.enabled) {
+            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            await manager.buildIndex(gameStateRef.current);
+          }
+
+          const prompt = `Begin the ${theme} story. ${customContext ? `Context: ${customContext}` : ""}`;
+          setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
+
+          const result = await handleAction(prompt, true, theme);
+          if (result && !result.success) {
+            console.warn("First turn failed after resume, player can retry");
+          }
+        } catch (error) {
+          console.error("First turn error after resume", error);
+          setGameState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            error: "Failed to start the story. Please try again using the retry button.",
+          }));
+        }
+      }, 100);
+    } catch (e) {
+      console.error("[ResumeOutline] Resume failed", e);
+      setGameState((prev) => ({
+        ...prev,
+        error: "Failed to resume outline generation",
+        isProcessing: false,
+      }));
+      navigate("/");
+    }
+  };
+
   const switchSlot = async (id: string) => {
     navigate("/initializing");
     // Ensure audio is preloaded
     await preloadAudio();
 
-    if (await loadSlot(id)) {
+    const result = await loadSlot(id);
+    if (result.success) {
+      // Restore embedding index if available and embedding is enabled
+      if (aiSettings.embedding?.enabled) {
+        const currentModelId = aiSettings.embedding.modelId;
+        let indexRestored = false;
+
+        if (result.embeddingIndex) {
+          if (result.savedModelId && result.savedModelId !== currentModelId) {
+            // Model mismatch - will rebuild below
+            console.warn(
+              `[Embedding] Model mismatch: saved=${result.savedModelId}, current=${currentModelId}. ` +
+              `RAG index will be rebuilt.`
+            );
+          } else {
+            // Model matches - restore the index
+            try {
+              const manager = initializeEmbeddingManager({ settings: aiSettings });
+              await manager.loadIndex(result.embeddingIndex);
+              console.log(
+                `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`
+              );
+              indexRestored = true;
+            } catch (error) {
+              console.error("[Embedding] Failed to restore index:", error);
+            }
+          }
+        }
+
+        // If no index was restored, build a new one from the loaded game state
+        if (!indexRestored) {
+          console.log("[Embedding] Building new index from game state...");
+          try {
+            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            await manager.buildIndex(gameStateRef.current);
+            console.log("[Embedding] Index rebuilt successfully");
+          } catch (error) {
+            console.error("[Embedding] Failed to build index:", error);
+            // Continue without RAG - not critical
+          }
+        }
+      }
+
       // Allow state to propagate
       setTimeout(() => navigate("/game"), 0);
     }
@@ -1164,6 +1407,7 @@ export const useGameEngine = () => {
     setGameState,
     handleAction,
     startNewGame,
+    resumeOutlineGeneration,
     isAutoSaving,
     isMagicMirrorOpen,
     setIsMagicMirrorOpen,
@@ -1190,5 +1434,6 @@ export const useGameEngine = () => {
     navigateToNode,
     generateImageForNode,
     updateNodeAudio,
+    triggerSave,
   };
 };

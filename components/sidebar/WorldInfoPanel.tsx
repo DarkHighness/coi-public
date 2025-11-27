@@ -7,8 +7,9 @@ interface WorldInfoPanelProps {
   history?: string;
   factions?: Faction[];
   worldSetting?: {
-    visible: string;
-    hidden: string;
+    visible?: string;
+    hidden?: string;
+    history?: string;
   };
   themeFont: string;
   outline?: StoryOutline | null; // Full outline for hidden content

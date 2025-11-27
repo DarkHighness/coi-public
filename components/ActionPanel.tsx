@@ -18,6 +18,8 @@ interface ActionPanelProps {
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
+  onOpenViewer?: () => void;
+  onTriggerSave?: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -29,6 +31,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onShowToast,
   onOpenStateEditor,
   onOpenRAG,
+  onOpenViewer,
+  onTriggerSave,
 }) => {
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
@@ -119,6 +123,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         return;
       }
 
+      if (commandResult.action?.type === "open_viewer") {
+        onOpenViewer?.();
+        return;
+      }
+
       // If command doesn't prevent action, continue with normal flow
       if (!commandResult.preventAction) {
         onAction(customInput);
@@ -141,8 +150,15 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       onOpenStateEditor?.();
     } else if (action.type === "open_rag") {
       onOpenRAG?.();
+    } else if (action.type === "open_viewer") {
+      onOpenViewer?.();
     } else {
       executeCommandAction(action, gameState, setGameState);
+
+      // Trigger save for state-modifying commands (/god, /unlock)
+      if (action.type === "god_mode" || action.type === "unlock_all") {
+        onTriggerSave?.();
+      }
 
       // Show success message
       const successMessage =

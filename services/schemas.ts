@@ -21,6 +21,12 @@ export {
   atmosphereSchema,
   envThemeSchema,
   ambienceSchema,
+  // 分阶段 Outline Schemas
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
 } from "./zodSchemas";
 
 // ============================================================================
@@ -48,6 +54,8 @@ export type {
   TimelineEvent,
   CausalChain,
   Faction,
+  CharacterAttribute,
+  HiddenTrait,
   CharacterStatus,
   StoryOutline,
   StorySummary,
@@ -55,4 +63,13 @@ export type {
   Atmosphere,
   EnvTheme,
   Ambience,
+  // 分阶段 Outline 类型
+  OutlinePhase1,
+  OutlinePhase2,
+  OutlinePhase3,
+  OutlinePhase4,
+  OutlinePhase5,
 } from "./zodSchemas";
+
+// PartialStoryOutline is now defined in types.ts for GameState integration
+export type { PartialStoryOutline } from "../types";

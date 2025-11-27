@@ -37,6 +37,30 @@ const EMPTY_ALIVE_ENTITIES: AliveEntities = {
   causalChains: [],
 };
 
+/**
+ * Normalize alive entities from AI response (partial) to full AliveEntities
+ * Ensures all fields are present with default empty arrays
+ */
+export function normalizeAliveEntities(
+  partial: Partial<AliveEntities> | undefined | null
+): AliveEntities {
+  if (!partial) {
+    return { ...EMPTY_ALIVE_ENTITIES };
+  }
+  return {
+    inventory: partial.inventory ?? [],
+    relationships: partial.relationships ?? [],
+    locations: partial.locations ?? [],
+    quests: partial.quests ?? [],
+    knowledge: partial.knowledge ?? [],
+    timeline: partial.timeline ?? [],
+    skills: partial.skills ?? [],
+    conditions: partial.conditions ?? [],
+    hiddenTraits: partial.hiddenTraits ?? [],
+    causalChains: partial.causalChains ?? [],
+  };
+}
+
 // Default empty fork tree
 const EMPTY_FORK_TREE: ForkTree = {
   nodes: {

@@ -17,6 +17,7 @@ export type CommandAction =
   | { type: "unlock_all" }
   | { type: "open_editor" }
   | { type: "open_rag" }
+  | { type: "open_viewer" }
   | { type: "none" };
 
 export interface CommandContext {
@@ -31,6 +32,7 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/unlock": handleUnlockAll,
   "/edit": handleOpenEditor,
   "/rag": handleOpenRAG,
+  "/view": handleOpenViewer,
   "/help": handleHelp,
 };
 
@@ -138,6 +140,17 @@ function handleOpenRAG(args: string[], context: CommandContext): CommandResult {
 }
 
 /**
+ * /view - Open Game State Viewer
+ */
+function handleOpenViewer(args: string[], context: CommandContext): CommandResult {
+  return {
+    handled: true,
+    preventAction: true,
+    action: { type: "open_viewer" },
+  };
+}
+
+/**
  * /help - Show available commands
  */
 function handleHelp(args: string[], context: CommandContext): CommandResult {
@@ -150,6 +163,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 /unlock - Reveal all hidden information
 /edit - Open GameState editor
 /rag - Open RAG Debugger
+/view - Open Game State Viewer
 /help - Show this help message`;
 
   return {
@@ -242,6 +256,7 @@ export function executeCommandAction(
 
     case "open_editor":
     case "open_rag":
+    case "open_viewer":
       // This is handled by the UI component
       break;
 
