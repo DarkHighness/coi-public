@@ -594,7 +594,9 @@ export const generateStoryOutline = async (
       tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
       tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
     themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
-    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, { ns: "themes" });
+    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, {
+      ns: "themes",
+    });
   } else {
     // Fallback to static config (text content is only in translation files)
     const themeData = THEMES[theme] || THEMES["fantasy"];
@@ -606,12 +608,12 @@ export const generateStoryOutline = async (
   const prompt = getOutlinePrompt(
     theme,
     language,
-    customContext,                // customContext (user-provided context)
-    themeDataWorldSetting,        // worldSetting (theme's world description)
-    themeDataBackgroundTemplate,  // backgroundTemplate (character setup template)
-    themeDataExample,             // themeExample (style reference)
-    false,                        // isRestricted (allow creative freedom)
-    themeDataNarrativeStyle,      // narrativeStyle (writing style guidance)
+    customContext, // customContext (user-provided context)
+    themeDataWorldSetting, // worldSetting (theme's world description)
+    themeDataBackgroundTemplate, // backgroundTemplate (character setup template)
+    themeDataExample, // themeExample (style reference)
+    false, // isRestricted (allow creative freedom)
+    themeDataNarrativeStyle, // narrativeStyle (writing style guidance)
   );
 
   const { result, log } = await generateContentUnified(
@@ -641,7 +643,10 @@ export interface OutlinePhaseProgress {
 }
 
 /** Conversation message format for outline generation */
-export type OutlineConversationMessage = { role: "user" | "model"; parts: { text: string }[] };
+export type OutlineConversationMessage = {
+  role: "user" | "model";
+  parts: { text: string }[];
+};
 
 /** Options for phased outline generation */
 export interface PhasedOutlineOptions {
@@ -690,7 +695,9 @@ export const generateStoryOutlinePhased = async (
       tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
       tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
     themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
-    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, { ns: "themes" });
+    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, {
+      ns: "themes",
+    });
   } else {
     const themeData = THEMES[theme] || THEMES["fantasy"];
     themeDataBackgroundTemplate = themeData.backgroundTemplate;
@@ -706,7 +713,9 @@ export const generateStoryOutlinePhased = async (
     partial = resumeState.partial;
     conversationHistory = [...resumeState.messages];
     systemInstruction = resumeState.systemInstruction;
-    console.log(`[OutlinePhased] Resuming from phase ${resumeState.currentPhase}`);
+    console.log(
+      `[OutlinePhased] Resuming from phase ${resumeState.currentPhase}`,
+    );
   } else {
     // Build fresh system instruction
     systemInstruction = getOutlineSystemInstruction(language, isRestricted);
@@ -767,8 +776,14 @@ export const generateStoryOutlinePhased = async (
     reportProgress(1, "starting");
 
     const phase1Prompt = getOutlinePhase1Prompt(
-      theme, language, customContext, themeDataWorldSetting,
-      themeDataBackgroundTemplate, themeDataExample, isRestricted, themeDataNarrativeStyle
+      theme,
+      language,
+      customContext,
+      themeDataWorldSetting,
+      themeDataBackgroundTemplate,
+      themeDataExample,
+      isRestricted,
+      themeDataNarrativeStyle,
     );
     conversationHistory.push({ role: "user", parts: [{ text: phase1Prompt }] });
 
@@ -776,12 +791,18 @@ export const generateStoryOutlinePhased = async (
       reportProgress(1, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider, modelId, systemInstruction, conversationHistory,
-        outlinePhase1Schema
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        outlinePhase1Schema,
       );
       partial.phase1 = result as OutlinePhase1;
       // Use compact JSON (no spaces) for conversation history
-      conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(result) }] });
+      conversationHistory.push({
+        role: "model",
+        parts: [{ text: JSON.stringify(result) }],
+      });
       if (log) logs.push(log);
       reportProgress(1, "completed");
       // Save conversation state for fault recovery (next phase = 2)
@@ -804,11 +825,17 @@ export const generateStoryOutlinePhased = async (
       reportProgress(2, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider, modelId, systemInstruction, conversationHistory,
-        outlinePhase2Schema
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        outlinePhase2Schema,
       );
       partial.phase2 = result as OutlinePhase2;
-      conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(result) }] });
+      conversationHistory.push({
+        role: "model",
+        parts: [{ text: JSON.stringify(result) }],
+      });
       if (log) logs.push(log);
       reportProgress(2, "completed");
       // Save conversation state for fault recovery (next phase = 3)
@@ -831,11 +858,17 @@ export const generateStoryOutlinePhased = async (
       reportProgress(3, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider, modelId, systemInstruction, conversationHistory,
-        outlinePhase3Schema
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        outlinePhase3Schema,
       );
       partial.phase3 = result as OutlinePhase3;
-      conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(result) }] });
+      conversationHistory.push({
+        role: "model",
+        parts: [{ text: JSON.stringify(result) }],
+      });
       if (log) logs.push(log);
       reportProgress(3, "completed");
       // Save conversation state for fault recovery (next phase = 4)
@@ -858,11 +891,17 @@ export const generateStoryOutlinePhased = async (
       reportProgress(4, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider, modelId, systemInstruction, conversationHistory,
-        outlinePhase4Schema
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        outlinePhase4Schema,
       );
       partial.phase4 = result as OutlinePhase4;
-      conversationHistory.push({ role: "model", parts: [{ text: JSON.stringify(result) }] });
+      conversationHistory.push({
+        role: "model",
+        parts: [{ text: JSON.stringify(result) }],
+      });
       if (log) logs.push(log);
       reportProgress(4, "completed");
       // Save conversation state for fault recovery (next phase = 5)
@@ -885,8 +924,11 @@ export const generateStoryOutlinePhased = async (
       reportProgress(5, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider, modelId, systemInstruction, conversationHistory,
-        outlinePhase5Schema
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        outlinePhase5Schema,
       );
       partial.phase5 = result as OutlinePhase5;
       if (log) logs.push(log);
@@ -909,7 +951,13 @@ export const generateStoryOutlinePhased = async (
  * Uses type assertions because PartialStoryOutline uses generic object type for persistence
  */
 function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
-  if (!partial.phase1 || !partial.phase2 || !partial.phase3 || !partial.phase4 || !partial.phase5) {
+  if (
+    !partial.phase1 ||
+    !partial.phase2 ||
+    !partial.phase3 ||
+    !partial.phase4 ||
+    !partial.phase5
+  ) {
     throw new Error("Cannot merge incomplete outline phases");
   }
 
@@ -943,7 +991,8 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     quests: p5.quests as StoryOutline["quests"],
     knowledge: p5.knowledge as StoryOutline["knowledge"],
     timeline: p5.timeline as StoryOutline["timeline"],
-    initialAtmosphere: p5.initialAtmosphere as StoryOutline["initialAtmosphere"],
+    initialAtmosphere:
+      p5.initialAtmosphere as StoryOutline["initialAtmosphere"],
   };
 }
 
@@ -1472,7 +1521,8 @@ const runAgenticLoop = async (
 
           // Extract atmosphere (unified system)
           if (args.atmosphere) {
-            accumulatedResponse.atmosphere = args.atmosphere as GameResponse["atmosphere"];
+            accumulatedResponse.atmosphere =
+              args.atmosphere as GameResponse["atmosphere"];
           }
           if (args.narrativeTone) {
             accumulatedResponse.narrativeTone = args.narrativeTone as string;

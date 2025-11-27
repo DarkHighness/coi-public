@@ -133,7 +133,7 @@ function createReadlineInterface(): readline.Interface {
 
 async function prompt(
   rl: readline.Interface,
-  question: string
+  question: string,
 ): Promise<string> {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
@@ -145,7 +145,7 @@ async function prompt(
 async function promptWithDefault(
   rl: readline.Interface,
   question: string,
-  defaultValue: string
+  defaultValue: string,
 ): Promise<string> {
   const answer = await prompt(rl, `${question} [${defaultValue}]: `);
   return answer || defaultValue;
@@ -154,7 +154,7 @@ async function promptWithDefault(
 async function promptWithOptions(
   rl: readline.Interface,
   question: string,
-  options: readonly string[]
+  options: readonly string[],
 ): Promise<string> {
   console.log(`\n${question}`);
   console.log("Available options:");
@@ -181,7 +181,7 @@ async function promptWithOptions(
 async function promptMultipleOptions(
   rl: readline.Interface,
   question: string,
-  options: readonly string[]
+  options: readonly string[],
 ): Promise<string[]> {
   console.log(`\n${question}`);
   console.log("Available options:");
@@ -189,7 +189,7 @@ async function promptMultipleOptions(
 
   const answer = await prompt(
     rl,
-    "Enter option numbers or names (comma-separated): "
+    "Enter option numbers or names (comma-separated): ",
   );
   const parts = answer.split(",").map((p) => p.trim());
 
@@ -216,7 +216,7 @@ async function promptMultipleOptions(
 async function promptYesNo(
   rl: readline.Interface,
   question: string,
-  defaultValue = false
+  defaultValue = false,
 ): Promise<boolean> {
   const defaultStr = defaultValue ? "Y/n" : "y/N";
   const answer = await prompt(rl, `${question} [${defaultStr}]: `);
@@ -227,7 +227,7 @@ async function promptYesNo(
 
 async function promptMultiline(
   rl: readline.Interface,
-  question: string
+  question: string,
 ): Promise<string> {
   console.log(`\n${question}`);
   console.log('(Enter your text. Type "END" on a new line to finish)');
@@ -275,7 +275,9 @@ function updateThemesFile(config: ThemeConfig): void {
 
   // Insert before the closing brace
   content =
-    content.slice(0, lastBraceIndex) + newThemeEntry + content.slice(lastBraceIndex);
+    content.slice(0, lastBraceIndex) +
+    newThemeEntry +
+    content.slice(lastBraceIndex);
 
   fs.writeFileSync(THEMES_FILE, content);
   console.log(`✅ Updated ${THEMES_FILE}`);
@@ -284,7 +286,7 @@ function updateThemesFile(config: ThemeConfig): void {
 function updateTranslationFile(
   filePath: string,
   themeKey: string,
-  translation: ThemeTranslation
+  translation: ThemeTranslation,
 ): void {
   const content = fs.readFileSync(filePath, "utf-8");
   const json = JSON.parse(content);
@@ -323,7 +325,7 @@ async function main(): Promise<void> {
     while (true) {
       themeKey = await prompt(
         rl,
-        "Enter theme key (snake_case, e.g., harry_potter): "
+        "Enter theme key (snake_case, e.g., harry_potter): ",
       );
       if (!themeKey) {
         console.log("Theme key is required.");
@@ -331,12 +333,14 @@ async function main(): Promise<void> {
       }
       if (!/^[a-z][a-z0-9_]*$/.test(themeKey)) {
         console.log(
-          "Theme key must be snake_case (lowercase letters, numbers, underscores)."
+          "Theme key must be snake_case (lowercase letters, numbers, underscores).",
         );
         continue;
       }
       if (checkThemeExists(themeKey)) {
-        console.log(`Theme "${themeKey}" already exists. Choose a different key.`);
+        console.log(
+          `Theme "${themeKey}" already exists. Choose a different key.`,
+        );
         continue;
       }
       break;
@@ -352,28 +356,28 @@ async function main(): Promise<void> {
     const envTheme = await promptWithOptions(
       rl,
       "Select visual theme (envTheme):",
-      ENV_THEME_OPTIONS
+      ENV_THEME_OPTIONS,
     );
 
     // Default atmosphere
     const defaultAtmosphere = await promptWithOptions(
       rl,
       "Select default ambient sound:",
-      AMBIENCE_OPTIONS
+      AMBIENCE_OPTIONS,
     );
 
     // Categories
     const categories = await promptMultipleOptions(
       rl,
       "Select categories:",
-      CATEGORY_OPTIONS
+      CATEGORY_OPTIONS,
     );
 
     // Restricted
     const restricted = await promptYesNo(
       rl,
       "Is this a licensed IP theme (game, movie, novel)?",
-      false
+      false,
     );
 
     const config: ThemeConfig = {
@@ -395,16 +399,21 @@ async function main(): Promise<void> {
 
     const enName = await prompt(rl, "Enter English theme name: ");
     console.log(
-      "\nEnter the narrative style description (writing guidelines for AI):"
+      "\nEnter the narrative style description (writing guidelines for AI):",
     );
     const enNarrativeStyle = await promptMultiline(rl, "Narrative Style:");
 
     console.log(
-      "\nEnter the background template (story setup with placeholders like [Location]):"
+      "\nEnter the background template (story setup with placeholders like [Location]):",
     );
-    const enBackgroundTemplate = await promptMultiline(rl, "Background Template:");
+    const enBackgroundTemplate = await promptMultiline(
+      rl,
+      "Background Template:",
+    );
 
-    console.log("\nEnter an example paragraph demonstrating the writing style:");
+    console.log(
+      "\nEnter an example paragraph demonstrating the writing style:",
+    );
     const enExample = await promptMultiline(rl, "Example:");
 
     console.log("\nEnter the world setting description:");
@@ -428,7 +437,7 @@ async function main(): Promise<void> {
       const wrapName = await promptYesNo(
         rl,
         "This is a licensed IP. Wrap name with《》?",
-        true
+        true,
       );
       if (wrapName) {
         zhName = `《${zhName}》`;
@@ -464,15 +473,19 @@ async function main(): Promise<void> {
     console.log(JSON.stringify(config, null, 2));
     console.log("\nEnglish Translation:");
     console.log(`  Name: ${enTranslation.name}`);
-    console.log(`  Narrative Style: ${enTranslation.narrativeStyle.substring(0, 100)}...`);
+    console.log(
+      `  Narrative Style: ${enTranslation.narrativeStyle.substring(0, 100)}...`,
+    );
     console.log("\nChinese Translation:");
     console.log(`  Name: ${zhTranslation.name}`);
-    console.log(`  Narrative Style: ${zhTranslation.narrativeStyle.substring(0, 100)}...`);
+    console.log(
+      `  Narrative Style: ${zhTranslation.narrativeStyle.substring(0, 100)}...`,
+    );
 
     const confirm = await promptYesNo(
       rl,
       "\nProceed with adding this theme?",
-      true
+      true,
     );
 
     if (!confirm) {
@@ -491,7 +504,9 @@ async function main(): Promise<void> {
     updateTranslationFile(ZH_THEMES_FILE, themeKey, zhTranslation);
 
     console.log("\n🎉 Theme added successfully!");
-    console.log(`\nYou can now select "${enName}" / "${zhName}" in the theme picker.`);
+    console.log(
+      `\nYou can now select "${enName}" / "${zhName}" in the theme picker.`,
+    );
     console.log("\nDon't forget to:");
     console.log("  1. Run the app to verify the theme works correctly");
     console.log("  2. Commit your changes to git");

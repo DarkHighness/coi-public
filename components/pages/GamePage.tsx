@@ -201,9 +201,14 @@ export const GamePage: React.FC<GamePageProps> = ({
     if (!gameState.outline) {
       if (gameState.outlineConversation) {
         // Has partial progress - navigate to home so user can click "Continue" to resume
-        console.log("[GamePage] Outline incomplete but has conversation state, redirecting to / for resume");
+        console.log(
+          "[GamePage] Outline incomplete but has conversation state, redirecting to / for resume",
+        );
       } else {
-        console.error("Illegal gameState detected, redirecting to /", gameState);
+        console.error(
+          "Illegal gameState detected, redirecting to /",
+          gameState,
+        );
       }
       navigate("/");
     }

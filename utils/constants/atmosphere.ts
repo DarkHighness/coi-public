@@ -171,7 +171,12 @@ export interface AtmosphereConfig {
  * Accepts both old string format and new AtmosphereObject format (including partial)
  */
 export function normalizeAtmosphere(
-  atmosphere: AtmosphereObject | Partial<AtmosphereObject> | string | undefined | null
+  atmosphere:
+    | AtmosphereObject
+    | Partial<AtmosphereObject>
+    | string
+    | undefined
+    | null,
 ): AtmosphereObject {
   // Handle null/undefined
   if (!atmosphere) {
@@ -186,8 +191,12 @@ export function normalizeAtmosphere(
   }
 
   // Handle object format (including partial)
-  const envTheme = isValidEnvTheme(atmosphere.envTheme) ? atmosphere.envTheme : "fantasy";
-  const ambience = isValidAmbience(atmosphere.ambience) ? atmosphere.ambience : "quiet";
+  const envTheme = isValidEnvTheme(atmosphere.envTheme)
+    ? atmosphere.envTheme
+    : "fantasy";
+  const ambience = isValidAmbience(atmosphere.ambience)
+    ? atmosphere.ambience
+    : "quiet";
   return { envTheme, ambience };
 }
 
@@ -195,7 +204,7 @@ export function normalizeAtmosphere(
  * Get the full configuration for an atmosphere
  */
 export function getAtmosphereConfig(
-  atmosphere: AtmosphereObject | undefined
+  atmosphere: AtmosphereObject | undefined,
 ): AtmosphereConfig {
   const normalized = normalizeAtmosphere(atmosphere);
   const { envTheme, ambience } = normalized;
@@ -216,7 +225,7 @@ export function getAtmosphereConfig(
  * Get visual theme for an atmosphere
  */
 export function getThemeForAtmosphere(
-  atmosphere: AtmosphereObject | undefined
+  atmosphere: AtmosphereObject | undefined,
 ): ThemeConfig {
   return getAtmosphereConfig(atmosphere).theme;
 }
@@ -225,7 +234,12 @@ export function getThemeForAtmosphere(
  * Get the theme key for an atmosphere (for looking up in ENV_THEMES)
  */
 export function getThemeKeyForAtmosphere(
-  atmosphere: AtmosphereObject | Partial<AtmosphereObject> | string | undefined | null
+  atmosphere:
+    | AtmosphereObject
+    | Partial<AtmosphereObject>
+    | string
+    | undefined
+    | null,
 ): string {
   return getAtmosphereConfig(normalizeAtmosphere(atmosphere)).themeKey;
 }
@@ -234,7 +248,7 @@ export function getThemeKeyForAtmosphere(
  * Get default visual effect for an atmosphere
  */
 export function getEffectForAtmosphere(
-  atmosphere: AtmosphereObject | undefined
+  atmosphere: AtmosphereObject | undefined,
 ): VisualEffect {
   return getAtmosphereConfig(atmosphere).defaultEffect;
 }
@@ -242,7 +256,9 @@ export function getEffectForAtmosphere(
 /**
  * Check if a string is a valid ambience
  */
-export function isValidAmbience(value: string | undefined | null): value is Ambience {
+export function isValidAmbience(
+  value: string | undefined | null,
+): value is Ambience {
   if (!value || typeof value !== "string") return false;
   return AMBIENCES.includes(value.toLowerCase().trim() as Ambience);
 }
@@ -250,7 +266,9 @@ export function isValidAmbience(value: string | undefined | null): value is Ambi
 /**
  * Check if a string is a valid envTheme
  */
-export function isValidEnvTheme(value: string | undefined | null): value is EnvThemeKey {
+export function isValidEnvTheme(
+  value: string | undefined | null,
+): value is EnvThemeKey {
   if (!value || typeof value !== "string") return false;
   return ENV_THEME_KEYS.includes(value.toLowerCase().trim() as EnvThemeKey);
 }

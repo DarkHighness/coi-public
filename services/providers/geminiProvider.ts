@@ -496,7 +496,10 @@ function buildGenerationConfig(
  * 解析 JSON 响应
  */
 function parseJSONResponse(text: string): unknown {
-  console.log("[Gemini] Attempting to parse response as JSON, first 200 chars:", text.substring(0, 200));
+  console.log(
+    "[Gemini] Attempting to parse response as JSON, first 200 chars:",
+    text.substring(0, 200),
+  );
   try {
     // 清理 markdown 代码块
     let cleaned = text.replace(/```json\n?|```/g, "").trim();
@@ -516,7 +519,10 @@ function parseJSONResponse(text: string): unknown {
         .replace(/,(\s*[}\]])/g, "$1");
       return JSON.parse(repaired);
     } catch (error2) {
-      console.error("[Gemini] JSON parse failed completely. Full text:", text.substring(0, 500));
+      console.error(
+        "[Gemini] JSON parse failed completely. Full text:",
+        text.substring(0, 500),
+      );
       throw new JSONParseError("gemini", text.substring(0, 500), error2);
     }
   }

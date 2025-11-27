@@ -17,7 +17,10 @@ import { Toast } from "./components/Toast";
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
-import { validateConnection, type OutlinePhaseProgress } from "./services/aiService";
+import {
+  validateConnection,
+  type OutlinePhaseProgress,
+} from "./services/aiService";
 import { InitializingPage } from "./components/pages/InitializingPage";
 import { GamePage } from "./components/pages/GamePage";
 import { GlobalStyles } from "./components/GlobalStyles";
@@ -95,7 +98,8 @@ export default function App() {
   const [streamedText, setStreamedText] = useState("");
 
   // Outline generation phase progress
-  const [phaseProgress, setPhaseProgress] = useState<OutlinePhaseProgress | null>(null);
+  const [phaseProgress, setPhaseProgress] =
+    useState<OutlinePhaseProgress | null>(null);
 
   // Global Error Handling (PWA/Chunk/Network errors)
   const [appError, setAppError] = useState<string | null>(null);
@@ -339,7 +343,9 @@ export default function App() {
           navigate("/game");
         } else if (gameState.outlineConversation) {
           // Has partial outline progress, resume generation
-          console.log("[ContinueGame] Resuming outline generation from saved state");
+          console.log(
+            "[ContinueGame] Resuming outline generation from saved state",
+          );
           setStreamedText("");
           setPhaseProgress(null);
           await resumeOutlineGeneration(
@@ -393,14 +399,16 @@ export default function App() {
         if (result.savedModelId && result.savedModelId !== currentModelId) {
           console.warn(
             `[Embedding] Model mismatch: saved=${result.savedModelId}, current=${currentModelId}. ` +
-            `RAG index will be rebuilt on first action.`
+              `RAG index will be rebuilt on first action.`,
           );
         } else {
           try {
-            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            const manager = initializeEmbeddingManager({
+              settings: aiSettings,
+            });
             await manager.loadIndex(result.embeddingIndex);
             console.log(
-              `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`
+              `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`,
             );
             indexRestored = true;
           } catch (error) {
@@ -411,7 +419,9 @@ export default function App() {
 
       // If no index was restored, it will be rebuilt on first action
       if (!indexRestored && !result.embeddingIndex) {
-        console.log("[Embedding] No saved index found, will build on first action");
+        console.log(
+          "[Embedding] No saved index found, will build on first action",
+        );
       }
     }
 
@@ -433,8 +443,13 @@ export default function App() {
       );
     } else {
       // No valid state - shouldn't happen for valid saves
-      console.warn("[LoadSlot] Loaded save has no outline or conversation state");
-      showToast(t("saves.invalidState") || "Save appears to be corrupted", "error");
+      console.warn(
+        "[LoadSlot] Loaded save has no outline or conversation state",
+      );
+      showToast(
+        t("saves.invalidState") || "Save appears to be corrupted",
+        "error",
+      );
     }
   };
 

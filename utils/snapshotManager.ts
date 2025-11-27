@@ -42,7 +42,7 @@ const EMPTY_ALIVE_ENTITIES: AliveEntities = {
  * Ensures all fields are present with default empty arrays
  */
 export function normalizeAliveEntities(
-  partial: Partial<AliveEntities> | undefined | null
+  partial: Partial<AliveEntities> | undefined | null,
 ): AliveEntities {
   if (!partial) {
     return { ...EMPTY_ALIVE_ENTITIES };

@@ -142,7 +142,10 @@ function handleOpenRAG(args: string[], context: CommandContext): CommandResult {
 /**
  * /view - Open Game State Viewer
  */
-function handleOpenViewer(args: string[], context: CommandContext): CommandResult {
+function handleOpenViewer(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
   return {
     handled: true,
     preventAction: true,

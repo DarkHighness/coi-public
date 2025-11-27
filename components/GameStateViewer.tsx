@@ -44,7 +44,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ViewTab>("overview");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["basics"])
+    new Set(["basics"]),
   );
 
   const toggleSection = (section: string) => {
@@ -138,7 +138,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
     const outline = gameState.outline;
     const char = gameState.character;
     const currentLoc = gameState.locations.find(
-      (loc) => loc.id === gameState.currentLocation
+      (loc) => loc.id === gameState.currentLocation,
     );
 
     return (
@@ -161,11 +161,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
 
         {/* Character Quick View */}
-        <Section
-          id="charQuick"
-          title={t("gameViewer.protagonist")}
-          icon="👤"
-        >
+        <Section id="charQuick" title={t("gameViewer.protagonist")} icon="👤">
           <InfoRow label={t("gameViewer.name")} value={char.name} />
           <InfoRow label={t("gameViewer.titleLabel")} value={char.title} />
           <InfoRow label={t("gameViewer.status")} value={char.status} />
@@ -203,7 +199,8 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           title={t("gameViewer.activeQuests")}
           icon="📜"
         >
-          {gameState.quests.filter((q) => q.status === "active").length === 0 ? (
+          {gameState.quests.filter((q) => q.status === "active").length ===
+          0 ? (
             <p className="text-theme-muted text-sm italic">
               {t("gameViewer.noActiveQuests")}
             </p>
@@ -229,11 +226,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
 
         {/* Atmosphere */}
-        <Section
-          id="atmosphere"
-          title={t("gameViewer.atmosphere")}
-          icon="🌤️"
-        >
+        <Section id="atmosphere" title={t("gameViewer.atmosphere")} icon="🌤️">
           <InfoRow
             label={t("gameViewer.environment")}
             value={gameState.atmosphere.envTheme}
@@ -255,7 +248,11 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
     return (
       <div className="space-y-4">
         {/* World Setting */}
-        <Section id="worldSetting" title={t("gameViewer.worldSetting")} icon="🌍">
+        <Section
+          id="worldSetting"
+          title={t("gameViewer.worldSetting")}
+          icon="🌍"
+        >
           {outline?.worldSetting ? (
             <>
               <div className="prose prose-sm prose-invert max-w-none">
@@ -334,18 +331,24 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           {loc.hidden.fullDescription && (
                             <p>{loc.hidden.fullDescription}</p>
                           )}
-                          {loc.hidden.hiddenFeatures && loc.hidden.hiddenFeatures.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.hiddenFeatures")}:</span>{" "}
-                              {loc.hidden.hiddenFeatures.join(", ")}
-                            </p>
-                          )}
-                          {loc.hidden.secrets && loc.hidden.secrets.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.secrets")}:</span>{" "}
-                              {loc.hidden.secrets.join(", ")}
-                            </p>
-                          )}
+                          {loc.hidden.hiddenFeatures &&
+                            loc.hidden.hiddenFeatures.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.hiddenFeatures")}:
+                                </span>{" "}
+                                {loc.hidden.hiddenFeatures.join(", ")}
+                              </p>
+                            )}
+                          {loc.hidden.secrets &&
+                            loc.hidden.secrets.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.secrets")}:
+                                </span>{" "}
+                                {loc.hidden.secrets.join(", ")}
+                              </p>
+                            )}
                         </div>
                       }
                     />
@@ -386,13 +389,17 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                         <div className="space-y-1">
                           {faction.hidden.agenda && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.secretAgenda")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.secretAgenda")}:
+                              </span>{" "}
                               {faction.hidden.agenda}
                             </p>
                           )}
                           {faction.hidden.influence && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.trueInfluence")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.trueInfluence")}:
+                              </span>{" "}
                               {faction.hidden.influence}
                             </p>
                           )}
@@ -420,16 +427,25 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           <InfoRow label={t("gameViewer.titleLabel")} value={char.title} />
           <InfoRow label={t("gameViewer.status")} value={char.status} />
           {char.profession && (
-            <InfoRow label={t("gameViewer.profession")} value={char.profession} />
+            <InfoRow
+              label={t("gameViewer.profession")}
+              value={char.profession}
+            />
           )}
           {char.race && (
             <InfoRow label={t("gameViewer.race")} value={char.race} />
           )}
           {char.background && (
-            <InfoRow label={t("gameViewer.background")} value={char.background} />
+            <InfoRow
+              label={t("gameViewer.background")}
+              value={char.background}
+            />
           )}
           {char.appearance && (
-            <InfoRow label={t("gameViewer.appearance")} value={char.appearance} />
+            <InfoRow
+              label={t("gameViewer.appearance")}
+              value={char.appearance}
+            />
           )}
         </Section>
 
@@ -492,18 +508,24 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           {skill.hidden.trueDescription && (
                             <p>{skill.hidden.trueDescription}</p>
                           )}
-                          {skill.hidden.hiddenEffects && skill.hidden.hiddenEffects.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.hiddenEffects")}:</span>{" "}
-                              {skill.hidden.hiddenEffects.join(", ")}
-                            </p>
-                          )}
-                          {skill.hidden.drawbacks && skill.hidden.drawbacks.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.drawbacks")}:</span>{" "}
-                              {skill.hidden.drawbacks.join(", ")}
-                            </p>
-                          )}
+                          {skill.hidden.hiddenEffects &&
+                            skill.hidden.hiddenEffects.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.hiddenEffects")}:
+                                </span>{" "}
+                                {skill.hidden.hiddenEffects.join(", ")}
+                              </p>
+                            )}
+                          {skill.hidden.drawbacks &&
+                            skill.hidden.drawbacks.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.drawbacks")}:
+                                </span>{" "}
+                                {skill.hidden.drawbacks.join(", ")}
+                              </p>
+                            )}
                         </div>
                       }
                     />
@@ -516,7 +538,11 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
 
         {/* Conditions */}
         {char.conditions.length > 0 && (
-          <Section id="charConditions" title={t("gameViewer.conditions")} icon="💫">
+          <Section
+            id="charConditions"
+            title={t("gameViewer.conditions")}
+            icon="💫"
+          >
             <div className="space-y-2">
               {char.conditions.map((cond) => (
                 <div
@@ -541,19 +567,25 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                         <div className="space-y-1 text-xs">
                           {cond.hidden.trueCause && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.trueCause")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.trueCause")}:
+                              </span>{" "}
                               {cond.hidden.trueCause}
                             </p>
                           )}
                           {cond.hidden.progression && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.progression")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.progression")}:
+                              </span>{" "}
                               {cond.hidden.progression}
                             </p>
                           )}
                           {cond.hidden.cure && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.cure")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.cure")}:
+                              </span>{" "}
                               {cond.hidden.cure}
                             </p>
                           )}
@@ -574,7 +606,11 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   const renderRelationships = () => {
     return (
       <div className="space-y-4">
-        <Section id="relationships" title={t("gameViewer.knownCharacters")} icon="👥">
+        <Section
+          id="relationships"
+          title={t("gameViewer.knownCharacters")}
+          icon="👥"
+        >
           {gameState.relationships.filter((r) => r.known !== false).length ===
           0 ? (
             <p className="text-theme-muted text-sm italic">
@@ -616,26 +652,36 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           <div className="space-y-1">
                             {rel.hidden.realPersonality && (
                               <p>
-                                <span className="text-theme-warning/60">{t("gameViewer.realPersonality")}:</span>{" "}
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.realPersonality")}:
+                                </span>{" "}
                                 {rel.hidden.realPersonality}
                               </p>
                             )}
                             {rel.hidden.realMotives && (
                               <p>
-                                <span className="text-theme-warning/60">{t("gameViewer.realMotives")}:</span>{" "}
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.realMotives")}:
+                                </span>{" "}
                                 {rel.hidden.realMotives}
                               </p>
                             )}
-                            {rel.hidden.secrets && rel.hidden.secrets.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">{t("gameViewer.secrets")}:</span>{" "}
-                                {rel.hidden.secrets.join(", ")}
-                              </p>
-                            )}
+                            {rel.hidden.secrets &&
+                              rel.hidden.secrets.length > 0 && (
+                                <p>
+                                  <span className="text-theme-warning/60">
+                                    {t("gameViewer.secrets")}:
+                                  </span>{" "}
+                                  {rel.hidden.secrets.join(", ")}
+                                </p>
+                              )}
                             {rel.hidden.trueAffinity !== undefined && (
                               <p>
-                                <span className="text-theme-warning/60">{t("gameViewer.trueAffinity")}:</span>{" "}
-                                {rel.hidden.trueAffinity > 0 ? "+" : ""}{rel.hidden.trueAffinity}
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.trueAffinity")}:
+                                </span>{" "}
+                                {rel.hidden.trueAffinity > 0 ? "+" : ""}
+                                {rel.hidden.trueAffinity}
                               </p>
                             )}
                           </div>
@@ -646,11 +692,12 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       <span className="text-theme-muted">
                         {rel.visible.relationshipType}
                       </span>
-                      {rel.currentLocation && rel.currentLocation !== "unknown" && (
-                        <span className="text-theme-muted">
-                          📍 {rel.currentLocation}
-                        </span>
-                      )}
+                      {rel.currentLocation &&
+                        rel.currentLocation !== "unknown" && (
+                          <span className="text-theme-muted">
+                            📍 {rel.currentLocation}
+                          </span>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -665,7 +712,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   const renderQuests = () => {
     const activeQuests = gameState.quests.filter((q) => q.status === "active");
     const completedQuests = gameState.quests.filter(
-      (q) => q.status === "completed"
+      (q) => q.status === "completed",
     );
     const failedQuests = gameState.quests.filter((q) => q.status === "failed");
 
@@ -734,15 +781,20 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           {quest.hidden.trueDescription && (
                             <p>{quest.hidden.trueDescription}</p>
                           )}
-                          {quest.hidden.trueObjectives && quest.hidden.trueObjectives.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.trueObjectives")}:</span>{" "}
-                              {quest.hidden.trueObjectives.join(", ")}
-                            </p>
-                          )}
+                          {quest.hidden.trueObjectives &&
+                            quest.hidden.trueObjectives.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.trueObjectives")}:
+                                </span>{" "}
+                                {quest.hidden.trueObjectives.join(", ")}
+                              </p>
+                            )}
                           {quest.hidden.secretOutcome && (
                             <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.secretOutcome")}:</span>{" "}
+                              <span className="text-theme-warning/60">
+                                {t("gameViewer.secretOutcome")}:
+                              </span>{" "}
                               {quest.hidden.secretOutcome}
                             </p>
                           )}
@@ -769,9 +821,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   key={quest.id}
                   className="p-2 bg-green-500/5 rounded border border-green-500/20"
                 >
-                  <span className="text-theme-text text-sm">
-                    {quest.title}
-                  </span>
+                  <span className="text-theme-text text-sm">{quest.title}</span>
                 </div>
               ))}
             </div>
@@ -838,12 +888,15 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           {entry.hidden.fullTruth && (
                             <p>{entry.hidden.fullTruth}</p>
                           )}
-                          {entry.hidden.misconceptions && entry.hidden.misconceptions.length > 0 && (
-                            <p>
-                              <span className="text-theme-warning/60">{t("gameViewer.misconceptions")}:</span>{" "}
-                              {entry.hidden.misconceptions.join(", ")}
-                            </p>
-                          )}
+                          {entry.hidden.misconceptions &&
+                            entry.hidden.misconceptions.length > 0 && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.misconceptions")}:
+                                </span>{" "}
+                                {entry.hidden.misconceptions.join(", ")}
+                              </p>
+                            )}
                         </div>
                       }
                     />
@@ -867,7 +920,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 .sort(
                   (a, b) =>
                     new Date(b.gameTime).getTime() -
-                    new Date(a.gameTime).getTime()
+                    new Date(a.gameTime).getTime(),
                 )
                 .slice(0, 20) // Show last 20 known events
                 .map((event) => (

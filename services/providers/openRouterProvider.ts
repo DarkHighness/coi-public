@@ -44,10 +44,7 @@ import {
 
 // Re-export OpenRouterConfig for consumers
 export type { OpenRouterConfig } from "./types";
-import {
-  zodToOpenAIResponseFormat,
-  zodToOpenAISchema,
-} from "../zodCompiler";
+import { zodToOpenAIResponseFormat, zodToOpenAISchema } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
 // ============================================================================
@@ -215,9 +212,11 @@ export async function getModels(
 /**
  * Infer model capabilities
  */
-function inferModelCapabilities(
-  modelData: { id: string; name?: string; [key: string]: unknown },
-): ModelCapabilities {
+function inferModelCapabilities(modelData: {
+  id: string;
+  name?: string;
+  [key: string]: unknown;
+}): ModelCapabilities {
   const parsedCaps = parseModelCapabilities(modelData);
 
   const capabilities: ModelCapabilities = {

@@ -42,14 +42,26 @@ import type {
 
 /** 辅助类型：确保 id 和 createdAt 等系统字段是必需的 */
 type WithRequiredId<T> = T & { id: string };
-type WithRequiredTimestamps<T> = T & { createdAt: number; lastModified: number };
+type WithRequiredTimestamps<T> = T & {
+  createdAt: number;
+  lastModified: number;
+};
 
 // 导出应用层类型（带必需的系统字段）
-export type InventoryItem = WithRequiredId<WithRequiredTimestamps<ZodInventoryItem>>;
-export type Relationship = WithRequiredId<WithRequiredTimestamps<ZodRelationship>>;
-export type Location = WithRequiredId<ZodLocation> & { isVisited: boolean; createdAt: number };
+export type InventoryItem = WithRequiredId<
+  WithRequiredTimestamps<ZodInventoryItem>
+>;
+export type Relationship = WithRequiredId<
+  WithRequiredTimestamps<ZodRelationship>
+>;
+export type Location = WithRequiredId<ZodLocation> & {
+  isVisited: boolean;
+  createdAt: number;
+};
 export type Quest = WithRequiredId<WithRequiredTimestamps<ZodQuest>>;
-export type KnowledgeEntry = WithRequiredId<WithRequiredTimestamps<ZodKnowledgeEntry>>;
+export type KnowledgeEntry = WithRequiredId<
+  WithRequiredTimestamps<ZodKnowledgeEntry>
+>;
 export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
 export type Faction = WithRequiredId<ZodFaction>;
@@ -65,7 +77,13 @@ export type GameResponse = ZodGameResponse & {
   finalState?: GameState; // System-populated after agentic loop processing
 };
 export type { Atmosphere, EnvTheme, Ambience, Skill, Condition };
-export type { OutlinePhase1, OutlinePhase2, OutlinePhase3, OutlinePhase4, OutlinePhase5 };
+export type {
+  OutlinePhase1,
+  OutlinePhase2,
+  OutlinePhase3,
+  OutlinePhase4,
+  OutlinePhase5,
+};
 
 // 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
 export type {
@@ -775,20 +793,28 @@ export interface EmbeddingConfig {
   // LRU Eviction Settings
   lru?: {
     // Global limits
-    maxTotalDocuments?: number;     // Maximum total documents in index (default: 5000)
-    maxDocumentsPerType?: number;   // Max documents per type (default: 1000)
-    maxVersionsPerEntity?: number;  // Max versions per entity ID (default: 5)
+    maxTotalDocuments?: number; // Maximum total documents in index (default: 5000)
+    maxDocumentsPerType?: number; // Max documents per type (default: 1000)
+    maxVersionsPerEntity?: number; // Max versions per entity ID (default: 5)
 
     // Priority settings
-    currentForkBonus?: number;      // Priority bonus for current fork (default: 0.5)
-    ancestorForkBonus?: number;     // Priority bonus for ancestor forks (default: 0.25)
-    turnDecayFactor?: number;       // Priority loss per turn difference (default: 0.01)
+    currentForkBonus?: number; // Priority bonus for current fork (default: 0.5)
+    ancestorForkBonus?: number; // Priority bonus for ancestor forks (default: 0.25)
+    turnDecayFactor?: number; // Priority loss per turn difference (default: 0.01)
   };
 }
 
 export interface EmbeddingDocument {
   id: string; // Unique document ID
-  type: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event" | "outline";
+  type:
+    | "story"
+    | "npc"
+    | "location"
+    | "item"
+    | "knowledge"
+    | "quest"
+    | "event"
+    | "outline";
   entityId: string; // Reference to the entity (e.g., npc:1, loc:2, outline:world)
   content: string; // Original text content
   embedding?: Float32Array; // Compressed embedding vector (stored separately)

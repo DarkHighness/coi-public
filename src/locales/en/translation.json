@@ -79,11 +79,26 @@
     "timeElapsed": "Time Elapsed",
     "outline": {
       "phase": {
-        "1": { "name": "Creating World", "desc": "Establishing world foundation and setting" },
-        "2": { "name": "Creating Character", "desc": "Designing protagonist and backstory" },
-        "3": { "name": "Building Locations", "desc": "Creating locations and factions" },
-        "4": { "name": "Setting Up Items", "desc": "Preparing relationships and inventory" },
-        "5": { "name": "Weaving Story", "desc": "Generating quests and story threads" }
+        "1": {
+          "name": "Creating World",
+          "desc": "Establishing world foundation and setting"
+        },
+        "2": {
+          "name": "Creating Character",
+          "desc": "Designing protagonist and backstory"
+        },
+        "3": {
+          "name": "Building Locations",
+          "desc": "Creating locations and factions"
+        },
+        "4": {
+          "name": "Setting Up Items",
+          "desc": "Preparing relationships and inventory"
+        },
+        "5": {
+          "name": "Weaving Story",
+          "desc": "Generating quests and story threads"
+        }
       }
     }
   },

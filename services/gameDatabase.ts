@@ -1592,7 +1592,10 @@ export class GameDatabase {
   private modifyGlobal(data: {
     time?: string;
     atmosphere?: AtmosphereObject;
-  }): ToolCallResult<{ updated: string[]; values: Record<string, string | AtmosphereObject> }> {
+  }): ToolCallResult<{
+    updated: string[];
+    values: Record<string, string | AtmosphereObject>;
+  }> {
     const updated: string[] = [];
     const values: Record<string, string | AtmosphereObject> = {};
 

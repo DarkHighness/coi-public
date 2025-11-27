@@ -557,7 +557,7 @@ export const useGameEngine = () => {
 
       // Resolve atmosphere from response (environment from finish_turn is actually atmosphere)
       const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
-        response.atmosphere || gameStateRef.current.atmosphere
+        response.atmosphere || gameStateRef.current.atmosphere,
       );
 
       const modelNode: StorySegment = {
@@ -822,7 +822,9 @@ export const useGameEngine = () => {
           // Do NOT resume from saved conversation - this is a fresh new game
           resumeFromConversation: undefined,
           // Save conversation state after each phase for fault recovery
-          onSaveConversation: async (conversationState: OutlineConversationState) => {
+          onSaveConversation: async (
+            conversationState: OutlineConversationState,
+          ) => {
             // Update state and get the new state for saving
             const updatedState = {
               ...gameStateRef.current,
@@ -831,7 +833,9 @@ export const useGameEngine = () => {
             setGameState(updatedState);
             // Persist immediately with the updated state
             await saveToSlot(slotId, updatedState);
-            console.log(`[StartNewGame] Saved conversation state at phase ${conversationState.currentPhase}`);
+            console.log(
+              `[StartNewGame] Saved conversation state at phase ${conversationState.currentPhase}`,
+            );
           },
         },
       );
@@ -841,7 +845,7 @@ export const useGameEngine = () => {
       // Calculate total tokens from all phase logs
       const totalPhaseTokens = logs.reduce(
         (sum, log) => sum + (log.usage?.totalTokens || 0),
-        0
+        0,
       );
 
       setGameState((prev) => ({
@@ -947,13 +951,18 @@ export const useGameEngine = () => {
           // Initialize RAG embedding manager and build initial index BEFORE first turn
           if (aiSettings.embedding?.enabled) {
             console.log("[StartNewGame] Initializing RAG for first turn...");
-            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            const manager = initializeEmbeddingManager({
+              settings: aiSettings,
+            });
             try {
               // Build index from current game state (which now has the outline)
               await manager.buildIndex(gameStateRef.current);
               console.log("[StartNewGame] RAG index built successfully");
             } catch (ragError) {
-              console.warn("[StartNewGame] Failed to build RAG index, continuing without RAG:", ragError);
+              console.warn(
+                "[StartNewGame] Failed to build RAG index, continuing without RAG:",
+                ragError,
+              );
               // Continue without RAG - it's not critical for game to function
             }
           }
@@ -1019,7 +1028,9 @@ export const useGameEngine = () => {
     }
 
     const { theme, customContext } = savedConversation;
-    console.log(`[ResumeOutline] Resuming from phase ${savedConversation.currentPhase} for theme ${theme}`);
+    console.log(
+      `[ResumeOutline] Resuming from phase ${savedConversation.currentPhase} for theme ${theme}`,
+    );
 
     // Set processing state
     setGameState((prev) => ({ ...prev, isProcessing: true }));
@@ -1035,14 +1046,18 @@ export const useGameEngine = () => {
           onChunk: onStream,
           onPhaseProgress,
           resumeFromConversation: savedConversation,
-          onSaveConversation: async (conversationState: OutlineConversationState) => {
+          onSaveConversation: async (
+            conversationState: OutlineConversationState,
+          ) => {
             const updatedState = {
               ...gameStateRef.current,
               outlineConversation: conversationState,
             };
             setGameState(updatedState);
             await saveToSlot(currentSlotId!, updatedState);
-            console.log(`[ResumeOutline] Saved conversation state at phase ${conversationState.currentPhase}`);
+            console.log(
+              `[ResumeOutline] Saved conversation state at phase ${conversationState.currentPhase}`,
+            );
           },
         },
       );
@@ -1051,7 +1066,7 @@ export const useGameEngine = () => {
 
       const totalPhaseTokens = logs.reduce(
         (sum, log) => sum + (log.usage?.totalTokens || 0),
-        0
+        0,
       );
 
       setGameState((prev) => ({
@@ -1067,16 +1082,20 @@ export const useGameEngine = () => {
             (t: any, i: number) => ({ ...t, id: `trait:${i + 1}` }),
           ),
         },
-        inventory: (outline.inventory || []).map((item: any, index: number) => ({
-          ...item,
-          id: `inv:${index + 1}`,
-          createdAt: Date.now(),
-        })),
-        relationships: (outline.relationships || []).map((rel: any, index: number) => ({
-          ...rel,
-          id: `npc:${index + 1}`,
-          createdAt: Date.now(),
-        })),
+        inventory: (outline.inventory || []).map(
+          (item: any, index: number) => ({
+            ...item,
+            id: `inv:${index + 1}`,
+            createdAt: Date.now(),
+          }),
+        ),
+        relationships: (outline.relationships || []).map(
+          (rel: any, index: number) => ({
+            ...rel,
+            id: `npc:${index + 1}`,
+            createdAt: Date.now(),
+          }),
+        ),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           id: `quest:${index + 1}`,
@@ -1136,7 +1155,9 @@ export const useGameEngine = () => {
       setTimeout(async () => {
         try {
           if (aiSettings.embedding?.enabled) {
-            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            const manager = initializeEmbeddingManager({
+              settings: aiSettings,
+            });
             await manager.buildIndex(gameStateRef.current);
           }
 
@@ -1152,7 +1173,8 @@ export const useGameEngine = () => {
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
-            error: "Failed to start the story. Please try again using the retry button.",
+            error:
+              "Failed to start the story. Please try again using the retry button.",
           }));
         }
       }, 100);
@@ -1184,15 +1206,17 @@ export const useGameEngine = () => {
             // Model mismatch - will rebuild below
             console.warn(
               `[Embedding] Model mismatch: saved=${result.savedModelId}, current=${currentModelId}. ` +
-              `RAG index will be rebuilt.`
+                `RAG index will be rebuilt.`,
             );
           } else {
             // Model matches - restore the index
             try {
-              const manager = initializeEmbeddingManager({ settings: aiSettings });
+              const manager = initializeEmbeddingManager({
+                settings: aiSettings,
+              });
               await manager.loadIndex(result.embeddingIndex);
               console.log(
-                `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`
+                `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`,
               );
               indexRestored = true;
             } catch (error) {
@@ -1205,7 +1229,9 @@ export const useGameEngine = () => {
         if (!indexRestored) {
           console.log("[Embedding] Building new index from game state...");
           try {
-            const manager = initializeEmbeddingManager({ settings: aiSettings });
+            const manager = initializeEmbeddingManager({
+              settings: aiSettings,
+            });
             await manager.buildIndex(gameStateRef.current);
             console.log("[Embedding] Index rebuilt successfully");
           } catch (error) {

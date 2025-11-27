@@ -87,16 +87,19 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
 
   // Typewriter effect for phase descriptions
   useEffect(() => {
-    if (!phaseProgress || phaseProgress.status === 'error') return;
+    if (!phaseProgress || phaseProgress.status === "error") return;
 
     const currentText = currentPhaseTexts[textIndex % currentPhaseTexts.length];
 
     if (charIndex < currentText.length) {
       // Type next character
-      const timer = setTimeout(() => {
-        setDisplayedText(currentText.slice(0, charIndex + 1));
-        setCharIndex((prev) => prev + 1);
-      }, 30 + Math.random() * 20); // Variable speed for natural feel
+      const timer = setTimeout(
+        () => {
+          setDisplayedText(currentText.slice(0, charIndex + 1));
+          setCharIndex((prev) => prev + 1);
+        },
+        30 + Math.random() * 20,
+      ); // Variable speed for natural feel
       return () => clearTimeout(timer);
     } else {
       // Wait then move to next text
@@ -200,12 +203,13 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                     style={{
                       // Show completed phases: if generating phase N, show (N-1) completed
                       // If phase N is completed, show N completed
-                      width: `${(
-                        (phaseProgress.status === 'completed'
+                      width: `${
+                        ((phaseProgress.status === "completed"
                           ? phaseProgress.phase
-                          : phaseProgress.phase - 1
-                        ) / phaseProgress.totalPhases
-                      ) * 100}%`
+                          : phaseProgress.phase - 1) /
+                          phaseProgress.totalPhases) *
+                        100
+                      }%`,
                     }}
                   />
                 </div>
@@ -213,18 +217,22 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                 <div className="text-xs text-theme-muted/80 font-mono flex flex-wrap items-center justify-center gap-1">
                   {/* Show completed count / total, not "current phase / total" */}
                   <span className="text-theme-primary">
-                    {phaseProgress.status === 'completed'
+                    {phaseProgress.status === "completed"
                       ? phaseProgress.phase
                       : phaseProgress.phase - 1}
                   </span>
                   <span>/</span>
                   <span>{phaseProgress.totalPhases}</span>
                   <span className="mx-1">·</span>
-                  <span className={`${phaseProgress.status === 'generating' ? 'animate-pulse' : ''} max-w-[200px] truncate`}>
+                  <span
+                    className={`${phaseProgress.status === "generating" ? "animate-pulse" : ""} max-w-[200px] truncate`}
+                  >
                     {/* Use the i18n key from phaseName directly */}
-                    {t(phaseProgress.phaseName, { defaultValue: phaseProgress.phaseName })}
+                    {t(phaseProgress.phaseName, {
+                      defaultValue: phaseProgress.phaseName,
+                    })}
                   </span>
-                  {phaseProgress.status === 'generating' && (
+                  {phaseProgress.status === "generating" && (
                     <span className="animate-pulse">...</span>
                   )}
                 </div>

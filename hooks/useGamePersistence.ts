@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { GameState, SaveSlot, VersionedGameState, EmbeddingIndex } from "../types";
+import {
+  GameState,
+  SaveSlot,
+  VersionedGameState,
+  EmbeddingIndex,
+} from "../types";
 import {
   saveGameState,
   loadGameState,
@@ -71,7 +76,8 @@ export const useGamePersistence = (
       // These are essential for consistent visual theming
       if (!parsed.atmosphere || typeof parsed.atmosphere !== "object") {
         // Try to extract from the latest node's stateSnapshot or atmosphere field
-        let foundAtmosphere: { envTheme?: string; ambience?: string } | null = null;
+        let foundAtmosphere: { envTheme?: string; ambience?: string } | null =
+          null;
         if (parsed.activeNodeId && parsed.nodes?.[parsed.activeNodeId]) {
           const activeNode = parsed.nodes[parsed.activeNodeId];
           foundAtmosphere =
@@ -86,7 +92,9 @@ export const useGamePersistence = (
           );
         } else {
           parsed.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
-          repairLog.push("Repaired: atmosphere defaulted to { envTheme: fantasy, ambience: quiet }");
+          repairLog.push(
+            "Repaired: atmosphere defaulted to { envTheme: fantasy, ambience: quiet }",
+          );
         }
       }
       if (!parsed.time || typeof parsed.time !== "string") {
@@ -288,7 +296,9 @@ export const useGamePersistence = (
       };
 
       await saveGameState(slotId, stateToSave);
-      console.log(`[Persistence] Saved to slot ${slotId}${embeddingIndex ? ` (with ${embeddingIndex.documents.length} embedding docs)` : ""}`);
+      console.log(
+        `[Persistence] Saved to slot ${slotId}${embeddingIndex ? ` (with ${embeddingIndex.documents.length} embedding docs)` : ""}`,
+      );
       return true;
     } catch (error) {
       console.error("[Persistence] Manual save failed:", error);
@@ -315,7 +325,9 @@ export const useGamePersistence = (
           }
 
           if (lastSlotId && typeof lastSlotId === "string") {
-            const data = await loadGameState(lastSlotId) as VersionedGameState | null;
+            const data = (await loadGameState(
+              lastSlotId,
+            )) as VersionedGameState | null;
             if (data) {
               // Extract embedding index before sanitizing
               const embeddingIndex = data._embeddingIndex;
@@ -328,7 +340,7 @@ export const useGamePersistence = (
               if (embeddingIndex) {
                 console.log(
                   `[Persistence] Save has embedding index with ${embeddingIndex.documents.length} documents, ` +
-                  `model: ${embeddingIndex.modelId}`
+                    `model: ${embeddingIndex.modelId}`,
                 );
               }
             }
@@ -555,7 +567,9 @@ export const useGamePersistence = (
    * Load a save slot and restore embedding index if available.
    * Returns an object with success status and optional embedding index.
    */
-  const loadSlot = async (id: string): Promise<{
+  const loadSlot = async (
+    id: string,
+  ): Promise<{
     success: boolean;
     embeddingIndex?: EmbeddingIndex;
     embeddingModelMismatch?: boolean;
@@ -564,7 +578,7 @@ export const useGamePersistence = (
     hasOutlineConversation?: boolean;
   }> => {
     try {
-      const data = await loadGameState(id) as VersionedGameState | null;
+      const data = (await loadGameState(id)) as VersionedGameState | null;
       if (data) {
         // Reset embedding manager when switching saves
         resetEmbeddingManager();

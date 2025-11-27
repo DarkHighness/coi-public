@@ -82,7 +82,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToGemini(
-      (schema as ZodNullable<any>)._def.innerType
+      (schema as ZodNullable<any>)._def.innerType,
     );
     return { ...innerSchema, nullable: true };
   }
@@ -140,7 +140,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
   // Handle union - Gemini doesn't support union, throw error
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
     throw new Error(
-      "Gemini Schema does not support union types. Please flatten your schema."
+      "Gemini Schema does not support union types. Please flatten your schema.",
     );
   }
 
@@ -170,7 +170,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
         discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value)
+          String((discriminatorField as ZodLiteral<any>)._def.value),
         );
       }
 
@@ -251,7 +251,10 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
           const innerTypeName = (
             (value as ZodNullable<any>)._def.innerType as ZodTypeAny
           )._def.typeName;
-          if (innerTypeName !== "ZodOptional" && innerTypeName !== "ZodDefault") {
+          if (
+            innerTypeName !== "ZodOptional" &&
+            innerTypeName !== "ZodDefault"
+          ) {
             required.push(key);
           }
         } else {
@@ -288,7 +291,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
  */
 export function zodToOpenAISchema(
   schema: ZodTypeAny,
-  strict: boolean = true
+  strict: boolean = true,
 ): OpenAISchema {
   return processZodToOpenAI(schema, strict);
 }
@@ -298,7 +301,7 @@ export function zodToOpenAISchema(
  */
 export function zodToOpenAIResponseFormat(
   schema: ZodTypeAny,
-  name: string = "response"
+  name: string = "response",
 ): OpenAIResponseFormat {
   return {
     type: "json_schema",
@@ -313,7 +316,7 @@ export function zodToOpenAIResponseFormat(
 function processZodToOpenAI(
   schema: ZodTypeAny,
   strict: boolean,
-  isOptionalField: boolean = false
+  isOptionalField: boolean = false,
 ): OpenAISchema {
   const typeName = schema._def.typeName;
 
@@ -322,7 +325,7 @@ function processZodToOpenAI(
     return processZodToOpenAI(
       (schema as ZodEffects<any>)._def.schema,
       strict,
-      isOptionalField
+      isOptionalField,
     );
   }
 
@@ -331,7 +334,7 @@ function processZodToOpenAI(
     return processZodToOpenAI(
       (schema as ZodOptional<any>)._def.innerType,
       strict,
-      true
+      true,
     );
   }
 
@@ -340,7 +343,7 @@ function processZodToOpenAI(
     const innerSchema = processZodToOpenAI(
       (schema as ZodNullable<any>)._def.innerType,
       strict,
-      isOptionalField
+      isOptionalField,
     );
     // Add null to type array
     if (Array.isArray(innerSchema.type)) {
@@ -358,7 +361,7 @@ function processZodToOpenAI(
     return processZodToOpenAI(
       (schema as ZodDefault<any>)._def.innerType,
       strict,
-      true
+      true,
     );
   }
 
@@ -426,7 +429,7 @@ function processZodToOpenAI(
   // Handle union - OpenAI doesn't support anyOf in strict mode
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
     throw new Error(
-      "OpenAI Strict Schema does not support union types. Please flatten your schema."
+      "OpenAI Strict Schema does not support union types. Please flatten your schema.",
     );
   }
 
@@ -457,7 +460,7 @@ function processZodToOpenAI(
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
         discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value)
+          String((discriminatorField as ZodLiteral<any>)._def.value),
         );
       }
 
@@ -478,7 +481,7 @@ function processZodToOpenAI(
           allProperties[key] = processZodToOpenAI(
             value as ZodTypeAny,
             strict,
-            true
+            true,
           );
         }
       }
@@ -508,7 +511,9 @@ function processZodToOpenAI(
     const result: OpenAISchema = {
       type: "object",
       properties: allProperties,
-      required: strict ? Array.from(allKeys) : [discriminator, ...Array.from(requiredInAllVariants)],
+      required: strict
+        ? Array.from(allKeys)
+        : [discriminator, ...Array.from(requiredInAllVariants)],
       additionalProperties: false,
     };
 
@@ -526,7 +531,7 @@ function processZodToOpenAI(
     const itemSchema = processZodToOpenAI(
       (schema as ZodArray<any>)._def.type,
       strict,
-      false
+      false,
     );
     const result: OpenAISchema = {
       type: "array",
@@ -559,7 +564,10 @@ function processZodToOpenAI(
           const innerTypeName = (
             (value as ZodNullable<any>)._def.innerType as ZodTypeAny
           )._def.typeName;
-          if (innerTypeName !== "ZodOptional" && innerTypeName !== "ZodDefault") {
+          if (
+            innerTypeName !== "ZodOptional" &&
+            innerTypeName !== "ZodDefault"
+          ) {
             originalRequired.push(key);
           }
         } else {
@@ -569,7 +577,11 @@ function processZodToOpenAI(
 
       // Process field - pass isOptionalField based on strict mode
       const isOptional = strict && !originalRequired.includes(key);
-      properties[key] = processZodToOpenAI(value as ZodTypeAny, strict, isOptional);
+      properties[key] = processZodToOpenAI(
+        value as ZodTypeAny,
+        strict,
+        isOptional,
+      );
     }
 
     const result: OpenAISchema = {
@@ -633,7 +645,7 @@ export interface OpenAIToolDefinition {
 export function createGeminiTool(
   name: string,
   description: string,
-  parameters: ZodTypeAny
+  parameters: ZodTypeAny,
 ): GeminiToolDefinition {
   return {
     name,
@@ -648,7 +660,7 @@ export function createGeminiTool(
 export function createOpenAITool(
   name: string,
   description: string,
-  parameters: ZodTypeAny
+  parameters: ZodTypeAny,
 ): OpenAIToolDefinition {
   return {
     type: "function",
@@ -668,16 +680,20 @@ export function createOpenAITool(
  * 批量编译工具定义到 Gemini 格式
  */
 export function compileToolsForGemini(
-  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>
+  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
 ): GeminiToolDefinition[] {
-  return tools.map((t) => createGeminiTool(t.name, t.description, t.parameters));
+  return tools.map((t) =>
+    createGeminiTool(t.name, t.description, t.parameters),
+  );
 }
 
 /**
  * 批量编译工具定义到 OpenAI 格式
  */
 export function compileToolsForOpenAI(
-  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>
+  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
 ): OpenAIToolDefinition[] {
-  return tools.map((t) => createOpenAITool(t.name, t.description, t.parameters));
+  return tools.map((t) =>
+    createOpenAITool(t.name, t.description, t.parameters),
+  );
 }

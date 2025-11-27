@@ -12,6 +12,7 @@ npx ts-node scripts/addStoryTheme.ts
 ```
 
 The script will guide you through:
+
 1. Setting up the theme configuration (key, icon, visual theme, categories)
 2. Entering English translations
 3. Entering Chinese translations

@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getEmbeddingManager, initializeEmbeddingManager, isWebGPUAvailable } from "../services/embedding";
+import {
+  getEmbeddingManager,
+  initializeEmbeddingManager,
+  isWebGPUAvailable,
+} from "../services/embedding";
 import { EmbeddingDocument, GameState, AISettings } from "../types";
 
 interface RAGDebuggerProps {
@@ -71,7 +75,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       documentCount: index.documents.length,
       modelId: index.modelId,
       typeBreakdown,
-      hasEmbeddings: index.documents.some((d) => d.embedding && d.embedding.length > 0),
+      hasEmbeddings: index.documents.some(
+        (d) => d.embedding && d.embedding.length > 0,
+      ),
       isWebGPUEnabled: webgpuEnabled,
     });
   }, []);
@@ -96,7 +102,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
     try {
       const embeddingManager = getEmbeddingManager();
       if (!embeddingManager) {
-        setError(t("ragDebugger.noEmbeddingManager", "Embedding manager not initialized"));
+        setError(
+          t(
+            "ragDebugger.noEmbeddingManager",
+            "Embedding manager not initialized",
+          ),
+        );
         setIsSearching(false);
         return;
       }
@@ -121,16 +132,23 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
         searchOptions.currentTurn = gameState.turnNumber;
       }
 
-      const response = await embeddingManager.retrieveContext(query, searchOptions);
+      const response = await embeddingManager.retrieveContext(
+        query,
+        searchOptions,
+      );
 
       if (response && (response as any).relevantDocs) {
         setResults((response as any).relevantDocs);
       } else {
-        setError(t("ragDebugger.rawDocsError", "Could not retrieve search results"));
+        setError(
+          t("ragDebugger.rawDocsError", "Could not retrieve search results"),
+        );
       }
     } catch (err: any) {
       console.error("RAG Search failed:", err);
-      setError(t("ragDebugger.searchFailed", "Search failed") + `: ${err.message}`);
+      setError(
+        t("ragDebugger.searchFailed", "Search failed") + `: ${err.message}`,
+      );
     } finally {
       setIsSearching(false);
     }
@@ -149,7 +167,10 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       console.log("[RAGDebugger] Index rebuilt successfully");
     } catch (err: any) {
       console.error("Failed to rebuild index:", err);
-      setError(t("ragDebugger.rebuildFailed", "Failed to rebuild index") + `: ${err.message}`);
+      setError(
+        t("ragDebugger.rebuildFailed", "Failed to rebuild index") +
+          `: ${err.message}`,
+      );
     } finally {
       setIsRebuildingIndex(false);
     }
@@ -189,7 +210,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
             onClick={onClose}
             className="text-theme-muted hover:text-theme-text transition-colors p-1"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -240,14 +266,22 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("ragDebugger.searchPlaceholder", "Enter search query...")}
+                  placeholder={t(
+                    "ragDebugger.searchPlaceholder",
+                    "Enter search query...",
+                  )}
                   className="flex-1 bg-theme-surface border border-theme-border rounded-lg px-4 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
                   autoFocus
                   disabled={!embeddingEnabled || !indexStats}
                 />
                 <button
                   type="submit"
-                  disabled={isSearching || !query.trim() || !embeddingEnabled || !indexStats}
+                  disabled={
+                    isSearching ||
+                    !query.trim() ||
+                    !embeddingEnabled ||
+                    !indexStats
+                  }
                   className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSearching
@@ -266,8 +300,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       onChange={(e) => setCurrentForkOnly(e.target.checked)}
                       className="w-4 h-4 rounded border-theme-border text-theme-primary focus:ring-theme-primary"
                     />
-                    <span>{t("ragDebugger.currentForkOnly", "Current Fork Only")}</span>
-                    <span className="text-theme-muted text-xs">(fork: {gameState.forkId})</span>
+                    <span>
+                      {t("ragDebugger.currentForkOnly", "Current Fork Only")}
+                    </span>
+                    <span className="text-theme-muted text-xs">
+                      (fork: {gameState.forkId})
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 text-theme-text cursor-pointer">
                     <input
@@ -276,8 +314,15 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       onChange={(e) => setBeforeCurrentTurn(e.target.checked)}
                       className="w-4 h-4 rounded border-theme-border text-theme-primary focus:ring-theme-primary"
                     />
-                    <span>{t("ragDebugger.beforeCurrentTurn", "Before Current Turn")}</span>
-                    <span className="text-theme-muted text-xs">(turn: {gameState.turnNumber})</span>
+                    <span>
+                      {t(
+                        "ragDebugger.beforeCurrentTurn",
+                        "Before Current Turn",
+                      )}
+                    </span>
+                    <span className="text-theme-muted text-xs">
+                      (turn: {gameState.turnNumber})
+                    </span>
                   </label>
                 </div>
               )}
@@ -289,18 +334,34 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {!embeddingEnabled && (
                 <div className="text-center text-theme-muted py-8">
-                  <p>{t("ragDebugger.embeddingDisabled", "RAG/Embedding is disabled in settings")}</p>
+                  <p>
+                    {t(
+                      "ragDebugger.embeddingDisabled",
+                      "RAG/Embedding is disabled in settings",
+                    )}
+                  </p>
                   <p className="text-xs mt-2">
-                    {t("ragDebugger.enableInSettings", "Enable it in Settings → Embedding")}
+                    {t(
+                      "ragDebugger.enableInSettings",
+                      "Enable it in Settings → Embedding",
+                    )}
                   </p>
                 </div>
               )}
 
               {embeddingEnabled && !indexStats && (
                 <div className="text-center text-theme-muted py-8">
-                  <p>{t("ragDebugger.noIndexYet", "No embedding index available")}</p>
+                  <p>
+                    {t(
+                      "ragDebugger.noIndexYet",
+                      "No embedding index available",
+                    )}
+                  </p>
                   <p className="text-xs mt-2">
-                    {t("ragDebugger.indexWillBuild", "Index will be built when you continue playing")}
+                    {t(
+                      "ragDebugger.indexWillBuild",
+                      "Index will be built when you continue playing",
+                    )}
                   </p>
                   {gameState && (
                     <button
@@ -316,11 +377,18 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 </div>
               )}
 
-              {embeddingEnabled && indexStats && results.length === 0 && !isSearching && !error && (
-                <div className="text-center text-theme-muted py-8">
-                  {t("ragDebugger.noResults", "Enter a query to search the embedding index")}
-                </div>
-              )}
+              {embeddingEnabled &&
+                indexStats &&
+                results.length === 0 &&
+                !isSearching &&
+                !error && (
+                  <div className="text-center text-theme-muted py-8">
+                    {t(
+                      "ragDebugger.noResults",
+                      "Enter a query to search the embedding index",
+                    )}
+                  </div>
+                )}
 
               {results.map((result, idx) => (
                 <div
@@ -332,7 +400,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       <span className="px-2 py-0.5 bg-theme-primary/20 text-theme-primary text-xs rounded-full uppercase font-bold">
                         {result.doc.type}
                       </span>
-                      <span className="text-xs text-theme-muted font-mono">{result.doc.entityId}</span>
+                      <span className="text-xs text-theme-muted font-mono">
+                        {result.doc.entityId}
+                      </span>
                       {result.doc.metadata?.forkId !== undefined && (
                         <span className="text-xs text-theme-secondary font-mono">
                           fork:{result.doc.metadata.forkId}
@@ -350,7 +420,8 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       )}
                     </div>
                     <span className="text-xs font-mono text-theme-secondary">
-                      {t("ragDebugger.score", "Score")}: {result.score.toFixed(4)}
+                      {t("ragDebugger.score", "Score")}:{" "}
+                      {result.score.toFixed(4)}
                     </span>
                   </div>
                   <p className="text-sm text-theme-text/90 whitespace-pre-wrap line-clamp-4">
@@ -375,11 +446,21 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
           <div className="flex-1 overflow-y-auto p-4">
             {!embeddingEnabled ? (
               <div className="text-center text-theme-muted py-8">
-                <p>{t("ragDebugger.embeddingDisabled", "RAG/Embedding is disabled")}</p>
+                <p>
+                  {t(
+                    "ragDebugger.embeddingDisabled",
+                    "RAG/Embedding is disabled",
+                  )}
+                </p>
               </div>
             ) : !indexStats ? (
               <div className="text-center text-theme-muted py-8">
-                <p>{t("ragDebugger.noIndexStats", "No index statistics available")}</p>
+                <p>
+                  {t(
+                    "ragDebugger.noIndexStats",
+                    "No index statistics available",
+                  )}
+                </p>
                 {gameState && (
                   <button
                     onClick={handleRebuildIndex}
@@ -413,15 +494,21 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     </div>
                   </div>
                   <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
-                    <div className="text-sm font-bold text-theme-primary truncate" title={indexStats.modelId}>
-                      {indexStats.modelId.split("/").pop() || indexStats.modelId}
+                    <div
+                      className="text-sm font-bold text-theme-primary truncate"
+                      title={indexStats.modelId}
+                    >
+                      {indexStats.modelId.split("/").pop() ||
+                        indexStats.modelId}
                     </div>
                     <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
                       {t("ragDebugger.model", "Embedding Model")}
                     </div>
                   </div>
                   <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
-                    <div className={`text-2xl font-bold ${indexStats.isWebGPUEnabled ? "text-green-400" : "text-theme-muted"}`}>
+                    <div
+                      className={`text-2xl font-bold ${indexStats.isWebGPUEnabled ? "text-green-400" : "text-theme-muted"}`}
+                    >
                       {indexStats.isWebGPUEnabled ? "✓" : "–"}
                     </div>
                     <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
@@ -465,7 +552,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     onClick={loadIndexStats}
                     className="px-4 py-2 border border-theme-border hover:border-theme-primary text-theme-text rounded-lg transition-colors flex items-center gap-2"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -483,7 +575,11 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     >
                       {isRebuildingIndex ? (
                         <>
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <svg
+                            className="w-4 h-4 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
                             <circle
                               className="opacity-25"
                               cx="12"
@@ -502,7 +598,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                         </>
                       ) : (
                         <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"

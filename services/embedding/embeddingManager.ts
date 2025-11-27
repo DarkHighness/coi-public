@@ -58,7 +58,7 @@ const LRU_DEFAULTS = {
 
 // Type importance multipliers (for breaking ties)
 const TYPE_IMPORTANCE: Record<EmbeddingDocument["type"], number> = {
-  outline: 10.0,  // Never evict outlines
+  outline: 10.0, // Never evict outlines
   story: 1.0,
   npc: 0.9,
   quest: 0.9,
@@ -243,7 +243,11 @@ function extractLocationContent(state: GameState): Array<{
     parts.push(`--- [AI_ONLY: Hidden Truth] ---`);
     if (loc.hidden && loc.hidden.fullDescription)
       parts.push(`[AI_ONLY] Full description: ${loc.hidden.fullDescription}`);
-    if (loc.hidden && loc.hidden.hiddenFeatures && loc.hidden.hiddenFeatures.length)
+    if (
+      loc.hidden &&
+      loc.hidden.hiddenFeatures &&
+      loc.hidden.hiddenFeatures.length
+    )
       parts.push(
         `[AI_ONLY] Hidden features: ${loc.hidden.hiddenFeatures.join(", ")}`,
       );
@@ -523,17 +527,23 @@ function extractOutlineContent(state: GameState): Array<{
     `Race: ${char.race || "Unknown"}`,
     ``,
     `--- Attributes ---`,
-    ...(char.attributes || []).map(attr => `${attr.label}: ${attr.value}/${attr.maxValue}`),
+    ...(char.attributes || []).map(
+      (attr) => `${attr.label}: ${attr.value}/${attr.maxValue}`,
+    ),
     ``,
     `--- Skills ---`,
-    ...(char.skills || []).map(skill =>
-      `${skill.name} (${skill.level}): ${skill.visible.description}` +
-      (skill.hidden ? `\n[AI_ONLY] True: ${skill.hidden.trueDescription}` : "")
+    ...(char.skills || []).map(
+      (skill) =>
+        `${skill.name} (${skill.level}): ${skill.visible.description}` +
+        (skill.hidden
+          ? `\n[AI_ONLY] True: ${skill.hidden.trueDescription}`
+          : ""),
     ),
     ``,
     `--- Hidden Traits ---`,
-    ...(char.hiddenTraits || []).map(trait =>
-      `[AI_ONLY] ${trait.name}: ${trait.description}\n[AI_ONLY] Effects: ${trait.effects.join(", ")}`
+    ...(char.hiddenTraits || []).map(
+      (trait) =>
+        `[AI_ONLY] ${trait.name}: ${trait.description}\n[AI_ONLY] Effects: ${trait.effects.join(", ")}`,
     ),
   ];
 
@@ -615,7 +625,7 @@ export class EmbeddingManager {
     }
 
     const extractors: EntityExtractor[] = [
-      extractOutlineContent,  // Outline first - highest priority for world context
+      extractOutlineContent, // Outline first - highest priority for world context
       extractStoryContent,
       extractNPCContent,
       extractLocationContent,
@@ -801,7 +811,12 @@ export class EmbeddingManager {
     // Apply LRU eviction to merged documents
     const forkId = state.forkId ?? 0;
     const turnNumber = state.turnNumber ?? 0;
-    allDocs = this.applyLRUEviction(allDocs, forkId, turnNumber, state.forkTree);
+    allDocs = this.applyLRUEviction(
+      allDocs,
+      forkId,
+      turnNumber,
+      state.forkTree,
+    );
 
     // Rebuild index
     const { embedding } = this.config.settings;
@@ -945,7 +960,7 @@ export class EmbeddingManager {
 
     // Group results by type
     const contextByType: Record<EmbeddingDocument["type"], string[]> = {
-      outline: [],  // World/character background from story outline
+      outline: [], // World/character background from story outline
       story: [],
       npc: [],
       location: [],
@@ -1192,11 +1207,15 @@ export class EmbeddingManager {
   private getLRUConfig() {
     const lru = this.config.settings.embedding?.lru || {};
     return {
-      maxTotalDocuments: lru.maxTotalDocuments ?? LRU_DEFAULTS.maxTotalDocuments,
-      maxDocumentsPerType: lru.maxDocumentsPerType ?? LRU_DEFAULTS.maxDocumentsPerType,
-      maxVersionsPerEntity: lru.maxVersionsPerEntity ?? LRU_DEFAULTS.maxVersionsPerEntity,
+      maxTotalDocuments:
+        lru.maxTotalDocuments ?? LRU_DEFAULTS.maxTotalDocuments,
+      maxDocumentsPerType:
+        lru.maxDocumentsPerType ?? LRU_DEFAULTS.maxDocumentsPerType,
+      maxVersionsPerEntity:
+        lru.maxVersionsPerEntity ?? LRU_DEFAULTS.maxVersionsPerEntity,
       currentForkBonus: lru.currentForkBonus ?? LRU_DEFAULTS.currentForkBonus,
-      ancestorForkBonus: lru.ancestorForkBonus ?? LRU_DEFAULTS.ancestorForkBonus,
+      ancestorForkBonus:
+        lru.ancestorForkBonus ?? LRU_DEFAULTS.ancestorForkBonus,
       turnDecayFactor: lru.turnDecayFactor ?? LRU_DEFAULTS.turnDecayFactor,
     };
   }
@@ -1269,7 +1288,9 @@ export class EmbeddingManager {
     if (documents.length === 0) return documents;
 
     const config = this.getLRUConfig();
-    const ancestorForkIds = new Set(getAncestorForkIds(currentForkId, forkTree));
+    const ancestorForkIds = new Set(
+      getAncestorForkIds(currentForkId, forkTree),
+    );
 
     // Calculate priorities for all documents
     const docsWithPriority = documents.map((doc) => ({
@@ -1302,9 +1323,10 @@ export class EmbeddingManager {
       entityDocs.sort((a, b) => b.priority - a.priority);
 
       // Keep top N versions per entity (outline gets unlimited)
-      const limit = entityDocs[0]?.doc.type === "outline"
-        ? entityDocs.length
-        : config.maxVersionsPerEntity;
+      const limit =
+        entityDocs[0]?.doc.type === "outline"
+          ? entityDocs.length
+          : config.maxVersionsPerEntity;
 
       const kept = entityDocs.slice(0, limit);
       entityEvictedCount += entityDocs.length - kept.length;
@@ -1313,7 +1335,10 @@ export class EmbeddingManager {
 
     // ========== Phase 2: Per-type eviction ==========
     // Group by type and keep top M documents per type
-    const byType = new Map<EmbeddingDocument["type"], typeof docsWithPriority>();
+    const byType = new Map<
+      EmbeddingDocument["type"],
+      typeof docsWithPriority
+    >();
     for (const item of afterEntityEviction) {
       const type = item.doc.type;
       if (!byType.has(type)) {
@@ -1330,9 +1355,8 @@ export class EmbeddingManager {
       typeDocs.sort((a, b) => b.priority - a.priority);
 
       // Keep top M documents per type (outline gets unlimited)
-      const limit = type === "outline"
-        ? typeDocs.length
-        : config.maxDocumentsPerType;
+      const limit =
+        type === "outline" ? typeDocs.length : config.maxDocumentsPerType;
 
       const kept = typeDocs.slice(0, limit);
       const evicted = typeDocs.length - kept.length;
@@ -1350,7 +1374,9 @@ export class EmbeddingManager {
     if (afterTypeEviction.length > config.maxTotalDocuments) {
       // Sort all docs by priority and take top K
       afterTypeEviction.sort((a, b) => b.priority - a.priority);
-      finalDocs = afterTypeEviction.slice(0, config.maxTotalDocuments).map((item) => item.doc);
+      finalDocs = afterTypeEviction
+        .slice(0, config.maxTotalDocuments)
+        .map((item) => item.doc);
       globalEvictedCount = afterTypeEviction.length - config.maxTotalDocuments;
     } else {
       finalDocs = afterTypeEviction.map((item) => item.doc);
@@ -1372,7 +1398,7 @@ export class EmbeddingManager {
 
       console.log(
         `[EmbeddingManager] LRU eviction: ${totalEvicted} docs evicted (${details.join(", ")}). ` +
-        `Remaining: ${finalDocs.length}/${documents.length}`
+          `Remaining: ${finalDocs.length}/${documents.length}`,
       );
     }
 

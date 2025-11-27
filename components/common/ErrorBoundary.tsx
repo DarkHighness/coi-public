@@ -86,7 +86,13 @@ class ErrorBoundaryClass extends Component<
 
   render(): ReactNode {
     const { hasError, error } = this.state;
-    const { children, fallback, showRetry = true, name, disableInDev = true } = this.props;
+    const {
+      children,
+      fallback,
+      showRetry = true,
+      name,
+      disableInDev = true,
+    } = this.props;
 
     // In development mode with disableInDev, just render children and let errors propagate
     if (disableInDev && isDevelopment() && hasError) {
@@ -143,7 +149,9 @@ function ErrorFallbackUI({
     <div className="flex flex-col items-center justify-center p-6 min-h-[200px] bg-theme-error border border-theme-error rounded-lg m-2 z-1000">
       <div className="text-3xl mb-4">⚠️</div>
       <h3 className="text-lg font-semibold text-white mb-2">
-        {t("errorPanel.componentError", { defaultValue: "Something went wrong" })}
+        {t("errorPanel.componentError", {
+          defaultValue: "Something went wrong",
+        })}
       </h3>
       <p className="text-sm text-white text-center mb-4 max-w-md">
         {isDev
@@ -151,8 +159,7 @@ function ErrorFallbackUI({
           : t("errorPanel.componentDescription", {
               defaultValue:
                 "This section encountered an errorPanel. You can try again or continue using other parts of the app.",
-            })
-        }
+            })}
       </p>
       {error && (
         <div className="p-3 rounded text-left overflow-auto max-h-24 w-full max-w-md mb-4 border-theme-danger border bg-black/5">
@@ -175,9 +182,7 @@ function ErrorFallbackUI({
         </button>
       )}
       {boundaryName && (
-        <p className="text-xs text-white mt-2">
-          Component: {boundaryName}
-        </p>
+        <p className="text-xs text-white mt-2">Component: {boundaryName}</p>
       )}
     </div>
   );

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getAudioTrack } from "../utils/audioLoader";
-import { type AtmosphereObject, type Ambience } from "../utils/constants/atmosphere";
+import {
+  type AtmosphereObject,
+  type Ambience,
+} from "../utils/constants/atmosphere";
 
 /**
  * useAmbience - Manages background ambient audio with proper lifecycle handling

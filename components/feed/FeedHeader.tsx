@@ -1,7 +1,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FeedLayout } from "../../types";
-import { normalizeAtmosphere, type AtmosphereObject } from "../../utils/constants/atmosphere";
+import {
+  normalizeAtmosphere,
+  type AtmosphereObject,
+} from "../../utils/constants/atmosphere";
 
 interface FeedHeaderProps {
   layout: FeedLayout;
@@ -38,7 +41,9 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   const displayAmbience = currentAmbience || ambience;
 
   // Get translated names - use environmentThemeNames for envTheme, environmentNames for ambience
-  let ambienceName = displayAmbience ? t("environmentNames." + displayAmbience) : null;
+  let ambienceName = displayAmbience
+    ? t("environmentNames." + displayAmbience)
+    : null;
   let envThemeName = envTheme ? t("environmentThemeNames." + envTheme) : null;
 
   // Fallback to raw names if translation missing
