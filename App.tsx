@@ -17,6 +17,10 @@ import { validateConnection } from "./services/aiService";
 import { InitializingPage } from "./components/pages/InitializingPage";
 import { GamePage } from "./components/pages/GamePage";
 import { GlobalStyles } from "./components/GlobalStyles";
+import {
+  ErrorBoundary,
+  SectionErrorBoundary,
+} from "./components/common/ErrorBoundary";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>
@@ -86,6 +90,14 @@ export default function App() {
 
   // Global Error Handling (PWA/Chunk/Network errors)
   const [appError, setAppError] = useState<string | null>(null);
+
+  // React component error tracking (caught by ErrorBoundary)
+  const [componentError, setComponentError] = useState<string | null>(null);
+
+  const handleComponentError = (error: Error) => {
+    console.error("Component error caught by ErrorBoundary:", error);
+    setComponentError(error.message);
+  };
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -344,72 +356,86 @@ export default function App() {
         </Suspense>
       </div>
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <StartScreen
-              onStart={handleStartGame}
-              onContinue={handleContinueGame}
-              onLoad={(file) => setIsSaveManagerOpen(true)}
-              onOpenSaves={() => setIsSaveManagerOpen(true)}
-              onSettings={() => setIsSettingsOpen(true)}
-              latestSave={
-                saveSlots.length > 0
-                  ? [...saveSlots].sort((a, b) => b.timestamp - a.timestamp)[0]
-                  : undefined
-              }
-              onThemePreview={setPreviewTheme}
-              setLanguage={setLanguage}
-              saveSlots={saveSlots}
-              onSwitchSlot={loadSlot}
-              onDeleteSlot={deleteSlot}
-            />
-          }
-        />
+      <ErrorBoundary
+        name="Routes"
+        onError={handleComponentError}
+        showRetry={true}
+      >
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <SectionErrorBoundary name="StartScreen">
+                <StartScreen
+                  onStart={handleStartGame}
+                  onContinue={handleContinueGame}
+                  onLoad={(file) => setIsSaveManagerOpen(true)}
+                  onOpenSaves={() => setIsSaveManagerOpen(true)}
+                  onSettings={() => setIsSettingsOpen(true)}
+                  latestSave={
+                    saveSlots.length > 0
+                      ? [...saveSlots].sort(
+                          (a, b) => b.timestamp - a.timestamp,
+                        )[0]
+                      : undefined
+                  }
+                  onThemePreview={setPreviewTheme}
+                  setLanguage={setLanguage}
+                  saveSlots={saveSlots}
+                  onSwitchSlot={loadSlot}
+                  onDeleteSlot={deleteSlot}
+                />
+              </SectionErrorBoundary>
+            }
+          />
 
-        <Route
-          path="/initializing"
-          element={
-            <InitializingPage
-              themeFont={currentThemeConfig.fontClass}
-              isProcessing={gameState.isProcessing}
-              streamedText={streamedText}
-            />
-          }
-        />
+          <Route
+            path="/initializing"
+            element={
+              <SectionErrorBoundary name="InitializingPage">
+                <InitializingPage
+                  themeFont={currentThemeConfig.fontClass}
+                  isProcessing={gameState.isProcessing}
+                  streamedText={streamedText}
+                />
+              </SectionErrorBoundary>
+            }
+          />
 
-        <Route
-          path="/game"
-          element={
-            <GamePage
-              gameState={gameState}
-              setGameState={setGameState}
-              currentHistory={currentHistory}
-              language={language}
-              setLanguage={setLanguage}
-              isTranslating={isTranslating}
-              handleAction={handleAction}
-              aiSettings={aiSettings}
-              handleSaveSettings={handleSaveSettings}
-              navigateToNode={navigateToNode}
-              generateImageForNode={generateImageForNode}
-              showToast={showToast}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onOpenSaves={() => setIsSaveManagerOpen(true)}
-              themeFont={currentThemeConfig.fontClass}
-              saveSlots={saveSlots}
-              switchSlot={async (id) => {
-                await loadSlot(id);
-              }}
-              deleteSlot={deleteSlot}
-              currentSlotId={currentSlotId}
-              onViewedSegmentChange={setViewedSegment}
-            />
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route
+            path="/game"
+            element={
+              <SectionErrorBoundary name="GamePage">
+                <GamePage
+                  gameState={gameState}
+                  setGameState={setGameState}
+                  currentHistory={currentHistory}
+                  language={language}
+                  setLanguage={setLanguage}
+                  isTranslating={isTranslating}
+                  handleAction={handleAction}
+                  aiSettings={aiSettings}
+                  handleSaveSettings={handleSaveSettings}
+                  navigateToNode={navigateToNode}
+                  generateImageForNode={generateImageForNode}
+                  showToast={showToast}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onOpenSaves={() => setIsSaveManagerOpen(true)}
+                  themeFont={currentThemeConfig.fontClass}
+                  saveSlots={saveSlots}
+                  switchSlot={async (id) => {
+                    await loadSlot(id);
+                  }}
+                  deleteSlot={deleteSlot}
+                  currentSlotId={currentSlotId}
+                  onViewedSegmentChange={setViewedSegment}
+                />
+              </SectionErrorBoundary>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
 
       <Suspense fallback={<LoadingFallback />}>
         <SettingsModal
@@ -442,8 +468,8 @@ export default function App() {
         type={notification.type}
       />
 
-      {/* Critical Error Modal */}
-      {(persistenceError || appError) && (
+      {/* Critical Error Modal - covers persistence, app, and component errors */}
+      {(persistenceError || appError || componentError) && (
         <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 max-w-md w-full text-center space-y-4">
             <div className="text-4xl">⚠️</div>
@@ -451,25 +477,53 @@ export default function App() {
               {t("app.errors.critical") || "Critical Error Detected"}
             </h2>
             <p className="text-sm text-theme-muted">
-              {t("app.errors.description") ||
-                "The game encountered a critical error. This is likely due to data corruption, a PWA update issue, or network failure."}
+              {componentError
+                ? t("app.errors.componentDescription") ||
+                  "A component encountered an error. You may try to dismiss this and continue, or reset if the issue persists."
+                : t("app.errors.description") ||
+                  "The game encountered a critical error. This is likely due to data corruption, a PWA update issue, or network failure."}
             </p>
             <div className="bg-black/30 p-3 rounded text-left overflow-auto max-h-32">
               <p className="text-xs text-red-400 font-mono">
                 {t("app.errors.label") || "Error:"}{" "}
-                {persistenceError || appError}
+                {persistenceError || appError || componentError}
               </p>
             </div>
-            <p className="text-xs text-theme-muted/80">
-              {t("app.errors.resetDescription") ||
-                "To fix this, you need to reset the game data. This will clear all saves and settings."}
-            </p>
-            <button
-              onClick={hardReset}
-              className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors uppercase tracking-wider text-xs"
-            >
-              {t("app.errors.resetButton") || "Clear Data & Reset Game"}
-            </button>
+            {componentError && !persistenceError && !appError ? (
+              <>
+                <p className="text-xs text-theme-muted/80">
+                  {t("app.errors.tryDismiss") ||
+                    "You can try dismissing this error and continue. If the problem persists, reset the game data."}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setComponentError(null)}
+                    className="flex-1 py-2 bg-theme-primary/20 hover:bg-theme-primary/30 text-theme-primary border border-theme-primary/30 rounded font-bold transition-colors text-xs"
+                  >
+                    {t("app.errors.dismissButton") || "Dismiss & Continue"}
+                  </button>
+                  <button
+                    onClick={hardReset}
+                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors text-xs"
+                  >
+                    {t("app.errors.resetButton") || "Reset Game"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-theme-muted/80">
+                  {t("app.errors.resetDescription") ||
+                    "To fix this, you need to reset the game data. This will clear all saves and settings."}
+                </p>
+                <button
+                  onClick={hardReset}
+                  className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors uppercase tracking-wider text-xs"
+                >
+                  {t("app.errors.resetButton") || "Clear Data & Reset Game"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

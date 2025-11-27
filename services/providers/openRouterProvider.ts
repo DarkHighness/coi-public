@@ -302,7 +302,7 @@ export async function generateContent(
     }
 
     if (options?.onChunk) {
-      return handleStreamingResponse(response, options.onChunk);
+      return handleStreamingResponse(response, options.onChunk, schema);
     } else {
       return handleNonStreamingResponse(response, schema);
     }
@@ -377,6 +377,7 @@ async function handleNonStreamingResponse(
 async function handleStreamingResponse(
   response: Response,
   onChunk: (text: string) => void,
+  schema?: JsonSchema,
 ): Promise<OpenRouterContentGenerationResponse> {
   if (!response.body) {
     throw new Error("Response body is null");
@@ -485,6 +486,16 @@ async function handleStreamingResponse(
       usage,
       raw: null, // Raw stream not retained
     };
+  }
+
+  // Parse JSON if schema is provided
+  if (schema && content) {
+    try {
+      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+      return { result: JSON.parse(cleanedContent), usage, raw: null };
+    } catch (error) {
+      throw new JSONParseError("openrouter", content.substring(0, 500), error);
+    }
   }
 
   return { result: content, usage, raw: null };

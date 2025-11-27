@@ -28,7 +28,11 @@ import {
   getThemeKeyForAtmosphere,
   Atmosphere,
 } from "../utils/constants/atmosphere";
-import { resetEmbeddingManager } from "../services/embedding/embeddingManager";
+import {
+  resetEmbeddingManager,
+  getEmbeddingManager,
+  initializeEmbeddingManager,
+} from "../services/embedding/embeddingManager";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -267,6 +271,15 @@ export const useGameEngine = () => {
 
     // Immediately lock
     if (!isInit) processingRef.current = true;
+
+    // Initialize embedding manager if RAG is enabled and not already initialized
+    if (aiSettings.embedding?.enabled) {
+      const existingManager = getEmbeddingManager();
+      if (!existingManager) {
+        console.log("[RAG] Initializing embedding manager...");
+        initializeEmbeddingManager({ settings: aiSettings });
+      }
+    }
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
@@ -807,6 +820,8 @@ export const useGameEngine = () => {
       );
 
       console.log("[StartNewGame] Outline generated", outline);
+
+      debugger;
 
       setGameState((prev) => ({
         ...prev,

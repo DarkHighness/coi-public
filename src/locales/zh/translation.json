@@ -9,7 +9,12 @@
     "title": "当前任务",
     "main": "主线",
     "side": "支线任务",
-    "empty": "暂无进行中的任务。"
+    "empty": "暂无进行中的任务。",
+    "hiddenTruth": "隐藏真相",
+    "description": "描述",
+    "trueDescription": "真实描述",
+    "trueObjectives": "真实目标",
+    "secretOutcome": "隐藏收获"
   },
   "summarySnapshot": "剧情回顾",
   "knowledgePanel": {
@@ -458,9 +463,15 @@
     "secretObjective": "隐藏目标"
   },
   "faction": {
-    "members": "Members",
-    "influence": "Influence",
-    "relations": "Relations"
+    "members": "成员",
+    "influence": "影响力",
+    "relations": "关系"
+  },
+  "confirm": "确认",
+  "errorPanel": {
+    "componentError": "出现错误",
+    "componentDescription": "此部分遇到错误。您可以重试或继续使用应用的其他部分。",
+    "retry": "重试"
   },
   "hidden": {
     "truth": "隐藏真相",

@@ -68,6 +68,33 @@ export const useGamePersistence = (
       parsed.generatingNodeId = null;
       parsed.error = null;
 
+      // === 1b. Fix atmosphere and time if missing ===
+      // These are essential for consistent visual theming
+      if (!parsed.atmosphere || typeof parsed.atmosphere !== "string") {
+        // Try to extract from the latest node's stateSnapshot or atmosphere field
+        let foundAtmosphere: string | null = null;
+        if (parsed.activeNodeId && parsed.nodes?.[parsed.activeNodeId]) {
+          const activeNode = parsed.nodes[parsed.activeNodeId];
+          foundAtmosphere =
+            activeNode.atmosphere ||
+            activeNode.stateSnapshot?.atmosphere ||
+            null;
+        }
+        if (foundAtmosphere) {
+          parsed.atmosphere = foundAtmosphere;
+          repairLog.push(
+            `Repaired: atmosphere extracted from active node: ${foundAtmosphere}`,
+          );
+        } else {
+          parsed.atmosphere = "quiet";
+          repairLog.push("Repaired: atmosphere defaulted to quiet");
+        }
+      }
+      if (!parsed.time || typeof parsed.time !== "string") {
+        parsed.time = "Day 1";
+        repairLog.push("Repaired: time defaulted to Day 1");
+      }
+
       // === 2. Fix missing or corrupted nextIds ===
       if (!parsed.nextIds || typeof parsed.nextIds !== "object") {
         repairLog.push("Repaired: missing nextIds");
@@ -305,45 +332,55 @@ export const useGamePersistence = (
     setTriggerSaveCount((prev) => prev + 1);
   }, []);
 
-  // Auto-Save Logic using IndexedDB with debounce and throttle
-  // IMPORTANT: Skip saving during processing to avoid corrupted state
+  // Track the last saved node to prevent duplicate saves
+  const lastSavedActiveNodeRef = useRef<string | null>(null);
+
+  // Auto-Save Logic using IndexedDB
+  // SAVE ONLY IN THESE SCENARIOS:
+  // 1. Story Outline generation complete (outline exists but rootNodeId just appeared)
+  // 2. AI turn complete (activeNodeId changed to a model node)
+  // 3. User action complete (triggerSave called manually after user choice)
+  // 4. /god or /unlock commands (triggerSave called manually)
   useEffect(() => {
-    // Skip conditions:
-    // 1. Not in game view
-    // 2. No current slot
-    // 3. No root node (game not started)
-    // 4. Currently processing (AI generating response)
-    // 5. Skip flag is set (manual recovery in progress)
+    // Basic skip conditions - must be in game with a valid slot and game started
     if (
       view !== "game" ||
       !currentSlotId ||
       !gameState.rootNodeId ||
-      gameState.isProcessing ||
       skipNextSave
     ) {
       if (skipNextSave) {
-        setSkipNextSave(false); // Reset flag after skipping
+        setSkipNextSave(false);
       }
       return;
     }
 
-    // Additional safety check: ensure activeNodeId points to a model node
-    // If it's a user node, we're mid-generation and shouldn't save
-    // EXCEPTION: If triggered manually via triggerSaveCount, we save anyway (e.g. after image gen)
-    // But we still want to avoid saving PURE user nodes if processing is happening.
-    // However, triggerSave is usually called AFTER processing is done.
-    if (gameState.activeNodeId && triggerSaveCount === 0) {
-      const activeNode = gameState.nodes[gameState.activeNodeId];
-      if (activeNode && activeNode.role === "user") {
-        return;
-      }
+    // Skip if currently processing (AI is generating)
+    if (gameState.isProcessing) {
+      return;
     }
 
-    // Only trigger save when activeNodeId changes (new turn completed) OR triggered manually
-    // This prevents saving on every minor state change
-    const shouldSave =
-      lastSavedNodeIdRef.current !== gameState.activeNodeId ||
-      triggerSaveCount > 0;
+    // Determine if we should save
+    let shouldSave = false;
+    let saveReason = "";
+
+    // Case 1: Manual trigger (from triggerSave callback)
+    if (triggerSaveCount > 0) {
+      shouldSave = true;
+      saveReason = "manual trigger";
+    }
+    // Case 2: Active node changed to a model node (AI turn complete)
+    else if (
+      gameState.activeNodeId &&
+      gameState.activeNodeId !== lastSavedActiveNodeRef.current
+    ) {
+      const activeNode = gameState.nodes[gameState.activeNodeId];
+      // Only save if it's a model node (AI response)
+      if (activeNode && activeNode.role === "model") {
+        shouldSave = true;
+        saveReason = "AI turn complete";
+      }
+    }
 
     if (!shouldSave) {
       return;
@@ -360,22 +397,28 @@ export const useGamePersistence = (
       const now = Date.now();
       const timeSinceLastSave = now - lastSaveTimeRef.current;
 
-      // If triggered manually, we might want to bypass throttle, but for safety let's keep it
-      // unless it's been a reasonable amount of time.
+      // Apply throttle only for non-manual saves
       if (timeSinceLastSave < MIN_SAVE_INTERVAL_MS && triggerSaveCount === 0) {
-        // Schedule another attempt after the remaining time
+        // Schedule another attempt
         saveTimeoutRef.current = setTimeout(() => {
-          // Re-trigger the effect by this point the state might have changed
-          lastSavedNodeIdRef.current = null;
+          lastSavedActiveNodeRef.current = null; // Reset to allow retry
         }, MIN_SAVE_INTERVAL_MS - timeSinceLastSave);
         return;
       }
 
       try {
+        console.log(`[AutoSave] Saving game state (reason: ${saveReason})`);
+
         // Save game state to IndexedDB
         await saveGameState(currentSlotId, gameState);
         lastSaveTimeRef.current = now;
+        lastSavedActiveNodeRef.current = gameState.activeNodeId;
         lastSavedNodeIdRef.current = gameState.activeNodeId;
+
+        // Reset trigger count after successful save
+        if (triggerSaveCount > 0) {
+          setTriggerSaveCount(0);
+        }
 
         // Update Slot Meta
         const activeNode = gameState.activeNodeId
@@ -390,7 +433,6 @@ export const useGamePersistence = (
         if (activeNode) {
           let curr: typeof activeNode | null = activeNode;
           let steps = 0;
-          // Look back up to 5 steps for an image
           while (curr && steps < 5) {
             if (curr.imageUrl) {
               previewImage = curr.imageUrl;
@@ -417,7 +459,6 @@ export const useGamePersistence = (
             : s,
         );
 
-        // Only update if changed to avoid loops
         if (JSON.stringify(updatedSlots) !== JSON.stringify(saveSlots)) {
           setSaveSlots(updatedSlots);
           await saveMetadata("slots", updatedSlots);
@@ -428,14 +469,12 @@ export const useGamePersistence = (
         setTimeout(() => setIsAutoSaving(false), 1500);
       } catch (error: unknown) {
         console.error("Failed to save game to IndexedDB:", error);
-        // Show user-friendly error
         if (error instanceof Error && error.name === "QuotaExceededError") {
           alert("QuotaExceededError");
         }
       }
     }, AUTO_SAVE_DEBOUNCE_MS);
 
-    // Cleanup timeout on unmount or dependency change
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -443,12 +482,14 @@ export const useGamePersistence = (
     };
   }, [
     gameState.activeNodeId,
+    gameState.isProcessing,
+    gameState.rootNodeId,
     currentSlotId,
     view,
     skipNextSave,
+    triggerSaveCount,
     gameState,
     saveSlots,
-    triggerSaveCount, // Added dependency
   ]);
 
   // Persist Current Slot ID to IndexedDB

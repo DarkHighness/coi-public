@@ -9,7 +9,12 @@
     "title": "Current Objective",
     "main": "Main",
     "side": "Side Quests",
-    "empty": "No active quests."
+    "empty": "No active quests.",
+    "hiddenTruth": "Hidden Truth",
+    "description": "Description",
+    "trueDescription": "True Description",
+    "trueObjectives": "True Objectives",
+    "secretOutcome": "Secret Outcome"
   },
   "knowledgePanel": {
     "title": "Knowledge",
@@ -528,10 +533,16 @@
     "hiddenTruth": "Hidden Truth",
     "secretObjective": "Secret Objective"
   },
+  "confirm": "Confirm",
   "faction": {
     "members": "Members",
     "influence": "Influence",
     "relations": "Relations"
+  },
+  "errorPanel": {
+    "componentError": "Something went wrong",
+    "componentDescription": "This section encountered an error. You can try again or continue using other parts of the app.",
+    "retry": "Try Again"
   },
   "tokenStats": {
     "promptTokens": "Prompt Tokens",

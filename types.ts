@@ -282,6 +282,8 @@ export interface LogEntry {
   // Legacy fields for non-agentic mode
   request?: any;
   response?: any;
+  // Parsed/structured result (for schema-based generation)
+  parsedResult?: any;
   usage?: TokenUsage;
   generationDetails?: {
     dynamicContext?: string;

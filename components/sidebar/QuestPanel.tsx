@@ -119,7 +119,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       >
         <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
           <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-            {t("description") || "Description"}
+            {t("questPanel.description") || "Description"}
           </span>
           <p className="pl-1">
             {q.visible?.description || t("noDescription") || "No description"}
@@ -140,14 +140,14 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                     clipRule="evenodd"
                   />
                 </svg>
-                {t("hiddenTruth") || "Hidden Truth"}
+                {t("questPanel.hiddenTruth") || "Hidden Truth"}
               </div>
 
               {/* True Description */}
               {q.hidden.trueDescription && (
                 <div className="pl-1">
                   <span className="text-[10px] uppercase tracking-wider text-theme-danger/80 font-bold block mb-0.5">
-                    {t("trueDescription") || "True Description"}
+                    {t("questPanel.trueDescription") || "True Description"}
                   </span>
                   <p className="text-theme-danger/80 not-italic">
                     {q.hidden.trueDescription}
@@ -160,7 +160,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 q.hidden.trueObjectives.length > 0 && (
                   <div className="pl-1">
                     <span className="text-[10px] uppercase tracking-wider text-theme-danger/80 font-bold block mb-0.5">
-                      {t("trueObjectives") || "True Objectives"}
+                      {t("questPanel.trueObjectives") || "True Objectives"}
                     </span>
                     <ul className="list-disc list-inside text-theme-danger/80 not-italic">
                       {q.hidden.trueObjectives.map((obj, idx) => (
@@ -174,7 +174,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               {q.hidden.secretOutcome && (
                 <div className="pl-1">
                   <span className="text-[10px] uppercase tracking-wider text-theme-secret/80 font-bold block mb-0.5">
-                    {t("secretOutcome") || "Secret Outcome"}
+                    {t("questPanel.secretOutcome") || "Secret Outcome"}
                   </span>
                   <p className="text-theme-secret/80 not-italic">
                     {q.hidden.secretOutcome}

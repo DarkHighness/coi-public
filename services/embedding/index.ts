@@ -33,6 +33,7 @@ export {
   getEmbeddingManager,
   resetEmbeddingManager,
   createEmbeddingManager,
+  initializeEmbeddingManager,
   type EmbeddingManagerConfig,
   type EmbeddingProgress,
   type RAGContext,

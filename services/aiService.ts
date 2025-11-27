@@ -204,6 +204,7 @@ const createLogEntry = (
   usage?: TokenUsage,
   toolCalls?: ToolCallRecord[],
   generationDetails?: LogEntry["generationDetails"],
+  parsedResult?: unknown,
 ): LogEntry => {
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -213,6 +214,7 @@ const createLogEntry = (
     endpoint,
     request: req,
     response: res as Record<string, unknown>,
+    parsedResult: parsedResult as Record<string, unknown>,
     usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     toolCalls,
     generationDetails,
@@ -221,6 +223,7 @@ const createLogEntry = (
     usage: entry.usage,
     hasRequest: !!req,
     hasResponse: !!res,
+    hasParsedResult: !!parsedResult,
     toolCallCount: toolCalls?.length || 0,
   });
   return entry;
@@ -537,7 +540,9 @@ export const generateContentUnified = async (
     usage,
     undefined, // toolCalls
     options?.generationDetails,
+    result, // parsedResult - include the parsed/structured result
   );
+
   return { result, usage, raw, log };
 };
 
@@ -557,18 +562,23 @@ export const generateStoryOutline = async (
 ): Promise<{ outline: StoryOutline; log: LogEntry }> => {
   const { provider, modelId } = getProviderConfig("story");
 
-  let themeDataBackgroundTemplate: string;
-  let themeDataExample: string;
+  let themeDataWorldSetting: string | undefined;
+  let themeDataBackgroundTemplate: string | undefined;
+  let themeDataExample: string | undefined;
+  let themeDataNarrativeStyle: string | undefined;
 
   if (tFunc) {
     // Use dynamic translation function from React component
+    themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
     themeDataBackgroundTemplate =
       tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
       tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
     themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
+    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, { ns: "themes" });
   } else {
-    // Fallback to static translations
+    // Fallback to static config (text content is only in translation files)
     const themeData = THEMES[theme] || THEMES["fantasy"];
+    // These text fields are only available in translation files, not in THEMES constant
     themeDataBackgroundTemplate = themeData.backgroundTemplate;
     themeDataExample = themeData.example;
   }
@@ -576,9 +586,12 @@ export const generateStoryOutline = async (
   const prompt = getOutlinePrompt(
     theme,
     language,
-    themeDataBackgroundTemplate,
-    themeDataExample,
-    customContext,
+    customContext,                // customContext (user-provided context)
+    themeDataWorldSetting,        // worldSetting (theme's world description)
+    themeDataBackgroundTemplate,  // backgroundTemplate (character setup template)
+    themeDataExample,             // themeExample (style reference)
+    false,                        // isRestricted (allow creative freedom)
+    themeDataNarrativeStyle,      // narrativeStyle (writing style guidance)
   );
 
   const { result, log } = await generateContentUnified(

@@ -1012,6 +1012,22 @@ export function getEmbeddingManager(
   return embeddingManagerInstance;
 }
 
+/**
+ * Initialize or reinitialize the embedding manager with new config.
+ * Call this when settings change or when first accessing RAG features.
+ */
+export function initializeEmbeddingManager(
+  config: EmbeddingManagerConfig,
+): EmbeddingManager {
+  // If instance exists with different settings, reset it
+  if (embeddingManagerInstance) {
+    embeddingManagerInstance.terminate();
+    embeddingManagerInstance = null;
+  }
+  embeddingManagerInstance = new EmbeddingManager(config);
+  return embeddingManagerInstance;
+}
+
 export function resetEmbeddingManager(): void {
   if (embeddingManagerInstance) {
     embeddingManagerInstance.terminate();

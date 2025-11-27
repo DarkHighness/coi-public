@@ -1320,15 +1320,26 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
 - "bad_ending": Story concludes with negative outcome (not death, but failure/tragedy)
 - "neutral_ending": Story concludes without clear win/loss
 
-IMPORTANT: Only set this if the narrative EXPLICITLY ends the story. Do NOT set for cliffhangers or temporary setbacks. If the player can still continue, do NOT set ending.`,
+⚠️ CRITICAL RULES - READ CAREFULLY:
+1. NEVER set 'ending' in the first 5 turns of a game. The story needs time to develop.
+2. 'death' should ONLY occur after the player makes MULTIPLE clearly dangerous choices, not from a single action.
+3. Even fatal situations should give the player a chance to escape or be rescued first.
+4. Injuries, defeats, and setbacks are NOT death - they are story progression.
+5. If unsure, DO NOT set ending. Let the story continue.
+
+IMPORTANT: Only set this if the narrative EXPLICITLY ends the story. Do NOT set for cliffhangers, temporary setbacks, or near-death experiences. If the player can still continue, do NOT set ending.`,
       },
       forceEnd: {
         type: "boolean",
         description: `Only relevant when 'ending' is set. Determines if the game ends permanently:
 - true: Game is OVER. Player cannot continue from this point. Use for death, true_ending, or definitive story conclusions.
 - false/omit: Player can choose to continue despite the ending (e.g., victory but story can continue with aftermath).
+
+⚠️ WARNING: Setting forceEnd: true with death in early game is almost always wrong.
+Consider: Can the character be saved? Is there a healer nearby? Can they be captured instead of killed?
+
 Typical usage:
-- death → forceEnd: true (character is dead)
+- death → forceEnd: true (character is dead) - ONLY after exhausting all survival options
 - victory → forceEnd: false (player might want to explore aftermath)
 - true_ending → forceEnd: true (canonical ending reached)
 - bad_ending → forceEnd: true or false depending on severity

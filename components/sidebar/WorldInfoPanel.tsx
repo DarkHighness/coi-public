@@ -203,7 +203,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                         faction.visible.members.length > 0 && (
                           <div className="text-[10px] text-theme-muted">
                             <span className="text-theme-primary/80 font-bold block mb-1">
-                              {t("members") || "Members"}:
+                              {t("faction.members") || "Members"}:
                             </span>
                             <div className="flex flex-wrap gap-1">
                               {faction.visible.members.map((member, idx) => (
@@ -226,7 +226,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       {faction.visible.influence && (
                         <div className="text-[10px] text-theme-muted flex items-start gap-1">
                           <span className="text-theme-primary/80 font-bold whitespace-nowrap">
-                            {t("influence") || "Influence"}:
+                            {t("faction.influence") || "Influence"}:
                           </span>
                           <span className="text-theme-text/80">
                             {faction.visible.influence}
@@ -237,7 +237,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                         faction.visible.relations.length > 0 && (
                           <div className="text-[10px] text-theme-muted">
                             <span className="text-theme-primary/80 font-bold block mb-0.5">
-                              {t("relations") || "Relations"}:
+                              {t("faction.relations") || "Relations"}:
                             </span>
                             <div className="grid grid-cols-1 gap-0.5 pl-1">
                               {faction.visible.relations.map((rel, idx) => (
