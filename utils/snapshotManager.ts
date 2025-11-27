@@ -6,13 +6,14 @@ import type {
   AliveEntities,
   ForkTree,
 } from "../types";
+import type { AtmosphereObject } from "./constants/atmosphere";
 
 export interface SnapshotMetadata {
   summaries: StorySummary[];
   lastSummarizedIndex: number;
   currentLocation: string;
   time: string;
-  atmosphere: string;
+  atmosphere: AtmosphereObject;
   veoScript?: string;
   uiState: GameState["uiState"];
   aliveEntities?: AliveEntities;

@@ -1,20 +1,20 @@
 import { BACKGROUND_IMAGES } from "../utils/constants";
 import {
   getEffectForAtmosphere,
-  resolveAtmosphere,
+  normalizeAtmosphere,
   type VisualEffect,
+  type AtmosphereObject,
 } from "../utils/constants/atmosphere";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+
+// Memory cache for loaded fallback images to prevent repeated requests
+const loadedFallbackCache = new Map<string, string>();
 
 interface EnvironmentalEffectsProps {
   currentText: string;
   imagePrompt?: string;
-  /** Unified atmosphere value (e.g. "forest", "horror", "city") */
-  atmosphere?: string;
-  /** @deprecated Legacy: visual theme key - use atmosphere instead */
-  envTheme?: string;
-  /** @deprecated Legacy: environment for audio - use atmosphere instead */
-  environment?: string;
+  /** Unified atmosphere object */
+  atmosphere?: AtmosphereObject;
   backgroundImage?: string;
   fallbackEnabled?: boolean;
 }
@@ -25,20 +25,14 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   currentText,
   imagePrompt,
   atmosphere,
-  envTheme,
-  environment,
   backgroundImage,
   fallbackEnabled = true,
 }) => {
   const [effect, setEffect] = useState<EffectType>(null);
   const [loadedBgSource, setLoadedBgSource] = useState<string | null>(null);
 
-  // Resolve the unified atmosphere from available props
-  const resolvedAtmosphere = resolveAtmosphere(
-    atmosphere,
-    environment,
-    envTheme,
-  );
+  // Normalize the atmosphere to get the unified object
+  const resolvedAtmosphere = normalizeAtmosphere(atmosphere);
 
   useEffect(() => {
     // Get default effect from atmosphere
@@ -114,19 +108,22 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     let bgSource = backgroundImage;
     let isFallback = false;
 
-    if (!bgSource && fallbackEnabled && resolvedAtmosphere) {
+    // Extract ambience string for background lookup
+    const ambienceKey = resolvedAtmosphere.ambience;
+
+    if (!bgSource && fallbackEnabled && ambienceKey) {
       // Try to find a matching background from constants
       // First try exact match
-      if (BACKGROUND_IMAGES[resolvedAtmosphere]) {
-        bgSource = BACKGROUND_IMAGES[resolvedAtmosphere];
+      if (BACKGROUND_IMAGES[ambienceKey]) {
+        bgSource = BACKGROUND_IMAGES[ambienceKey];
         isFallback = true;
       }
       // If no exact match, try to find by partial match or default to fantasy
       else {
-        // Simple fallback logic: check if atmosphere contains key words
-        const atmosphereLower = resolvedAtmosphere.toLowerCase();
+        // Simple fallback logic: check if ambience contains key words
+        const ambienceLower = ambienceKey.toLowerCase();
         const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
-          atmosphereLower.includes(key),
+          ambienceLower.includes(key),
         );
         if (foundKey) {
           bgSource = BACKGROUND_IMAGES[foundKey];
@@ -137,10 +134,18 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
     // If we have a background source, try to load it
     if (bgSource) {
-      // For pollinations.ai images (fallback), preload and handle errors silently
+      // For pollinations.ai images (fallback), check cache first then preload
       if (isFallback && bgSource.includes("pollinations.ai")) {
+        // Check memory cache first
+        if (loadedFallbackCache.has(bgSource)) {
+          setLoadedBgSource(loadedFallbackCache.get(bgSource)!);
+          return;
+        }
+
         const img = new Image();
         img.onload = () => {
+          // Cache the successfully loaded URL
+          loadedFallbackCache.set(bgSource, bgSource);
           setLoadedBgSource(bgSource);
         };
         img.onerror = (e) => {

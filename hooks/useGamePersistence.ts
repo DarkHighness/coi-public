@@ -70,9 +70,9 @@ export const useGamePersistence = (
 
       // === 1b. Fix atmosphere and time if missing ===
       // These are essential for consistent visual theming
-      if (!parsed.atmosphere || typeof parsed.atmosphere !== "string") {
+      if (!parsed.atmosphere || typeof parsed.atmosphere !== "object") {
         // Try to extract from the latest node's stateSnapshot or atmosphere field
-        let foundAtmosphere: string | null = null;
+        let foundAtmosphere: { envTheme?: string; ambience?: string } | null = null;
         if (parsed.activeNodeId && parsed.nodes?.[parsed.activeNodeId]) {
           const activeNode = parsed.nodes[parsed.activeNodeId];
           foundAtmosphere =
@@ -80,14 +80,14 @@ export const useGamePersistence = (
             activeNode.stateSnapshot?.atmosphere ||
             null;
         }
-        if (foundAtmosphere) {
+        if (foundAtmosphere && typeof foundAtmosphere === "object") {
           parsed.atmosphere = foundAtmosphere;
           repairLog.push(
-            `Repaired: atmosphere extracted from active node: ${foundAtmosphere}`,
+            `Repaired: atmosphere extracted from active node: ${JSON.stringify(foundAtmosphere)}`,
           );
         } else {
-          parsed.atmosphere = "quiet";
-          repairLog.push("Repaired: atmosphere defaulted to quiet");
+          parsed.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
+          repairLog.push("Repaired: atmosphere defaulted to { envTheme: fantasy, ambience: quiet }");
         }
       }
       if (!parsed.time || typeof parsed.time !== "string") {

@@ -21,6 +21,16 @@ export interface JsonSchema {
   anyOf?: JsonSchema[];
   oneOf?: JsonSchema[];
   additionalProperties?: boolean;
+  // 额外的 JSON Schema 验证属性
+  default?: unknown;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  minItems?: number;
+  maxItems?: number;
+  pattern?: string;
+  format?: string;
 }
 
 /**

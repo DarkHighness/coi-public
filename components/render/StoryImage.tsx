@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 interface StoryImageProps {
   imageUrl?: string;
   imagePrompt?: string;
+  /** The full styled prompt used for image generation (includes context, style, etc.) */
+  fullImagePrompt?: string;
   isGenerating?: boolean;
   labelVision: string;
   labelUnavailable: string;
@@ -22,6 +24,7 @@ interface StoryImageProps {
 export const StoryImage: React.FC<StoryImageProps> = ({
   imageUrl,
   imagePrompt,
+  fullImagePrompt,
   isGenerating,
   labelVision,
   labelUnavailable,
@@ -35,6 +38,67 @@ export const StoryImage: React.FC<StoryImageProps> = ({
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
+
+  // Copy prompt to clipboard
+  const handleCopyPrompt = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Prefer fullImagePrompt if available, otherwise use imagePrompt
+    const promptToCopy = fullImagePrompt || imagePrompt;
+    if (!promptToCopy) return;
+
+    try {
+      await navigator.clipboard.writeText(promptToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy prompt:", err);
+    }
+  };
+
+  if (disableImages) return null;
+
+  // If image was intentionally skipped by AI, do not render anything
+  if (imageSkipped && !imageUrl && !isGenerating) return null;
+
+  // Copy Prompt Button Component
+  const CopyPromptButton = () => (
+    <button
+      onClick={handleCopyPrompt}
+      className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+      title={copied ? t("storyImage.promptCopied") : t("storyImage.copyPrompt")}
+    >
+      {copied ? (
+        <svg
+          className="w-5 h-5 text-green-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      ) : (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+      )}
+    </button>
+  );
 
   if (disableImages) return null;
 
@@ -61,6 +125,9 @@ export const StoryImage: React.FC<StoryImageProps> = ({
 
           {/* Action Buttons Container */}
           <div className="absolute top-3 right-3 flex gap-2">
+            {/* Copy Prompt Button - Show if imagePrompt exists */}
+            {imagePrompt && <CopyPromptButton />}
+
             {/* Regenerate Button - Only show if onRegenerate callback exists */}
             {onRegenerate && (
               <button
@@ -110,7 +177,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     const actuallyFailed = !isGenerating && canRegenerate && !manualImageGen;
 
     return (
-      <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black">
+      <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
         <ImagePlaceholder
           isGenerating={isGenerating || false}
           hasFailed={actuallyFailed}
@@ -119,6 +186,10 @@ export const StoryImage: React.FC<StoryImageProps> = ({
           themeFont={themeFont}
           onRegenerate={canRegenerate ? onRegenerate : undefined}
         />
+        {/* Copy Prompt Button - Always available when imagePrompt exists */}
+        <div className="absolute top-3 right-3 flex gap-2">
+          <CopyPromptButton />
+        </div>
       </div>
     );
   }

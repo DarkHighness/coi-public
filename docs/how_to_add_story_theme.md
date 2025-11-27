@@ -2,6 +2,25 @@
 
 This guide outlines the steps to add a new story theme to the application.
 
+## Quick Start: Using the Script
+
+The easiest way to add a new theme is using the interactive script:
+
+```bash
+# From the project root directory
+npx ts-node scripts/addStoryTheme.ts
+```
+
+The script will guide you through:
+1. Setting up the theme configuration (key, icon, visual theme, categories)
+2. Entering English translations
+3. Entering Chinese translations
+4. Applying changes to all relevant files
+
+## Manual Setup
+
+If you prefer to add themes manually, follow the steps below.
+
 ## File Structure Overview
 
 The theme system is organized into the following files:

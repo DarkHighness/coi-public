@@ -73,46 +73,18 @@ export interface GenerateContentOptions {
   minP?: number;
   /** 流式输出回调 */
   onChunk?: (text: string) => void;
-  /** 工具定义列表 */
-  tools?: ToolDefinition[];
+  /** 工具定义列表 (使用 Zod Schema) */
+  tools?: ZodToolDefinition[];
 }
 
-/** 工具/函数定义 */
-export interface ToolDefinition {
+import type { ZodTypeAny } from "zod";
+
+/** 工具/函数定义 (使用 Zod Schema) */
+export interface ZodToolDefinition {
   name: string;
   description: string;
-  parameters: JsonSchema;
+  parameters: ZodTypeAny;
 }
-
-/** JSON Schema 类型定义 */
-export interface JsonSchema {
-  type?: JsonSchemaType | JsonSchemaType[];
-  description?: string;
-  properties?: Record<string, JsonSchema>;
-  required?: string[];
-  items?: JsonSchema;
-  enum?: string[];
-  nullable?: boolean;
-  allOf?: JsonSchema[];
-  anyOf?: JsonSchema[];
-  oneOf?: JsonSchema[];
-  additionalProperties?: boolean;
-  default?: unknown;
-  minimum?: number;
-  maximum?: number;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string;
-}
-
-export type JsonSchemaType =
-  | "string"
-  | "number"
-  | "integer"
-  | "boolean"
-  | "object"
-  | "array"
-  | "null";
 
 // ============================================================================
 // Message Types (对话)
@@ -286,7 +258,7 @@ export interface AIProvider<TConfig extends ProviderConfig> {
     model: string,
     systemInstruction: string,
     messages: UnifiedMessage[],
-    schema?: JsonSchema,
+    schema?: ZodTypeAny,
     options?: GenerateContentOptions,
   ): Promise<ContentGenerationResponse>;
 

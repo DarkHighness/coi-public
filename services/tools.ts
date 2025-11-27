@@ -1,29 +1,54 @@
-import {
-  inventoryItemProperties,
-  relationshipProperties,
-  locationProperties,
-  questProperties,
-  knowledgeProperties,
-  timelineEventProperties,
-  causalChainProperties,
-  factionProperties,
-  skillProperties,
-  conditionProperties,
-} from "./schemas";
+/**
+ * ============================================================================
+ * Tool Definitions - 使用 Zod Schema 定义 AI 工具
+ * ============================================================================
+ *
+ * 所有工具参数使用 Zod schema 定义，通过 zodCompiler 编译为各 Provider 格式。
+ *
+ * --- ID Format Documentation ---
+ * All entities in the game use a standardized ID format: "{prefix}:{number}"
+ * - Inventory Items: "inv:{N}" (e.g., "inv:1", "inv:42")
+ * - NPCs/Relationships: "npc:{N}" (e.g., "npc:1", "npc:15")
+ * - Locations: "loc:{N}" (e.g., "loc:1", "loc:7")
+ * - Quests: "quest:{N}" (e.g., "quest:1", "quest:3")
+ * - Knowledge Entries: "know:{N}" (e.g., "know:1", "know:12")
+ * - Factions: "fac:{N}" (e.g., "fac:1", "fac:5")
+ * - Timeline Events: "evt:{N}" (e.g., "evt:1", "evt:100")
+ * - Causal Chains: "chain:{N}" (e.g., "chain:1", "chain:8")
+ * - Character Skills: "skill:{N}" (e.g., "skill:1", "skill:5")
+ * - Character Conditions: "cond:{N}" (e.g., "cond:1", "cond:3")
+ * - Hidden Traits: "trait:{N}" (e.g., "trait:1", "trait:2")
+ */
 
-// --- ID Format Documentation ---
-// All entities in the game use a standardized ID format: "{prefix}:{number}"
-// - Inventory Items: "inv:{N}" (e.g., "inv:1", "inv:42")
-// - NPCs/Relationships: "npc:{N}" (e.g., "npc:1", "npc:15")
-// - Locations: "loc:{N}" (e.g., "loc:1", "loc:7")
-// - Quests: "quest:{N}" (e.g., "quest:1", "quest:3")
-// - Knowledge Entries: "know:{N}" (e.g., "know:1", "know:12")
-// - Factions: "fac:{N}" (e.g., "fac:1", "fac:5")
-// - Timeline Events: "evt:{N}" (e.g., "evt:1", "evt:100")
-// - Causal Chains: "chain:{N}" (e.g., "chain:1", "chain:8")
-// - Character Skills: "skill:{N}" (e.g., "skill:1", "skill:5")
-// - Character Conditions: "cond:{N}" (e.g., "cond:1", "cond:3")
-// - Hidden Traits: "trait:{N}" (e.g., "trait:1", "trait:2")
+import { z } from "zod";
+import type { ZodToolDefinition } from "./providers/types";
+import {
+  atmosphereSchema,
+  inventoryItemVisibleSchema,
+  inventoryItemHiddenSchema,
+  relationshipVisibleSchema,
+  relationshipHiddenSchema,
+  locationVisibleSchema,
+  locationHiddenSchema,
+  questVisibleSchema,
+  questHiddenSchema,
+  questTypeSchema,
+  knowledgeVisibleSchema,
+  knowledgeHiddenSchema,
+  knowledgeCategorySchema,
+  timelineEventVisibleSchema,
+  timelineEventHiddenSchema,
+  timelineEventCategorySchema,
+  skillVisibleSchema,
+  skillHiddenSchema,
+  conditionVisibleSchema,
+  conditionHiddenSchema,
+  conditionTypeSchema,
+  attributeColorSchema,
+  factionMemberSchema,
+  factionRelationSchema,
+  causalChainStatusSchema,
+} from "./zodSchemas";
 
 export const ID_PREFIXES = {
   inventory: "inv",
@@ -55,266 +80,179 @@ export const parseEntityId = (
   return { type: match[1], num: parseInt(match[2], 10) };
 };
 
-// --- Tool Definitions ---
+// ============================================================================
+// Query Tools - 使用 Zod Schema 定义参数
+// ============================================================================
 
-export const QUERY_INVENTORY_TOOL = {
+export const QUERY_INVENTORY_TOOL: ZodToolDefinition = {
   name: "query_inventory",
   description:
     "Query the player's inventory. Returns a list of items matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Name, ID (format: inv:N, e.g., 'inv:1'), or keyword to search for. If omitted, lists all items.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Name, ID (format: inv:N, e.g., 'inv:1'), or keyword to search for. If omitted, lists all items."
+    ),
+  }),
 };
 
-export const QUERY_RELATIONSHIPS_TOOL = {
+export const QUERY_RELATIONSHIPS_TOOL: ZodToolDefinition = {
   name: "query_relationships",
   description:
     "Query known NPCs and relationships. Returns a list of NPCs matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Name, ID (format: npc:N, e.g., 'npc:1'), or keyword to search for. If omitted, lists all known NPCs.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Name, ID (format: npc:N, e.g., 'npc:1'), or keyword to search for. If omitted, lists all known NPCs."
+    ),
+  }),
 };
 
-export const QUERY_LOCATIONS_TOOL = {
+export const QUERY_LOCATIONS_TOOL: ZodToolDefinition = {
   name: "query_locations",
   description:
     "Query known locations. Returns a list of locations matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Name, ID (format: loc:N, e.g., 'loc:1'), or keyword to search for. If omitted, lists all known locations.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Name, ID (format: loc:N, e.g., 'loc:1'), or keyword to search for. If omitted, lists all known locations."
+    ),
+  }),
 };
 
-export const QUERY_QUESTS_TOOL = {
+export const QUERY_QUESTS_TOOL: ZodToolDefinition = {
   name: "query_quests",
   description:
     "Query active and completed quests. Returns a list of quests matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Title, ID (format: quest:N, e.g., 'quest:1'), or keyword to search for. If omitted, lists all quests matching the status.",
-      },
-      status: {
-        type: "string",
-        enum: ["active", "completed", "failed", "all"],
-        description: "Filter by quest status. Defaults to 'active'.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Title, ID (format: quest:N, e.g., 'quest:1'), or keyword to search for. If omitted, lists all quests matching the status."
+    ),
+    status: z.enum(["active", "completed", "failed", "all"]).optional().describe(
+      "Filter by quest status. Defaults to 'active'."
+    ),
+  }),
 };
 
-export const QUERY_KNOWLEDGE_TOOL = {
+export const QUERY_KNOWLEDGE_TOOL: ZodToolDefinition = {
   name: "query_knowledge",
   description:
     "Query the player's accumulated knowledge/lore. Returns a list of entries matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Title, ID (format: know:N, e.g., 'know:1'), or keyword to search for. If omitted, lists all knowledge.",
-      },
-      category: {
-        type: "string",
-        enum: [
-          "landscape",
-          "history",
-          "item",
-          "legend",
-          "faction",
-          "culture",
-          "magic",
-          "technology",
-          "other",
-        ],
-        description: "Filter by category.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Title, ID (format: know:N, e.g., 'know:1'), or keyword to search for. If omitted, lists all knowledge."
+    ),
+    category: knowledgeCategorySchema.optional().describe("Filter by category."),
+  }),
 };
 
-export const QUERY_TIMELINE_TOOL = {
+export const QUERY_TIMELINE_TOOL: ZodToolDefinition = {
   name: "query_timeline",
   description:
     "Query the world timeline and history. Returns a list of events matching the query.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Keyword, ID (format: evt:N, e.g., 'evt:1'), or category to search for. If omitted, lists recent events.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Keyword, ID (format: evt:N, e.g., 'evt:1'), or category to search for. If omitted, lists recent events."
+    ),
+  }),
 };
 
-export const QUERY_CAUSAL_CHAIN_TOOL = {
+export const QUERY_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
   name: "query_causal_chain",
   description: "Query active causal chains (cause-and-effect sequences).",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description: "Keyword or Chain ID (format: chain:N, e.g., 'chain:1').",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Keyword or Chain ID (format: chain:N, e.g., 'chain:1')."
+    ),
+  }),
 };
 
-export const QUERY_FACTIONS_TOOL = {
+export const QUERY_FACTIONS_TOOL: ZodToolDefinition = {
   name: "query_factions",
   description: "Query major factions and power groups.",
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description: "Name, ID (format: fac:N, e.g., 'fac:1'), or keyword.",
-      },
-    },
-  },
+  parameters: z.object({
+    query: z.string().optional().describe(
+      "Name, ID (format: fac:N, e.g., 'fac:1'), or keyword."
+    ),
+  }),
 };
 
-export const QUERY_GLOBAL_TOOL = {
+export const QUERY_GLOBAL_TOOL: ZodToolDefinition = {
   name: "query_global",
   description:
     "Query global game state properties like time, theme, environment, etc.",
-  parameters: {
-    type: "object",
-    properties: {
-      category: {
-        type: "string",
-        enum: ["time", "theme", "environment", "all"],
-        description: "The category of global state to retrieve.",
-      },
-    },
-    required: ["category"],
-  },
+  parameters: z.object({
+    category: z.enum(["time", "theme", "environment", "all"]).describe(
+      "The category of global state to retrieve."
+    ),
+  }),
 };
 
-export const QUERY_CHARACTER_TOOL = {
+export const QUERY_CHARACTER_TOOL: ZodToolDefinition = {
   name: "query_character",
   description:
     "Query the player character's status, attributes, skills, conditions, and hidden traits.",
-  parameters: {
-    type: "object",
-    properties: {
-      aspect: {
-        type: "string",
-        enum: [
-          "all",
-          "profile",
-          "attributes",
-          "skills",
-          "conditions",
-          "hiddenTraits",
-        ],
-        description: "The aspect of the character to query. Defaults to 'all'.",
-      },
-      query: {
-        type: "string",
-        description:
-          "For skills/conditions/traits: Name or ID (skill:N, cond:N, trait:N) to search for specific items.",
-      },
-    },
-  },
+  parameters: z.object({
+    aspect: z.enum([
+      "all",
+      "profile",
+      "attributes",
+      "skills",
+      "conditions",
+      "hiddenTraits",
+    ]).optional().describe("The aspect of the character to query. Defaults to 'all'."),
+    query: z.string().optional().describe(
+      "For skills/conditions/traits: Name or ID (skill:N, cond:N, trait:N) to search for specific items."
+    ),
+  }),
 };
 
-// --- Update Tools (Using Unified Schemas) ---
+// ============================================================================
+// Update Tools - 使用 Zod Schema 定义参数
+// ============================================================================
 // IMPORTANT: For all update tools, to REMOVE an optional property, set its value to null.
 // Example: To remove an NPC's notes, set notes: null
 // Example: To remove a skill's level, set level: null
 // The system will delete these properties from the entity when it sees null values.
 
-export const UPDATE_INVENTORY_TOOL = {
+export const UPDATE_INVENTORY_TOOL: ZodToolDefinition = {
   name: "update_inventory",
   description: `Add, remove, or update items in the player's inventory.
 IMPORTANT: To REMOVE an optional property from an existing item, set it to null.
 Example: To clear an item's lore, set lore: null`,
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "remove"],
-        description: "The action to perform on the inventory item.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Item ID (format: inv:N, e.g., 'inv:1'). Required for 'update' and 'remove' actions.",
-      },
-      name: {
-        type: "string",
-        description: "Item name. Required for 'add' action.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          description: {
-            type: "string",
-            description: "Visual description of the item.",
-          },
-          notes: {
-            type: "string",
-            description: "Player's notes about the item.",
-          },
-        },
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          truth: {
-            type: "string",
-            description: "True nature/power of the item.",
-          },
-          secrets: {
-            type: "array",
-            items: { type: "string" },
-            description: "Hidden secrets about the item.",
-          },
-        },
-      },
-      lore: {
-        type: "string",
-        description: "Brief lore or history of the item.",
-      },
-      unlocked: {
-        type: "boolean",
-        description: "Whether the hidden truth is revealed to the player.",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional (auto-generated if not provided)
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Item ID (format: inv:N). Optional for 'add' - will be auto-generated if not provided."
+      ),
+      name: z.string().describe("Item name. Required for 'add' action."),
+      visible: inventoryItemVisibleSchema.partial().optional(),
+      hidden: inventoryItemHiddenSchema.partial().optional(),
+      lore: z.string().optional().describe("Brief lore or history of the item."),
+      unlocked: z.boolean().optional().describe(
+        "Whether the hidden truth is revealed to the player."
+      ),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Item ID (format: inv:N, e.g., 'inv:1'). Required."),
+      name: z.string().optional().describe("Updated item name."),
+      visible: inventoryItemVisibleSchema.partial().optional(),
+      hidden: inventoryItemHiddenSchema.partial().optional(),
+      lore: z.string().optional().describe("Brief lore or history of the item."),
+      unlocked: z.boolean().optional().describe(
+        "Whether the hidden truth is revealed to the player."
+      ),
+    }),
+    // Remove action - id is required
+    z.object({
+      action: z.literal("remove"),
+      id: z.string().describe("Item ID (format: inv:N, e.g., 'inv:1'). Required."),
+    }),
+  ]),
 };
 
-export const UPDATE_RELATIONSHIP_TOOL = {
+export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
   name: "update_relationship",
   description: `Add, update, or remove NPC relationships.
 IMPORTANT:
@@ -323,398 +261,204 @@ IMPORTANT:
 - When NPC moves, update their currentLocation accordingly.
 Example: To clear an NPC's notes, set notes: null
 Example: To move NPC to player's location, set currentLocation: "loc:3"`,
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "remove"],
-        description: "The action to perform on the relationship.",
-      },
-      id: {
-        type: "string",
-        description:
-          "NPC ID (format: npc:N, e.g., 'npc:1'). Required for 'update' and 'remove' actions.",
-      },
-      currentLocation: {
-        type: "string",
-        description:
-          "NPC's current location ID (e.g., 'loc:1'). Update when NPC moves. NPCs at player's location are 'nearby'.",
-      },
-      known: {
-        type: "boolean",
-        description: "Whether the player knows this character.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          name: {
-            type: "string",
-            description: "Name the player knows them by.",
-          },
-          description: {
-            type: "string",
-            description: "Public perception of the NPC.",
-          },
-          appearance: { type: "string", description: "Physical appearance." },
-          relationshipType: {
-            type: "string",
-            description: "Relationship status from player's perspective.",
-          },
-          currentImpression: {
-            type: "string",
-            description: "NPC's current observable state.",
-          },
-          personality: {
-            type: "string",
-            description: "Public perception of personality.",
-          },
-          affinity: { type: "integer", description: "Affinity score 0-100." },
-          affinityKnown: {
-            type: "boolean",
-            description: "Whether the player knows the affinity level.",
-          },
-        },
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          trueName: {
-            type: "string",
-            description: "The character's real name if different.",
-          },
-          realPersonality: { type: "string", description: "True personality." },
-          realMotives: {
-            type: "string",
-            description: "True underlying motives.",
-          },
-          secrets: {
-            type: "array",
-            items: { type: "string" },
-            description: "Character's secrets.",
-          },
-          trueAffinity: {
-            type: "integer",
-            description: "True affinity score.",
-          },
-          relationshipType: {
-            type: "string",
-            description: "NPC's true view of the relationship.",
-          },
-          status: {
-            type: "string",
-            description: "NPC's current state (e.g., 'plotting', 'injured').",
-          },
-        },
-      },
-      notes: {
-        type: "string",
-        description: "NPC's observations of player's behavior.",
-      },
-      unlocked: {
-        type: "boolean",
-        description:
-          "Whether hidden info is revealed (requires special ability).",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "NPC ID (format: npc:N). Optional for 'add' - will be auto-generated."
+      ),
+      name: z.string().describe("NPC name. Required for 'add' action."),
+      currentLocation: z.string().optional().describe(
+        "NPC's current location ID (e.g., 'loc:1')."
+      ),
+      known: z.boolean().optional().describe("Whether the player knows this character."),
+      visible: relationshipVisibleSchema.partial().optional(),
+      hidden: relationshipHiddenSchema.partial().optional(),
+      notes: z.string().optional().describe("NPC's observations of player's behavior."),
+      unlocked: z.boolean().optional().describe(
+        "Whether hidden info is revealed."
+      ),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("NPC ID (format: npc:N, e.g., 'npc:1'). Required."),
+      name: z.string().optional().describe("Updated NPC name."),
+      currentLocation: z.string().optional().describe(
+        "NPC's current location ID (e.g., 'loc:1'). Update when NPC moves."
+      ),
+      known: z.boolean().optional().describe("Whether the player knows this character."),
+      visible: relationshipVisibleSchema.partial().optional(),
+      hidden: relationshipHiddenSchema.partial().optional(),
+      notes: z.string().optional().describe("NPC's observations of player's behavior."),
+      unlocked: z.boolean().optional().describe(
+        "Whether hidden info is revealed."
+      ),
+    }),
+    // Remove action - id is required
+    z.object({
+      action: z.literal("remove"),
+      id: z.string().describe("NPC ID (format: npc:N, e.g., 'npc:1'). Required."),
+    }),
+  ]),
 };
 
-export const UPDATE_LOCATION_TOOL = {
+export const UPDATE_LOCATION_TOOL: ZodToolDefinition = {
   name: "update_location",
   description: `Add, update, or remove locations. Use to track player movement and location discovery.
 IMPORTANT: To REMOVE an optional property, set it to null.
 Example: To clear a location's environment, set environment: null`,
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "remove"],
-        description: "The action to perform on the location.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Location ID (format: loc:N, e.g., 'loc:1'). Required for 'update' and 'remove' actions.",
-      },
-      name: {
-        type: "string",
-        description: "Location name. Required for 'add' action.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          description: {
-            type: "string",
-            description: "Visual description of the location.",
-          },
-          knownFeatures: {
-            type: "array",
-            items: { type: "string" },
-            description: "Known features.",
-          },
-        },
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          fullDescription: {
-            type: "string",
-            description: "True nature of the location.",
-          },
-          hiddenFeatures: {
-            type: "array",
-            items: { type: "string" },
-            description: "Hidden features.",
-          },
-          secrets: {
-            type: "array",
-            items: { type: "string" },
-            description: "Location secrets.",
-          },
-        },
-      },
-      environment: {
-        type: "string",
-        description: "Atmosphere/Environment tag.",
-      },
-      isCurrent: {
-        type: "boolean",
-        description: "Set to true if player moves here.",
-      },
-      isVisited: {
-        type: "boolean",
-        description: "Whether the location has been visited.",
-      },
-      unlocked: {
-        type: "boolean",
-        description: "Whether hidden secrets are discovered.",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Location ID (format: loc:N). Optional for 'add' - will be auto-generated."
+      ),
+      name: z.string().describe("Location name. Required for 'add' action."),
+      visible: locationVisibleSchema.partial().optional(),
+      hidden: locationHiddenSchema.partial().optional(),
+      environment: z.string().optional().describe("Atmosphere/Environment tag."),
+      isCurrent: z.boolean().optional().describe("Set to true if player moves here."),
+      isVisited: z.boolean().optional().describe("Whether the location has been visited."),
+      unlocked: z.boolean().optional().describe("Whether hidden secrets are discovered."),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Location ID (format: loc:N, e.g., 'loc:1'). Required."),
+      name: z.string().optional().describe("Updated location name."),
+      visible: locationVisibleSchema.partial().optional(),
+      hidden: locationHiddenSchema.partial().optional(),
+      environment: z.string().optional().describe("Atmosphere/Environment tag."),
+      isCurrent: z.boolean().optional().describe("Set to true if player moves here."),
+      isVisited: z.boolean().optional().describe("Whether the location has been visited."),
+      unlocked: z.boolean().optional().describe("Whether hidden secrets are discovered."),
+    }),
+    // Remove action - id is required
+    z.object({
+      action: z.literal("remove"),
+      id: z.string().describe("Location ID (format: loc:N, e.g., 'loc:1'). Required."),
+    }),
+  ]),
 };
 
-export const UPDATE_QUEST_TOOL = {
+export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
   name: "update_quest",
   description: "Add, update, complete, fail, or remove quests.",
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "complete", "fail", "remove"],
-        description: "The action to perform on the quest.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Quest ID (format: quest:N, e.g., 'quest:1'). Required for 'update', 'complete', 'fail', 'remove' actions.",
-      },
-      title: {
-        type: "string",
-        description: "Quest title. Required for 'add' action.",
-      },
-      type: {
-        type: "string",
-        enum: ["main", "side", "hidden"],
-        description: "Quest type.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          description: {
-            type: "string",
-            description: "The apparent objective.",
-          },
-          objectives: {
-            type: "array",
-            items: { type: "string" },
-            description: "Visible objectives.",
-          },
-        },
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          trueDescription: {
-            type: "string",
-            description: "The hidden truth or real purpose.",
-          },
-          trueObjectives: {
-            type: "array",
-            items: { type: "string" },
-            description: "True objectives.",
-          },
-          secretOutcome: { type: "string", description: "Secret outcome." },
-        },
-      },
-      unlocked: {
-        type: "boolean",
-        description: "Whether true objectives are revealed.",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Quest ID (format: quest:N). Optional for 'add' - will be auto-generated."
+      ),
+      title: z.string().describe("Quest title. Required for 'add' action."),
+      type: questTypeSchema.optional().describe("Quest type."),
+      visible: questVisibleSchema.partial().optional(),
+      hidden: questHiddenSchema.partial().optional(),
+      unlocked: z.boolean().optional().describe("Whether true objectives are revealed."),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Quest ID (format: quest:N, e.g., 'quest:1'). Required."),
+      title: z.string().optional().describe("Updated quest title."),
+      type: questTypeSchema.optional().describe("Quest type."),
+      visible: questVisibleSchema.partial().optional(),
+      hidden: questHiddenSchema.partial().optional(),
+      unlocked: z.boolean().optional().describe("Whether true objectives are revealed."),
+    }),
+    // Complete action - id is required
+    z.object({
+      action: z.literal("complete"),
+      id: z.string().describe("Quest ID (format: quest:N, e.g., 'quest:1'). Required."),
+    }),
+    // Fail action - id is required
+    z.object({
+      action: z.literal("fail"),
+      id: z.string().describe("Quest ID (format: quest:N, e.g., 'quest:1'). Required."),
+    }),
+    // Remove action - id is required
+    z.object({
+      action: z.literal("remove"),
+      id: z.string().describe("Quest ID (format: quest:N, e.g., 'quest:1'). Required."),
+    }),
+  ]),
 };
 
-export const UPDATE_KNOWLEDGE_TOOL = {
+export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
   name: "update_knowledge",
   description:
     "Add or update knowledge entries. Knowledge can only be added or updated, never removed.",
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update"],
-        description: "The action to perform.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Knowledge ID (format: know:N, e.g., 'know:1'). Required for 'update' action.",
-      },
-      title: {
-        type: "string",
-        description: "Title of the knowledge entry. Required for 'add' action.",
-      },
-      category: {
-        type: "string",
-        enum: [
-          "landscape",
-          "history",
-          "item",
-          "legend",
-          "faction",
-          "culture",
-          "magic",
-          "technology",
-          "other",
-        ],
-        description: "Category of knowledge.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          description: {
-            type: "string",
-            description: "What is commonly known.",
-          },
-          details: { type: "string", description: "Additional details." },
-        },
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          fullTruth: { type: "string", description: "The complete truth." },
-          misconceptions: {
-            type: "array",
-            items: { type: "string" },
-            description: "Common misconceptions.",
-          },
-          toBeRevealed: {
-            type: "array",
-            items: { type: "string" },
-            description: "Info to be revealed later.",
-          },
-        },
-      },
-      discoveredAt: {
-        type: "string",
-        description: "When this knowledge was discovered.",
-      },
-      relatedTo: {
-        type: "array",
-        items: { type: "string" },
-        description: "Related entity IDs.",
-      },
-      unlocked: {
-        type: "boolean",
-        description: "Whether full truth is revealed.",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Knowledge ID (format: know:N). Optional for 'add' - will be auto-generated."
+      ),
+      title: z.string().describe("Title of the knowledge entry. Required for 'add' action."),
+      category: knowledgeCategorySchema.optional().describe("Category of knowledge."),
+      visible: knowledgeVisibleSchema.partial().optional(),
+      hidden: knowledgeHiddenSchema.partial().optional(),
+      discoveredAt: z.string().optional().describe("When this knowledge was discovered."),
+      relatedTo: z.array(z.string()).optional().describe("Related entity IDs."),
+      unlocked: z.boolean().optional().describe("Whether full truth is revealed."),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Knowledge ID (format: know:N, e.g., 'know:1'). Required."),
+      title: z.string().optional().describe("Updated title."),
+      category: knowledgeCategorySchema.optional().describe("Category of knowledge."),
+      visible: knowledgeVisibleSchema.partial().optional(),
+      hidden: knowledgeHiddenSchema.partial().optional(),
+      discoveredAt: z.string().optional().describe("When this knowledge was discovered."),
+      relatedTo: z.array(z.string()).optional().describe("Related entity IDs."),
+      unlocked: z.boolean().optional().describe("Whether full truth is revealed."),
+    }),
+  ]),
 };
 
-export const UPDATE_TIMELINE_TOOL = {
+export const UPDATE_TIMELINE_TOOL: ZodToolDefinition = {
   name: "update_timeline",
   description:
     "Add or update timeline events (World Events, NPC Actions, Consequences).",
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update"],
-        description: "The action to perform.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Event ID (format: evt:N, e.g., 'evt:1'). Required for 'update' action.",
-      },
-      gameTime: {
-        type: "string",
-        description: "When the event happened in game time.",
-      },
-      category: {
-        type: "string",
-        enum: ["player_action", "npc_action", "world_event", "consequence"],
-        description: "Category of the event.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          description: {
-            type: "string",
-            description: "Public description of the event.",
-          },
-          causedBy: { type: "string", description: "Publicly known cause." },
-        },
-        required: ["description"],
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          trueDescription: {
-            type: "string",
-            description: "The true nature of the event.",
-          },
-          trueCausedBy: { type: "string", description: "The real cause." },
-          consequences: {
-            type: "array",
-            items: { type: "string" },
-            description: "Hidden consequences.",
-          },
-        },
-      },
-      involvedEntities: {
-        type: "array",
-        items: { type: "string" },
-        description: "IDs of involved entities.",
-      },
-      chainId: {
-        type: "string",
-        description: "Link to a CausalChain (format: chain:N).",
-      },
-      known: {
-        type: "boolean",
-        description: "Whether the player knows about this event.",
-      },
-      unlocked: {
-        type: "boolean",
-        description: "Whether true cause is revealed.",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Event ID (format: evt:N). Optional for 'add' - will be auto-generated."
+      ),
+      gameTime: z.string().optional().describe("When the event happened in game time."),
+      category: timelineEventCategorySchema.optional().describe("Category of the event."),
+      visible: timelineEventVisibleSchema.optional(),
+      hidden: timelineEventHiddenSchema.optional(),
+      involvedEntities: z.array(z.string()).optional().describe("IDs of involved entities."),
+      chainId: z.string().optional().describe("Link to a CausalChain (format: chain:N)."),
+      known: z.boolean().optional().describe("Whether the player knows about this event."),
+      unlocked: z.boolean().optional().describe("Whether true cause is revealed."),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Event ID (format: evt:N, e.g., 'evt:1'). Required."),
+      gameTime: z.string().optional().describe("When the event happened in game time."),
+      category: timelineEventCategorySchema.optional().describe("Category of the event."),
+      visible: timelineEventVisibleSchema.optional(),
+      hidden: timelineEventHiddenSchema.optional(),
+      involvedEntities: z.array(z.string()).optional().describe("IDs of involved entities."),
+      chainId: z.string().optional().describe("Link to a CausalChain (format: chain:N)."),
+      known: z.boolean().optional().describe("Whether the player knows about this event."),
+      unlocked: z.boolean().optional().describe("Whether true cause is revealed."),
+    }),
+  ]),
 };
 
-export const UPDATE_CAUSAL_CHAIN_TOOL = {
+export const UPDATE_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
   name: "update_causal_chain",
   description: `Create, update, resolve, or trigger causal chains.
 IMPORTANT: The AI (you) decides WHEN consequences occur based on story context.
@@ -722,191 +466,92 @@ IMPORTANT: The AI (you) decides WHEN consequences occur based on story context.
 - Use 'trigger' to make a pending consequence happen NOW (narrate it in your response)
 - Use 'resolve' when a chain's story arc is complete
 - Use 'interrupt' when circumstances prevent the chain from continuing`,
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "resolve", "interrupt", "trigger"],
-        description:
-          "The action. Use 'trigger' when YOU decide a pending consequence should happen NOW.",
-      },
-      chainId: {
-        type: "string",
-        description:
-          "Chain ID (format: chain:N, e.g., 'chain:1'). Required for all actions.",
-      },
-      rootCause: {
-        type: "object",
-        properties: {
-          eventId: {
-            type: "string",
-            description: "ID of the root cause event.",
-          },
-          description: {
-            type: "string",
-            description: "Description of the root cause.",
-          },
-        },
-        description: "Required for 'add' action.",
-      },
-      status: {
-        type: "string",
-        enum: ["active", "resolved", "interrupted"],
-        description: "Current status of the chain.",
-      },
-      pendingConsequences: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            id: {
-              type: "string",
-              description: "Unique ID for tracking (e.g., 'conseq:1').",
-            },
-            description: {
-              type: "string",
-              description: "What could happen if triggered.",
-            },
-            readyAfterTurn: {
-              type: "integer",
-              description:
-                "The consequence CAN'T trigger UNTIL after this turn number. Use current turn + delay.",
-            },
-            conditions: {
-              type: "array",
-              items: { type: "string" },
-              description:
-                "Narrative conditions you'll check when deciding to trigger.",
-            },
-            known: {
-              type: "boolean",
-              description:
-                "Will the player know when this happens? Default false for hidden consequences.",
-            },
-          },
-          required: ["id", "description", "readyAfterTurn"],
-        },
-        description:
-          "Future consequences. YOU decide when to trigger them based on story.",
-      },
-      triggerConsequenceId: {
-        type: "string",
-        description:
-          "For 'trigger' action: the ID of the pending consequence to trigger NOW. You MUST narrate this in your response.",
-      },
-    },
-    required: ["action", "chainId"],
-  },
+  parameters: z.object({
+    action: z.enum(["add", "update", "resolve", "interrupt", "trigger"]).describe(
+      "The action. Use 'trigger' when YOU decide a pending consequence should happen NOW."
+    ),
+    chainId: z.string().describe(
+      "Chain ID (format: chain:N, e.g., 'chain:1'). Required for all actions."
+    ),
+    rootCause: z.object({
+      eventId: z.string().describe("ID of the root cause event."),
+      description: z.string().describe("Description of the root cause."),
+    }).optional().describe("Required for 'add' action."),
+    status: causalChainStatusSchema.optional().describe("Current status of the chain."),
+    pendingConsequences: z.array(z.object({
+      id: z.string().describe("Unique ID for tracking (e.g., 'conseq:1')."),
+      description: z.string().describe("What could happen if triggered."),
+      readyAfterTurn: z.number().int().describe(
+        "The consequence CAN'T trigger UNTIL after this turn number. Use current turn + delay."
+      ),
+      conditions: z.array(z.string()).optional().describe(
+        "Narrative conditions you'll check when deciding to trigger."
+      ),
+      known: z.boolean().optional().describe(
+        "Will the player know when this happens? Default false for hidden consequences."
+      ),
+    })).optional().describe(
+      "Future consequences. YOU decide when to trigger them based on story."
+    ),
+    triggerConsequenceId: z.string().optional().describe(
+      "For 'trigger' action: the ID of the pending consequence to trigger NOW. You MUST narrate this in your response."
+    ),
+  }),
 };
 
-export const UPDATE_FACTION_TOOL = {
+export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
   name: "update_faction",
   description: "Add, update, or remove factions and power groups.",
-  parameters: {
-    type: "object",
-    properties: {
-      action: {
-        type: "string",
-        enum: ["add", "update", "remove"],
-        description: "The action to perform.",
-      },
-      id: {
-        type: "string",
-        description:
-          "Faction ID (format: fac:N, e.g., 'fac:1'). Required for 'update' and 'remove' actions.",
-      },
-      name: {
-        type: "string",
-        description: "Faction name. Required for 'add' action.",
-      },
-      visible: {
-        type: "object",
-        properties: {
-          agenda: { type: "string", description: "Public agenda/reputation." },
-          members: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Name of the member" },
-                title: {
-                  type: "string",
-                  description: "Optional title or role",
-                },
-              },
-              required: ["name"],
-            },
-            description: "Publicly known members. NOT relationship keys.",
-          },
-          influence: {
-            type: "string",
-            description: "Perceived influence description.",
-          },
-          relations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                target: { type: "string", description: "Target faction name" },
-                status: { type: "string", description: "Relationship status" },
-              },
-              required: ["target", "status"],
-            },
-            description: "Public alliances/rivalries.",
-          },
-        },
-        description: "Publicly known information.",
-      },
-      hidden: {
-        type: "object",
-        properties: {
-          agenda: { type: "string", description: "Secret agenda/corruption." },
-          members: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string", description: "Name of the member" },
-                title: {
-                  type: "string",
-                  description: "Optional title or role",
-                },
-              },
-              required: ["name"],
-            },
-            description: "Secret members/leaders. NOT relationship keys.",
-          },
-          influence: {
-            type: "string",
-            description: "True influence description.",
-          },
-          relations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                target: { type: "string", description: "Target faction name" },
-                status: { type: "string", description: "Relationship status" },
-              },
-              required: ["target", "status"],
-            },
-            description: "Secret alliances/rivalries.",
-          },
-        },
-        description: "Secret information (GM knowledge).",
-      },
-      unlocked: {
-        type: "boolean",
-        description:
-          "Set to true to reveal this faction's hidden agenda to the player. Only unlock when the player discovers the faction's secrets through story events (e.g., finding documents, overhearing conversations, betrayal reveal).",
-      },
-    },
-    required: ["action"],
-  },
+  parameters: z.discriminatedUnion("action", [
+    // Add action - id is optional
+    z.object({
+      action: z.literal("add"),
+      id: z.string().optional().describe(
+        "Faction ID (format: fac:N). Optional for 'add' - will be auto-generated."
+      ),
+      name: z.string().describe("Faction name. Required for 'add' action."),
+      visible: z.object({
+        agenda: z.string().optional().describe("Public agenda/reputation."),
+        members: z.array(factionMemberSchema).optional().describe("Publicly known members."),
+        influence: z.string().optional().describe("Perceived influence description."),
+        relations: z.array(factionRelationSchema).optional().describe("Public alliances/rivalries."),
+      }).optional().describe("Publicly known information."),
+      hidden: z.object({
+        agenda: z.string().optional().describe("Secret agenda/corruption."),
+        members: z.array(factionMemberSchema).optional().describe("Secret members/leaders."),
+        influence: z.string().optional().describe("True influence description."),
+        relations: z.array(factionRelationSchema).optional().describe("Secret alliances/rivalries."),
+      }).optional().describe("Secret information (GM knowledge)."),
+      unlocked: z.boolean().optional().describe("Whether hidden agenda is revealed."),
+    }),
+    // Update action - id is required
+    z.object({
+      action: z.literal("update"),
+      id: z.string().describe("Faction ID (format: fac:N, e.g., 'fac:1'). Required."),
+      name: z.string().optional().describe("Updated faction name."),
+      visible: z.object({
+        agenda: z.string().optional().describe("Public agenda/reputation."),
+        members: z.array(factionMemberSchema).optional().describe("Publicly known members."),
+        influence: z.string().optional().describe("Perceived influence description."),
+        relations: z.array(factionRelationSchema).optional().describe("Public alliances/rivalries."),
+      }).optional().describe("Publicly known information."),
+      hidden: z.object({
+        agenda: z.string().optional().describe("Secret agenda/corruption."),
+        members: z.array(factionMemberSchema).optional().describe("Secret members/leaders."),
+        influence: z.string().optional().describe("True influence description."),
+        relations: z.array(factionRelationSchema).optional().describe("Secret alliances/rivalries."),
+      }).optional().describe("Secret information (GM knowledge)."),
+      unlocked: z.boolean().optional().describe("Whether hidden agenda is revealed."),
+    }),
+    // Remove action - id is required
+    z.object({
+      action: z.literal("remove"),
+      id: z.string().describe("Faction ID (format: fac:N, e.g., 'fac:1'). Required."),
+    }),
+  ]),
 };
 
-export const UPDATE_WORLD_INFO_TOOL = {
+export const UPDATE_WORLD_INFO_TOOL: ZodToolDefinition = {
   name: "update_world_info",
   description: `Update world-level information visibility. Use this to reveal hidden world secrets, story outlines, and main plot twists to the player.
 IMPORTANT: Only unlock world info when the player achieves significant story milestones:
@@ -914,216 +559,93 @@ IMPORTANT: Only unlock world info when the player achieves significant story mil
 - Uncovers the main antagonist's true plan
 - Reaches a pivotal story moment
 - Achieves a quest that reveals world secrets`,
-  parameters: {
-    type: "object",
-    properties: {
-      unlockWorldSetting: {
-        type: "boolean",
-        description:
-          "Set to true to reveal the hidden world setting information (worldSetting.hidden) to the player.",
-      },
-      unlockMainGoal: {
-        type: "boolean",
-        description:
-          "Set to true to reveal the hidden main goal information (mainGoal.hidden) - the true nature of the story's main objective.",
-      },
-      reason: {
-        type: "string",
-        description:
-          "Brief explanation of WHY this information is being revealed (for logging).",
-      },
-    },
-    required: ["reason"],
-  },
+  parameters: z.object({
+    unlockWorldSetting: z.boolean().optional().describe(
+      "Set to true to reveal the hidden world setting information (worldSetting.hidden) to the player."
+    ),
+    unlockMainGoal: z.boolean().optional().describe(
+      "Set to true to reveal the hidden main goal information (mainGoal.hidden) - the true nature of the story's main objective."
+    ),
+    reason: z.string().describe(
+      "Brief explanation of WHY this information is being revealed (for logging)."
+    ),
+  }),
 };
 
-export const UPDATE_CHARACTER_TOOL = {
+export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
   name: "update_character",
   description:
     "Update character profile, attributes, skills, conditions, or hidden traits.",
-  parameters: {
-    type: "object",
-    properties: {
-      profile: {
-        type: "object",
-        properties: {
-          status: {
-            type: "string",
-            description: "Current condition (e.g., 'Healthy', 'Injured').",
-          },
-          appearance: {
-            type: "string",
-            description: "Physical appearance description.",
-          },
-          profession: {
-            type: "string",
-            description: "Character's profession/class.",
-          },
-          background: {
-            type: "string",
-            description: "Character's background story.",
-          },
-          race: { type: "string", description: "Character's race." },
-          title: { type: "string", description: "Character's title/role." },
-        },
-        description: "Updates to core profile fields.",
-      },
-      attributes: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            action: { type: "string", enum: ["add", "update", "remove"] },
-            name: {
-              type: "string",
-              description: "Attribute name (e.g., Health, Mana).",
-            },
-            value: { type: "integer", description: "New value." },
-            maxValue: { type: "integer", description: "Maximum value." },
-            color: {
-              type: "string",
-              enum: ["red", "blue", "green", "yellow", "purple", "gray"],
-            },
-          },
-          required: ["action", "name"],
-        },
-        description: "Changes to numeric attributes.",
-      },
-      skills: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            action: { type: "string", enum: ["add", "update", "remove"] },
-            id: { type: "string", description: "Skill ID (format: skill:N)." },
-            name: { type: "string", description: "Skill name." },
-            level: {
-              type: "string",
-              description: "Skill level (e.g., Novice, Master).",
-            },
-            visible: {
-              type: "object",
-              properties: {
-                description: { type: "string" },
-                knownEffects: { type: "array", items: { type: "string" } },
-              },
-            },
-            hidden: {
-              type: "object",
-              properties: {
-                trueDescription: { type: "string" },
-                hiddenEffects: { type: "array", items: { type: "string" } },
-                drawbacks: { type: "array", items: { type: "string" } },
-              },
-            },
-            category: { type: "string" },
-            unlocked: { type: "boolean" },
-          },
-          required: ["action", "name"],
-        },
-        description: "Changes to skills.",
-      },
-      conditions: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            action: { type: "string", enum: ["add", "update", "remove"] },
-            id: {
-              type: "string",
-              description: "Condition ID (format: cond:N).",
-            },
-            name: { type: "string", description: "Condition name." },
-            type: { type: "string", enum: ["buff", "debuff", "neutral"] },
-            visible: {
-              type: "object",
-              properties: {
-                description: { type: "string" },
-                perceivedSeverity: { type: "string" },
-              },
-            },
-            hidden: {
-              type: "object",
-              properties: {
-                trueCause: { type: "string" },
-                actualSeverity: { type: "integer" },
-                progression: { type: "string" },
-                cure: { type: "string" },
-              },
-            },
-            effects: {
-              type: "object",
-              properties: {
-                visible: { type: "array", items: { type: "string" } },
-                hidden: { type: "array", items: { type: "string" } },
-              },
-            },
-            duration: { type: "integer", description: "Duration in turns." },
-            unlocked: { type: "boolean" },
-          },
-          required: ["action", "name"],
-        },
-        description: "Changes to conditions (buffs/debuffs).",
-      },
-      hiddenTraits: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            action: { type: "string", enum: ["add", "update", "remove"] },
-            id: { type: "string", description: "Trait ID (format: trait:N)." },
-            name: { type: "string", description: "Trait name." },
-            description: { type: "string", description: "Trait description." },
-            effects: { type: "array", items: { type: "string" } },
-            triggerConditions: { type: "array", items: { type: "string" } },
-            unlocked: {
-              type: "boolean",
-              description: "Whether the trait is revealed.",
-            },
-          },
-          required: ["action", "name"],
-        },
-        description: "Changes to hidden personality traits.",
-      },
-    },
-  },
+  parameters: z.object({
+    profile: z.object({
+      status: z.string().optional().describe(
+        "Current condition (e.g., 'Healthy', 'Injured')."
+      ),
+      appearance: z.string().optional().describe("Physical appearance description."),
+      profession: z.string().optional().describe("Character's profession/class."),
+      background: z.string().optional().describe("Character's background story."),
+      race: z.string().optional().describe("Character's race."),
+      title: z.string().optional().describe("Character's title/role."),
+    }).optional().describe("Updates to core profile fields."),
+    attributes: z.array(z.object({
+      action: z.enum(["add", "update", "remove"]),
+      name: z.string().describe("Attribute name (e.g., Health, Mana)."),
+      value: z.number().int().optional().describe("New value."),
+      maxValue: z.number().int().optional().describe("Maximum value."),
+      color: attributeColorSchema.optional(),
+    })).optional().describe("Changes to numeric attributes."),
+    skills: z.array(z.object({
+      action: z.enum(["add", "update", "remove"]),
+      id: z.string().optional().describe("Skill ID (format: skill:N)."),
+      name: z.string().describe("Skill name."),
+      level: z.string().optional().describe("Skill level (e.g., Novice, Master)."),
+      visible: skillVisibleSchema.partial().optional(),
+      hidden: skillHiddenSchema.partial().optional(),
+      category: z.string().optional(),
+      unlocked: z.boolean().optional(),
+    })).optional().describe("Changes to skills."),
+    conditions: z.array(z.object({
+      action: z.enum(["add", "update", "remove"]),
+      id: z.string().optional().describe("Condition ID (format: cond:N)."),
+      name: z.string().describe("Condition name."),
+      type: conditionTypeSchema.optional(),
+      visible: conditionVisibleSchema.partial().optional(),
+      hidden: conditionHiddenSchema.partial().optional(),
+      effects: z.object({
+        visible: z.array(z.string()).optional(),
+        hidden: z.array(z.string()).optional(),
+      }).optional(),
+      duration: z.number().int().optional().describe("Duration in turns."),
+      unlocked: z.boolean().optional(),
+    })).optional().describe("Changes to conditions (buffs/debuffs)."),
+    hiddenTraits: z.array(z.object({
+      action: z.enum(["add", "update", "remove"]),
+      id: z.string().optional().describe("Trait ID (format: trait:N)."),
+      name: z.string().describe("Trait name."),
+      description: z.string().optional().describe("Trait description."),
+      effects: z.array(z.string()).optional(),
+      triggerConditions: z.array(z.string()).optional(),
+      unlocked: z.boolean().optional().describe("Whether the trait is revealed."),
+    })).optional().describe("Changes to hidden personality traits."),
+  }),
 };
 
-export const UPDATE_GLOBAL_TOOL = {
+export const UPDATE_GLOBAL_TOOL: ZodToolDefinition = {
   name: "update_global",
   description: "Update global game state properties like time and atmosphere.",
-  parameters: {
-    type: "object",
-    properties: {
-      time: { type: "string", description: "Update the in-game time." },
-      atmosphere: {
-        type: "string",
-        enum: [
-          "cave",
-          "city",
-          "combat",
-          "desert",
-          "dungeon",
-          "forest",
-          "horror",
-          "market",
-          "mystical",
-          "ocean",
-          "quiet",
-          "rain",
-          "scifi",
-          "snow",
-          "storm",
-          "tavern",
-        ],
-        description:
-          "Unified atmosphere controlling visual theme, effects, and audio ambience.",
-      },
-    },
-  },
+  parameters: z.object({
+    time: z.string().optional().describe("Update the in-game time."),
+    atmosphere: atmosphereSchema.optional().describe(
+      "Atmosphere settings with envTheme (visual) and ambience (audio)."
+    ),
+  }),
 };
 
-export const RAG_SEARCH_TOOL = {
+// ============================================================================
+// RAG and Control Tools - 使用 Zod Schema 定义参数
+// ============================================================================
+
+export const RAG_SEARCH_TOOL: ZodToolDefinition = {
   name: "rag_search",
   description: `Perform a semantic search across the game world to retrieve relevant context. Use this when you need to recall information that might be relevant to the current situation but is not immediately in context. This searches through:
 - Story history (past events and narratives)
@@ -1143,177 +665,104 @@ IMPORTANT: RAG may return results from:
 Use the filtering options to control search scope:
 - \`currentForkOnly\`: Only search within the current timeline branch (excludes other forks)
 - \`beforeCurrentTurn\`: Only search content from before the current turn (excludes "future" events)`,
-  parameters: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Natural language search query. Be specific about what you're looking for. Examples: 'NPCs who know about the ancient prophecy', 'locations with hidden magical artifacts', 'events involving the fallen kingdom'",
-      },
-      types: {
-        type: "array",
-        items: {
-          type: "string",
-          enum: [
-            "story",
-            "npc",
-            "location",
-            "item",
-            "knowledge",
-            "quest",
-            "event",
-          ],
-        },
-        description: "Optional: Filter results to specific entity types.",
-      },
-      topK: {
-        type: "number",
-        description: "Maximum number of results to return. Default is 5.",
-      },
-      currentForkOnly: {
-        type: "boolean",
-        description:
-          "If true, only return results from the current timeline branch and its ancestors. Excludes content from other fork branches. Default is false (searches all forks).",
-      },
-      beforeCurrentTurn: {
-        type: "boolean",
-        description:
-          "If true, only return results from before the current turn number. Useful to exclude 'future' content when player forked from a later point. Default is false.",
-      },
-    },
-    required: ["query"],
-  },
+  parameters: z.object({
+    query: z.string().describe(
+      "Natural language search query. Be specific about what you're looking for. Examples: 'NPCs who know about the ancient prophecy', 'locations with hidden magical artifacts', 'events involving the fallen kingdom'"
+    ),
+    types: z.array(z.enum([
+      "story",
+      "npc",
+      "location",
+      "item",
+      "knowledge",
+      "quest",
+      "event",
+    ])).optional().describe("Optional: Filter results to specific entity types."),
+    topK: z.number().optional().describe(
+      "Maximum number of results to return. Default is 5."
+    ),
+    currentForkOnly: z.boolean().optional().describe(
+      "If true, only return results from the current timeline branch and its ancestors. Excludes content from other fork branches. Default is false (searches all forks)."
+    ),
+    beforeCurrentTurn: z.boolean().optional().describe(
+      "If true, only return results from before the current turn number. Useful to exclude 'future' content when player forked from a later point. Default is false."
+    ),
+  }),
 };
 
-export const FINISH_TURN_TOOL = {
+export const FINISH_TURN_TOOL: ZodToolDefinition = {
   name: "finish_turn",
   description:
     "Finish the turn and generate the final narrative response. Call this ONLY when you have completed all necessary state queries and modifications.",
-  parameters: {
-    type: "object",
-    properties: {
-      narrative: {
-        type: "string",
-        description:
-          "The final story text to present to the player. Use the defined narrative style. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.",
-      },
-      choices: {
-        type: "array",
-        description: `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
+  parameters: z.object({
+    narrative: z.string().describe(
+      "The final story text to present to the player. Use the defined narrative style. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions."
+    ),
+    choices: z.array(z.string()).min(2).max(4).describe(
+      `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
 1. **Knowledge/Cognition**: Only offer choices based on what the character KNOWS. If the player hasn't discovered a secret location, don't offer "Go to the hidden vault".
 2. **Personality/Background**: Choices should reflect the character's personality. A shy scholar might not have "Loudly challenge the guard" as an option.
 3. **Current Conditions**: If the character is injured, exhausted, or under a debuff, choices should reflect limitations. Don't offer "Sprint across the rooftops" if legs are broken.
 4. **Skills & Abilities**: Offer choices that utilize the character's skills. A mage should have magic-based options; a warrior should have combat options.
 5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types (e.g., "Use your latent psychic powers").
-DO NOT include meta-knowledge that only the player (not the character) would know.`,
-        items: { type: "string" },
-      },
-      imagePrompt: {
-        type: "string",
-        description:
-          "Optional prompt for generating an image of the current scene.",
-      },
-      generateImage: {
-        type: "boolean",
-        description: "Whether to generate an image for this turn.",
-      },
-      atmosphere: {
-        type: "string",
-        enum: [
-          "cave",
-          "city",
-          "combat",
-          "desert",
-          "dungeon",
-          "forest",
-          "horror",
-          "market",
-          "mystical",
-          "ocean",
-          "quiet",
-          "rain",
-          "scifi",
-          "snow",
-          "storm",
-          "tavern",
-        ],
-        description:
-          "Unified atmosphere controlling visual theme, effects, and audio ambience for this scene.",
-      },
-      narrativeTone: {
-        type: "string",
-        description:
-          "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
-      },
-      aliveEntities: {
-        type: "object",
-        description:
-          "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately.",
-        properties: {
-          inventory: {
-            type: "array",
-            items: { type: "string" },
-            description: "Item IDs (inv:N) relevant for next turn.",
-          },
-          relationships: {
-            type: "array",
-            items: { type: "string" },
-            description: "NPC IDs (npc:N) relevant for next turn.",
-          },
-          locations: {
-            type: "array",
-            items: { type: "string" },
-            description: "Location IDs (loc:N) relevant for next turn.",
-          },
-          quests: {
-            type: "array",
-            items: { type: "string" },
-            description: "Quest IDs (quest:N) relevant for next turn.",
-          },
-          knowledge: {
-            type: "array",
-            items: { type: "string" },
-            description: "Knowledge IDs (know:N) relevant for next turn.",
-          },
-          timeline: {
-            type: "array",
-            items: { type: "string" },
-            description: "Event IDs (evt:N) relevant for next turn.",
-          },
-          skills: {
-            type: "array",
-            items: { type: "string" },
-            description: "Character skill IDs relevant for next turn.",
-          },
-          conditions: {
-            type: "array",
-            items: { type: "string" },
-            description: "Character condition IDs relevant for next turn.",
-          },
-          hiddenTraits: {
-            type: "array",
-            items: { type: "string" },
-            description: "Character hidden trait IDs relevant for next turn.",
-          },
-          causalChains: {
-            type: "array",
-            items: { type: "string" },
-            description:
-              "CausalChain chainIds with pending consequences that may trigger soon.",
-          },
-        },
-      },
-      ending: {
-        type: "string",
-        enum: [
-          "death",
-          "victory",
-          "true_ending",
-          "bad_ending",
-          "neutral_ending",
-        ],
-        description: `ONLY set if the story reaches a definitive endpoint this turn:
+DO NOT include meta-knowledge that only the player (not the character) would know.`
+    ),
+    imagePrompt: z.string().optional().describe(
+      "Optional prompt for generating an image of the current scene."
+    ),
+    generateImage: z.boolean().optional().describe(
+      "Whether to generate an image for this turn."
+    ),
+    atmosphere: atmosphereSchema.optional().describe(
+      "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene."
+    ),
+    narrativeTone: z.string().optional().describe(
+      "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy')."
+    ),
+    aliveEntities: z.object({
+      inventory: z.array(z.string()).optional().describe(
+        "Item IDs (inv:N) relevant for next turn."
+      ),
+      relationships: z.array(z.string()).optional().describe(
+        "NPC IDs (npc:N) relevant for next turn."
+      ),
+      locations: z.array(z.string()).optional().describe(
+        "Location IDs (loc:N) relevant for next turn."
+      ),
+      quests: z.array(z.string()).optional().describe(
+        "Quest IDs (quest:N) relevant for next turn."
+      ),
+      knowledge: z.array(z.string()).optional().describe(
+        "Knowledge IDs (know:N) relevant for next turn."
+      ),
+      timeline: z.array(z.string()).optional().describe(
+        "Event IDs (evt:N) relevant for next turn."
+      ),
+      skills: z.array(z.string()).optional().describe(
+        "Character skill IDs relevant for next turn."
+      ),
+      conditions: z.array(z.string()).optional().describe(
+        "Character condition IDs relevant for next turn."
+      ),
+      hiddenTraits: z.array(z.string()).optional().describe(
+        "Character hidden trait IDs relevant for next turn."
+      ),
+      causalChains: z.array(z.string()).optional().describe(
+        "CausalChain chainIds with pending consequences that may trigger soon."
+      ),
+    }).optional().describe(
+      "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately."
+    ),
+    ending: z.enum([
+      "continue",
+      "death",
+      "victory",
+      "true_ending",
+      "bad_ending",
+      "neutral_ending",
+    ]).describe(
+      `Story continuation status. MUST be set every turn:
+- "continue": Story continues normally (USE THIS IN MOST CASES)
 - "death": Player character dies or suffers irreversible fatal consequence
 - "victory": Main quest goal achieved, story concludes positively
 - "true_ending": Secret/best ending discovered (e.g., hidden path, full truth revealed)
@@ -1321,17 +770,16 @@ DO NOT include meta-knowledge that only the player (not the character) would kno
 - "neutral_ending": Story concludes without clear win/loss
 
 ⚠️ CRITICAL RULES - READ CAREFULLY:
-1. NEVER set 'ending' in the first 5 turns of a game. The story needs time to develop.
-2. 'death' should ONLY occur after the player makes MULTIPLE clearly dangerous choices, not from a single action.
-3. Even fatal situations should give the player a chance to escape or be rescued first.
-4. Injuries, defeats, and setbacks are NOT death - they are story progression.
-5. If unsure, DO NOT set ending. Let the story continue.
+1. DEFAULT TO "continue" - Use this for 99% of turns.
+2. NEVER use endings other than "continue" in the first 5 turns of a game.
+3. 'death' should ONLY occur after the player makes MULTIPLE clearly dangerous choices.
+4. Even fatal situations should give the player a chance to escape or be rescued first.
+5. Injuries, defeats, and setbacks are NOT endings - they are story progression, use "continue".
 
-IMPORTANT: Only set this if the narrative EXPLICITLY ends the story. Do NOT set for cliffhangers, temporary setbacks, or near-death experiences. If the player can still continue, do NOT set ending.`,
-      },
-      forceEnd: {
-        type: "boolean",
-        description: `Only relevant when 'ending' is set. Determines if the game ends permanently:
+IMPORTANT: Only use non-continue endings when the narrative EXPLICITLY ends the story.`
+    ),
+    forceEnd: z.boolean().optional().describe(
+      `Only relevant when 'ending' is set. Determines if the game ends permanently:
 - true: Game is OVER. Player cannot continue from this point. Use for death, true_ending, or definitive story conclusions.
 - false/omit: Player can choose to continue despite the ending (e.g., victory but story can continue with aftermath).
 
@@ -1343,35 +791,31 @@ Typical usage:
 - victory → forceEnd: false (player might want to explore aftermath)
 - true_ending → forceEnd: true (canonical ending reached)
 - bad_ending → forceEnd: true or false depending on severity
-- neutral_ending → forceEnd: false (open-ended)`,
-      },
-      ragQueries: {
-        type: "array",
-        items: { type: "string" },
-        description: `Semantic search queries to pre-fetch relevant context for the NEXT turn. Use this to prepare important information that might be needed based on the narrative direction. Examples:
+- neutral_ending → forceEnd: false (open-ended)`
+    ),
+    ragQueries: z.array(z.string()).optional().describe(
+      `Semantic search queries to pre-fetch relevant context for the NEXT turn. Use this to prepare important information that might be needed based on the narrative direction. Examples:
 - After mentioning a mysterious artifact: ["ancient artifacts with hidden powers", "cursed items in the kingdom"]
 - Before entering a dungeon: ["dungeon traps and hazards", "creatures that live in underground caves"]
 - When an NPC mentions their past: ["NPC's history and secrets", "related events from timeline"]
 These queries will be used for semantic search to retrieve relevant world knowledge.
 
-NOTE: RAG results may include content from other timeline forks or "future" events (if player forked from a later point). Use ragCurrentForkOnly and ragBeforeCurrentTurn to filter if needed.`,
-      },
-      ragCurrentForkOnly: {
-        type: "boolean",
-        description:
-          "If true, next turn's RAG queries will only search within the current timeline branch. Default is false.",
-      },
-      ragBeforeCurrentTurn: {
-        type: "boolean",
-        description:
-          "If true, next turn's RAG queries will only search content from before the current turn. Default is false.",
-      },
-    },
-    required: ["narrative", "choices"],
-  },
+NOTE: RAG results may include content from other timeline forks or "future" events (if player forked from a later point). Use ragCurrentForkOnly and ragBeforeCurrentTurn to filter if needed.`
+    ),
+    ragCurrentForkOnly: z.boolean().optional().describe(
+      "If true, next turn's RAG queries will only search within the current timeline branch. Default is false."
+    ),
+    ragBeforeCurrentTurn: z.boolean().optional().describe(
+      "If true, next turn's RAG queries will only search content from before the current turn. Default is false."
+    ),
+  }),
 };
 
-export const TOOLS = [
+// ============================================================================
+// 工具列表导出
+// ============================================================================
+
+export const TOOLS: ZodToolDefinition[] = [
   // Query Tools
   QUERY_INVENTORY_TOOL,
   QUERY_RELATIONSHIPS_TOOL,

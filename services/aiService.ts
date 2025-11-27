@@ -82,7 +82,7 @@ import {
   gameResponseSchema,
   translationSchema,
   storyOutlineSchema,
-  summarySchema,
+  storySummarySchema,
 } from "./schemas";
 
 import { getEnvApiKey } from "../utils/env";
@@ -98,7 +98,6 @@ import {
   getVeoScriptPrompt,
   getGodModePrompt,
 } from "./prompts";
-import { convertJsonSchemaToOpenAI } from "./schemaUtils";
 import { TOOLS } from "./tools";
 import {
   UnifiedMessage,
@@ -626,7 +625,7 @@ export const summarizeContext = async (
       modelId,
       sys,
       contents,
-      summarySchema,
+      storySummarySchema,
     );
     return { summary: result as StorySummary, log: log! };
   } catch (e) {
@@ -1131,7 +1130,7 @@ const runAgenticLoop = async (
 
           // Extract atmosphere (unified system)
           if (args.atmosphere) {
-            accumulatedResponse.atmosphere = args.atmosphere as string;
+            accumulatedResponse.atmosphere = args.atmosphere as GameResponse["atmosphere"];
           }
           if (args.narrativeTone) {
             accumulatedResponse.narrativeTone = args.narrativeTone as string;
@@ -1148,14 +1147,14 @@ const runAgenticLoop = async (
             accumulatedResponse.ragQueries = args.ragQueries as string[];
           }
 
-          // Extract ending type if story has concluded
-          if (args.ending) {
+          // Extract ending type - "continue" means no ending, story continues
+          if (args.ending && args.ending !== "continue") {
             accumulatedResponse.ending = args.ending as GameResponse["ending"];
           }
 
-          // Extract forceEnd flag
-          if (args.forceEnd !== undefined) {
-            accumulatedResponse.forceEnd = args.forceEnd as boolean;
+          // Extract forceEnd flag (handle null from OpenAI strict schema)
+          if (args.forceEnd === true || args.forceEnd === false) {
+            accumulatedResponse.forceEnd = args.forceEnd;
           }
 
           // Attach the FINAL STATE from the DB

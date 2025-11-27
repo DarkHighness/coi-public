@@ -26,7 +26,8 @@ import {
 } from "../utils/snapshotManager";
 import {
   getThemeKeyForAtmosphere,
-  Atmosphere,
+  type AtmosphereObject,
+  normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
 import {
   resetEmbeddingManager,
@@ -155,9 +156,7 @@ export const useGameEngine = () => {
   useEffect(() => {
     const root = document.documentElement;
     const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
-    const envThemeKey = getThemeKeyForAtmosphere(
-      gameState.atmosphere as Atmosphere,
-    );
+    const envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere);
     const themeConfig = ENV_THEMES[envThemeKey] || ENV_THEMES.fantasy;
 
     // Determine active mode
@@ -344,6 +343,7 @@ export const useGameEngine = () => {
               usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
               summaries: baseSummaries,
               summarizedIndex: baseIndex,
+              ending: "continue",
             },
           },
           activeNodeId: userNodeId,
@@ -371,6 +371,7 @@ export const useGameEngine = () => {
         timestamp: Date.now(),
         summaries: baseSummaries,
         summarizedIndex: baseIndex,
+        ending: "continue",
       };
 
       if (!isInit) contextNodes.push(tempUserNode);
@@ -551,9 +552,9 @@ export const useGameEngine = () => {
       }
 
       // Resolve atmosphere from response (environment from finish_turn is actually atmosphere)
-      const responseAtmosphere = (response.atmosphere ||
-        gameStateRef.current.atmosphere ||
-        "quiet") as Atmosphere;
+      const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
+        response.atmosphere || gameStateRef.current.atmosphere
+      );
 
       const modelNode: StorySegment = {
         id: modelNodeId,
@@ -570,7 +571,7 @@ export const useGameEngine = () => {
         atmosphere: responseAtmosphere, // Unified atmosphere
         narrativeTone: response.narrativeTone,
         imageSkipped: !response.generateImage,
-        ending: response.ending || null, // Game ending type if story concludes
+        ending: response.ending || "continue", // Game ending type, default to continue
         forceEnd: response.forceEnd, // Whether game ends permanently
         stateSnapshot: createStateSnapshot(
           finalState, // Use finalState for snapshot
@@ -821,8 +822,6 @@ export const useGameEngine = () => {
 
       console.log("[StartNewGame] Outline generated", outline);
 
-      debugger;
-
       setGameState((prev) => ({
         ...prev,
         outline,
@@ -899,7 +898,7 @@ export const useGameEngine = () => {
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
-        atmosphere: outline.initialAtmosphere || "quiet", // Initial atmosphere
+        atmosphere: normalizeAtmosphere(outline.initialAtmosphere), // Initial atmosphere
         time: outline.initialTime || "Day 1",
       }));
 

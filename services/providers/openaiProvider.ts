@@ -32,7 +32,6 @@ import {
   EmbeddingModelInfo,
   EmbeddingResponse,
   ToolCallResult,
-  JsonSchema,
   UnifiedMessage,
   TextContentPart,
   ToolCallContentPart,
@@ -43,9 +42,10 @@ import {
   MalformedToolCallError,
 } from "./types";
 import {
-  convertJsonSchemaToOpenAI,
-  convertJsonSchemaToOpenAIObject,
-} from "../schemaUtils";
+  zodToOpenAIResponseFormat,
+  zodToOpenAISchema,
+} from "../zodCompiler";
+import type { ZodTypeAny } from "zod";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -263,7 +263,7 @@ export async function generateContent(
   model: string,
   systemInstruction: string,
   contents: UnifiedMessage[],
-  schema?: JsonSchema,
+  schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<OpenAIContentGenerationResponse> {
   const client = createOpenAIClient(config);
@@ -287,7 +287,7 @@ export async function generateContent(
     tool_choice: tools ? "auto" : undefined,
 
     response_format: schema
-      ? convertJsonSchemaToOpenAI(schema)
+      ? zodToOpenAIResponseFormat(schema)
       : { type: "json_object" },
   };
 
@@ -529,7 +529,7 @@ function convertToOpenAITools(
     function: {
       name: tool.name,
       description: tool.description,
-      parameters: convertJsonSchemaToOpenAIObject(tool.parameters),
+      parameters: zodToOpenAISchema(tool.parameters),
     },
   }));
 }

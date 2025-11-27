@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { isDevelopment } from "../../utils/env";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -13,6 +14,12 @@ interface ErrorBoundaryProps {
   showRetry?: boolean;
   /** Whether to propagate the error to parent boundaries */
   propagate?: boolean;
+  /**
+   * Whether to disable error boundary in development mode.
+   * When true (default), errors will be thrown normally in dev mode
+   * so they appear in the browser's DevTools.
+   */
+  disableInDev?: boolean;
 }
 
 interface ErrorBoundaryState {
@@ -25,6 +32,9 @@ interface ErrorBoundaryState {
  * Error Boundary component for catching and handling React errors.
  * Can be used at various levels of the component tree to provide
  * graceful degradation and user-friendly error messages.
+ *
+ * In development mode (when disableInDev is true, which is the default),
+ * errors are re-thrown so they appear in the browser's DevTools for easier debugging.
  */
 class ErrorBoundaryClass extends Component<
   ErrorBoundaryProps,
@@ -40,7 +50,7 @@ class ErrorBoundaryClass extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    const { name, onError, propagate } = this.props;
+    const { name, onError, propagate, disableInDev = true } = this.props;
 
     console.error(
       `[ErrorBoundary${name ? `:${name}` : ""}] Caught error:`,
@@ -52,6 +62,16 @@ class ErrorBoundaryClass extends Component<
 
     if (onError) {
       onError(error, errorInfo);
+    }
+
+    // In development mode, re-throw so errors appear in DevTools
+    // This makes debugging much easier as you can see the actual error location
+    if (disableInDev && isDevelopment()) {
+      // Reset state first, then throw
+      setTimeout(() => {
+        throw error;
+      }, 0);
+      return;
     }
 
     // If propagate is true, re-throw to parent boundary
@@ -66,7 +86,21 @@ class ErrorBoundaryClass extends Component<
 
   render(): ReactNode {
     const { hasError, error } = this.state;
-    const { children, fallback, showRetry = true, name } = this.props;
+    const { children, fallback, showRetry = true, name, disableInDev = true } = this.props;
+
+    // In development mode with disableInDev, just render children and let errors propagate
+    if (disableInDev && isDevelopment() && hasError) {
+      // Still show the error UI briefly, but the error will be re-thrown
+      // Reset state after a short delay to allow retry
+      return (
+        <ErrorFallbackUI
+          error={error}
+          onRetry={this.handleRetry}
+          boundaryName={name}
+          isDev={true}
+        />
+      );
+    }
 
     if (hasError) {
       if (fallback) {
@@ -93,44 +127,55 @@ interface ErrorFallbackUIProps {
   error: Error | null;
   onRetry?: () => void;
   boundaryName?: string;
+  /** Whether we're in development mode (shows additional debug info) */
+  isDev?: boolean;
 }
 
 function ErrorFallbackUI({
   error,
   onRetry,
   boundaryName,
+  isDev = false,
 }: ErrorFallbackUIProps): React.ReactElement {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 min-h-[200px] bg-red-900/10 border border-red-500/30 rounded-lg m-2">
+    <div className="flex flex-col items-center justify-center p-6 min-h-[200px] bg-theme-error border border-theme-error rounded-lg m-2 z-1000">
       <div className="text-3xl mb-4">⚠️</div>
-      <h3 className="text-lg font-semibold text-red-400 mb-2">
+      <h3 className="text-lg font-semibold text-white mb-2">
         {t("errorPanel.componentError", { defaultValue: "Something went wrong" })}
       </h3>
-      <p className="text-sm text-theme-muted text-center mb-4 max-w-md">
-        {t("errorPanel.componentDescription", {
-          defaultValue:
-            "This section encountered an errorPanel. You can try again or continue using other parts of the app.",
-        })}
+      <p className="text-sm text-white text-center mb-4 max-w-md">
+        {isDev
+          ? "Error caught in development mode. Check the browser console for the full stack trace."
+          : t("errorPanel.componentDescription", {
+              defaultValue:
+                "This section encountered an errorPanel. You can try again or continue using other parts of the app.",
+            })
+        }
       </p>
       {error && (
-        <div className="bg-black/30 p-3 rounded text-left overflow-auto max-h-24 w-full max-w-md mb-4">
-          <p className="text-xs text-red-400 font-mono break-all">
+        <div className="p-3 rounded text-left overflow-auto max-h-24 w-full max-w-md mb-4 border-theme-danger border bg-black/5">
+          <p className="text-xs text-white font-mono break-all">
             {error.message || "Unknown error"}
           </p>
         </div>
       )}
+      {isDev && (
+        <p className="text-xs text-yellow-300 mb-2">
+          💡 Dev Mode: Error will be re-thrown to DevTools
+        </p>
+      )}
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-4 py-2 bg-theme-primary/20 hover:bg-theme-primary/30 text-theme-primary border border-theme-primary/30 rounded transition-colors text-sm"
+          className="px-4 py-2 bg-red-500/60 hover:bg-red-600/70 text-white border border-red-600/60 rounded transition-colors text-sm"
         >
           {t("errorPanel.retry", { defaultValue: "Try Again" })}
         </button>
       )}
       {boundaryName && (
-        <p className="text-xs text-theme-muted/50 mt-2">
+        <p className="text-xs text-white mt-2">
           Component: {boundaryName}
         </p>
       )}

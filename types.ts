@@ -1,3 +1,5 @@
+import type { AtmosphereObject } from "./utils/constants/atmosphere";
+
 /**
  * ============================================================================
  * FIELD RESPONSIBILITY GUIDE
@@ -99,7 +101,7 @@ export interface GameState {
   generatingNodeId: string | null; // Track specifically which node is generating an image
   error: string | null;
   // Unified Atmosphere (controls visual theme, effects, and audio)
-  atmosphere: string; // The current atmosphere (e.g. "forest", "horror", "city")
+  atmosphere: AtmosphereObject; // The current atmosphere { envTheme, ambience }
   theme: string; // Static game genre (e.g. "Cyberpunk", "Wuxia")
   time: string; // In-game time tracking
 
@@ -336,7 +338,7 @@ export interface StoryOutline {
   knowledge?: Omit<KnowledgeEntry, "id">[]; // Initial knowledge
   timeline?: TimelineEvent[]; // Initial timeline events (Backstory)
   // Unified Atmosphere for initial state
-  initialAtmosphere: string; // Initial atmosphere (e.g. "forest", "horror", "city")
+  initialAtmosphere: AtmosphereObject; // Initial atmosphere { envTheme, ambience }
   // Unlocked flags - set by AI when player discovers hidden info
   worldSettingUnlocked?: boolean; // True when worldSetting.hidden is revealed
   mainGoalUnlocked?: boolean; // True when mainGoal.hidden is revealed
@@ -490,25 +492,25 @@ export interface StorySegment {
   summarizedIndex?: number; // The index in the history chain where the summary ends
 
   // Unified Atmosphere System (controls visual theme, effects, and audio)
-  atmosphere?: string; // The unified atmosphere (e.g. "forest", "horror", "city")
+  atmosphere?: AtmosphereObject; // The unified atmosphere { envTheme, ambience }
 
   narrativeTone?: string; // The tone of the narrative (e.g. "suspenseful", "cheerful")
   imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
   stateSnapshot?: GameStateSnapshot; // Snapshot of the game state at this point
 
   // Game Ending
-  ending?: EndingType; // If this node is an ending, what type of ending is it?
+  ending: EndingType; // Story continuation status - "continue" means story continues normally
   forceEnd?: boolean; // If true, game ends permanently (no continue); if false/undefined, player can continue
 }
 
 // Game Ending Types
 export type EndingType =
+  | "continue" // Story continues normally (default)
   | "death" // Player death / Game Over
   | "victory" // Main goal achieved
   | "true_ending" // Secret/True ending discovered
   | "bad_ending" // Bad outcome but not death
-  | "neutral_ending" // Story concluded without clear win/loss
-  | null;
+  | "neutral_ending"; // Story concluded without clear win/loss
 
 export interface GameStateSnapshot {
   // Entity State (Dual-layer)
@@ -547,7 +549,7 @@ export interface GameStateSnapshot {
 
   // UI & Meta
   uiState: UIState;
-  atmosphere: string; // Unified atmosphere identifier
+  atmosphere: AtmosphereObject; // Unified atmosphere { envTheme, ambience }
   veoScript?: string;
 
   // Context Priority System
@@ -820,7 +822,7 @@ export interface GameResponse {
   knowledgeActions?: KnowledgeAction[]; // Player's accumulated knowledge
   imagePrompt?: string;
   // Unified Atmosphere System
-  atmosphere?: string; // The unified atmosphere for this segment (e.g. "forest", "horror", "city")
+  atmosphere?: AtmosphereObject; // The unified atmosphere { envTheme, ambience }
   narrativeTone?: string; // The tone of the narrative
   generateImage?: boolean;
   timeUpdate?: string; // The new time string
@@ -859,7 +861,7 @@ export interface GameResponse {
   aliveEntities?: AliveEntities;
   // RAG Queries: semantic search queries for next turn context
   ragQueries?: string[];
-  // Game Ending: if this response concludes the game
+  // Game Ending: story continuation status
   ending?: EndingType;
   // Force End: if true, game ends permanently (no continue option)
   forceEnd?: boolean;
@@ -935,7 +937,7 @@ export interface ThemeConfig {
 
 export interface StoryThemeConfig {
   envTheme: string; // The visual theme key (ENV_THEMES key, e.g. "fantasy", "horror")
-  defaultAtmosphere: string; // The default atmosphere (ATMOSPHERES value, e.g. "forest", "cave")
+  defaultAtmosphere: AtmosphereObject; // The default atmosphere { envTheme, ambience }
   icon?: string;
   categories?: string[];
   restricted?: boolean;
@@ -1098,8 +1100,9 @@ export interface ModelInfo {
 export type FeedLayout = "scroll" | "stack";
 
 export interface ImageGenerationContext {
-  theme: string;
-  worldSetting?: string; // Added worldSetting
+  theme: string; // 故事主题（来自 GameState.theme）- 主要用于匹配视觉风格
+  worldSetting?: string; // 世界设定描述
+  storyTitle?: string; // 故事标题 - 备用，用于匹配特定 IP 的艺术风格
   time?: string;
   location?: {
     name: string;

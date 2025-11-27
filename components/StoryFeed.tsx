@@ -18,6 +18,7 @@ interface StoryFeedProps {
   onFork?: (id: string) => void;
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
+  /** Current playing ambience key (from audio system) */
   currentAmbience?: string;
   onToggleMute?: () => void;
   onViewedSegmentChange?: (segment: StorySegment) => void;
@@ -205,8 +206,8 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
         setLayout={setLayout}
         activeIndex={activeIndex}
         totalSegments={currentHistory.length}
-        environment={currentHistory[activeIndex]?.atmosphere}
-        ambience={currentAmbience}
+        atmosphere={currentHistory[activeIndex]?.atmosphere}
+        currentAmbience={currentAmbience}
         theme={gameState.theme}
         isMuted={aiSettings?.audioVolume?.bgmMuted}
         onToggleMute={onToggleMute}

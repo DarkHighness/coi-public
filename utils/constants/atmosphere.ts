@@ -2,24 +2,20 @@
  * Unified Environment System
  *
  * This system unifies the concept of "atmosphere" across:
- * 1. Visual Theme (UI colors, fonts) - previously envTheme
- * 2. Environmental Effects (rain, snow, fog, etc.)
- * 3. Audio Ambience (background sounds)
+ * 1. Visual Theme (UI colors, fonts) - envTheme field
+ * 2. Audio Ambience (background sounds) - ambience field
+ * 3. Environmental Effects (rain, snow, fog, etc.) - derived from ambience
  *
- * Each StorySegment has a single `atmosphere` field that controls all three.
- *
- * MIGRATION STRATEGY:
- * - Old saves may have `envTheme` and `environment` separately
- * - New saves use unified `atmosphere` field
- * - When atmosphere is present, it takes precedence
- * - When not present, we derive from environment (audio) or envTheme (visual)
+ * Each StorySegment has an `atmosphere` object with:
+ * - envTheme: Visual theme key (e.g., "fantasy", "cyberpunk", "horror")
+ * - ambience: Audio/environment key (e.g., "forest", "city", "combat")
  */
 
 import { ENV_THEMES } from "./envThemes";
 import type { ThemeConfig } from "../../types";
 
-// All available atmosphere types (matches audio folder names)
-export const ATMOSPHERES = [
+// All available ambience types (matches audio folder names)
+export const AMBIENCES = [
   // Nature & Weather
   "forest",
   "desert",
@@ -45,9 +41,48 @@ export const ATMOSPHERES = [
   "dungeon",
 ] as const;
 
-export type Atmosphere = (typeof ATMOSPHERES)[number];
+export type Ambience = (typeof AMBIENCES)[number];
 
-// Visual effect types that can be triggered by atmosphere
+// Visual theme keys (matches envTheme in zodSchemas)
+export const ENV_THEME_KEYS = [
+  "fantasy",
+  "scifi",
+  "cyberpunk",
+  "horror",
+  "mystery",
+  "romance",
+  "royal",
+  "wuxia",
+  "demonic",
+  "ethereal",
+  "modern",
+  "gold",
+  "villain",
+  "sepia",
+  "rose",
+  "war",
+  "sunset",
+  "cold",
+  "violet",
+  "nature",
+  "artdeco",
+  "intrigue",
+  "wasteland",
+  "patriotic",
+  "cyan",
+  "silver",
+  "obsidian",
+] as const;
+
+export type EnvThemeKey = (typeof ENV_THEME_KEYS)[number];
+
+/** Unified atmosphere object type */
+export interface AtmosphereObject {
+  envTheme: EnvThemeKey;
+  ambience: Ambience;
+}
+
+// Visual effect types that can be triggered by ambience
 export type VisualEffect =
   | "rain"
   | "snow"
@@ -58,8 +93,8 @@ export type VisualEffect =
   | "dust"
   | null;
 
-// Mapping from atmosphere to visual theme (envTheme key)
-const ATMOSPHERE_TO_THEME: Record<Atmosphere, string> = {
+// Mapping from ambience to default visual theme (envTheme key)
+const AMBIENCE_TO_THEME: Record<Ambience, EnvThemeKey> = {
   // Nature & Weather
   forest: "nature",
   desert: "gold",
@@ -85,8 +120,8 @@ const ATMOSPHERE_TO_THEME: Record<Atmosphere, string> = {
   dungeon: "horror",
 };
 
-// Mapping from atmosphere to default visual effect
-const ATMOSPHERE_TO_EFFECT: Record<Atmosphere, VisualEffect> = {
+// Mapping from ambience to default visual effect
+const AMBIENCE_TO_EFFECT: Record<Ambience, VisualEffect> = {
   // Nature & Weather
   forest: "sunny",
   desert: "dust",
@@ -112,15 +147,17 @@ const ATMOSPHERE_TO_EFFECT: Record<Atmosphere, VisualEffect> = {
   dungeon: "flicker",
 };
 
-// Audio file mapping (atmosphere name matches audio folder)
-// Audio files are at /audio/{atmosphere}/ambience.mp3
+// Audio file mapping (ambience name matches audio folder)
+// Audio files are at /audio/{ambience}/ambience.mp3
 
 export interface AtmosphereConfig {
-  /** The atmosphere key */
-  key: Atmosphere;
+  /** The ambience key (for audio) */
+  key: Ambience;
+  /** The envTheme key (for visual theme) */
+  envTheme: EnvThemeKey;
   /** Visual theme configuration (colors, fonts) */
   theme: ThemeConfig;
-  /** Visual theme key for lookup */
+  /** Visual theme key for lookup (alias for envTheme) */
   themeKey: string;
   /** Default visual effect */
   defaultEffect: VisualEffect;
@@ -129,157 +166,100 @@ export interface AtmosphereConfig {
 }
 
 /**
- * Get the full configuration for an atmosphere
+ * Normalize atmosphere input to AtmosphereObject
+ * Ensures all fields are valid, providing defaults if needed
  */
-export function getAtmosphereConfig(atmosphere: string): AtmosphereConfig {
-  const normalizedAtmosphere = atmosphere.toLowerCase().trim() as Atmosphere;
-
-  // Check if valid atmosphere
-  if (!ATMOSPHERES.includes(normalizedAtmosphere)) {
-    console.warn(`Unknown atmosphere: ${atmosphere}, falling back to 'quiet'`);
-    return getAtmosphereConfig("quiet");
+export function normalizeAtmosphere(
+  atmosphere: AtmosphereObject | undefined
+): AtmosphereObject {
+  if (!atmosphere) {
+    return { envTheme: "fantasy", ambience: "quiet" };
   }
 
-  const themeKey = ATMOSPHERE_TO_THEME[normalizedAtmosphere];
-  const theme = ENV_THEMES[themeKey] || ENV_THEMES.fantasy;
+  return {
+    envTheme: isValidEnvTheme(atmosphere.envTheme) ? atmosphere.envTheme : "fantasy",
+    ambience: isValidAmbience(atmosphere.ambience) ? atmosphere.ambience : "quiet",
+  };
+}
+
+/**
+ * Get the full configuration for an atmosphere
+ */
+export function getAtmosphereConfig(
+  atmosphere: AtmosphereObject | undefined
+): AtmosphereConfig {
+  const normalized = normalizeAtmosphere(atmosphere);
+  const { envTheme, ambience } = normalized;
+
+  const theme = ENV_THEMES[envTheme] || ENV_THEMES.fantasy;
 
   return {
-    key: normalizedAtmosphere,
+    key: ambience,
+    envTheme,
     theme,
-    themeKey,
-    defaultEffect: ATMOSPHERE_TO_EFFECT[normalizedAtmosphere],
-    audioPath: `/audio/${normalizedAtmosphere}/ambience.mp3`,
+    themeKey: envTheme,
+    defaultEffect: AMBIENCE_TO_EFFECT[ambience],
+    audioPath: `/audio/${ambience}/ambience.mp3`,
   };
 }
 
 /**
  * Get visual theme for an atmosphere
  */
-export function getThemeForAtmosphere(atmosphere: string): ThemeConfig {
+export function getThemeForAtmosphere(
+  atmosphere: AtmosphereObject | undefined
+): ThemeConfig {
   return getAtmosphereConfig(atmosphere).theme;
 }
 
 /**
  * Get the theme key for an atmosphere (for looking up in ENV_THEMES)
  */
-export function getThemeKeyForAtmosphere(atmosphere: string): string {
+export function getThemeKeyForAtmosphere(
+  atmosphere: AtmosphereObject | undefined
+): string {
   return getAtmosphereConfig(atmosphere).themeKey;
 }
 
 /**
  * Get default visual effect for an atmosphere
  */
-export function getEffectForAtmosphere(atmosphere: string): VisualEffect {
+export function getEffectForAtmosphere(
+  atmosphere: AtmosphereObject | undefined
+): VisualEffect {
   return getAtmosphereConfig(atmosphere).defaultEffect;
 }
 
 /**
- * Check if a string is a valid atmosphere
+ * Check if a string is a valid ambience
  */
-export function isValidAtmosphere(value: string): value is Atmosphere {
-  return ATMOSPHERES.includes(value.toLowerCase().trim() as Atmosphere);
+export function isValidAmbience(value: string | undefined | null): value is Ambience {
+  if (!value || typeof value !== "string") return false;
+  return AMBIENCES.includes(value.toLowerCase().trim() as Ambience);
 }
 
 /**
- * Resolve atmosphere from StorySegment fields (with backward compatibility)
- * Priority: atmosphere > environment > envTheme mapping
+ * Check if a string is a valid envTheme
+ */
+export function isValidEnvTheme(value: string | undefined | null): value is EnvThemeKey {
+  if (!value || typeof value !== "string") return false;
+  return ENV_THEME_KEYS.includes(value.toLowerCase().trim() as EnvThemeKey);
+}
+
+/**
+ * Resolve atmosphere ensuring it's a valid AtmosphereObject
  */
 export function resolveAtmosphere(
-  atmosphere?: string,
-  environment?: string,
-  envTheme?: string,
-): Atmosphere {
-  // 1. If atmosphere is directly set and valid, use it
-  if (atmosphere && isValidAtmosphere(atmosphere)) {
-    return atmosphere.toLowerCase().trim() as Atmosphere;
-  }
-
-  // 2. If environment (audio) is set and valid, use it (they share the same values)
-  if (environment && isValidAtmosphere(environment)) {
-    return environment.toLowerCase().trim() as Atmosphere;
-  }
-
-  // 3. Map from envTheme
-  if (envTheme) {
-    return envThemeToAtmosphere(envTheme);
-  }
-
-  // Default fallback
-  return "quiet";
+  atmosphere?: AtmosphereObject,
+): AtmosphereObject {
+  return normalizeAtmosphere(atmosphere);
 }
 
 /**
- * Legacy compatibility: Map old envTheme to nearest atmosphere
- * This is used to migrate old saves that have envTheme but no atmosphere
- */
-export function envThemeToAtmosphere(envTheme: string): Atmosphere {
-  const normalized = envTheme.toLowerCase().trim();
-
-  // Direct matches (if envTheme happens to be a valid atmosphere)
-  if (isValidAtmosphere(normalized)) {
-    return normalized as Atmosphere;
-  }
-
-  // Map old theme names to atmospheres
-  const themeToAtmosphere: Record<string, Atmosphere> = {
-    // Visual themes to atmospheres
-    fantasy: "forest",
-    scifi: "scifi",
-    cyberpunk: "city",
-    horror: "horror",
-    mystery: "rain",
-    romance: "quiet",
-    royal: "market",
-    wuxia: "tavern",
-    demonic: "cave",
-    ethereal: "mystical",
-    modern: "city",
-    gold: "market",
-    villain: "horror",
-    danger: "combat",
-    glamour: "city",
-    rgb: "city",
-    sepia: "tavern",
-    rose: "quiet",
-    war: "combat",
-    sunset: "desert",
-    cold: "snow",
-    violet: "mystical",
-    nature: "forest",
-    artdeco: "city",
-    intrigue: "city",
-    wasteland: "desert",
-    patriotic: "combat",
-    cyan: "ocean",
-    silver: "scifi",
-    obsessive: "horror",
-    emerald: "forest",
-    stone: "cave",
-    heartbreak: "rain",
-    apocalypse: "storm",
-    gothic: "horror",
-    interstellar: "scifi",
-    academy: "quiet",
-  };
-
-  return themeToAtmosphere[normalized] || "quiet";
-}
-
-/**
- * Get the default atmosphere for a story theme
- * This handles the transition from defaultEnvTheme (envTheme values) to actual atmosphere values
- *
- * @param themeConfig The story theme configuration
- * @returns The resolved atmosphere value
+ * Get default atmosphere for a story theme
  */
 export function getDefaultAtmosphereForTheme(
-  defaultAtmosphere: string,
-): Atmosphere {
-  // If it's already a valid atmosphere, return it directly
-  if (isValidAtmosphere(defaultAtmosphere)) {
-    return defaultAtmosphere as Atmosphere;
-  }
-
-  // Otherwise, it's an old envTheme value, map it to atmosphere
-  return envThemeToAtmosphere(defaultAtmosphere);
+  defaultAtmosphere: AtmosphereObject,
+): AtmosphereObject {
+  return normalizeAtmosphere(defaultAtmosphere);
 }

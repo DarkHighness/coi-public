@@ -1,14 +1,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FeedLayout } from "../../types";
+import { normalizeAtmosphere, type AtmosphereObject } from "../../utils/constants/atmosphere";
 
 interface FeedHeaderProps {
   layout: FeedLayout;
   setLayout: (layout: FeedLayout) => void;
   activeIndex: number;
   totalSegments: number;
-  environment?: string;
-  ambience?: string;
+  /** Unified atmosphere object */
+  atmosphere?: AtmosphereObject;
+  /** Current playing ambience key (from audio system) */
+  currentAmbience?: string;
   theme?: string;
   isMuted?: boolean;
   onToggleMute?: () => void;
@@ -19,33 +22,38 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   setLayout,
   activeIndex,
   totalSegments,
-  environment,
-  ambience,
+  atmosphere,
+  currentAmbience,
   theme,
   isMuted,
   onToggleMute,
 }) => {
   const { t } = useTranslation();
 
-  let ambienceName = ambience ? t("environmentNames." + ambience) : null;
-  let environmentName = environment
-    ? t("environmentNames." + environment)
-    : null;
+  // Normalize atmosphere to get envTheme and ambience
+  const normalizedAtmosphere = normalizeAtmosphere(atmosphere);
+  const { envTheme, ambience } = normalizedAtmosphere;
+
+  // Use currentAmbience (actual playing audio) if available, otherwise use atmosphere's ambience
+  const displayAmbience = currentAmbience || ambience;
+
+  // Get translated names - use environmentThemeNames for envTheme, environmentNames for ambience
+  let ambienceName = displayAmbience ? t("environmentNames." + displayAmbience) : null;
+  let envThemeName = envTheme ? t("environmentThemeNames." + envTheme) : null;
 
   // Fallback to raw names if translation missing
-  // If the translation key is the same as the input, it means no translation was found
   if (
-    ambience &&
-    (!ambienceName || ambienceName == "environmentNames." + ambience)
+    displayAmbience &&
+    (!ambienceName || ambienceName === "environmentNames." + displayAmbience)
   ) {
-    ambienceName = ambience;
+    ambienceName = displayAmbience;
   }
 
   if (
-    environment &&
-    (!environmentName || environmentName == "environmentNames." + environment)
+    envTheme &&
+    (!envThemeName || envThemeName === "environmentThemeNames." + envTheme)
   ) {
-    environmentName = environment;
+    envThemeName = envTheme;
   }
 
   return (
@@ -77,9 +85,9 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
           </div>
         )}
 
-        {(environment || ambience) && (
+        {(envTheme || displayAmbience) && (
           <div className="flex items-center space-x-2 md:space-x-3 border-l border-theme-border pl-2 md:pl-4 opacity-70 overflow-hidden flex-1 min-w-0">
-            {environment && (
+            {envTheme && (
               <div
                 className="flex items-center space-x-1 min-w-0"
                 title={t("environment")}
@@ -92,11 +100,11 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                   📍
                 </span>
                 <span className="text-theme-text truncate text-xs md:text-sm">
-                  {environmentName}
+                  {envThemeName}
                 </span>
               </div>
             )}
-            {ambience && (
+            {displayAmbience && (
               <button
                 onClick={onToggleMute}
                 className={`flex items-center space-x-1 min-w-0 hover:text-theme-primary transition-colors ${isMuted ? "opacity-50 grayscale" : ""}`}

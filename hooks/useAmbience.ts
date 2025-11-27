@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getAudioTrack } from "../utils/audioLoader";
+import { type AtmosphereObject, type Ambience } from "../utils/constants/atmosphere";
 
 /**
  * useAmbience - Manages background ambient audio with proper lifecycle handling
@@ -9,18 +10,26 @@ import { getAudioTrack } from "../utils/audioLoader";
  * 2. Properly handles mute/unmute without restarting track
  * 3. Smooth fade transitions between environments
  * 4. Mobile-friendly with proper cleanup
+ *
+ * @param atmosphere - The atmosphere object containing envTheme and ambience
+ * @param volume - Volume level (0-1)
+ * @param muted - Whether audio is muted
+ * @param onPlay - Callback when a new ambience starts playing
  */
 export const useAmbience = (
-  environment?: string,
+  atmosphere?: AtmosphereObject,
   volume: number = 0.5,
   muted: boolean = false,
-  onPlay?: (env: string) => void,
+  onPlay?: (ambience: Ambience) => void,
 ) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [currentEnv, setCurrentEnv] = useState<string | undefined>(undefined);
+  const [currentEnv, setCurrentEnv] = useState<Ambience | undefined>(undefined);
   const onPlayRef = useRef(onPlay);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+
+  // Extract ambience key from atmosphere object
+  const environment: Ambience | undefined = atmosphere?.ambience;
 
   // Keep callback ref updated
   useEffect(() => {
@@ -118,8 +127,8 @@ export const useAmbience = (
 
   // Handle environment changes
   useEffect(() => {
-    // Clean environment or "Unknown" means stop
-    if (!environment || environment === "Unknown") {
+    // No environment means stop
+    if (!environment) {
       if (audioRef.current) {
         fadeOutAndStop(audioRef.current, () => {
           audioRef.current = null;

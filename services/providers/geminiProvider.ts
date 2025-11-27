@@ -32,7 +32,6 @@ import {
   EmbeddingModelInfo,
   EmbeddingResponse,
   ToolCallResult,
-  JsonSchema,
   UnifiedMessage,
   TextContentPart,
   ToolCallContentPart,
@@ -43,7 +42,8 @@ import {
   AIProviderError,
   getAspectRatio,
 } from "./types";
-import { convertJsonSchemaToGemini } from "../schemaUtils";
+import { zodToGemini } from "../zodCompiler";
+import type { ZodTypeAny } from "zod";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -221,7 +221,7 @@ export async function generateContent(
   model: string,
   systemInstruction: string,
   contents: Content[],
-  schema?: JsonSchema,
+  schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<GeminiContentGenerationResponse> {
   const client = createGeminiClient(config);
@@ -451,27 +451,27 @@ function handleFinishReason(
  */
 function buildGenerationConfig(
   systemInstruction: string,
-  schema?: JsonSchema,
+  schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): GenerateContentConfig {
   const config: GenerateContentConfig = {
     systemInstruction,
   };
 
-  // JSON 模式配置
+  // JSON 模式配置 - 从 Zod 直接编译到 Gemini 格式
   if (schema && !options?.tools) {
     config.responseMimeType = "application/json";
-    config.responseSchema = convertJsonSchemaToGemini(schema);
+    config.responseSchema = zodToGemini(schema);
   }
 
-  // 工具配置
+  // 工具配置 - 从 Zod 直接编译到 Gemini 格式
   if (options?.tools && options.tools.length > 0) {
     config.tools = [
       {
         functionDeclarations: options.tools.map((tool) => ({
           name: tool.name,
           description: tool.description,
-          parameters: convertJsonSchemaToGemini(tool.parameters),
+          parameters: zodToGemini(tool.parameters),
         })),
       },
     ];

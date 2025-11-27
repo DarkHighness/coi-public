@@ -267,6 +267,46 @@
     "temple": "神庙",
     "Unknown": "未知"
   },
+  "environmentThemeNames": {
+    "fantasy": "奇幻",
+    "scifi": "科幻",
+    "cyberpunk": "赛博朋克",
+    "horror": "恐怖",
+    "mystery": "悬疑",
+    "romance": "浪漫",
+    "royal": "宫廷",
+    "wuxia": "武侠",
+    "demonic": "魔族",
+    "ethereal": "仙侠",
+    "modern": "都市",
+    "gold": "金色",
+    "villain": "反派",
+    "sepia": "复古",
+    "rose": "玫瑰",
+    "war": "战争",
+    "sunset": "夕阳",
+    "cold": "冷峻",
+    "violet": "紫罗兰",
+    "nature": "自然",
+    "artdeco": "装饰艺术",
+    "intrigue": "权谋",
+    "wasteland": "废土",
+    "patriotic": "热血",
+    "cyan": "青色",
+    "silver": "银色",
+    "obsidian": "黑曜",
+    "obsessive": "病娇",
+    "emerald": "翡翠",
+    "danger": "危机",
+    "glamour": "华丽",
+    "rgb": "电竞",
+    "stone": "石岩",
+    "heartbreak": "虐恋",
+    "interstellar": "星际",
+    "gothic": "哥特",
+    "academy": "学院",
+    "apocalypse": "末日"
+  },
   "models": {
     "story": "故事生成",
     "script": "Veo 脚本生成",
@@ -547,7 +587,9 @@
   },
   "storyImage": {
     "sceneVisualization": "场景可视化",
-    "regenerate": "重新生成图片"
+    "regenerate": "重新生成图片",
+    "copyPrompt": "复制图片生成提示词",
+    "promptCopied": "已复制提示词"
   },
   "magicMirrorAction": {
     "animate": "动画化"

@@ -12,6 +12,7 @@ import {
   CharacterAttribute,
 } from "../types";
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
+import type { AtmosphereObject } from "../utils/constants/atmosphere";
 
 // --- Tool Call Result Types ---
 
@@ -1590,10 +1591,10 @@ export class GameDatabase {
 
   private modifyGlobal(data: {
     time?: string;
-    atmosphere?: string;
-  }): ToolCallResult<{ updated: string[]; values: Record<string, string> }> {
+    atmosphere?: AtmosphereObject;
+  }): ToolCallResult<{ updated: string[]; values: Record<string, string | AtmosphereObject> }> {
     const updated: string[] = [];
-    const values: Record<string, string> = {};
+    const values: Record<string, string | AtmosphereObject> = {};
 
     if (data.time) {
       this.state.time = data.time;

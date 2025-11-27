@@ -1,53 +1,72 @@
+/**
+ * Schema Conversion Tests
+ * 测试 Zod 到各 Provider 格式的编译
+ */
+
 import {
   storyOutlineSchema,
   gameResponseSchema,
-  summarySchema,
-} from "../services/schemas";
+  storySummarySchema,
+} from "../services/zodSchemas";
 import {
-  convertJsonSchemaToOpenAI,
-  convertJsonSchemaToGemini,
-} from "../services/schemaUtils";
+  zodToGemini,
+  zodToOpenAIResponseFormat,
+  zodToOpenAISchema,
+} from "../services/zodCompiler";
 
 const schemas = {
   storyOutlineSchema,
   gameResponseSchema,
-  summarySchema,
+  storySummarySchema,
 };
 
 async function runTests() {
-  console.log("Starting Schema Conversion Tests...");
+  console.log("Starting Zod to Provider Schema Compilation Tests...");
   let failed = false;
 
   for (const [name, schema] of Object.entries(schemas)) {
     console.log(`\nTesting ${name}...`);
 
-    // Test OpenAI Conversion
+    // Test OpenAI Response Format Conversion
     try {
-      console.log(`  Converting to OpenAI...`);
-      const openAISchema = convertJsonSchemaToOpenAI(schema);
-      console.log(`  ✅ OpenAI Conversion Successful`);
-      // console.log(JSON.stringify(openAISchema, null, 2));
+      console.log(`  Compiling to OpenAI Response Format...`);
+      const openAIFormat = zodToOpenAIResponseFormat(schema, name);
+      console.log(`  ✅ OpenAI Response Format Compilation Successful`);
 
       // Basic validation of OpenAI schema structure
-      if (!openAISchema.strict)
+      if (openAIFormat.type !== "json_schema")
+        throw new Error("OpenAI format missing 'type: json_schema'");
+      if (!openAIFormat.json_schema.strict)
         throw new Error("OpenAI schema missing 'strict: true'");
-      if (openAISchema.name !== "response")
-        throw new Error("OpenAI schema missing 'name: response'");
-      if (!openAISchema.schema)
+      if (!openAIFormat.json_schema.schema)
         throw new Error("OpenAI schema missing 'schema' property");
     } catch (error) {
-      console.error(`  ❌ OpenAI Conversion Failed:`, error);
+      console.error(`  ❌ OpenAI Response Format Compilation Failed:`, error);
+      failed = true;
+    }
+
+    // Test OpenAI Schema Conversion
+    try {
+      console.log(`  Compiling to OpenAI Schema...`);
+      const openAISchema = zodToOpenAISchema(schema);
+      console.log(`  ✅ OpenAI Schema Compilation Successful`);
+
+      // Basic validation
+      if (!openAISchema.type)
+        throw new Error("OpenAI schema missing 'type' property");
+    } catch (error) {
+      console.error(`  ❌ OpenAI Schema Compilation Failed:`, error);
       failed = true;
     }
 
     // Test Gemini Conversion
     try {
-      console.log(`  Converting to Gemini...`);
-      const geminiSchema = convertJsonSchemaToGemini(schema);
-      console.log(`  ✅ Gemini Conversion Successful`);
+      console.log(`  Compiling to Gemini...`);
+      const geminiSchema = zodToGemini(schema);
+      console.log(`  ✅ Gemini Compilation Successful`);
       // console.log(JSON.stringify(geminiSchema, null, 2));
     } catch (error) {
-      console.error(`  ❌ Gemini Conversion Failed:`, error);
+      console.error(`  ❌ Gemini Compilation Failed:`, error);
       failed = true;
     }
   }
