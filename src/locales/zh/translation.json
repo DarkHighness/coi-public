@@ -704,7 +704,11 @@
     "totalTokens": "总 Token",
     "in": "输入:",
     "out": "输出:",
-    "total": "总计:"
+    "total": "总计:",
+    "cacheRead": "缓存读取 Token",
+    "cacheWrite": "缓存写入 Token",
+    "cacheReadShort": "读:",
+    "cacheWriteShort": "写:"
   },
   "storyImage": {
     "sceneVisualization": "场景可视化",
@@ -739,6 +743,8 @@
     "prompt": "提示词:",
     "completion": "生成:",
     "total": "总计:",
+    "cacheRead": "缓存读取:",
+    "cacheWrite": "缓存写入:",
     "noLogs": "本次会话暂无日志记录。"
   },
   "saveManager": {
@@ -816,6 +822,8 @@
     "addProvider": "添加提供商",
     "addFromTemplate": "从模板添加",
     "noProviders": "尚未配置提供商。添加一个以开始使用。",
+    "noAvailableProviders": "当前没有可用的提供商。",
+    "noAvailableProvidersDesc": "请检查提供商配置。",
     "inUseBy": "使用于：",
     "delete": "删除",
     "protocol": "协议：",

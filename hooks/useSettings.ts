@@ -5,6 +5,7 @@ import { DEFAULTS } from "../utils/constants";
 import { getModels } from "../services/aiService";
 
 const STORAGE_KEY = "chronicles_aisettings";
+const MODEL_CACHE_KEY = "chronicles_model_cache";
 
 /**
  * Settings Hook - 管理应用设置状态
@@ -231,6 +232,24 @@ export const useSettings = () => {
   const loadModels = useCallback(async (force: boolean = false) => {
     setIsLoadingModels(true);
     try {
+      // Check cache first if not forced
+      if (!force) {
+        const cached = localStorage.getItem(MODEL_CACHE_KEY);
+        if (cached) {
+          try {
+            const { timestamp, models } = JSON.parse(cached);
+            // Cache valid for 24 hours
+            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+              setProviderModels(models);
+              setIsLoadingModels(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to parse model cache", e);
+          }
+        }
+      }
+
       const currentSettings = settingsRef.current;
       // Load models for all providers with API keys
       const providersWithKeys = currentSettings.providers.instances.filter(
@@ -255,6 +274,15 @@ export const useSettings = () => {
       });
 
       setProviderModels(newProviderModels);
+
+      // Save to cache
+      localStorage.setItem(
+        MODEL_CACHE_KEY,
+        JSON.stringify({
+          timestamp: Date.now(),
+          models: newProviderModels,
+        }),
+      );
     } catch (e) {
       console.error("Failed to load models", e);
     } finally {

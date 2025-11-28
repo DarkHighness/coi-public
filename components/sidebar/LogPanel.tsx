@@ -427,6 +427,22 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                         </strong>{" "}
                         {log.usage.completionTokens}
                       </span>
+                      {(log.usage.cacheRead || 0) > 0 && (
+                        <span>
+                          <strong className="text-theme-primary">
+                            {t("logPanel.cacheRead") || "Cache Read:"}
+                          </strong>{" "}
+                          {log.usage.cacheRead}
+                        </span>
+                      )}
+                      {(log.usage.cacheWrite || 0) > 0 && (
+                        <span>
+                          <strong className="text-theme-primary">
+                            {t("logPanel.cacheWrite") || "Cache Write:"}
+                          </strong>{" "}
+                          {log.usage.cacheWrite}
+                        </span>
+                      )}
                       <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">
                         <strong className="text-theme-primary">
                           {t("logPanel.total") || "Total:"}

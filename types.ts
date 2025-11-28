@@ -299,6 +299,8 @@ export interface TokenUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  cacheRead?: number;
+  cacheWrite?: number;
 }
 
 // Individual tool call record

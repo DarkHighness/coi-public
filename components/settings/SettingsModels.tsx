@@ -21,6 +21,14 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     loadModels: onLoadModels,
   } = useSettings();
 
+  // Auto-refresh models on mount if empty
+  React.useEffect(() => {
+    const hasModels = Object.keys(providerModels).length > 0;
+    if (!hasModels && !loadingModels) {
+      onLoadModels(false);
+    }
+  }, []);
+
   const getFilteredModels = (providerId: string, type: FunctionKey) => {
     const list = providerModels[providerId] || [];
     return filterModels(list, type);
@@ -345,15 +353,15 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                     >
                       {config.modelId} ({t("saveManager.current") || "Current"})
                     </option>
-                    {modelList.map((m) => (
-                      <option
-                        key={m.id}
-                        value={m.id}
-                        className="text-black dark:text-white"
-                      >
-                        {m.name || m.id}
-                      </option>
-                    ))}
+                      {modelList.map((m, idx) => (
+                        <option
+                          key={`${config.providerId}-${m.id}-${idx}`}
+                          value={m.id}
+                          className="text-black dark:text-white"
+                        >
+                          {m.name || m.id}
+                        </option>
+                      ))}
                   </select>
                   {loadingModels && (
                     <div className="absolute right-2 top-2 text-theme-muted text-xs">

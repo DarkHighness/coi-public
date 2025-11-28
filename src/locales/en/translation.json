@@ -725,7 +725,11 @@
     "totalTokens": "Total Tokens",
     "in": "In:",
     "out": "Out:",
-    "total": "Total:"
+    "total": "Total:",
+    "cacheRead": "Cache Read Tokens",
+    "cacheWrite": "Cache Write Tokens",
+    "cacheReadShort": "CR:",
+    "cacheWriteShort": "CW:"
   },
   "storyImage": {
     "sceneVisualization": "Scene Visualization",
@@ -760,6 +764,8 @@
     "prompt": "Prompt:",
     "completion": "Completion:",
     "total": "Total:",
+    "cacheRead": "Cache Read:",
+    "cacheWrite": "Cache Write:",
     "noLogs": "No logs recorded in this session."
   },
   "saveManager": {
@@ -837,6 +843,8 @@
     "addProvider": "Add Provider",
     "addFromTemplate": "Add from Template",
     "noProviders": "No providers configured. Add one to get started.",
+    "noAvailableProviders": "No available providers.",
+    "noAvailableProvidersDesc": "Please check provider configuration.",
     "inUseBy": "In use by:",
     "delete": "Delete",
     "protocol": "Protocol:",

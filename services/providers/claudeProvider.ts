@@ -305,6 +305,10 @@ export async function generateContent(
         // 初始使用量
         if (event.message.usage) {
           usage.promptTokens = event.message.usage.input_tokens || 0;
+          usage.cacheWrite =
+            (event.message.usage as any).cache_creation_input_tokens || 0;
+          usage.cacheRead =
+            (event.message.usage as any).cache_read_input_tokens || 0;
         }
       }
     }
@@ -359,6 +363,8 @@ export async function generateContent(
       totalTokens:
         (response.usage.input_tokens || 0) +
         (response.usage.output_tokens || 0),
+      cacheWrite: (response.usage as any).cache_creation_input_tokens || 0,
+      cacheRead: (response.usage as any).cache_read_input_tokens || 0,
     };
   }
 

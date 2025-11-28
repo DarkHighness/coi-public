@@ -19,6 +19,23 @@ export const TokenStats: React.FC<TokenStatsProps> = ({ usage }) => {
       <span title={t("tokenStats.completionTokens")}>
         {t("tokenStats.out")} {usage.completionTokens}
       </span>
+      {(usage.cacheRead || 0) > 0 && (
+        <>
+          <span>|</span>
+          <span title={t("tokenStats.cacheRead")}>
+            {t("tokenStats.cacheReadShort") || "CR"} {usage.cacheRead}
+          </span>
+        </>
+      )}
+      {(usage.cacheWrite || 0) > 0 && (
+        <>
+          <span>|</span>
+          <span title={t("tokenStats.cacheWrite")}>
+            {t("tokenStats.cacheWriteShort") || "CW"} {usage.cacheWrite}
+          </span>
+          <span>|</span>
+        </>
+      )}
       <span>|</span>
       <span title={t("tokenStats.totalTokens")} className="font-bold">
         {t("tokenStats.total")} {usage.totalTokens}

@@ -362,6 +362,11 @@ async function handleNonStreamingResponse(
     promptTokens: data.usage?.prompt_tokens || 0,
     completionTokens: data.usage?.completion_tokens || 0,
     totalTokens: data.usage?.total_tokens || 0,
+    cacheRead:
+      (data.usage as any)?.prompt_tokens_details?.cached_tokens ||
+      (data.usage as any)?.cache_read_input_tokens ||
+      0,
+    cacheWrite: (data.usage as any)?.cache_creation_input_tokens || 0,
   };
 
   console.log(`[OpenRouter] Generation complete. Usage:`, usage);
@@ -466,6 +471,12 @@ async function handleStreamingResponse(
               promptTokens: chunk.usage.prompt_tokens || 0,
               completionTokens: chunk.usage.completion_tokens || 0,
               totalTokens: chunk.usage.total_tokens || 0,
+              cacheRead:
+                (chunk.usage as any)?.prompt_tokens_details?.cached_tokens ||
+                (chunk.usage as any)?.cache_read_input_tokens ||
+                0,
+              cacheWrite:
+                (chunk.usage as any)?.cache_creation_input_tokens || 0,
             };
           }
         } catch (e) {

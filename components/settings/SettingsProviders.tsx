@@ -28,6 +28,13 @@ interface ProviderFormData {
 
 type ModalMode = "add" | "edit" | "template" | null;
 
+const DEFAULT_BASE_URLS: Record<ProviderProtocol, string> = {
+  openai: "https://api.openai.com/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+  claude: "https://api.anthropic.com/v1",
+  gemini: "https://generativelanguage.googleapis.com",
+};
+
 export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
   showToast,
 }) => {
@@ -104,7 +111,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     setFormData({
       name: "",
       protocol: "openai",
-      baseUrl: "",
+      baseUrl: DEFAULT_BASE_URLS["openai"],
       apiKey: "",
       enabled: true,
     });
@@ -148,11 +155,22 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       return;
     }
 
+    let finalBaseUrl = formData.baseUrl.trim();
+
+    // Auto-append /v1 for OpenAI and OpenRouter if missing
+    if (
+      (formData.protocol === "openai" || formData.protocol === "openrouter") &&
+      !finalBaseUrl.endsWith("/") &&
+      !finalBaseUrl.endsWith("/v1")
+    ) {
+      finalBaseUrl += "/v1";
+    }
+
     const newInstance: ProviderInstance = {
       id: `provider-${currentSettings.providers.nextId}`,
       name: formData.name.trim(),
       protocol: formData.protocol,
-      baseUrl: formData.baseUrl.trim(),
+      baseUrl: finalBaseUrl,
       apiKey: formData.apiKey,
       enabled: formData.enabled,
       createdAt: Date.now(),
@@ -216,13 +234,23 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     const newApiKey =
       formData.apiKey.trim() !== "" ? formData.apiKey : existingInstance.apiKey;
 
+    // Auto-append /v1 for OpenAI and OpenRouter if missing
+    let finalBaseUrl = formData.baseUrl.trim();
+    if (
+      (formData.protocol === "openai" || formData.protocol === "openrouter") &&
+      !finalBaseUrl.endsWith("/") &&
+      !finalBaseUrl.endsWith("/v1")
+    ) {
+      finalBaseUrl += "/v1";
+    }
+
     const updatedInstances = currentSettings.providers.instances.map((inst) =>
       inst.id === editingId
         ? {
             ...inst,
             name: formData.name.trim(),
             protocol: formData.protocol,
-            baseUrl: formData.baseUrl.trim(),
+            baseUrl: finalBaseUrl,
             apiKey: newApiKey,
             enabled: formData.enabled,
             lastModified: Date.now(),
@@ -647,12 +675,24 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                   </label>
                   <select
                     value={formData.protocol}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newProtocol = e.target.value as ProviderProtocol;
+                      // Check if current URL is a default one or empty
+                      const currentIsDefault =
+                        !formData.baseUrl ||
+                        Object.values(DEFAULT_BASE_URLS).includes(
+                          formData.baseUrl,
+                        );
+
                       setFormData({
                         ...formData,
-                        protocol: e.target.value as ProviderProtocol,
-                      })
-                    }
+                        protocol: newProtocol,
+                        // Only auto-switch URL if user hasn't entered a custom one
+                        baseUrl: currentIsDefault
+                          ? DEFAULT_BASE_URLS[newProtocol]
+                          : formData.baseUrl,
+                      });
+                    }}
                     className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none focus:border-theme-primary"
                   >
                     <option value="gemini">{t("providers.gemini")}</option>

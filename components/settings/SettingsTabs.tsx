@@ -18,7 +18,12 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
   ];
 
   return (
-    <div className="flex border-b border-theme-border bg-theme-bg overflow-x-auto">
+    <div className="flex border-b border-theme-border bg-theme-bg overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+      `}</style>
       {tabs.map((tab) => (
         <button
           key={tab}

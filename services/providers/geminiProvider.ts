@@ -313,6 +313,7 @@ export async function generateContent(
     promptTokens: usageMetadata?.promptTokenCount || 0,
     completionTokens: usageMetadata?.candidatesTokenCount || 0,
     totalTokens: usageMetadata?.totalTokenCount || 0,
+    cacheRead: (usageMetadata as any)?.cachedContentTokenCount || 0,
   };
 
   console.log(`[Gemini] Generation complete. Usage:`, usage);
