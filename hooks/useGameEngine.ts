@@ -730,10 +730,39 @@ export const useGameEngine = () => {
       triggerSave();
 
       // Background RAG Update (non-blocking)
-      if (aiSettings.embedding?.enabled && changedEntities.length > 0) {
-        updateRAGDocumentsBackground(changedEntities, gameStateRef.current).catch((error) => {
-          console.error("[RAG Update] Background update failed:", error);
-        });
+      if (aiSettings.embedding?.enabled) {
+        const allChangedEntities = [
+          ...changedEntities,
+          { id: `story:${effectiveUserNodeId}`, type: "story" },
+          { id: `story:${modelNodeId}`, type: "story" },
+        ];
+
+        // Construct a state object that includes the latest updates
+        // (Since React state update is async, gameStateRef might not have the new model node yet)
+        const stateForRAG = {
+          ...gameStateRef.current,
+          ...finalState, // Apply latest entity states (inventory, relationships, etc.)
+          nodes: {
+            ...gameStateRef.current.nodes,
+            // Ensure user node has latest summary info
+            [effectiveUserNodeId]: {
+              ...gameStateRef.current.nodes[effectiveUserNodeId],
+              summaries: effectiveSummaries,
+              summarizedIndex: lastIndex,
+            },
+            // Add the new model node
+            [modelNodeId]: modelNode,
+          },
+          // Update other root properties that might be relevant for extraction context
+          turnNumber: gameStateRef.current.turnNumber + 1,
+          atmosphere: responseAtmosphere,
+        };
+
+        updateRAGDocumentsBackground(allChangedEntities, stateForRAG).catch(
+          (error) => {
+            console.error("[RAG Update] Background update failed:", error);
+          },
+        );
       }
 
       return {

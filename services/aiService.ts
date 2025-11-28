@@ -1265,6 +1265,7 @@ const buildSystemContext = (
   godMode?: boolean,
   detailedDescription?: boolean,
   ragEnabled?: boolean,
+  isGemini?: boolean,
 ): string => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
@@ -1272,6 +1273,7 @@ const buildSystemContext = (
     isRestricted,
     detailedDescription,
     ragEnabled,
+    isGemini,
   );
   const staticWorldContext = getStaticWorldContext(outline);
 
@@ -1470,6 +1472,9 @@ export const generateAdventureTurn = async (
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
 
+  // Check if provider is Gemini
+  const isGemini = instance.protocol === "gemini";
+
   let systemInstruction = buildSystemContext(
     context.language,
     narrativeStyle,
@@ -1479,6 +1484,7 @@ export const generateAdventureTurn = async (
     gameState.godMode,
     settings.extra?.detailedDescription,
     isRAGEnabled,
+    isGemini,
   );
 
   const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
@@ -1661,10 +1667,10 @@ const runAgenticLoop = async (
     let retryCount = 0;
     let lastError: Error | null = null;
 
-    // Last round: don't provide tools, force schema response
+    // Last round: don't provide tools
     const isLastRound = turnCount === maxTurns - 1;
     const effectiveToolConfig = isLastRound ? undefined : toolConfig;
-    const effectiveSchema = isLastRound ? finishTurnSchema : undefined;
+    const effectiveSchema = finishTurnSchema;
 
     if (isLastRound) {
       console.log(

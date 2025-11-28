@@ -696,182 +696,198 @@ export function extractDocumentsFromState(
 
 function extractStoryContent(node: StorySegment): string {
   const parts: string[] = [];
+  const turn = node.stateSnapshot?.turnNumber || "Unknown";
+
+  parts.push(`<segment id="${node.id}" turn="${turn}">`);
 
   if (node.role === "user") {
-    parts.push(`Player Action: ${node.text}`);
+    parts.push(`  <player_action>\n    ${node.text}\n  </player_action>`);
   } else {
-    parts.push(node.text);
+    parts.push(`  <narrative>\n    ${node.text}\n  </narrative>`);
   }
 
-  if (node.stateSnapshot?.currentLocation) {
-    parts.push(`Location: ${node.stateSnapshot.currentLocation}`);
+  // Contextual Info
+  if (node.stateSnapshot) {
+    parts.push("  <context>");
+    if (node.stateSnapshot.currentLocation) {
+      parts.push(`    <location>${node.stateSnapshot.currentLocation}</location>`);
+    }
+    if (node.stateSnapshot.time) {
+      parts.push(`    <time>${JSON.stringify(node.stateSnapshot.time)}</time>`);
+    }
+    if (node.atmosphere) {
+      parts.push(`    <atmosphere>${JSON.stringify(node.atmosphere)}</atmosphere>`);
+    }
+    parts.push("  </context>");
   }
 
+  parts.push("</segment>");
   return parts.join("\n");
 }
 
 function extractNPCContent(npc: Relationship): string {
   const parts: string[] = [];
+  parts.push(`<npc id="${npc.id}">`);
 
   // Visible info
   if (npc.visible) {
-    if (npc.visible.name) parts.push(`Name: ${npc.visible.name}`);
-    if (npc.visible.description)
-      parts.push(`Description: ${npc.visible.description}`);
-    if (npc.visible.appearance)
-      parts.push(`Appearance: ${npc.visible.appearance}`);
-    if (npc.visible.relationshipType)
-      parts.push(`Relationship: ${npc.visible.relationshipType}`);
-    if (npc.visible.personality)
-      parts.push(`Personality: ${npc.visible.personality}`);
-    if (npc.visible.currentImpression)
-      parts.push(`Current State: ${npc.visible.currentImpression}`);
+    parts.push("  <visible>");
+    if (npc.visible.name) parts.push(`    <name>${npc.visible.name}</name>`);
+    if (npc.visible.description) parts.push(`    <description>${npc.visible.description}</description>`);
+    if (npc.visible.appearance) parts.push(`    <appearance>${npc.visible.appearance}</appearance>`);
+    if (npc.visible.relationshipType) parts.push(`    <relation_type>${npc.visible.relationshipType}</relation_type>`);
+    if (npc.visible.personality) parts.push(`    <personality>${npc.visible.personality}</personality>`);
+    if (npc.visible.currentImpression) parts.push(`    <impression>${npc.visible.currentImpression}</impression>`);
+    if (npc.notes) parts.push(`    <player_notes>${npc.notes}</player_notes>`);
+    parts.push("  </visible>");
   }
 
   // Hidden info (if unlocked)
   if (npc.unlocked && npc.hidden) {
-    if (npc.hidden.realPersonality)
-      parts.push(`True Personality: ${npc.hidden.realPersonality}`);
-    if (npc.hidden.realMotives)
-      parts.push(`True Motives: ${npc.hidden.realMotives}`);
-    if (npc.hidden.secrets?.length)
-      parts.push(`Secrets: ${npc.hidden.secrets.join(", ")}`);
+    parts.push("  <hidden status=\"unlocked\">");
+    if (npc.hidden.realPersonality) parts.push(`    <true_personality>${npc.hidden.realPersonality}</true_personality>`);
+    if (npc.hidden.realMotives) parts.push(`    <true_motives>${npc.hidden.realMotives}</true_motives>`);
+    if (npc.hidden.secrets?.length) parts.push(`    <secrets>${npc.hidden.secrets.join("; ")}</secrets>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</npc>");
   return parts.join("\n");
 }
 
 function extractLocationContent(location: Location): string {
   const parts: string[] = [];
+  parts.push(`<location id="${location.id}">`);
 
-  if (location.name) parts.push(`Name: ${location.name}`);
+  if (location.name) parts.push(`  <name>${location.name}</name>`);
 
   if (location.visible) {
-    if (location.visible.description)
-      parts.push(`Description: ${location.visible.description}`);
+    parts.push("  <visible>");
+    if (location.visible.description) parts.push(`    <description>${location.visible.description}</description>`);
     if (location.visible.knownFeatures?.length) {
-      parts.push(`Features: ${location.visible.knownFeatures.join(", ")}`);
+      parts.push(`    <features>${location.visible.knownFeatures.join("; ")}</features>`);
     }
+    parts.push("  </visible>");
   }
 
-  if (location.environment) parts.push(`Environment: ${location.environment}`);
-  if (location.lore) parts.push(`Lore: ${location.lore}`);
+  if (location.environment) parts.push(`  <environment>${location.environment}</environment>`);
+  if (location.lore) parts.push(`  <lore>${location.lore}</lore>`);
 
   // Hidden info (if unlocked)
   if (location.unlocked && location.hidden) {
-    if (location.hidden.fullDescription)
-      parts.push(`Full Description: ${location.hidden.fullDescription}`);
-    if (location.hidden.secrets?.length)
-      parts.push(`Secrets: ${location.hidden.secrets.join(", ")}`);
+    parts.push("  <hidden status=\"unlocked\">");
+    if (location.hidden.fullDescription) parts.push(`    <full_description>${location.hidden.fullDescription}</full_description>`);
+    if (location.hidden.secrets?.length) parts.push(`    <secrets>${location.hidden.secrets.join("; ")}</secrets>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</location>");
   return parts.join("\n");
 }
 
 function extractItemContent(item: InventoryItem): string {
   const parts: string[] = [];
+  parts.push(`<item id="${item.id}">`);
 
-  if (item.name) parts.push(`Name: ${item.name}`);
+  if (item.name) parts.push(`  <name>${item.name}</name>`);
 
   if (item.visible) {
-    if (item.visible.description)
-      parts.push(`Description: ${item.visible.description}`);
-    if (item.visible.notes) parts.push(`Notes: ${item.visible.notes}`);
+    parts.push("  <visible>");
+    if (item.visible.description) parts.push(`    <description>${item.visible.description}</description>`);
+    if (item.visible.notes) parts.push(`    <notes>${item.visible.notes}</notes>`);
+    parts.push("  </visible>");
   }
 
-  if (item.lore) parts.push(`Lore: ${item.lore}`);
+  if (item.lore) parts.push(`  <lore>${item.lore}</lore>`);
 
   // Hidden info (if unlocked)
   if (item.unlocked && item.hidden) {
-    if (item.hidden.truth) parts.push(`True Nature: ${item.hidden.truth}`);
-    if (item.hidden.secrets?.length)
-      parts.push(`Secrets: ${item.hidden.secrets.join(", ")}`);
+    parts.push("  <hidden status=\"unlocked\">");
+    if (item.hidden.truth) parts.push(`    <true_nature>${item.hidden.truth}</true_nature>`);
+    if (item.hidden.secrets?.length) parts.push(`    <secrets>${item.hidden.secrets.join("; ")}</secrets>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</item>");
   return parts.join("\n");
 }
 
 function extractKnowledgeContent(knowledge: KnowledgeEntry): string {
   const parts: string[] = [];
+  parts.push(`<knowledge id="${knowledge.id}">`);
 
-  if (knowledge.title) parts.push(`Topic: ${knowledge.title}`);
-  if (knowledge.category) parts.push(`Category: ${knowledge.category}`);
+  if (knowledge.title) parts.push(`  <topic>${knowledge.title}</topic>`);
+  if (knowledge.category) parts.push(`  <category>${knowledge.category}</category>`);
 
   if (knowledge.visible) {
-    if (knowledge.visible.description)
-      parts.push(`Content: ${knowledge.visible.description}`);
-    if (knowledge.visible.details)
-      parts.push(`Details: ${knowledge.visible.details}`);
+    parts.push("  <visible>");
+    if (knowledge.visible.description) parts.push(`    <description>${knowledge.visible.description}</description>`);
+    if (knowledge.visible.details) parts.push(`    <content>${knowledge.visible.details}</content>`);
+    parts.push("  </visible>");
   }
 
-  // Hidden info (if unlocked)
   if (knowledge.unlocked && knowledge.hidden) {
-    if (knowledge.hidden.fullTruth)
-      parts.push(`Full Truth: ${knowledge.hidden.fullTruth}`);
+    parts.push("  <hidden status=\"unlocked\">");
+    if (knowledge.hidden.fullTruth) parts.push(`    <truth>${knowledge.hidden.fullTruth}</truth>`);
+    if (knowledge.hidden.toBeRevealed?.length) parts.push(`    <implications>${knowledge.hidden.toBeRevealed.join("; ")}</implications>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</knowledge>");
   return parts.join("\n");
 }
 
 function extractQuestContent(quest: Quest): string {
   const parts: string[] = [];
+  parts.push(`<quest id="${quest.id}" status="${quest.status}">`);
 
-  if (quest.title) parts.push(`Quest: ${quest.title}`);
-  if (quest.status) parts.push(`Status: ${quest.status}`);
-  if (quest.type) parts.push(`Type: ${quest.type}`);
+  if (quest.title) parts.push(`  <title>${quest.title}</title>`);
+  if (quest.type) parts.push(`  <type>${quest.type}</type>`);
 
   if (quest.visible) {
-    if (quest.visible.description)
-      parts.push(`Description: ${quest.visible.description}`);
-    if (quest.visible.objectives?.length) {
-      parts.push(`Objectives: ${quest.visible.objectives.join(", ")}`);
-    }
+    parts.push("  <visible>");
+    if (quest.visible.description) parts.push(`    <description>${quest.visible.description}</description>`);
+    if (quest.visible.objectives?.length) parts.push(`    <objectives>${quest.visible.objectives.join("; ")}</objectives>`);
+    parts.push("  </visible>");
   }
 
-  // Hidden info (if unlocked)
   if (quest.unlocked && quest.hidden) {
-    if (quest.hidden.trueDescription)
-      parts.push(`True Purpose: ${quest.hidden.trueDescription}`);
-    if (quest.hidden.trueObjectives?.length) {
-      parts.push(`True Objectives: ${quest.hidden.trueObjectives.join(", ")}`);
-    }
+    parts.push("  <hidden status=\"unlocked\">");
+    if (quest.hidden.trueObjectives?.length) parts.push(`    <true_objectives>${quest.hidden.trueObjectives.join("; ")}</true_objectives>`);
+    if (quest.hidden.secretOutcome) parts.push(`    <secret_outcome>${quest.hidden.secretOutcome}</secret_outcome>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</quest>");
   return parts.join("\n");
 }
 
 function extractEventContent(event: TimelineEvent): string {
   const parts: string[] = [];
+  parts.push(`<event id="${event.id}">`);
 
-  if (event.gameTime) parts.push(`Time: ${event.gameTime}`);
-  if (event.category) parts.push(`Category: ${event.category}`);
+  if (event.gameTime) parts.push(`  <time>${event.gameTime}</time>`);
+  if (event.category) parts.push(`  <category>${event.category}</category>`);
 
   if (event.visible) {
-    if (event.visible.description)
-      parts.push(`Event: ${event.visible.description}`);
-    if (event.visible.causedBy)
-      parts.push(`Caused by: ${event.visible.causedBy}`);
+    parts.push("  <visible>");
+    if (event.visible.description) parts.push(`    <description>${event.visible.description}</description>`);
+    if (event.visible.causedBy) parts.push(`    <caused_by>${event.visible.causedBy}</caused_by>`);
+    parts.push("  </visible>");
   }
 
-  if (event.involvedEntities?.length) {
-    parts.push(`Involved: ${event.involvedEntities.join(", ")}`);
-  }
-
-  // Hidden info (if unlocked)
   if (event.unlocked && event.hidden) {
-    if (event.hidden.trueDescription)
-      parts.push(`Truth: ${event.hidden.trueDescription}`);
-    if (event.hidden.trueCausedBy)
-      parts.push(`True Cause: ${event.hidden.trueCausedBy}`);
+    parts.push("  <hidden status=\"unlocked\">");
+    if (event.hidden.trueDescription) parts.push(`    <true_description>${event.hidden.trueDescription}</true_description>`);
+    if (event.hidden.trueCausedBy) parts.push(`    <true_cause>${event.hidden.trueCausedBy}</true_cause>`);
+    if (event.hidden.consequences) parts.push(`    <consequences>${event.hidden.consequences}</consequences>`);
+    parts.push("  </hidden>");
   }
 
+  parts.push("</event>");
   return parts.join("\n");
 }
 
-/**
- * Extract content from StoryOutline for RAG indexing
- * Supports different outline aspects: world, goal, premise, character
- */
 function extractOutlineContent(outline: StoryOutline, aspect: string): string {
   const parts: string[] = [];
 

@@ -88,13 +88,13 @@ export const parseEntityId = (
 export const QUERY_INVENTORY_TOOL: ZodToolDefinition = {
   name: "query_inventory",
   description:
-    "Query the player's inventory. Returns a list of items matching the query.",
+    "Check what the player is carrying. Use this to verify if they have the necessary tools, weapons, or items for an action, or to describe their equipment.",
   parameters: z.object({
     query: z
       .string()
       .optional()
       .describe(
-        "Name, ID (format: inv:N, e.g., 'inv:1'), or keyword to search for. If omitted, lists all items.",
+        "Name, ID (format: inv:N), or keyword. If omitted, lists all items.",
       ),
   }),
 };
@@ -102,13 +102,13 @@ export const QUERY_INVENTORY_TOOL: ZodToolDefinition = {
 export const QUERY_RELATIONSHIPS_TOOL: ZodToolDefinition = {
   name: "query_relationships",
   description:
-    "Query known NPCs and relationships. Returns a list of NPCs matching the query.",
+    "Recall details about NPCs the player has met. Use this to check their current status, location, personality, or past interactions before generating dialogue.",
   parameters: z.object({
     query: z
       .string()
       .optional()
       .describe(
-        "Name, ID (format: npc:N, e.g., 'npc:1'), or keyword to search for. If omitted, lists all known NPCs.",
+        "Name, ID (format: npc:N), or keyword. If omitted, lists all known NPCs.",
       ),
   }),
 };
@@ -116,13 +116,13 @@ export const QUERY_RELATIONSHIPS_TOOL: ZodToolDefinition = {
 export const QUERY_LOCATIONS_TOOL: ZodToolDefinition = {
   name: "query_locations",
   description:
-    "Query known locations. Returns a list of locations matching the query.",
+    "Recall details about known locations. Use this to describe the environment, check for connected paths, or remember past events in a specific place.",
   parameters: z.object({
     query: z
       .string()
       .optional()
       .describe(
-        "Name, ID (format: loc:N, e.g., 'loc:1'), or keyword to search for. If omitted, lists all known locations.",
+        "Name, ID (format: loc:N), or keyword. If omitted, lists all known locations.",
       ),
   }),
 };
@@ -244,9 +244,8 @@ export const QUERY_CHARACTER_TOOL: ZodToolDefinition = {
 
 export const UPDATE_INVENTORY_TOOL: ZodToolDefinition = {
   name: "update_inventory",
-  description: `Add, remove, or update items in the player's inventory.
-IMPORTANT: To REMOVE an optional property from an existing item, set it to null.
-Example: To clear an item's lore, set lore: null`,
+  description: `Modify the player's inventory. Use this when the player finds, buys, uses, breaks, or loses an item.
+IMPORTANT: To REMOVE an optional property (like clearing lore), set it to null.`,
   parameters: z.discriminatedUnion("action", [
     // Add action - id is optional (auto-generated if not provided)
     z.object({
@@ -299,13 +298,9 @@ Example: To clear an item's lore, set lore: null`,
 
 export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
   name: "update_relationship",
-  description: `Add, update, or remove NPC relationships.
-IMPORTANT:
-- To REMOVE an optional property, set it to null.
-- Use 'currentLocation' to track NPC's location (e.g., 'loc:1'). NPCs at the same location as the player are considered "nearby".
-- When NPC moves, update their currentLocation accordingly.
-Example: To clear an NPC's notes, set notes: null
-Example: To move NPC to player's location, set currentLocation: "loc:3"`,
+  description: `Modify an NPC's state. Use this when the player's actions change an NPC's opinion, location, or physical condition.
+CRITICAL: Update 'notes' to record how the NPC perceives the player's behavior (e.g., "Suspicious of player's magic").
+IMPORTANT: To REMOVE an optional property, set it to null.`,
   parameters: z.discriminatedUnion("action", [
     // Add action - id is optional
     z.object({
@@ -376,9 +371,8 @@ Example: To move NPC to player's location, set currentLocation: "loc:3"`,
 
 export const UPDATE_LOCATION_TOOL: ZodToolDefinition = {
   name: "update_location",
-  description: `Add, update, or remove locations. Use to track player movement and location discovery.
-IMPORTANT: To REMOVE an optional property, set it to null.
-Example: To clear a location's environment, set environment: null`,
+  description: `Update the world map. Use this when the player discovers a new place, moves to a new area, or when the environment changes (e.g., "The bridge collapses").
+IMPORTANT: To REMOVE an optional property, set it to null.`,
   parameters: z.discriminatedUnion("action", [
     // Add action - id is optional
     z.object({

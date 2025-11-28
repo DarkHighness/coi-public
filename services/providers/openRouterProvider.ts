@@ -838,21 +838,13 @@ function getDefaultEmbeddingModels(): EmbeddingModelInfo[] {
       id: "openai/text-embedding-3-small",
       name: "OpenAI Text Embedding 3 Small",
       dimensions: 1536,
+      contextLength: 8192,
     },
     {
       id: "openai/text-embedding-3-large",
       name: "OpenAI Text Embedding 3 Large",
       dimensions: 3072,
-    },
-    {
-      id: "cohere/embed-english-v3.0",
-      name: "Cohere Embed English v3",
-      dimensions: 1024,
-    },
-    {
-      id: "cohere/embed-multilingual-v3.0",
-      name: "Cohere Embed Multilingual v3",
-      dimensions: 1024,
+      contextLength: 8192,
     },
   ];
 }

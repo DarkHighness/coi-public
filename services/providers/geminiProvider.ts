@@ -16,6 +16,8 @@ import {
   GenerateContentConfig,
   Schema,
   Type,
+  HarmCategory,
+  HarmBlockThreshold,
 } from "@google/genai";
 
 import type { EmbeddingTaskType, TokenUsage } from "../../types";
@@ -454,12 +456,13 @@ function buildGenerationConfig(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): GenerateContentConfig {
-  const config: GenerateContentConfig = {
-    systemInstruction,
-  };
+  const config: GenerateContentConfig = {};
+  if (systemInstruction) {
+    config.systemInstruction = systemInstruction;
+  }
 
   // JSON 模式配置 - 从 Zod 直接编译到 Gemini 格式
-  if (schema && !options?.tools) {
+  if (schema && (!options?.tools || options.tools.length === 0)) {
     config.responseMimeType = "application/json";
     config.responseSchema = zodToGemini(schema);
     console.log("[Gemini] JSON mode enabled with schema:", JSON.stringify(config.responseSchema, null, 2));
@@ -488,6 +491,26 @@ function buildGenerationConfig(
   if (options?.topK !== undefined) {
     config.topK = options.topK;
   }
+
+  // Safety Settings - Permissive to prevent blocking
+  config.safetySettings = [
+    {
+      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+  ];
 
   return config;
 }
