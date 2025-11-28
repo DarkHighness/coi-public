@@ -832,7 +832,8 @@
     "docs": "文档",
     "totalDocs": "文档总数",
     "pending": "待处理",
-    "idle": "空闲"
+    "idle": "空闲",
+    "status": "状态"
   },
   "providers": {
     "configuration": "提供商配置",

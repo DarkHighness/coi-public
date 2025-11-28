@@ -311,7 +311,10 @@ async function handleAddDocuments(
     return { count: documents.length };
   } catch (error) {
     // If error occurs, reset pending count for failed documents
-    pendingDocuments = Math.max(0, pendingDocuments - (payload.documents.length - documents.length));
+    pendingDocuments = Math.max(
+      0,
+      pendingDocuments - (payload.documents.length - documents.length),
+    );
     throw error;
   }
 }

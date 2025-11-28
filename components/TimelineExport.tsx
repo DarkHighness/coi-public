@@ -136,26 +136,35 @@ export const TimelineExport = forwardRef<
   return createPortal(
     <div
       id="export-container"
-      className="absolute left-[-9999px] top-0 w-[800px] p-12 bg-theme-bg text-theme-text"
-      style={
-        {
-          ...currentThemeConfig.vars,
-        } as React.CSSProperties
-      }
+      className={`absolute left-[-9999px] top-0 w-[800px] p-12 ${currentThemeConfig.fontClass}`}
+      style={{
+        backgroundColor: "#0f172a",
+        color: "#e2e8f0",
+      }}
       ref={exportContainerRef}
     >
       <div className="relative">
         {/* Continuous Vertical Line */}
-        <div className="absolute left-[19px] top-32 bottom-12 w-0.5 bg-theme-border opacity-50"></div>
+        <div
+          className="absolute left-[19px] top-32 bottom-12 w-0.5 opacity-50"
+          style={{ backgroundColor: "#475569" }} // slate-600
+        ></div>
 
         <div className="space-y-12 relative z-10">
-          <div className="text-center mb-12 border-b-2 border-theme-border pb-8">
+          <div
+            className="text-center mb-12 border-b-2 pb-8"
+            style={{ borderColor: "#475569" }} // slate-600
+          >
             <h1
-              className={`text-3xl font-bold uppercase tracking-[0.2em] mb-3 ${currentThemeConfig.fontClass} text-theme-primary`}
+              className={`text-3xl font-bold uppercase tracking-[0.2em] mb-3 ${currentThemeConfig.fontClass}`}
+              style={{ color: "#fbbf24" }} // amber-400
             >
               {title || t("timeline.exportTitle") || "Chronicles of Infinity"}
             </h1>
-            <p className="text-base text-theme-muted uppercase tracking-widest font-serif italic opacity-80">
+            <p
+              className="text-base uppercase tracking-widest font-serif italic opacity-80"
+              style={{ color: "#94a3b8" }} // slate-400
+            >
               {subtitle || t("timeline.exportSubtitle") || "Timeline Export"}
             </p>
           </div>
@@ -164,33 +173,38 @@ export const TimelineExport = forwardRef<
             <div key={seg.id} className="relative pl-16">
               {/* Timeline Node */}
               <div
-                className="absolute left-[11px] top-1 w-4 h-4 rounded-full bg-theme-bg border-[3px] border-theme-primary z-10"
+                className="absolute left-[11px] top-1 w-4 h-4 rounded-full border-[3px] z-10"
                 style={{
-                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", // shadow-sm replacement
-                  // ring-4 replacement (using box-shadow to simulate ring)
-                  // We combine the shadow-sm and the ring
-                  // ring-theme-bg is usually the background color
-                  // We can just use a transparent border or a box-shadow ring
+                  backgroundColor: "#0f172a", // slate-900
+                  borderColor: "#fbbf24", // amber-400
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
                 }}
               ></div>
 
               <div className="space-y-5">
                 {/* Metadata Header */}
-                <div className="flex items-center gap-3 text-sm uppercase tracking-widest text-theme-muted font-medium">
-                  <span className="text-theme-primary font-bold">
+                <div
+                  className="flex items-center gap-3 text-sm uppercase tracking-widest font-medium"
+                  style={{ color: "#94a3b8" }} // slate-400
+                >
+                  <span style={{ color: "#fbbf24", fontWeight: "bold" }}>
                     {seg.stateSnapshot?.time}
                   </span>
-                  <span className="w-1 h-1 rounded-full bg-theme-border"></span>
+                  <span
+                    className="w-1 h-1 rounded-full"
+                    style={{ backgroundColor: "#475569" }} // slate-600
+                  ></span>
                   <span>{seg.stateSnapshot?.currentLocation}</span>
                 </div>
 
                 {/* Image */}
                 {seg.imageUrl && (
                   <div
-                    className="rounded-lg overflow-hidden border border-theme-border"
+                    className="rounded-lg overflow-hidden border"
                     style={{
+                      borderColor: "#475569", // slate-600
                       boxShadow:
-                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", // shadow-lg replacement
+                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                     }}
                   >
                     <img
@@ -202,14 +216,104 @@ export const TimelineExport = forwardRef<
                 )}
 
                 {/* Text */}
-                <div className="text-base font-serif leading-loose text-theme-text">
-                  <MarkdownText content={seg.text} />
+                <div
+                  className="text-base font-serif leading-loose"
+                  style={{ color: "#e2e8f0" }} // slate-200
+                >
+                  <MarkdownText
+                    content={seg.text}
+                    components={{
+                      p: ({ node, ...props }: any) => (
+                        <p className="mb-4 last:mb-0 indent-8" {...props} />
+                      ),
+                      strong: ({ node, ...props }: any) => (
+                        <strong
+                          className="font-bold"
+                          style={{ color: "#fbbf24" }}
+                          {...props}
+                        />
+                      ),
+                      em: ({ node, ...props }: any) => (
+                        <em
+                          className="italic"
+                          style={{ color: "rgba(226, 232, 240, 0.9)" }}
+                          {...props}
+                        />
+                      ),
+                      code: ({ node, inline, ...props }: any) =>
+                        inline ? (
+                          <code
+                            className="px-1 py-0.5 rounded text-sm font-mono"
+                            style={{
+                              backgroundColor: "rgba(51, 65, 85, 0.6)",
+                              color: "#fde68a",
+                            }}
+                            {...props}
+                          />
+                        ) : (
+                          <code
+                            className="block p-3 rounded font-mono text-sm my-2"
+                            style={{ backgroundColor: "rgba(51, 65, 85, 0.4)" }}
+                            {...props}
+                          />
+                        ),
+                      blockquote: ({ node, ...props }: any) => (
+                        <blockquote
+                          className="border-l-4 pl-4 my-4 italic"
+                          style={{
+                            borderColor: "rgba(251, 191, 36, 0.5)",
+                            color: "rgba(226, 232, 240, 0.8)",
+                          }}
+                          {...props}
+                        />
+                      ),
+                      ul: ({ node, ...props }: any) => (
+                        <ul
+                          className="list-disc list-inside my-2 space-y-1"
+                          {...props}
+                        />
+                      ),
+                      ol: ({ node, ...props }: any) => (
+                        <ol
+                          className="list-decimal list-inside my-2 space-y-1"
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }: any) => (
+                        <li className="ml-2" {...props} />
+                      ),
+                      h1: ({ node, ...props }: any) => (
+                        <h1
+                          className="text-2xl font-bold my-4"
+                          style={{ color: "#fbbf24" }}
+                          {...props}
+                        />
+                      ),
+                      h2: ({ node, ...props }: any) => (
+                        <h2
+                          className="text-xl font-semibold my-3"
+                          style={{ color: "rgba(251, 191, 36, 0.9)" }}
+                          {...props}
+                        />
+                      ),
+                      h3: ({ node, ...props }: any) => (
+                        <h3
+                          className="text-lg font-semibold my-2"
+                          style={{ color: "rgba(251, 191, 36, 0.8)" }}
+                          {...props}
+                        />
+                      ),
+                    }}
+                  />
                 </div>
               </div>
             </div>
           ))}
 
-          <div className="text-center pt-12 border-t border-theme-border text-xs text-theme-muted uppercase tracking-widest opacity-60">
+          <div
+            className="text-center pt-12 border-t text-xs uppercase tracking-widest opacity-60"
+            style={{ borderColor: "#475569", color: "#94a3b8" }} // slate-600, slate-400
+          >
             {t("timeline.generatedBy") || "Generated by Chronicles of Infinity"}
           </div>
         </div>

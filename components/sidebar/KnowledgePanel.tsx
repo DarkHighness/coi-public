@@ -172,7 +172,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
                   {t("knowledgePanel.discovered") || "Discovered"}
                 </span>
-                <span className="text-[10px] text-theme-muted opacity-80">
+                <span className="text-[10px] text-theme-muted">
                   {k.discoveredAt}
                 </span>
               </div>

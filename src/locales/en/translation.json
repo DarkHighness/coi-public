@@ -853,7 +853,8 @@
     "docs": "docs",
     "totalDocs": "Total Docs",
     "pending": "Pending",
-    "idle": "Idle"
+    "idle": "Idle",
+    "status": "Status"
   },
   "providers": {
     "configuration": "Provider Configuration",

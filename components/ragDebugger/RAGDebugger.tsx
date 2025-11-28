@@ -13,7 +13,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"search" | "stats" | "documents">("search");
+  const [activeTab, setActiveTab] = useState<"search" | "stats" | "documents">(
+    "search",
+  );
 
   if (!isOpen) return null;
 
@@ -36,8 +38,18 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
             onClick={onClose}
             className="text-theme-muted hover:text-theme-text transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -77,9 +89,15 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
         </div>
 
         {/* Tab Content */}
-        {activeTab === "search" && <SearchTab gameState={gameState} aiSettings={aiSettings} />}
-        {activeTab === "stats" && <StatisticsTab gameState={gameState} aiSettings={aiSettings} />}
-        {activeTab === "documents" && <DocumentsTab gameState={gameState} aiSettings={aiSettings} />}
+        {activeTab === "search" && (
+          <SearchTab gameState={gameState} aiSettings={aiSettings} />
+        )}
+        {activeTab === "stats" && (
+          <StatisticsTab gameState={gameState} aiSettings={aiSettings} />
+        )}
+        {activeTab === "documents" && (
+          <DocumentsTab gameState={gameState} aiSettings={aiSettings} />
+        )}
       </div>
     </div>
   );

@@ -644,7 +644,18 @@ export interface CharacterUpdates {
     action: "add" | "update" | "remove";
     id?: string;
     name: string;
-    type?: "buff" | "debuff" | "neutral";
+    type?:
+      | "normal"
+      | "wound"
+      | "poison"
+      | "buff"
+      | "debuff"
+      | "mental"
+      | "curse"
+      | "stun"
+      | "unconscious"
+      | "tired"
+      | "dead";
     visible?: {
       description?: string;
       perceivedSeverity?: string;

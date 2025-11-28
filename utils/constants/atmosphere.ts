@@ -80,6 +80,8 @@ export type EnvThemeKey = (typeof ENV_THEME_KEYS)[number];
 export interface AtmosphereObject {
   envTheme: EnvThemeKey;
   ambience: Ambience;
+  /** Explicit weather override from AI */
+  weather?: string;
 }
 
 // Visual effect types that can be triggered by ambience
@@ -197,7 +199,11 @@ export function normalizeAtmosphere(
   const ambience = isValidAmbience(atmosphere.ambience)
     ? atmosphere.ambience
     : "quiet";
-  return { envTheme, ambience };
+
+  // Preserve explicit weather if present
+  const weather = atmosphere.weather;
+
+  return { envTheme, ambience, weather };
 }
 
 /**

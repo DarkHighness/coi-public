@@ -20,249 +20,211 @@ const colorMap: Record<string, string> = {
   gray: "from-gray-600 to-gray-400",
 };
 
-const textMap: Record<string, string> = {
-  red: "text-red-400",
-  blue: "text-blue-400",
-  green: "text-green-400",
-  yellow: "text-yellow-400",
-  purple: "text-purple-400",
-  gray: "text-gray-400",
-};
+const getStatusConfig = (condition: CharacterCondition) => {
+  const matchedKey = condition.type;
 
-const getStatusConfig = (status: string) => {
-  const normalized = status.toLowerCase();
-
-  if (normalized.includes("poison") || normalized.includes("toxic")) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M23 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-4 9c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-4-18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-6.1 1.1c.4-.8 1.2-1.1 2.1-.7.8.4 1.1 1.2.7 2.1-.4.8-1.2 1.1-2.1.7-.8-.4-1.1-1.2-.7-2.1zM3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm3.9 7.9c-.4.8-1.2 1.1-2.1.7-.8-.4-1.1-1.2-.7-2.1.4-.8 1.2-1.1 2.1-.7.8.4 1.1 1.2.7 2.1zM12 6a6 6 0 100 12 6 6 0 000-12z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-purple-900/20 text-purple-400 border-purple-500/30",
-    };
+  switch (matchedKey) {
+    case "poison":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M23 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-4 9c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-4-18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-6.1 1.1c.4-.8 1.2-1.1 2.1-.7.8.4 1.1 1.2.7 2.1-.4.8-1.2 1.1-2.1.7-.8-.4-1.1-1.2-.7-2.1zM3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm3.9 7.9c-.4.8-1.2 1.1-2.1.7-.8-.4-1.1-1.2-.7-2.1.4-.8 1.2-1.1 2.1-.7.8.4 1.1 1.2.7 2.1zM12 6a6 6 0 100 12 6 6 0 000-12z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-purple-500/10 text-purple-300 border-purple-500/20",
+      };
+    case "wound":
+    case "debuff":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-red-500/10 text-red-300 border-red-500/20",
+      };
+    case "normal":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+      };
+    case "buff":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+      };
+    case "dead":
+    case "unconscious":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+            ></path>
+          </svg>
+        ),
+        style: "bg-gray-700/50 text-gray-400 border-gray-600/50",
+      };
+    case "tired":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-orange-500/10 text-orange-300 border-orange-500/20",
+      };
+    case "mental":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            ></path>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+      };
+    case "curse":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-pink-500/10 text-pink-300 border-pink-500/20",
+      };
+    case "stun":
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            ></path>
+          </svg>
+        ),
+        style: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
+      };
+    default:
+      // Default generic
+      return {
+        icon: (
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+        ),
+        style:
+          "bg-theme-surface-highlight text-theme-primary border-theme-border",
+      };
   }
-  if (
-    normalized.includes("wound") ||
-    normalized.includes("injur") ||
-    normalized.includes("bleed") ||
-    normalized.includes("hurt")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-red-900/20 text-red-400 border-red-500/30",
-    };
-  }
-  if (
-    normalized.includes("health") ||
-    normalized.includes("fine") ||
-    normalized.includes("good")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-green-900/20 text-green-400 border-green-500/30",
-    };
-  }
-  if (
-    normalized.includes("empower") ||
-    normalized.includes("buff") ||
-    normalized.includes("strong")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-yellow-900/20 text-yellow-400 border-yellow-500/30",
-    };
-  }
-  if (
-    normalized.includes("dead") ||
-    normalized.includes("dying") ||
-    normalized.includes("unconscious")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-          ></path>
-        </svg>
-      ),
-      style: "bg-gray-800 text-gray-400 border-gray-600/30",
-    };
-  }
-  if (
-    normalized.includes("tired") ||
-    normalized.includes("exhaust") ||
-    normalized.includes("fatigue")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-orange-900/20 text-orange-300 border-orange-500/30",
-    };
-  }
-  if (
-    normalized.includes("terrified") ||
-    normalized.includes("fear") ||
-    normalized.includes("panic")
-  ) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          ></path>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-indigo-900/20 text-indigo-300 border-indigo-500/30",
-    };
-  }
-  if (normalized.includes("curs") || normalized.includes("hex")) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-fuchsia-900/20 text-fuchsia-400 border-fuchsia-500/30",
-    };
-  }
-  if (normalized.includes("stun") || normalized.includes("paraly")) {
-    return {
-      icon: (
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          ></path>
-        </svg>
-      ),
-      style: "bg-yellow-900/20 text-yellow-200 border-yellow-500/30",
-    };
-  }
-
-  // Default generic
-  return {
-    icon: (
-      <svg
-        className="w-3 h-3"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        ></path>
-      </svg>
-    ),
-    style: "bg-theme-surface-highlight text-theme-primary border-theme-border",
-  };
 };
 
 // Sub-component for individual skills to handle expansion state
@@ -382,7 +344,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
 
-  const { icon, style } = getStatusConfig(condition.name);
+  const { icon, style } = getStatusConfig(condition);
 
   const handleClick = () => {
     setIsExpanded(!isExpanded);
@@ -419,9 +381,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
         </div>
 
         {condition.visible?.description && (
-          <p className="text-[11px] opacity-80">
-            {condition.visible.description}
-          </p>
+          <p className="text-[11px]">{condition.visible.description}</p>
         )}
 
         {/* Expanded content with unlocked information */}
@@ -698,9 +658,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                       >
                         <div className="font-bold mb-0.5">{trait.name}</div>
                         {trait.description && (
-                          <p className="text-[10px] opacity-80">
-                            {trait.description}
-                          </p>
+                          <p className="text-[10px]">{trait.description}</p>
                         )}
                       </div>
                     ))}

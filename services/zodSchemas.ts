@@ -338,14 +338,27 @@ export const conditionEffectsSchema = z.object({
 });
 
 /** 条件类型 */
-export const conditionTypeSchema = z.enum(["buff", "debuff", "neutral"]);
+/** 条件类型 - 用于UI图标和效果判断 */
+export const conditionTypeSchema = z.enum([
+  "normal",
+  "wound",
+  "poison",
+  "buff",
+  "debuff",
+  "mental",
+  "curse",
+  "stun",
+  "unconscious",
+  "tired",
+  "dead",
+]);
 
 /** 完整条件 Schema */
 export const conditionSchema = z.object({
   id: z.string().optional().describe("Format: cond:N"),
   name: z.string().describe("Condition name."),
   type: conditionTypeSchema.describe(
-    "Condition type: buff, debuff, or neutral.",
+    "Condition type (e.g. wound, poison, buff, debuff, etc.).",
   ),
   visible: conditionVisibleSchema,
   hidden: conditionHiddenSchema.optional(),
@@ -654,15 +667,11 @@ export const characterStatusSchema = z.object({
     .optional()
     .describe("Hidden personality traits."),
   appearance: z.string().describe("Detailed physical appearance."),
-  profession: z
+  profession: z.string().describe("Character's occupation or class."),
+  background: z.string().describe("Brief life story and background."),
+  race: z
     .string()
-    .optional()
-    .describe("Character's occupation or class."),
-  background: z
-    .string()
-    .optional()
-    .describe("Brief life story and background."),
-  race: z.string().optional().describe("The character's race."),
+    .describe("The character's race (e.g. Human, Elf, Dwarf, etc.)."),
 });
 
 // ============================================================================
@@ -695,42 +704,30 @@ export const worldSettingSchema = z.object({
   visible: worldSettingVisibleSchema.describe(
     "Publicly known world information.",
   ),
-  hidden: worldSettingHiddenSchema
-    .optional()
-    .describe("Secret truths about the world."),
-  history: z
-    .string()
-    .optional()
-    .describe("Ancient events that shape the present."),
+  hidden: worldSettingHiddenSchema.describe("Secret truths about the world."),
+  history: z.string().describe("Ancient events that shape the present."),
 });
 
 /** 主要目标可见层 */
 export const mainGoalVisibleSchema = z.object({
   description: z.string().describe("The apparent main motivation or task."),
-  conditions: z
-    .string()
-    .optional()
-    .describe("Known conditions for achieving the goal."),
+  conditions: z.string().describe("Known conditions for achieving the goal."),
 });
 
 /** 主要目标隐藏层 */
 export const mainGoalHiddenSchema = z.object({
   trueDescription: z
     .string()
-    .optional()
     .describe("The hidden true nature or purpose of the goal."),
-  trueConditions: z
-    .string()
-    .optional()
-    .describe("Secret conditions for the true goal."),
+  trueConditions: z.string().describe("Secret conditions for the true goal."),
 });
 
 /** 主要目标 */
 export const mainGoalSchema = z.object({
   visible: mainGoalVisibleSchema.describe("The apparent goal."),
-  hidden: mainGoalHiddenSchema
-    .optional()
-    .describe("The hidden event logic or true nature."),
+  hidden: mainGoalHiddenSchema.describe(
+    "The hidden event logic or true nature.",
+  ),
 });
 
 // ============================================================================
@@ -788,7 +785,18 @@ export const ambienceSchema = z.enum([
   "tavern",
 ]);
 
-/** 氛围对象 - 包含视觉主题和音频氛围 */
+/** 天气特效枚举 */
+export const weatherEffectSchema = z.enum([
+  "none",
+  "rain",
+  "snow",
+  "fog",
+  "embers",
+  "flicker",
+  "sunny",
+]);
+
+/** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
 export const atmosphereSchema = z.object({
   envTheme: envThemeSchema.describe(
     "The visual theme/color palette for UI rendering.",
@@ -796,6 +804,9 @@ export const atmosphereSchema = z.object({
   ambience: ambienceSchema.describe(
     "The audio ambience/environment for sound effects and music.",
   ),
+  weather: weatherEffectSchema
+    .optional()
+    .describe("Specific visual weather effect to render."),
 });
 
 /** 故事大纲 Schema (完整版 - 用于类型定义和最终验证) */
@@ -820,22 +831,18 @@ export const storyOutlineSchema = z.object({
     .describe("Initial locations with full details."),
   knowledge: z
     .array(knowledgeEntrySchema.omit({ id: true }))
-    .optional()
     .describe("Initial knowledge entries about the world."),
   timeline: z
     .array(timelineEventSchema)
-    .optional()
     .describe("Initial timeline events representing the backstory."),
   character: characterStatusSchema.describe(
     "The initialized character profile.",
   ),
   inventory: z
     .array(inventoryItemSchema.omit({ id: true }))
-    .optional()
     .describe("Initial items in the inventory (1-3 items)."),
   relationships: z
     .array(relationshipSchema.omit({ id: true }))
-    .optional()
     .describe("Initial relationships (1-2 NPCs)."),
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience.",
@@ -1273,7 +1280,7 @@ export const gameResponseSchema = z.object({
       "neutral_ending",
     ])
     .optional()
-    .describe("Story continuation status."),
+    .describe("Story continuation status. IF NOT SET, DEFAULTS TO 'continue'."),
   forceEnd: z
     .boolean()
     .optional()
@@ -1390,8 +1397,9 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
       "bad_ending",
       "neutral_ending",
     ])
+    .optional()
     .describe(
-      `Story continuation status. MUST be set every turn:
+      `Story continuation status. IF NOT SET, DEFAULTS TO "continue":
 - "continue": Story continues normally (USE THIS IN MOST CASES)
 - "death": Player character dies or suffers irreversible fatal consequence
 - "victory": Main quest goal achieved, story concludes positively

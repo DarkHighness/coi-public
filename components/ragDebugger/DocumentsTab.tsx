@@ -2,17 +2,27 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getRAGService } from "../../services/rag";
 import type { DocumentType } from "../../services/rag";
-import type { DocumentsTabProps, SearchResultDisplay, IndexStats } from "./types";
+import type {
+  DocumentsTabProps,
+  SearchResultDisplay,
+  IndexStats,
+} from "./types";
 import { DocumentTypeFilter } from "./DocumentTypeFilter";
 
-export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSettings }) => {
+export const DocumentsTab: React.FC<DocumentsTabProps> = ({
+  gameState,
+  aiSettings,
+}) => {
   const { t } = useTranslation();
   const [allDocuments, setAllDocuments] = useState<SearchResultDisplay[]>([]);
   const [recentDocs, setRecentDocs] = useState<SearchResultDisplay[]>([]);
   const [documentsPage, setDocumentsPage] = useState(1);
   const [documentsPerPage] = useState(20);
-  const [documentsFilterType, setDocumentsFilterType] = useState<DocumentType | "all">("all");
-  const [editingDocument, setEditingDocument] = useState<SearchResultDisplay | null>(null);
+  const [documentsFilterType, setDocumentsFilterType] = useState<
+    DocumentType | "all"
+  >("all");
+  const [editingDocument, setEditingDocument] =
+    useState<SearchResultDisplay | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
 
@@ -44,7 +54,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
     try {
       const docs = await ragService.getRecentDocuments(
         1000,
-        documentsFilterType === "all" ? undefined : [documentsFilterType]
+        documentsFilterType === "all" ? undefined : [documentsFilterType],
       );
       setAllDocuments(
         docs.map((doc) => ({
@@ -59,7 +69,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
             createdAt: doc.createdAt,
             version: doc.version,
           },
-        }))
+        })),
       );
     } catch (err) {
       console.error("[DocumentsTab] Failed to load documents:", err);
@@ -80,44 +90,63 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
     loadIndexStats();
   }, [loadDocuments, loadIndexStats]);
 
-  const handleUpdateDocument = useCallback(async (doc: SearchResultDisplay, newContent: string, newImportance: number) => {
-    const ragService = getRAGService();
-    if (!ragService || !gameState) return;
+  const handleUpdateDocument = useCallback(
+    async (
+      doc: SearchResultDisplay,
+      newContent: string,
+      newImportance: number,
+    ) => {
+      const ragService = getRAGService();
+      if (!ragService || !gameState) return;
 
-    try {
-      await ragService.addDocuments([
-        {
-          entityId: doc.entityId,
-          type: doc.type as any,
-          content: newContent,
-          saveId: indexStats?.currentSaveId || "unknown",
-          forkId: (doc.metadata?.forkId as number) || gameState.forkId,
-          turnNumber: (doc.metadata?.turnNumber as number) || gameState.turnNumber,
-          importance: newImportance,
-        },
-      ]);
-      setEditingDocument(null);
-      loadDocuments();
-    } catch (err) {
-      console.error("[DocumentsTab] Failed to update document:", err);
-      setError(t("ragDebugger.updateFailed", "Failed to update document"));
-    }
-  }, [gameState, indexStats, loadDocuments, t]);
+      try {
+        await ragService.addDocuments([
+          {
+            entityId: doc.entityId,
+            type: doc.type as any,
+            content: newContent,
+            saveId: indexStats?.currentSaveId || "unknown",
+            forkId: (doc.metadata?.forkId as number) || gameState.forkId,
+            turnNumber:
+              (doc.metadata?.turnNumber as number) || gameState.turnNumber,
+            importance: newImportance,
+          },
+        ]);
+        setEditingDocument(null);
+        loadDocuments();
+      } catch (err) {
+        console.error("[DocumentsTab] Failed to update document:", err);
+        setError(t("ragDebugger.updateFailed", "Failed to update document"));
+      }
+    },
+    [gameState, indexStats, loadDocuments, t],
+  );
 
-  const handleDeleteDocument = useCallback(async (entityId: string) => {
-    if (!confirm(t("ragDebugger.confirmDelete", "Are you sure you want to delete this document?"))) return;
+  const handleDeleteDocument = useCallback(
+    async (entityId: string) => {
+      if (
+        !confirm(
+          t(
+            "ragDebugger.confirmDelete",
+            "Are you sure you want to delete this document?",
+          ),
+        )
+      )
+        return;
 
-    const ragService = getRAGService();
-    if (!ragService) return;
+      const ragService = getRAGService();
+      if (!ragService) return;
 
-    try {
-      await ragService.deleteDocuments({ entityIds: [entityId] });
-      loadDocuments();
-    } catch (err) {
-      console.error("[DocumentsTab] Failed to delete document:", err);
-      setError(t("ragDebugger.deleteFailed", "Failed to delete document"));
-    }
-  }, [loadDocuments, t]);
+      try {
+        await ragService.deleteDocuments({ entityIds: [entityId] });
+        loadDocuments();
+      } catch (err) {
+        console.error("[DocumentsTab] Failed to delete document:", err);
+        setError(t("ragDebugger.deleteFailed", "Failed to delete document"));
+      }
+    },
+    [loadDocuments, t],
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-4 flex flex-col">
@@ -142,8 +171,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
             className="p-1.5 text-theme-muted hover:text-theme-primary transition-colors"
             title={t("ragDebugger.refresh", "Refresh")}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
           </button>
         </div>
@@ -151,7 +190,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
         {/* Pagination Controls */}
         <div className="flex items-center gap-2 text-sm">
           <button
-            onClick={() => setDocumentsPage(p => Math.max(1, p - 1))}
+            onClick={() => setDocumentsPage((p) => Math.max(1, p - 1))}
             disabled={documentsPage === 1}
             className="px-2 py-1 border border-theme-border rounded hover:bg-theme-surface-highlight disabled:opacity-50"
           >
@@ -161,7 +200,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
             {t("ragDebugger.page", "Page")} {documentsPage}
           </span>
           <button
-            onClick={() => setDocumentsPage(p => p + 1)}
+            onClick={() => setDocumentsPage((p) => p + 1)}
             disabled={recentDocs.length < documentsPerPage}
             className="px-2 py-1 border border-theme-border rounded hover:bg-theme-surface-highlight disabled:opacity-50"
           >
@@ -175,11 +214,21 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
         <table className="w-full text-left text-sm border-collapse">
           <thead className="bg-theme-surface-highlight/50 sticky top-0 z-10">
             <tr>
-              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">Type</th>
-              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">Entity ID</th>
-              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider w-1/2">Content</th>
-              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">Ver</th>
-              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider text-right">Actions</th>
+              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
+                Type
+              </th>
+              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
+                Entity ID
+              </th>
+              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider w-1/2">
+                Content
+              </th>
+              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
+                Ver
+              </th>
+              <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-theme-border/50">
@@ -191,7 +240,10 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
               </tr>
             ) : (
               recentDocs.map((doc, idx) => (
-                <tr key={`${doc.entityId}-${idx}`} className="hover:bg-theme-surface-highlight/30 transition-colors group">
+                <tr
+                  key={`${doc.entityId}-${idx}`}
+                  className="hover:bg-theme-surface-highlight/30 transition-colors group"
+                >
                   <td className="p-3 align-top">
                     <span className="px-2 py-0.5 bg-theme-primary/10 text-theme-primary text-xs rounded-full uppercase font-bold border border-theme-primary/20">
                       {doc.type}
@@ -204,12 +256,15 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
                     </div>
                   </td>
                   <td className="p-3 align-top">
-                    <div className="line-clamp-2 text-theme-text/90 text-xs font-mono" title={doc.content}>
+                    <div
+                      className="line-clamp-2 text-theme-text/90 text-xs font-mono"
+                      title={doc.content}
+                    >
                       {doc.content}
                     </div>
                   </td>
                   <td className="p-3 align-top text-xs text-theme-muted">
-                    v{doc.metadata?.version as number || 1}
+                    v{(doc.metadata?.version as number) || 1}
                   </td>
                   <td className="p-3 align-top text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -218,8 +273,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
                         className="p-1 text-theme-primary hover:bg-theme-primary/10 rounded"
                         title={t("common.edit", "Edit")}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
                         </svg>
                       </button>
                       <button
@@ -227,8 +292,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
                         className="p-1 text-red-400 hover:bg-red-400/10 rounded"
                         title={t("common.delete", "Delete")}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -257,7 +332,9 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
             </div>
             <div className="p-4 flex-1 overflow-y-auto space-y-4">
               <div>
-                <label className="block text-xs font-bold text-theme-muted uppercase mb-1">Content</label>
+                <label className="block text-xs font-bold text-theme-muted uppercase mb-1">
+                  Content
+                </label>
                 <textarea
                   className="w-full h-64 bg-theme-bg border border-theme-border rounded p-3 text-sm font-mono focus:border-theme-primary focus:outline-none"
                   defaultValue={editingDocument.content}
@@ -265,14 +342,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-theme-muted uppercase mb-1">Importance (0-1)</label>
+                <label className="block text-xs font-bold text-theme-muted uppercase mb-1">
+                  Importance (0-1)
+                </label>
                 <input
                   type="number"
                   step="0.1"
                   min="0"
                   max="1"
                   className="w-full bg-theme-bg border border-theme-border rounded p-2 text-sm focus:border-theme-primary focus:outline-none"
-                  defaultValue={editingDocument.metadata?.importance as number || 0.5}
+                  defaultValue={
+                    (editingDocument.metadata?.importance as number) || 0.5
+                  }
                   id="edit-doc-importance"
                 />
               </div>
@@ -286,8 +367,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ gameState, aiSetting
               </button>
               <button
                 onClick={() => {
-                  const content = (document.getElementById("edit-doc-content") as HTMLTextAreaElement).value;
-                  const importance = parseFloat((document.getElementById("edit-doc-importance") as HTMLInputElement).value);
+                  const content = (
+                    document.getElementById(
+                      "edit-doc-content",
+                    ) as HTMLTextAreaElement
+                  ).value;
+                  const importance = parseFloat(
+                    (
+                      document.getElementById(
+                        "edit-doc-importance",
+                      ) as HTMLInputElement
+                    ).value,
+                  );
                   handleUpdateDocument(editingDocument, content, importance);
                 }}
                 className="px-4 py-2 bg-theme-primary text-theme-bg rounded font-bold hover:bg-theme-primary-hover transition-colors"

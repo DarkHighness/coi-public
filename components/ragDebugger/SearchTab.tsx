@@ -1,11 +1,17 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getRAGService } from "../../services/rag";
-import type { SearchResult as RAGSearchResult, DocumentType } from "../../services/rag";
+import type {
+  SearchResult as RAGSearchResult,
+  DocumentType,
+} from "../../services/rag";
 import type { SearchTabProps, SearchResultDisplay } from "./types";
 import { DocumentTypeFilter } from "./DocumentTypeFilter";
 
-export const SearchTab: React.FC<SearchTabProps> = ({ gameState, aiSettings }) => {
+export const SearchTab: React.FC<SearchTabProps> = ({
+  gameState,
+  aiSettings,
+}) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultDisplay[]>([]);
@@ -25,7 +31,9 @@ export const SearchTab: React.FC<SearchTabProps> = ({ gameState, aiSettings }) =
     try {
       const ragService = getRAGService();
       if (!ragService) {
-        setError(t("ragDebugger.noEmbeddingManager", "RAG service not initialized"));
+        setError(
+          t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
+        );
         setIsSearching(false);
         return;
       }
@@ -99,7 +107,10 @@ export const SearchTab: React.FC<SearchTabProps> = ({ gameState, aiSettings }) =
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder={t("ragDebugger.searchPlaceholder", "Enter search query...")}
+            placeholder={t(
+              "ragDebugger.searchPlaceholder",
+              "Enter search query...",
+            )}
             className="flex-1 bg-theme-surface border border-theme-border rounded px-3 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
           />
           <button
@@ -164,7 +175,10 @@ export const SearchTab: React.FC<SearchTabProps> = ({ gameState, aiSettings }) =
       <div className="flex-1 overflow-y-auto space-y-3">
         {results.length === 0 && !isSearching && (
           <div className="text-center text-theme-muted py-8">
-            {t("ragDebugger.noResults", "Enter a query to search the embedding index.")}
+            {t(
+              "ragDebugger.noResults",
+              "Enter a query to search the embedding index.",
+            )}
           </div>
         )}
         {results.map((result, idx) => (
@@ -192,7 +206,10 @@ export const SearchTab: React.FC<SearchTabProps> = ({ gameState, aiSettings }) =
               <div className="flex gap-4 text-xs text-theme-muted">
                 <span>Fork: {result.metadata.forkId as number}</span>
                 <span>Turn: {result.metadata.turnNumber as number}</span>
-                <span>Importance: {((result.metadata.importance as number) * 100).toFixed(0)}%</span>
+                <span>
+                  Importance:{" "}
+                  {((result.metadata.importance as number) * 100).toFixed(0)}%
+                </span>
               </div>
             )}
           </div>

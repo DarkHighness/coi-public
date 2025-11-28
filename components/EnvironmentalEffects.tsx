@@ -5,6 +5,7 @@ import {
   type VisualEffect,
   type AtmosphereObject,
 } from "../utils/constants/atmosphere";
+
 import React, { useEffect, useState, useMemo } from "react";
 
 // Memory cache for loaded fallback images to prevent repeated requests
@@ -44,60 +45,13 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     // Priority Detection Logic - text-based overrides
     let detectedEffect: EffectType = atmosphereEffect;
 
-    // 1. Flicker (Horror/Dungeon settings mostly)
-    if (
-      analysisText.includes("flicker") ||
-      analysisText.includes("strobe") ||
-      analysisText.includes("malfunctioning light") ||
-      analysisText.includes("torch sputtering")
-    ) {
-      detectedEffect = "flicker";
-    }
-    // 2. Rain (Storms, Water)
-    else if (
-      analysisText.includes("rain") ||
-      analysisText.includes("storm") ||
-      analysisText.includes("downpour") ||
-      analysisText.includes("drizzle")
-    ) {
-      detectedEffect = "rain";
-    }
-    // 3. Snow (Cold, Ice)
-    else if (
-      analysisText.includes("snow") ||
-      analysisText.includes("blizzard") ||
-      analysisText.includes("frozen") ||
-      analysisText.includes("icy")
-    ) {
-      detectedEffect = "snow";
-    }
-    // 4. Fire/Embers (Volcano, Campfire, Destruction)
-    else if (
-      analysisText.includes("fire") ||
-      analysisText.includes("ember") ||
-      analysisText.includes("burning") ||
-      analysisText.includes("lava") ||
-      analysisText.includes("ash")
-    ) {
-      detectedEffect = "embers";
-    }
-    // 5. Fog (Mystery, Swamp)
-    else if (
-      analysisText.includes("fog") ||
-      analysisText.includes("mist") ||
-      analysisText.includes("haze") ||
-      analysisText.includes("steam")
-    ) {
-      detectedEffect = "fog";
-    }
-    // 6. Sunny/Particles (Forest, Day)
-    else if (
-      analysisText.includes("sun") ||
-      analysisText.includes("beam") ||
-      analysisText.includes("dust mote") ||
-      analysisText.includes("pollen")
-    ) {
-      detectedEffect = "sunny";
+    // 1. Check for explicit weather enum from AI (Highest Priority)
+    if (resolvedAtmosphere.weather) {
+      if (resolvedAtmosphere.weather === "none") {
+        detectedEffect = null;
+      } else {
+        detectedEffect = resolvedAtmosphere.weather as EffectType;
+      }
     }
 
     setEffect(detectedEffect);
