@@ -315,7 +315,12 @@ export const GamePage: React.FC<GamePageProps> = ({
             if (lastUserSegment) {
               // Retry using the SAME parent ID as the original user segment
               // This creates a sibling node (fork) at the same level
-              handleAction(lastUserSegment.text, false, undefined, lastUserSegment.parentId || undefined);
+              handleAction(
+                lastUserSegment.text,
+                false,
+                undefined,
+                lastUserSegment.parentId || undefined,
+              );
             } else {
               // Fallback if no user segment found (shouldn't happen in game)
               handleAction(defaultContinuePrompt);
@@ -365,7 +370,12 @@ export const GamePage: React.FC<GamePageProps> = ({
 
             if (lastUserSegment) {
               // Retry using the SAME parent ID as the original user segment
-              handleAction(lastUserSegment.text, false, undefined, lastUserSegment.parentId || undefined);
+              handleAction(
+                lastUserSegment.text,
+                false,
+                undefined,
+                lastUserSegment.parentId || undefined,
+              );
             } else {
               handleAction(defaultContinuePrompt);
             }

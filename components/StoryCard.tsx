@@ -1,7 +1,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { StorySegment, AISettings, ImageGenerationContext, Relationship, Location as GameLocation, GameState } from "../types";
-import { getSceneImagePrompt, createImageGenerationContext } from "../services/prompts";
+import {
+  StorySegment,
+  AISettings,
+  ImageGenerationContext,
+  Relationship,
+  Location as GameLocation,
+  GameState,
+} from "../types";
+import {
+  getSceneImagePrompt,
+  createImageGenerationContext,
+} from "../services/prompts";
 import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";
@@ -49,7 +59,10 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
     // If we have a snapshot, reconstruct the full prompt context
     if (segment.stateSnapshot) {
-      const imageContext = createImageGenerationContext(gameState, segment.stateSnapshot);
+      const imageContext = createImageGenerationContext(
+        gameState,
+        segment.stateSnapshot,
+      );
       return getSceneImagePrompt(segment.imagePrompt, imageContext);
     }
 

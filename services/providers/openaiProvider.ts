@@ -702,7 +702,7 @@ export async function getEmbeddingModels(
           id: model.id,
           name: model.id,
           dimensions: dimension,
-          contextLength: 8192
+          contextLength: 8192,
         });
       }
     }

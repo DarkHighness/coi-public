@@ -232,7 +232,9 @@ const createProviderConfig = (
         baseUrl: instance.baseUrl || undefined,
       };
     default:
-      throw new Error(`Unknown protocol: ${(instance as ProviderInstance).protocol}`);
+      throw new Error(
+        `Unknown protocol: ${(instance as ProviderInstance).protocol}`,
+      );
   }
 };
 
@@ -543,7 +545,9 @@ const generateContentUnifiedInternal = async (
   let raw: unknown;
 
   // Get additional options from settings if provided
-  const storyConfig = options?.settings ? getProviderConfig(options.settings, "story") : null;
+  const storyConfig = options?.settings
+    ? getProviderConfig(options.settings, "story")
+    : null;
   const mergedOptions: GenerateContentOptions = {
     thinkingLevel: options?.thinkingLevel || storyConfig?.thinkingLevel,
     mediaResolution: options?.mediaResolution || storyConfig?.mediaResolution,
@@ -726,7 +730,10 @@ export const generateContentUnified = async (
 
   if (functionTypes.includes(providerOrFunc as FunctionType)) {
     // 通过 function type 调用
-    const providerInfo = getProviderConfig(settings, providerOrFunc as FunctionType);
+    const providerInfo = getProviderConfig(
+      settings,
+      providerOrFunc as FunctionType,
+    );
     if (!providerInfo) {
       throw new Error(
         `Provider not configured for function: ${providerOrFunc}`,
@@ -872,8 +879,7 @@ export const generateStoryOutlinePhased = async (
     systemInstruction = getOutlineSystemInstruction(language, isRestricted);
 
     // Inject prompt injections from config
-    const promptInjectionEnabled =
-      settings.extra?.promptInjectionEnabled;
+    const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
     if (promptInjectionEnabled && promptInjectionData) {
       const loweredModelId = modelId.toLowerCase();
       console.log(
@@ -966,7 +972,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         outlinePhase1Schema,
-        { settings }
+        { settings },
       );
       partial.phase1 = result as OutlinePhase1;
       // Use compact JSON (no spaces) for conversation history
@@ -1001,7 +1007,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         outlinePhase2Schema,
-        { settings }
+        { settings },
       );
       partial.phase2 = result as OutlinePhase2;
       conversationHistory.push({
@@ -1035,7 +1041,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         outlinePhase3Schema,
-        { settings }
+        { settings },
       );
       partial.phase3 = result as OutlinePhase3;
       conversationHistory.push({
@@ -1069,7 +1075,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         outlinePhase4Schema,
-        { settings }
+        { settings },
       );
       partial.phase4 = result as OutlinePhase4;
       conversationHistory.push({
@@ -1103,7 +1109,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         outlinePhase5Schema,
-        { settings }
+        { settings },
       );
       partial.phase5 = result as OutlinePhase5;
       if (log) logs.push(log);
@@ -1815,7 +1821,13 @@ const runAgenticLoop = async (
         let output: unknown = { success: false, error: "Unknown tool" };
 
         // Execute tool
-        output = executeToolCall(name, args, db, accumulatedResponse, changedEntities);
+        output = executeToolCall(
+          name,
+          args,
+          db,
+          accumulatedResponse,
+          changedEntities,
+        );
 
         // Handle finish_turn specially
         if (name === "finish_turn") {
@@ -1870,7 +1882,9 @@ const runAgenticLoop = async (
             response: accumulatedResponse,
             logs: allLogs,
             usage: totalUsage,
-            changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+            changedEntities: Array.from(changedEntities.entries()).map(
+              ([id, type]) => ({ id, type }),
+            ),
           };
         }
 
@@ -1943,7 +1957,9 @@ const runAgenticLoop = async (
           response: accumulatedResponse,
           logs: allLogs,
           usage: totalUsage,
-          changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+          changedEntities: Array.from(changedEntities.entries()).map(
+            ([id, type]) => ({ id, type }),
+          ),
         };
       } catch (validationError) {
         console.error(
@@ -1958,7 +1974,9 @@ const runAgenticLoop = async (
             response: result as GameResponse,
             logs: allLogs,
             usage: totalUsage,
-            changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+            changedEntities: Array.from(changedEntities.entries()).map(
+              ([id, type]) => ({ id, type }),
+            ),
           };
         }
 
@@ -1974,7 +1992,9 @@ const runAgenticLoop = async (
           },
           logs: allLogs,
           usage: totalUsage,
-          changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+          changedEntities: Array.from(changedEntities.entries()).map(
+            ([id, type]) => ({ id, type }),
+          ),
         };
       }
     }
@@ -1989,7 +2009,9 @@ const runAgenticLoop = async (
     response: accumulatedResponse,
     logs: allLogs,
     usage: totalUsage,
-    changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+    changedEntities: Array.from(changedEntities.entries()).map(
+      ([id, type]) => ({ id, type }),
+    ),
   };
 };
 
@@ -2045,9 +2067,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["inventoryActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'item');
+        changedEntities.set(entity.id, "item");
       }
     }
     return modifyResult;
@@ -2062,9 +2090,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["relationshipActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'npc');
+        changedEntities.set(entity.id, "npc");
       }
     }
     return modifyResult;
@@ -2080,9 +2114,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["locationActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'location');
+        changedEntities.set(entity.id, "location");
       }
     }
     return modifyResult;
@@ -2097,9 +2137,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["questActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'quest');
+        changedEntities.set(entity.id, "quest");
       }
     }
     return modifyResult;
@@ -2114,9 +2160,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["knowledgeActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'knowledge');
+        changedEntities.set(entity.id, "knowledge");
       }
     }
     return modifyResult;
@@ -2124,9 +2176,16 @@ function executeToolCall(
     const { action: actionType, ...data } = args;
     const modifyResult = db.modify("timeline", actionType as string, data);
     // Track entity with type for RAG update
-    if (modifyResult.success && changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+    if (
+      modifyResult.success &&
+      changedEntities &&
+      modifyResult.data &&
+      typeof modifyResult.data === "object" &&
+      modifyResult.data !== null &&
+      "id" in modifyResult.data
+    ) {
       const entity = modifyResult.data as { id: string };
-      changedEntities.set(entity.id, 'event');
+      changedEntities.set(entity.id, "event");
     }
     return modifyResult;
   } else if (name === "update_causal_chain") {
@@ -2143,9 +2202,15 @@ function executeToolCall(
         ...data,
       } as GameResponse["factionActions"][number]);
       // Track entity with type for RAG update
-      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      if (
+        changedEntities &&
+        modifyResult.data &&
+        typeof modifyResult.data === "object" &&
+        modifyResult.data !== null &&
+        "id" in modifyResult.data
+      ) {
         const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, 'faction');
+        changedEntities.set(entity.id, "faction");
       }
     }
     return modifyResult;

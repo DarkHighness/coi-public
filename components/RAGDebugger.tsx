@@ -212,7 +212,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
 
         // Add outline documents
         if (gameState.outline) {
-          entityIds.push("outline:full", "outline:world", "outline:goal", "outline:premise", "outline:character");
+          entityIds.push(
+            "outline:full",
+            "outline:world",
+            "outline:goal",
+            "outline:premise",
+            "outline:character",
+          );
         }
 
         // Add all entities
@@ -238,7 +244,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
               saveId: indexStats?.currentSaveId || "unknown",
               forkId: gameState.forkId || 0,
               turnNumber: gameState.turnNumber || 0,
-            }))
+            })),
           );
           console.log(`[RAGDebugger] Re-indexed ${documents.length} documents`);
         }
@@ -490,11 +496,17 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
 
                     {isLoadingRecent ? (
                       <div className="text-center text-theme-muted py-4">
-                        {t("ragDebugger.loadingRecent", "Loading recent documents...")}
+                        {t(
+                          "ragDebugger.loadingRecent",
+                          "Loading recent documents...",
+                        )}
                       </div>
                     ) : recentDocs.length === 0 ? (
                       <div className="text-center text-theme-muted py-4">
-                        {t("ragDebugger.noRecentDocs", "No documents in index yet.")}
+                        {t(
+                          "ragDebugger.noRecentDocs",
+                          "No documents in index yet.",
+                        )}
                       </div>
                     ) : (
                       recentDocs.map((doc, idx) => (
@@ -512,18 +524,22 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                               </span>
                               {doc.metadata?.forkId !== undefined && (
                                 <span className="text-xs text-theme-secondary font-mono">
-                                  {t("ragDebugger.fork", "fork")}:{String(doc.metadata.forkId)}
+                                  {t("ragDebugger.fork", "fork")}:
+                                  {String(doc.metadata.forkId)}
                                 </span>
                               )}
                               {doc.metadata?.turnNumber !== undefined && (
                                 <span className="text-xs text-theme-secondary font-mono">
-                                  {t("ragDebugger.turn", "turn")}:{String(doc.metadata.turnNumber)}
+                                  {t("ragDebugger.turn", "turn")}:
+                                  {String(doc.metadata.turnNumber)}
                                 </span>
                               )}
                             </div>
                             {doc.metadata?.createdAt && (
                               <span className="text-xs text-theme-muted font-mono">
-                                {new Date(Number(doc.metadata.createdAt)).toLocaleTimeString()}
+                                {new Date(
+                                  Number(doc.metadata.createdAt),
+                                ).toLocaleTimeString()}
                               </span>
                             )}
                           </div>

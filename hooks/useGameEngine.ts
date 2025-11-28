@@ -66,7 +66,10 @@ async function updateRAGDocumentsBackground(
     if (!ragService) return;
 
     const entityIds = changedEntities.map((e) => e.id);
-    console.log(`[RAG Update] Updating ${entityIds.length} entities:`, entityIds);
+    console.log(
+      `[RAG Update] Updating ${entityIds.length} entities:`,
+      entityIds,
+    );
 
     const documents = extractDocumentsFromState(state, entityIds);
     if (documents.length === 0) return;
@@ -110,7 +113,9 @@ async function indexInitialEntities(state: any): Promise<void> {
     state.locations?.forEach((loc: any) => initialEntityIds.push(loc.id));
     state.quests?.forEach((quest: any) => initialEntityIds.push(quest.id));
     state.knowledge?.forEach((know: any) => initialEntityIds.push(know.id));
-    state.factions?.forEach((faction: any) => initialEntityIds.push(faction.id));
+    state.factions?.forEach((faction: any) =>
+      initialEntityIds.push(faction.id),
+    );
     state.timeline?.forEach((event: any) => initialEntityIds.push(event.id));
 
     if (initialEntityIds.length === 0) return;
@@ -277,7 +282,8 @@ export const useGameEngine = () => {
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
     // If fromNodeId is provided, use it as parent. Otherwise use activeNodeId.
-    const parentId = fromNodeId || (isInit ? null : gameStateRef.current.activeNodeId);
+    const parentId =
+      fromNodeId || (isInit ? null : gameStateRef.current.activeNodeId);
 
     let effectiveUserNodeId = userNodeId;
     let effectiveParentId = parentId;
@@ -885,7 +891,12 @@ export const useGameEngine = () => {
 
       if (shouldRetry) {
         // Retry outline generation
-        return startNewGame(selectedTheme, customContext, onStream, onPhaseProgress);
+        return startNewGame(
+          selectedTheme,
+          customContext,
+          onStream,
+          onPhaseProgress,
+        );
       } else {
         // User chose not to retry - clean up and go back
         deleteSlot(slotId);
@@ -897,7 +908,6 @@ export const useGameEngine = () => {
 
     // Step 2: Process outline and generate first turn (original try-catch continues)
     try {
-
       // Calculate total tokens from all phase logs
       const totalPhaseTokens = logs.reduce(
         (sum, log) => sum + (log.usage?.totalTokens || 0),
@@ -1029,7 +1039,10 @@ export const useGameEngine = () => {
             // On success, index initial entities in background (non-blocking)
             if (aiSettings.embedding?.enabled) {
               indexInitialEntities(gameStateRef.current).catch((error) => {
-                console.error("[RAG Init] Failed to index initial entities:", error);
+                console.error(
+                  "[RAG Init] Failed to index initial entities:",
+                  error,
+                );
               });
             }
           }
@@ -1361,7 +1374,10 @@ export const useGameEngine = () => {
 
     try {
       const snapshot = node.stateSnapshot || gameStateRef.current;
-      const imageContext = createImageGenerationContext(gameStateRef.current, snapshot);
+      const imageContext = createImageGenerationContext(
+        gameStateRef.current,
+        snapshot,
+      );
 
       const { url, log } = await generateSceneImage(
         node.imagePrompt,

@@ -156,7 +156,8 @@ export default function App() {
     if (!wasDisabled || !nowEnabled) return;
 
     // Check if there's existing game data that could benefit from indexing
-    const hasExistingGame = gameState.outline !== null && currentSlotId !== null;
+    const hasExistingGame =
+      gameState.outline !== null && currentSlotId !== null;
     const hasStoryContent = Object.keys(gameState.nodes).length > 0;
 
     if (!hasExistingGame && !hasStoryContent) return;
@@ -169,7 +170,7 @@ export default function App() {
     // Prompt user to index existing content
     const shouldIndex = window.confirm(
       t("rag.newlyEnabled") ||
-        "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment."
+        "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
     );
 
     if (shouldIndex) {
@@ -188,7 +189,13 @@ export default function App() {
 
           // Add outline documents
           if (gameState.outline) {
-            entityIds.push("outline:full", "outline:world", "outline:goal", "outline:premise", "outline:character");
+            entityIds.push(
+              "outline:full",
+              "outline:world",
+              "outline:goal",
+              "outline:premise",
+              "outline:character",
+            );
           }
 
           // Add all entities
@@ -214,26 +221,32 @@ export default function App() {
                 saveId: currentSlotId || "unknown",
                 forkId: gameState.forkId || 0,
                 turnNumber: gameState.turnNumber || 0,
-              }))
+              })),
             );
             console.log(`[App] Indexed ${documents.length} existing documents`);
             showToast(
               t("rag.indexComplete") || `Indexed ${documents.length} documents`,
-              "info"
+              "info",
             );
           }
         } catch (error) {
           console.error("[App] Failed to index existing content:", error);
           showToast(
             t("rag.indexFailed") || "Failed to index existing content",
-            "error"
+            "error",
           );
         }
       };
 
       indexExistingContent();
     }
-  }, [aiSettings.embedding?.enabled, ragState.isInitialized, gameState, currentSlotId, t]);
+  }, [
+    aiSettings.embedding?.enabled,
+    ragState.isInitialized,
+    gameState,
+    currentSlotId,
+    t,
+  ]);
 
   // Handle RAG model mismatch
   useEffect(() => {
@@ -472,8 +485,10 @@ export default function App() {
     const storyInstance = getProviderInstance(storyProviderId);
     const storyProviderName = storyInstance?.name || storyProviderId;
 
-    const { isValid: storyValid, error: storyError } =
-      await validateConnection(aiSettings, storyProviderId);
+    const { isValid: storyValid, error: storyError } = await validateConnection(
+      aiSettings,
+      storyProviderId,
+    );
     if (!storyValid) {
       showToast(
         `${storyProviderName}: ${storyError || "Connection Failed"} - Story generation is required`,
@@ -488,8 +503,10 @@ export default function App() {
     const loreInstance = getProviderInstance(loreProviderId);
     const loreProviderName = loreInstance?.name || loreProviderId;
 
-    const { isValid: loreValid, error: loreError } =
-      await validateConnection(aiSettings, loreProviderId);
+    const { isValid: loreValid, error: loreError } = await validateConnection(
+      aiSettings,
+      loreProviderId,
+    );
     if (!loreValid) {
       showToast(
         `${loreProviderName}: ${loreError || "Connection Failed"} - Lore generation is required`,
@@ -537,7 +554,10 @@ export default function App() {
         // Skip if same as story provider (already checked)
         const instance = getProviderInstance(providerId);
         const providerName = instance?.name || providerId;
-        const { isValid, error } = await validateConnection(aiSettings, providerId);
+        const { isValid, error } = await validateConnection(
+          aiSettings,
+          providerId,
+        );
         if (!isValid) {
           console.warn(`${name} provider validation failed:`, error);
           showToast(

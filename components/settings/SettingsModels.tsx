@@ -9,7 +9,9 @@ interface SettingsModelsProps {
   showToast: (msg: string, type?: "info" | "error") => void;
 }
 
-export const SettingsModels: React.FC<SettingsModelsProps> = ({ showToast }) => {
+export const SettingsModels: React.FC<SettingsModelsProps> = ({
+  showToast,
+}) => {
   const { t } = useTranslation();
   const {
     settings: currentSettings,

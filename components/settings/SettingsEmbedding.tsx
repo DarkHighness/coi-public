@@ -34,7 +34,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
       setLoadingModels((prev) => ({ ...prev, [providerId]: true }));
       try {
-        const fetchedModels = await getEmbeddingModels(currentSettings, providerId);
+        const fetchedModels = await getEmbeddingModels(
+          currentSettings,
+          providerId,
+        );
         if (fetchedModels.length > 0) {
           setModels((prev) => ({ ...prev, [providerId]: fetchedModels }));
         }
@@ -126,8 +129,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           </svg>
           <div className="flex-1">
             <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-1">
-              {t("embedding.noAvailableProviders") ||
-                "No Available Providers"}
+              {t("embedding.noAvailableProviders") || "No Available Providers"}
             </h4>
             <p className="text-xs text-red-400">
               {t("embedding.noAvailableProvidersDesc") ||
@@ -216,8 +218,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           >
             <option value="">
               {getModelsForProvider().length === 0
-                ? (t("embedding.noModels") || "No models available")
-                : (t("embedding.selectModel") || "Select a model...")}
+                ? t("embedding.noModels") || "No models available"
+                : t("embedding.selectModel") || "Select a model..."}
             </option>
             {getModelsForProvider().map((model) => (
               <option key={model.id} value={model.id}>
@@ -228,14 +230,17 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           </select>
           {!config.modelId && getModelsForProvider().length > 0 && (
             <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
-              {t("embedding.noModelSelected") || "Please select an embedding model"}
+              {t("embedding.noModelSelected") ||
+                "Please select an embedding model"}
             </div>
           )}
-          {getModelsForProvider().length === 0 && !loadingModels[config.providerId] && (
-            <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-              {t("embedding.noModelsAvailable") || "This provider does not support embedding models"}
-            </div>
-          )}
+          {getModelsForProvider().length === 0 &&
+            !loadingModels[config.providerId] && (
+              <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+                {t("embedding.noModelsAvailable") ||
+                  "This provider does not support embedding models"}
+              </div>
+            )}
         </div>
 
         {/* Dimensions Display */}
@@ -244,7 +249,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             {t("embedding.dimensions") || "Dimensions"}
           </span>
           <span className="text-theme-text font-mono">
-            {config.dimensions || (t("embedding.notSet") || "Not set")}
+            {config.dimensions || t("embedding.notSet") || "Not set"}
           </span>
         </div>
 

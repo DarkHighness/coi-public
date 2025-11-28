@@ -139,7 +139,7 @@ export interface StateChanges {
 }
 
 export type ActionResult =
-  | { success: true; stateChanges: StateChanges; }
+  | { success: true; stateChanges: StateChanges }
   | { success: false; error: string };
 
 // Alive Entities: entities marked by AI as needed for next turn

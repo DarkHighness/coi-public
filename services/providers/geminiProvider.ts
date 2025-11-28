@@ -465,7 +465,10 @@ function buildGenerationConfig(
   if (schema && (!options?.tools || options.tools.length === 0)) {
     config.responseMimeType = "application/json";
     config.responseSchema = zodToGemini(schema);
-    console.log("[Gemini] JSON mode enabled with schema:", JSON.stringify(config.responseSchema, null, 2));
+    console.log(
+      "[Gemini] JSON mode enabled with schema:",
+      JSON.stringify(config.responseSchema, null, 2),
+    );
   }
 
   // 工具配置 - 从 Zod 直接编译到 Gemini 格式
@@ -542,10 +545,7 @@ function parseJSONResponse(text: string): unknown {
         .replace(/,(\s*[}\]])/g, "$1");
       return JSON.parse(repaired);
     } catch (error2) {
-      console.error(
-        "[Gemini] JSON parse failed completely. Full text:",
-        text,
-      );
+      console.error("[Gemini] JSON parse failed completely. Full text:", text);
       throw new JSONParseError("gemini", text.substring(0, 500), error2);
     }
   }

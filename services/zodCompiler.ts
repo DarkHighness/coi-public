@@ -219,7 +219,8 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
             // which is the most permissive for discriminated unions
             const mergedSchema: Schema = {
               type: Type.STRING,
-              description: allProperties[key].description || processedSchema.description,
+              description:
+                allProperties[key].description || processedSchema.description,
             };
             // Preserve nullable flag if either schema has it
             if (allProperties[key].nullable || processedSchema.nullable) {

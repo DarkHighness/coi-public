@@ -144,13 +144,14 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       <MarkdownText content={worldSetting.hidden.hiddenRules} />
                     </div>
                   )}
-                  {worldSetting.hidden.secrets && worldSetting.hidden.secrets.length > 0 && (
-                    <ul className="text-[10px] text-theme-danger/70 mt-1 list-disc pl-3">
-                      {worldSetting.hidden.secrets.map((secret, idx) => (
-                        <li key={idx}>{secret}</li>
-                      ))}
-                    </ul>
-                  )}
+                  {worldSetting.hidden.secrets &&
+                    worldSetting.hidden.secrets.length > 0 && (
+                      <ul className="text-[10px] text-theme-danger/70 mt-1 list-disc pl-3">
+                        {worldSetting.hidden.secrets.map((secret, idx) => (
+                          <li key={idx}>{secret}</li>
+                        ))}
+                      </ul>
+                    )}
                 </div>
               )}
             </div>
@@ -177,7 +178,9 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
               </h4>
               <div className="text-xs text-theme-danger/80 font-serif leading-relaxed italic bg-theme-danger/5 p-2 rounded border border-theme-danger/20">
                 {outline.mainGoal.hidden.trueDescription && (
-                  <MarkdownText content={outline.mainGoal.hidden.trueDescription} />
+                  <MarkdownText
+                    content={outline.mainGoal.hidden.trueDescription}
+                  />
                 )}
                 {outline.mainGoal.hidden.trueConditions && (
                   <p className="mt-1 text-[10px] text-theme-danger/60">

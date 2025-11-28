@@ -269,9 +269,7 @@ async function handleAddDocuments(
   // Add to database
   await database!.addDocuments(documents);
 
-  console.log(
-    `[RAGWorker] Added ${documents.length} documents to database`,
-  );
+  console.log(`[RAGWorker] Added ${documents.length} documents to database`);
 
   // Check global storage overflow
   const overflow = await database!.checkStorageOverflow();
@@ -469,7 +467,9 @@ async function handleGetRecentDocuments(
 
   const docs = await database!.getRecentDocuments(currentSaveId, limit, types);
 
-  console.log(`[RAGWorker] getRecentDocuments: returning ${docs.length} documents`);
+  console.log(
+    `[RAGWorker] getRecentDocuments: returning ${docs.length} documents`,
+  );
 
   return docs;
 }

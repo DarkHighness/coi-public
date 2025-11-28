@@ -70,7 +70,13 @@ export type QueryResultMap = {
   quest: Quest[];
   knowledge: KnowledgeEntry[];
   faction: Faction[];
-  character: CharacterStatus | CharacterProfile | CharacterAttribute[] | CharacterStatus["skills"] | CharacterStatus["conditions"] | CharacterStatus["hiddenTraits"];
+  character:
+    | CharacterStatus
+    | CharacterProfile
+    | CharacterAttribute[]
+    | CharacterStatus["skills"]
+    | CharacterStatus["conditions"]
+    | CharacterStatus["hiddenTraits"];
   timeline: TimelineEvent[];
   causal_chain: CausalChain[];
   global: GlobalStateInfo;
@@ -88,7 +94,10 @@ export type ModifyResultMap = {
   character: { updated: string[] };
   timeline: TimelineEvent;
   causal_chain: CausalChain | { triggered: boolean; description: string };
-  global: { updated: string[]; values: Record<string, string | AtmosphereObject> };
+  global: {
+    updated: string[];
+    values: Record<string, string | AtmosphereObject>;
+  };
 };
 
 // --- Helper Functions ---
@@ -312,7 +321,10 @@ export class GameDatabase {
   }
 
   // Type-safe filter function for entities with name/title/id/visible fields
-  private filterEntities<T extends Record<string, unknown>>(list: T[], term?: string): T[] {
+  private filterEntities<T extends Record<string, unknown>>(
+    list: T[],
+    term?: string,
+  ): T[] {
     if (!term) return list;
     const lowerTerm = term.toLowerCase();
     return list.filter((item) => {
@@ -341,20 +353,29 @@ export class GameDatabase {
         case "inventory": {
           const results = this.filterEntities(this.state.inventory, term);
           this.updateLastAccess(results);
-          return createSuccess<InventoryItem[]>(results, `Found ${results.length} items`);
+          return createSuccess<InventoryItem[]>(
+            results,
+            `Found ${results.length} items`,
+          );
         }
 
         case "relationship": {
           const results = this.filterEntities(this.state.relationships, term);
           this.updateLastAccess(results);
-          return createSuccess<Relationship[]>(results, `Found ${results.length} NPCs`);
+          return createSuccess<Relationship[]>(
+            results,
+            `Found ${results.length} NPCs`,
+          );
         }
 
         case "location":
           if (term) {
             const results = this.filterEntities(this.state.locations, term);
             this.updateLastAccess(results);
-            return createSuccess<Location[]>(results, `Found ${results.length} locations`);
+            return createSuccess<Location[]>(
+              results,
+              `Found ${results.length} locations`,
+            );
           }
           // For listing, still update lastAccess for all
           this.updateLastAccess(this.state.locations);
@@ -373,7 +394,10 @@ export class GameDatabase {
         case "quest": {
           const results = this.filterEntities(this.state.quests, term);
           this.updateLastAccess(results);
-          return createSuccess<Quest[]>(results, `Found ${results.length} quests`);
+          return createSuccess<Quest[]>(
+            results,
+            `Found ${results.length} quests`,
+          );
         }
 
         case "knowledge": {
