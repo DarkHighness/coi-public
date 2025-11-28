@@ -162,6 +162,7 @@ export type RAGWorkerMessageType =
   | "updateDocument"
   | "deleteDocuments"
   | "search"
+  | "getRecentDocuments"
   | "switchSave"
   | "getSaveStats"
   | "getAllSaveStats"
@@ -251,6 +252,15 @@ export interface SearchPayload {
   query: string;
   queryEmbedding?: Float32Array; // Pre-computed embedding (optional)
   options: SearchOptions;
+}
+
+// ============================================================================
+// Get Recent Documents Payload
+// ============================================================================
+
+export interface GetRecentDocumentsPayload {
+  limit?: number; // Max documents to return (default: 20)
+  types?: DocumentType[]; // Filter by types
 }
 
 // ============================================================================

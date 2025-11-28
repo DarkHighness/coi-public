@@ -10,6 +10,7 @@ import {
   type RAGConfig,
   type RAGDocument,
   type DocumentType,
+  type RAGDocumentMeta,
   type RAGWorkerRequest,
   type RAGWorkerResponse,
   type RAGEvent,
@@ -168,6 +169,9 @@ export class RAGService {
     documents: AddDocumentsPayload["documents"],
   ): Promise<{ count: number }> {
     this.ensureInitialized();
+    console.log(
+      `[RAGService] addDocuments: count=${documents.length}, saveId=${documents[0]?.saveId || "N/A"}`,
+    );
     return this.sendRequest("addDocuments", { documents });
   }
 
@@ -203,6 +207,9 @@ export class RAGService {
     options: SearchOptions = {},
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
+    console.log(
+      `[RAGService] search: query="${query.substring(0, 50)}...", options=${JSON.stringify(options)}`,
+    );
     return this.sendRequest("search", {
       query,
       options,
@@ -222,6 +229,20 @@ export class RAGService {
       queryEmbedding,
       options,
     } as SearchPayload);
+  }
+
+  /**
+   * Get recently added documents (for debugging/display)
+   */
+  async getRecentDocuments(
+    limit: number = 20,
+    types?: DocumentType[],
+  ): Promise<RAGDocumentMeta[]> {
+    this.ensureInitialized();
+    console.log(
+      `[RAGService] getRecentDocuments: limit=${limit}, types=${types?.join(",") || "all"}`,
+    );
+    return this.sendRequest("getRecentDocuments", { limit, types });
   }
 
   // ==========================================================================
@@ -513,13 +534,21 @@ export class RAGService {
 // Singleton Instance
 // ============================================================================
 
-let ragServiceInstance: RAGService | null = null;
+// Put it on the window to persist across hot reloads in development
+if (typeof window !== "undefined") {
+  if (!(window as any).ragServiceInstance) {
+    (window as any).ragServiceInstance = null;
+  }
+}
 
 /**
  * Get the RAG service singleton instance
  */
 export function getRAGService(): RAGService | null {
-  return ragServiceInstance;
+  if (typeof window !== "undefined") {
+    return (window as any).ragServiceInstance;
+  }
+  return null;
 }
 
 /**
@@ -529,23 +558,26 @@ export async function initializeRAGService(
   config: Partial<RAGConfig>,
   credentials: InitPayload["credentials"],
 ): Promise<RAGService> {
+  let ragServiceInstance = getRAGService();
   if (ragServiceInstance) {
     // Update config if already initialized
     await ragServiceInstance.updateConfig(config);
     return ragServiceInstance;
   }
 
-  ragServiceInstance = new RAGService();
-  await ragServiceInstance.initialize(config, credentials);
-  return ragServiceInstance;
+  (window as any).ragServiceInstance = new RAGService();
+  await (window as any).ragServiceInstance.initialize(config, credentials);
+
+  return (window as any).ragServiceInstance;
 }
 
 /**
  * Terminate the RAG service singleton
  */
 export function terminateRAGService(): void {
+  const ragServiceInstance = getRAGService();
   if (ragServiceInstance) {
     ragServiceInstance.terminate();
-    ragServiceInstance = null;
+    (window as any).ragServiceInstance = null;
   }
 }

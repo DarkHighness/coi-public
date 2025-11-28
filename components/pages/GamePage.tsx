@@ -453,6 +453,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onClose={() => setIsRAGDebuggerOpen(false)}
             themeFont={themeFont}
             gameState={gameState}
+            aiSettings={aiSettings}
           />
         )}
 

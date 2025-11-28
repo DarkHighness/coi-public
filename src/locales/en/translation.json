@@ -242,8 +242,14 @@
     "statusInfo": "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation.",
     "status": "RAG Status",
     "phase": {
-      "complete": "Completed"
-    }
+      "complete": "Completed",
+      "cleanup": "Cleaning Up"
+    },
+    "maxStorage": "Max Storage Documents",
+    "maxMemory": "Max Memory Documents",
+    "selectModel": "Please select an embedding model",
+    "noModelsAvailable": "No embedding models available, please check provider settings.",
+    "noModels": "No embedding model selected."
   },
   "themeMode": "Theme Mode",
   "settings": {
@@ -816,7 +822,15 @@
     "rebuildFailed": "Failed to rebuild index",
     "fork": "fork",
     "turn": "turn",
-    "importance": "imp"
+    "importance": "imp",
+    "saveId": "Save ID",
+    "provider": "Provider",
+    "providerInfo": "Information about provider configuration can be found in Settings → Providers.",
+    "initialized": "Initialized",
+    "storageDocs": "Stored Documents",
+    "memoryDocs": "Documents in Memory",
+    "recentDocuments": "Recent Documents",
+    "recentDocsHint": "Recent documents are shown when there are no search queries."
   },
   "providers": {
     "configuration": "Provider Configuration",

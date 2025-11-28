@@ -230,8 +230,14 @@
     "statusInfo": "嵌入将在创建故事内容时生成。这使得在故事生成期间能够进行语义搜索以检索相关上下文。",
     "status": "RAG 状态",
     "phase": {
-      "complete": "完成"
-    }
+      "complete": "完成",
+      "cleanup": "清理"
+    },
+    "maxStorage": "最大存储文档数",
+    "maxMemory": "最大内存文档数",
+    "selectModel": "请选择嵌入模型",
+    "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
+    "noModels": "未选择嵌入模型。"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
@@ -795,7 +801,15 @@
     "rebuildFailed": "重建索引失败",
     "fork": "分支",
     "turn": "回合",
-    "importance": "权重"
+    "importance": "权重",
+    "saveId": "存档 ID",
+    "provider": "提供商",
+    "providerInfo": "有关提供商配置的信息，请前往 设置 → 提供商。",
+    "initialized": "已初始化",
+    "storageDocs": "存储的文档",
+    "memoryDocs": "内存中的文档",
+    "recentDocuments": "最近的文档",
+    "recentDocsHint": "当没有查找请求时，将显示最近的文档。"
   },
   "providers": {
     "configuration": "提供商配置",

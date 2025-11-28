@@ -29,6 +29,7 @@ import {
   type UpdateDocumentPayload,
   type DeleteDocumentsPayload,
   type SearchPayload,
+  type GetRecentDocumentsPayload,
   type SwitchSavePayload,
   type SearchResult,
   type SaveStats,
@@ -36,6 +37,7 @@ import {
   type ModelMismatchInfo,
   type StorageOverflowInfo,
   type GlobalStorageStats,
+  type RAGDocumentMeta,
 } from "./types";
 
 // ============================================================================
@@ -136,6 +138,11 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
     case "search":
       return handleSearch(request.payload as SearchPayload);
 
+    case "getRecentDocuments":
+      return handleGetRecentDocuments(
+        request.payload as GetRecentDocumentsPayload,
+      );
+
     case "switchSave":
       return handleSwitchSave(request.payload as SwitchSavePayload);
 
@@ -179,8 +186,13 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
 // ============================================================================
 
 async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
+  console.log(
+    `[RAGWorker] handleInit: provider=${payload.config.provider}, modelId=${payload.config.modelId}`,
+  );
+
   if (isInitialized) {
     // Re-initialize with new config/credentials
+    console.log("[RAGWorker] Re-initializing with new config");
     config = { ...config, ...payload.config };
     credentials = payload.credentials;
     cache?.updateConfig(config);
@@ -191,8 +203,10 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   credentials = payload.credentials;
 
   // Initialize database
+  console.log("[RAGWorker] Initializing database...");
   database = new RAGDatabase(config);
   await database.initialize();
+  console.log("[RAGWorker] Database initialized");
 
   // Initialize cache
   cache = new LRUCacheManager(config);
@@ -211,11 +225,18 @@ async function handleAddDocuments(
 ): Promise<{ count: number }> {
   ensureInitialized();
 
+  console.log(
+    `[RAGWorker] handleAddDocuments: count=${payload.documents.length}, saveId=${payload.documents[0]?.saveId || "N/A"}`,
+  );
+
   const documents: RAGDocument[] = [];
   const now = Date.now();
 
   for (const doc of payload.documents) {
     // Generate embedding for document
+    console.log(
+      `[RAGWorker] Generating embedding for: entityId=${doc.entityId}, type=${doc.type}`,
+    );
     const embedding = await generateEmbedding(doc.content);
 
     const ragDoc: RAGDocument = {
@@ -247,6 +268,10 @@ async function handleAddDocuments(
 
   // Add to database
   await database!.addDocuments(documents);
+
+  console.log(
+    `[RAGWorker] Added ${documents.length} documents to database`,
+  );
 
   // Check global storage overflow
   const overflow = await database!.checkStorageOverflow();
@@ -350,6 +375,9 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   }
 
   isSearching = true;
+  console.log(
+    `[RAGWorker] handleSearch: query="${payload.query.substring(0, 50)}...", saveId=${currentSaveId}`,
+  );
 
   try {
     // Get query embedding
@@ -420,6 +448,30 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   } finally {
     isSearching = false;
   }
+}
+
+async function handleGetRecentDocuments(
+  payload: GetRecentDocumentsPayload,
+): Promise<RAGDocumentMeta[]> {
+  ensureInitialized();
+
+  if (!currentSaveId) {
+    console.log("[RAGWorker] getRecentDocuments: No save context set");
+    return [];
+  }
+
+  const limit = payload.limit || 20;
+  const types = payload.types;
+
+  console.log(
+    `[RAGWorker] getRecentDocuments: saveId=${currentSaveId}, limit=${limit}, types=${types?.join(",") || "all"}`,
+  );
+
+  const docs = await database!.getRecentDocuments(currentSaveId, limit, types);
+
+  console.log(`[RAGWorker] getRecentDocuments: returning ${docs.length} documents`);
+
+  return docs;
 }
 
 async function handleSwitchSave(

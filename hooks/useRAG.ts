@@ -35,6 +35,7 @@ import {
   type ModelMismatchInfo,
   type StorageOverflowInfo,
   type DocumentType,
+  type RAGDocumentMeta,
 } from "../services/rag";
 import { getEmbeddingModels as getGeminiEmbeddingModels } from "../services/providers/geminiProvider";
 import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../services/providers/openaiProvider";
@@ -66,6 +67,10 @@ export interface RAGHookActions {
     changedEntityIds: string[],
   ) => Promise<void>;
   search: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
+  getRecentDocuments: (
+    limit?: number,
+    types?: DocumentType[],
+  ) => Promise<RAGDocumentMeta[]>;
   getRAGContext: (query: string, state: GameState) => Promise<string>;
   handleModelMismatch: (
     action: "rebuild" | "disable" | "continue",
@@ -343,6 +348,27 @@ export function useRAG(
     [],
   );
 
+  const getRecentDocuments = useCallback(
+    async (
+      limit: number = 20,
+      types?: DocumentType[],
+    ): Promise<RAGDocumentMeta[]> => {
+      const service = serviceRef.current;
+      if (!service) {
+        console.log("[useRAG] getRecentDocuments: Service not initialized");
+        return [];
+      }
+
+      try {
+        return await service.getRecentDocuments(limit, types);
+      } catch (error) {
+        console.error("[useRAG] getRecentDocuments failed:", error);
+        return [];
+      }
+    },
+    [],
+  );
+
   const getRAGContext = useCallback(
     async (query: string, state: GameState): Promise<string> => {
       const service = serviceRef.current;
@@ -518,6 +544,7 @@ export function useRAG(
       switchSave,
       updateDocuments,
       search,
+      getRecentDocuments,
       getRAGContext,
       handleModelMismatch,
       handleStorageOverflow,

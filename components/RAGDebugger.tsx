@@ -40,7 +40,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultDisplay[]>([]);
+  const [recentDocs, setRecentDocs] = useState<SearchResultDisplay[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
   const [activeTab, setActiveTab] = useState<"search" | "stats">("search");
@@ -75,6 +77,40 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
     }
   }, []);
 
+  // Load recent documents
+  const loadRecentDocuments = useCallback(async () => {
+    const ragService = getRAGService();
+    if (!ragService) {
+      setRecentDocs([]);
+      return;
+    }
+
+    setIsLoadingRecent(true);
+    try {
+      const docs = await ragService.getRecentDocuments(20);
+      console.log("[RAGDebugger] Loaded recent documents:", docs.length);
+      setRecentDocs(
+        docs.map((doc) => ({
+          entityId: doc.entityId,
+          type: doc.type,
+          content: doc.content,
+          score: 1.0, // No similarity score for recent docs
+          metadata: {
+            forkId: doc.forkId,
+            turnNumber: doc.turnNumber,
+            importance: doc.importance,
+            createdAt: doc.createdAt,
+          },
+        })),
+      );
+    } catch (err) {
+      console.error("[RAGDebugger] Failed to load recent docs:", err);
+      setRecentDocs([]);
+    } finally {
+      setIsLoadingRecent(false);
+    }
+  }, []);
+
   // Reset state and load stats when opened
   useEffect(() => {
     if (isOpen) {
@@ -82,8 +118,9 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       setResults([]);
       setError(null);
       loadIndexStats();
+      loadRecentDocuments();
     }
-  }, [isOpen, loadIndexStats]);
+  }, [isOpen, loadIndexStats, loadRecentDocuments]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -428,10 +465,73 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 results.length === 0 &&
                 !isSearching &&
                 !error && (
-                  <div className="text-center text-theme-muted py-8">
-                    {t(
-                      "ragDebugger.noResults",
-                      "Enter a query to search the embedding index",
+                  <div className="space-y-4">
+                    {/* Recent Documents Section */}
+                    <div className="border-b border-theme-border pb-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-theme-text uppercase tracking-wider">
+                          {t("ragDebugger.recentDocuments", "Recent Documents")}
+                        </h3>
+                        <button
+                          onClick={loadRecentDocuments}
+                          disabled={isLoadingRecent}
+                          className="text-xs text-theme-muted hover:text-theme-primary transition-colors"
+                        >
+                          {isLoadingRecent ? "..." : "↻"}
+                        </button>
+                      </div>
+                      <p className="text-xs text-theme-muted mt-1">
+                        {t(
+                          "ragDebugger.recentDocsHint",
+                          "Showing recently added documents. Enter a query above to search.",
+                        )}
+                      </p>
+                    </div>
+
+                    {isLoadingRecent ? (
+                      <div className="text-center text-theme-muted py-4">
+                        {t("ragDebugger.loadingRecent", "Loading recent documents...")}
+                      </div>
+                    ) : recentDocs.length === 0 ? (
+                      <div className="text-center text-theme-muted py-4">
+                        {t("ragDebugger.noRecentDocs", "No documents in index yet.")}
+                      </div>
+                    ) : (
+                      recentDocs.map((doc, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-3 hover:border-theme-primary/50 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2 py-0.5 bg-theme-primary/20 text-theme-primary text-xs rounded-full uppercase font-bold">
+                                {doc.type}
+                              </span>
+                              <span className="text-xs text-theme-muted font-mono">
+                                {doc.entityId}
+                              </span>
+                              {doc.metadata?.forkId !== undefined && (
+                                <span className="text-xs text-theme-secondary font-mono">
+                                  {t("ragDebugger.fork", "fork")}:{String(doc.metadata.forkId)}
+                                </span>
+                              )}
+                              {doc.metadata?.turnNumber !== undefined && (
+                                <span className="text-xs text-theme-secondary font-mono">
+                                  {t("ragDebugger.turn", "turn")}:{String(doc.metadata.turnNumber)}
+                                </span>
+                              )}
+                            </div>
+                            {doc.metadata?.createdAt && (
+                              <span className="text-xs text-theme-muted font-mono">
+                                {new Date(Number(doc.metadata.createdAt)).toLocaleTimeString()}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-theme-text/90 whitespace-pre-wrap">
+                            {doc.content}
+                          </p>
+                        </div>
+                      ))
                     )}
                   </div>
                 )}

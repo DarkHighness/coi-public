@@ -165,6 +165,10 @@ export class RAGDatabase {
       doc.forkId,
     );
 
+    console.log(
+      `[RAGDatabase] addDocument: entityId=${doc.entityId}, type=${doc.type}, saveId=${doc.saveId}, version=${version}`,
+    );
+
     // Insert document with model info
     await this.db.query(
       `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version,
@@ -220,6 +224,10 @@ export class RAGDatabase {
 
   async addDocuments(docs: RAGDocument[]): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
+
+    console.log(
+      `[RAGDatabase] addDocuments: count=${docs.length}, saveId=${docs[0]?.saveId || "N/A"}`,
+    );
 
     // Use transaction for batch insert
     await this.db.transaction(async (tx) => {
@@ -385,6 +393,10 @@ export class RAGDatabase {
 
     const { topK = 10, threshold = 0.5, types, forkIds, beforeTurn } = options;
 
+    console.log(
+      `[RAGDatabase] searchSimilar: saveId=${saveId}, topK=${topK}, threshold=${threshold}, types=${types?.join(",") || "all"}`,
+    );
+
     // Build query with filters
     let whereConditions = ["d.save_id = $2"];
     const params: any[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
@@ -506,6 +518,42 @@ export class RAGDatabase {
 
     const params = limit ? [saveId, limit] : [saveId];
     const result = await this.db.query<any>(query, params);
+
+    return result.rows.map((row) => this.rowToDocumentMeta(row));
+  }
+
+  /**
+   * Get recently added documents for the current save
+   */
+  async getRecentDocuments(
+    saveId: string,
+    limit: number = 20,
+    types?: DocumentType[],
+  ): Promise<RAGDocumentMeta[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    let query: string;
+    let params: any[];
+
+    if (types && types.length > 0) {
+      query = `SELECT * FROM documents
+               WHERE save_id = $1 AND type = ANY($2)
+               ORDER BY created_at DESC
+               LIMIT $3`;
+      params = [saveId, types, limit];
+    } else {
+      query = `SELECT * FROM documents
+               WHERE save_id = $1
+               ORDER BY created_at DESC
+               LIMIT $2`;
+      params = [saveId, limit];
+    }
+
+    const result = await this.db.query<any>(query, params);
+
+    console.log(
+      `[RAGDatabase] getRecentDocuments: saveId=${saveId}, limit=${limit}, types=${types?.join(",") || "all"}, found=${result.rows.length}`,
+    );
 
     return result.rows.map((row) => this.rowToDocumentMeta(row));
   }
