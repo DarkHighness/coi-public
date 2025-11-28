@@ -40,7 +40,7 @@ export interface RAGDocument {
 
   // Model tracking (critical for consistency)
   embeddingModel: string; // Model used to generate embedding (e.g., "text-embedding-004")
-  embeddingProvider: "gemini" | "openai" | "openrouter"; // Provider used
+  embeddingProvider: string; // Provider used
 
   // Metadata
   importance: number; // 0-1 importance score
@@ -99,7 +99,7 @@ export interface RAGConfig {
 
   // Embedding settings
   dimensions: number; // Embedding vector dimensions
-  provider: "gemini" | "openai" | "openrouter";
+  provider: "gemini" | "openai" | "openrouter" | "claude";
   modelId: string;
 }
 

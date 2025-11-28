@@ -139,7 +139,7 @@ export interface StateChanges {
 }
 
 export type ActionResult =
-  | { success: true; stateChanges: StateChanges; legacyMessage: string }
+  | { success: true; stateChanges: StateChanges; }
   | { success: false; error: string };
 
 // Context Priority System: How many recent/alive entities to include in context
@@ -705,7 +705,30 @@ export interface StoryThemeConfig {
 
 export type LanguageCode = "en" | "zh";
 
-export type AIProvider = "gemini" | "openai" | "openrouter";
+// ============================================================================
+// Multi-Provider System Types
+// ============================================================================
+
+/** Provider 协议类型 */
+export type ProviderProtocol = "gemini" | "openai" | "openrouter" | "claude";
+
+/** Provider 实例配置 */
+export interface ProviderInstance {
+  id: string; // 唯一标识符，如 "provider-1", "provider-2"
+  name: string; // 用户自定义名称，如 "OpenAI Official", "DeepSeek"
+  protocol: ProviderProtocol; // 协议类型
+  baseUrl: string; // API 基础 URL
+  apiKey: string; // API 密钥
+  enabled: boolean; // 是否启用
+  createdAt: number; // 创建时间
+  lastModified: number; // 最后修改时间
+}
+
+/** Provider 管理配置 */
+export interface ProviderManagement {
+  instances: ProviderInstance[]; // 所有 provider 实例
+  nextId: number; // 用于生成新的 provider ID
+}
 
 export interface ProviderCredentials {
   apiKey?: string;
@@ -713,7 +736,7 @@ export interface ProviderCredentials {
 }
 
 export interface FunctionConfig {
-  provider: AIProvider;
+  providerId: string; // 引用 ProviderInstance.id
   modelId: string;
   enabled?: boolean;
   resolution?: string; // e.g. "512x512", "1024x1024"
@@ -733,9 +756,9 @@ export interface FunctionConfig {
 }
 
 export interface AISettings {
-  gemini: ProviderCredentials;
-  openai: ProviderCredentials;
-  openrouter: ProviderCredentials;
+  // Multi-Provider Management
+  providers: ProviderManagement;
+
   contextLen: number; // Max conversation turns before summarization
 
   story: FunctionConfig;
@@ -790,7 +813,7 @@ export type EmbeddingTaskType =
   | "clustering";
 
 export interface EmbeddingConfig {
-  provider: "gemini" | "openai" | "openrouter";
+  providerId: string; // 引用 ProviderInstance.id
   modelId: string;
   enabled: boolean;
   dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)

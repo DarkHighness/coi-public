@@ -22,6 +22,7 @@ import type {
   Quest,
   TimelineEvent,
   Relationship,
+  StoryOutline,
 } from "../types";
 import {
   initializeRAGService,
@@ -104,25 +105,48 @@ export function useRAG(
       settingsRef.current = settings;
 
       try {
-        // Build credentials from settings
+        // Get the embedding provider instance
+        const embeddingConfig = settings.embedding;
+        const providerId = embeddingConfig.providerId;
+        const providerInstance = settings.providers.instances.find(
+          (p) => p.id === providerId,
+        );
+
+        if (!providerInstance) {
+          throw new Error(`Embedding provider not found: ${providerId}`);
+        }
+
+        // Build credentials from the provider instance
         const credentials = {
-          gemini: settings.gemini?.apiKey
-            ? { apiKey: settings.gemini.apiKey }
-            : undefined,
-          openai: settings.openai?.apiKey
-            ? {
-                apiKey: settings.openai.apiKey,
-                baseUrl: settings.openai.baseUrl,
-              }
-            : undefined,
-          openrouter: settings.openrouter?.apiKey
-            ? { apiKey: settings.openrouter.apiKey }
-            : undefined,
+          gemini:
+            providerInstance.protocol === "gemini"
+              ? {
+                  apiKey: providerInstance.apiKey,
+                  baseUrl: providerInstance.baseUrl,
+                }
+              : undefined,
+          openai:
+            providerInstance.protocol === "openai"
+              ? {
+                  apiKey: providerInstance.apiKey,
+                  baseUrl: providerInstance.baseUrl,
+                }
+              : undefined,
+          openrouter:
+            providerInstance.protocol === "openrouter"
+              ? { apiKey: providerInstance.apiKey }
+              : undefined,
+          claude:
+            providerInstance.protocol === "claude"
+              ? {
+                  apiKey: providerInstance.apiKey,
+                  baseUrl: providerInstance.baseUrl,
+                }
+              : undefined,
         };
 
-        // Determine embedding provider and model from settings
-        const embeddingConfig = settings.embedding;
-        const provider = embeddingConfig.provider || "gemini";
+        // Determine embedding provider protocol and model from settings
+        const provider = providerInstance.protocol;
         const modelId = embeddingConfig.modelId || "text-embedding-004";
 
         // Initialize the RAG service
@@ -471,7 +495,7 @@ interface ExtractedDocument {
   unlocked?: boolean;
 }
 
-function extractDocumentsFromState(
+export function extractDocumentsFromState(
   state: GameState,
   changedEntityIds: string[],
 ): ExtractedDocument[] {
@@ -574,6 +598,22 @@ function extractDocumentsFromState(
             content: extractEventContent(event),
             importance: 0.6,
           });
+        }
+        break;
+      }
+
+      case "outline": {
+        // Outline documents use special IDs like "outline:world", "outline:goal", etc.
+        if (state.outline) {
+          const content = extractOutlineContent(state.outline, id);
+          if (content) {
+            documents.push({
+              entityId,
+              type: "outline",
+              content,
+              importance: 1.0, // Highest importance for core story outline
+            });
+          }
         }
         break;
       }
@@ -752,6 +792,94 @@ function extractEventContent(event: TimelineEvent): string {
       parts.push(`Truth: ${event.hidden.trueDescription}`);
     if (event.hidden.trueCausedBy)
       parts.push(`True Cause: ${event.hidden.trueCausedBy}`);
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Extract content from StoryOutline for RAG indexing
+ * Supports different outline aspects: world, goal, premise, character
+ */
+function extractOutlineContent(outline: StoryOutline, aspect: string): string {
+  const parts: string[] = [];
+
+  switch (aspect) {
+    case "world": {
+      parts.push(`Story: ${outline.title}`);
+      if (outline.premise) parts.push(`Premise: ${outline.premise}`);
+      if (outline.worldSetting?.visible?.description) {
+        parts.push(`World: ${outline.worldSetting.visible.description}`);
+      }
+      if (outline.worldSetting?.visible?.rules) {
+        parts.push(`Rules: ${outline.worldSetting.visible.rules}`);
+      }
+      // Hidden world setting (for GM knowledge)
+      if (outline.worldSettingUnlocked && outline.worldSetting?.hidden) {
+        if (outline.worldSetting.hidden.hiddenRules) {
+          parts.push(`Hidden Rules: ${outline.worldSetting.hidden.hiddenRules}`);
+        }
+        if (outline.worldSetting.hidden.secrets?.length) {
+          parts.push(`World Secrets: ${outline.worldSetting.hidden.secrets.join(", ")}`);
+        }
+      }
+      break;
+    }
+
+    case "goal": {
+      parts.push(`Story: ${outline.title}`);
+      if (outline.mainGoal?.visible?.description) {
+        parts.push(`Main Goal: ${outline.mainGoal.visible.description}`);
+      }
+      if (outline.mainGoal?.visible?.conditions) {
+        parts.push(`Win Conditions: ${outline.mainGoal.visible.conditions}`);
+      }
+      // Hidden goal (for GM knowledge)
+      if (outline.mainGoalUnlocked && outline.mainGoal?.hidden) {
+        if (outline.mainGoal.hidden.trueDescription) {
+          parts.push(`True Goal: ${outline.mainGoal.hidden.trueDescription}`);
+        }
+        if (outline.mainGoal.hidden.trueConditions) {
+          parts.push(`True Conditions: ${outline.mainGoal.hidden.trueConditions}`);
+        }
+      }
+      break;
+    }
+
+    case "premise": {
+      parts.push(`Story: ${outline.title}`);
+      if (outline.initialTime) parts.push(`Time: ${outline.initialTime}`);
+      if (outline.premise) parts.push(`Premise: ${outline.premise}`);
+      break;
+    }
+
+    case "character": {
+      parts.push(`Story: ${outline.title}`);
+      if (outline.character?.name) parts.push(`Name: ${outline.character.name}`);
+      if (outline.character?.race) parts.push(`Race: ${outline.character.race}`);
+      if (outline.character?.profession) parts.push(`Profession: ${outline.character.profession}`);
+      if (outline.character?.background) parts.push(`Background: ${outline.character.background}`);
+      if (outline.character?.appearance) parts.push(`Appearance: ${outline.character.appearance}`);
+      break;
+    }
+
+    case "full":
+    default: {
+      // Full outline for comprehensive retrieval
+      parts.push(`Story: ${outline.title}`);
+      if (outline.initialTime) parts.push(`Time: ${outline.initialTime}`);
+      if (outline.premise) parts.push(`Premise: ${outline.premise}`);
+      if (outline.worldSetting?.visible?.description) {
+        parts.push(`World: ${outline.worldSetting.visible.description}`);
+      }
+      if (outline.mainGoal?.visible?.description) {
+        parts.push(`Main Goal: ${outline.mainGoal.visible.description}`);
+      }
+      if (outline.character?.name) {
+        parts.push(`Protagonist: ${outline.character.name}, ${outline.character.race} ${outline.character.profession}`);
+      }
+      break;
+    }
   }
 
   return parts.join("\n");

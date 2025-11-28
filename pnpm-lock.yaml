@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      "@anthropic-ai/sdk":
+        specifier: ^0.71.0
+        version: 0.71.0(zod@3.25.76)
       "@electric-sql/pglite":
         specifier: ^0.3.14
         version: 0.3.14
@@ -94,6 +97,18 @@ importers:
         version: 0.8.5(rollup@4.53.3)
 
 packages:
+  "@anthropic-ai/sdk@0.71.0":
+    resolution:
+      {
+        integrity: sha512-go1XeWXmpxuiTkosSXpb8tokLk2ZLkIRcXpbWVwJM6gH5OBtHOVsfPfGuqI1oW7RRt4qc59EmYbrXRZ0Ng06Jw==,
+      }
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   "@babel/code-frame@7.27.1":
     resolution:
       {
@@ -2231,6 +2246,13 @@ packages:
         integrity: sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==,
       }
 
+  json-schema-to-ts@3.1.1:
+    resolution:
+      {
+        integrity: sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==,
+      }
+    engines: { node: ">=16" }
+
   json5@2.2.3:
     resolution:
       {
@@ -3243,6 +3265,12 @@ packages:
         integrity: sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw==,
       }
 
+  ts-algebra@2.0.0:
+    resolution:
+      {
+        integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==,
+      }
+
   tslib@2.8.1:
     resolution:
       {
@@ -3531,6 +3559,12 @@ packages:
       }
 
 snapshots:
+  "@anthropic-ai/sdk@0.71.0(zod@3.25.76)":
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 3.25.76
+
   "@babel/code-frame@7.27.1":
     dependencies:
       "@babel/helper-validator-identifier": 7.28.5
@@ -4711,6 +4745,11 @@ snapshots:
     dependencies:
       bignumber.js: 9.3.1
 
+  json-schema-to-ts@3.1.1:
+    dependencies:
+      "@babel/runtime": 7.28.4
+      ts-algebra: 2.0.0
+
   json5@2.2.3: {}
 
   jsonc-parser@3.3.1: {}
@@ -5491,6 +5530,8 @@ snapshots:
   trim-lines@3.0.1: {}
 
   trough@2.2.0: {}
+
+  ts-algebra@2.0.0: {}
 
   tslib@2.8.1: {}
 

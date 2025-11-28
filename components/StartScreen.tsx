@@ -93,7 +93,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           background: `radial-gradient(circle at 20% 50%, ${activeThemeVar}, transparent 70%)`,
         }}
       ></div>
-      <div className="absolute inset-0 z-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 animate-pulse"></div>
+      <div className="absolute inset-0 z-0 bg-[url('/img/stardust.png')] opacity-10 animate-pulse"></div>
       <ButterflyBackground />
 
       {/* Left Panel: Branding & Atmosphere - Hidden on mobile when in theme select mode to give space */}

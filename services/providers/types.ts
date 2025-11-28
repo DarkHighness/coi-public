@@ -31,8 +31,18 @@ export interface OpenRouterConfig {
   apiKey: string;
 }
 
+/** Claude Provider 配置 */
+export interface ClaudeConfig {
+  apiKey: string;
+  baseUrl?: string;
+}
+
 /** 所有 Provider 配置的联合类型 */
-export type ProviderConfig = GeminiConfig | OpenAIConfig | OpenRouterConfig;
+export type ProviderConfig =
+  | GeminiConfig
+  | OpenAIConfig
+  | OpenRouterConfig
+  | ClaudeConfig;
 
 // ============================================================================
 // Model Information Types
@@ -170,13 +180,6 @@ export type GenerationResult =
 /** 内容生成响应 */
 export interface ContentGenerationResponse {
   result: GenerationResult;
-  usage: TokenUsage;
-  raw: unknown;
-}
-
-/** 兼容旧 API 的响应格式 (过渡期使用) */
-export interface LegacyContentGenerationResponse {
-  result: unknown;
   usage: TokenUsage;
   raw: unknown;
 }

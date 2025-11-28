@@ -7,8 +7,14 @@ interface WorldInfoPanelProps {
   history?: string;
   factions?: Faction[];
   worldSetting?: {
-    visible?: string;
-    hidden?: string;
+    visible?: {
+      description?: string;
+      rules?: string;
+    };
+    hidden?: {
+      hiddenRules?: string;
+      secrets?: string[];
+    };
     history?: string;
   };
   themeFont: string;
@@ -77,7 +83,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
         <div className="space-y-4 pt-2 pl-2 animate-slide-in">
           {/* Empty State Check */}
           {!history &&
-            (!worldSetting?.visible || worldSetting.visible.length === 0) &&
+            !worldSetting?.visible?.description &&
             (!factions || factions.length === 0) &&
             !isMainGoalUnlocked && (
               <div className="text-xs text-theme-muted italic text-center py-2 opacity-70">
@@ -100,7 +106,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
           )}
 
           {/* World Setting (Visible) */}
-          {worldSetting?.visible && (
+          {worldSetting?.visible?.description && (
             <div className="space-y-1">
               <h4
                 className={`text-[10px] text-theme-primary/70 uppercase tracking-wider ${themeFont}`}
@@ -108,8 +114,13 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {t("worldInfo.setting") || "Setting"}
               </h4>
               <div className="text-xs text-theme-text/80 font-serif leading-relaxed">
-                <MarkdownText content={worldSetting.visible} />
+                <MarkdownText content={worldSetting.visible.description} />
               </div>
+              {worldSetting.visible.rules && (
+                <div className="text-[10px] text-theme-muted mt-1">
+                  📜 {worldSetting.visible.rules}
+                </div>
+              )}
 
               {/* Hidden World Setting - shown when unlocked */}
               {isWorldSettingUnlocked && worldSetting.hidden && (
@@ -128,9 +139,18 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                     </svg>
                     {t("worldInfo.hiddenTruth") || "Hidden Truth"}
                   </div>
-                  <div className="text-[10px] text-theme-danger/80 italic">
-                    <MarkdownText content={worldSetting.hidden} />
-                  </div>
+                  {worldSetting.hidden.hiddenRules && (
+                    <div className="text-[10px] text-theme-danger/80 italic">
+                      <MarkdownText content={worldSetting.hidden.hiddenRules} />
+                    </div>
+                  )}
+                  {worldSetting.hidden.secrets && worldSetting.hidden.secrets.length > 0 && (
+                    <ul className="text-[10px] text-theme-danger/70 mt-1 list-disc pl-3">
+                      {worldSetting.hidden.secrets.map((secret, idx) => (
+                        <li key={idx}>{secret}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
             </div>
@@ -156,7 +176,14 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {t("worldInfo.secretObjective") || "Secret Objective"}
               </h4>
               <div className="text-xs text-theme-danger/80 font-serif leading-relaxed italic bg-theme-danger/5 p-2 rounded border border-theme-danger/20">
-                <MarkdownText content={outline.mainGoal.hidden} />
+                {outline.mainGoal.hidden.trueDescription && (
+                  <MarkdownText content={outline.mainGoal.hidden.trueDescription} />
+                )}
+                {outline.mainGoal.hidden.trueConditions && (
+                  <p className="mt-1 text-[10px] text-theme-danger/60">
+                    📝 {outline.mainGoal.hidden.trueConditions}
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -8,7 +8,7 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
 }) => {
   const { t } = useTranslation();
   const tabs: Tab[] = [
-    "credentials",
+    "providers",
     "models",
     "embedding",
     "audio",

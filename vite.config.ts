@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "."),
       },
     },
+    optimizeDeps: {
+      exclude: ["@electric-sql/pglite", "@electric-sql/pglite/worker"],
+    },
     build: {
       rollupOptions: {
         output: {

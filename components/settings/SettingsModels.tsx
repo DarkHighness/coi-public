@@ -1,32 +1,31 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { filterModels } from "../../services/aiService";
-import { SettingsModelsProps, FunctionKey } from "./types";
+import { FunctionKey } from "./types";
 import { AISettings } from "../../types";
+import { useSettings } from "../../hooks/useSettings";
 
-export const SettingsModels: React.FC<SettingsModelsProps> = ({
-  currentSettings,
-  onUpdateSettings,
-  loadingModels,
-  onLoadModels,
-  geminiModels,
-  openaiModels,
-  openrouterModels,
-  showToast,
-}) => {
+interface SettingsModelsProps {
+  showToast: (msg: string, type?: "info" | "error") => void;
+}
+
+export const SettingsModels: React.FC<SettingsModelsProps> = ({ showToast }) => {
   const { t } = useTranslation();
+  const {
+    settings: currentSettings,
+    updateSettings: onUpdateSettings,
+    providerModels,
+    isLoadingModels: loadingModels,
+    loadModels: onLoadModels,
+  } = useSettings();
 
-  const getFilteredModels = (
-    provider: "gemini" | "openai" | "openrouter",
-    type: FunctionKey,
-  ) => {
-    const list =
-      provider === "gemini"
-        ? geminiModels
-        : provider === "openai"
-          ? openaiModels
-          : openrouterModels;
+  const getFilteredModels = (providerId: string, type: FunctionKey) => {
+    const list = providerModels[providerId] || [];
     return filterModels(list, type);
+  };
+
+  const getProviderById = (providerId: string) => {
+    return currentSettings.providers.instances.find((p) => p.id === providerId);
   };
 
   const updateFunction = (func: FunctionKey, field: string, value: any) => {
@@ -46,7 +45,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
       // Check if all text functions currently have invalid models
       const allInvalid = textFunctions.every((fn) => {
         const config = currentSettings[fn];
-        const modelList = getFilteredModels(config.provider, fn);
+        const modelList = getFilteredModels(config.providerId, fn);
         return !modelList.some((m) => m.id === config.modelId);
       });
 
@@ -63,7 +62,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           textFunctions.forEach((fn) => {
             newSettings[fn] = {
               ...currentSettings[fn],
-              provider: currentSettings[func].provider, // Use the provider from the function being updated
+              providerId: currentSettings[func].providerId, // Use the providerId from the function being updated
               modelId: value,
             };
           });
@@ -83,16 +82,56 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
       ...currentSettings,
       [func]: { ...currentSettings[func], [field]: value },
     };
+
+    // If changing providerId, clear modelId
+    if (field === "providerId") {
+      newSettings[func].modelId = "";
+    }
+
     onUpdateSettings(newSettings);
   };
 
+  // Check if there are any available providers
+  const availableProviders = currentSettings.providers.instances.filter(
+    (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
+  );
+  const hasNoAvailableProviders = availableProviders.length === 0;
+
   return (
     <div className="space-y-6 animate-slide-in">
+      {/* Warning: No available providers */}
+      {hasNoAvailableProviders && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded p-4 flex items-start gap-3">
+          <svg
+            className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-1">
+              {t("models.noAvailableProviders") || "No Available Providers"}
+            </h4>
+            <p className="text-xs text-red-400">
+              {t("models.noAvailableProvidersDesc") ||
+                "No providers are available. Please go to the Providers tab to enable at least one provider and configure its API key."}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end">
         <button
           onClick={() => onLoadModels(true)}
-          disabled={loadingModels}
-          className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2"
+          disabled={loadingModels || hasNoAvailableProviders}
+          className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loadingModels ? (
             <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -207,8 +246,11 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         const sectionKey = section.key as FunctionKey;
         const config = currentSettings[sectionKey];
         const isEnabled = config.enabled !== false;
-        const modelList = getFilteredModels(config.provider, sectionKey);
+        const provider = getProviderById(config.providerId);
+        const modelList = getFilteredModels(config.providerId, sectionKey);
         const isModelValid = modelList.some((m) => m.id === config.modelId);
+        const isProviderAvailable =
+          provider && provider.enabled && provider.apiKey;
 
         return (
           <div
@@ -245,26 +287,42 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               }`}
             >
               <div className="flex flex-col md:flex-row gap-3 col-span-1 md:col-span-3">
-                <select
-                  value={config.provider}
-                  onChange={(e) =>
-                    updateFunction(sectionKey, "provider", e.target.value)
-                  }
-                  className="bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text w-full md:w-1/3"
-                >
-                  <option value="gemini" className="text-black dark:text-white">
-                    Gemini
-                  </option>
-                  <option value="openai" className="text-black dark:text-white">
-                    OpenAI
-                  </option>
-                  <option
-                    value="openrouter"
-                    className="text-black dark:text-white"
+                <div className="relative w-full md:w-1/3">
+                  <select
+                    value={config.providerId}
+                    onChange={(e) =>
+                      updateFunction(sectionKey, "providerId", e.target.value)
+                    }
+                    className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
+                      !isProviderAvailable
+                        ? "border-yellow-500"
+                        : "border-theme-border"
+                    }`}
                   >
-                    OpenRouter
-                  </option>
-                </select>
+                    {currentSettings.providers.instances
+                      .filter((p) => p.enabled)
+                      .map((p) => (
+                        <option
+                          key={p.id}
+                          value={p.id}
+                          className="text-black dark:text-white"
+                        >
+                          {p.name} ({p.protocol})
+                        </option>
+                      ))}
+                  </select>
+                  {!isProviderAvailable && (
+                    <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+                      {!provider
+                        ? t("settings.providerNotFound") || "Provider not found"
+                        : !provider.enabled
+                          ? t("settings.providerDisabled") ||
+                            "Provider disabled"
+                          : t("settings.providerNoApiKey") ||
+                            "Provider missing API key"}
+                    </div>
+                  )}
+                </div>
 
                 <div className="relative w-full md:w-2/3">
                   <select

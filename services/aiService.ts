@@ -30,6 +30,8 @@ import type {
   ForkTree,
   OutlineConversationState,
   PartialStoryOutline,
+  ProviderInstance,
+  ProviderProtocol,
 } from "../types";
 
 import { GameDatabase } from "./gameDatabase";
@@ -81,6 +83,16 @@ import {
   getEmbeddingModels as getOpenRouterEmbeddingModels,
   generateEmbedding as generateOpenRouterEmbedding,
 } from "./providers/openRouterProvider";
+
+import {
+  ClaudeConfig,
+  generateContent as generateClaudeContent,
+  generateSpeech as generateClaudeSpeech,
+  getModels as getClaudeModels,
+  validateConnection as validateClaudeConnection,
+  getEmbeddingModels as getClaudeEmbeddingModels,
+  generateEmbedding as generateClaudeEmbedding,
+} from "./providers/claudeProvider";
 
 import { DEFAULTS, DEFAULT_OPENAI_BASE_URL, THEMES } from "../utils/constants";
 import {
@@ -140,47 +152,10 @@ import {
 // Configuration
 // ============================================================================
 
-let geminiConfig: GeminiConfig = { apiKey: getEnvApiKey(), baseUrl: undefined };
-let openaiConfig: OpenAIConfig = { apiKey: "", baseUrl: "", modelId: "" };
-let openRouterConfig: OpenRouterConfig = { apiKey: "" };
-let currentSettings: AISettings = JSON.parse(JSON.stringify(DEFAULTS));
-
-/**
- * 更新 AI 配置
- */
-export const updateAIConfig = (settings: AISettings): void => {
-  currentSettings = settings;
-
-  const geminiBase = settings.gemini.baseUrl
-    ? settings.gemini.baseUrl.replace(/\/+$/, "")
-    : undefined;
-  geminiConfig = {
-    apiKey: settings.gemini.apiKey || getEnvApiKey(),
-    baseUrl: geminiBase,
-  };
-
-  const openaiBase = settings.openai.baseUrl
-    ? settings.openai.baseUrl.replace(/\/+$/, "")
-    : DEFAULT_OPENAI_BASE_URL;
-  openaiConfig = {
-    apiKey: settings.openai.apiKey || "",
-    baseUrl: openaiBase,
-    modelId: "",
-  };
-
-  openRouterConfig = {
-    apiKey: settings.openrouter?.apiKey || "",
-  };
-
-  // Note: RAG config is now handled by the RAG service (hooks/useRAG.ts)
-  // The old embedding manager has been replaced
-};
-
 // ============================================================================
 // Provider Configuration
 // ============================================================================
 
-type ProviderType = "gemini" | "openai" | "openrouter";
 type FunctionType =
   | "story"
   | "image"
@@ -191,7 +166,8 @@ type FunctionType =
   | "script";
 
 interface ProviderConfigResult {
-  provider: ProviderType;
+  instance: ProviderInstance;
+  config: GeminiConfig | OpenAIConfig | OpenRouterConfig | ClaudeConfig;
   modelId: string;
   enabled: boolean;
   resolution?: string;
@@ -203,19 +179,93 @@ interface ProviderConfigResult {
   minP?: number;
 }
 
-const getProviderConfig = (func: FunctionType): ProviderConfigResult => {
-  const config = currentSettings[func];
+/**
+ * 根据 providerId 获取 provider 实例
+ * @param settings 设置对象
+ * @param providerId Provider ID
+ * @param requireEnabled 是否要求 provider 已启用（默认为 true，用于 API 调用；设为 false 用于获取模型列表）
+ */
+const getProviderInstance = (
+  settings: AISettings,
+  providerId: string,
+  requireEnabled: boolean = true,
+): ProviderInstance | null => {
+  const instance = settings.providers.instances.find(
+    (p) => p.id === providerId,
+  );
+  if (!instance) {
+    console.error(`Provider instance not found: ${providerId}`);
+    return null;
+  }
+  if (requireEnabled && !instance.enabled) {
+    console.warn(`Provider instance is disabled: ${providerId}`);
+    return null;
+  }
+  return instance;
+};
+
+/**
+ * 根据 provider 实例创建对应的配置对象
+ */
+const createProviderConfig = (
+  instance: ProviderInstance,
+): GeminiConfig | OpenAIConfig | OpenRouterConfig | ClaudeConfig => {
+  switch (instance.protocol) {
+    case "gemini":
+      return {
+        apiKey: instance.apiKey,
+        baseUrl: instance.baseUrl || undefined,
+      };
+    case "openai":
+      return {
+        apiKey: instance.apiKey,
+        baseUrl: instance.baseUrl,
+        modelId: "",
+      };
+    case "openrouter":
+      return {
+        apiKey: instance.apiKey,
+      };
+    case "claude":
+      return {
+        apiKey: instance.apiKey,
+        baseUrl: instance.baseUrl || undefined,
+      };
+    default:
+      throw new Error(`Unknown protocol: ${(instance as ProviderInstance).protocol}`);
+  }
+};
+
+/**
+ * 获取函数配置和对应的 provider 实例
+ * @param settings 设置对象
+ * @param func 功能类型
+ */
+const getProviderConfig = (
+  settings: AISettings,
+  func: FunctionType,
+): ProviderConfigResult | null => {
+  const funcConfig = settings[func];
+  const instance = getProviderInstance(settings, funcConfig.providerId);
+
+  if (!instance) {
+    return null;
+  }
+
+  const config = createProviderConfig(instance);
+
   return {
-    provider: config.provider as ProviderType,
-    modelId: config.modelId,
-    enabled: config.enabled !== false,
-    resolution: config.resolution,
-    thinkingLevel: config.thinkingLevel,
-    mediaResolution: config.mediaResolution,
-    temperature: config.temperature,
-    topP: config.topP,
-    topK: config.topK,
-    minP: config.minP,
+    instance,
+    config,
+    modelId: funcConfig.modelId,
+    enabled: funcConfig.enabled !== false,
+    resolution: funcConfig.resolution,
+    thinkingLevel: funcConfig.thinkingLevel,
+    mediaResolution: funcConfig.mediaResolution,
+    temperature: funcConfig.temperature,
+    topP: funcConfig.topP,
+    topK: funcConfig.topK,
+    minP: funcConfig.minP,
   };
 };
 
@@ -277,82 +327,119 @@ const modelCache: Record<string, ModelCacheEntry> = {};
 
 /**
  * 获取可用模型列表
+ * @param settings 设置对象
+ * @param providerId Provider ID
+ * @param forceRefresh 是否强制刷新（忽略缓存）
  */
 export const getModels = async (
-  provider: ProviderType,
+  settings: AISettings,
+  providerId: string,
   forceRefresh: boolean = false,
 ): Promise<ModelInfo[]> => {
-  let config: GeminiConfig | OpenAIConfig | OpenRouterConfig;
-
-  if (provider === "gemini") {
-    config = geminiConfig;
-  } else if (provider === "openrouter") {
-    config = openRouterConfig;
-  } else {
-    config = { ...openaiConfig, apiKey: currentSettings.openai.apiKey || "" };
-  }
-
-  // Skip API request if API key is missing or empty
-  if (!config.apiKey || config.apiKey.trim() === "") {
-    console.warn(
-      `Skipping model fetch for ${provider}: API key not configured`,
-    );
+  // 获取模型列表时不要求 provider 已启用
+  const instance = getProviderInstance(settings, providerId, false);
+  if (!instance) {
     return [];
   }
 
-  const configHash = JSON.stringify(config);
-  const cacheKey = provider;
-
-  // Check cache
-  if (
-    !forceRefresh &&
-    modelCache[cacheKey] &&
-    modelCache[cacheKey].configHash === configHash
-  ) {
-    return modelCache[cacheKey].data;
+  // 检查是否有 API Key
+  if (!instance.apiKey || instance.apiKey.trim() === "") {
+    console.warn(`Provider ${providerId} has no API key`);
+    return [];
   }
 
-  let models: ModelInfo[] = [];
-  if (provider === "gemini") {
-    models = await getGeminiModels(geminiConfig);
-  } else if (provider === "openrouter") {
-    models = await getOpenRouterModels(openRouterConfig);
-  } else {
-    models = await getOpenAIModels(config as OpenAIConfig);
+  const config = createProviderConfig(instance);
+
+  // 检查缓存
+  const cacheKey = `${providerId}`;
+  if (!forceRefresh && modelCache[cacheKey]) {
+    const cached = modelCache[cacheKey];
+    const age = Date.now() - cached.timestamp;
+    if (age < 60 * 1000) {
+      return cached.data;
+    }
   }
 
-  // Update cache
-  modelCache[cacheKey] = {
-    timestamp: Date.now(),
-    data: models,
-    configHash,
-  };
+  try {
+    let models: ModelInfo[];
 
-  return models;
+    switch (instance.protocol) {
+      case "gemini":
+        models = await getGeminiModels(config as GeminiConfig);
+        break;
+      case "openai":
+        models = await getOpenAIModels(config as OpenAIConfig);
+        break;
+      case "openrouter":
+        models = await getOpenRouterModels(config as OpenRouterConfig);
+        break;
+      case "claude":
+        models = await getClaudeModels(config as ClaudeConfig);
+        break;
+      default:
+        throw new Error(`Unknown protocol: ${instance.protocol}`);
+    }
+
+    // 缓存结果
+    modelCache[cacheKey] = {
+      timestamp: Date.now(),
+      data: models,
+      configHash: JSON.stringify({ providerId, baseUrl: instance.baseUrl }),
+    };
+
+    return models;
+  } catch (error) {
+    console.error(`Failed to fetch models for provider ${providerId}:`, error);
+    return [];
+  }
 };
 
 /**
  * 验证 Provider 连接
+ * 注意：此函数可以验证禁用的 provider，因为用户可能需要先测试再启用
+ * @param settings 设置对象
+ * @param providerId Provider ID
  */
 export const validateConnection = async (
-  provider: ProviderType,
+  settings: AISettings,
+  providerId: string,
 ): Promise<{ isValid: boolean; error?: string }> => {
+  // 直接查找 provider 实例，不检查 enabled 状态
+  const instance = settings.providers.instances.find(
+    (p) => p.id === providerId,
+  );
+  if (!instance) {
+    return { isValid: false, error: "Provider instance not found" };
+  }
+
+  // 检查必要的配置
+  if (!instance.apiKey || instance.apiKey.trim() === "") {
+    return { isValid: false, error: "API key is required" };
+  }
+
+  const config = createProviderConfig(instance);
+
   try {
-    if (provider === "gemini") {
-      await validateGeminiConnection(geminiConfig);
-    } else if (provider === "openrouter") {
-      await validateOpenRouterConnection(openRouterConfig);
-    } else {
-      await validateOpenAIConnection({
-        ...openaiConfig,
-        apiKey: currentSettings.openai.apiKey || "",
-      });
+    switch (instance.protocol) {
+      case "gemini":
+        await validateGeminiConnection(config as GeminiConfig);
+        break;
+      case "openai":
+        await validateOpenAIConnection(config as OpenAIConfig);
+        break;
+      case "openrouter":
+        await validateOpenRouterConnection(config as OpenRouterConfig);
+        break;
+      case "claude":
+        await validateClaudeConnection(config as ClaudeConfig);
+        break;
+      default:
+        throw new Error(`Unknown protocol: ${instance.protocol}`);
     }
     return { isValid: true };
-  } catch (e) {
-    const error = e instanceof Error ? e : new Error(String(e));
-    console.error(`Validation failed for ${provider}`, error);
-    return { isValid: false, error: error.message };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { isValid: false, error: message };
   }
 };
 
@@ -435,13 +522,16 @@ interface GenerateContentUnifiedOptions {
   onChunk?: (text: string) => void;
   tools?: Array<{ name: string; description: string; parameters: unknown }>;
   generationDetails?: LogEntry["generationDetails"];
+  /** 设置对象 */
+  settings?: AISettings;
 }
 
 /**
- * 统一内容生成助手
+ * 统一内容生成助手 (内部使用 - 通过 provider protocol 调用)
  */
-export const generateContentUnified = async (
-  provider: ProviderType,
+const generateContentUnifiedInternal = async (
+  protocol: ProviderProtocol,
+  config: GeminiConfig | OpenAIConfig | OpenRouterConfig | ClaudeConfig,
   modelId: string,
   systemInstruction: string,
   contents: unknown[],
@@ -452,15 +542,15 @@ export const generateContentUnified = async (
   let usage: TokenUsage;
   let raw: unknown;
 
-  // Get options from current settings (defaults)
-  const storyConfig = getProviderConfig("story");
+  // Get additional options from settings if provided
+  const storyConfig = options?.settings ? getProviderConfig(options.settings, "story") : null;
   const mergedOptions: GenerateContentOptions = {
-    thinkingLevel: options?.thinkingLevel || storyConfig.thinkingLevel,
-    mediaResolution: options?.mediaResolution || storyConfig.mediaResolution,
-    temperature: options?.temperature ?? storyConfig.temperature,
-    topP: options?.topP ?? storyConfig.topP,
-    topK: options?.topK ?? storyConfig.topK,
-    minP: options?.minP ?? storyConfig.minP,
+    thinkingLevel: options?.thinkingLevel || storyConfig?.thinkingLevel,
+    mediaResolution: options?.mediaResolution || storyConfig?.mediaResolution,
+    temperature: options?.temperature ?? storyConfig?.temperature,
+    topP: options?.topP ?? storyConfig?.topP,
+    topK: options?.topK ?? storyConfig?.topK,
+    minP: options?.minP ?? storyConfig?.minP,
     onChunk: options?.onChunk,
     tools: options?.tools as GenerateContentOptions["tools"],
   };
@@ -483,7 +573,7 @@ export const generateContentUnified = async (
     "parts" in contents[0];
 
   try {
-    if (provider === "gemini") {
+    if (protocol === "gemini") {
       // Gemini expects Content[] format (with 'parts')
       let geminiContents: unknown[];
       if (isUnifiedFormat) {
@@ -495,7 +585,7 @@ export const generateContentUnified = async (
       }
 
       const response = await generateGeminiContent(
-        geminiConfig,
+        config as GeminiConfig,
         modelId,
         systemInstruction,
         geminiContents as Parameters<typeof generateGeminiContent>[3],
@@ -506,7 +596,7 @@ export const generateContentUnified = async (
       usage = response.usage;
       raw = response.raw;
     } else {
-      // OpenAI/OpenRouter expect UnifiedMessage[] - convert from Gemini format if needed
+      // OpenAI/OpenRouter/Claude expect UnifiedMessage[] - convert from Gemini format if needed
       let unifiedContents: UnifiedMessage[];
       if (isUnifiedFormat) {
         unifiedContents = contents as UnifiedMessage[];
@@ -523,9 +613,9 @@ export const generateContentUnified = async (
         unifiedContents = contents as UnifiedMessage[];
       }
 
-      if (provider === "openai") {
+      if (protocol === "openai") {
         const response = await generateOpenAIContent(
-          { ...openaiConfig, modelId },
+          config as OpenAIConfig,
           modelId,
           systemInstruction,
           unifiedContents,
@@ -535,9 +625,9 @@ export const generateContentUnified = async (
         result = response.result;
         usage = response.usage;
         raw = response.raw;
-      } else {
+      } else if (protocol === "openrouter") {
         const response = await generateOpenRouterContent(
-          openRouterConfig,
+          config as OpenRouterConfig,
           modelId,
           systemInstruction,
           unifiedContents,
@@ -547,6 +637,20 @@ export const generateContentUnified = async (
         result = response.result;
         usage = response.usage;
         raw = response.raw;
+      } else if (protocol === "claude") {
+        const response = await generateClaudeContent(
+          config as ClaudeConfig,
+          modelId,
+          systemInstruction,
+          unifiedContents,
+          schema as Parameters<typeof generateClaudeContent>[4],
+          mergedOptions,
+        );
+        result = response.result;
+        usage = response.usage;
+        raw = response.raw;
+      } else {
+        throw new Error(`Unknown protocol: ${protocol}`);
       }
     }
   } catch (e) {
@@ -562,7 +666,7 @@ export const generateContentUnified = async (
   }
 
   const log = createLogEntry(
-    provider,
+    protocol,
     modelId,
     "generateContent",
     { systemInstruction, contents: contents as Record<string, unknown>[] },
@@ -574,6 +678,95 @@ export const generateContentUnified = async (
   );
 
   return { result, usage, raw, log };
+};
+
+/**
+ * 统一内容生成助手 (公共接口 - 保持向后兼容)
+ *
+/**
+ * 统一的内容生成函数 (使用 provider 或 function type)
+ *
+ * 支持两种调用方式:
+ * 1. 通过 function type (story, image, etc.) - 内部使用
+ * 2. 通过 provider protocol (gemini, openai, etc.) - 向后兼容
+ *
+ * @param providerOrFunc Provider protocol 或 function type
+ * @param modelId 模型 ID
+ * @param systemInstruction 系统指令
+ * @param contents 消息内容
+ * @param schema 可选的输出 schema
+ * @param options 生成选项（必须包含 settings）
+ */
+export const generateContentUnified = async (
+  providerOrFunc: ProviderProtocol | FunctionType,
+  modelId: string,
+  systemInstruction: string,
+  contents: unknown[],
+  schema?: unknown,
+  options?: GenerateContentUnifiedOptions,
+): Promise<GenerateContentResult> => {
+  if (!options?.settings) {
+    throw new Error("settings is required in options");
+  }
+  const settings = options.settings;
+  // 检查是否是 function type (用于内部调用)
+  const functionTypes: FunctionType[] = [
+    "story",
+    "image",
+    "video",
+    "audio",
+    "translation",
+    "lore",
+    "script",
+  ];
+
+  let protocol: ProviderProtocol;
+  let config: GeminiConfig | OpenAIConfig | OpenRouterConfig | ClaudeConfig;
+  let actualModelId: string;
+
+  if (functionTypes.includes(providerOrFunc as FunctionType)) {
+    // 通过 function type 调用
+    const providerInfo = getProviderConfig(settings, providerOrFunc as FunctionType);
+    if (!providerInfo) {
+      throw new Error(
+        `Provider not configured for function: ${providerOrFunc}`,
+      );
+    }
+    protocol = providerInfo.instance.protocol;
+    config = providerInfo.config;
+    actualModelId = providerInfo.modelId;
+  } else {
+    // 通过 protocol 直接调用
+    protocol = providerOrFunc as ProviderProtocol;
+    actualModelId = modelId;
+
+    // 尝试从 story 配置获取 provider 实例
+    const providerInfo = getProviderConfig(settings, "story");
+    if (providerInfo && providerInfo.instance.protocol === protocol) {
+      config = providerInfo.config;
+    } else {
+      // 回退：查找第一个匹配 protocol 的实例
+      const instance = settings.providers.instances.find(
+        (p) => p.protocol === protocol && p.enabled,
+      );
+      if (!instance) {
+        throw new Error(
+          `No enabled provider instance found for protocol: ${protocol}`,
+        );
+      }
+      config = createProviderConfig(instance);
+    }
+  }
+
+  return generateContentUnifiedInternal(
+    protocol,
+    config,
+    actualModelId,
+    systemInstruction,
+    contents,
+    schema,
+    options,
+  );
 };
 
 // ============================================================================
@@ -604,6 +797,8 @@ export interface PhasedOutlineOptions {
   resumeFromConversation?: OutlineConversationState;
   /** Callback to save conversation state after each phase for fault recovery */
   onSaveConversation?: (state: OutlineConversationState) => void;
+  /** 可选的设置对象，如果不提供则使用全局设置 */
+  settings?: AISettings;
 }
 
 /**
@@ -621,8 +816,16 @@ export const generateStoryOutlinePhased = async (
   tFunc?: (key: string, options?: Record<string, unknown>) => string,
   options?: PhasedOutlineOptions,
 ): Promise<{ outline: StoryOutline; logs: LogEntry[] }> => {
+  if (!options?.settings) {
+    throw new Error("settings is required in options");
+  }
+  const settings = options.settings;
   // Use "lore" model config for outline generation (typically more capable model)
-  const { provider, modelId } = getProviderConfig("lore");
+  const providerInfo = getProviderConfig(settings, "lore");
+  if (!providerInfo) {
+    throw new Error("Lore provider not configured");
+  }
+  const { instance, config, modelId } = providerInfo;
   const logs: LogEntry[] = [];
 
   // Initialize from resume state or fresh
@@ -670,7 +873,7 @@ export const generateStoryOutlinePhased = async (
 
     // Inject prompt injections from config
     const promptInjectionEnabled =
-      currentSettings.extra?.promptInjectionEnabled;
+      settings.extra?.promptInjectionEnabled;
     if (promptInjectionEnabled && promptInjectionData) {
       const loweredModelId = modelId.toLowerCase();
       console.log(
@@ -758,11 +961,12 @@ export const generateStoryOutlinePhased = async (
       reportProgress(1, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider,
+        instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
         outlinePhase1Schema,
+        { settings }
       );
       partial.phase1 = result as OutlinePhase1;
       // Use compact JSON (no spaces) for conversation history
@@ -792,11 +996,12 @@ export const generateStoryOutlinePhased = async (
       reportProgress(2, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider,
+        instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
         outlinePhase2Schema,
+        { settings }
       );
       partial.phase2 = result as OutlinePhase2;
       conversationHistory.push({
@@ -825,11 +1030,12 @@ export const generateStoryOutlinePhased = async (
       reportProgress(3, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider,
+        instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
         outlinePhase3Schema,
+        { settings }
       );
       partial.phase3 = result as OutlinePhase3;
       conversationHistory.push({
@@ -858,11 +1064,12 @@ export const generateStoryOutlinePhased = async (
       reportProgress(4, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider,
+        instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
         outlinePhase4Schema,
+        { settings }
       );
       partial.phase4 = result as OutlinePhase4;
       conversationHistory.push({
@@ -891,11 +1098,12 @@ export const generateStoryOutlinePhased = async (
       reportProgress(5, "generating");
       // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
       const { result, log } = await generateContentUnified(
-        provider,
+        instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
         outlinePhase5Schema,
+        { settings }
       );
       partial.phase5 = result as OutlinePhase5;
       if (log) logs.push(log);
@@ -965,13 +1173,22 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
 
 /**
  * 总结上下文
+ * @param previousSummary 之前的摘要
+ * @param newTurns 新的回合内容
+ * @param language 语言
+ * @param settings 设置对象（必需）
  */
 export const summarizeContext = async (
   previousSummary: StorySummary,
   newTurns: string,
   language: string,
+  settings: AISettings,
 ): Promise<{ summary: StorySummary | null; log: LogEntry }> => {
-  const { provider, modelId } = getProviderConfig("story");
+  const providerInfo = getProviderConfig(settings, "story");
+  if (!providerInfo) {
+    throw new Error("Story provider not configured");
+  }
+  const { instance, modelId } = providerInfo;
   const prompt = getSummaryPrompt(previousSummary, newTurns, language);
   const sys =
     "You are a diligent chronicler summarizing events. Focus on facts and cause-and-effect, tracking changes in quests, relationships, inventory, character status, and locations. Output strictly valid JSON.";
@@ -979,11 +1196,12 @@ export const summarizeContext = async (
 
   try {
     const { result, log } = await generateContentUnified(
-      provider,
+      instance.protocol,
       modelId,
       sys,
       contents,
       storySummarySchema,
+      { settings },
     );
     return { summary: result as StorySummary, log: log! };
   } catch (e) {
@@ -992,7 +1210,7 @@ export const summarizeContext = async (
     return {
       summary: null,
       log: createLogEntry(
-        provider,
+        instance.protocol,
         modelId,
         "summary",
         { error: error.message },
@@ -1046,12 +1264,14 @@ const buildSystemContext = (
   outline: StoryOutline | null,
   godMode?: boolean,
   detailedDescription?: boolean,
+  ragEnabled?: boolean,
 ): string => {
   const coreSystemInstruction = getCoreSystemInstruction(
     language,
     narrativeStyle,
     isRestricted,
     detailedDescription,
+    ragEnabled,
   );
   const staticWorldContext = getStaticWorldContext(outline);
 
@@ -1213,27 +1433,42 @@ export interface TurnContext {
   themeKey?: string;
   tFunc?: (key: string) => unknown;
   ragContext?: string; // RAG context from the new RAG service
+  settings?: AISettings; // 可选的设置对象，如果不提供则使用全局设置
 }
 
 interface AgenticLoopResult {
   response: GameResponse;
   logs: LogEntry[];
   usage: TokenUsage;
+  changedEntities: Array<{ id: string; type: string }>; // Changed entities with their types for efficient RAG updates
 }
 
 /**
  * 生成冒险回合
+ * @param gameState 游戏状态
+ * @param context 回合上下文（必须包含 settings）
  */
 export const generateAdventureTurn = async (
   gameState: GameState,
   context: TurnContext,
 ): Promise<AgenticLoopResult> => {
-  const { provider, modelId } = getProviderConfig("story");
+  if (!context.settings) {
+    throw new Error("settings is required in context");
+  }
+  const settings = context.settings;
+  const providerInfo = getProviderConfig(settings, "story");
+  if (!providerInfo) {
+    throw new Error("Story provider not configured");
+  }
+  const { instance, modelId } = providerInfo;
   const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
     context.themeKey,
     context.language,
     context.tFunc as (key: string, options?: Record<string, unknown>) => string,
   );
+
+  // Check if RAG is enabled
+  const isRAGEnabled = settings.embedding?.enabled ?? false;
 
   let systemInstruction = buildSystemContext(
     context.language,
@@ -1242,10 +1477,11 @@ export const generateAdventureTurn = async (
     isRestricted,
     gameState.outline,
     gameState.godMode,
-    currentSettings.extra?.detailedDescription,
+    settings.extra?.detailedDescription,
+    isRAGEnabled,
   );
 
-  const promptInjectionEnabled = currentSettings.extra?.promptInjectionEnabled;
+  const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
   if (promptInjectionEnabled && promptInjectionData) {
     const loweredModelId = modelId.toLowerCase();
     console.log(
@@ -1286,25 +1522,37 @@ export const generateAdventureTurn = async (
   };
 
   return runAgenticLoop(
-    provider,
+    instance.protocol,
+    instance,
     modelId,
     systemInstruction,
     messages,
     gameState,
     generationDetails,
+    context.settings,
   );
 };
 
 /**
  * Agentic Loop 实现
+ * @param protocol Provider protocol
+ * @param instance Provider instance
+ * @param modelId 模型 ID
+ * @param systemInstruction 系统指令
+ * @param initialContents 初始消息
+ * @param inputState 输入游戏状态
+ * @param generationDetails 生成详情
+ * @param settings 设置对象（必需）
  */
 const runAgenticLoop = async (
-  provider: ProviderType,
+  protocol: ProviderProtocol,
+  instance: ProviderInstance,
   modelId: string,
   systemInstruction: string,
   initialContents: UnifiedMessage[],
   inputState: GameState,
-  generationDetails?: LogEntry["generationDetails"],
+  generationDetails: LogEntry["generationDetails"] | undefined,
+  settings: AISettings,
 ): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   let turnCount = 0;
@@ -1336,6 +1584,9 @@ const runAgenticLoop = async (
     timelineEvents: [],
   };
 
+  // Track changed entities with their types for efficient RAG updates
+  const changedEntities: Map<string, string> = new Map(); // Map<entityId, entityType>
+
   let totalUsage: TokenUsage = {
     promptTokens: 0,
     completionTokens: 0,
@@ -1344,7 +1595,7 @@ const runAgenticLoop = async (
 
   // Initialize lastLog with a placeholder
   let lastLog: LogEntry = createLogEntry(
-    provider,
+    protocol,
     modelId,
     "agentic_init",
     { initializing: true },
@@ -1352,13 +1603,13 @@ const runAgenticLoop = async (
     totalUsage,
   );
 
+  // Check if RAG is enabled
+  const isRAGEnabled = settings.embedding?.enabled ?? false;
+
   // Prepare tools for the provider
   const toolConfig = TOOLS.filter((t) => {
     // Hide RAG tools if embedding is disabled
-    if (
-      !currentSettings.embedding?.enabled &&
-      (t.name === "search_memory" || t.name === "search_knowledge")
-    ) {
+    if (!isRAGEnabled && t.name === "rag_search") {
       return false;
     }
     return true;
@@ -1430,8 +1681,10 @@ const runAgenticLoop = async (
     while (retryCount <= maxRetries) {
       try {
         // Pass UnifiedMessage[] directly - generateContentUnified handles format conversion
-        const resultData = await generateContentUnified(
-          provider,
+        const config = createProviderConfig(instance);
+        const resultData = await generateContentUnifiedInternal(
+          protocol,
+          config,
           modelId,
           systemInstruction,
           conversationHistory,
@@ -1492,7 +1745,7 @@ const runAgenticLoop = async (
     }
 
     lastLog = createLogEntry(
-      provider,
+      protocol,
       modelId,
       `agentic_turn_${turnCount + 1}`,
       { turn: turnCount + 1 },
@@ -1556,7 +1809,7 @@ const runAgenticLoop = async (
         let output: unknown = { success: false, error: "Unknown tool" };
 
         // Execute tool
-        output = executeToolCall(name, args, db, accumulatedResponse);
+        output = executeToolCall(name, args, db, accumulatedResponse, changedEntities);
 
         // Handle finish_turn specially
         if (name === "finish_turn") {
@@ -1589,7 +1842,7 @@ const runAgenticLoop = async (
 
           // Create final summary log
           const finalLog = createLogEntry(
-            provider,
+            protocol,
             modelId,
             "agentic_complete",
             { turns: turnCount + 1 },
@@ -1611,6 +1864,7 @@ const runAgenticLoop = async (
             response: accumulatedResponse,
             logs: allLogs,
             usage: totalUsage,
+            changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
           };
         }
 
@@ -1661,7 +1915,7 @@ const runAgenticLoop = async (
 
         // Create final summary log
         const finalLog = createLogEntry(
-          provider,
+          protocol,
           modelId,
           "agentic_complete",
           { turns: turnCount + 1, method: "schema_response" },
@@ -1683,6 +1937,7 @@ const runAgenticLoop = async (
           response: accumulatedResponse,
           logs: allLogs,
           usage: totalUsage,
+          changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
         };
       } catch (validationError) {
         console.error(
@@ -1697,6 +1952,7 @@ const runAgenticLoop = async (
             response: result as GameResponse,
             logs: allLogs,
             usage: totalUsage,
+            changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
           };
         }
 
@@ -1712,6 +1968,7 @@ const runAgenticLoop = async (
           },
           logs: allLogs,
           usage: totalUsage,
+          changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
         };
       }
     }
@@ -1721,7 +1978,13 @@ const runAgenticLoop = async (
   console.warn(
     `[Agentic Loop] Max turns (${maxTurns}) reached without finish_turn`,
   );
-  return { response: accumulatedResponse, logs: allLogs, usage: totalUsage };
+
+  return {
+    response: accumulatedResponse,
+    logs: allLogs,
+    usage: totalUsage,
+    changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({ id, type })),
+  };
 };
 
 // ============================================================================
@@ -1736,6 +1999,7 @@ function executeToolCall(
   args: Record<string, unknown>,
   db: GameDatabase,
   accumulatedResponse: GameResponse,
+  changedEntities?: Map<string, string>, // Map<entityId, entityType>
 ): unknown {
   // Query operations
   if (name === "query_inventory") {
@@ -1774,6 +2038,11 @@ function executeToolCall(
         action: actionType as "add" | "update" | "remove",
         ...data,
       } as GameResponse["inventoryActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'item');
+      }
     }
     return modifyResult;
   } else if (name === "update_relationship") {
@@ -1786,6 +2055,11 @@ function executeToolCall(
         action: actionType as "add" | "update" | "remove",
         ...data,
       } as GameResponse["relationshipActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'npc');
+      }
     }
     return modifyResult;
   } else if (name === "update_location") {
@@ -1799,6 +2073,11 @@ function executeToolCall(
         action: actionType as "add" | "update",
         ...data,
       } as GameResponse["locationActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'location');
+      }
     }
     return modifyResult;
   } else if (name === "update_quest") {
@@ -1811,6 +2090,11 @@ function executeToolCall(
         action: actionType as "add" | "update" | "complete" | "fail",
         ...data,
       } as GameResponse["questActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'quest');
+      }
     }
     return modifyResult;
   } else if (name === "update_knowledge") {
@@ -1823,11 +2107,22 @@ function executeToolCall(
         action: actionType as "add" | "update",
         ...data,
       } as GameResponse["knowledgeActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'knowledge');
+      }
     }
     return modifyResult;
   } else if (name === "update_timeline") {
     const { action: actionType, ...data } = args;
-    return db.modify("timeline", actionType as string, data);
+    const modifyResult = db.modify("timeline", actionType as string, data);
+    // Track entity with type for RAG update
+    if (modifyResult.success && changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+      const entity = modifyResult.data as { id: string };
+      changedEntities.set(entity.id, 'event');
+    }
+    return modifyResult;
   } else if (name === "update_causal_chain") {
     const { action: actionType, ...data } = args;
     return db.modify("causal_chain", actionType as string, data);
@@ -1841,6 +2136,11 @@ function executeToolCall(
         action: actionType as "update",
         ...data,
       } as GameResponse["factionActions"][number]);
+      // Track entity with type for RAG update
+      if (changedEntities && modifyResult.data && typeof modifyResult.data === 'object' && modifyResult.data !== null && 'id' in modifyResult.data) {
+        const entity = modifyResult.data as { id: string };
+        changedEntities.set(entity.id, 'faction');
+      }
     }
     return modifyResult;
   } else if (name === "update_world_info") {
@@ -1980,19 +2280,24 @@ async function executeRagSearch(
 
 /**
  * 生成场景图片
+ * @param prompt 图片提示词
+ * @param settings 设置对象
+ * @param context 图片生成上下文
  */
 export const generateSceneImage = async (
   prompt: string,
+  settings: AISettings,
   context: ImageGenerationContext,
 ): Promise<{ url: string | null; log: LogEntry }> => {
-  const { provider, modelId, enabled, resolution } = getProviderConfig("image");
-  if (!enabled) {
+  const providerInfo = getProviderConfig(settings, "image");
+  if (!providerInfo || !providerInfo.enabled) {
     return {
       url: null,
       log: createLogEntry("none", "none", "image", { disabled: true }, null),
     };
   }
 
+  const { instance, config, modelId, resolution } = providerInfo;
   const styledPrompt = getSceneImagePrompt(prompt, context);
   let url: string | null;
   let usage: TokenUsage | undefined;
@@ -2007,9 +2312,9 @@ export const generateSceneImage = async (
     resolution,
   );
 
-  if (provider === "openai") {
+  if (instance.protocol === "openai") {
     const response = await generateOpenAIImage(
-      { ...openaiConfig, modelId },
+      config as OpenAIConfig,
       modelId,
       styledPrompt,
       resolution,
@@ -2017,9 +2322,19 @@ export const generateSceneImage = async (
     url = response.url;
     usage = response.usage;
     raw = response.raw;
-  } else if (provider === "openrouter") {
+  } else if (instance.protocol === "openrouter") {
     const response = await generateOpenRouterImage(
-      openRouterConfig,
+      config as OpenRouterConfig,
+      modelId,
+      styledPrompt,
+      resolution,
+    );
+    url = response.url;
+    usage = response.usage;
+    raw = response.raw;
+  } else if (instance.protocol === "gemini") {
+    const response = await generateGeminiImage(
+      config as GeminiConfig,
       modelId,
       styledPrompt,
       resolution,
@@ -2028,19 +2343,13 @@ export const generateSceneImage = async (
     usage = response.usage;
     raw = response.raw;
   } else {
-    const response = await generateGeminiImage(
-      geminiConfig,
-      modelId,
-      styledPrompt,
-      resolution,
+    throw new Error(
+      `Image generation not supported by protocol: ${instance.protocol}`,
     );
-    url = response.url;
-    usage = response.usage;
-    raw = response.raw;
   }
 
   const log = createLogEntry(
-    provider,
+    instance.protocol,
     modelId,
     "generateImage",
     { prompt: styledPrompt, resolution },
@@ -2052,8 +2361,15 @@ export const generateSceneImage = async (
 
 /**
  * 翻译游戏内容
+ * @param settings 设置对象
+ * @param segments 故事片段
+ * @param inventory 物品清单
+ * @param character 角色状态
+ * @param relationships 关系列表
+ * @param targetLanguage 目标语言
  */
 export const translateGameContent = async (
+  settings: AISettings,
   segments: StorySegment[],
   inventory: string[],
   character: CharacterStatus,
@@ -2065,7 +2381,11 @@ export const translateGameContent = async (
   character: CharacterStatus;
   relationships: Relationship[];
 }> => {
-  const { provider, modelId } = getProviderConfig("translation");
+  const providerInfo = getProviderConfig(settings, "translation");
+  if (!providerInfo) {
+    throw new Error("Translation provider not configured");
+  }
+  const { instance, modelId } = providerInfo;
 
   // 提取需要翻译的文本字段
   const segmentsToTranslate = segments.map((s) => ({
@@ -2088,7 +2408,7 @@ export const translateGameContent = async (
 
   try {
     const { result } = await generateContentUnified(
-      provider,
+      instance.protocol,
       modelId,
       sys,
       contents,
@@ -2131,17 +2451,25 @@ export const translateGameContent = async (
 
 /**
  * 生成 Veo 视频
+ * @param settings 设置对象
+ * @param imageBase64 图片的 Base64 编码
+ * @param prompt 视频提示词
  */
 export const generateVeoVideo = async (
+  settings: AISettings,
   imageBase64: string,
   prompt: string,
 ): Promise<string> => {
-  const { provider, modelId, enabled } = getProviderConfig("video");
-  if (!enabled) throw new Error("Disabled");
+  const providerInfo = getProviderConfig(settings, "video");
+  if (!providerInfo || !providerInfo.enabled) {
+    throw new Error("Video generation is disabled");
+  }
 
-  if (provider === "gemini") {
+  const { instance, config, modelId } = providerInfo;
+
+  if (instance.protocol === "gemini") {
     const { url } = await generateGeminiVideo(
-      geminiConfig,
+      config as GeminiConfig,
       modelId,
       imageBase64,
       prompt,
@@ -2149,21 +2477,31 @@ export const generateVeoVideo = async (
     return url;
   }
 
-  throw new Error(`Video generation not supported by ${provider}`);
+  throw new Error(
+    `Video generation not supported by protocol: ${instance.protocol}`,
+  );
 };
 
 /**
  * 生成语音
+ * @param settings 设置对象
+ * @param text 要朗读的文本
+ * @param voiceName 声音名称
+ * @param narrativeTone 叙事语气
  */
 export const generateSpeech = async (
+  settings: AISettings,
   text: string,
   voiceName?: string,
   narrativeTone?: string,
 ): Promise<ArrayBuffer | null> => {
-  const { provider, modelId, enabled } = getProviderConfig("audio");
-  const audioConfig = currentSettings.audio;
+  const providerInfo = getProviderConfig(settings, "audio");
+  if (!providerInfo || !providerInfo.enabled) {
+    throw new Error("Audio generation is disabled");
+  }
 
-  if (!enabled) throw new Error("Disabled");
+  const { instance, config, modelId } = providerInfo;
+  const audioConfig = settings.audio;
 
   // Default options from settings
   const options: {
@@ -2182,7 +2520,10 @@ export const generateSpeech = async (
 
   // Dynamic Voice Selection based on Tone
   if (!voiceName) {
-    if (narrativeTone && (provider === "openai" || provider === "openrouter")) {
+    if (
+      narrativeTone &&
+      (instance.protocol === "openai" || instance.protocol === "openrouter")
+    ) {
       const tone = narrativeTone.toLowerCase();
       if (
         tone.includes("suspense") ||
@@ -2223,25 +2564,25 @@ export const generateSpeech = async (
   }
 
   try {
-    if (provider === "openai") {
+    if (instance.protocol === "openai") {
       const { audio } = await generateOpenAISpeech(
-        { ...openaiConfig, modelId },
+        config as OpenAIConfig,
         modelId,
         text,
         targetVoice,
         options,
       );
       return audio;
-    } else if (provider === "openrouter") {
+    } else if (instance.protocol === "openrouter") {
       const { audio } = await generateOpenRouterSpeech(
-        openRouterConfig,
+        config as OpenRouterConfig,
         modelId,
         text,
         targetVoice,
         options,
       );
       return audio;
-    } else {
+    } else if (instance.protocol === "gemini") {
       // Gemini
       const geminiOptions = {
         ...options,
@@ -2249,13 +2590,26 @@ export const generateSpeech = async (
       };
 
       const { audio } = await generateGeminiSpeech(
-        geminiConfig,
+        config as GeminiConfig,
         modelId,
         text,
         targetVoice,
         geminiOptions,
       );
       return audio;
+    } else if (instance.protocol === "claude") {
+      const { audio } = await generateClaudeSpeech(
+        config as ClaudeConfig,
+        modelId,
+        text,
+        targetVoice,
+        options,
+      );
+      return audio;
+    } else {
+      throw new Error(
+        `Speech generation not supported by protocol: ${instance.protocol}`,
+      );
     }
   } catch (error) {
     console.error("Speech generation failed", error);
@@ -2265,22 +2619,31 @@ export const generateSpeech = async (
 
 /**
  * 生成 Veo 脚本
+ * @param settings 设置对象
+ * @param gameState 游戏状态
+ * @param history 历史片段
+ * @param language 语言
  */
 export const generateVeoScript = async (
+  settings: AISettings,
   gameState: GameState,
   history: StorySegment[],
   language: string = "English",
 ): Promise<string> => {
   const prompt = getVeoScriptPrompt(gameState, history, language);
 
-  const { provider, modelId } = getProviderConfig("script");
+  const providerInfo = getProviderConfig(settings, "script");
+  if (!providerInfo) {
+    throw new Error("Script provider not configured");
+  }
+  const { instance, modelId } = providerInfo;
   const sys =
     "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
   const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
   try {
     const { result } = await generateContentUnified(
-      provider,
+      instance.protocol,
       modelId,
       sys,
       contents,
@@ -2299,20 +2662,38 @@ export const generateVeoScript = async (
 
 /**
  * 获取可用的嵌入模型列表
+ * @param settings 设置对象
+ * @param providerId Provider ID
  */
 export const getEmbeddingModels = async (
-  provider: ProviderType,
+  settings: AISettings,
+  providerId: string,
 ): Promise<EmbeddingModelInfo[]> => {
+  const instance = getProviderInstance(settings, providerId);
+  if (!instance) {
+    return [];
+  }
+
+  const config = createProviderConfig(instance);
+
   try {
-    if (provider === "gemini") {
-      return await getGeminiEmbeddingModels(geminiConfig);
-    } else if (provider === "openai") {
-      return await getOpenAIEmbeddingModels(openaiConfig);
-    } else {
-      return await getOpenRouterEmbeddingModels(openRouterConfig);
+    switch (instance.protocol) {
+      case "gemini":
+        return await getGeminiEmbeddingModels(config as GeminiConfig);
+      case "openai":
+        return await getOpenAIEmbeddingModels(config as OpenAIConfig);
+      case "openrouter":
+        return await getOpenRouterEmbeddingModels(config as OpenRouterConfig);
+      case "claude":
+        return await getClaudeEmbeddingModels(config as ClaudeConfig);
+      default:
+        return [];
     }
   } catch (error) {
-    console.error(`Failed to get embedding models from ${provider}:`, error);
+    console.error(
+      `Failed to get embedding models from provider ${providerId}:`,
+      error,
+    );
     return [];
   }
 };
@@ -2324,26 +2705,77 @@ interface EmbeddingUsage {
 
 /**
  * 生成嵌入向量
+ * @param settings 设置对象
+ * @param texts 要生成嵌入的文本数组
+ * @param embeddingConfig 嵌入配置（如果不提供则使用 settings 中的嵌入配置）
  */
 export const generateEmbeddings = async (
+  settings: AISettings,
   texts: string[],
-  config?: EmbeddingConfig,
+  embeddingConfig?: EmbeddingConfig,
 ): Promise<{ embeddings: Float32Array[]; usage: EmbeddingUsage }> => {
-  const embeddingConfig = config || currentSettings.embedding;
+  const config = embeddingConfig || settings.embedding;
 
-  if (!embeddingConfig?.enabled) {
+  if (!config?.enabled) {
     throw new Error("Embedding is disabled");
   }
 
-  const { provider, modelId } = embeddingConfig;
-
-  if (provider === "gemini") {
-    return await generateGeminiEmbedding(geminiConfig, modelId, texts);
-  } else if (provider === "openai") {
-    return await generateOpenAIEmbedding(openaiConfig, modelId, texts);
-  } else {
-    return await generateOpenRouterEmbedding(openRouterConfig, modelId, texts);
+  const instance = getProviderInstance(settings, config.providerId);
+  if (!instance) {
+    throw new Error(`Provider not found: ${config.providerId}`);
   }
+
+  const providerConfig = createProviderConfig(instance);
+
+  let response;
+  switch (instance.protocol) {
+    case "gemini":
+      response = await generateGeminiEmbedding(
+        providerConfig as GeminiConfig,
+        config.modelId,
+        texts,
+        config.dimensions,
+        undefined,
+      );
+      break;
+    case "openai":
+      response = await generateOpenAIEmbedding(
+        providerConfig as OpenAIConfig,
+        config.modelId,
+        texts,
+        config.dimensions,
+        undefined,
+      );
+      break;
+    case "openrouter":
+      response = await generateOpenRouterEmbedding(
+        providerConfig as OpenRouterConfig,
+        config.modelId,
+        texts,
+        config.dimensions,
+        undefined,
+      );
+      break;
+    case "claude":
+      response = await generateClaudeEmbedding(
+        providerConfig as ClaudeConfig,
+        config.modelId,
+        texts,
+        config.dimensions,
+        undefined,
+      );
+      break;
+    default:
+      throw new Error(`Unknown protocol: ${instance.protocol}`);
+  }
+
+  return {
+    embeddings: response.embeddings,
+    usage: {
+      promptTokens: response.usage.promptTokens,
+      totalTokens: response.usage.totalTokens,
+    },
+  };
 };
 
 // Re-export the EmbeddingModelInfo type for consumers

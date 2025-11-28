@@ -662,6 +662,11 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
       return generateOpenAIEmbedding(text);
     case "openrouter":
       return generateOpenRouterEmbedding(text);
+    case "claude":
+      // Claude doesn't support embeddings, throw a helpful error
+      throw new Error(
+        "Claude does not support embedding generation. Please use Gemini, OpenAI, or OpenRouter for embeddings.",
+      );
     default:
       throw new Error(`Unknown embedding provider: ${config.provider}`);
   }

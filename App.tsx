@@ -11,7 +11,6 @@ import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
 // Note: Old embedding manager has been replaced with the new RAG service
 // See hooks/useRAG.ts for the new integration
-import { Toast } from "./components/Toast";
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
@@ -26,6 +25,7 @@ import {
   ErrorBoundary,
   SectionErrorBoundary,
 } from "./components/common/ErrorBoundary";
+import { useRAG } from "./hooks/useRAG";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>
@@ -79,6 +79,9 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Initialize RAG service
+  const [ragState, ragActions] = useRAG(aiSettings.embedding?.enabled);
+
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [notification, setNotification] = useState<{
     show: boolean;
@@ -109,6 +112,163 @@ export default function App() {
     console.error("Component error caught by ErrorBoundary:", error);
     setComponentError(error.message);
   };
+
+  // Initialize RAG service when embedding is enabled and settings are available
+  useEffect(() => {
+    const initRAG = async () => {
+      if (
+        aiSettings.embedding?.enabled &&
+        !ragState.isInitialized &&
+        !ragState.isLoading
+      ) {
+        console.log("[App] Initializing RAG service immediately...");
+        const success = await ragActions.initialize(aiSettings);
+        if (success) {
+          console.log("[App] RAG service initialized successfully");
+        } else {
+          console.warn("[App] RAG service initialization failed");
+        }
+      } else if (!aiSettings.embedding?.enabled && ragState.isInitialized) {
+        console.log("[App] Embedding disabled, terminating RAG service...");
+        ragActions.terminate();
+      }
+    };
+
+    initRAG();
+  }, [
+    aiSettings.embedding?.enabled,
+    aiSettings.embedding?.providerId,
+    aiSettings.embedding?.modelId,
+  ]);
+
+  // Track previous embedding enabled state to detect when it becomes enabled
+  const prevEmbeddingEnabledRef = useRef<boolean | undefined>(undefined);
+
+  // Prompt user to index existing game data when embedding is newly enabled
+  useEffect(() => {
+    const wasDisabled = prevEmbeddingEnabledRef.current === false;
+    const nowEnabled = aiSettings.embedding?.enabled === true;
+
+    // Update ref for next comparison
+    prevEmbeddingEnabledRef.current = aiSettings.embedding?.enabled;
+
+    // Only prompt when transitioning from disabled to enabled
+    if (!wasDisabled || !nowEnabled) return;
+
+    // Check if there's existing game data that could benefit from indexing
+    const hasExistingGame = gameState.outline !== null && currentSlotId !== null;
+    const hasStoryContent = Object.keys(gameState.nodes).length > 0;
+
+    if (!hasExistingGame && !hasStoryContent) return;
+
+    // Wait for RAG service to be initialized
+    if (!ragState.isInitialized) return;
+
+    console.log("[App] Embedding newly enabled with existing game data");
+
+    // Prompt user to index existing content
+    const shouldIndex = window.confirm(
+      t("rag.newlyEnabled") ||
+        "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment."
+    );
+
+    if (shouldIndex) {
+      // Trigger a full index of current game state
+      const indexExistingContent = async () => {
+        try {
+          const { extractDocumentsFromState } = await import("./hooks/useRAG");
+          const ragService = (await import("./services/rag")).getRAGService();
+
+          if (!ragService) {
+            console.warn("[App] RAG service not available for indexing");
+            return;
+          }
+
+          const entityIds: string[] = [];
+
+          // Add outline documents
+          if (gameState.outline) {
+            entityIds.push("outline:full", "outline:world", "outline:goal", "outline:premise", "outline:character");
+          }
+
+          // Add all entities
+          gameState.inventory?.forEach((item) => entityIds.push(item.id));
+          gameState.relationships?.forEach((npc) => entityIds.push(npc.id));
+          gameState.locations?.forEach((loc) => entityIds.push(loc.id));
+          gameState.quests?.forEach((quest) => entityIds.push(quest.id));
+          gameState.knowledge?.forEach((know) => entityIds.push(know.id));
+          gameState.timeline?.forEach((event) => entityIds.push(event.id));
+
+          // Extract story nodes (last 50 to avoid overload)
+          const storyNodeIds = Object.keys(gameState.nodes)
+            .slice(-50)
+            .map((id) => `story:${id}`);
+          entityIds.push(...storyNodeIds);
+
+          const documents = extractDocumentsFromState(gameState, entityIds);
+
+          if (documents.length > 0) {
+            await ragService.addDocuments(
+              documents.map((doc) => ({
+                ...doc,
+                saveId: currentSlotId || "unknown",
+                forkId: gameState.forkId || 0,
+                turnNumber: gameState.turnNumber || 0,
+              }))
+            );
+            console.log(`[App] Indexed ${documents.length} existing documents`);
+            showToast(
+              t("rag.indexComplete") || `Indexed ${documents.length} documents`,
+              "info"
+            );
+          }
+        } catch (error) {
+          console.error("[App] Failed to index existing content:", error);
+          showToast(
+            t("rag.indexFailed") || "Failed to index existing content",
+            "error"
+          );
+        }
+      };
+
+      indexExistingContent();
+    }
+  }, [aiSettings.embedding?.enabled, ragState.isInitialized, gameState, currentSlotId, t]);
+
+  // Handle RAG model mismatch
+  useEffect(() => {
+    if (ragState.modelMismatch) {
+      const message = `Embedding model mismatch detected!\n\nStored: ${ragState.modelMismatch.storedModel}\nCurrent: ${ragState.modelMismatch.currentModel}\n\nWould you like to rebuild the index? This will clear existing embeddings.`;
+
+      if (window.confirm(message)) {
+        ragActions.handleModelMismatch("rebuild");
+      } else {
+        const disableRAG = window.confirm("Disable RAG for this session?");
+        if (disableRAG) {
+          ragActions.handleModelMismatch("disable");
+          handleSaveSettings({
+            ...aiSettings,
+            embedding: { ...aiSettings.embedding, enabled: false },
+          });
+        } else {
+          ragActions.handleModelMismatch("continue");
+        }
+      }
+    }
+  }, [ragState.modelMismatch]);
+
+  // Handle RAG storage overflow
+  useEffect(() => {
+    if (ragState.storageOverflow) {
+      const message = `Storage limit reached!\n\nCurrent: ${ragState.storageOverflow.currentTotal} documents\nLimit: ${ragState.storageOverflow.maxTotal} documents\n\nOldest saves will be removed to free up space.`;
+
+      if (window.confirm(message)) {
+        ragActions.handleStorageOverflow(
+          ragState.storageOverflow.suggestedDeletions,
+        );
+      }
+    }
+  }, [ragState.storageOverflow]);
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -214,10 +374,6 @@ export default function App() {
       const seg = currentHistory[i];
       // If we find an image, that's our background
       if (seg.imageUrl) return seg.imageUrl;
-      // If we find a prompt (intention) but no image, it means we are in a scene
-      // that *should* have an image but doesn't (generating or failed).
-      // In this case, we return undefined to trigger the Fallback (Environment Image).
-      if (seg.imagePrompt) return undefined;
     }
     // If we reach the start without finding anything, return undefined (Fallback)
     return undefined;
@@ -231,46 +387,112 @@ export default function App() {
     );
   };
 
-  const validateConfig = () => {
-    const hasApiKey = (provider: string) => {
-      if (provider === "gemini")
-        return !!(aiSettings.gemini.apiKey || getEnvApiKey());
-      if (provider === "openai") return !!aiSettings.openai.apiKey;
-      if (provider === "openrouter") return !!aiSettings.openrouter?.apiKey;
-      return false;
-    };
+  // Helper: Get provider instance by ID
+  const getProviderInstance = (providerId: string) => {
+    return aiSettings.providers.instances.find((p) => p.id === providerId);
+  };
 
-    // Story is always enabled
-    if (!hasApiKey(aiSettings.story.provider)) return false;
+  // Helper: Check if a provider has API key configured
+  const hasApiKey = (providerId: string) => {
+    const instance = getProviderInstance(providerId);
+    if (!instance) return false;
+    // For Gemini, also check environment variable
+    if (instance.protocol === "gemini") {
+      return !!(instance.apiKey || getEnvApiKey());
+    }
+    return !!(instance.apiKey && instance.apiKey.trim() !== "");
+  };
 
-    // Check other enabled features
-    if (aiSettings.image.enabled && !hasApiKey(aiSettings.image.provider))
-      return false;
-    if (aiSettings.audio.enabled && !hasApiKey(aiSettings.audio.provider))
-      return false;
-    if (aiSettings.video.enabled && !hasApiKey(aiSettings.video.provider))
-      return false;
-
-    return true;
+  // Helper: Check if a provider is available (enabled + has API key)
+  const isProviderAvailable = (providerId: string) => {
+    const instance = getProviderInstance(providerId);
+    if (!instance) return false;
+    return instance.enabled && hasApiKey(providerId);
   };
 
   const performValidation = async (): Promise<boolean> => {
-    if (!validateConfig()) {
+    // Check required providers have API keys
+    if (!isProviderAvailable(aiSettings.story.providerId)) {
+      showToast(t("missingApiKey"), "error");
+      setIsSettingsOpen(true);
+      return false;
+    }
+    if (!isProviderAvailable(aiSettings.lore.providerId)) {
       showToast(t("missingApiKey"), "error");
       setIsSettingsOpen(true);
       return false;
     }
 
+    // Check enabled optional features have API keys
+    const enabledFeatures = [
+      {
+        name: "image",
+        providerId: aiSettings.image.providerId,
+        enabled: aiSettings.image.enabled,
+      },
+      {
+        name: "audio",
+        providerId: aiSettings.audio.providerId,
+        enabled: aiSettings.audio.enabled,
+      },
+      {
+        name: "video",
+        providerId: aiSettings.video.providerId,
+        enabled: aiSettings.video.enabled,
+      },
+      {
+        name: "embedding",
+        providerId: aiSettings.embedding.providerId,
+        enabled: aiSettings.embedding.enabled,
+      },
+      {
+        name: "translation",
+        providerId: aiSettings.translation.providerId,
+        enabled: aiSettings.translation.enabled,
+      },
+      {
+        name: "script",
+        providerId: aiSettings.script.providerId,
+        enabled: aiSettings.script.enabled,
+      },
+    ];
+
+    for (const feature of enabledFeatures) {
+      if (feature.enabled && !isProviderAvailable(feature.providerId)) {
+        showToast(t("missingApiKey"), "error");
+        setIsSettingsOpen(true);
+        return false;
+      }
+    }
+
     showToast(t("validate-connection"), "info");
 
     // Story provider is REQUIRED - block if it fails
-    const storyProvider = aiSettings.story.provider;
-    const { isValid: storyValid, error: storyError } = await validateConnection(
-      storyProvider as any,
-    );
+    const storyProviderId = aiSettings.story.providerId;
+    const storyInstance = getProviderInstance(storyProviderId);
+    const storyProviderName = storyInstance?.name || storyProviderId;
+
+    const { isValid: storyValid, error: storyError } =
+      await validateConnection(aiSettings, storyProviderId);
     if (!storyValid) {
       showToast(
-        `${storyProvider}: ${storyError || "Connection Failed"} - Story generation is required`,
+        `${storyProviderName}: ${storyError || "Connection Failed"} - Story generation is required`,
+        "error",
+      );
+      setIsSettingsOpen(true);
+      return false;
+    }
+
+    // Lore provider is REQUIRED - block if it fails
+    const loreProviderId = aiSettings.lore.providerId;
+    const loreInstance = getProviderInstance(loreProviderId);
+    const loreProviderName = loreInstance?.name || loreProviderId;
+
+    const { isValid: loreValid, error: loreError } =
+      await validateConnection(aiSettings, loreProviderId);
+    if (!loreValid) {
+      showToast(
+        `${loreProviderName}: ${loreError || "Connection Failed"} - Lore generation is required`,
         "error",
       );
       setIsSettingsOpen(true);
@@ -280,34 +502,46 @@ export default function App() {
     // Optional providers (image, audio, video) - just warn, don't block
     const optionalProviders: Array<{
       name: string;
-      provider: string;
+      providerId: string;
       enabled: boolean;
     }> = [
       {
         name: "Image",
-        provider: aiSettings.image.provider,
+        providerId: aiSettings.image.providerId,
         enabled: aiSettings.image.enabled !== false,
       },
       {
         name: "Audio",
-        provider: aiSettings.audio.provider,
+        providerId: aiSettings.audio.providerId,
         enabled: aiSettings.audio.enabled !== false,
       },
       {
         name: "Video",
-        provider: aiSettings.video.provider,
+        providerId: aiSettings.video.providerId,
         enabled: aiSettings.video.enabled !== false,
+      },
+      {
+        name: "Translation",
+        providerId: aiSettings.translation.providerId,
+        enabled: aiSettings.translation.enabled !== false,
+      },
+      {
+        name: "Script",
+        providerId: aiSettings.script.providerId,
+        enabled: aiSettings.script.enabled !== false,
       },
     ];
 
-    for (const { name, provider, enabled } of optionalProviders) {
-      if (enabled && provider !== storyProvider) {
+    for (const { name, providerId, enabled } of optionalProviders) {
+      if (enabled && providerId !== storyProviderId) {
         // Skip if same as story provider (already checked)
-        const { isValid, error } = await validateConnection(provider as any);
+        const instance = getProviderInstance(providerId);
+        const providerName = instance?.name || providerId;
+        const { isValid, error } = await validateConnection(aiSettings, providerId);
         if (!isValid) {
           console.warn(`${name} provider validation failed:`, error);
           showToast(
-            `Warning: ${name} (${provider}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`,
+            `Warning: ${name} (${providerName}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`,
             "error",
           );
         }
@@ -337,6 +571,27 @@ export default function App() {
       // Helper to handle continuation based on game state
       const handleContinuation = async () => {
         if (gameState.outline) {
+          // Switch RAG context if enabled
+          if (
+            aiSettings.embedding?.enabled &&
+            ragState.isInitialized &&
+            currentSlotId
+          ) {
+            console.log("[ContinueGame] Switching RAG context...");
+            try {
+              await ragActions.switchSave(
+                currentSlotId,
+                gameState.forkId || 0,
+                gameState.forkTree,
+              );
+              console.log("[ContinueGame] RAG context switched successfully");
+            } catch (error) {
+              console.error(
+                "[ContinueGame] Failed to switch RAG context:",
+                error,
+              );
+            }
+          }
           // Outline complete, go directly to game
           navigate("/game");
         } else if (gameState.outlineConversation) {
@@ -364,12 +619,28 @@ export default function App() {
         const mostRecent = sorted[0];
         const result = await loadSlot(mostRecent.id);
         if (result.success) {
-          // Note: RAG service initialization is now handled in useGameEngine/useRAG
-          // The new RAG service uses PGlite with SharedWorker and handles save switching automatically
-          if (aiSettings.embedding?.enabled) {
+          // Switch RAG context to the loaded save if RAG is enabled
+          if (
+            aiSettings.embedding?.enabled &&
+            ragState.isInitialized &&
+            result.hasOutline
+          ) {
             console.log(
-              "[ContinueGame] RAG enabled, service will initialize on game start",
+              "[ContinueGame] Switching RAG context to loaded save...",
             );
+            try {
+              await ragActions.switchSave(
+                mostRecent.id,
+                gameState.forkId || 0,
+                gameState.forkTree,
+              );
+              console.log("[ContinueGame] RAG context switched successfully");
+            } catch (error) {
+              console.error(
+                "[ContinueGame] Failed to switch RAG context:",
+                error,
+              );
+            }
           }
 
           // After loading, check the game state and handle appropriately
@@ -396,12 +667,24 @@ export default function App() {
       return;
     }
 
-    // Note: RAG service now handles index persistence automatically via PGlite
-    // Model mismatch detection is also handled by the new RAG service
-    if (aiSettings.embedding?.enabled && result.hasOutline) {
-      console.log(
-        "[LoadSlot] RAG enabled, service will handle save context switching",
-      );
+    // Switch RAG context to the loaded save if RAG is enabled
+    if (
+      aiSettings.embedding?.enabled &&
+      ragState.isInitialized &&
+      result.hasOutline
+    ) {
+      console.log("[LoadSlot] Switching RAG context to loaded save...");
+      try {
+        await ragActions.switchSave(
+          id,
+          gameState.forkId || 0,
+          gameState.forkTree,
+        );
+        console.log("[LoadSlot] RAG context switched successfully");
+      } catch (error) {
+        console.error("[LoadSlot] Failed to switch RAG context:", error);
+        // Continue without RAG - not critical
+      }
     }
 
     // Close the save manager
@@ -546,13 +829,8 @@ export default function App() {
         <SettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
-          currentSettings={aiSettings}
-          onSave={handleSaveSettings}
           themeFont={currentThemeConfig.fontClass}
           showToast={showToast}
-          themeMode={themeMode}
-          onSetThemeMode={setThemeMode}
-          onResetSettings={resetSettings}
           onClearAllSaves={clearAllSaves}
           saveCount={saveSlots.length}
         />
@@ -566,12 +844,6 @@ export default function App() {
           />
         )}
       </Suspense>
-
-      <Toast
-        show={isAutoSaving || notification.show}
-        message={notification.show ? notification.msg : t("autoSaving")}
-        type={notification.type}
-      />
 
       {/* Critical Error Modal - covers persistence, app, and component errors */}
       {(persistenceError || appError || componentError) && (

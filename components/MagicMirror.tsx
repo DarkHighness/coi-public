@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { generateVeoVideo } from "../services/aiService";
+import type { AISettings } from "../types";
 
 interface MagicMirrorProps {
   isOpen: boolean;
   onClose: () => void;
+  settings: AISettings;
   initialImage?: string | null;
   themeFont?: string;
 }
@@ -44,6 +46,7 @@ const ANIMATION_TEMPLATES = [
 export const MagicMirror: React.FC<MagicMirrorProps> = ({
   isOpen,
   onClose,
+  settings,
   initialImage,
   themeFont = "font-fantasy",
 }) => {
@@ -113,7 +116,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
     setError(null);
 
     try {
-      const url = await generateVeoVideo(image, prompt);
+      const url = await generateVeoVideo(settings, image, prompt);
       setVideoUrl(url);
     } catch (e) {
       console.error(e);

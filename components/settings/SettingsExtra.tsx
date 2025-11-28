@@ -1,17 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { AISettings } from "../../types";
+import { useSettings } from "../../hooks/useSettings";
 
-interface SettingsExtraProps {
-  currentSettings: AISettings;
-  onUpdateSettings: (settings: AISettings) => void;
-}
-
-export const SettingsExtra: React.FC<SettingsExtraProps> = ({
-  currentSettings,
-  onUpdateSettings,
-}) => {
+export const SettingsExtra: React.FC = () => {
   const { t } = useTranslation();
+  const { settings: currentSettings, updateSettings: onUpdateSettings } =
+    useSettings();
   const extra = currentSettings.extra || {};
 
   const updateExtra = (field: string, value: any) => {

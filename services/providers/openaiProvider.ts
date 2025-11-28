@@ -46,6 +46,9 @@ import {
   createOpenAITool,
   zodToOpenAIResponseFormat,
   zodToOpenAISchema,
+  zodToGemini,
+  createGeminiTool,
+  isGeminiModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
@@ -270,12 +273,19 @@ export async function generateContent(
 ): Promise<OpenAIContentGenerationResponse> {
   const client = createOpenAIClient(config);
 
+  // 检测是否为 Gemini 模型
+  const isGemini = isGeminiModel(model);
+
   // 转换消息格式
   const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-  // 转换工具定义
+  // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 格式
   const tools = options?.tools
-    ? compileToolsForOpenAI(options.tools)
+    ? isGemini
+      ? options.tools.map((t) =>
+          createGeminiTool(t.name, t.description, t.parameters),
+        )
+      : compileToolsForOpenAI(options.tools)
     : undefined;
 
   // 构建请求参数
@@ -285,10 +295,16 @@ export async function generateContent(
     temperature: options?.temperature ?? 1.0,
     top_p: options?.topP,
     stream: !!options?.onChunk,
+    // @ts-ignore
     tools,
     tool_choice: tools ? "auto" : undefined,
 
-    response_format: schema ? zodToOpenAIResponseFormat(schema) : undefined,
+    // 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
+    response_format: schema
+      ? isGemini
+        ? ({ type: "json_schema", schema: zodToGemini(schema) } as any)
+        : zodToOpenAIResponseFormat(schema)
+      : undefined,
   };
 
   let content = "";
@@ -304,8 +320,15 @@ export async function generateContent(
     | AsyncIterable<ChatCompletionChunk>;
 
   console.log(
-    `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
+    `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
   );
+
+  if (isGemini && schema) {
+    console.log(
+      "[OpenAI] Detected Gemini model, using Gemini schema format:",
+      JSON.stringify(requestParams.response_format, null, 2),
+    );
+  }
 
   if (options?.onChunk) {
     // 流式生成
@@ -436,6 +459,7 @@ export async function generateContent(
   } catch (error) {
     // 如果有 schema 但解析失败
     if (schema) {
+      console.error(`[OpenAI] Failed to parse JSON content:`, content);
       throw new JSONParseError("openai", content.substring(0, 500), error);
     }
     // 返回纯文本

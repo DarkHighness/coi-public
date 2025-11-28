@@ -279,7 +279,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
         onWheel={handleWheel}
         style={{ opacity: isReady ? 1 : 0, transition: "opacity 0.3s ease-in" }}
       >
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[url('/img/cubes.png')] opacity-80 pointer-events-none"></div>
 
         <svg
           style={{

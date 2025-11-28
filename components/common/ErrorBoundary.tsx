@@ -169,9 +169,7 @@ function ErrorFallbackUI({
         </div>
       )}
       {isDev && (
-        <p className="text-xs text-yellow-300 mb-2">
-          💡 Dev Mode: Error will be re-thrown to DevTools
-        </p>
+        <p className="text-xs text-yellow-300 mb-2">{t("devModeError")}</p>
       )}
       {onRetry && (
         <button
@@ -182,7 +180,9 @@ function ErrorFallbackUI({
         </button>
       )}
       {boundaryName && (
-        <p className="text-xs text-white mt-2">Component: {boundaryName}</p>
+        <p className="text-xs text-white mt-2">
+          {t("component")} {boundaryName}
+        </p>
       )}
     </div>
   );
@@ -202,6 +202,8 @@ export function InlineErrorFallback({
   message,
   onRetry,
 }: InlineErrorFallbackProps): React.ReactElement {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-2 p-3 bg-red-900/10 border border-red-500/30 rounded text-sm">
       <span className="text-red-400">⚠️</span>
@@ -213,7 +215,7 @@ export function InlineErrorFallback({
           onClick={onRetry}
           className="text-xs text-theme-primary hover:underline"
         >
-          Retry
+          {t("common.retry")}
         </button>
       )}
     </div>

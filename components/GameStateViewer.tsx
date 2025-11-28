@@ -314,20 +314,38 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             <>
               <div className="prose prose-sm prose-invert max-w-none">
                 <p className="text-theme-text text-sm leading-relaxed">
-                  {outline.worldSetting.visible}
+                  {outline.worldSetting.visible?.description}
                 </p>
+                {outline.worldSetting.visible?.rules && (
+                  <p className="text-theme-muted text-xs mt-2">
+                    📜 {outline.worldSetting.visible.rules}
+                  </p>
+                )}
               </div>
               {(gameState.outline?.worldSettingUnlocked ||
-                gameState.unlockMode) && (
-                <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
-                  <span className="text-theme-warning text-xs font-medium">
-                    🔓 {t("gameViewer.hiddenRevealed")}
-                  </span>
-                  <p className="text-theme-warning/80 text-sm mt-1">
-                    {outline.worldSetting.hidden}
-                  </p>
-                </div>
-              )}
+                gameState.unlockMode) &&
+                outline.worldSetting.hidden && (
+                  <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
+                    <span className="text-theme-warning text-xs font-medium">
+                      🔓 {t("gameViewer.hiddenRevealed")}
+                    </span>
+                    {outline.worldSetting.hidden.hiddenRules && (
+                      <p className="text-theme-warning/80 text-sm mt-1">
+                        {outline.worldSetting.hidden.hiddenRules}
+                      </p>
+                    )}
+                    {outline.worldSetting.hidden.secrets &&
+                      outline.worldSetting.hidden.secrets.length > 0 && (
+                        <ul className="text-theme-warning/80 text-sm mt-1 list-disc pl-4">
+                          {outline.worldSetting.hidden.secrets.map(
+                            (secret, idx) => (
+                              <li key={idx}>{secret}</li>
+                            ),
+                          )}
+                        </ul>
+                      )}
+                  </div>
+                )}
               {(gameState.outline?.worldSettingUnlocked ||
                 gameState.unlockMode) &&
                 outline.worldSetting.history && (
@@ -922,18 +940,31 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             onToggle={toggleSection}
           >
             <p className="text-theme-text text-sm">
-              {gameState.outline.mainGoal.visible}
+              {gameState.outline.mainGoal.visible?.description}
             </p>
-            {(gameState.outline.mainGoalUnlocked || gameState.unlockMode) && (
-              <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
-                <span className="text-theme-warning text-xs font-medium">
-                  🔓 {t("gameViewer.hiddenRevealed")}
-                </span>
-                <p className="text-theme-warning/80 text-sm mt-1">
-                  {gameState.outline.mainGoal.hidden}
-                </p>
-              </div>
+            {gameState.outline.mainGoal.visible?.conditions && (
+              <p className="text-theme-muted text-xs mt-2">
+                📝 {gameState.outline.mainGoal.visible.conditions}
+              </p>
             )}
+            {(gameState.outline.mainGoalUnlocked || gameState.unlockMode) &&
+              gameState.outline.mainGoal.hidden && (
+                <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
+                  <span className="text-theme-warning text-xs font-medium">
+                    🔓 {t("gameViewer.hiddenRevealed")}
+                  </span>
+                  {gameState.outline.mainGoal.hidden.trueDescription && (
+                    <p className="text-theme-warning/80 text-sm mt-1">
+                      {gameState.outline.mainGoal.hidden.trueDescription}
+                    </p>
+                  )}
+                  {gameState.outline.mainGoal.hidden.trueConditions && (
+                    <p className="text-theme-warning/70 text-xs mt-1">
+                      📝 {gameState.outline.mainGoal.hidden.trueConditions}
+                    </p>
+                  )}
+                </div>
+              )}
           </Section>
         )}
 

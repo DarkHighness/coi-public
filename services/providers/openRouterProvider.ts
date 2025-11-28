@@ -44,7 +44,13 @@ import {
 
 // Re-export OpenRouterConfig for consumers
 export type { OpenRouterConfig } from "./types";
-import { zodToOpenAIResponseFormat, zodToOpenAISchema } from "../zodCompiler";
+import {
+  zodToOpenAIResponseFormat,
+  zodToOpenAISchema,
+  zodToGemini,
+  createGeminiTool,
+  isGeminiModel,
+} from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
 // ============================================================================
@@ -273,12 +279,19 @@ export async function generateContent(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<OpenRouterContentGenerationResponse> {
+  // 检测是否为 Gemini 模型
+  const isGemini = isGeminiModel(model);
+
   // Convert messages
   const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-  // Convert tools
+  // Convert tools - 如果是 Gemini 模型，使用 Gemini 格式
   const tools = options?.tools
-    ? convertToOpenAITools(options.tools)
+    ? isGemini
+      ? options.tools.map((t) =>
+          createGeminiTool(t.name, t.description, t.parameters),
+        )
+      : convertToOpenAITools(options.tools)
     : undefined;
 
   // Build request body
@@ -294,14 +307,23 @@ export async function generateContent(
     tool_choice: tools ? "auto" : undefined,
   };
 
-  // Add schema
+  // Add schema - 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
   if (schema) {
-    requestBody.response_format = zodToOpenAIResponseFormat(schema);
+    requestBody.response_format = isGemini
+      ? { type: "json_schema", schema: zodToGemini(schema) }
+      : zodToOpenAIResponseFormat(schema);
   }
 
   console.log(
-    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
+    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
   );
+
+  if (isGemini && schema) {
+    console.log(
+      "[OpenRouter] Detected Gemini model, using Gemini schema format:",
+      JSON.stringify(requestBody.response_format, null, 2),
+    );
+  }
 
   try {
     const response = await fetch(
@@ -384,6 +406,7 @@ async function handleNonStreamingResponse(
       const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
       return { result: JSON.parse(cleanedContent), usage, raw: data };
     } catch (error) {
+      console.error(`[OpenRouter] Failed to parse JSON content:`, content);
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }
@@ -514,6 +537,7 @@ async function handleStreamingResponse(
       const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
       return { result: JSON.parse(cleanedContent), usage, raw: null };
     } catch (error) {
+      console.error(`[OpenRouter] Failed to parse JSON content:`, content);
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }

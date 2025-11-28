@@ -11,7 +11,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   disabled,
   onChange,
 }) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   return (
     <select
@@ -24,8 +24,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       disabled={disabled}
       className="bg-theme-surface-highlight border border-theme-border text-theme-text text-xs rounded p-1 focus:outline-none focus:border-theme-primary disabled:opacity-50"
     >
-      <option value="en">English</option>
-      <option value="zh">中文</option>
+      <option value="en">{t("languages.english")}</option>
+      <option value="zh">{t("languages.chinese")}</option>
     </select>
   );
 };

@@ -213,6 +213,7 @@
   },
   "dragToReorder": "Drag to reorder",
   "tabs": {
+    "providers": "Providers",
     "credentials": "API Keys",
     "models": "Models",
     "embedding": "RAG",
@@ -814,5 +815,70 @@
     "fork": "fork",
     "turn": "turn",
     "importance": "imp"
-  }
+  },
+  "providers": {
+    "configuration": "Provider Configuration",
+    "addProvider": "Add Provider",
+    "addFromTemplate": "Add from Template",
+    "noProviders": "No providers configured. Add one to get started.",
+    "inUseBy": "In use by:",
+    "delete": "Delete",
+    "protocol": "Protocol:",
+    "baseUrl": "Base URL:",
+    "apiKeyLabel": "API Key:",
+    "deleteConfirm": "Delete",
+    "deleteConfirmMessage": "Delete \"{name}\"?",
+    "testing": "Testing...",
+    "addProviderTitle": "Add Provider",
+    "editProviderTitle": "Edit Provider",
+    "nameLabel": "Name *",
+    "protocolLabel": "Protocol *",
+    "baseUrlLabel": "Base URL *",
+    "apiKeyField": "API Key",
+    "apiKeyOptional": "(Optional)",
+    "keepExistingKey": "Keep existing API key",
+    "enableProvider": "Enable this provider",
+    "addButton": "Add",
+    "saveChanges": "Save Changes",
+    "addFromTemplateTitle": "Add Provider from Template",
+    "selectTemplate": "Select Template",
+    "apiKeyRequired": "API Key *",
+    "addProviderButton": "Add Provider",
+    "gemini": "Gemini",
+    "openai": "OpenAI",
+    "openrouter": "OpenRouter",
+    "claude": "Claude"
+  },
+  "audio": {
+    "voices": {
+      "alloy": "Alloy (Neutral)",
+      "echo": "Echo (Male)",
+      "fable": "Fable (British Male)",
+      "onyx": "Onyx (Deep Male)",
+      "nova": "Nova (Female)",
+      "shimmer": "Shimmer (Female)",
+      "ash": "Ash (Neutral)",
+      "coral": "Coral (Female)",
+      "sage": "Sage (Female)",
+      "kore": "Kore (Female)",
+      "fenrir": "Fenrir (Male)",
+      "luna": "Luna (Female)",
+      "puck": "Puck (Male)",
+      "enceladus": "Enceladus (Male)"
+    },
+    "formats": {
+      "mp3": "MP3 (Default)",
+      "opus": "Opus (Low Latency)",
+      "aac": "AAC (Standard)",
+      "flac": "FLAC (Lossless)",
+      "wav": "WAV (Uncompressed)",
+      "pcm": "PCM (Raw)"
+    }
+  },
+  "languages": {
+    "english": "English",
+    "chinese": "中文 (Chinese)"
+  },
+  "component": "Component:",
+  "devModeError": "💡 Dev Mode: Error will be re-thrown to DevTools"
 }

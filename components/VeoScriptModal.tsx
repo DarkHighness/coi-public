@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { generateVeoScript } from "../services/aiService";
-import { GameState, StorySegment } from "../types";
+import { AISettings, GameState, StorySegment } from "../types";
 
 interface VeoScriptModalProps {
   isOpen: boolean;
   onClose: () => void;
   gameState: GameState;
   currentHistory: StorySegment[];
+  settings: AISettings;
   themeFont?: string;
   onScriptGenerated?: (script: string) => void; // Callback to save script to gameState
 }
@@ -17,6 +18,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   onClose,
   gameState,
   currentHistory,
+  settings,
   themeFont = "font-fantasy",
   onScriptGenerated,
 }) => {
@@ -42,6 +44,7 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
     setError(null);
     try {
       const result = await generateVeoScript(
+        settings,
         gameState,
         currentHistory,
         i18n.language,

@@ -12,15 +12,15 @@ import {
 } from "../types";
 import { useGameState } from "./useGameState";
 import { useGamePersistence } from "./useGamePersistence";
+import { useSettings } from "./useSettings";
 import {
   generateAdventureTurn,
   generateSceneImage,
-  updateAIConfig,
   generateStoryOutlinePhased,
   summarizeContext,
   type OutlinePhaseProgress,
 } from "../services/aiService";
-import { THEMES, ENV_THEMES, LANG_MAP, DEFAULTS } from "../utils/constants";
+import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
 import {
   createStateSnapshot,
   restoreStateFromSnapshot,
@@ -33,6 +33,7 @@ import {
   normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
 import { getRAGService } from "../services/rag";
+import { extractDocumentsFromState } from "./useRAG";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -49,6 +50,86 @@ const deriveHistory = (
   }
   return history;
 };
+
+/**
+ * Update RAG documents for changed entities in background (non-blocking)
+ */
+async function updateRAGDocumentsBackground(
+  changedEntities: Array<{ id: string; type: string }>,
+  state: any,
+): Promise<void> {
+  if (changedEntities.length === 0) return;
+
+  try {
+    const ragService = getRAGService();
+    if (!ragService) return;
+
+    const entityIds = changedEntities.map((e) => e.id);
+    console.log(`[RAG Update] Updating ${entityIds.length} entities:`, entityIds);
+
+    const documents = extractDocumentsFromState(state, entityIds);
+    if (documents.length === 0) return;
+
+    await ragService.addDocuments(
+      documents.map((doc) => ({
+        ...doc,
+        saveId: state.saveId || "unknown",
+        forkId: state.forkId || 0,
+        turnNumber: state.turnNumber || 0,
+      })),
+    );
+    console.log(`[RAG Update] Updated ${documents.length} documents`);
+  } catch (error) {
+    console.error("[RAG Update] Failed:", error);
+  }
+}
+
+/**
+ * Index initial entities when game starts (outline + first turn)
+ */
+async function indexInitialEntities(state: any): Promise<void> {
+  try {
+    const ragService = getRAGService();
+    if (!ragService) return;
+
+    console.log("[RAG Init] Indexing initial entities");
+    const initialEntityIds: string[] = [];
+
+    // Index outline documents first (highest priority)
+    if (state.outline) {
+      initialEntityIds.push("outline:full");
+      initialEntityIds.push("outline:world");
+      initialEntityIds.push("outline:goal");
+      initialEntityIds.push("outline:premise");
+      initialEntityIds.push("outline:character");
+    }
+
+    state.inventory?.forEach((item: any) => initialEntityIds.push(item.id));
+    state.relationships?.forEach((npc: any) => initialEntityIds.push(npc.id));
+    state.locations?.forEach((loc: any) => initialEntityIds.push(loc.id));
+    state.quests?.forEach((quest: any) => initialEntityIds.push(quest.id));
+    state.knowledge?.forEach((know: any) => initialEntityIds.push(know.id));
+    state.factions?.forEach((faction: any) => initialEntityIds.push(faction.id));
+    state.timeline?.forEach((event: any) => initialEntityIds.push(event.id));
+
+    if (initialEntityIds.length === 0) return;
+
+    const documents = extractDocumentsFromState(state, initialEntityIds);
+    if (documents.length === 0) return;
+
+    await ragService.addDocuments(
+      documents.map((doc) => ({
+        ...doc,
+        saveId: state.saveId || "unknown",
+        forkId: state.forkId || 0,
+        turnNumber: state.turnNumber || 0,
+      })),
+    );
+    console.log(`[RAG Init] Indexed ${documents.length} documents`);
+  } catch (error) {
+    console.error("[RAG Init] Failed:", error);
+  }
+}
 
 export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
@@ -91,60 +172,21 @@ export const useGameEngine = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Initialize settings from localStorage to avoid flash
-  const [aiSettings, setAiSettings] = useState<AISettings>(() => {
-    const saved = localStorage.getItem("chronicles_aisettings");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          ...DEFAULTS,
-          ...parsed,
-          gemini: { ...DEFAULTS.gemini, ...(parsed.gemini || {}) },
-          openai: { ...DEFAULTS.openai, ...(parsed.openai || {}) },
-          story: { ...DEFAULTS.story, ...(parsed.story || {}) },
-          script: { ...DEFAULTS.script, ...(parsed.script || {}) },
-          image: { ...DEFAULTS.image, ...(parsed.image || {}) },
-          video: { ...DEFAULTS.video, ...(parsed.video || {}) },
-          audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
-          audioVolume: {
-            ...DEFAULTS.audioVolume,
-            ...(parsed.audioVolume || {}),
-          },
-          translation: {
-            ...DEFAULTS.translation,
-            ...(parsed.translation || {}),
-          },
-          lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
-        };
-      } catch (e) {
-        console.error("Failed to parse settings", e);
-        return DEFAULTS;
-      }
-    }
-    return DEFAULTS;
-  });
+  // Use settings hook for all settings management
+  const {
+    settings: aiSettings,
+    updateSettings: handleSaveSettings,
+    resetSettings,
+    language,
+    setLanguage,
+    themeMode,
+    setThemeMode: setThemeModeValue,
+    toggleThemeMode,
+  } = useSettings();
 
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<"day" | "night" | "system">(() => {
-    const saved = localStorage.getItem("chronicles_theme_mode");
-    return saved === "day" || saved === "night" || saved === "system"
-      ? saved
-      : "system";
-  });
-
-  // Derived Language State
-  const language = i18n.language as LanguageCode;
-
-  const setLanguage = (lang: LanguageCode) => {
-    const newSettings = { ...aiSettings, language: lang };
-    setAiSettings(newSettings);
-    updateAIConfig(newSettings);
-    localStorage.setItem("chronicles_aisettings", JSON.stringify(newSettings));
-    i18n.changeLanguage(lang);
-  };
 
   const currentHistory = useMemo(
     () => deriveHistory(gameState.nodes, gameState.activeNodeId),
@@ -208,49 +250,6 @@ export const useGameEngine = () => {
       }
     }
   }, [view, gameState.activeNodeId, gameState.nodes]);
-
-  useEffect(() => {
-    // Sync i18n with settings on mount if different
-    if (aiSettings.language && aiSettings.language !== i18n.language) {
-      i18n.changeLanguage(aiSettings.language);
-    }
-    updateAIConfig(aiSettings);
-  }, []);
-
-  const handleSaveSettings = (newSettings: AISettings) => {
-    setAiSettings(newSettings);
-    updateAIConfig(newSettings);
-    localStorage.setItem("chronicles_aisettings", JSON.stringify(newSettings));
-    if (newSettings.language !== language) {
-      i18n.changeLanguage(newSettings.language);
-    }
-  };
-
-  const toggleThemeMode = () => {
-    const modes: ("day" | "night" | "system")[] = ["day", "night", "system"];
-    const nextIndex = (modes.indexOf(themeMode) + 1) % modes.length;
-    const newMode = modes[nextIndex];
-    setThemeMode(newMode);
-    localStorage.setItem("chronicles_theme_mode", newMode);
-  };
-
-  const setThemeModeValue = (mode: "day" | "night" | "system") => {
-    setThemeMode(mode);
-    localStorage.setItem("chronicles_theme_mode", mode);
-  };
-
-  const resetSettings = () => {
-    // Reset to default settings
-    const defaultSettings = DEFAULTS;
-    setAiSettings(defaultSettings);
-    updateAIConfig(defaultSettings);
-    localStorage.setItem(
-      "chronicles_aisettings",
-      JSON.stringify(defaultSettings),
-    );
-    // Reset language to default
-    i18n.changeLanguage(defaultSettings.language);
-  };
 
   // --- Core Game Loop ---
 
@@ -418,6 +417,7 @@ export const useGameEngine = () => {
           previousSummary,
           textBlock,
           LANG_MAP[language],
+          aiSettings,
         );
 
         // Push the new summary object (or string for legacy compatibility)
@@ -466,12 +466,14 @@ export const useGameEngine = () => {
         response,
         logs: turnLogs,
         usage,
+        changedEntities,
       } = await generateAdventureTurn(gameStateRef.current, {
         recentHistory: segmentsToSend,
         userAction: action,
         language: LANG_MAP[language],
         themeKey: gameStateRef.current.theme,
         tFunc: t,
+        settings: aiSettings,
       });
 
       // Sanitize choices to ensure strict string array
@@ -530,19 +532,6 @@ export const useGameEngine = () => {
             ?.filter((a) => a.action === "add")
             .map((a) => ({ name: a.name || "Unknown Location" })) || [],
       };
-
-      // Legacy single toast message for backwards compatibility
-      let toastMessage = "";
-      if (stateChanges.itemsAdded.length > 0) {
-        toastMessage = t("toast.itemAdded");
-      } else if (stateChanges.npcsAdded.length > 0) {
-        toastMessage = t("toast.charMet");
-      } else if (
-        stateChanges.questsAdded.length > 0 ||
-        stateChanges.questsCompleted.length > 0
-      ) {
-        toastMessage = t("toast.questUpd");
-      }
 
       // Resolve atmosphere from response (environment from finish_turn is actually atmosphere)
       const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
@@ -644,7 +633,7 @@ export const useGameEngine = () => {
 
         const imageContext = {
           theme: finalState.theme,
-          worldSetting: finalState.outline?.worldSetting?.visible,
+          worldSetting: finalState.outline?.worldSetting?.visible?.description,
           time: finalState.time,
           location: currentLoc
             ? {
@@ -690,7 +679,7 @@ export const useGameEngine = () => {
           (aiSettings.imageTimeout || 60) * 1000,
         );
 
-        generateSceneImage(response.imagePrompt, imageContext)
+        generateSceneImage(response.imagePrompt, aiSettings, imageContext)
           .then(({ url, log }) => {
             clearTimeout(imageTimeout);
             setGameState((prev) => ({
@@ -737,15 +726,16 @@ export const useGameEngine = () => {
       // Trigger save immediately after generation
       triggerSave();
 
-      // Background RAG Update (Silent)
-      // Note: RAG updates are now handled automatically by the RAG SharedWorker
-      // when documents are added via aiService.executeRagSearch()
-      // No manual update needed here anymore
+      // Background RAG Update (non-blocking)
+      if (aiSettings.embedding?.enabled && changedEntities.length > 0) {
+        updateRAGDocumentsBackground(changedEntities, gameStateRef.current).catch((error) => {
+          console.error("[RAG Update] Background update failed:", error);
+        });
+      }
 
       return {
         success: true as const,
         stateChanges,
-        legacyMessage: toastMessage,
       };
     } catch (error: unknown) {
       console.error(error);
@@ -799,13 +789,17 @@ export const useGameEngine = () => {
     setGameState((prev) => ({ ...prev, isProcessing: true }));
 
     navigate("/initializing");
+
+    // Step 1: Generate outline (with separate error handling)
+    let outline;
+    let logs;
     try {
       // NOTE: startNewGame creates a completely NEW game, so we don't resume from
       // any previous conversation state. resumeOutlineGeneration should be used
       // to resume from a saved conversation state.
 
       // Use phased generation to avoid "schema produces a constraint that has too many states" errors
-      const { outline, logs } = await generateStoryOutlinePhased(
+      const result = await generateStoryOutlinePhased(
         selectedTheme,
         LANG_MAP[language],
         customContext,
@@ -815,6 +809,8 @@ export const useGameEngine = () => {
           onPhaseProgress,
           // Do NOT resume from saved conversation - this is a fresh new game
           resumeFromConversation: undefined,
+          // Pass settings for the generation
+          settings: aiSettings,
           // Save conversation state after each phase for fault recovery
           onSaveConversation: async (
             conversationState: OutlineConversationState,
@@ -834,7 +830,41 @@ export const useGameEngine = () => {
         },
       );
 
+      outline = result.outline;
+      logs = result.logs;
       console.log("[StartNewGame] Outline generated (phased)", outline);
+    } catch (outlineError) {
+      // Outline generation failed - prompt user to retry
+      console.error("Outline generation failed", outlineError);
+      const errorMessage =
+        outlineError instanceof Error
+          ? outlineError.message
+          : "Failed to generate story outline";
+
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+      }));
+
+      // Show alert asking if user wants to retry
+      const shouldRetry = window.confirm(
+        `${errorMessage}\n\nWould you like to retry generating the story outline?`,
+      );
+
+      if (shouldRetry) {
+        // Retry outline generation
+        return startNewGame(selectedTheme, customContext, onStream, onPhaseProgress);
+      } else {
+        // User chose not to retry - clean up and go back
+        deleteSlot(slotId);
+        setCurrentSlotId(null);
+        navigate("/");
+        return;
+      }
+    }
+
+    // Step 2: Process outline and generate first turn (original try-catch continues)
+    try {
 
       // Calculate total tokens from all phase logs
       const totalPhaseTokens = logs.reduce(
@@ -954,7 +984,7 @@ export const useGameEngine = () => {
           const result = await handleAction(prompt, true, selectedTheme);
 
           // handleAction returns:
-          // - { success: true, stateChanges, legacyMessage } on success
+          // - { success: true, stateChanges } on success
           // - { success: false, error } on failure
           // If first turn fails, stay in game and allow retry via retry button
           // Don't delete the save since outline generation succeeded
@@ -963,6 +993,13 @@ export const useGameEngine = () => {
               "First turn generation failed, but outline is valid - player can retry",
             );
             // Error state is already set by handleAction, player can use retry button
+          } else if (result && result.success) {
+            // On success, index initial entities in background (non-blocking)
+            if (aiSettings.embedding?.enabled) {
+              indexInitialEntities(gameStateRef.current).catch((error) => {
+                console.error("[RAG Init] Failed to index initial entities:", error);
+              });
+            }
           }
           // On success, we're already in /game with content showing
         } catch (error) {
@@ -979,13 +1016,14 @@ export const useGameEngine = () => {
         }
       }, 100);
     } catch (e) {
-      console.error("Init failed", e);
-      // Outline generation failed - clean up the save slot
+      // This catch block now only handles errors AFTER outline generation
+      // (e.g., state processing errors, navigation errors)
+      console.error("Post-outline processing failed", e);
       deleteSlot(slotId);
       setCurrentSlotId(null);
       setGameState((prev) => ({
         ...prev,
-        error: "Init Failed",
+        error: "Failed to initialize game state",
         isProcessing: false,
       }));
       navigate("/");
@@ -1172,6 +1210,7 @@ export const useGameEngine = () => {
     if (result.success) {
       // RAG context switching is now handled by the SharedWorker
       // It automatically loads the correct embeddings for the save when switchSave is called
+      // Model mismatch detection is handled in App.tsx via useRAG hook
       if (aiSettings.embedding?.enabled) {
         const ragService = getRAGService();
         if (ragService) {
@@ -1183,29 +1222,6 @@ export const useGameEngine = () => {
               gameStateRef.current.forkTree,
             );
             console.log(`[RAG] Switched to save context: ${id}`);
-
-            // Check for model mismatch
-            const mismatchInfo = await ragService.checkModelMismatch();
-            if (mismatchInfo) {
-              const shouldRebuild = window.confirm(
-                `Embedding model mismatch (Saved: ${mismatchInfo.storedModel}, Current: ${mismatchInfo.currentModel}).\n\n` +
-                  `Click OK to rebuild the index (clears existing embeddings).\n` +
-                  `Click Cancel to disable RAG for this session.`,
-              );
-
-              if (shouldRebuild) {
-                console.log("[RAG] User chose to rebuild index.");
-                await ragService.rebuildForModel();
-              } else {
-                console.log("[RAG] User chose to disable RAG.");
-                const newSettings = {
-                  ...aiSettings,
-                  embedding: { ...aiSettings.embedding, enabled: false },
-                };
-                setAiSettings(newSettings);
-                updateAIConfig(newSettings);
-              }
-            }
           } catch (error) {
             console.error("[RAG] Failed to switch context:", error);
             // Continue without RAG - not critical
@@ -1224,6 +1240,9 @@ export const useGameEngine = () => {
    * @param isFork - If true, creates a new fork branch from this node
    */
   const navigateToNode = (nodeId: string, isFork: boolean = false) => {
+    let newForkId: number | null = null;
+    let newForkTree: any = null;
+
     setGameState((prev) => {
       const targetNode = prev.nodes[nodeId];
       let newState = { ...prev, activeNodeId: nodeId };
@@ -1236,12 +1255,14 @@ export const useGameEngine = () => {
       // If this is a fork operation (going back to an earlier point to diverge),
       // create a new fork branch
       if (isFork && nodeId !== prev.activeNodeId) {
-        const { newForkId, newForkTree } = createFork(
+        const forkResult = createFork(
           prev.forkId,
           prev.forkTree,
           nodeId,
           newState.turnNumber,
         );
+        newForkId = forkResult.newForkId;
+        newForkTree = forkResult.newForkTree;
         newState = {
           ...newState,
           forkId: newForkId,
@@ -1254,6 +1275,21 @@ export const useGameEngine = () => {
 
       return newState;
     });
+
+    // Update RAG context if a fork was created (background, non-blocking)
+    if (isFork && newForkId !== null && aiSettings.embedding?.enabled) {
+      const ragService = getRAGService();
+      if (ragService && currentSlotId) {
+        ragService
+          .switchSave(currentSlotId, newForkId, newForkTree)
+          .then(() => {
+            console.log(`[RAG] Switched to fork ${newForkId} context`);
+          })
+          .catch((error) => {
+            console.error("[RAG] Failed to switch fork context:", error);
+          });
+      }
+    }
   };
 
   const generateImageForNode = async (nodeId: string) => {
@@ -1295,6 +1331,7 @@ export const useGameEngine = () => {
       const snapshot = node.stateSnapshot || gameStateRef.current;
       const imageContext = {
         theme: gameStateRef.current.theme,
+        worldSetting: gameStateRef.current.outline?.worldSetting?.visible?.description,
         time: snapshot.time,
         location: {
           name: snapshot.currentLocation,
@@ -1349,6 +1386,7 @@ export const useGameEngine = () => {
 
       const { url, log } = await generateSceneImage(
         node.imagePrompt,
+        aiSettings,
         imageContext,
       );
       clearTimeout(imageTimeout);

@@ -1,14 +1,15 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsAppearanceProps } from "./types";
+import { useSettings } from "../../hooks/useSettings";
 
-export const SettingsAppearance: React.FC<SettingsAppearanceProps> = ({
-  themeMode,
-  onSetThemeMode,
-  currentSettings,
-  onUpdateSettings,
-}) => {
+export const SettingsAppearance: React.FC = () => {
   const { t } = useTranslation();
+  const {
+    settings: currentSettings,
+    updateSettings: onUpdateSettings,
+    themeMode,
+    setThemeMode: onSetThemeMode,
+  } = useSettings();
 
   return (
     <div className="space-y-8 animate-slide-in">

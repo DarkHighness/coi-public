@@ -192,7 +192,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                         <>
                           <span className="text-theme-muted/50">•</span>
                           <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold">
-                            {t("timeline.moment") || "Moment"} {index + 1}
+                            {t("timeline.moment")} {index + 1}
                           </span>
                           <span className="text-theme-muted/80">
                             {seg.stateSnapshot.currentLocation}
@@ -212,7 +212,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                       >
                         <img
                           src={seg.imageUrl}
-                          alt="Moment"
+                          alt={t("timeline.moment")}
                           className="w-full h-full object-cover"
                         />
                       </div>

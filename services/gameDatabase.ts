@@ -10,6 +10,7 @@ import {
   CausalChain,
   CharacterStatus,
   CharacterAttribute,
+  Atmosphere,
 } from "../types";
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
 import type { AtmosphereObject } from "../utils/constants/atmosphere";
@@ -34,6 +35,61 @@ export interface ToolCallError {
 }
 
 export type ToolCallResult<T = unknown> = ToolCallSuccess<T> | ToolCallError;
+
+// --- Query Result Type Mappings ---
+
+export interface LocationListItem {
+  id: string;
+  name: string;
+  visited: boolean;
+  isCurrent: boolean;
+}
+
+export interface CharacterProfile {
+  name: string;
+  title: string;
+  status: string;
+  appearance: string;
+  profession: string;
+  background: string;
+  race: string;
+}
+
+export interface GlobalStateInfo {
+  time: string;
+  atmosphere: AtmosphereObject;
+  theme: string;
+  currentLocation: string;
+}
+
+// Query target to result type mapping
+export type QueryResultMap = {
+  inventory: InventoryItem[];
+  relationship: Relationship[];
+  location: Location[] | LocationListItem[];
+  quest: Quest[];
+  knowledge: KnowledgeEntry[];
+  faction: Faction[];
+  character: CharacterStatus | CharacterProfile | CharacterAttribute[] | CharacterStatus["skills"] | CharacterStatus["conditions"] | CharacterStatus["hiddenTraits"];
+  timeline: TimelineEvent[];
+  causal_chain: CausalChain[];
+  global: GlobalStateInfo;
+};
+
+// Modify target to result type mapping
+export type ModifyResultMap = {
+  inventory: InventoryItem | { removed: string };
+  relationship: Relationship | { removed: string };
+  location: Location | { removed: string };
+  quest: Quest | { removed: string };
+  knowledge: KnowledgeEntry;
+  faction: Faction | { removed: string };
+  world_info: { updated: string[] };
+  character: { updated: string[] };
+  timeline: TimelineEvent;
+  causal_chain: CausalChain | { triggered: boolean; description: string };
+  global: { updated: string[]; values: Record<string, string | AtmosphereObject> };
+};
 
 // --- Helper Functions ---
 
@@ -255,48 +311,54 @@ export class GameDatabase {
     return items;
   }
 
+  // Type-safe filter function for entities with name/title/id/visible fields
+  private filterEntities<T extends Record<string, unknown>>(list: T[], term?: string): T[] {
+    if (!term) return list;
+    const lowerTerm = term.toLowerCase();
+    return list.filter((item) => {
+      const name = item.name as string | undefined;
+      const title = item.title as string | undefined;
+      const id = item.id as string | undefined;
+      const visible = item.visible as { name?: string } | undefined;
+      return (
+        (name && name.toLowerCase().includes(lowerTerm)) ||
+        (title && title.toLowerCase().includes(lowerTerm)) ||
+        (visible?.name && visible.name.toLowerCase().includes(lowerTerm)) ||
+        (id && String(id).toLowerCase().includes(lowerTerm))
+      );
+    });
+  }
+
   public query(
     target: string,
     queryOrAspect?: string,
     extraQuery?: string,
-  ): ToolCallResult<unknown> {
+  ): ToolCallResult<QueryResultMap[keyof QueryResultMap]> {
     const term = queryOrAspect?.toLowerCase();
-
-    const filter = (list: any[]): any[] => {
-      if (!term) return list;
-      return list.filter(
-        (item) =>
-          (item.name && item.name.toLowerCase().includes(term)) ||
-          (item.title && item.title.toLowerCase().includes(term)) ||
-          (item.visible?.name &&
-            item.visible.name.toLowerCase().includes(term)) ||
-          (item.id && String(item.id).toLowerCase().includes(term)),
-      );
-    };
 
     try {
       switch (target) {
         case "inventory": {
-          const results = filter(this.state.inventory);
+          const results = this.filterEntities(this.state.inventory, term);
           this.updateLastAccess(results);
-          return createSuccess(results, `Found ${results.length} items`);
+          return createSuccess<InventoryItem[]>(results, `Found ${results.length} items`);
         }
 
         case "relationship": {
-          const results = filter(this.state.relationships);
+          const results = this.filterEntities(this.state.relationships, term);
           this.updateLastAccess(results);
-          return createSuccess(results, `Found ${results.length} NPCs`);
+          return createSuccess<Relationship[]>(results, `Found ${results.length} NPCs`);
         }
 
         case "location":
           if (term) {
-            const results = filter(this.state.locations);
+            const results = this.filterEntities(this.state.locations, term);
             this.updateLastAccess(results);
-            return createSuccess(results, `Found ${results.length} locations`);
+            return createSuccess<Location[]>(results, `Found ${results.length} locations`);
           }
           // For listing, still update lastAccess for all
           this.updateLastAccess(this.state.locations);
-          return createSuccess(
+          return createSuccess<LocationListItem[]>(
             this.state.locations.map((l) => ({
               id: l.id,
               name: l.name,
@@ -309,25 +371,27 @@ export class GameDatabase {
           );
 
         case "quest": {
-          const results = filter(this.state.quests);
+          const results = this.filterEntities(this.state.quests, term);
           this.updateLastAccess(results);
-          return createSuccess(results, `Found ${results.length} quests`);
+          return createSuccess<Quest[]>(results, `Found ${results.length} quests`);
         }
 
         case "knowledge": {
-          const results = filter(this.state.knowledge || []);
+          const results = this.filterEntities(this.state.knowledge || [], term);
           this.updateLastAccess(results);
-          return createSuccess(
+          return createSuccess<KnowledgeEntry[]>(
             results,
             `Found ${results.length} knowledge entries`,
           );
         }
 
-        case "faction":
-          return createSuccess(
-            filter(this.state.factions || []),
-            `Found ${filter(this.state.factions || []).length} factions`,
+        case "faction": {
+          const results = this.filterEntities(this.state.factions || [], term);
+          return createSuccess<Faction[]>(
+            results,
+            `Found ${results.length} factions`,
           );
+        }
 
         case "character": {
           const aspect = queryOrAspect || "all";

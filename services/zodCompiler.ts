@@ -84,7 +84,17 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     const innerSchema = processZodToGemini(
       (schema as ZodNullable<any>)._def.innerType,
     );
-    return { ...innerSchema, nullable: true };
+    // Create a clean copy to avoid polluting with extra properties
+    const result: Schema = {
+      type: innerSchema.type,
+      nullable: true,
+    };
+    if (innerSchema.description) result.description = innerSchema.description;
+    if (innerSchema.properties) result.properties = innerSchema.properties;
+    if (innerSchema.required) result.required = innerSchema.required;
+    if (innerSchema.items) result.items = innerSchema.items;
+    if (innerSchema.enum) result.enum = innerSchema.enum;
+    return result;
   }
 
   // Handle default
@@ -156,6 +166,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
     // Collect all possible properties from all variants
     const allProperties: Record<string, Schema> = {};
+    const propertyTypes: Record<string, Set<string>> = {}; // Track types for each property
     const discriminatorValues: string[] = [];
     const requiredByAll = new Set<string>();
     let firstVariant = true;
@@ -185,8 +196,37 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
         if (isRequired) currentRequired.add(key);
 
+        // Process the schema for this property
+        const processedSchema = processZodToGemini(value as ZodTypeAny);
+
+        // Track the type for this property
+        if (!propertyTypes[key]) {
+          propertyTypes[key] = new Set();
+        }
+        if (processedSchema.type) {
+          propertyTypes[key].add(String(processedSchema.type));
+        }
+
+        // Store the first occurrence or merge if types differ
         if (!allProperties[key]) {
-          allProperties[key] = processZodToGemini(value as ZodTypeAny);
+          allProperties[key] = processedSchema;
+        } else {
+          // If types differ across variants, make it nullable to be more permissive
+          const existingType = allProperties[key].type;
+          const newType = processedSchema.type;
+          if (existingType !== newType) {
+            // For Gemini, we can't use union types, so we make it a string type
+            // which is the most permissive for discriminated unions
+            const mergedSchema: Schema = {
+              type: Type.STRING,
+              description: allProperties[key].description || processedSchema.description,
+            };
+            // Preserve nullable flag if either schema has it
+            if (allProperties[key].nullable || processedSchema.nullable) {
+              mergedSchema.nullable = true;
+            }
+            allProperties[key] = mergedSchema;
+          }
         }
       }
 
@@ -697,6 +737,22 @@ export function createOpenRouterTool(
       parameters: zodToOpenAISchema(parameters, true),
     },
   };
+}
+
+// ============================================================================
+// Model Detection Helpers
+// ============================================================================
+
+/**
+ * 检测模型 ID 是否为 Gemini 模型
+ */
+export function isGeminiModel(modelId: string): boolean {
+  const lowerModelId = modelId.toLowerCase();
+  return (
+    lowerModelId.includes("gemini") ||
+    lowerModelId.includes("google/gemini") ||
+    lowerModelId.startsWith("gemini-")
+  );
 }
 
 // ============================================================================

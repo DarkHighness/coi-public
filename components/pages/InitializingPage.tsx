@@ -149,7 +149,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   return (
     <div className="h-dvh w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
       {/* Cinematic Background */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse z-0"></div>
+      <div className="absolute inset-0 bg-[url('/img/stardust.png')] opacity-20 animate-pulse z-0"></div>
 
       {/* Animated Phase Text Background */}
       {animatedText && (

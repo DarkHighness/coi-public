@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {character && (
-          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
             <CharacterPanel
               character={character}
               themeFont={currentThemeConfig.fontClass}
@@ -128,14 +128,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Timeline Events Panel (New) */}
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <TimelineEventsPanel
             events={gameState.timeline}
             themeFont={currentThemeConfig.fontClass}
           />
         </div>
 
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <LocationPanel
             currentLocation={gameState.currentLocation}
             locations={gameState.locations || []}
@@ -145,13 +145,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onUpdateList={(newState) => onUpdateUIState("locations", newState)}
           />
         </div>
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <QuestPanel
             quests={gameState.quests || []}
             themeFont={currentThemeConfig.fontClass}
           />
         </div>
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <RelationshipPanel
             relationships={gameState.relationships || []}
             locations={gameState.locations || []}
@@ -163,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             unlockMode={gameState.unlockMode}
           />
         </div>
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <InventoryPanel
             inventory={gameState.inventory || []}
             themeFont={currentThemeConfig.fontClass}
@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
           />
         </div>
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <KnowledgePanel
             knowledge={gameState.knowledge || []}
             themeFont={currentThemeConfig.fontClass}
@@ -180,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* World Info Panel (New) */}
-        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg p-2 shadow-sm">
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
           <WorldInfoPanel
             history={gameState.outline?.worldSetting?.history}
             factions={gameState.factions}
@@ -193,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Embedding Status Panel (New) */}
         {embeddingProgress && (
-          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
             <EmbeddingStatusPanel
               progress={embeddingProgress}
               isExpanded={gameState.uiState?.embeddingExpanded !== false}
@@ -210,7 +210,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Status Bar */}
       <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
-        <span>Tokens: {gameState.totalTokens.toLocaleString()}</span>
+        <span>
+          {t("sidebar.tokens")} {gameState.totalTokens.toLocaleString()}
+        </span>
         <div className="flex gap-4">
           <button
             onClick={() =>

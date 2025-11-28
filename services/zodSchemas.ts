@@ -669,18 +669,66 @@ export const characterStatusSchema = z.object({
 // 世界设定 Schemas
 // ============================================================================
 
+/** 世界设定可见层 */
+export const worldSettingVisibleSchema = z.object({
+  description: z.string().describe("Common knowledge about the world."),
+  rules: z
+    .string()
+    .optional()
+    .describe("Known rules or laws of the world (magic, physics, society)."),
+});
+
+/** 世界设定隐藏层 */
+export const worldSettingHiddenSchema = z.object({
+  hiddenRules: z
+    .string()
+    .optional()
+    .describe("Secret rules or laws unknown to most."),
+  secrets: z
+    .array(z.string())
+    .optional()
+    .describe("World-level secrets and hidden truths."),
+});
+
 /** 世界设定 */
 export const worldSettingSchema = z.object({
-  visible: z.string().describe("Common knowledge about the world."),
-  hidden: z.string().optional().describe("Secret truths about the world."),
-  history: z.string().describe("Ancient events that shape the present."),
+  visible: worldSettingVisibleSchema.describe(
+    "Publicly known world information.",
+  ),
+  hidden: worldSettingHiddenSchema
+    .optional()
+    .describe("Secret truths about the world."),
+  history: z
+    .string()
+    .optional()
+    .describe("Ancient events that shape the present."),
+});
+
+/** 主要目标可见层 */
+export const mainGoalVisibleSchema = z.object({
+  description: z.string().describe("The apparent main motivation or task."),
+  conditions: z
+    .string()
+    .optional()
+    .describe("Known conditions for achieving the goal."),
+});
+
+/** 主要目标隐藏层 */
+export const mainGoalHiddenSchema = z.object({
+  trueDescription: z
+    .string()
+    .optional()
+    .describe("The hidden true nature or purpose of the goal."),
+  trueConditions: z
+    .string()
+    .optional()
+    .describe("Secret conditions for the true goal."),
 });
 
 /** 主要目标 */
 export const mainGoalSchema = z.object({
-  visible: z.string().describe("The apparent main motivation or task."),
-  hidden: z
-    .string()
+  visible: mainGoalVisibleSchema.describe("The apparent goal."),
+  hidden: mainGoalHiddenSchema
     .optional()
     .describe("The hidden event logic or true nature."),
 });

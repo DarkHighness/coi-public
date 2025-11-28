@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { generateSpeech } from "../services/aiService";
 import { loadAudio, saveAudio } from "../utils/indexedDB";
+import type { AISettings } from "../types";
 
 export const useStoryAudio = (
   text: string,
+  settings: AISettings,
   volume: number = 1.0,
   muted: boolean = false,
   onWarning?: (msg: string) => void,
@@ -85,6 +87,7 @@ export const useStoryAudio = (
       // 2. If not found or no key, generate
       if (!audioData) {
         const arrayBuffer = await generateSpeech(
+          settings,
           text,
           undefined,
           narrativeTone,

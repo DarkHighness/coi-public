@@ -165,10 +165,49 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
     try {
       const ragService = getRAGService();
       if (ragService) {
-        // Clear current save's in-memory cache
-        await ragService.clearSave();
+        // First, rebuild (clear documents) for the current save
+        await ragService.rebuildForModel();
+
+        // Then, re-index all current game entities
+        const { extractDocumentsFromState } = await import("../hooks/useRAG");
+
+        const entityIds: string[] = [];
+
+        // Add outline documents
+        if (gameState.outline) {
+          entityIds.push("outline:full", "outline:world", "outline:goal", "outline:premise", "outline:character");
+        }
+
+        // Add all entities
+        gameState.inventory?.forEach((item) => entityIds.push(item.id));
+        gameState.relationships?.forEach((npc) => entityIds.push(npc.id));
+        gameState.locations?.forEach((loc) => entityIds.push(loc.id));
+        gameState.quests?.forEach((quest) => entityIds.push(quest.id));
+        gameState.knowledge?.forEach((know) => entityIds.push(know.id));
+        gameState.timeline?.forEach((event) => entityIds.push(event.id));
+
+        // Extract recent story nodes (last 50 to avoid overload)
+        const storyNodeIds = Object.keys(gameState.nodes)
+          .slice(-50)
+          .map((id) => `story:${id}`);
+        entityIds.push(...storyNodeIds);
+
+        const documents = extractDocumentsFromState(gameState, entityIds);
+
+        if (documents.length > 0) {
+          await ragService.addDocuments(
+            documents.map((doc) => ({
+              ...doc,
+              saveId: indexStats?.currentSaveId || "unknown",
+              forkId: gameState.forkId || 0,
+              turnNumber: gameState.turnNumber || 0,
+            }))
+          );
+          console.log(`[RAGDebugger] Re-indexed ${documents.length} documents`);
+        }
+
         loadIndexStats();
-        console.log("[RAGDebugger] Index cleared successfully");
+        console.log("[RAGDebugger] Index rebuilt successfully");
       }
     } catch (err: unknown) {
       console.error("Failed to rebuild index:", err);
@@ -311,7 +350,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       {t("ragDebugger.currentForkOnly", "Current Fork Only")}
                     </span>
                     <span className="text-theme-muted text-xs">
-                      (fork: {gameState.forkId})
+                      ({t("ragDebugger.fork")}: {gameState.forkId})
                     </span>
                   </label>
                   <label className="flex items-center gap-2 text-theme-text cursor-pointer">
@@ -328,7 +367,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       )}
                     </span>
                     <span className="text-theme-muted text-xs">
-                      (turn: {gameState.turnNumber})
+                      ({t("ragDebugger.turn")}: {gameState.turnNumber})
                     </span>
                   </label>
                 </div>
@@ -622,10 +661,10 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                             />
                           </svg>
-                          {t("ragDebugger.rebuildIndex", "Clear Memory")}
+                          {t("ragDebugger.rebuildIndex", "Rebuild Index")}
                         </>
                       )}
                     </button>

@@ -144,7 +144,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                       <span className="text-[9px] uppercase tracking-wider text-theme-primary block mb-0.5">
                         {t("hidden.misconceptions")}:
                       </span>
-                      <ul className="list-disc list-inside text-red-200/80 space-y-0.5">
+                      <ul className="list-disc list-inside text-red-500 space-y-0.5">
                         {k.hidden.misconceptions.map((misc, i) => (
                           <li key={i}>{misc}</li>
                         ))}
@@ -157,7 +157,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                     <span className="text-[9px] uppercase tracking-wider text-blue-400/70 block mb-0.5">
                       {t("hidden.future")}:
                     </span>
-                    <ul className="list-disc list-inside text-blue-200/80 space-y-0.5">
+                    <ul className="list-disc list-inside text-blue-500 space-y-0.5">
                       {k.hidden.toBeRevealed.map((mystery, i) => (
                         <li key={i}>{mystery}</li>
                       ))}

@@ -3,6 +3,7 @@ import {
   AISettings,
   LanguageCode,
   EmbeddingConfig,
+  ProviderManagement,
 } from "../../types";
 
 export const INITIAL_PROMPT =
@@ -26,42 +27,79 @@ export const LANG_MAP: Record<LanguageCode, string> = {
 
 export const DEFAULT_OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
 
+// Default Provider Instances
+export const DEFAULT_PROVIDERS: ProviderManagement = {
+  instances: [
+    {
+      id: "provider-1",
+      name: "Google Gemini",
+      protocol: "gemini",
+      baseUrl: "https://generativelanguage.googleapis.com",
+      apiKey: "",
+      enabled: false,
+      createdAt: Date.now(),
+      lastModified: Date.now(),
+    },
+    {
+      id: "provider-2",
+      name: "OpenAI",
+      protocol: "openai",
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "",
+      enabled: false,
+      createdAt: Date.now(),
+      lastModified: Date.now(),
+    },
+    {
+      id: "provider-3",
+      name: "OpenRouter",
+      protocol: "openrouter",
+      baseUrl: "https://openrouter.ai/api/v1",
+      apiKey: "",
+      enabled: false,
+      createdAt: Date.now(),
+      lastModified: Date.now(),
+    },
+    {
+      id: "provider-4",
+      name: "Anthropic Claude",
+      protocol: "claude",
+      baseUrl: "https://api.anthropic.com",
+      apiKey: "",
+      enabled: false,
+      createdAt: Date.now(),
+      lastModified: Date.now(),
+    },
+  ],
+  nextId: 5,
+};
+
 // Default Models
 export const DEFAULTS: AISettings = {
-  gemini: {
-    apiKey: undefined,
-    baseUrl: undefined,
-  },
-  openai: {
-    apiKey: undefined,
-    baseUrl: DEFAULT_OPENAI_BASE_URL,
-  },
-  openrouter: {
-    apiKey: "",
-  },
+  providers: DEFAULT_PROVIDERS,
   contextLen: 10, // Summarize after 10 turns
   story: {
-    provider: "gemini",
-    modelId: "gemini-3-pro-preview",
+    providerId: "provider-1",
+    modelId: "gemini-2.0-flash-exp",
   },
   script: {
-    provider: "gemini",
-    modelId: "gemini-3-pro-preview",
+    providerId: "provider-1",
+    modelId: "gemini-2.0-flash-exp",
     enabled: true,
   },
   image: {
-    provider: "gemini",
+    providerId: "provider-1",
     modelId: "imagen-4.0-generate-001",
     enabled: true,
     resolution: "1344x768",
   },
   video: {
-    provider: "gemini",
+    providerId: "provider-1",
     modelId: "veo-3.1-fast-generate-preview",
     enabled: true,
   },
   audio: {
-    provider: "gemini",
+    providerId: "provider-1",
     modelId: "gemini-2.5-flash-preview-tts",
     enabled: true,
   },
@@ -72,12 +110,12 @@ export const DEFAULTS: AISettings = {
     ttsMuted: false,
   },
   translation: {
-    provider: "gemini",
+    providerId: "provider-1",
     modelId: "gemini-2.5-flash",
     enabled: true,
   },
   lore: {
-    provider: "gemini",
+    providerId: "provider-1",
     modelId: "gemini-2.5-flash",
     enabled: true,
   },
@@ -87,11 +125,13 @@ export const DEFAULTS: AISettings = {
   enableFallbackBackground: true,
   lockEnvTheme: false,
   // RAG Embedding Settings
+  // Note: modelId is empty by default - user must select a model based on their provider
+  // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)
   embedding: {
     enabled: false,
-    provider: "gemini",
-    modelId: "text-embedding-004",
-    dimensions: 768,
+    providerId: "provider-1",
+    modelId: "", // No default - must be selected based on provider's available models
+    dimensions: undefined, // Will be set when model is selected
     topK: 10,
     similarityThreshold: 0.65,
     // LRU Eviction Settings

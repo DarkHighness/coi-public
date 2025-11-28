@@ -6,14 +6,13 @@ import { TypewriterText } from "../TypewriterText";
 import { useStoryAudio } from "../../hooks/useStoryAudio";
 import { AISettings } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
-import { Toast } from "../Toast";
 import { markdownComponents } from "../../utils/markdownComponents";
 
 interface StoryTextProps {
   text: string;
   isLast: boolean;
   shouldAnimate?: boolean;
-  aiSettings?: AISettings;
+  aiSettings: AISettings;
   onTypingComplete?: () => void;
   narrativeTone?: string;
   segmentId?: string;
@@ -37,8 +36,9 @@ export const StoryText: React.FC<StoryTextProps> = ({
 
   const { isPlaying, isLoadingAudio, playAudio } = useStoryAudio(
     text,
-    aiSettings?.audioVolume?.ttsVolume ?? 1.0,
-    aiSettings?.audioVolume?.ttsMuted ?? false,
+    aiSettings,
+    aiSettings.audioVolume?.ttsVolume ?? 1.0,
+    aiSettings.audioVolume?.ttsMuted ?? false,
     (msg) => setWarning(msg),
     narrativeTone,
     segmentId,

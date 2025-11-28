@@ -1,58 +1,51 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { AISettings } from "../../types";
 import {
   getEmbeddingModels,
   EmbeddingModelInfo,
 } from "../../services/aiService";
-import { EMBEDDING_MODELS } from "../../services/rag";
+import { useSettings } from "../../hooks/useSettings";
 
 interface SettingsEmbeddingProps {
-  currentSettings: AISettings;
-  onUpdateSettings: (settings: AISettings) => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
 }
 
 export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
-  currentSettings,
-  onUpdateSettings,
   showToast,
 }) => {
   const { t } = useTranslation();
+  const { settings: currentSettings, updateSettings: onUpdateSettings } =
+    useSettings();
   const config = currentSettings.embedding;
   const isEnabled = config?.enabled ?? false;
 
-  // State for dynamically fetched models
-  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>({
-    gemini: EMBEDDING_MODELS.gemini || [],
-    openai: EMBEDDING_MODELS.openai || [],
-    openrouter: EMBEDDING_MODELS.openrouter || [],
-  });
-  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({
-    gemini: false,
-    openai: false,
-    openrouter: false,
-  });
+  // State for dynamically fetched models (keyed by providerId)
+  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(
+    {},
+  );
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // Fetch models from API for a provider
   const fetchModelsForProvider = useCallback(
-    async (provider: "gemini" | "openai" | "openrouter") => {
-      if (loadingModels[provider]) return;
+    async (providerId: string) => {
+      if (loadingModels[providerId]) return;
 
-      setLoadingModels((prev) => ({ ...prev, [provider]: true }));
+      setLoadingModels((prev) => ({ ...prev, [providerId]: true }));
       try {
-        const fetchedModels = await getEmbeddingModels(provider);
+        const fetchedModels = await getEmbeddingModels(currentSettings, providerId);
         if (fetchedModels.length > 0) {
-          setModels((prev) => ({ ...prev, [provider]: fetchedModels }));
+          setModels((prev) => ({ ...prev, [providerId]: fetchedModels }));
         }
       } catch (error) {
         console.error(
-          `Failed to fetch embedding models for ${provider}:`,
+          `Failed to fetch embedding models for provider ${providerId}:`,
           error,
         );
         // Keep using fallback models
       } finally {
-        setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+        setLoadingModels((prev) => ({ ...prev, [providerId]: false }));
       }
     },
     [loadingModels],
@@ -60,10 +53,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
   // Fetch models when provider changes or component mounts
   useEffect(() => {
-    if (isEnabled && config.provider) {
-      fetchModelsForProvider(config.provider);
+    if (isEnabled && config.providerId) {
+      fetchModelsForProvider(config.providerId);
     }
-  }, [config.provider, isEnabled]);
+  }, [config.providerId, isEnabled]);
 
   const updateEmbedding = (field: string, value: any) => {
     const newSettings = {
@@ -76,8 +69,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
     // Auto-update dimensions when model changes
     if (field === "modelId") {
-      const provider = config.provider;
-      const providerModels = models[provider] || [];
+      const providerId = config.providerId;
+      const providerModels = models[providerId] || [];
       const model = providerModels.find((m) => m.id === value);
       if (model?.dimensions) {
         newSettings.embedding.dimensions = model.dimensions;
@@ -85,25 +78,65 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     }
 
     // Reset model when provider changes
-    if (field === "provider") {
-      const providerModels = models[value as keyof typeof models] || [];
-      if (providerModels.length > 0) {
-        newSettings.embedding.modelId = providerModels[0].id;
-        newSettings.embedding.dimensions = providerModels[0].dimensions;
-      }
+    if (field === "providerId") {
+      newSettings.embedding.modelId = "";
       // Trigger fetch for new provider
-      fetchModelsForProvider(value as "gemini" | "openai" | "openrouter");
+      fetchModelsForProvider(value);
     }
 
     onUpdateSettings(newSettings);
   };
 
   const getModelsForProvider = () => {
-    return models[config.provider as keyof typeof models] || [];
+    return models[config.providerId] || [];
   };
+
+  const getProviderById = (providerId: string) => {
+    return currentSettings.providers.instances.find((p) => p.id === providerId);
+  };
+
+  const currentProvider = getProviderById(config.providerId);
+  const isProviderEnabled = currentProvider?.enabled ?? false;
+  const hasApiKey =
+    currentProvider?.apiKey && currentProvider.apiKey.trim() !== "";
+
+  // Check if there are any available providers
+  const availableProviders = currentSettings.providers.instances.filter(
+    (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
+  );
+  const hasNoAvailableProviders = availableProviders.length === 0;
 
   return (
     <div className="space-y-6 animate-slide-in">
+      {/* Warning: No available providers */}
+      {hasNoAvailableProviders && isEnabled && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded p-4 flex items-start gap-3">
+          <svg
+            className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-1">
+              {t("embedding.noAvailableProviders") ||
+                "No Available Providers"}
+            </h4>
+            <p className="text-xs text-red-400">
+              {t("embedding.noAvailableProvidersDesc") ||
+                "No providers are available for embedding. Please go to the Providers tab to enable at least one provider and configure its API key."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Enable Toggle */}
       <div className="flex items-center justify-between pb-4 border-b border-theme-border">
         <div>
@@ -138,14 +171,29 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             {t("embedding.provider") || "Provider"}
           </label>
           <select
-            value={config.provider}
-            onChange={(e) => updateEmbedding("provider", e.target.value)}
+            value={config.providerId}
+            onChange={(e) => updateEmbedding("providerId", e.target.value)}
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
           >
-            <option value="gemini">Gemini</option>
-            <option value="openai">OpenAI</option>
-            <option value="openrouter">OpenRouter</option>
+            {currentSettings.providers.instances
+              .filter((p) => p.enabled)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.protocol})
+                </option>
+              ))}
           </select>
+          {!isProviderEnabled && (
+            <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+              {t("embedding.providerDisabled") ||
+                "Selected provider is disabled"}
+            </div>
+          )}
+          {!hasApiKey && isProviderEnabled && (
+            <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+              {t("embedding.noApiKey") || "Provider has no API key configured"}
+            </div>
+          )}
         </div>
 
         {/* Model Selection */}
@@ -154,7 +202,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
               {t("embedding.model") || "Embedding Model"}
             </label>
-            {loadingModels[config.provider] && (
+            {loadingModels[config.providerId] && (
               <span className="text-[10px] text-theme-muted animate-pulse">
                 {t("loading") || "Loading..."}
               </span>
@@ -163,15 +211,31 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           <select
             value={config.modelId}
             onChange={(e) => updateEmbedding("modelId", e.target.value)}
-            disabled={loadingModels[config.provider]}
+            disabled={loadingModels[config.providerId]}
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono [&>option]:bg-theme-bg [&>option]:text-theme-text disabled:opacity-50"
           >
+            <option value="">
+              {getModelsForProvider().length === 0
+                ? (t("embedding.noModels") || "No models available")
+                : (t("embedding.selectModel") || "Select a model...")}
+            </option>
             {getModelsForProvider().map((model) => (
               <option key={model.id} value={model.id}>
-                {model.name} ({model.dimensions}d)
+                {model.name} ({model.dimensions}
+                {t("embedding.dimensions", "d")})
               </option>
             ))}
           </select>
+          {!config.modelId && getModelsForProvider().length > 0 && (
+            <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+              {t("embedding.noModelSelected") || "Please select an embedding model"}
+            </div>
+          )}
+          {getModelsForProvider().length === 0 && !loadingModels[config.providerId] && (
+            <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+              {t("embedding.noModelsAvailable") || "This provider does not support embedding models"}
+            </div>
+          )}
         </div>
 
         {/* Dimensions Display */}
@@ -180,7 +244,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             {t("embedding.dimensions") || "Dimensions"}
           </span>
           <span className="text-theme-text font-mono">
-            {config.dimensions || 768}
+            {config.dimensions || (t("embedding.notSet") || "Not set")}
           </span>
         </div>
 

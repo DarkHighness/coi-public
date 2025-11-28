@@ -378,6 +378,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         <MagicMirror
           isOpen={isMagicMirrorOpen}
           onClose={() => setIsMagicMirrorOpen(false)}
+          settings={aiSettings}
           initialImage={magicMirrorImage}
           themeFont={themeFont}
         />
@@ -387,6 +388,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onClose={() => setIsVeoScriptOpen(false)}
           gameState={gameState}
           currentHistory={currentHistory}
+          settings={aiSettings}
           themeFont={themeFont}
           onScriptGenerated={(script) => {
             setGameState((prev) => ({

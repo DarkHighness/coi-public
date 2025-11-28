@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
     "@electric-sql/pglite": "^0.3.14",
     "@google/genai": "^1.30.0",
     "@openrouter/sdk": "^0.1.17",

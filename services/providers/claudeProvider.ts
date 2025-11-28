@@ -1,0 +1,640 @@
+/**
+ * ============================================================================
+ * Claude Provider - Anthropic SDK 实现
+ * ============================================================================
+ *
+ * 使用官方 @anthropic-ai/sdk，提供完整的类型安全支持。
+ * 包括：内容生成、工具调用、流式输出
+ *
+ * 注意：Claude 不支持图片生成、视频生成、语音合成、嵌入向量生成
+ */
+
+import Anthropic from "@anthropic-ai/sdk";
+import type {
+  MessageParam,
+  MessageCreateParams,
+  ContentBlock,
+  TextBlock,
+  ToolUseBlock,
+  Message,
+  MessageStreamEvent,
+  Tool,
+} from "@anthropic-ai/sdk/resources/messages";
+
+import type { TokenUsage } from "../../types";
+
+import {
+  ModelInfo,
+  ModelCapabilities,
+  GenerateContentOptions,
+  ImageGenerationResponse,
+  SpeechGenerationResponse,
+  SpeechGenerationOptions,
+  EmbeddingModelInfo,
+  EmbeddingResponse,
+  ToolCallResult,
+  UnifiedMessage,
+  TextContentPart,
+  ToolCallContentPart,
+  ToolResponseContentPart,
+  SafetyFilterError,
+  JSONParseError,
+  AIProviderError,
+  MalformedToolCallError,
+} from "./types";
+import { compileToolsForOpenAI, zodToOpenAISchema } from "../zodCompiler";
+import type { ZodTypeAny } from "zod";
+
+// ============================================================================
+// Configuration Types
+// ============================================================================
+
+/** Claude Provider 配置 */
+export interface ClaudeConfig {
+  apiKey: string;
+  baseUrl?: string;
+}
+
+// ============================================================================
+// Response Types (兼容旧 API)
+// ============================================================================
+
+/** 内容生成响应 (兼容格式) */
+export interface ClaudeContentGenerationResponse {
+  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
+  usage: TokenUsage;
+  raw: Message | AsyncIterable<MessageStreamEvent>;
+}
+
+// ============================================================================
+// Client Factory
+// ============================================================================
+
+/**
+ * 创建 Claude 客户端实例
+ */
+export function createClaudeClient(config: ClaudeConfig): Anthropic {
+  if (!config.apiKey) {
+    throw new AIProviderError("Claude API key is required", "claude");
+  }
+
+  return new Anthropic({
+    apiKey: config.apiKey,
+    baseURL: config.baseUrl,
+    dangerouslyAllowBrowser: true,
+  });
+}
+
+// ============================================================================
+// Connection Validation
+// ============================================================================
+
+/**
+ * 验证 Claude API 连接
+ */
+export async function validateConnection(config: ClaudeConfig): Promise<void> {
+  try {
+    const client = createClaudeClient(config);
+    // Claude SDK 没有 list models API，我们通过创建一个最小请求来验证
+    await client.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1,
+      messages: [{ role: "user", content: "test" }],
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AIProviderError(
+      `Failed to connect to Claude API: ${message}`,
+      "claude",
+      undefined,
+      error,
+    );
+  }
+}
+
+// ============================================================================
+// Model Listing
+// ============================================================================
+
+/**
+ * 获取可用的 Claude 模型列表
+ *
+ * 注意：Claude API 不提供模型列表端点，返回预定义的模型列表
+ */
+export async function getModels(_config: ClaudeConfig): Promise<ModelInfo[]> {
+  return getDefaultModels();
+}
+
+/**
+ * 默认模型列表
+ */
+function getDefaultModels(): ModelInfo[] {
+  return [
+    {
+      id: "claude-3-5-sonnet-20241022",
+      name: "Claude 3.5 Sonnet (New)",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-5-sonnet-20240620",
+      name: "Claude 3.5 Sonnet",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-5-haiku-20241022",
+      name: "Claude 3.5 Haiku",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-opus-20240229",
+      name: "Claude 3 Opus",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-sonnet-20240229",
+      name: "Claude 3 Sonnet",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-haiku-20240307",
+      name: "Claude 3 Haiku",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+  ];
+}
+
+// ============================================================================
+// Content Generation
+// ============================================================================
+
+/**
+ * 生成内容（对话/工具调用）
+ */
+export async function generateContent(
+  config: ClaudeConfig,
+  model: string,
+  systemInstruction: string,
+  contents: UnifiedMessage[],
+  schema?: ZodTypeAny,
+  options?: GenerateContentOptions,
+): Promise<ClaudeContentGenerationResponse> {
+  const client = createClaudeClient(config);
+
+  // 转换消息格式
+  const messages = convertToClaudeMessages(contents);
+
+  // 转换工具定义 (Claude 使用与 OpenAI 相似的格式)
+  const tools = options?.tools
+    ? convertToolsForClaude(options.tools)
+    : undefined;
+
+  // 构建请求参数
+  const requestParams: MessageCreateParams = {
+    model,
+    max_tokens: 8192, // Claude 需要显式指定 max_tokens
+    system: systemInstruction,
+    messages,
+    temperature: options?.temperature ?? 1.0,
+    top_p: options?.topP,
+    tools,
+  };
+
+  let content = "";
+  let toolCalls: ToolCallResult[] = [];
+  let usage: TokenUsage = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+  };
+  let rawResponse: Message | AsyncIterable<MessageStreamEvent>;
+
+  console.log(
+    `[Claude] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
+  );
+
+  if (options?.onChunk) {
+    // 流式生成
+    const stream = await client.messages.create({
+      ...requestParams,
+      stream: true,
+    });
+
+    rawResponse = stream;
+
+    // 累积工具调用信息
+    const accumulatedToolCalls: Map<
+      number,
+      { id: string; name: string; input: string }
+    > = new Map();
+
+    let currentToolIndex = -1;
+
+    for await (const event of stream) {
+      // 处理不同类型的事件
+      if (event.type === "content_block_start") {
+        const block = event.content_block;
+        if (block.type === "tool_use") {
+          currentToolIndex++;
+          accumulatedToolCalls.set(currentToolIndex, {
+            id: block.id,
+            name: block.name,
+            input: "",
+          });
+        }
+      } else if (event.type === "content_block_delta") {
+        const delta = event.delta;
+        if (delta.type === "text_delta") {
+          // 文本内容
+          content += delta.text;
+          options.onChunk(delta.text);
+        } else if (delta.type === "input_json_delta") {
+          // 工具调用参数（增量）
+          const existing = accumulatedToolCalls.get(currentToolIndex);
+          if (existing) {
+            existing.input += delta.partial_json;
+          }
+        }
+      } else if (event.type === "message_delta") {
+        // 更新使用量
+        if (event.usage) {
+          usage.completionTokens = event.usage.output_tokens || 0;
+        }
+      } else if (event.type === "message_start") {
+        // 初始使用量
+        if (event.message.usage) {
+          usage.promptTokens = event.message.usage.input_tokens || 0;
+        }
+      }
+    }
+
+    // 解析累积的工具调用
+    for (const [, tc] of accumulatedToolCalls) {
+      try {
+        toolCalls.push({
+          id: tc.id,
+          name: tc.name,
+          args: JSON.parse(tc.input || "{}") as Record<string, unknown>,
+        });
+      } catch (parseError) {
+        console.error(
+          `[Claude] Failed to parse tool call arguments:`,
+          tc.input,
+        );
+        throw new MalformedToolCallError("claude", tc.name, tc.input);
+      }
+    }
+
+    usage.totalTokens = usage.promptTokens + usage.completionTokens;
+  } else {
+    // 非流式生成
+    const response = await client.messages.create({
+      ...requestParams,
+      stream: false,
+    });
+
+    rawResponse = response;
+
+    // 处理响应内容
+    for (const block of response.content) {
+      if (block.type === "text") {
+        content += (block as TextBlock).text;
+      } else if (block.type === "tool_use") {
+        const toolBlock = block as ToolUseBlock;
+        toolCalls.push({
+          id: toolBlock.id,
+          name: toolBlock.name,
+          args: toolBlock.input as Record<string, unknown>,
+        });
+      }
+    }
+
+    // 检查停止原因
+    handleStopReason(response.stop_reason, response.stop_sequence);
+
+    usage = {
+      promptTokens: response.usage.input_tokens || 0,
+      completionTokens: response.usage.output_tokens || 0,
+      totalTokens:
+        (response.usage.input_tokens || 0) +
+        (response.usage.output_tokens || 0),
+    };
+  }
+
+  console.log(`[Claude] Generation complete. Usage:`, usage);
+
+  // 如果有工具调用，返回工具调用结果
+  if (toolCalls.length > 0) {
+    return {
+      result: { functionCalls: toolCalls },
+      usage,
+      raw: rawResponse,
+    };
+  }
+
+  // 没有内容也没有工具调用
+  if (!content) {
+    throw new AIProviderError("No content returned from Claude", "claude");
+  }
+
+  // 如果有 schema，解析 JSON
+  if (schema) {
+    try {
+      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+      const result = JSON.parse(cleanedContent);
+      return { result, usage, raw: rawResponse };
+    } catch (error) {
+      console.error(`[Claude] Failed to parse JSON content:`, content);
+      throw new JSONParseError("claude", content.substring(0, 500), error);
+    }
+  }
+
+  // 返回纯文本
+  return { result: { narrative: content }, usage, raw: rawResponse };
+}
+
+/**
+ * 处理停止原因
+ */
+function handleStopReason(
+  stopReason: string | null,
+  stopSequence?: string | null,
+): void {
+  if (stopReason === "max_tokens") {
+    console.warn("[Claude] Generation stopped: max_tokens reached");
+  } else if (stopReason === "stop_sequence") {
+    console.log(`[Claude] Generation stopped by sequence: ${stopSequence}`);
+  }
+  // Claude 没有明确的 safety filter，但可能在 error 中体现
+}
+
+/**
+ * 转换消息到 Claude 格式
+ */
+function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
+  const result: MessageParam[] = [];
+
+  for (const msg of messages) {
+    // 跳过 system 消息（已在顶层处理）
+    if (msg.role === "system") {
+      continue;
+    }
+
+    // 处理工具响应消息
+    if (msg.role === "tool") {
+      // Claude 要求工具响应必须跟在 assistant 的 tool_use 之后
+      // 我们需要将工具响应转换为 user 消息
+      const toolContents: Array<{
+        type: "tool_result";
+        tool_use_id: string;
+        content: string;
+      }> = [];
+
+      for (const part of msg.content) {
+        if (part.type === "tool_response") {
+          const tr = part as ToolResponseContentPart;
+          toolContents.push({
+            type: "tool_result",
+            tool_use_id: tr.toolCallId,
+            content:
+              typeof tr.content === "string"
+                ? tr.content
+                : JSON.stringify(tr.content),
+          });
+        }
+      }
+
+      if (toolContents.length > 0) {
+        result.push({
+          role: "user",
+          content: toolContents,
+        });
+      }
+      continue;
+    }
+
+    // 处理助手消息（可能包含工具调用）
+    if (msg.role === "assistant") {
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_call",
+      );
+
+      if (toolCallParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\n");
+
+        const content: Array<
+          | { type: "text"; text: string }
+          | { type: "tool_use"; id: string; name: string; input: unknown }
+        > = [];
+
+        // 添加文本内容（如果有）
+        if (textContent) {
+          content.push({ type: "text", text: textContent });
+        }
+
+        // 添加工具调用
+        for (const tc of toolCallParts) {
+          content.push({
+            type: "tool_use",
+            id: tc.id,
+            name: tc.name,
+            input: tc.arguments,
+          });
+        }
+
+        result.push({
+          role: "assistant",
+          content,
+        });
+        continue;
+      }
+    }
+
+    // 处理普通文本消息
+    const textContent = msg.content
+      .filter((p): p is TextContentPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    if (textContent) {
+      result.push({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: textContent,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 转换工具定义到 Claude 格式
+ * Claude 使用与 OpenAI 类似的格式，但有细微差别
+ */
+function convertToolsForClaude(
+  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
+): Tool[] {
+  return tools.map((tool) => {
+    const schema = zodToOpenAISchema(tool.parameters, true);
+    return {
+      name: tool.name,
+      description: tool.description,
+      input_schema: {
+        type: "object" as const,
+        ...(schema as object),
+      },
+    };
+  });
+}
+
+// ============================================================================
+// Image Generation (Not Supported)
+// ============================================================================
+
+/**
+ * 生成图片 (Claude 不支持)
+ */
+export async function generateImage(
+  _config: ClaudeConfig,
+  _model: string,
+  _prompt: string,
+  _resolution?: string,
+): Promise<ImageGenerationResponse> {
+  throw new AIProviderError(
+    "Image generation is not supported by Claude provider",
+    "claude",
+    "UNSUPPORTED",
+  );
+}
+
+// ============================================================================
+// Video Generation (Not Supported)
+// ============================================================================
+
+/**
+ * 生成视频 (Claude 不支持)
+ */
+export async function generateVideo(
+  _config: ClaudeConfig,
+  _model: string,
+  _imageBase64: string,
+  _prompt: string,
+): Promise<never> {
+  throw new AIProviderError(
+    "Video generation is not supported by Claude provider",
+    "claude",
+    "UNSUPPORTED",
+  );
+}
+
+// ============================================================================
+// Speech Generation (Not Supported)
+// ============================================================================
+
+/**
+ * 生成语音 (Claude 不支持)
+ */
+export async function generateSpeech(
+  _config: ClaudeConfig,
+  _model: string,
+  _text: string,
+  _voiceName?: string,
+  _options?: SpeechGenerationOptions,
+): Promise<SpeechGenerationResponse> {
+  throw new AIProviderError(
+    "Speech generation is not supported by Claude provider",
+    "claude",
+    "UNSUPPORTED",
+  );
+}
+
+// ============================================================================
+// Embedding Generation (Not Supported)
+// ============================================================================
+
+/**
+ * 获取嵌入模型列表 (Claude 不支持)
+ */
+export async function getEmbeddingModels(
+  _config: ClaudeConfig,
+): Promise<EmbeddingModelInfo[]> {
+  return [];
+}
+
+/**
+ * 生成嵌入向量 (Claude 不支持)
+ */
+export async function generateEmbedding(
+  _config: ClaudeConfig,
+  _modelId: string,
+  _texts: string[],
+  _dimensions?: number,
+  _taskType?: string,
+): Promise<EmbeddingResponse> {
+  throw new AIProviderError(
+    "Embedding generation is not supported by Claude provider",
+    "claude",
+    "UNSUPPORTED",
+  );
+}
+
+// ============================================================================
+// Re-exports for Backward Compatibility
+// ============================================================================
+
+export type {
+  ModelInfo,
+  GenerateContentOptions,
+  ImageGenerationResponse,
+  SpeechGenerationResponse,
+  SpeechGenerationOptions,
+  EmbeddingModelInfo,
+  EmbeddingResponse,
+};
+
+// Alias for backward compatibility
+export type { EmbeddingResponse as EmbeddingResult };

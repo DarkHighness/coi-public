@@ -229,12 +229,12 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
               <p className="text-theme-muted text-sm italic">
                 {gameState.outline.premise}
               </p>
-              {gameState.outline.mainGoal?.visible && (
+              {gameState.outline.mainGoal?.visible?.description && (
                 <p className="text-theme-text text-sm mt-4 border-t border-theme-border/30 pt-2">
                   <strong className="text-theme-primary">
                     {t("outline.currentGoal")}:
                   </strong>{" "}
-                  {gameState.outline.mainGoal.visible}
+                  {gameState.outline.mainGoal.visible.description}
                 </p>
               )}
             </div>
@@ -277,7 +277,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     {segment.summarySnapshot && (
                       <div
                         className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group"
-                        title="Summary"
+                        title={t("summary.divider")}
                       >
                         <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
                         <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">

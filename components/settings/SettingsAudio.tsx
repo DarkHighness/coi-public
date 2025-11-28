@@ -1,12 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsAudioProps, FunctionKey } from "./types";
+import { FunctionKey } from "./types";
+import { useSettings } from "../../hooks/useSettings";
 
-export const SettingsAudio: React.FC<SettingsAudioProps> = ({
-  currentSettings,
-  onUpdateSettings,
-}) => {
+export const SettingsAudio: React.FC = () => {
   const { t } = useTranslation();
+  const { settings: currentSettings, updateSettings: onUpdateSettings } =
+    useSettings();
 
   const updateFunction = (func: FunctionKey, field: string, value: any) => {
     const newSettings = {
@@ -15,6 +15,12 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
     };
     onUpdateSettings(newSettings);
   };
+
+  // Get the audio provider's protocol
+  const audioProvider = currentSettings.providers.instances.find(
+    (p) => p.id === currentSettings.audio.providerId,
+  );
+  const audioProtocol = audioProvider?.protocol;
 
   return (
     <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar">
@@ -150,27 +156,28 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
               onChange={(e) => updateFunction("audio", "voice", e.target.value)}
               className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
             >
-              {currentSettings.audio.provider === "openai" ||
-              currentSettings.audio.provider === "openrouter" ? (
+              {audioProtocol === "openai" || audioProtocol === "openrouter" ? (
                 <>
-                  <option value="alloy">Alloy (Neutral)</option>
-                  <option value="echo">Echo (Male)</option>
-                  <option value="fable">Fable (British Male)</option>
-                  <option value="onyx">Onyx (Deep Male)</option>
-                  <option value="nova">Nova (Female)</option>
-                  <option value="shimmer">Shimmer (Female)</option>
-                  <option value="ash">Ash (Neutral)</option>
-                  <option value="coral">Coral (Female)</option>
-                  <option value="sage">Sage (Female)</option>
+                  <option value="alloy">{t("audio.voices.alloy")}</option>
+                  <option value="echo">{t("audio.voices.echo")}</option>
+                  <option value="fable">{t("audio.voices.fable")}</option>
+                  <option value="onyx">{t("audio.voices.onyx")}</option>
+                  <option value="nova">{t("audio.voices.nova")}</option>
+                  <option value="shimmer">{t("audio.voices.shimmer")}</option>
+                  <option value="ash">{t("audio.voices.ash")}</option>
+                  <option value="coral">{t("audio.voices.coral")}</option>
+                  <option value="sage">{t("audio.voices.sage")}</option>
                 </>
               ) : (
                 <>
                   {/* Gemini Voices */}
-                  <option value="Kore">Kore (Female)</option>
-                  <option value="Fenrir">Fenrir (Male)</option>
-                  <option value="Luna">Luna (Female)</option>
-                  <option value="Puck">Puck (Male)</option>
-                  <option value="Enceladus">Enceladus (Male)</option>
+                  <option value="Kore">{t("audio.voices.kore")}</option>
+                  <option value="Fenrir">{t("audio.voices.fenrir")}</option>
+                  <option value="Luna">{t("audio.voices.luna")}</option>
+                  <option value="Puck">{t("audio.voices.puck")}</option>
+                  <option value="Enceladus">
+                    {t("audio.voices.enceladus")}
+                  </option>
                 </>
               )}
             </select>
@@ -207,12 +214,12 @@ export const SettingsAudio: React.FC<SettingsAudioProps> = ({
               }
               className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
             >
-              <option value="mp3">MP3 (Default)</option>
-              <option value="opus">Opus (Low Latency)</option>
-              <option value="aac">AAC (Standard)</option>
-              <option value="flac">FLAC (Lossless)</option>
-              <option value="wav">WAV (Uncompressed)</option>
-              <option value="pcm">PCM (Raw)</option>
+              <option value="mp3">{t("audio.formats.mp3")}</option>
+              <option value="opus">{t("audio.formats.opus")}</option>
+              <option value="aac">{t("audio.formats.aac")}</option>
+              <option value="flac">{t("audio.formats.flac")}</option>
+              <option value="wav">{t("audio.formats.wav")}</option>
+              <option value="pcm">{t("audio.formats.pcm")}</option>
             </select>
           </div>
         </div>

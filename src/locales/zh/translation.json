@@ -201,6 +201,7 @@
   "dragToReorder": "拖拽排序",
   "import": "导入",
   "tabs": {
+    "providers": "提供商",
     "credentials": "API 密钥",
     "models": "模型",
     "embedding": "RAG",
@@ -793,5 +794,70 @@
     "fork": "分支",
     "turn": "回合",
     "importance": "权重"
-  }
+  },
+  "providers": {
+    "configuration": "提供商配置",
+    "addProvider": "添加提供商",
+    "addFromTemplate": "从模板添加",
+    "noProviders": "尚未配置提供商。添加一个以开始使用。",
+    "inUseBy": "使用于：",
+    "delete": "删除",
+    "protocol": "协议：",
+    "baseUrl": "Base URL：",
+    "apiKeyLabel": "API Key：",
+    "deleteConfirm": "删除",
+    "deleteConfirmMessage": "删除 \"{name}\"？",
+    "testing": "测试中...",
+    "addProviderTitle": "添加提供商",
+    "editProviderTitle": "编辑提供商",
+    "nameLabel": "名称 *",
+    "protocolLabel": "协议 *",
+    "baseUrlLabel": "Base URL *",
+    "apiKeyField": "API Key",
+    "apiKeyOptional": "（可选）",
+    "keepExistingKey": "保留现有 API Key",
+    "enableProvider": "启用此提供商",
+    "addButton": "添加",
+    "saveChanges": "保存更改",
+    "addFromTemplateTitle": "从模板添加提供商",
+    "selectTemplate": "选择模板",
+    "apiKeyRequired": "API Key *",
+    "addProviderButton": "添加提供商",
+    "gemini": "Gemini",
+    "openai": "OpenAI",
+    "openrouter": "OpenRouter",
+    "claude": "Claude"
+  },
+  "audio": {
+    "voices": {
+      "alloy": "Alloy（中性）",
+      "echo": "Echo（男性）",
+      "fable": "Fable（英式男性）",
+      "onyx": "Onyx（低沉男性）",
+      "nova": "Nova（女性）",
+      "shimmer": "Shimmer（女性）",
+      "ash": "Ash（中性）",
+      "coral": "Coral（女性）",
+      "sage": "Sage（女性）",
+      "kore": "Kore（女性）",
+      "fenrir": "Fenrir（男性）",
+      "luna": "Luna（女性）",
+      "puck": "Puck（男性）",
+      "enceladus": "Enceladus（男性）"
+    },
+    "formats": {
+      "mp3": "MP3（默认）",
+      "opus": "Opus（低延迟）",
+      "aac": "AAC（标准）",
+      "flac": "FLAC（无损）",
+      "wav": "WAV（未压缩）",
+      "pcm": "PCM（原始）"
+    }
+  },
+  "languages": {
+    "english": "English",
+    "chinese": "中文"
+  },
+  "component": "组件：",
+  "devModeError": "💡 开发模式：错误将重新抛出到开发工具"
 }
