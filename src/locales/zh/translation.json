@@ -17,6 +17,8 @@
     "secretOutcome": "隐藏收获"
   },
   "summarySnapshot": "剧情回顾",
+  "copyImagePrompt": "复制图片提示",
+  "copied": "已复制!",
   "knowledgePanel": {
     "title": "知识",
     "empty": "尚未发现任何知识。",

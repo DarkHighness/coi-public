@@ -101,6 +101,7 @@ export interface RAGConfig {
   dimensions: number; // Embedding vector dimensions
   provider: "gemini" | "openai" | "openrouter" | "claude";
   modelId: string;
+  contextLength?: number;
 }
 
 export const DEFAULT_RAG_CONFIG: RAGConfig = {

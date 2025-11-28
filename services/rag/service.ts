@@ -293,7 +293,18 @@ export class RAGService {
    * Get current status
    */
   async getStatus(): Promise<RAGStatus> {
-    this.ensureInitialized();
+    if (!this.isInitialized || !this.port) {
+      return {
+        initialized: false,
+        currentSaveId: null,
+        currentModel: this.config.modelId,
+        currentProvider: this.config.provider,
+        memoryDocuments: 0,
+        storageDocuments: 0,
+        isSearching: false,
+        lastError: null,
+      };
+    }
     return this.sendRequest("getStatus", {});
   }
 

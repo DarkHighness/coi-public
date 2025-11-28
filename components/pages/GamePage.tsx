@@ -69,7 +69,12 @@ interface GamePageProps {
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
   isTranslating: boolean;
-  handleAction: (action: string) => Promise<ActionResult | null>;
+  handleAction: (
+    action: string,
+    isInit?: boolean,
+    forceTheme?: string,
+    fromNodeId?: string,
+  ) => Promise<ActionResult | null>;
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
   navigateToNode: (nodeId: string, isFork?: boolean) => void;
@@ -302,10 +307,19 @@ export const GamePage: React.FC<GamePageProps> = ({
           }}
           onGenerateImage={generateImageForNode}
           onRetry={() => {
-            const lastUserAction = [...currentHistory]
+            // Find the last user segment to retry from
+            const lastUserSegment = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(lastUserAction?.text || defaultContinuePrompt);
+
+            if (lastUserSegment) {
+              // Retry using the SAME parent ID as the original user segment
+              // This creates a sibling node (fork) at the same level
+              handleAction(lastUserSegment.text, false, undefined, lastUserSegment.parentId || undefined);
+            } else {
+              // Fallback if no user segment found (shouldn't happen in game)
+              handleAction(defaultContinuePrompt);
+            }
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -344,10 +358,17 @@ export const GamePage: React.FC<GamePageProps> = ({
           }}
           onGenerateImage={generateImageForNode}
           onRetry={() => {
-            const lastUserAction = [...currentHistory]
+            // Find the last user segment to retry from
+            const lastUserSegment = [...currentHistory]
               .reverse()
               .find((seg) => seg.role === "user");
-            handleAction(lastUserAction?.text || defaultContinuePrompt);
+
+            if (lastUserSegment) {
+              // Retry using the SAME parent ID as the original user segment
+              handleAction(lastUserSegment.text, false, undefined, lastUserSegment.parentId || undefined);
+            } else {
+              handleAction(defaultContinuePrompt);
+            }
           }}
           onFork={handleFork}
           onAction={handlePlayerAction}

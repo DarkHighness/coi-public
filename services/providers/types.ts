@@ -224,6 +224,7 @@ export interface EmbeddingModelInfo {
   name: string;
   dimensions?: number;
   maxBatchSize?: number;
+  contextLength?: number;
 }
 
 /** 嵌入任务类型 */

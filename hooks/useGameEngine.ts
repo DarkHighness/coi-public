@@ -20,6 +20,7 @@ import {
   summarizeContext,
   type OutlinePhaseProgress,
 } from "../services/aiService";
+import { createImageGenerationContext } from "../services/prompts";
 import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
 import {
   createStateSnapshot,
@@ -257,6 +258,7 @@ export const useGameEngine = () => {
     action: string,
     isInit: boolean = false,
     forceTheme?: string,
+    fromNodeId?: string,
   ) => {
     // Check both the ref (immediate) and state (persisted)
     if (
@@ -274,7 +276,8 @@ export const useGameEngine = () => {
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
-    const parentId = isInit ? null : gameStateRef.current.activeNodeId;
+    // If fromNodeId is provided, use it as parent. Otherwise use activeNodeId.
+    const parentId = fromNodeId || (isInit ? null : gameStateRef.current.activeNodeId);
 
     let effectiveUserNodeId = userNodeId;
     let effectiveParentId = parentId;
@@ -1329,60 +1332,7 @@ export const useGameEngine = () => {
 
     try {
       const snapshot = node.stateSnapshot || gameStateRef.current;
-      const imageContext = {
-        theme: gameStateRef.current.theme,
-        worldSetting: gameStateRef.current.outline?.worldSetting?.visible?.description,
-        time: snapshot.time,
-        location: {
-          name: snapshot.currentLocation,
-          environment:
-            snapshot.locations?.find(
-              (l: any) => l.name === snapshot.currentLocation,
-            )?.environment || "Unknown",
-          details:
-            snapshot.locations?.find(
-              (l: any) => l.name === snapshot.currentLocation,
-            )?.visible?.description || "",
-        },
-        character: {
-          name: snapshot.character?.name || "Unknown",
-          race: snapshot.character?.race || "Unknown",
-          profession: snapshot.character?.profession || "",
-          appearance: snapshot.character?.appearance || "Not described",
-          status: snapshot.character?.status || "Normal",
-        },
-        activeNPCs: (snapshot.relationships || [])
-          .filter((r: Relationship) => {
-            // Resolve player location ID
-            const playerLoc = snapshot.locations?.find(
-              (l: GameLocation) =>
-                l.name === snapshot.currentLocation ||
-                l.id === snapshot.currentLocation,
-            );
-            const playerLocId = playerLoc?.id;
-            const playerLocName = playerLoc?.name;
-
-            // Check if NPC is in the same location
-            const isAtLocation =
-              r.currentLocation &&
-              r.currentLocation !== "unknown" &&
-              (r.currentLocation === playerLocId ||
-                r.currentLocation === playerLocName ||
-                r.currentLocation === snapshot.currentLocation);
-
-            return (
-              r.visible?.relationshipType !== "Absent" &&
-              r.visible?.relationshipType !== "Dead" &&
-              isAtLocation
-            );
-          })
-          .map((r: any) => ({
-            name: r.name,
-            description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
-            appearance: r.visible?.appearance || "No appearance available",
-            status: `${r.visible?.relationshipType || "Unknown"} (${r.hidden?.status || "Normal"})`,
-          })),
-      };
+      const imageContext = createImageGenerationContext(gameStateRef.current, snapshot);
 
       const { url, log } = await generateSceneImage(
         node.imagePrompt,

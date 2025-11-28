@@ -36,6 +36,10 @@ import {
   type StorageOverflowInfo,
   type DocumentType,
 } from "../services/rag";
+import { getEmbeddingModels as getGeminiEmbeddingModels } from "../services/providers/geminiProvider";
+import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../services/providers/openaiProvider";
+import { getEmbeddingModels as getOpenRouterEmbeddingModels } from "../services/providers/openRouterProvider";
+import { getEmbeddingModels as getClaudeEmbeddingModels } from "../services/providers/claudeProvider";
 
 // ============================================================================
 // Types
@@ -149,12 +153,52 @@ export function useRAG(
         const provider = providerInstance.protocol;
         const modelId = embeddingConfig.modelId || "text-embedding-004";
 
+        // Get context length for the selected model
+        let contextLength: number | undefined;
+        try {
+          let models: any[] = [];
+          switch (provider) {
+            case "gemini":
+              models = await getGeminiEmbeddingModels({
+                apiKey: providerInstance.apiKey,
+              });
+              break;
+            case "openai":
+              models = await getOpenAIEmbeddingModels({
+                apiKey: providerInstance.apiKey,
+                baseUrl: providerInstance.baseUrl,
+              });
+              break;
+            case "openrouter":
+              models = await getOpenRouterEmbeddingModels({
+                apiKey: providerInstance.apiKey,
+              });
+              break;
+            case "claude":
+              models = await getClaudeEmbeddingModels({
+                apiKey: providerInstance.apiKey,
+              });
+              break;
+          }
+
+          const modelInfo = models.find((m) => m.id === modelId);
+          if (modelInfo?.contextLength) {
+            contextLength = modelInfo.contextLength;
+          }
+        } catch (error) {
+          console.warn(
+            "[useRAG] Failed to fetch model info for context length:",
+            error,
+          );
+        }
+
         // Initialize the RAG service
         const service = await initializeRAGService(
           {
             provider,
             modelId,
             dimensions: embeddingConfig.dimensions,
+            contextLength,
           },
           credentials,
         );

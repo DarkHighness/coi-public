@@ -346,6 +346,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                           }
                         }}
                         onAudioGenerated={onAudioGenerated}
+                        gameState={gameState}
                       />
                     </div>
                   </React.Fragment>
@@ -409,6 +410,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     aiSettings={aiSettings}
                     onTypingComplete={undefined} // Stack mode doesn't animate typing usually
                     onAudioGenerated={onAudioGenerated}
+                    gameState={gameState}
                   />
                 </div>
               )}

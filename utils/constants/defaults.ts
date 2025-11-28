@@ -20,6 +20,16 @@ export const DEFAULT_CHARACTER: CharacterStatus = {
   appearance: "Loading...",
 };
 
+// Context Priority System: How many recent/alive entities to include in context
+export const RECENT_LIMITS = {
+  inventory: 5,
+  relationships: 4,
+  locations: 3,
+  quests: 3,
+  knowledge: 4,
+  timeline: 5,
+} as const;
+
 export const LANG_MAP: Record<LanguageCode, string> = {
   en: "English",
   zh: "Chinese (Simplified)",

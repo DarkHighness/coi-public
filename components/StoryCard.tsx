@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { StorySegment, AISettings } from "../types";
+import { StorySegment, AISettings, ImageGenerationContext, Relationship, Location as GameLocation, GameState } from "../types";
+import { getSceneImagePrompt, createImageGenerationContext } from "../services/prompts";
 import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";
@@ -24,6 +25,7 @@ export interface StoryCardProps {
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
   onAudioGenerated?: (id: string, key: string) => void;
+  gameState: GameState;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -38,8 +40,22 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   aiSettings,
   onTypingComplete,
   onAudioGenerated,
+  gameState,
 }) => {
   const { t } = useTranslation();
+
+  const handleCopyPrompt = () => {
+    if (!segment.imagePrompt) return "";
+
+    // If we have a snapshot, reconstruct the full prompt context
+    if (segment.stateSnapshot) {
+      const imageContext = createImageGenerationContext(gameState, segment.stateSnapshot);
+      return getSceneImagePrompt(segment.imagePrompt, imageContext);
+    }
+
+    // Fallback if no snapshot available
+    return segment.imagePrompt;
+  };
 
   if (segment.role === "user") {
     return <UserActionCard text={segment.text} labelDecided={labels.decided} />;
@@ -117,6 +133,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           segmentId={segment.id}
           audioKey={segment.audioKey}
           onAudioGenerated={(key) => onAudioGenerated?.(segment.id, key)}
+          onCopyPrompt={segment.imagePrompt ? handleCopyPrompt : undefined}
         />
 
         {/* Ending Banner */}

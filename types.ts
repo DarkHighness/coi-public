@@ -142,16 +142,6 @@ export type ActionResult =
   | { success: true; stateChanges: StateChanges; }
   | { success: false; error: string };
 
-// Context Priority System: How many recent/alive entities to include in context
-export const RECENT_LIMITS = {
-  inventory: 5,
-  relationships: 4,
-  locations: 3,
-  quests: 3,
-  knowledge: 4,
-  timeline: 5,
-} as const;
-
 // Alive Entities: entities marked by AI as needed for next turn
 export interface AliveEntities {
   inventory: string[]; // inv:N IDs

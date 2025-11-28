@@ -35,6 +35,8 @@
       "other": "Other"
     }
   },
+  "copyImagePrompt": "Copy Image Prompt",
+  "copied":"Copied!",
   "inventory": "Inventory",
   "environment": "Environment",
   "appearance": "Appearance",

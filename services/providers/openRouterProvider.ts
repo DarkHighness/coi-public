@@ -14,7 +14,7 @@
  * - Embedding generation
  */
 
-import { OpenRouter } from "@openrouter/sdk";
+import openRouterModels from "../../src/resources/openrouter.json";
 import type { EmbeddingTaskType, TokenUsage } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
@@ -53,24 +53,7 @@ import {
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
-// ============================================================================
-// SDK Instance Cache
-// ============================================================================
 
-let cachedSDK: OpenRouter | null = null;
-let cachedApiKey: string = "";
-
-/**
- * Get or create OpenRouter SDK instance
- */
-function getSDKInstance(config: OpenRouterConfig): OpenRouter {
-  if (cachedSDK && cachedApiKey === config.apiKey) {
-    return cachedSDK;
-  }
-  cachedSDK = new OpenRouter({ apiKey: config.apiKey });
-  cachedApiKey = config.apiKey;
-  return cachedSDK;
-}
 
 // ============================================================================
 // Response Types (Compatible with OpenAI API)
@@ -182,35 +165,27 @@ export async function validateConnection(
 // ============================================================================
 
 /**
- * Get available OpenRouter models using SDK
+ * Get available OpenRouter models using local JSON
  */
 export async function getModels(
-  config: OpenRouterConfig,
+  _config: OpenRouterConfig,
 ): Promise<ModelInfo[]> {
   try {
-    const sdk = getSDKInstance(config);
-    const response = await sdk.models.list();
-
-    if (!response.data) {
-      console.warn("No models returned from OpenRouter SDK");
-      return [];
-    }
-
-    return response.data.map((m) => {
+    return openRouterModels.data.map((m) => {
       const capabilities = inferModelCapabilities({
-        id: m.id,
-        name: m.name || m.id,
+        id: m.slug,
+        name: m.name || m.slug,
         ...m,
       });
 
       return {
-        id: m.id,
-        name: m.name || m.id,
+        id: m.slug,
+        name: m.name || m.slug,
         capabilities,
       };
     });
   } catch (error) {
-    console.warn("Failed to list OpenRouter models via SDK:", error);
+    console.warn("Failed to list OpenRouter models via local JSON:", error);
     return [];
   }
 }
@@ -792,28 +767,22 @@ interface EmbeddingAPIResponse {
 }
 
 /**
- * Get embedding models using SDK
+ * Get embedding models using local JSON
  */
 export async function getEmbeddingModels(
-  config: OpenRouterConfig,
+  _config: OpenRouterConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
-    const sdk = getSDKInstance(config);
-    const response = await sdk.models.list();
-
-    if (!response.data) {
-      return getDefaultEmbeddingModels();
-    }
-
     const embeddingModels: EmbeddingModelInfo[] = [];
 
-    for (const model of response.data) {
-      const id = model.id.toLowerCase();
-      if (isEmbeddingModel(id)) {
+    for (const model of openRouterModels.data) {
+      const id = model.slug.toLowerCase();
+      if (model.output_modalities.includes("embeddings")) {
         embeddingModels.push({
-          id: model.id,
-          name: model.name || model.id,
+          id: model.slug,
+          name: model.name || model.slug,
           dimensions: guessEmbeddingDimensions(id),
+          contextLength: model.context_length,
         });
       }
     }
@@ -824,7 +793,10 @@ export async function getEmbeddingModels(
 
     return embeddingModels;
   } catch (error) {
-    console.warn("Failed to list OpenRouter embedding models via SDK:", error);
+    console.warn(
+      "Failed to list OpenRouter embedding models via local JSON:",
+      error,
+    );
     return getDefaultEmbeddingModels();
   }
 }

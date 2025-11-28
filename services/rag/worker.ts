@@ -654,6 +654,20 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
     throw new Error("No credentials configured for embedding generation");
   }
 
+  // Check context length limit if configured
+  if (config.contextLength) {
+    // Estimate tokens (1 token ≈ 4 characters)
+    const estimatedTokens = Math.ceil(text.length / 4);
+    if (estimatedTokens > config.contextLength) {
+      console.warn(
+        `[RAGWorker] Input text too long for embedding model. Estimated tokens: ${estimatedTokens}, Limit: ${config.contextLength}`,
+      );
+      throw new Error(
+        `Input text exceeds context length limit (${estimatedTokens} > ${config.contextLength} tokens)`,
+      );
+    }
+  }
+
   // Use the appropriate provider based on config
   switch (config.provider) {
     case "gemini":

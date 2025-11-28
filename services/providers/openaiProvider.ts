@@ -686,11 +686,23 @@ export async function getEmbeddingModels(
 
     for (const model of list.data) {
       const id = model.id.toLowerCase();
+
+      if (id !== "text-embedding-3-small" && id !== "text-embedding-3-large") {
+        continue;
+      }
+
+      let dimension = 1536;
+      if (id === "text-embedding-3-large") {
+        dimension = 3072;
+      }
+
+      let knownContextLength = 8192;
       if (isEmbeddingModel(id)) {
         embeddingModels.push({
           id: model.id,
           name: model.id,
-          dimensions: guessEmbeddingDimensions(id),
+          dimensions: dimension,
+          contextLength: 8192
         });
       }
     }

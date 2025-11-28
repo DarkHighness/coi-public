@@ -240,13 +240,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
             {/* Status Badge */}
             <span
               className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-                embeddingEnabled && indexStats
+                embeddingEnabled && indexStats?.isInitialized
                   ? "bg-green-500/20 text-green-400"
                   : "bg-yellow-500/20 text-yellow-400"
               }`}
             >
               {embeddingEnabled
-                ? indexStats
+                ? indexStats?.isInitialized
                   ? t("ragDebugger.statusActive", "Active")
                   : t("ragDebugger.statusNoIndex", "No Index")
                 : t("ragDebugger.statusDisabled", "Disabled")}
