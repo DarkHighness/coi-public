@@ -1105,6 +1105,7 @@ export const useGameEngine = () => {
         customContext,
         t,
         {
+          settings: aiSettings,
           onChunk: onStream,
           onPhaseProgress,
           resumeFromConversation: savedConversation,
