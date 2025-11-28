@@ -96,9 +96,11 @@ export const DEFAULTS: AISettings = {
     similarityThreshold: 0.65,
     // LRU Eviction Settings
     lru: {
-      maxTotalDocuments: 5000, // Global limit
-      maxDocumentsPerType: 1000, // Per-type limit (story, npc, location, etc.)
+      maxMemoryDocuments: 1000, // In-memory cache limit
+      maxStorageDocuments: 10000, // Persistent storage limit
+      maxDocumentsPerType: 2000, // Per-type limit (story, npc, location, etc.)
       maxVersionsPerEntity: 5, // Per-entity limit (e.g., max 5 versions of item:1)
+      maxVersionsAcrossForks: 10, // Max versions across forks
       currentForkBonus: 0.5, // Priority bonus for current fork
       ancestorForkBonus: 0.25, // Priority bonus for ancestor forks
       turnDecayFactor: 0.01, // Priority loss per turn difference

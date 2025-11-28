@@ -39,7 +39,7 @@ import { getAncestorForkIds } from "../../utils/snapshotManager";
  *    - Default: 1000 documents per type
  *
  * 3. Global limit: Maximum total documents across all types
- *    - Default: 5000 documents total
+ *    - Default: 10000 documents total
  *
  * Priority calculation per entity version:
  * - Current fork > Ancestor forks > Other forks
@@ -48,9 +48,11 @@ import { getAncestorForkIds } from "../../utils/snapshotManager";
  */
 
 const LRU_DEFAULTS = {
-  maxTotalDocuments: 5000,
-  maxDocumentsPerType: 1000,
+  maxMemoryDocuments: 1000,
+  maxStorageDocuments: 10000,
+  maxDocumentsPerType: 2000,
   maxVersionsPerEntity: 5,
+  maxVersionsAcrossForks: 10,
   currentForkBonus: 0.5,
   ancestorForkBonus: 0.25,
   turnDecayFactor: 0.01,
@@ -1344,8 +1346,8 @@ export class EmbeddingManager {
   private getLRUConfig() {
     const lru = this.config.settings.embedding?.lru || {};
     return {
-      maxTotalDocuments:
-        lru.maxTotalDocuments ?? LRU_DEFAULTS.maxTotalDocuments,
+      maxStorageDocuments:
+        lru.maxStorageDocuments ?? LRU_DEFAULTS.maxStorageDocuments,
       maxDocumentsPerType:
         lru.maxDocumentsPerType ?? LRU_DEFAULTS.maxDocumentsPerType,
       maxVersionsPerEntity:
@@ -1508,13 +1510,13 @@ export class EmbeddingManager {
     let finalDocs: EmbeddingDocument[];
     let globalEvictedCount = 0;
 
-    if (afterTypeEviction.length > config.maxTotalDocuments) {
+    if (afterTypeEviction.length > config.maxStorageDocuments) {
       // Sort all docs by priority and take top K
       afterTypeEviction.sort((a, b) => b.priority - a.priority);
       finalDocs = afterTypeEviction
-        .slice(0, config.maxTotalDocuments)
+        .slice(0, config.maxStorageDocuments)
         .map((item) => item.doc);
-      globalEvictedCount = afterTypeEviction.length - config.maxTotalDocuments;
+      globalEvictedCount = afterTypeEviction.length - config.maxStorageDocuments;
     } else {
       finalDocs = afterTypeEviction.map((item) => item.doc);
     }

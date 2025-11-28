@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { EmbeddingProgress } from "../../services/embedding/embeddingManager";
+import { EmbeddingProgress } from "../../hooks/useEmbeddingStatus";
 
 interface EmbeddingStatusPanelProps {
   progress: EmbeddingProgress | null;
@@ -50,7 +50,7 @@ export const EmbeddingStatusPanel: React.FC<EmbeddingStatusPanelProps> = ({
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-theme-muted">
                 <span>
-                  {t(`embedding.phase.${progress.phase}`) || progress.phase}
+                  {t(`embedding.phase.${progress.stage}`) || progress.stage}
                 </span>
                 <span>
                   {progress.current} / {progress.total}

@@ -175,6 +175,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onOpenRAG={onOpenRAG}
               onOpenViewer={onOpenViewer}
               onTriggerSave={onTriggerSave}
+              onRetry={onRetry}
             />
           </div>
         </div>

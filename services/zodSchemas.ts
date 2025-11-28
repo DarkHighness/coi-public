@@ -1203,6 +1203,18 @@ export const gameResponseSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Semantic search queries for next turn context."),
+  ragCurrentForkOnly: z
+    .boolean()
+    .optional()
+    .describe(
+      "If true, next turn's RAG queries will only search within the current timeline branch.",
+    ),
+  ragBeforeCurrentTurn: z
+    .boolean()
+    .optional()
+    .describe(
+      "If true, next turn's RAG queries will only search content from before the current turn.",
+    ),
   ending: z
     .enum([
       "continue",
@@ -1220,6 +1232,160 @@ export const gameResponseSchema = z.object({
     .describe("If true, game ends permanently (no continue option)."),
   // Note: finalState is NOT included in AI schema - it's system-populated after processing
 });
+
+// ============================================================================
+// finish_turn Schema (独立的回合结束响应 Schema)
+// ============================================================================
+
+/**
+ * finish_turn 响应 Schema
+ * 用于验证模型通过 finish_turn 工具调用或直接返回的回合结束响应
+ */
+export const finishTurnSchema = z.object({
+  narrative: z.string().describe(
+    `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
+
+**MARKDOWN FORMATTING RULES:**
+Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
+Use *italics* for character thoughts, internal monologue, and emphasis.
+Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
+Use --- horizontal rules to separate distinct scenes or time jumps.
+Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
+Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.`,
+  ),
+  choices: z
+    .array(z.string())
+    .min(2)
+    .max(4)
+    .describe(
+      `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
+1. **Knowledge/Cognition**: Only offer choices based on what the character KNOWS.
+2. **Personality/Background**: Choices should reflect the character's personality.
+3. **Current Conditions**: If the character is injured/exhausted, choices should reflect limitations.
+4. **Skills & Abilities**: Offer choices that utilize the character's skills.
+5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types.`,
+    ),
+  imagePrompt: z
+    .string()
+    .optional()
+    .describe("Optional prompt for generating an image of the current scene."),
+  generateImage: z
+    .boolean()
+    .optional()
+    .describe("Whether to generate an image for this turn."),
+  atmosphere: atmosphereSchema
+    .optional()
+    .describe(
+      "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
+    ),
+  narrativeTone: z
+    .string()
+    .optional()
+    .describe(
+      "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+    ),
+  aliveEntities: z
+    .object({
+      inventory: z
+        .array(z.string())
+        .optional()
+        .describe("Item IDs (inv:N) relevant for next turn."),
+      relationships: z
+        .array(z.string())
+        .optional()
+        .describe("NPC IDs (npc:N) relevant for next turn."),
+      locations: z
+        .array(z.string())
+        .optional()
+        .describe("Location IDs (loc:N) relevant for next turn."),
+      quests: z
+        .array(z.string())
+        .optional()
+        .describe("Quest IDs (quest:N) relevant for next turn."),
+      knowledge: z
+        .array(z.string())
+        .optional()
+        .describe("Knowledge IDs (know:N) relevant for next turn."),
+      timeline: z
+        .array(z.string())
+        .optional()
+        .describe("Event IDs (evt:N) relevant for next turn."),
+      skills: z
+        .array(z.string())
+        .optional()
+        .describe("Character skill IDs relevant for next turn."),
+      conditions: z
+        .array(z.string())
+        .optional()
+        .describe("Character condition IDs relevant for next turn."),
+      hiddenTraits: z
+        .array(z.string())
+        .optional()
+        .describe("Character hidden trait IDs relevant for next turn."),
+      causalChains: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "CausalChain chainIds with pending consequences that may trigger soon.",
+        ),
+    })
+    .optional()
+    .describe(
+      "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
+    ),
+  ending: z
+    .enum([
+      "continue",
+      "death",
+      "victory",
+      "true_ending",
+      "bad_ending",
+      "neutral_ending",
+    ])
+    .describe(
+      `Story continuation status. MUST be set every turn:
+- "continue": Story continues normally (USE THIS IN MOST CASES)
+- "death": Player character dies or suffers irreversible fatal consequence
+- "victory": Main quest goal achieved, story concludes positively
+- "true_ending": Secret/best ending discovered
+- "bad_ending": Story concludes with negative outcome
+- "neutral_ending": Story concludes without clear win/loss
+
+⚠️ CRITICAL RULES:
+1. DEFAULT TO "continue" - Use this for 99% of turns.
+2. NEVER use endings other than "continue" in the first 5 turns.
+3. 'death' should ONLY occur after MULTIPLE clearly dangerous choices.`,
+    ),
+  forceEnd: z
+    .boolean()
+    .optional()
+    .describe(
+      `Only relevant when 'ending' is set. Determines if the game ends permanently:
+- true: Game is OVER. Player cannot continue from this point.
+- false/omit: Player can choose to continue despite the ending.`,
+    ),
+  ragQueries: z
+    .array(z.string())
+    .optional()
+    .describe(
+      `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
+    ),
+  ragCurrentForkOnly: z
+    .boolean()
+    .optional()
+    .describe(
+      "If true, next turn's RAG queries will only search within the current timeline branch.",
+    ),
+  ragBeforeCurrentTurn: z
+    .boolean()
+    .optional()
+    .describe(
+      "If true, next turn's RAG queries will only search content from before the current turn.",
+    ),
+});
+
+/** finish_turn 响应类型 */
+export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;
 
 // ============================================================================
 // 翻译 Schema
@@ -1289,6 +1455,7 @@ export const GEMINI_SCHEMAS = {
   storySummary: zodToGemini(storySummarySchema),
   gameResponse: zodToGemini(gameResponseSchema),
   translation: zodToGemini(translationSchema),
+  finishTurn: zodToGemini(finishTurnSchema),
   // 分阶段 Outline Schemas
   outlinePhase1: zodToGemini(outlinePhase1Schema),
   outlinePhase2: zodToGemini(outlinePhase2Schema),
@@ -1303,6 +1470,7 @@ export const OPENAI_RESPONSE_FORMATS = {
   storySummary: zodToOpenAIResponseFormat(storySummarySchema, "story_summary"),
   gameResponse: zodToOpenAIResponseFormat(gameResponseSchema, "game_response"),
   translation: zodToOpenAIResponseFormat(translationSchema, "translation"),
+  finishTurn: zodToOpenAIResponseFormat(finishTurnSchema, "finish_turn"),
   // 分阶段 Outline Response Formats
   outlinePhase1: zodToOpenAIResponseFormat(
     outlinePhase1Schema,
@@ -1332,6 +1500,7 @@ export const OPENAI_SCHEMAS = {
   storySummary: zodToOpenAISchema(storySummarySchema),
   gameResponse: zodToOpenAISchema(gameResponseSchema),
   translation: zodToOpenAISchema(translationSchema),
+  finishTurn: zodToOpenAISchema(finishTurnSchema),
   // 分阶段 Outline Schemas
   outlinePhase1: zodToOpenAISchema(outlinePhase1Schema),
   outlinePhase2: zodToOpenAISchema(outlinePhase2Schema),

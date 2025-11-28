@@ -1242,7 +1242,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             <div className="space-y-2">
               <InfoRow
                 label={t("embedding.phase") || "Phase"}
-                value={t(`embedding.phase.${embeddingProgress.phase}`) || embeddingProgress.phase}
+                value={t(`embedding.phase.${embeddingProgress.stage}`) || embeddingProgress.stage}
               />
               <InfoRow
                 label={t("embedding.progress") || "Progress"}

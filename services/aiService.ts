@@ -33,7 +33,9 @@ import type {
 } from "../types";
 
 import { GameDatabase } from "./gameDatabase";
-import { getEmbeddingManager } from "./embedding";
+// Note: Embedding/RAG functionality has moved to the new RAG service (services/rag)
+// The old embedding manager is no longer used - see hooks/useRAG.ts for the new API
+// @ts-ignore
 import promptInjectionData from "../src/prompt/prompt.toml";
 
 // Provider imports - 使用新的统一类型系统
@@ -91,11 +93,13 @@ import {
   outlinePhase3Schema,
   outlinePhase4Schema,
   outlinePhase5Schema,
+  finishTurnSchema,
   type OutlinePhase1,
   type OutlinePhase2,
   type OutlinePhase3,
   type OutlinePhase4,
   type OutlinePhase5,
+  type FinishTurnResponse,
 } from "./schemas";
 
 import { getEnvApiKey } from "../utils/env";
@@ -168,11 +172,8 @@ export const updateAIConfig = (settings: AISettings): void => {
     apiKey: settings.openrouter?.apiKey || "",
   };
 
-  // Update Embedding Manager config
-  const embeddingManager = getEmbeddingManager();
-  if (embeddingManager) {
-    embeddingManager.updateConfig(settings);
-  }
+  // Note: RAG config is now handled by the RAG service (hooks/useRAG.ts)
+  // The old embedding manager has been replaced
 };
 
 // ============================================================================
@@ -1135,12 +1136,74 @@ const buildTurnContents = (
 // Turn Context and Agentic Loop
 // ============================================================================
 
+/**
+ * Process finish_turn response data (from tool call or direct schema response)
+ * Extracts all fields and populates the accumulated response
+ */
+function processFinishTurnResponse(
+  finishTurnData: Record<string, unknown>,
+  accumulatedResponse: GameResponse,
+  db: GameDatabase,
+): void {
+  // Extract narrative and choices
+  accumulatedResponse.narrative = (finishTurnData.narrative as string)
+    ?.replace(/\\n/g, "\n")
+    .replace(/\\"/g, '"');
+  accumulatedResponse.choices = finishTurnData.choices as string[];
+  accumulatedResponse.imagePrompt = finishTurnData.imagePrompt as string;
+  accumulatedResponse.generateImage = finishTurnData.generateImage as boolean;
+
+  // Extract atmosphere
+  if (finishTurnData.atmosphere) {
+    accumulatedResponse.atmosphere =
+      finishTurnData.atmosphere as GameResponse["atmosphere"];
+  }
+  if (finishTurnData.narrativeTone) {
+    accumulatedResponse.narrativeTone = finishTurnData.narrativeTone as string;
+  }
+
+  // Extract alive entities for next turn context
+  if (finishTurnData.aliveEntities) {
+    accumulatedResponse.aliveEntities =
+      finishTurnData.aliveEntities as GameResponse["aliveEntities"];
+  }
+
+  // Extract RAG queries for next turn context
+  if (finishTurnData.ragQueries && Array.isArray(finishTurnData.ragQueries)) {
+    accumulatedResponse.ragQueries = finishTurnData.ragQueries as string[];
+  }
+
+  // Extract RAG filter flags
+  if (finishTurnData.ragCurrentForkOnly !== undefined) {
+    accumulatedResponse.ragCurrentForkOnly = finishTurnData.ragCurrentForkOnly as boolean;
+  }
+  if (finishTurnData.ragBeforeCurrentTurn !== undefined) {
+    accumulatedResponse.ragBeforeCurrentTurn = finishTurnData.ragBeforeCurrentTurn as boolean;
+  }
+
+  // Extract ending type - "continue" means no ending, story continues
+  if (finishTurnData.ending && finishTurnData.ending !== "continue") {
+    accumulatedResponse.ending = finishTurnData.ending as GameResponse["ending"];
+  }
+
+  // Extract forceEnd flag (handle null from OpenAI strict schema)
+  if (finishTurnData.forceEnd === true || finishTurnData.forceEnd === false) {
+    accumulatedResponse.forceEnd = finishTurnData.forceEnd;
+  }
+
+  // Attach the FINAL STATE from the DB
+  (
+    accumulatedResponse as GameResponse & { finalState: unknown }
+  ).finalState = db.getState();
+}
+
 export interface TurnContext {
   recentHistory: StorySegment[];
   userAction: string;
   language: string;
   themeKey?: string;
   tFunc?: (key: string) => unknown;
+  ragContext?: string; // RAG context from the new RAG service
 }
 
 interface AgenticLoopResult {
@@ -1185,56 +1248,10 @@ export const generateAdventureTurn = async (
   }
 
   // Try to get RAG context if embedding is enabled
-  let ragContext: string | undefined;
-  try {
-    const embeddingManager = getEmbeddingManager();
-    if (embeddingManager && embeddingManager.hasIndex()) {
-      const ragContextParts: string[] = [];
-
-      // 1. Get context from current user action
-      const actionRag = await embeddingManager.getContextForAction(
-        context.userAction,
-        gameState,
-      );
-      if (actionRag.combinedContext) {
-        ragContextParts.push(actionRag.combinedContext);
-      }
-
-      // 2. If there are ragQueries from the previous turn, execute them
-      if (gameState.ragQueries && gameState.ragQueries.length > 0) {
-        console.log(
-          `[RAG] Processing ${gameState.ragQueries.length} pre-planned queries from previous turn`,
-        );
-        for (const query of gameState.ragQueries) {
-          try {
-            const queryRag = await embeddingManager.retrieveContext(query, {
-              topK: 3,
-            });
-            if (queryRag.combinedContext) {
-              ragContextParts.push(
-                `=== Pre-planned Query: "${query}" ===\n${queryRag.combinedContext}`,
-              );
-            }
-          } catch (queryError) {
-            console.warn(
-              `[RAG] Failed to process pre-planned query "${query}":`,
-              queryError,
-            );
-          }
-        }
-      }
-
-      if (ragContextParts.length > 0) {
-        ragContext = ragContextParts.join("\n\n");
-        console.log(
-          `[RAG] Retrieved combined context from ${ragContextParts.length} sources`,
-        );
-      }
-    }
-  } catch (error) {
-    console.warn("[RAG] Failed to retrieve context:", error);
-    // Continue without RAG context
-  }
+  // Note: RAG context is now provided via context.ragContext parameter
+  // The new RAG service (services/rag) is integrated through hooks/useRAG.ts
+  // and the context is passed in from the game engine layer
+  let ragContext: string | undefined = context.ragContext;
 
   const { messages, dynamicContext } = buildTurnContents(
     gameState.summaries,
@@ -1367,7 +1384,7 @@ const runAgenticLoop = async (
   }
 
   while (turnCount < maxTurns) {
-    console.log(`[Agentic Loop] Turn ${turnCount + 1}`);
+    console.log(`[Agentic Loop] Turn ${turnCount + 1}/${maxTurns}`);
 
     let result: GenerateContentResult["result"];
     let usage: TokenUsage;
@@ -1378,6 +1395,23 @@ const runAgenticLoop = async (
     let retryCount = 0;
     let lastError: Error | null = null;
 
+    // Last round: don't provide tools, force schema response
+    const isLastRound = turnCount === maxTurns - 1;
+    const effectiveToolConfig = isLastRound ? undefined : toolConfig;
+    const effectiveSchema = isLastRound ? finishTurnSchema : undefined;
+
+    if (isLastRound) {
+      console.log(
+        `[Agentic Loop] LAST ROUND - No tools available, forcing finish_turn schema response`,
+      );
+      // Add a system message to inform the model
+      conversationHistory.push(
+        createUserMessage(
+          `[SYSTEM: FINAL ROUND]\nThis is the final round. You MUST return a JSON response matching the finish_turn schema. No tools are available.`,
+        ),
+      );
+    }
+
     while (retryCount <= maxRetries) {
       try {
         // Pass UnifiedMessage[] directly - generateContentUnified handles format conversion
@@ -1386,8 +1420,8 @@ const runAgenticLoop = async (
           modelId,
           systemInstruction,
           conversationHistory,
-          undefined,
-          { tools: toolConfig, generationDetails },
+          effectiveSchema,
+          { tools: effectiveToolConfig, generationDetails },
         );
 
         result = resultData.result;
@@ -1460,8 +1494,22 @@ const runAgenticLoop = async (
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
       .functionCalls;
 
-    if (result && functionCalls) {
-      const toolCalls: UnifiedToolCallResult[] = functionCalls;
+    if (result && functionCalls && functionCalls.length > 0) {
+      let toolCalls: UnifiedToolCallResult[] = functionCalls;
+
+      // **REORDER: Ensure finish_turn is the last tool call**
+      const finishTurnIndex = toolCalls.findIndex((tc) => tc.name === "finish_turn");
+      if (finishTurnIndex !== -1 && finishTurnIndex !== toolCalls.length - 1) {
+        console.log(
+          `[Agentic Loop] Reordering finish_turn from position ${finishTurnIndex} to last position`,
+        );
+        const finishTurnCall = toolCalls[finishTurnIndex];
+        toolCalls = [
+          ...toolCalls.slice(0, finishTurnIndex),
+          ...toolCalls.slice(finishTurnIndex + 1),
+          finishTurnCall,
+        ];
+      }
 
       // Collect detailed tool call records for this turn
       const turnToolCalls: ToolCallRecord[] = [];
@@ -1495,48 +1543,8 @@ const runAgenticLoop = async (
 
         // Handle finish_turn specially
         if (name === "finish_turn") {
-          // Finalize
-          accumulatedResponse.narrative = (args.narrative as string)
-            ?.replace(/\\n/g, "\n")
-            .replace(/\\"/g, '"');
-          accumulatedResponse.choices = args.choices as string[];
-          accumulatedResponse.imagePrompt = args.imagePrompt as string;
-          accumulatedResponse.generateImage = args.generateImage as boolean;
-
-          // Extract atmosphere (unified system)
-          if (args.atmosphere) {
-            accumulatedResponse.atmosphere =
-              args.atmosphere as GameResponse["atmosphere"];
-          }
-          if (args.narrativeTone) {
-            accumulatedResponse.narrativeTone = args.narrativeTone as string;
-          }
-
-          // Extract alive entities for next turn context
-          if (args.aliveEntities) {
-            accumulatedResponse.aliveEntities =
-              args.aliveEntities as GameResponse["aliveEntities"];
-          }
-
-          // Extract RAG queries for next turn context
-          if (args.ragQueries && Array.isArray(args.ragQueries)) {
-            accumulatedResponse.ragQueries = args.ragQueries as string[];
-          }
-
-          // Extract ending type - "continue" means no ending, story continues
-          if (args.ending && args.ending !== "continue") {
-            accumulatedResponse.ending = args.ending as GameResponse["ending"];
-          }
-
-          // Extract forceEnd flag (handle null from OpenAI strict schema)
-          if (args.forceEnd === true || args.forceEnd === false) {
-            accumulatedResponse.forceEnd = args.forceEnd;
-          }
-
-          // Attach the FINAL STATE from the DB
-          (
-            accumulatedResponse as GameResponse & { finalState: unknown }
-          ).finalState = db.getState();
+          // Process finish_turn response
+          processFinishTurnResponse(args, accumulatedResponse, db);
 
           console.log(
             `[Agentic Loop] finish_turn called. Final usage:`,
@@ -1614,31 +1622,87 @@ const runAgenticLoop = async (
 
       turnCount++;
     } else {
-      // Fallback for text-only response
-      if (result && (result as GameResponse).narrative) {
+      // No tool calls - check if this is a direct finish_turn schema response
+      console.log(
+        `[Agentic Loop] No tool calls. Checking for finish_turn schema response...`,
+      );
+
+      // Validate against finishTurnSchema
+      try {
+        const finishTurnData = finishTurnSchema.parse(result);
+        console.log(
+          `[Agentic Loop] Valid finish_turn schema response detected`,
+        );
+
+        // Process finish_turn response
+        processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
+
+        console.log(
+          `[Agentic Loop] finish_turn schema response processed. Final usage:`,
+          totalUsage,
+        );
+
+        // Create final summary log
+        const finalLog = createLogEntry(
+          provider,
+          modelId,
+          "agentic_complete",
+          { turns: turnCount + 1, method: "schema_response" },
+          {
+            totalToolCalls: allLogs.reduce(
+              (sum, log) => sum + (log.toolCalls?.length || 0),
+              0,
+            ),
+            narrative:
+              accumulatedResponse.narrative?.substring(0, 100) + "...",
+            choices: accumulatedResponse.choices,
+            atmosphere: accumulatedResponse.atmosphere,
+          },
+          totalUsage,
+        );
+        allLogs.push(lastLog);
+        allLogs.push(finalLog);
+
+        return {
+          response: accumulatedResponse,
+          logs: allLogs,
+          usage: totalUsage,
+        };
+      } catch (validationError) {
+        console.error(
+          `[Agentic Loop] Response does not match finish_turn schema:`,
+          validationError,
+        );
+
+        // Fallback: try to extract narrative if present
+        if (result && (result as GameResponse).narrative) {
+          allLogs.push(lastLog);
+          return {
+            response: result as GameResponse,
+            logs: allLogs,
+            usage: totalUsage,
+          };
+        }
+
+        // Last resort fallback
+        console.warn("Model returned unexpected response format:", result);
         allLogs.push(lastLog);
         return {
-          response: result as GameResponse,
+          response: {
+            ...accumulatedResponse,
+            narrative:
+              typeof result === "string" ? result : JSON.stringify(result),
+            choices: ["Continue"],
+          },
           logs: allLogs,
           usage: totalUsage,
         };
       }
-
-      console.warn("Model returned text instead of tool call:", result);
-      allLogs.push(lastLog);
-      return {
-        response: {
-          ...accumulatedResponse,
-          narrative:
-            typeof result === "string" ? result : JSON.stringify(result),
-          choices: ["Continue"],
-        },
-        logs: allLogs,
-        usage: totalUsage,
-      };
     }
   }
 
+  // Max turns reached without finish_turn
+  console.warn(`[Agentic Loop] Max turns (${maxTurns}) reached without finish_turn`);
   return { response: accumulatedResponse, logs: allLogs, usage: totalUsage };
 };
 
@@ -1803,34 +1867,27 @@ function executeToolCall(
 
 /**
  * 执行 RAG 搜索
+ * Uses the new RAG service (SharedWorker-based) for semantic search
  */
 async function executeRagSearch(
   args: Record<string, unknown>,
   db: GameDatabase,
 ): Promise<unknown> {
-  const embeddingManager = getEmbeddingManager();
-  if (embeddingManager && embeddingManager.hasIndex()) {
-    try {
-      const query = args.query as string;
-      const types = args.types as
-        | (
-            | "story"
-            | "location"
-            | "quest"
-            | "knowledge"
-            | "npc"
-            | "item"
-            | "event"
-          )[]
-        | undefined;
-      const topK = (args.topK as number) || 5;
-      const currentForkOnly = args.currentForkOnly as boolean | undefined;
-      const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
+  const { getRAGService } = await import("./rag");
+  const ragService = getRAGService();
 
-      // Build search options with fork/turn filtering
-      interface SearchOptions {
-        topK: number;
-        types?: (
+  if (!ragService) {
+    return {
+      success: false,
+      error: "RAG search is not available. RAG service has not been initialized.",
+      hint: "Use query_* tools to search specific entity types instead.",
+    };
+  }
+
+  try {
+    const query = args.query as string;
+    const types = args.types as
+      | (
           | "story"
           | "location"
           | "quest"
@@ -1838,77 +1895,64 @@ async function executeRagSearch(
           | "npc"
           | "item"
           | "event"
-        )[];
-        currentForkOnly?: boolean;
-        forkId?: number;
-        forkTree?: ForkTree;
-        beforeCurrentTurn?: boolean;
-        currentTurn?: number;
+        )[]
+      | undefined;
+    const topK = (args.topK as number) || 5;
+    const currentForkOnly = args.currentForkOnly as boolean | undefined;
+    const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
+
+    const state = db.getState();
+
+    // Build search options for new RAG service
+    const searchOptions = {
+      topK,
+      types,
+      forkId: state.forkId,
+      currentForkOnly,
+      beforeTurn: beforeCurrentTurn ? state.turnNumber : undefined,
+    };
+
+    const results = await ragService.search(query, searchOptions);
+
+    // Group results by type for backwards compatibility
+    const groupedResults: Record<string, string[]> = {
+      story: [],
+      npc: [],
+      location: [],
+      item: [],
+      knowledge: [],
+      quest: [],
+      event: [],
+    };
+
+    for (const result of results) {
+      const type = result.document.type;
+      if (groupedResults[type]) {
+        groupedResults[type].push(result.document.content);
       }
-
-      const searchOptions: SearchOptions = {
-        topK,
-        types,
-      };
-
-      // Add fork filtering if requested
-      if (currentForkOnly) {
-        searchOptions.currentForkOnly = true;
-        searchOptions.forkId = db.getState().forkId;
-        searchOptions.forkTree = db.getState().forkTree;
-      }
-
-      // Add turn filtering if requested
-      if (beforeCurrentTurn) {
-        searchOptions.beforeCurrentTurn = true;
-        searchOptions.currentTurn = db.getState().turnNumber;
-      }
-
-      const ragContext = await embeddingManager.retrieveContext(
-        query,
-        searchOptions,
-      );
-
-      return {
-        success: true,
-        query,
-        filters: {
-          currentForkOnly: currentForkOnly || false,
-          beforeCurrentTurn: beforeCurrentTurn || false,
-          forkId: currentForkOnly ? db.getState().forkId : undefined,
-          turnNumber: beforeCurrentTurn ? db.getState().turnNumber : undefined,
-        },
-        results: {
-          story: ragContext.storyContext,
-          npc: ragContext.npcContext,
-          location: ragContext.locationContext,
-          item: ragContext.itemContext,
-          knowledge: ragContext.knowledgeContext,
-          quest: ragContext.questContext,
-          event: ragContext.eventContext,
-        },
-        combinedContext: ragContext.combinedContext,
-        message: `Found ${
-          ragContext.storyContext.length +
-          ragContext.npcContext.length +
-          ragContext.locationContext.length +
-          ragContext.itemContext.length +
-          ragContext.knowledgeContext.length +
-          ragContext.questContext.length +
-          ragContext.eventContext.length
-        } relevant entries`,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-      };
     }
-  } else {
+
+    const combinedContext = results
+      .map((r) => r.document.content)
+      .join("\n\n");
+
+    return {
+      success: true,
+      query,
+      filters: {
+        currentForkOnly: currentForkOnly || false,
+        beforeCurrentTurn: beforeCurrentTurn || false,
+        forkId: currentForkOnly ? state.forkId : undefined,
+        turnNumber: beforeCurrentTurn ? state.turnNumber : undefined,
+      },
+      results: groupedResults,
+      combinedContext,
+      message: `Found ${results.length} relevant entries`,
+    };
+  } catch (error) {
     return {
       success: false,
-      error: "RAG search is not available. Embedding index has not been built.",
-      hint: "Use query_* tools to search specific entity types instead.",
+      error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }

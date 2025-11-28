@@ -797,12 +797,16 @@ export interface EmbeddingConfig {
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)
 
-  // LRU Eviction Settings
+  // LRU Eviction Settings (player-adjustable)
   lru?: {
-    // Global limits
-    maxTotalDocuments?: number; // Maximum total documents in index (default: 5000)
-    maxDocumentsPerType?: number; // Max documents per type (default: 1000)
+    // Memory limits (in-memory cache)
+    maxMemoryDocuments?: number; // Max documents in memory cache (default: 1000)
+
+    // Storage limits (persistent in IndexedDB)
+    maxStorageDocuments?: number; // Max total documents in storage (default: 10000)
+    maxDocumentsPerType?: number; // Max documents per type (default: 2000)
     maxVersionsPerEntity?: number; // Max versions per entity ID (default: 5)
+    maxVersionsAcrossForks?: number; // Max versions across forks (default: 10)
 
     // Priority settings
     currentForkBonus?: number; // Priority bonus for current fork (default: 0.5)

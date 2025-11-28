@@ -9,10 +9,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
-import {
-  initializeEmbeddingManager,
-  getEmbeddingManager,
-} from "./services/embedding";
+// Note: Old embedding manager has been replaced with the new RAG service
+// See hooks/useRAG.ts for the new integration
 import { Toast } from "./components/Toast";
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
@@ -366,43 +364,10 @@ export default function App() {
         const mostRecent = sorted[0];
         const result = await loadSlot(mostRecent.id);
         if (result.success) {
-          // Initialize Embedding Manager if enabled
+          // Note: RAG service initialization is now handled in useGameEngine/useRAG
+          // The new RAG service uses PGlite with SharedWorker and handles save switching automatically
           if (aiSettings.embedding?.enabled) {
-            try {
-              // Try to restore from result or DB
-              let indexRestored = false;
-              const manager = initializeEmbeddingManager({
-                settings: aiSettings,
-              });
-
-              if (result.embeddingIndex) {
-                await manager.loadIndex(result.embeddingIndex);
-                indexRestored = true;
-                console.log(
-                  `[ContinueGame] Restored index from save with ${result.embeddingIndex.documents.length} docs`,
-                );
-              } else {
-                // Try persistent storage
-                const restored = await manager.restoreIndex();
-                if (restored) {
-                  indexRestored = true;
-                  console.log(
-                    "[ContinueGame] Restored index from persistent storage",
-                  );
-                }
-              }
-
-              if (!indexRestored) {
-                console.log(
-                  "[ContinueGame] No index found, will build on first action",
-                );
-              }
-            } catch (err) {
-              console.error(
-                "[ContinueGame] Failed to initialize embedding manager:",
-                err,
-              );
-            }
+            console.log("[ContinueGame] RAG enabled, service will initialize on game start");
           }
 
           // After loading, check the game state and handle appropriately
@@ -429,56 +394,10 @@ export default function App() {
       return;
     }
 
-    // Restore embedding index if available and embedding is enabled
+    // Note: RAG service now handles index persistence automatically via PGlite
+    // Model mismatch detection is also handled by the new RAG service
     if (aiSettings.embedding?.enabled && result.hasOutline) {
-      const currentModelId = aiSettings.embedding.modelId;
-      let indexRestored = false;
-
-      if (result.embeddingIndex) {
-        if (result.savedModelId && result.savedModelId !== currentModelId) {
-          console.warn(
-            `[Embedding] Model mismatch: saved=${result.savedModelId}, current=${currentModelId}. ` +
-              `RAG index will be rebuilt on first action.`,
-          );
-        } else {
-          try {
-            const manager = initializeEmbeddingManager({
-              settings: aiSettings,
-            });
-            await manager.loadIndex(result.embeddingIndex);
-            console.log(
-              `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`,
-            );
-            indexRestored = true;
-          } catch (error) {
-            console.error("[Embedding] Failed to restore index:", error);
-          }
-        }
-      } else {
-        // Try to restore from separate DB (new persistence method)
-        try {
-          const manager = initializeEmbeddingManager({
-            settings: aiSettings,
-          });
-          const restored = await manager.restoreIndex();
-          if (restored) {
-            indexRestored = true;
-            console.log("[Embedding] Restored index from persistent storage");
-          }
-        } catch (error) {
-          console.error(
-            "[Embedding] Failed to restore index from persistent storage:",
-            error,
-          );
-        }
-      }
-
-      // If no index was restored, it will be rebuilt on first action
-      if (!indexRestored && !result.embeddingIndex) {
-        console.log(
-          "[Embedding] No saved index found, will build on first action",
-        );
-      }
+      console.log("[LoadSlot] RAG enabled, service will handle save context switching");
     }
 
     // Close the save manager

@@ -22,6 +22,7 @@ interface ActionPanelProps {
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
+  onRetry?: () => void;
 }
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
@@ -35,6 +36,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenRAG,
   onOpenViewer,
   onTriggerSave,
+  onRetry,
 }) => {
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
@@ -255,11 +257,37 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             !isTranslating &&
             availableChoices.length > 0 && (
               <div className="animate-fade-in-up">
-                {/* Mobile Toggle */}
-                <div className="md:hidden flex justify-center mb-2">
+                {/* Mobile Toggle + Retry Button */}
+                <div className="flex justify-center items-center gap-2 mb-2">
+                  {/* Retry Button */}
+                  {onRetry && (
+                    <button
+                      onClick={onRetry}
+                      disabled={isDisabled}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-warning/50 rounded-full text-xs font-bold text-theme-warning uppercase tracking-widest hover:bg-theme-warning hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t("retryGeneration")}
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        ></path>
+                      </svg>
+                      <span className="hidden sm:inline">{t("retryGeneration")}</span>
+                    </button>
+                  )}
+
+                  {/* Mobile Toggle */}
                   <button
                     onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                    className="flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
+                    className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
                   >
                     {isChoicesExpanded ? (
                       <>

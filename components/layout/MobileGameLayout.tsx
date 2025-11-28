@@ -134,6 +134,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onOpenRAG={onOpenRAG}
             onOpenViewer={onOpenViewer}
             onTriggerSave={onTriggerSave}
+            onRetry={onRetry}
           />
         </div>
       </div>

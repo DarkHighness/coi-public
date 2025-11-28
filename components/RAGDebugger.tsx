@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  getEmbeddingManager,
-  initializeEmbeddingManager,
-  isWebGPUAvailable,
-} from "../services/embedding";
-import { EmbeddingDocument, GameState, AISettings } from "../types";
+import { getRAGService } from "../services/rag";
+import type { SearchResult as RAGSearchResult } from "../services/rag";
+import { GameState, AISettings } from "../types";
 
 interface RAGDebuggerProps {
   isOpen: boolean;
@@ -15,17 +12,22 @@ interface RAGDebuggerProps {
   aiSettings?: AISettings;
 }
 
-interface SearchResult {
-  doc: EmbeddingDocument;
+interface SearchResultDisplay {
+  entityId: string;
+  type: string;
+  content: string;
   score: number;
+  metadata?: Record<string, unknown>;
 }
 
 interface IndexStats {
   documentCount: number;
   modelId: string;
-  typeBreakdown: Record<string, number>;
-  hasEmbeddings: boolean;
-  isWebGPUEnabled: boolean;
+  provider: string;
+  isInitialized: boolean;
+  currentSaveId: string | null;
+  storageDocuments: number;
+  memoryDocuments: number;
 }
 
 export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
@@ -37,12 +39,12 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
 }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultDisplay[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
-  const [isRebuildingIndex, setIsRebuildingIndex] = useState(false);
   const [activeTab, setActiveTab] = useState<"search" | "stats">("search");
+  const [isRebuildingIndex, setIsRebuildingIndex] = useState(false);
 
   // Fork/Turn filtering options
   const [currentForkOnly, setCurrentForkOnly] = useState(false);
@@ -50,36 +52,27 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
 
   // Load index stats
   const loadIndexStats = useCallback(async () => {
-    const embeddingManager = getEmbeddingManager();
-    if (!embeddingManager) {
+    const ragService = getRAGService();
+    if (!ragService) {
       setIndexStats(null);
       return;
     }
 
-    const index = embeddingManager.getIndex();
-    if (!index) {
+    try {
+      const status = await ragService.getStatus();
+      setIndexStats({
+        documentCount: status.storageDocuments + status.memoryDocuments,
+        modelId: status.currentModel,
+        provider: status.currentProvider,
+        isInitialized: status.initialized,
+        currentSaveId: status.currentSaveId,
+        storageDocuments: status.storageDocuments,
+        memoryDocuments: status.memoryDocuments,
+      });
+    } catch (err) {
+      console.error("[RAGDebugger] Failed to load stats:", err);
       setIndexStats(null);
-      return;
     }
-
-    // Calculate type breakdown
-    const typeBreakdown: Record<string, number> = {};
-    for (const doc of index.documents) {
-      typeBreakdown[doc.type] = (typeBreakdown[doc.type] || 0) + 1;
-    }
-
-    // Check WebGPU availability asynchronously
-    const webgpuEnabled = await isWebGPUAvailable();
-
-    setIndexStats({
-      documentCount: index.documents.length,
-      modelId: index.modelId,
-      typeBreakdown,
-      hasEmbeddings: index.documents.some(
-        (d) => d.embedding && d.embedding.length > 0,
-      ),
-      isWebGPUEnabled: webgpuEnabled,
-    });
   }, []);
 
   // Reset state and load stats when opened
@@ -100,54 +93,63 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
     setError(null);
 
     try {
-      const embeddingManager = getEmbeddingManager();
-      if (!embeddingManager) {
+      const ragService = getRAGService();
+      if (!ragService) {
         setError(
-          t(
-            "ragDebugger.noEmbeddingManager",
-            "Embedding manager not initialized",
-          ),
+          t("ragDebugger.noEmbeddingManager", "RAG service not initialized")
         );
         setIsSearching(false);
         return;
       }
 
-      if (!embeddingManager.hasIndex()) {
+      const status = await ragService.getStatus();
+      if (!status.initialized) {
         setError(t("ragDebugger.noIndex", "No embedding index available"));
         setIsSearching(false);
         return;
       }
 
       // Build search options with fork/turn filtering
-      const searchOptions: any = { topK: 10 };
+      const searchOptions: {
+        topK?: number;
+        forkId?: number;
+        beforeTurn?: number;
+        currentForkOnly?: boolean;
+      } = { topK: 10 };
 
       if (currentForkOnly && gameState) {
-        searchOptions.currentForkOnly = true;
         searchOptions.forkId = gameState.forkId;
-        searchOptions.forkTree = gameState.forkTree;
+        searchOptions.currentForkOnly = true;
       }
 
       if (beforeCurrentTurn && gameState) {
-        searchOptions.beforeCurrentTurn = true;
-        searchOptions.currentTurn = gameState.turnNumber;
+        searchOptions.beforeTurn = gameState.turnNumber;
       }
 
-      const response = await embeddingManager.retrieveContext(
-        query,
-        searchOptions,
-      );
+      const searchResults = await ragService.search(query, searchOptions);
 
-      if (response && (response as any).relevantDocs) {
-        setResults((response as any).relevantDocs);
-      } else {
-        setError(
-          t("ragDebugger.rawDocsError", "Could not retrieve search results"),
+      if (searchResults && searchResults.length > 0) {
+        setResults(
+          searchResults.map((r: RAGSearchResult) => ({
+            entityId: r.document.entityId,
+            type: r.document.type,
+            content: r.document.content,
+            score: r.score,
+            metadata: {
+              forkId: r.document.forkId,
+              turnNumber: r.document.turnNumber,
+              importance: r.document.importance,
+            },
+          }))
         );
+      } else {
+        setResults([]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("RAG Search failed:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(
-        t("ragDebugger.searchFailed", "Search failed") + `: ${err.message}`,
+        t("ragDebugger.searchFailed", "Search failed") + ": " + errorMessage
       );
     } finally {
       setIsSearching(false);
@@ -161,15 +163,19 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
     setError(null);
 
     try {
-      const manager = initializeEmbeddingManager({ settings: aiSettings });
-      await manager.buildIndex(gameState);
-      loadIndexStats();
-      console.log("[RAGDebugger] Index rebuilt successfully");
-    } catch (err: any) {
+      const ragService = getRAGService();
+      if (ragService) {
+        // Clear current save's in-memory cache
+        await ragService.clearSave();
+        loadIndexStats();
+        console.log("[RAGDebugger] Index cleared successfully");
+      }
+    } catch (err: unknown) {
       console.error("Failed to rebuild index:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(
         t("ragDebugger.rebuildFailed", "Failed to rebuild index") +
-          `: ${err.message}`,
+          ": " + errorMessage
       );
     } finally {
       setIsRebuildingIndex(false);
@@ -268,7 +274,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t(
                     "ragDebugger.searchPlaceholder",
-                    "Enter search query...",
+                    "Enter search query..."
                   )}
                   className="flex-1 bg-theme-surface border border-theme-border rounded-lg px-4 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
                   autoFocus
@@ -317,7 +323,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     <span>
                       {t(
                         "ragDebugger.beforeCurrentTurn",
-                        "Before Current Turn",
+                        "Before Current Turn"
                       )}
                     </span>
                     <span className="text-theme-muted text-xs">
@@ -337,13 +343,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <p>
                     {t(
                       "ragDebugger.embeddingDisabled",
-                      "RAG/Embedding is disabled in settings",
+                      "RAG/Embedding is disabled in settings"
                     )}
                   </p>
                   <p className="text-xs mt-2">
                     {t(
                       "ragDebugger.enableInSettings",
-                      "Enable it in Settings → Embedding",
+                      "Enable it in Settings → Embedding"
                     )}
                   </p>
                 </div>
@@ -354,13 +360,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <p>
                     {t(
                       "ragDebugger.noIndexYet",
-                      "No embedding index available",
+                      "No embedding index available"
                     )}
                   </p>
                   <p className="text-xs mt-2">
                     {t(
                       "ragDebugger.indexWillBuild",
-                      "Index will be built when you continue playing",
+                      "Index will be built when you continue playing"
                     )}
                   </p>
                   {gameState && (
@@ -385,7 +391,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <div className="text-center text-theme-muted py-8">
                     {t(
                       "ragDebugger.noResults",
-                      "Enter a query to search the embedding index",
+                      "Enter a query to search the embedding index"
                     )}
                   </div>
                 )}
@@ -398,27 +404,27 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="px-2 py-0.5 bg-theme-primary/20 text-theme-primary text-xs rounded-full uppercase font-bold">
-                        {result.doc.type}
+                        {result.type}
                       </span>
                       <span className="text-xs text-theme-muted font-mono">
-                        {result.doc.entityId}
+                        {result.entityId}
                       </span>
-                      {result.doc.metadata?.forkId !== undefined && (
+                      {result.metadata?.forkId !== undefined && (
                         <span className="text-xs text-theme-secondary font-mono">
                           {t("ragDebugger.fork", "fork")}:
-                          {result.doc.metadata.forkId}
+                          {String(result.metadata.forkId)}
                         </span>
                       )}
-                      {result.doc.metadata?.turnNumber !== undefined && (
+                      {result.metadata?.turnNumber !== undefined && (
                         <span className="text-xs text-theme-secondary font-mono">
                           {t("ragDebugger.turn", "turn")}:
-                          {result.doc.metadata.turnNumber}
+                          {String(result.metadata.turnNumber)}
                         </span>
                       )}
-                      {result.doc.metadata?.importance !== undefined && (
+                      {result.metadata?.importance !== undefined && (
                         <span className="text-xs text-amber-400 font-mono">
                           {t("ragDebugger.importance", "imp")}:
-                          {result.doc.metadata.importance.toFixed(2)}
+                          {Number(result.metadata.importance).toFixed(2)}
                         </span>
                       )}
                     </div>
@@ -428,7 +434,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     </span>
                   </div>
                   <p className="text-sm text-theme-text/90 whitespace-pre-wrap line-clamp-4">
-                    {result.doc.content}
+                    {result.content}
                   </p>
                   <details className="mt-2">
                     <summary className="text-xs text-theme-muted cursor-pointer hover:text-theme-text">
@@ -436,7 +442,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     </summary>
                     <div className="mt-2 pt-2 border-t border-theme-border/50 text-xs text-theme-muted">
                       <pre className="whitespace-pre-wrap font-mono overflow-x-auto">
-                        {JSON.stringify(result.doc.metadata, null, 2)}
+                        {JSON.stringify(result.metadata, null, 2)}
                       </pre>
                     </div>
                   </details>
@@ -452,7 +458,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 <p>
                   {t(
                     "ragDebugger.embeddingDisabled",
-                    "RAG/Embedding is disabled",
+                    "RAG/Embedding is disabled"
                   )}
                 </p>
               </div>
@@ -461,7 +467,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 <p>
                   {t(
                     "ragDebugger.noIndexStats",
-                    "No index statistics available",
+                    "No index statistics available"
                   )}
                 </p>
                 {gameState && (
@@ -490,10 +496,18 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   </div>
                   <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-theme-primary">
-                      {Object.keys(indexStats.typeBreakdown).length}
+                      {indexStats.storageDocuments}
                     </div>
                     <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
-                      {t("ragDebugger.types", "Document Types")}
+                      {t("ragDebugger.storageDocs", "Storage")}
+                    </div>
+                  </div>
+                  <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-theme-primary">
+                      {indexStats.memoryDocuments}
+                    </div>
+                    <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
+                      {t("ragDebugger.memoryDocs", "Memory")}
                     </div>
                   </div>
                   <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
@@ -501,51 +515,46 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       className="text-sm font-bold text-theme-primary truncate"
                       title={indexStats.modelId}
                     >
-                      {indexStats.modelId.split("/").pop() ||
-                        indexStats.modelId}
+                      {indexStats.modelId.split("/").pop() || indexStats.modelId}
                     </div>
                     <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
                       {t("ragDebugger.model", "Embedding Model")}
                     </div>
                   </div>
-                  <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
-                    <div
-                      className={`text-2xl font-bold ${indexStats.isWebGPUEnabled ? "text-green-400" : "text-theme-muted"}`}
-                    >
-                      {indexStats.isWebGPUEnabled ? "✓" : "–"}
-                    </div>
-                    <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
-                      {t("ragDebugger.webgpu", "WebGPU")}
-                    </div>
-                  </div>
                 </div>
 
-                {/* Type Breakdown */}
+                {/* Provider Info */}
                 <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4">
                   <h3 className="text-sm font-bold text-theme-text mb-3 uppercase tracking-wider">
-                    {t("ragDebugger.typeBreakdown", "Documents by Type")}
+                    {t("ragDebugger.providerInfo", "Provider Information")}
                   </h3>
-                  <div className="space-y-2">
-                    {Object.entries(indexStats.typeBreakdown)
-                      .sort(([, a], [, b]) => b - a)
-                      .map(([type, count]) => (
-                        <div key={type} className="flex items-center gap-3">
-                          <span className="px-2 py-0.5 bg-theme-primary/20 text-theme-primary text-xs rounded-full uppercase font-bold min-w-[80px] text-center">
-                            {type}
-                          </span>
-                          <div className="flex-1 h-2 bg-theme-bg rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-theme-primary/60 rounded-full transition-all"
-                              style={{
-                                width: `${(count / indexStats.documentCount) * 100}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-xs text-theme-muted font-mono w-12 text-right">
-                            {count}
-                          </span>
-                        </div>
-                      ))}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-theme-muted">
+                        {t("ragDebugger.provider", "Provider")}:
+                      </span>
+                      <span className="ml-2 text-theme-text font-mono">
+                        {indexStats.provider}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-theme-muted">
+                        {t("ragDebugger.saveId", "Save ID")}:
+                      </span>
+                      <span className="ml-2 text-theme-text font-mono">
+                        {indexStats.currentSaveId || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-theme-muted">
+                        {t("ragDebugger.initialized", "Initialized")}:
+                      </span>
+                      <span
+                        className={`ml-2 font-mono ${indexStats.isInitialized ? "text-green-400" : "text-red-400"}`}
+                      >
+                        {indexStats.isInitialized ? "Yes" : "No"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -614,7 +623,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                             />
                           </svg>
-                          {t("ragDebugger.rebuildIndex", "Rebuild Index")}
+                          {t("ragDebugger.rebuildIndex", "Clear Memory")}
                         </>
                       )}
                     </button>

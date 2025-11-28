@@ -48,6 +48,7 @@ import {
   factionMemberSchema,
   factionRelationSchema,
   causalChainStatusSchema,
+  finishTurnSchema,
 } from "./zodSchemas";
 
 export const ID_PREFIXES = {
@@ -1023,180 +1024,15 @@ Use the filtering options to control search scope:
 
 export const FINISH_TURN_TOOL: ZodToolDefinition = {
   name: "finish_turn",
-  description:
-    "Finish the turn and generate the final narrative response. Call this ONLY when you have completed all necessary state queries and modifications.",
-  parameters: z.object({
-    narrative: z.string().describe(
-      `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
+  description: `**RECOMMENDED**: End the current turn and generate the final narrative response.
 
-**MARKDOWN FORMATTING RULES:**
-Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
-Use *italics* for character thoughts, internal monologue, and emphasis.
-Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
-Use --- horizontal rules to separate distinct scenes or time jumps.
-Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
-Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.
+**USAGE**:
+- Call this tool ONLY after completing ALL necessary state queries and modifications.
+- This tool MUST be the LAST tool call in your response. If you call it alongside other tools, the system will automatically reorder it to execute last.
+- Alternatively, you can return a response matching the finish_turn schema directly without calling this tool, but using this tool is recommended for clarity.
 
-**EXAMPLE:**
-> "Who goes there?" the guard challenged.
-
-You step forward into the *flickering torchlight*, revealing yourself. The **Silver Gate** looms before you—the legendary entrance to the forgotten catacombs.
-
-*This is it*, you think. *The moment I've been preparing for.*`,
-    ),
-    choices: z
-      .array(z.string())
-      .min(2)
-      .max(4)
-      .describe(
-        `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
-1. **Knowledge/Cognition**: Only offer choices based on what the character KNOWS. If the player hasn't discovered a secret location, don't offer "Go to the hidden vault".
-2. **Personality/Background**: Choices should reflect the character's personality. A shy scholar might not have "Loudly challenge the guard" as an option.
-3. **Current Conditions**: If the character is injured, exhausted, or under a debuff, choices should reflect limitations. Don't offer "Sprint across the rooftops" if legs are broken.
-4. **Skills & Abilities**: Offer choices that utilize the character's skills. A mage should have magic-based options; a warrior should have combat options.
-5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types (e.g., "Use your latent psychic powers").
-DO NOT include meta-knowledge that only the player (not the character) would know.`,
-      ),
-    imagePrompt: z
-      .string()
-      .optional()
-      .describe(
-        "Optional prompt for generating an image of the current scene.",
-      ),
-    generateImage: z
-      .boolean()
-      .optional()
-      .describe("Whether to generate an image for this turn."),
-    atmosphere: atmosphereSchema
-      .optional()
-      .describe(
-        "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
-      ),
-    narrativeTone: z
-      .string()
-      .optional()
-      .describe(
-        "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
-      ),
-    aliveEntities: z
-      .object({
-        inventory: z
-          .array(z.string())
-          .optional()
-          .describe("Item IDs (inv:N) relevant for next turn."),
-        relationships: z
-          .array(z.string())
-          .optional()
-          .describe("NPC IDs (npc:N) relevant for next turn."),
-        locations: z
-          .array(z.string())
-          .optional()
-          .describe("Location IDs (loc:N) relevant for next turn."),
-        quests: z
-          .array(z.string())
-          .optional()
-          .describe("Quest IDs (quest:N) relevant for next turn."),
-        knowledge: z
-          .array(z.string())
-          .optional()
-          .describe("Knowledge IDs (know:N) relevant for next turn."),
-        timeline: z
-          .array(z.string())
-          .optional()
-          .describe("Event IDs (evt:N) relevant for next turn."),
-        skills: z
-          .array(z.string())
-          .optional()
-          .describe("Character skill IDs relevant for next turn."),
-        conditions: z
-          .array(z.string())
-          .optional()
-          .describe("Character condition IDs relevant for next turn."),
-        hiddenTraits: z
-          .array(z.string())
-          .optional()
-          .describe("Character hidden trait IDs relevant for next turn."),
-        causalChains: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "CausalChain chainIds with pending consequences that may trigger soon.",
-          ),
-      })
-      .optional()
-      .describe(
-        "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context. Only include entities that will LIKELY be referenced again immediately.",
-      ),
-    ending: z
-      .enum([
-        "continue",
-        "death",
-        "victory",
-        "true_ending",
-        "bad_ending",
-        "neutral_ending",
-      ])
-      .describe(
-        `Story continuation status. MUST be set every turn:
-- "continue": Story continues normally (USE THIS IN MOST CASES)
-- "death": Player character dies or suffers irreversible fatal consequence
-- "victory": Main quest goal achieved, story concludes positively
-- "true_ending": Secret/best ending discovered (e.g., hidden path, full truth revealed)
-- "bad_ending": Story concludes with negative outcome (not death, but failure/tragedy)
-- "neutral_ending": Story concludes without clear win/loss
-
-⚠️ CRITICAL RULES - READ CAREFULLY:
-1. DEFAULT TO "continue" - Use this for 99% of turns.
-2. NEVER use endings other than "continue" in the first 5 turns of a game.
-3. 'death' should ONLY occur after the player makes MULTIPLE clearly dangerous choices.
-4. Even fatal situations should give the player a chance to escape or be rescued first.
-5. Injuries, defeats, and setbacks are NOT endings - they are story progression, use "continue".
-
-IMPORTANT: Only use non-continue endings when the narrative EXPLICITLY ends the story.`,
-      ),
-    forceEnd: z
-      .boolean()
-      .optional()
-      .describe(
-        `Only relevant when 'ending' is set. Determines if the game ends permanently:
-- true: Game is OVER. Player cannot continue from this point. Use for death, true_ending, or definitive story conclusions.
-- false/omit: Player can choose to continue despite the ending (e.g., victory but story can continue with aftermath).
-
-⚠️ WARNING: Setting forceEnd: true with death in early game is almost always wrong.
-Consider: Can the character be saved? Is there a healer nearby? Can they be captured instead of killed?
-
-Typical usage:
-- death → forceEnd: true (character is dead) - ONLY after exhausting all survival options
-- victory → forceEnd: false (player might want to explore aftermath)
-- true_ending → forceEnd: true (canonical ending reached)
-- bad_ending → forceEnd: true or false depending on severity
-- neutral_ending → forceEnd: false (open-ended)`,
-      ),
-    ragQueries: z
-      .array(z.string())
-      .optional()
-      .describe(
-        `Semantic search queries to pre-fetch relevant context for the NEXT turn. Use this to prepare important information that might be needed based on the narrative direction. Examples:
-- After mentioning a mysterious artifact: ["ancient artifacts with hidden powers", "cursed items in the kingdom"]
-- Before entering a dungeon: ["dungeon traps and hazards", "creatures that live in underground caves"]
-- When an NPC mentions their past: ["NPC's history and secrets", "related events from timeline"]
-These queries will be used for semantic search to retrieve relevant world knowledge.
-
-NOTE: RAG results may include content from other timeline forks or "future" events (if player forked from a later point). Use ragCurrentForkOnly and ragBeforeCurrentTurn to filter if needed.`,
-      ),
-    ragCurrentForkOnly: z
-      .boolean()
-      .optional()
-      .describe(
-        "If true, next turn's RAG queries will only search within the current timeline branch. Default is false.",
-      ),
-    ragBeforeCurrentTurn: z
-      .boolean()
-      .optional()
-      .describe(
-        "If true, next turn's RAG queries will only search content from before the current turn. Default is false.",
-      ),
-  }),
+**IMPORTANT**: Never return narrative or choices outside of this tool call.`,
+  parameters: finishTurnSchema,
 };
 
 // ============================================================================

@@ -14,11 +14,7 @@ import {
   getStorageEstimate,
   clearDatabase,
 } from "../utils/indexedDB";
-import {
-  resetEmbeddingManager,
-  getEmbeddingManager,
-  initializeEmbeddingManager,
-} from "../services/embedding/embeddingManager";
+import { getRAGService } from "../services/rag";
 
 // Default nextIds structure for recovery
 const DEFAULT_NEXT_IDS = {
@@ -281,24 +277,19 @@ export const useGamePersistence = (
    */
   const saveToSlot = useCallback(async (slotId: string, state: GameState) => {
     try {
-      // Get embedding index if available
-      const embeddingManager = getEmbeddingManager();
-      const embeddingIndex = embeddingManager?.getIndex();
-
-      // Create versioned state with embedding index
+      // Create versioned state
+      // Note: RAG embeddings are now stored in PGlite via the RAG SharedWorker,
+      // not in the game save anymore
       const stateToSave: VersionedGameState = {
         ...state,
         _saveVersion: {
           version: 1,
           createdAt: Date.now(),
         },
-        _embeddingIndex: embeddingIndex || undefined,
       };
 
       await saveGameState(slotId, stateToSave);
-      console.log(
-        `[Persistence] Saved to slot ${slotId}${embeddingIndex ? ` (with ${embeddingIndex.documents.length} embedding docs)` : ""}`,
-      );
+      console.log(`[Persistence] Saved to slot ${slotId}`);
       return true;
     } catch (error) {
       console.error("[Persistence] Manual save failed:", error);
@@ -433,18 +424,15 @@ export const useGamePersistence = (
       try {
         console.log(`[AutoSave] Saving game state (reason: ${saveReason})`);
 
-        // Get embedding index if available
-        const embeddingManager = getEmbeddingManager();
-        const embeddingIndex = embeddingManager?.getIndex();
-
-        // Create versioned state with embedding index
+        // Create versioned state
+        // Note: RAG embeddings are now stored in PGlite via the RAG SharedWorker,
+        // not in the game save anymore
         const stateToSave: VersionedGameState = {
           ...gameState,
           _saveVersion: {
             version: 1,
             createdAt: Date.now(),
           },
-          _embeddingIndex: embeddingIndex || undefined,
         };
 
         // Save game state to IndexedDB
@@ -580,10 +568,17 @@ export const useGamePersistence = (
     try {
       const data = (await loadGameState(id)) as VersionedGameState | null;
       if (data) {
-        // Reset embedding manager when switching saves
-        resetEmbeddingManager();
+        // Switch RAG context to this save
+        // The RAG SharedWorker maintains its own PGlite database,
+        // so we just need to tell it which save we're loading
+        const ragService = getRAGService();
+        if (ragService) {
+          // Will be fully initialized when game starts
+          console.log(`[Persistence] RAG service available for save ${id}`);
+        }
 
         // Extract embedding index before sanitizing (it will be stripped)
+        // Note: This is for backward compatibility - new saves won't have this
         const embeddingIndex = data._embeddingIndex;
 
         const sanitized = sanitizeState(data);

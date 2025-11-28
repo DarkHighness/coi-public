@@ -32,11 +32,7 @@ import {
   type AtmosphereObject,
   normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
-import {
-  resetEmbeddingManager,
-  getEmbeddingManager,
-  initializeEmbeddingManager,
-} from "../services/embedding/embeddingManager";
+import { getRAGService } from "../services/rag";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -274,14 +270,8 @@ export const useGameEngine = () => {
     // Immediately lock
     if (!isInit) processingRef.current = true;
 
-    // Initialize embedding manager if RAG is enabled and not already initialized
-    if (aiSettings.embedding?.enabled) {
-      const existingManager = getEmbeddingManager();
-      if (!existingManager) {
-        console.log("[RAG] Initializing embedding manager...");
-        initializeEmbeddingManager({ settings: aiSettings });
-      }
-    }
+    // RAG is now managed via the SharedWorker service - no need to initialize here
+    // The RAG service should be initialized when the game loads via useRAG hook or App.tsx
 
     const newSegmentId = Date.now().toString();
     const userNodeId = `user-${newSegmentId}`;
@@ -747,62 +737,10 @@ export const useGameEngine = () => {
       // Trigger save immediately after generation
       triggerSave();
 
-      // Background Embedding Update (Silent)
-      if (aiSettings.embedding?.enabled) {
-        // Run in background, don't await
-        const manager = getEmbeddingManager();
-        if (manager) {
-          // We need to identify what changed. For now, we pass the whole state
-          // and let the manager figure it out or just update everything.
-          // Ideally, we would pass changedEntityIds, but for now we'll rely on
-          // the manager's ability to handle updates or we can optimize later.
-          // Actually, updateIndex takes changedEntityIds.
-          // We can construct a list from stateChanges.
-          const changedIds: string[] = [];
-
-          // Helper to extract IDs from actions
-          // Note: The actions in response don't always have IDs, so we might need to rely on
-          // the fact that we have the final state.
-          // A simpler approach for now is to let the manager re-scan or just pass a flag.
-          // But updateIndex requires changedEntityIds.
-          // Let's try to gather some IDs if possible, or pass a special "all" flag if we modify manager.
-          // Since we don't have easy access to IDs here without parsing actions deeply,
-          // and updateIndex is designed for incremental updates...
-          // Let's look at how we can get IDs.
-          // The finalState has the new entities.
-          // We can just pass an empty array and let the manager decide, or we can skip for now
-          // and implement a "scan for changes" method in manager later.
-          // Wait, the user asked for "background embedding updates (silent updates)".
-          // If I pass all entity IDs, it might be too slow.
-          // Let's just pass the IDs of the active node and related entities for now.
-
-          // Actually, let's just use a "smart update" if we can.
-          // For now, I'll pass the IDs of the new model node and user node.
-          changedIds.push(`story:${modelNodeId}`);
-          changedIds.push(`story:${effectiveUserNodeId}`);
-
-          // Add IDs from state changes
-          // This is a bit tricky without exact IDs.
-          // Let's just trigger a full re-scan/update in the background for now,
-          // or better, let's modify updateIndex to accept null to mean "scan all".
-          // But I can't modify manager right now easily without another tool call.
-          // Let's just pass the story nodes for now, as they are the most important context.
-          // And maybe the current location.
-          if (finalState.currentLocation) changedIds.push(`location:${finalState.currentLocation}`);
-
-          // We should also include any entities mentioned in the response?
-          // That's hard to know.
-
-          // Alternative: The EmbeddingManager could have a method `updateFromState(state)`
-          // that diffs with previous state.
-          // For now, let's just update the story nodes and current location.
-          // This is a "good enough" incremental update for the turn.
-
-          manager.updateIndex(finalState, changedIds).catch(err => {
-            console.warn("[RAG] Background update failed:", err);
-          });
-        }
-      }
+      // Background RAG Update (Silent)
+      // Note: RAG updates are now handled automatically by the RAG SharedWorker
+      // when documents are added via aiService.executeRagSearch()
+      // No manual update needed here anymore
 
       return {
         success: true as const,
@@ -851,8 +789,8 @@ export const useGameEngine = () => {
     const slotId = createSaveSlot(selectedTheme);
     setCurrentSlotId(slotId);
 
-    // Reset embedding manager when starting a new game
-    resetEmbeddingManager();
+    // Note: RAG context switching is now handled automatically by the SharedWorker
+    // when switching saves. No manual reset needed here.
 
     // Strict Reset
     resetState(selectedTheme);
@@ -1004,24 +942,9 @@ export const useGameEngine = () => {
       // Generate first turn in the game view
       setTimeout(async () => {
         try {
-          // Initialize RAG embedding manager and build initial index BEFORE first turn
-          if (aiSettings.embedding?.enabled) {
-            console.log("[StartNewGame] Initializing RAG for first turn...");
-            const manager = initializeEmbeddingManager({
-              settings: aiSettings,
-            });
-            try {
-              // Build index from current game state (which now has the outline)
-              await manager.buildIndex(gameStateRef.current);
-              console.log("[StartNewGame] RAG index built successfully");
-            } catch (ragError) {
-              console.warn(
-                "[StartNewGame] Failed to build RAG index, continuing without RAG:",
-                ragError,
-              );
-              // Continue without RAG - it's not critical for game to function
-            }
-          }
+          // RAG initialization is now handled automatically by the SharedWorker
+          // when documents are added. No manual initialization needed.
+          // The RAG service should already be initialized via App.tsx
 
           const prompt = `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`;
 
@@ -1210,12 +1133,7 @@ export const useGameEngine = () => {
       // Generate first turn
       setTimeout(async () => {
         try {
-          if (aiSettings.embedding?.enabled) {
-            const manager = initializeEmbeddingManager({
-              settings: aiSettings,
-            });
-            await manager.buildIndex(gameStateRef.current);
-          }
+          // RAG is now managed by the SharedWorker - no manual initialization needed
 
           const prompt = `Begin the ${theme} story. ${customContext ? `Context: ${customContext}` : ""}`;
           setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
@@ -1252,63 +1170,44 @@ export const useGameEngine = () => {
 
     const result = await loadSlot(id);
     if (result.success) {
-      // Restore embedding index if available and embedding is enabled
+      // RAG context switching is now handled by the SharedWorker
+      // It automatically loads the correct embeddings for the save when switchSave is called
       if (aiSettings.embedding?.enabled) {
-        const currentModelId = aiSettings.embedding.modelId;
-        let indexRestored = false;
-
-        if (result.embeddingIndex) {
-          if (result.savedModelId && result.savedModelId !== currentModelId) {
-            // Model mismatch - prompt user
-            const shouldRebuild = window.confirm(
-              `Embedding model mismatch (Saved: ${result.savedModelId}, Current: ${currentModelId}).\n\n` +
-                `Click OK to rebuild the index (consumes tokens).\n` +
-                `Click Cancel to disable RAG for this session.`,
-            );
-
-            if (shouldRebuild) {
-              console.log("[Embedding] User chose to rebuild index.");
-              // Fall through to rebuild logic below
-            } else {
-              console.log("[Embedding] User chose to disable RAG.");
-              // Disable RAG in settings
-              const newSettings = {
-                ...aiSettings,
-                embedding: { ...aiSettings.embedding, enabled: false },
-              };
-              setAiSettings(newSettings);
-              updateAIConfig(newSettings);
-              // Don't rebuild
-              indexRestored = true; // Pretend restored to skip rebuild block
-            }
-          } else {
-            // Model matches - restore the index
-            try {
-              const manager = initializeEmbeddingManager({
-                settings: aiSettings,
-              });
-              await manager.loadIndex(result.embeddingIndex);
-              console.log(
-                `[Embedding] Restored index with ${result.embeddingIndex.documents.length} documents`,
-              );
-              indexRestored = true;
-            } catch (error) {
-              console.error("[Embedding] Failed to restore index:", error);
-            }
-          }
-        }
-
-        // If no index was restored, build a new one from the loaded game state
-        if (!indexRestored) {
-          console.log("[Embedding] Building new index from game state...");
+        const ragService = getRAGService();
+        if (ragService) {
           try {
-            const manager = initializeEmbeddingManager({
-              settings: aiSettings,
-            });
-            await manager.buildIndex(gameStateRef.current);
-            console.log("[Embedding] Index rebuilt successfully");
+            // Switch RAG context to the loaded save
+            await ragService.switchSave(
+              id,
+              gameStateRef.current.forkId,
+              gameStateRef.current.forkTree
+            );
+            console.log(`[RAG] Switched to save context: ${id}`);
+
+            // Check for model mismatch
+            const mismatchInfo = await ragService.checkModelMismatch();
+            if (mismatchInfo) {
+              const shouldRebuild = window.confirm(
+                `Embedding model mismatch (Saved: ${mismatchInfo.storedModel}, Current: ${mismatchInfo.currentModel}).\n\n` +
+                  `Click OK to rebuild the index (clears existing embeddings).\n` +
+                  `Click Cancel to disable RAG for this session.`
+              );
+
+              if (shouldRebuild) {
+                console.log("[RAG] User chose to rebuild index.");
+                await ragService.rebuildForModel();
+              } else {
+                console.log("[RAG] User chose to disable RAG.");
+                const newSettings = {
+                  ...aiSettings,
+                  embedding: { ...aiSettings.embedding, enabled: false },
+                };
+                setAiSettings(newSettings);
+                updateAIConfig(newSettings);
+              }
+            }
           } catch (error) {
-            console.error("[Embedding] Failed to build index:", error);
+            console.error("[RAG] Failed to switch context:", error);
             // Continue without RAG - not critical
           }
         }

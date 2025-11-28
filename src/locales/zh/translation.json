@@ -147,6 +147,7 @@
   },
   "showChoices": "显示选项",
   "hideChoices": "隐藏选项",
+  "retryGeneration": "重新生成",
   "skills": "技能",
   "emptySkills": "暂未习得技能。",
   "status": "状态",

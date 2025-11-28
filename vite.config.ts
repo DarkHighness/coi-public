@@ -11,6 +11,14 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: "0.0.0.0",
+      headers: {
+        // Required for SharedArrayBuffer (used by PGlite in SharedWorker)
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      },
+    },
+    worker: {
+      format: 'es',
     },
     plugins: [react(), tailwindcss(), ViteToml()],
     define: {
@@ -84,6 +92,10 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes("aiService") || id.includes("schemas")) {
                 return "ai-core";
+              }
+              // RAG service - separate chunk
+              if (id.includes("services/rag/")) {
+                return "rag-service";
               }
             }
 

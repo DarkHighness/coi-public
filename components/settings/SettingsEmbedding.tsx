@@ -5,7 +5,7 @@ import {
   getEmbeddingModels,
   EmbeddingModelInfo,
 } from "../../services/aiService";
-import { EMBEDDING_MODELS } from "../../services/embedding";
+import { EMBEDDING_MODELS } from "../../services/rag";
 
 interface SettingsEmbeddingProps {
   currentSettings: AISettings;
@@ -267,26 +267,52 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                 {t("embedding.lruLimits") || "Resource Limits (LRU)"}
               </div>
 
-              {/* Max Total Documents */}
+              {/* Max Memory Documents */}
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                    {t("embedding.maxTotal") || "Max Total Documents"}
+                    {t("embedding.maxMemory") || "Max In-Memory Documents"}
                   </label>
                   <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxTotalDocuments || 5000}
+                    {config.lru?.maxMemoryDocuments || 1000}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="200"
+                  max="5000"
+                  step="100"
+                  value={config.lru?.maxMemoryDocuments || 1000}
+                  onChange={(e) =>
+                    updateEmbedding("lru", {
+                      ...config.lru,
+                      maxMemoryDocuments: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                />
+              </div>
+
+              {/* Max Storage Documents */}
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("embedding.maxStorage") || "Max Storage Documents"}
+                  </label>
+                  <span className="text-[10px] font-mono text-theme-text">
+                    {config.lru?.maxStorageDocuments || 10000}
                   </span>
                 </div>
                 <input
                   type="range"
                   min="1000"
-                  max="20000"
-                  step="500"
-                  value={config.lru?.maxTotalDocuments || 5000}
+                  max="50000"
+                  step="1000"
+                  value={config.lru?.maxStorageDocuments || 10000}
                   onChange={(e) =>
                     updateEmbedding("lru", {
                       ...config.lru,
-                      maxTotalDocuments: parseInt(e.target.value),
+                      maxStorageDocuments: parseInt(e.target.value),
                     })
                   }
                   className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
@@ -300,15 +326,15 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                     {t("embedding.maxPerType") || "Max Per Type"}
                   </label>
                   <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxDocumentsPerType || 1000}
+                    {config.lru?.maxDocumentsPerType || 2000}
                   </span>
                 </div>
                 <input
                   type="range"
                   min="100"
-                  max="5000"
+                  max="10000"
                   step="100"
-                  value={config.lru?.maxDocumentsPerType || 1000}
+                  value={config.lru?.maxDocumentsPerType || 2000}
                   onChange={(e) =>
                     updateEmbedding("lru", {
                       ...config.lru,
