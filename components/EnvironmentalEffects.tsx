@@ -8,8 +8,7 @@ import {
 
 import React, { useEffect, useState, useMemo } from "react";
 
-// Memory cache for loaded fallback images to prevent repeated requests
-const loadedFallbackCache = new Map<string, string>();
+import { imageLoader } from "../utils/imageLoader";
 
 interface EnvironmentalEffectsProps {
   currentText: string;
@@ -36,6 +35,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   const resolvedAtmosphere = normalizeAtmosphere(atmosphere);
 
   useEffect(() => {
+    // ... effect detection logic (unchanged)
     // Get default effect from atmosphere
     const atmosphereEffect = getEffectForAtmosphere(resolvedAtmosphere);
 
@@ -88,34 +88,29 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
     // If we have a background source, try to load it
     if (bgSource) {
-      // For pollinations.ai images (fallback), check cache first then preload
+      // For pollinations.ai images (fallback), use the imageLoader
       if (isFallback && bgSource.includes("pollinations.ai")) {
-        // Check memory cache first
-        if (loadedFallbackCache.has(bgSource)) {
-          setLoadedBgSource(loadedFallbackCache.get(bgSource)!);
-          return;
-        }
-
-        const img = new Image();
-        img.onload = () => {
-          // Cache the successfully loaded URL
-          loadedFallbackCache.set(bgSource, bgSource);
-          setLoadedBgSource(bgSource);
-        };
-        img.onerror = (e) => {
-          // Silently fail on 429 or any other error from pollinations.ai
-          console.warn(
-            "Failed to load fallback background image (pollinations.ai):",
-            e,
-          );
-          setLoadedBgSource(null);
-        };
-        img.src = bgSource;
+        imageLoader
+          .load(bgSource)
+          .then((url) => {
+            setLoadedBgSource(url);
+          })
+          .catch((err) => {
+            console.warn("Failed to load fallback background image:", err);
+            // Don't clear loadedBgSource on error to keep previous image
+          });
       } else {
-        // For non-fallback images, use them directly
+        // For non-fallback images (local or direct), use them directly
+        // We could also use imageLoader here for consistency, but let's stick to direct set for now
+        // unless we want to cache user uploaded images too?
+        // Let's use imageLoader for everything to ensure smooth loading!
+        // Actually, user images might be local blobs or base64, so maybe just direct set.
         setLoadedBgSource(bgSource);
       }
     } else {
+      // If no background, we might want to keep the old one or clear it?
+      // Clearing it might cause a flash to black/transparent.
+      // Let's clear it if explicitly null.
       setLoadedBgSource(null);
     }
   }, [backgroundImage, fallbackEnabled, resolvedAtmosphere]);
