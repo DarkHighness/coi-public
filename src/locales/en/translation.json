@@ -807,8 +807,6 @@
     "statusActive": "Active",
     "statusNoIndex": "No Index",
     "statusDisabled": "Disabled",
-    "tabSearch": "Search",
-    "tabStats": "Statistics",
     "embeddingDisabled": "RAG/Embedding is disabled in settings",
     "enableInSettings": "Enable it in Settings → Embedding",
     "noIndexYet": "No embedding index available",
@@ -836,7 +834,26 @@
     "storageDocs": "Stored Documents",
     "memoryDocs": "Documents in Memory",
     "recentDocuments": "Recent Documents",
-    "recentDocsHint": "Recent documents are shown when there are no search queries."
+    "recentDocsHint": "Recent documents are shown when there are no search queries.",
+    "tabStatistics": "Statistics",
+    "tabDocuments": "Documents",
+    "allTypes": "All Types",
+    "page": "Page",
+    "noDocsFound": "No documents found",
+    "editDocument": "Edit Document",
+    "confirmDelete": "Are you sure you want to delete this document?",
+    "updateFailed": "Failed to update document",
+    "deleteFailed": "Failed to delete document"
+  },
+  "rag": {
+    "title": "RAG System",
+    "totalDocuments": "Total Documents",
+    "indexing": "Indexing...",
+    "pendingRequests": "Pending Requests",
+    "docs": "docs",
+    "totalDocs": "Total Docs",
+    "pending": "Pending",
+    "idle": "Idle"
   },
   "providers": {
     "configuration": "Provider Configuration",

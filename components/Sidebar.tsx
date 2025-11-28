@@ -12,7 +12,7 @@ import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { SystemFooter } from "./sidebar/SystemFooter";
 import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
 import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
-import { EmbeddingStatusPanel } from "./sidebar/EmbeddingStatusPanel";
+import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 
 interface SidebarProps {
@@ -191,21 +191,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </div>
 
-        {/* Embedding Status Panel (New) */}
-        {embeddingProgress && (
-          <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
-            <EmbeddingStatusPanel
-              progress={embeddingProgress}
-              isExpanded={gameState.uiState?.embeddingExpanded !== false}
-              onToggle={() =>
-                onUpdateUIState(
-                  "embeddingExpanded",
-                  gameState.uiState?.embeddingExpanded === false,
-                )
-              }
-            />
-          </div>
-        )}
+        {/* RAG Panel (New) */}
+        <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
+          <RAGPanel
+            progress={embeddingProgress}
+            themeFont={currentThemeConfig.fontClass}
+          />
+        </div>
       </div>
 
       {/* Status Bar */}

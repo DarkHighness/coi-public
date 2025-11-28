@@ -30,6 +30,7 @@ import {
   type DeleteDocumentsPayload,
   type SearchPayload,
   type GetRecentDocumentsPayload,
+  type GetDocumentsPaginatedPayload,
   type SwitchSavePayload,
   type SearchResult,
   type SaveStats,
@@ -62,6 +63,7 @@ let forkTree: SwitchSavePayload["forkTree"] | null = null;
 let isInitialized = false;
 let isSearching = false;
 let lastError: string | null = null;
+let pendingDocuments = 0; // Number of documents waiting to be indexed
 
 // Connected ports (SharedWorker can have multiple connections)
 const ports: Set<MessagePort> = new Set();
@@ -141,6 +143,11 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
     case "getRecentDocuments":
       return handleGetRecentDocuments(
         request.payload as GetRecentDocumentsPayload,
+      );
+
+    case "getDocumentsPaginated":
+      return handleGetDocumentsPaginated(
+        request.payload as GetDocumentsPaginatedPayload,
       );
 
     case "switchSave":
@@ -229,72 +236,84 @@ async function handleAddDocuments(
     `[RAGWorker] handleAddDocuments: count=${payload.documents.length}, saveId=${payload.documents[0]?.saveId || "N/A"}`,
   );
 
+  // Track pending documents
+  pendingDocuments += payload.documents.length;
+
   const documents: RAGDocument[] = [];
   const now = Date.now();
 
-  for (const doc of payload.documents) {
-    // Generate embedding for document
-    console.log(
-      `[RAGWorker] Generating embedding for: entityId=${doc.entityId}, type=${doc.type}`,
-    );
-    const embedding = await generateEmbedding(doc.content);
+  try {
+    for (const doc of payload.documents) {
+      // Generate embedding for document
+      console.log(
+        `[RAGWorker] Generating embedding for: entityId=${doc.entityId}, type=${doc.type}`,
+      );
+      const embedding = await generateEmbedding(doc.content);
 
-    const ragDoc: RAGDocument = {
-      id: `${doc.saveId}-${doc.entityId}-${now}-${Math.random().toString(36).substr(2, 9)}`,
-      entityId: doc.entityId,
-      type: doc.type,
-      content: doc.content,
-      embedding,
-      saveId: doc.saveId,
-      forkId: doc.forkId,
-      turnNumber: doc.turnNumber,
-      version: 1, // Will be assigned by database
-      embeddingModel: config.modelId,
-      embeddingProvider: config.provider,
-      importance: doc.importance ?? 0.5,
-      unlocked: doc.unlocked ?? false,
-      createdAt: now,
-      lastAccess: now,
-    };
+      const ragDoc: RAGDocument = {
+        id: `${doc.saveId}-${doc.entityId}-${now}-${Math.random().toString(36).substr(2, 9)}`,
+        entityId: doc.entityId,
+        type: doc.type,
+        content: doc.content,
+        embedding,
+        saveId: doc.saveId,
+        forkId: doc.forkId,
+        turnNumber: doc.turnNumber,
+        version: 1, // Will be assigned by database
+        embeddingModel: config.modelId,
+        embeddingProvider: config.provider,
+        importance: doc.importance ?? 0.5,
+        unlocked: doc.unlocked ?? false,
+        createdAt: now,
+        lastAccess: now,
+      };
 
-    documents.push(ragDoc);
-  }
+      documents.push(ragDoc);
 
-  // Check and enforce per-save limits
-  if (documents.length > 0) {
-    const saveId = documents[0].saveId;
-    await database!.enforceSaveLimit(saveId);
-  }
+      // Decrement as each document finishes embedding
+      pendingDocuments--;
+    }
 
-  // Add to database
-  await database!.addDocuments(documents);
+    // Check and enforce per-save limits
+    if (documents.length > 0) {
+      const saveId = documents[0].saveId;
+      await database!.enforceSaveLimit(saveId);
+    }
 
-  console.log(`[RAGWorker] Added ${documents.length} documents to database`);
+    // Add to database
+    await database!.addDocuments(documents);
 
-  // Check global storage overflow
-  const overflow = await database!.checkStorageOverflow();
-  if (overflow) {
+    console.log(`[RAGWorker] Added ${documents.length} documents to database`);
+
+    // Check global storage overflow
+    const overflow = await database!.checkStorageOverflow();
+    if (overflow) {
+      broadcastEvent({
+        type: "storageOverflow",
+        data: overflow,
+      });
+    }
+
+    // Add to cache if from current save
+    if (currentSaveId) {
+      const docsForCurrentSave = documents.filter(
+        (d) => d.saveId === currentSaveId,
+      );
+      cache!.setMany(docsForCurrentSave);
+    }
+
+    // Broadcast update event
     broadcastEvent({
-      type: "storageOverflow",
-      data: overflow,
+      type: "indexUpdated",
+      data: { count: documents.length, saveId: documents[0]?.saveId },
     });
+
+    return { count: documents.length };
+  } catch (error) {
+    // If error occurs, reset pending count for failed documents
+    pendingDocuments = Math.max(0, pendingDocuments - (payload.documents.length - documents.length));
+    throw error;
   }
-
-  // Add to cache if from current save
-  if (currentSaveId) {
-    const docsForCurrentSave = documents.filter(
-      (d) => d.saveId === currentSaveId,
-    );
-    cache!.setMany(docsForCurrentSave);
-  }
-
-  // Broadcast update event
-  broadcastEvent({
-    type: "indexUpdated",
-    data: { count: documents.length, saveId: documents[0]?.saveId },
-  });
-
-  return { count: documents.length };
 }
 
 async function handleUpdateDocument(
@@ -474,6 +493,36 @@ async function handleGetRecentDocuments(
   return docs;
 }
 
+async function handleGetDocumentsPaginated(
+  payload: GetDocumentsPaginatedPayload,
+): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
+  ensureInitialized();
+
+  if (!currentSaveId) {
+    console.log("[RAGWorker] getDocumentsPaginated: No save context set");
+    return { documents: [], total: 0 };
+  }
+
+  const { offset, limit, types } = payload;
+
+  console.log(
+    `[RAGWorker] getDocumentsPaginated: saveId=${currentSaveId}, offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}`,
+  );
+
+  const result = await database!.getDocumentsPaginated(
+    currentSaveId,
+    offset,
+    limit,
+    types,
+  );
+
+  console.log(
+    `[RAGWorker] getDocumentsPaginated: returning ${result.documents.length} of ${result.total} documents`,
+  );
+
+  return result;
+}
+
 async function handleSwitchSave(
   payload: SwitchSavePayload,
 ): Promise<{ success: boolean }> {
@@ -585,6 +634,7 @@ async function handleGetStatus(): Promise<RAGStatus> {
       ? (await database?.getSaveStats(currentSaveId))?.totalDocuments || 0
       : 0,
     isSearching,
+    pending: pendingDocuments,
     lastError,
   };
 }

@@ -558,6 +558,57 @@ export class RAGDatabase {
     return result.rows.map((row) => this.rowToDocumentMeta(row));
   }
 
+  /**
+   * Get paginated documents with total count for efficient pagination
+   */
+  async getDocumentsPaginated(
+    saveId: string,
+    offset: number,
+    limit: number,
+    types?: DocumentType[],
+  ): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    let countQuery: string;
+    let dataQuery: string;
+    let countParams: any[];
+    let dataParams: any[];
+
+    if (types && types.length > 0) {
+      countQuery = `SELECT COUNT(*) as count FROM documents
+                    WHERE save_id = $1 AND type = ANY($2)`;
+      dataQuery = `SELECT * FROM documents
+                   WHERE save_id = $1 AND type = ANY($2)
+                   ORDER BY created_at DESC
+                   LIMIT $3 OFFSET $4`;
+      countParams = [saveId, types];
+      dataParams = [saveId, types, limit, offset];
+    } else {
+      countQuery = `SELECT COUNT(*) as count FROM documents
+                    WHERE save_id = $1`;
+      dataQuery = `SELECT * FROM documents
+                   WHERE save_id = $1
+                   ORDER BY created_at DESC
+                   LIMIT $2 OFFSET $3`;
+      countParams = [saveId];
+      dataParams = [saveId, limit, offset];
+    }
+
+    // Get total count
+    const countResult = await this.db.query<any>(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+
+    // Get paginated data
+    const dataResult = await this.db.query<any>(dataQuery, dataParams);
+    const documents = dataResult.rows.map((row) => this.rowToDocumentMeta(row));
+
+    console.log(
+      `[RAGDatabase] getDocumentsPaginated: saveId=${saveId}, offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}, total=${total}, returned=${documents.length}`,
+    );
+
+    return { documents, total };
+  }
+
   // ==========================================================================
   // LRU and Cleanup
   // ==========================================================================
@@ -581,14 +632,20 @@ export class RAGDatabase {
     for (const type of types) {
       if (type === "outline") continue; // Never delete outlines
 
+      // Use specific limit for story, generic limit for others
+      const limit =
+        type === "story"
+          ? this.config.storyMaxEntries
+          : this.config.maxDocumentsPerType;
+
       const result = await this.db.query<any>(
         `SELECT COUNT(*) as count FROM documents WHERE type = $1`,
         [type],
       );
 
       const count = parseInt(result.rows[0].count);
-      if (count > this.config.maxDocumentsPerType) {
-        const toDelete = count - this.config.maxDocumentsPerType;
+      if (count > limit) {
+        const toDelete = count - limit;
         await this.db.query(
           `DELETE FROM documents WHERE id IN (
             SELECT id FROM documents WHERE type = $1 ORDER BY last_access ASC LIMIT $2

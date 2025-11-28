@@ -89,6 +89,7 @@ export interface RAGConfig {
   maxDocumentsPerSave: number; // Max documents per save (default: 5000)
   maxTotalStorageDocuments: number; // Max total documents across all saves (default: 50000)
   maxDocumentsPerType: number; // Max per type within a save (default: 1000)
+  storyMaxEntries: number; // Max story documents (default: 50)
   maxVersionsPerEntity: number; // Max versions per entity (default: 5)
   maxVersionsAcrossForks: number; // Max versions across different forks (default: 10)
 
@@ -110,6 +111,7 @@ export const DEFAULT_RAG_CONFIG: RAGConfig = {
   maxDocumentsPerSave: 5000,
   maxTotalStorageDocuments: 50000,
   maxDocumentsPerType: 1000,
+  storyMaxEntries: 50,
   maxVersionsPerEntity: 5,
   maxVersionsAcrossForks: 10,
   currentForkBonus: 0.5,
@@ -163,6 +165,7 @@ export type RAGWorkerMessageType =
   | "deleteDocuments"
   | "search"
   | "getRecentDocuments"
+  | "getDocumentsPaginated"
   | "switchSave"
   | "getSaveStats"
   | "getAllSaveStats"
@@ -264,6 +267,16 @@ export interface GetRecentDocumentsPayload {
 }
 
 // ============================================================================
+// Get Documents Paginated Payload
+// ============================================================================
+
+export interface GetDocumentsPaginatedPayload {
+  offset: number; // Number of documents to skip
+  limit: number; // Max documents to return
+  types?: DocumentType[]; // Filter by types
+}
+
+// ============================================================================
 // Switch Save Message
 // ============================================================================
 
@@ -320,6 +333,7 @@ export interface RAGStatus {
   memoryDocuments: number;
   storageDocuments: number;
   isSearching: boolean;
+  pending: number;
   lastError: string | null;
   modelMismatch?: ModelMismatchInfo;
 }

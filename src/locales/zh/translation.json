@@ -786,8 +786,6 @@
     "statusActive": "活跃",
     "statusNoIndex": "无索引",
     "statusDisabled": "已禁用",
-    "tabSearch": "搜索",
-    "tabStats": "统计",
     "embeddingDisabled": "RAG/嵌入功能已在设置中禁用",
     "enableInSettings": "请在 设置 → RAG 中启用",
     "noIndexYet": "暂无嵌入索引",
@@ -815,7 +813,26 @@
     "storageDocs": "存储的文档",
     "memoryDocs": "内存中的文档",
     "recentDocuments": "最近的文档",
-    "recentDocsHint": "当没有查找请求时，将显示最近的文档。"
+    "recentDocsHint": "当没有查找请求时，将显示最近的文档。",
+    "tabStatistics": "统计",
+    "tabDocuments": "文档",
+    "allTypes": "全部类型",
+    "page": "页",
+    "noDocsFound": "未找到文档",
+    "editDocument": "编辑文档",
+    "confirmDelete": "确定要删除此文档吗?",
+    "updateFailed": "更新文档失败",
+    "deleteFailed": "删除文档失败"
+  },
+  "rag": {
+    "title": "RAG 系统",
+    "totalDocuments": "文档总数",
+    "indexing": "索引中...",
+    "pendingRequests": "待处理请求",
+    "docs": "文档",
+    "totalDocs": "文档总数",
+    "pending": "待处理",
+    "idle": "空闲"
   },
   "providers": {
     "configuration": "提供商配置",

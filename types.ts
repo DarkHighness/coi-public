@@ -827,6 +827,9 @@ export interface EmbeddingConfig {
     currentForkBonus?: number; // Priority bonus for current fork (default: 0.5)
     ancestorForkBonus?: number; // Priority bonus for ancestor forks (default: 0.25)
     turnDecayFactor?: number; // Priority loss per turn difference (default: 0.01)
+
+    // Type-specific limits
+    storyMaxEntries?: number; // Max story documents (default: 50)
   };
 }
 

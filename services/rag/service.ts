@@ -245,6 +245,21 @@ export class RAGService {
     return this.sendRequest("getRecentDocuments", { limit, types });
   }
 
+  /**
+   * Get paginated documents with total count (for efficient pagination)
+   */
+  async getDocumentsPaginated(
+    offset: number,
+    limit: number,
+    types?: DocumentType[],
+  ): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
+    this.ensureInitialized();
+    console.log(
+      `[RAGService] getDocumentsPaginated: offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}`,
+    );
+    return this.sendRequest("getDocumentsPaginated", { offset, limit, types });
+  }
+
   // ==========================================================================
   // Save Management
   // ==========================================================================
@@ -323,6 +338,7 @@ export class RAGService {
         memoryDocuments: 0,
         storageDocuments: 0,
         isSearching: false,
+        pending: 0,
         lastError: null,
       };
     }
