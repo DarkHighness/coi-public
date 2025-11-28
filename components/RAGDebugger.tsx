@@ -96,7 +96,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       const ragService = getRAGService();
       if (!ragService) {
         setError(
-          t("ragDebugger.noEmbeddingManager", "RAG service not initialized")
+          t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
         );
         setIsSearching(false);
         return;
@@ -140,7 +140,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
               turnNumber: r.document.turnNumber,
               importance: r.document.importance,
             },
-          }))
+          })),
         );
       } else {
         setResults([]);
@@ -149,7 +149,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       console.error("RAG Search failed:", err);
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(
-        t("ragDebugger.searchFailed", "Search failed") + ": " + errorMessage
+        t("ragDebugger.searchFailed", "Search failed") + ": " + errorMessage,
       );
     } finally {
       setIsSearching(false);
@@ -175,7 +175,8 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(
         t("ragDebugger.rebuildFailed", "Failed to rebuild index") +
-          ": " + errorMessage
+          ": " +
+          errorMessage,
       );
     } finally {
       setIsRebuildingIndex(false);
@@ -274,7 +275,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t(
                     "ragDebugger.searchPlaceholder",
-                    "Enter search query..."
+                    "Enter search query...",
                   )}
                   className="flex-1 bg-theme-surface border border-theme-border rounded-lg px-4 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
                   autoFocus
@@ -323,7 +324,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                     <span>
                       {t(
                         "ragDebugger.beforeCurrentTurn",
-                        "Before Current Turn"
+                        "Before Current Turn",
                       )}
                     </span>
                     <span className="text-theme-muted text-xs">
@@ -343,13 +344,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <p>
                     {t(
                       "ragDebugger.embeddingDisabled",
-                      "RAG/Embedding is disabled in settings"
+                      "RAG/Embedding is disabled in settings",
                     )}
                   </p>
                   <p className="text-xs mt-2">
                     {t(
                       "ragDebugger.enableInSettings",
-                      "Enable it in Settings → Embedding"
+                      "Enable it in Settings → Embedding",
                     )}
                   </p>
                 </div>
@@ -360,13 +361,13 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <p>
                     {t(
                       "ragDebugger.noIndexYet",
-                      "No embedding index available"
+                      "No embedding index available",
                     )}
                   </p>
                   <p className="text-xs mt-2">
                     {t(
                       "ragDebugger.indexWillBuild",
-                      "Index will be built when you continue playing"
+                      "Index will be built when you continue playing",
                     )}
                   </p>
                   {gameState && (
@@ -391,7 +392,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                   <div className="text-center text-theme-muted py-8">
                     {t(
                       "ragDebugger.noResults",
-                      "Enter a query to search the embedding index"
+                      "Enter a query to search the embedding index",
                     )}
                   </div>
                 )}
@@ -458,7 +459,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 <p>
                   {t(
                     "ragDebugger.embeddingDisabled",
-                    "RAG/Embedding is disabled"
+                    "RAG/Embedding is disabled",
                   )}
                 </p>
               </div>
@@ -467,7 +468,7 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                 <p>
                   {t(
                     "ragDebugger.noIndexStats",
-                    "No index statistics available"
+                    "No index statistics available",
                   )}
                 </p>
                 {gameState && (
@@ -515,7 +516,8 @@ export const RAGDebugger: React.FC<RAGDebuggerProps> = ({
                       className="text-sm font-bold text-theme-primary truncate"
                       title={indexStats.modelId}
                     >
-                      {indexStats.modelId.split("/").pop() || indexStats.modelId}
+                      {indexStats.modelId.split("/").pop() ||
+                        indexStats.modelId}
                     </div>
                     <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
                       {t("ragDebugger.model", "Embedding Model")}

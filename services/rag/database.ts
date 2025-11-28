@@ -5,8 +5,8 @@
  * Stores data in IndexedDB for persistence
  */
 
-import { PGlite } from '@electric-sql/pglite';
-import { vector } from '@electric-sql/pglite/vector';
+import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
 import type {
   RAGDocument,
   RAGDocumentMeta,
@@ -17,7 +17,7 @@ import type {
   GlobalStorageStats,
   ModelMismatchInfo,
   StorageOverflowInfo,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // Database Schema
@@ -114,7 +114,7 @@ export class RAGDatabase {
     try {
       // Initialize PGlite with IndexedDB persistence and vector extension
       this.db = new PGlite(`idb://${this.config.dbName}`, {
-        extensions: { vector }
+        extensions: { vector },
       });
 
       // Wait for database to be ready
@@ -136,9 +136,9 @@ export class RAGDatabase {
       await this.ensureVectorDimensions();
 
       this.initialized = true;
-      console.log('[RAGDatabase] Initialized successfully');
+      console.log("[RAGDatabase] Initialized successfully");
     } catch (error) {
-      console.error('[RAGDatabase] Initialization failed:', error);
+      console.error("[RAGDatabase] Initialization failed:", error);
       throw error;
     }
   }
@@ -154,12 +154,16 @@ export class RAGDatabase {
   // ==========================================================================
 
   async addDocument(doc: RAGDocument): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const now = Date.now();
 
     // Get next version for this entity
-    const version = await this.getNextVersion(doc.entityId, doc.saveId, doc.forkId);
+    const version = await this.getNextVersion(
+      doc.entityId,
+      doc.saveId,
+      doc.forkId,
+    );
 
     // Insert document with model info
     await this.db.query(
@@ -171,9 +175,22 @@ export class RAGDatabase {
          importance = EXCLUDED.importance,
          unlocked = EXCLUDED.unlocked,
          last_access = EXCLUDED.last_access`,
-      [doc.id, doc.entityId, doc.type, doc.content, doc.saveId, doc.forkId,
-       doc.turnNumber, version, doc.embeddingModel, doc.embeddingProvider,
-       doc.importance, doc.unlocked, now, now]
+      [
+        doc.id,
+        doc.entityId,
+        doc.type,
+        doc.content,
+        doc.saveId,
+        doc.forkId,
+        doc.turnNumber,
+        version,
+        doc.embeddingModel,
+        doc.embeddingProvider,
+        doc.importance,
+        doc.unlocked,
+        now,
+        now,
+      ],
     );
 
     // Insert embedding if provided
@@ -186,24 +203,34 @@ export class RAGDatabase {
       `INSERT INTO entity_versions (entity_id, save_id, fork_id, version, doc_id)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (entity_id, save_id, fork_id, version) DO UPDATE SET doc_id = EXCLUDED.doc_id`,
-      [doc.entityId, doc.saveId, doc.forkId, version, doc.id]
+      [doc.entityId, doc.saveId, doc.forkId, version, doc.id],
     );
 
     // Update save metadata with model info
-    await this.updateSaveMetadata(doc.saveId, doc.forkId, doc.embeddingModel, doc.embeddingProvider);
+    await this.updateSaveMetadata(
+      doc.saveId,
+      doc.forkId,
+      doc.embeddingModel,
+      doc.embeddingProvider,
+    );
 
     // Enforce version limits
     await this.enforceVersionLimits(doc.entityId, doc.saveId, doc.forkId);
   }
 
   async addDocuments(docs: RAGDocument[]): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     // Use transaction for batch insert
     await this.db.transaction(async (tx) => {
       for (const doc of docs) {
         const now = Date.now();
-        const version = await this.getNextVersionTx(tx, doc.entityId, doc.saveId, doc.forkId);
+        const version = await this.getNextVersionTx(
+          tx,
+          doc.entityId,
+          doc.saveId,
+          doc.forkId,
+        );
 
         await tx.query(
           `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version,
@@ -214,17 +241,30 @@ export class RAGDatabase {
              importance = EXCLUDED.importance,
              unlocked = EXCLUDED.unlocked,
              last_access = EXCLUDED.last_access`,
-          [doc.id, doc.entityId, doc.type, doc.content, doc.saveId, doc.forkId,
-           doc.turnNumber, version, doc.embeddingModel, doc.embeddingProvider,
-           doc.importance, doc.unlocked, now, now]
+          [
+            doc.id,
+            doc.entityId,
+            doc.type,
+            doc.content,
+            doc.saveId,
+            doc.forkId,
+            doc.turnNumber,
+            version,
+            doc.embeddingModel,
+            doc.embeddingProvider,
+            doc.importance,
+            doc.unlocked,
+            now,
+            now,
+          ],
         );
 
         if (doc.embedding) {
-          const vectorStr = `[${Array.from(doc.embedding).join(',')}]`;
+          const vectorStr = `[${Array.from(doc.embedding).join(",")}]`;
           await tx.query(
             `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
              ON CONFLICT (doc_id) DO UPDATE SET embedding = EXCLUDED.embedding`,
-            [doc.id, vectorStr]
+            [doc.id, vectorStr],
           );
         }
 
@@ -232,21 +272,30 @@ export class RAGDatabase {
           `INSERT INTO entity_versions (entity_id, save_id, fork_id, version, doc_id)
            VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (entity_id, save_id, fork_id, version) DO UPDATE SET doc_id = EXCLUDED.doc_id`,
-          [doc.entityId, doc.saveId, doc.forkId, version, doc.id]
+          [doc.entityId, doc.saveId, doc.forkId, version, doc.id],
         );
       }
     });
 
     // Update save metadata for unique saves
-    const saveIds = [...new Set(docs.map(d => d.saveId))];
+    const saveIds = [...new Set(docs.map((d) => d.saveId))];
     for (const saveId of saveIds) {
-      const saveDocs = docs.filter(d => d.saveId === saveId);
+      const saveDocs = docs.filter((d) => d.saveId === saveId);
       const firstDoc = saveDocs[0];
-      const forkIds = [...new Set(saveDocs.map(d => d.forkId))];
+      const forkIds = [...new Set(saveDocs.map((d) => d.forkId))];
       for (const forkId of forkIds) {
-        await this.updateSaveMetadata(saveId, forkId, firstDoc.embeddingModel, firstDoc.embeddingProvider);
+        await this.updateSaveMetadata(
+          saveId,
+          forkId,
+          firstDoc.embeddingModel,
+          firstDoc.embeddingProvider,
+        );
         // Enforce version limits for each entity
-        const entityIds = [...new Set(saveDocs.filter(d => d.forkId === forkId).map(d => d.entityId))];
+        const entityIds = [
+          ...new Set(
+            saveDocs.filter((d) => d.forkId === forkId).map((d) => d.entityId),
+          ),
+        ];
         for (const entityId of entityIds) {
           await this.enforceVersionLimits(entityId, saveId, forkId);
         }
@@ -255,25 +304,25 @@ export class RAGDatabase {
   }
 
   async setEmbedding(docId: string, embedding: Float32Array): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
-    const vectorStr = `[${Array.from(embedding).join(',')}]`;
+    const vectorStr = `[${Array.from(embedding).join(",")}]`;
     await this.db.query(
       `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
        ON CONFLICT (doc_id) DO UPDATE SET embedding = EXCLUDED.embedding`,
-      [docId, vectorStr]
+      [docId, vectorStr],
     );
   }
 
   async getDocument(docId: string): Promise<RAGDocument | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT d.*, e.embedding
        FROM documents d
        LEFT JOIN embeddings e ON d.id = e.doc_id
        WHERE d.id = $1`,
-      [docId]
+      [docId],
     );
 
     if (result.rows.length === 0) return null;
@@ -282,32 +331,37 @@ export class RAGDatabase {
     return this.rowToDocument(row);
   }
 
-  async getDocumentsByEntity(entityId: string, saveId: string): Promise<RAGDocumentMeta[]> {
-    if (!this.db) throw new Error('Database not initialized');
+  async getDocumentsByEntity(
+    entityId: string,
+    saveId: string,
+  ): Promise<RAGDocumentMeta[]> {
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT * FROM documents WHERE entity_id = $1 AND save_id = $2 ORDER BY version DESC`,
-      [entityId, saveId]
+      [entityId, saveId],
     );
 
-    return result.rows.map(row => this.rowToDocumentMeta(row));
+    return result.rows.map((row) => this.rowToDocumentMeta(row));
   }
 
   async deleteDocument(docId: string): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     await this.db.query(`DELETE FROM documents WHERE id = $1`, [docId]);
   }
 
   async deleteDocumentsBySave(saveId: string): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query(
       `DELETE FROM documents WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
-    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [saveId]);
+    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [
+      saveId,
+    ]);
 
     return result.affectedRows || 0;
   }
@@ -325,18 +379,15 @@ export class RAGDatabase {
       types?: DocumentType[];
       forkIds?: number[];
       beforeTurn?: number;
-    } = {}
+    } = {},
   ): Promise<SearchResult[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const { topK = 10, threshold = 0.5, types, forkIds, beforeTurn } = options;
 
     // Build query with filters
-    let whereConditions = ['d.save_id = $2'];
-    const params: any[] = [
-      `[${Array.from(queryEmbedding).join(',')}]`,
-      saveId
-    ];
+    let whereConditions = ["d.save_id = $2"];
+    const params: any[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
     let paramIndex = 3;
 
     if (types && types.length > 0) {
@@ -357,7 +408,7 @@ export class RAGDatabase {
       paramIndex++;
     }
 
-    const whereClause = whereConditions.join(' AND ');
+    const whereClause = whereConditions.join(" AND ");
 
     // Vector similarity search using cosine distance
     // PGlite vector uses <=> for cosine distance (1 - similarity)
@@ -370,7 +421,7 @@ export class RAGDatabase {
          AND 1 - (e.embedding <=> $1::vector) >= $${paramIndex}
        ORDER BY e.embedding <=> $1::vector
        LIMIT $${paramIndex + 1}`,
-      [...params, threshold, topK * 2] // Get more than needed for re-ranking
+      [...params, threshold, topK * 2], // Get more than needed for re-ranking
     );
 
     // Update last access time
@@ -378,7 +429,7 @@ export class RAGDatabase {
     if (docIds.length > 0) {
       await this.db.query(
         `UPDATE documents SET last_access = $1 WHERE id = ANY($2)`,
-        [Date.now(), docIds]
+        [Date.now(), docIds],
       );
     }
 
@@ -394,22 +445,29 @@ export class RAGDatabase {
   // ==========================================================================
 
   async getSaveStats(saveId: string): Promise<SaveStats | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const metaResult = await this.db.query<any>(
       `SELECT * FROM save_metadata WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     if (metaResult.rows.length === 0) return null;
 
     const typeResult = await this.db.query<any>(
       `SELECT type, COUNT(*) as count FROM documents WHERE save_id = $1 GROUP BY type`,
-      [saveId]
+      [saveId],
     );
 
     const documentsByType: Record<DocumentType, number> = {
-      story: 0, npc: 0, location: 0, item: 0, knowledge: 0, quest: 0, event: 0, outline: 0
+      story: 0,
+      npc: 0,
+      location: 0,
+      item: 0,
+      knowledge: 0,
+      quest: 0,
+      event: 0,
+      outline: 0,
     };
 
     for (const row of typeResult.rows) {
@@ -427,17 +485,20 @@ export class RAGDatabase {
   }
 
   async getAllSaveIds(): Promise<string[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
-      `SELECT DISTINCT save_id FROM save_metadata ORDER BY last_updated DESC`
+      `SELECT DISTINCT save_id FROM save_metadata ORDER BY last_updated DESC`,
     );
 
     return result.rows.map((r: any) => r.save_id);
   }
 
-  async getDocumentsForSave(saveId: string, limit?: number): Promise<RAGDocumentMeta[]> {
-    if (!this.db) throw new Error('Database not initialized');
+  async getDocumentsForSave(
+    saveId: string,
+    limit?: number,
+  ): Promise<RAGDocumentMeta[]> {
+    if (!this.db) throw new Error("Database not initialized");
 
     const query = limit
       ? `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC LIMIT $2`
@@ -446,7 +507,7 @@ export class RAGDatabase {
     const params = limit ? [saveId, limit] : [saveId];
     const result = await this.db.query<any>(query, params);
 
-    return result.rows.map(row => this.rowToDocumentMeta(row));
+    return result.rows.map((row) => this.rowToDocumentMeta(row));
   }
 
   // ==========================================================================
@@ -454,18 +515,27 @@ export class RAGDatabase {
   // ==========================================================================
 
   async enforceStorageLimits(): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     let totalDeleted = 0;
 
     // 1. Enforce per-type limits
-    const types: DocumentType[] = ['story', 'npc', 'location', 'item', 'knowledge', 'quest', 'event', 'outline'];
+    const types: DocumentType[] = [
+      "story",
+      "npc",
+      "location",
+      "item",
+      "knowledge",
+      "quest",
+      "event",
+      "outline",
+    ];
     for (const type of types) {
-      if (type === 'outline') continue; // Never delete outlines
+      if (type === "outline") continue; // Never delete outlines
 
       const result = await this.db.query<any>(
         `SELECT COUNT(*) as count FROM documents WHERE type = $1`,
-        [type]
+        [type],
       );
 
       const count = parseInt(result.rows[0].count);
@@ -475,14 +545,16 @@ export class RAGDatabase {
           `DELETE FROM documents WHERE id IN (
             SELECT id FROM documents WHERE type = $1 ORDER BY last_access ASC LIMIT $2
           )`,
-          [type, toDelete]
+          [type, toDelete],
         );
         totalDeleted += toDelete;
       }
     }
 
     // 2. Enforce global limit
-    const totalResult = await this.db.query<any>(`SELECT COUNT(*) as count FROM documents`);
+    const totalResult = await this.db.query<any>(
+      `SELECT COUNT(*) as count FROM documents`,
+    );
     const totalCount = parseInt(totalResult.rows[0].count);
 
     if (totalCount > this.config.maxTotalStorageDocuments) {
@@ -492,7 +564,7 @@ export class RAGDatabase {
         `DELETE FROM documents WHERE id IN (
           SELECT id FROM documents WHERE type != 'outline' ORDER BY last_access ASC LIMIT $1
         )`,
-        [toDelete]
+        [toDelete],
       );
       totalDeleted += toDelete;
     }
@@ -501,7 +573,7 @@ export class RAGDatabase {
   }
 
   async cleanupOldVersions(): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     // Get entities with too many versions
     const result = await this.db.query<any>(
@@ -509,7 +581,7 @@ export class RAGDatabase {
        FROM entity_versions
        GROUP BY entity_id, save_id, fork_id
        HAVING COUNT(*) > $1`,
-      [this.config.maxVersionsPerEntity]
+      [this.config.maxVersionsPerEntity],
     );
 
     let totalDeleted = 0;
@@ -519,7 +591,7 @@ export class RAGDatabase {
         row.entity_id,
         row.save_id,
         row.fork_id,
-        this.config.maxVersionsPerEntity
+        this.config.maxVersionsPerEntity,
       );
       totalDeleted += deleted;
     }
@@ -531,24 +603,33 @@ export class RAGDatabase {
   // Private Helpers
   // ==========================================================================
 
-  private async getNextVersion(entityId: string, saveId: string, forkId: number): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+  private async getNextVersion(
+    entityId: string,
+    saveId: string,
+    forkId: number,
+  ): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT MAX(version) as max_version FROM entity_versions
        WHERE entity_id = $1 AND save_id = $2 AND fork_id = $3`,
-      [entityId, saveId, forkId]
+      [entityId, saveId, forkId],
     );
 
     return (result.rows[0]?.max_version || 0) + 1;
   }
 
-  private async getNextVersionTx(tx: any, entityId: string, saveId: string, forkId: number): Promise<number> {
-    const result = await tx.query(
+  private async getNextVersionTx(
+    tx: any,
+    entityId: string,
+    saveId: string,
+    forkId: number,
+  ): Promise<number> {
+    const result = (await tx.query(
       `SELECT MAX(version) as max_version FROM entity_versions
        WHERE entity_id = $1 AND save_id = $2 AND fork_id = $3`,
-      [entityId, saveId, forkId]
-    ) as { rows: any[] };
+      [entityId, saveId, forkId],
+    )) as { rows: any[] };
 
     return (result.rows[0]?.max_version || 0) + 1;
   }
@@ -557,13 +638,13 @@ export class RAGDatabase {
     saveId: string,
     forkId: number,
     embeddingModel?: string,
-    embeddingProvider?: string
+    embeddingProvider?: string,
   ): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const countResult = await this.db.query<any>(
       `SELECT COUNT(*) as count FROM documents WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     if (embeddingModel && embeddingProvider) {
@@ -576,7 +657,14 @@ export class RAGDatabase {
            document_count = EXCLUDED.document_count,
            embedding_model = EXCLUDED.embedding_model,
            embedding_provider = EXCLUDED.embedding_provider`,
-        [saveId, forkId, Date.now(), parseInt(countResult.rows[0].count), embeddingModel, embeddingProvider]
+        [
+          saveId,
+          forkId,
+          Date.now(),
+          parseInt(countResult.rows[0].count),
+          embeddingModel,
+          embeddingProvider,
+        ],
       );
     } else {
       await this.db.query(
@@ -586,14 +674,23 @@ export class RAGDatabase {
            current_fork_id = EXCLUDED.current_fork_id,
            last_updated = EXCLUDED.last_updated,
            document_count = EXCLUDED.document_count`,
-        [saveId, forkId, Date.now(), parseInt(countResult.rows[0].count)]
+        [saveId, forkId, Date.now(), parseInt(countResult.rows[0].count)],
       );
     }
   }
 
-  private async enforceVersionLimits(entityId: string, saveId: string, forkId: number): Promise<void> {
+  private async enforceVersionLimits(
+    entityId: string,
+    saveId: string,
+    forkId: number,
+  ): Promise<void> {
     // Delete old versions beyond limit within same fork
-    await this.deleteOldVersions(entityId, saveId, forkId, this.config.maxVersionsPerEntity);
+    await this.deleteOldVersions(
+      entityId,
+      saveId,
+      forkId,
+      this.config.maxVersionsPerEntity,
+    );
 
     // Also enforce cross-fork version limits
     await this.enforceCrossForkVersionLimits(entityId, saveId);
@@ -603,9 +700,9 @@ export class RAGDatabase {
     entityId: string,
     saveId: string,
     forkId: number,
-    keepCount: number
+    keepCount: number,
   ): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query(
       `DELETE FROM documents WHERE id IN (
@@ -614,20 +711,23 @@ export class RAGDatabase {
         ORDER BY version DESC
         OFFSET $4
       )`,
-      [entityId, saveId, forkId, keepCount]
+      [entityId, saveId, forkId, keepCount],
     );
 
     return result.affectedRows || 0;
   }
 
-  private async enforceCrossForkVersionLimits(entityId: string, saveId: string): Promise<void> {
-    if (!this.db) throw new Error('Database not initialized');
+  private async enforceCrossForkVersionLimits(
+    entityId: string,
+    saveId: string,
+  ): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
 
     // Get total versions across all forks
     const result = await this.db.query<any>(
       `SELECT COUNT(*) as count FROM entity_versions
        WHERE entity_id = $1 AND save_id = $2`,
-      [entityId, saveId]
+      [entityId, saveId],
     );
 
     const totalVersions = parseInt(result.rows[0].count);
@@ -643,7 +743,7 @@ export class RAGDatabase {
         ORDER BY d.created_at ASC
         LIMIT $3
       )`,
-      [entityId, saveId, toDelete]
+      [entityId, saveId, toDelete],
     );
   }
 
@@ -658,8 +758,8 @@ export class RAGDatabase {
       forkId: row.fork_id,
       turnNumber: row.turn_number,
       version: row.version,
-      embeddingModel: row.embedding_model || 'text-embedding-004',
-      embeddingProvider: row.embedding_provider || 'gemini',
+      embeddingModel: row.embedding_model || "text-embedding-004",
+      embeddingProvider: row.embedding_provider || "gemini",
       importance: row.importance,
       unlocked: row.unlocked,
       createdAt: row.created_at,
@@ -677,8 +777,8 @@ export class RAGDatabase {
       forkId: row.fork_id,
       turnNumber: row.turn_number,
       version: row.version,
-      embeddingModel: row.embedding_model || 'text-embedding-004',
-      embeddingProvider: row.embedding_provider || 'gemini',
+      embeddingModel: row.embedding_model || "text-embedding-004",
+      embeddingProvider: row.embedding_provider || "gemini",
       importance: row.importance,
       unlocked: row.unlocked,
       createdAt: row.created_at,
@@ -689,9 +789,9 @@ export class RAGDatabase {
   private parseVector(vectorStr: string): Float32Array {
     // PGlite returns vector as string like "[0.1, 0.2, ...]"
     const nums = vectorStr
-      .replace(/[\[\]]/g, '')
-      .split(',')
-      .map(s => parseFloat(s.trim()));
+      .replace(/[\[\]]/g, "")
+      .split(",")
+      .map((s) => parseFloat(s.trim()));
     return new Float32Array(nums);
   }
 
@@ -705,9 +805,9 @@ export class RAGDatabase {
   async checkModelMismatch(
     saveId: string,
     expectedModel: string,
-    expectedProvider: string
+    expectedProvider: string,
   ): Promise<ModelMismatchInfo | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     // Get documents with different model/provider
     const result = await this.db.query<any>(
@@ -717,7 +817,7 @@ export class RAGDatabase {
          AND (embedding_model != $2 OR embedding_provider != $3)
        GROUP BY embedding_model, embedding_provider
        LIMIT 1`,
-      [saveId, expectedModel, expectedProvider]
+      [saveId, expectedModel, expectedProvider],
     );
 
     if (result.rows.length === 0) return null;
@@ -735,20 +835,22 @@ export class RAGDatabase {
   /**
    * Get the model info for a save from its metadata
    */
-  async getSaveModelInfo(saveId: string): Promise<{ model: string; provider: string } | null> {
-    if (!this.db) throw new Error('Database not initialized');
+  async getSaveModelInfo(
+    saveId: string,
+  ): Promise<{ model: string; provider: string } | null> {
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT embedding_model, embedding_provider FROM save_metadata WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     if (result.rows.length === 0) return null;
 
     const row = result.rows[0];
     return {
-      model: row.embedding_model || 'text-embedding-004',
-      provider: row.embedding_provider || 'gemini',
+      model: row.embedding_model || "text-embedding-004",
+      provider: row.embedding_provider || "gemini",
     };
   }
 
@@ -756,17 +858,17 @@ export class RAGDatabase {
    * Delete all documents for a save (for rebuild)
    */
   async clearSaveForRebuild(saveId: string): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query(
       `DELETE FROM documents WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     // Reset save metadata
     await this.db.query(
       `UPDATE save_metadata SET document_count = 0 WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     return result.affectedRows || 0;
@@ -780,10 +882,10 @@ export class RAGDatabase {
    * Check if global storage limit is exceeded
    */
   async checkStorageOverflow(): Promise<StorageOverflowInfo | null> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const totalResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents`
+      `SELECT COUNT(*) as count FROM documents`,
     );
     const totalCount = parseInt(totalResult.rows[0].count);
 
@@ -796,7 +898,7 @@ export class RAGDatabase {
       `SELECT save_id, COUNT(*) as count, MAX(last_access) as last_accessed
        FROM documents
        GROUP BY save_id
-       ORDER BY last_accessed ASC`
+       ORDER BY last_accessed ASC`,
     );
 
     const saveStats = saveStatsResult.rows.map((row: any) => ({
@@ -829,12 +931,14 @@ export class RAGDatabase {
   /**
    * Check if a save exceeds its document limit
    */
-  async checkSaveOverflow(saveId: string): Promise<{ overflow: number; current: number } | null> {
-    if (!this.db) throw new Error('Database not initialized');
+  async checkSaveOverflow(
+    saveId: string,
+  ): Promise<{ overflow: number; current: number } | null> {
+    if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT COUNT(*) as count FROM documents WHERE save_id = $1`,
-      [saveId]
+      [saveId],
     );
 
     const count = parseInt(result.rows[0].count);
@@ -852,22 +956,21 @@ export class RAGDatabase {
    * Delete oldest documents from specific saves
    */
   async deleteOldestFromSaves(saveIds: string[]): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     let totalDeleted = 0;
 
     for (const saveId of saveIds) {
       const result = await this.db.query(
         `DELETE FROM documents WHERE save_id = $1 AND type != 'outline'`,
-        [saveId]
+        [saveId],
       );
       totalDeleted += result.affectedRows || 0;
 
       // Also delete from save_metadata
-      await this.db.query(
-        `DELETE FROM save_metadata WHERE save_id = $1`,
-        [saveId]
-      );
+      await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [
+        saveId,
+      ]);
     }
 
     return totalDeleted;
@@ -877,7 +980,7 @@ export class RAGDatabase {
    * Enforce per-save document limit by evicting oldest non-outline documents
    */
   async enforceSaveLimit(saveId: string): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const overflow = await this.checkSaveOverflow(saveId);
     if (!overflow) return 0;
@@ -890,7 +993,7 @@ export class RAGDatabase {
         ORDER BY last_access ASC
         LIMIT $2
       )`,
-      [saveId, overflow.overflow]
+      [saveId, overflow.overflow],
     );
 
     // Update save metadata
@@ -903,10 +1006,10 @@ export class RAGDatabase {
    * Get global storage statistics
    */
   async getGlobalStats(): Promise<GlobalStorageStats> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) throw new Error("Database not initialized");
 
     const totalResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents`
+      `SELECT COUNT(*) as count FROM documents`,
     );
     const totalDocuments = parseInt(totalResult.rows[0].count);
 
@@ -917,7 +1020,7 @@ export class RAGDatabase {
        LEFT JOIN (
          SELECT save_id, COUNT(*) as actual_count FROM documents GROUP BY save_id
        ) d ON s.save_id = d.save_id
-       ORDER BY s.last_updated DESC`
+       ORDER BY s.last_updated DESC`,
     );
 
     const saves: SaveStats[] = savesResult.rows.map((row: any) => ({

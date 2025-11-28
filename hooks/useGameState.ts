@@ -125,7 +125,7 @@ export const useGameState = () => {
       outlineConversation: undefined,
       // God mode and unlocked mode
       godMode: false,
-      unlockMode: false
+      unlockMode: false,
     });
   };
 

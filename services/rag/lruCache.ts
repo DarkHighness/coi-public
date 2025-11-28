@@ -5,7 +5,12 @@
  * Provides fast access to frequently used documents
  */
 
-import type { RAGDocument, RAGDocumentMeta, RAGConfig, DocumentType } from './types';
+import type {
+  RAGDocument,
+  RAGDocumentMeta,
+  RAGConfig,
+  DocumentType,
+} from "./types";
 
 // ============================================================================
 // LRU Cache Entry
@@ -52,7 +57,9 @@ export class LRUCacheManager {
   switchSave(
     saveId: string,
     forkId: number,
-    forkTree: { nodes: Record<number, { id: number; parentId: number | null }> }
+    forkTree: {
+      nodes: Record<number, { id: number; parentId: number | null }>;
+    },
   ): void {
     // If switching to a different save, clear entire cache
     if (saveId !== this.currentSaveId) {
@@ -212,7 +219,10 @@ export class LRUCacheManager {
   getByType(type: DocumentType): RAGDocument[] {
     const result: RAGDocument[] = [];
     for (const entry of this.cache.values()) {
-      if (entry.document.type === type && entry.document.saveId === this.currentSaveId) {
+      if (
+        entry.document.type === type &&
+        entry.document.saveId === this.currentSaveId
+      ) {
         result.push(entry.document);
       }
     }
@@ -225,7 +235,10 @@ export class LRUCacheManager {
   getByEntityId(entityId: string): RAGDocument[] {
     const result: RAGDocument[] = [];
     for (const entry of this.cache.values()) {
-      if (entry.document.entityId === entityId && entry.document.saveId === this.currentSaveId) {
+      if (
+        entry.document.entityId === entityId &&
+        entry.document.saveId === this.currentSaveId
+      ) {
         result.push(entry.document);
       }
     }
@@ -291,7 +304,8 @@ export class LRUCacheManager {
     if (this.cache.size <= this.config.maxMemoryDocuments) return;
 
     // Calculate priorities for all entries
-    const entries: Array<{ id: string; entry: CacheEntry; priority: number }> = [];
+    const entries: Array<{ id: string; entry: CacheEntry; priority: number }> =
+      [];
     for (const [id, entry] of this.cache) {
       entries.push({
         id,
@@ -308,12 +322,14 @@ export class LRUCacheManager {
     for (let i = 0; i < toEvict; i++) {
       const entry = entries[i];
       // Never evict outline documents
-      if (entry.entry.document.type !== 'outline') {
+      if (entry.entry.document.type !== "outline") {
         this.cache.delete(entry.id);
       }
     }
 
-    console.log(`[LRUCache] Evicted ${toEvict} documents, cache size: ${this.cache.size}`);
+    console.log(
+      `[LRUCache] Evicted ${toEvict} documents, cache size: ${this.cache.size}`,
+    );
   }
 
   /**
@@ -325,7 +341,10 @@ export class LRUCacheManager {
     for (const [id, entry] of this.cache) {
       const forkId = entry.document.forkId;
       // Keep if in current fork lineage or if it's an outline
-      if (!this.ancestorForkIds.has(forkId) && entry.document.type !== 'outline') {
+      if (
+        !this.ancestorForkIds.has(forkId) &&
+        entry.document.type !== "outline"
+      ) {
         toDelete.push(id);
       }
     }
@@ -335,7 +354,9 @@ export class LRUCacheManager {
     }
 
     if (toDelete.length > 0) {
-      console.log(`[LRUCache] Evicted ${toDelete.length} documents from unrelated forks`);
+      console.log(
+        `[LRUCache] Evicted ${toDelete.length} documents from unrelated forks`,
+      );
     }
   }
 
@@ -353,7 +374,14 @@ export class LRUCacheManager {
     hitRate: number;
   } {
     const byType: Record<DocumentType, number> = {
-      story: 0, npc: 0, location: 0, item: 0, knowledge: 0, quest: 0, event: 0, outline: 0
+      story: 0,
+      npc: 0,
+      location: 0,
+      item: 0,
+      knowledge: 0,
+      quest: 0,
+      event: 0,
+      outline: 0,
     };
 
     let totalMemory = 0;

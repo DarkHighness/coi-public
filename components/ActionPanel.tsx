@@ -280,7 +280,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         ></path>
                       </svg>
-                      <span className="hidden sm:inline">{t("retryGeneration")}</span>
+                      <span className="hidden sm:inline">
+                        {t("retryGeneration")}
+                      </span>
                     </button>
                   )}
 
@@ -338,7 +340,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         key={idx}
                         className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
                       >
-
                         <button
                           onClick={() => onAction(label)}
                           className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left"
@@ -349,7 +350,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                              p: ({ children }) => <span className="inline">{children}</span>,
+                              p: ({ children }) => (
+                                <span className="inline">{children}</span>
+                              ),
                               strong: ({ children }) => (
                                 <span className="font-bold">{children}</span>
                               ),

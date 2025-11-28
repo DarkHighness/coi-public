@@ -100,84 +100,84 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-        <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
-          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-            {t("description") || "Description"}
-          </span>
-          <p className="pl-1 mb-2">{k.visible?.description}</p>
+          <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
+            <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+              {t("description") || "Description"}
+            </span>
+            <p className="pl-1 mb-2">{k.visible?.description}</p>
 
-          {k.visible?.details && (
-            <div className="mt-2 pt-2 border-t border-theme-border/30">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                {t("details") || "Details"}
-              </span>
-              <div className="pl-1">
-                <p>{k.visible.details}</p>
+            {k.visible?.details && (
+              <div className="mt-2 pt-2 border-t border-theme-border/30">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                  {t("details") || "Details"}
+                </span>
+                <div className="pl-1">
+                  <p>{k.visible.details}</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Unlocked Hidden Truth */}
-          {k.unlocked && k.hidden?.fullTruth && (
-            <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
-                <svg
-                  className="w-3 h-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {t("hidden.truth")}
-              </span>
-              <p className="leading-relaxed text-theme-text">
-                {k.hidden.fullTruth}
-              </p>
+            {/* Unlocked Hidden Truth */}
+            {k.unlocked && k.hidden?.fullTruth && (
+              <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {t("hidden.truth")}
+                </span>
+                <p className="leading-relaxed text-theme-text">
+                  {k.hidden.fullTruth}
+                </p>
 
-              {k.hidden.misconceptions &&
-                k.hidden.misconceptions.length > 0 && (
+                {k.hidden.misconceptions &&
+                  k.hidden.misconceptions.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary block mb-0.5">
+                        {t("hidden.misconceptions")}:
+                      </span>
+                      <ul className="list-disc list-inside text-red-200/80 space-y-0.5">
+                        {k.hidden.misconceptions.map((misc, i) => (
+                          <li key={i}>{misc}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {k.hidden.toBeRevealed && k.hidden.toBeRevealed.length > 0 && (
                   <div className="mt-2">
-                    <span className="text-[9px] uppercase tracking-wider text-theme-primary block mb-0.5">
-                      {t("hidden.misconceptions")}:
+                    <span className="text-[9px] uppercase tracking-wider text-blue-400/70 block mb-0.5">
+                      {t("hidden.future")}:
                     </span>
-                    <ul className="list-disc list-inside text-red-200/80 space-y-0.5">
-                      {k.hidden.misconceptions.map((misc, i) => (
-                        <li key={i}>{misc}</li>
+                    <ul className="list-disc list-inside text-blue-200/80 space-y-0.5">
+                      {k.hidden.toBeRevealed.map((mystery, i) => (
+                        <li key={i}>{mystery}</li>
                       ))}
                     </ul>
                   </div>
                 )}
+              </div>
+            )}
 
-              {k.hidden.toBeRevealed && k.hidden.toBeRevealed.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-[9px] uppercase tracking-wider text-blue-400/70 block mb-0.5">
-                    {t("hidden.future")}:
-                  </span>
-                  <ul className="list-disc list-inside text-blue-200/80 space-y-0.5">
-                    {k.hidden.toBeRevealed.map((mystery, i) => (
-                      <li key={i}>{mystery}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          {k.discoveredAt && (
-            <div className="mt-2 pt-2 border-t border-theme-border/30 flex justify-between items-center">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
-                {t("knowledgePanel.discovered") || "Discovered"}
-              </span>
-              <span className="text-[10px] text-theme-muted opacity-80">
-                {k.discoveredAt}
-              </span>
-            </div>
-          )}
-        </div>
+            {k.discoveredAt && (
+              <div className="mt-2 pt-2 border-t border-theme-border/30 flex justify-between items-center">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
+                  {t("knowledgePanel.discovered") || "Discovered"}
+                </span>
+                <span className="text-[10px] text-theme-muted opacity-80">
+                  {k.discoveredAt}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

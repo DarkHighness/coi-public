@@ -1180,7 +1180,7 @@ export const useGameEngine = () => {
             await ragService.switchSave(
               id,
               gameStateRef.current.forkId,
-              gameStateRef.current.forkTree
+              gameStateRef.current.forkTree,
             );
             console.log(`[RAG] Switched to save context: ${id}`);
 
@@ -1190,7 +1190,7 @@ export const useGameEngine = () => {
               const shouldRebuild = window.confirm(
                 `Embedding model mismatch (Saved: ${mismatchInfo.storedModel}, Current: ${mismatchInfo.currentModel}).\n\n` +
                   `Click OK to rebuild the index (clears existing embeddings).\n` +
-                  `Click Cancel to disable RAG for this session.`
+                  `Click Cancel to disable RAG for this session.`,
               );
 
               if (shouldRebuild) {

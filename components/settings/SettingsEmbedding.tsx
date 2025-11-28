@@ -369,10 +369,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   }
                   className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
                 />
+              </div>
             </div>
-            </div>
-        </div>
-      </details>
+          </div>
+        </details>
 
         {/* Status Info */}
         <div className="mt-4 p-3 bg-theme-surface-highlight rounded border border-theme-border">

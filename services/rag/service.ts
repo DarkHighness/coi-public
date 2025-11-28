@@ -29,7 +29,7 @@ import {
   type GlobalStorageStats,
   type ModelMismatchEvent,
   type StorageOverflowEvent,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // Event Types
@@ -42,8 +42,11 @@ export interface RAGServiceEvents {
   error: (error: string) => void;
   indexUpdated: (data: { count: number; saveId: string }) => void;
   searchComplete: (results: SearchResult[]) => void;
-  cleanupComplete: (data: { deletedVersions: number; deletedStorage: number }) => void;
-  progress: (data: ProgressEvent['data']) => void;
+  cleanupComplete: (data: {
+    deletedVersions: number;
+    deletedStorage: number;
+  }) => void;
+  progress: (data: ProgressEvent["data"]) => void;
   modelMismatch: (data: ModelMismatchInfo) => void;
   storageOverflow: (data: StorageOverflowInfo) => void;
 }
@@ -56,11 +59,14 @@ export class RAGService {
   private worker: SharedWorker | null = null;
   private port: MessagePort | null = null;
   private requestId = 0;
-  private pendingRequests: Map<string, {
-    resolve: (value: any) => void;
-    reject: (error: Error) => void;
-    timeout: ReturnType<typeof setTimeout>;
-  }> = new Map();
+  private pendingRequests: Map<
+    string,
+    {
+      resolve: (value: any) => void;
+      reject: (error: Error) => void;
+      timeout: ReturnType<typeof setTimeout>;
+    }
+  > = new Map();
   private eventListeners: Map<string, Set<Function>> = new Map();
   private isInitialized = false;
   private initPromise: Promise<void> | null = null;
@@ -78,7 +84,7 @@ export class RAGService {
    */
   async initialize(
     config: Partial<RAGConfig>,
-    credentials: InitPayload['credentials']
+    credentials: InitPayload["credentials"],
   ): Promise<void> {
     if (this.initPromise) {
       return this.initPromise;
@@ -90,29 +96,33 @@ export class RAGService {
 
   private async doInitialize(
     config: Partial<RAGConfig>,
-    credentials: InitPayload['credentials']
+    credentials: InitPayload["credentials"],
   ): Promise<void> {
     // Check SharedWorker support
-    if (typeof SharedWorker === 'undefined') {
-      console.warn('[RAGService] SharedWorker not supported, falling back to inline mode');
+    if (typeof SharedWorker === "undefined") {
+      console.warn(
+        "[RAGService] SharedWorker not supported, falling back to inline mode",
+      );
       // TODO: Implement inline fallback if needed
-      throw new Error('SharedWorker not supported in this browser');
+      throw new Error("SharedWorker not supported in this browser");
     }
 
     // Create SharedWorker
-    this.worker = new SharedWorker(
-      new URL('./worker.ts', import.meta.url),
-      { type: 'module', name: 'rag-worker' }
-    );
+    this.worker = new SharedWorker(new URL("./worker.ts", import.meta.url), {
+      type: "module",
+      name: "rag-worker",
+    });
 
     this.port = this.worker.port;
 
     // Set up message handler
-    this.port.onmessage = (event: MessageEvent<RAGWorkerResponse | RAGEvent>) => {
+    this.port.onmessage = (
+      event: MessageEvent<RAGWorkerResponse | RAGEvent>,
+    ) => {
       const data = event.data;
 
       // Check if it's a response to a request
-      if ('id' in data && 'success' in data) {
+      if ("id" in data && "success" in data) {
         this.handleResponse(data as RAGWorkerResponse);
       } else {
         // It's an event
@@ -121,8 +131,8 @@ export class RAGService {
     };
 
     this.port.onmessageerror = (event) => {
-      console.error('[RAGService] Message error:', event);
-      this.emit('error', 'Worker communication error');
+      console.error("[RAGService] Message error:", event);
+      this.emit("error", "Worker communication error");
     };
 
     this.port.start();
@@ -131,13 +141,13 @@ export class RAGService {
     this.config = { ...DEFAULT_RAG_CONFIG, ...config };
 
     // Initialize worker
-    await this.sendRequest('init', {
+    await this.sendRequest("init", {
       config: this.config,
       credentials,
     } as InitPayload);
 
     this.isInitialized = true;
-    console.log('[RAGService] Initialized successfully');
+    console.log("[RAGService] Initialized successfully");
   }
 
   /**
@@ -155,30 +165,30 @@ export class RAGService {
    * Add documents to the RAG index
    */
   async addDocuments(
-    documents: AddDocumentsPayload['documents']
+    documents: AddDocumentsPayload["documents"],
   ): Promise<{ count: number }> {
     this.ensureInitialized();
-    return this.sendRequest('addDocuments', { documents });
+    return this.sendRequest("addDocuments", { documents });
   }
 
   /**
    * Update a single document (creates new version)
    */
   async updateDocument(
-    params: UpdateDocumentPayload
+    params: UpdateDocumentPayload,
   ): Promise<{ success: boolean }> {
     this.ensureInitialized();
-    return this.sendRequest('updateDocument', params);
+    return this.sendRequest("updateDocument", params);
   }
 
   /**
    * Delete documents
    */
   async deleteDocuments(
-    params: DeleteDocumentsPayload
+    params: DeleteDocumentsPayload,
   ): Promise<{ deleted: number }> {
     this.ensureInitialized();
-    return this.sendRequest('deleteDocuments', params);
+    return this.sendRequest("deleteDocuments", params);
   }
 
   // ==========================================================================
@@ -190,10 +200,10 @@ export class RAGService {
    */
   async search(
     query: string,
-    options: SearchOptions = {}
+    options: SearchOptions = {},
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
-    return this.sendRequest('search', {
+    return this.sendRequest("search", {
       query,
       options,
     } as SearchPayload);
@@ -204,11 +214,11 @@ export class RAGService {
    */
   async searchWithEmbedding(
     queryEmbedding: Float32Array,
-    options: SearchOptions = {}
+    options: SearchOptions = {},
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
-    return this.sendRequest('search', {
-      query: '',
+    return this.sendRequest("search", {
+      query: "",
       queryEmbedding,
       options,
     } as SearchPayload);
@@ -225,10 +235,10 @@ export class RAGService {
   async switchSave(
     saveId: string,
     forkId: number,
-    forkTree: SwitchSavePayload['forkTree']
+    forkTree: SwitchSavePayload["forkTree"],
   ): Promise<{ success: boolean }> {
     this.ensureInitialized();
-    return this.sendRequest('switchSave', {
+    return this.sendRequest("switchSave", {
       saveId,
       forkId,
       forkTree,
@@ -240,7 +250,7 @@ export class RAGService {
    */
   async getSaveStats(saveId?: string): Promise<SaveStats | null> {
     this.ensureInitialized();
-    return this.sendRequest('getSaveStats', { saveId });
+    return this.sendRequest("getSaveStats", { saveId });
   }
 
   /**
@@ -248,7 +258,7 @@ export class RAGService {
    */
   async clearSave(saveId?: string): Promise<{ deleted: number }> {
     this.ensureInitialized();
-    return this.sendRequest('clearSave', { saveId });
+    return this.sendRequest("clearSave", { saveId });
   }
 
   // ==========================================================================
@@ -258,18 +268,23 @@ export class RAGService {
   /**
    * Run cleanup to enforce limits
    */
-  async cleanup(): Promise<{ deletedVersions: number; deletedStorage: number }> {
+  async cleanup(): Promise<{
+    deletedVersions: number;
+    deletedStorage: number;
+  }> {
     this.ensureInitialized();
-    return this.sendRequest('cleanup', {});
+    return this.sendRequest("cleanup", {});
   }
 
   /**
    * Update configuration
    */
-  async updateConfig(config: Partial<RAGConfig>): Promise<{ success: boolean }> {
+  async updateConfig(
+    config: Partial<RAGConfig>,
+  ): Promise<{ success: boolean }> {
     this.config = { ...this.config, ...config };
     if (this.isInitialized) {
-      return this.sendRequest('updateConfig', config);
+      return this.sendRequest("updateConfig", config);
     }
     return { success: true };
   }
@@ -279,7 +294,7 @@ export class RAGService {
    */
   async getStatus(): Promise<RAGStatus> {
     this.ensureInitialized();
-    return this.sendRequest('getStatus', {});
+    return this.sendRequest("getStatus", {});
   }
 
   // ==========================================================================
@@ -292,7 +307,7 @@ export class RAGService {
    */
   async checkModelMismatch(saveId?: string): Promise<ModelMismatchInfo | null> {
     this.ensureInitialized();
-    return this.sendRequest('checkModelMismatch', { saveId });
+    return this.sendRequest("checkModelMismatch", { saveId });
   }
 
   /**
@@ -301,7 +316,7 @@ export class RAGService {
    */
   async rebuildForModel(saveId?: string): Promise<{ deleted: number }> {
     this.ensureInitialized();
-    return this.sendRequest('rebuildForModel', { saveId });
+    return this.sendRequest("rebuildForModel", { saveId });
   }
 
   /**
@@ -309,7 +324,7 @@ export class RAGService {
    */
   async checkStorageOverflow(): Promise<StorageOverflowInfo | null> {
     this.ensureInitialized();
-    return this.sendRequest('checkStorageOverflow', {});
+    return this.sendRequest("checkStorageOverflow", {});
   }
 
   /**
@@ -317,7 +332,7 @@ export class RAGService {
    */
   async deleteOldestSaves(saveIds: string[]): Promise<{ deleted: number }> {
     this.ensureInitialized();
-    return this.sendRequest('deleteOldestSaves', { saveIds });
+    return this.sendRequest("deleteOldestSaves", { saveIds });
   }
 
   /**
@@ -325,7 +340,7 @@ export class RAGService {
    */
   async getAllSaveStats(): Promise<GlobalStorageStats> {
     this.ensureInitialized();
-    return this.sendRequest('getAllSaveStats', {});
+    return this.sendRequest("getAllSaveStats", {});
   }
 
   // ==========================================================================
@@ -337,7 +352,7 @@ export class RAGService {
    */
   on<K extends keyof RAGServiceEvents>(
     event: K,
-    callback: RAGServiceEvents[K]
+    callback: RAGServiceEvents[K],
   ): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
@@ -350,7 +365,7 @@ export class RAGService {
    */
   off<K extends keyof RAGServiceEvents>(
     event: K,
-    callback: RAGServiceEvents[K]
+    callback: RAGServiceEvents[K],
   ): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
@@ -385,7 +400,7 @@ export class RAGService {
     // Cancel all pending requests
     for (const [id, request] of this.pendingRequests) {
       clearTimeout(request.timeout);
-      request.reject(new Error('Service terminated'));
+      request.reject(new Error("Service terminated"));
     }
     this.pendingRequests.clear();
 
@@ -400,7 +415,7 @@ export class RAGService {
     this.isInitialized = false;
     this.initPromise = null;
 
-    console.log('[RAGService] Terminated');
+    console.log("[RAGService] Terminated");
   }
 
   // ==========================================================================
@@ -409,13 +424,13 @@ export class RAGService {
 
   private ensureInitialized(): void {
     if (!this.isInitialized || !this.port) {
-      throw new Error('RAG Service not initialized. Call initialize() first.');
+      throw new Error("RAG Service not initialized. Call initialize() first.");
     }
   }
 
   private async sendRequest<T>(type: string, payload: any): Promise<T> {
     if (!this.port) {
-      throw new Error('Worker port not available');
+      throw new Error("Worker port not available");
     }
 
     const id = `${++this.requestId}`;
@@ -423,7 +438,11 @@ export class RAGService {
     return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id);
-        reject(new Error(`Request ${type} timed out after ${this.REQUEST_TIMEOUT}ms`));
+        reject(
+          new Error(
+            `Request ${type} timed out after ${this.REQUEST_TIMEOUT}ms`,
+          ),
+        );
       }, this.REQUEST_TIMEOUT);
 
       this.pendingRequests.set(id, { resolve, reject, timeout });
@@ -443,38 +462,38 @@ export class RAGService {
     if (response.success) {
       pending.resolve(response.data);
     } else {
-      pending.reject(new Error(response.error || 'Unknown error'));
+      pending.reject(new Error(response.error || "Unknown error"));
     }
   }
 
   private handleEvent(event: RAGEvent): void {
     switch (event.type) {
-      case 'ready':
-        this.emit('ready');
+      case "ready":
+        this.emit("ready");
         break;
-      case 'error':
-        this.emit('error', event.data);
+      case "error":
+        this.emit("error", event.data);
         break;
-      case 'indexUpdated':
-        this.emit('indexUpdated', event.data);
+      case "indexUpdated":
+        this.emit("indexUpdated", event.data);
         break;
-      case 'searchComplete':
-        this.emit('searchComplete', event.data);
+      case "searchComplete":
+        this.emit("searchComplete", event.data);
         break;
-      case 'cleanupComplete':
-        this.emit('cleanupComplete', event.data);
+      case "cleanupComplete":
+        this.emit("cleanupComplete", event.data);
         break;
-      case 'progress':
-        this.emit('progress', event.data);
+      case "progress":
+        this.emit("progress", event.data);
         break;
-      case 'modelMismatch':
-        this.emit('modelMismatch', event.data);
+      case "modelMismatch":
+        this.emit("modelMismatch", event.data);
         break;
-      case 'storageOverflow':
-        this.emit('storageOverflow', event.data);
+      case "storageOverflow":
+        this.emit("storageOverflow", event.data);
         break;
       default:
-        console.warn('[RAGService] Unknown event type:', event.type);
+        console.warn("[RAGService] Unknown event type:", event.type);
     }
   }
 }
@@ -497,7 +516,7 @@ export function getRAGService(): RAGService | null {
  */
 export async function initializeRAGService(
   config: Partial<RAGConfig>,
-  credentials: InitPayload['credentials']
+  credentials: InitPayload["credentials"],
 ): Promise<RAGService> {
   if (ragServiceInstance) {
     // Update config if already initialized

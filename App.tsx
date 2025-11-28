@@ -367,7 +367,9 @@ export default function App() {
           // Note: RAG service initialization is now handled in useGameEngine/useRAG
           // The new RAG service uses PGlite with SharedWorker and handles save switching automatically
           if (aiSettings.embedding?.enabled) {
-            console.log("[ContinueGame] RAG enabled, service will initialize on game start");
+            console.log(
+              "[ContinueGame] RAG enabled, service will initialize on game start",
+            );
           }
 
           // After loading, check the game state and handle appropriately
@@ -397,7 +399,9 @@ export default function App() {
     // Note: RAG service now handles index persistence automatically via PGlite
     // Model mismatch detection is also handled by the new RAG service
     if (aiSettings.embedding?.enabled && result.hasOutline) {
-      console.log("[LoadSlot] RAG enabled, service will handle save context switching");
+      console.log(
+        "[LoadSlot] RAG enabled, service will handle save context switching",
+      );
     }
 
     // Close the save manager

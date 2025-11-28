@@ -18,7 +18,9 @@ export const EmbeddingStatusPanel: React.FC<EmbeddingStatusPanelProps> = ({
   if (!progress) return null;
 
   const percentage =
-    progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+    progress.total > 0
+      ? Math.round((progress.current / progress.total) * 100)
+      : 0;
 
   return (
     <div className="border-t border-theme-border bg-theme-bg/50">

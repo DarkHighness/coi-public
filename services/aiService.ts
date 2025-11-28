@@ -669,14 +669,21 @@ export const generateStoryOutlinePhased = async (
     systemInstruction = getOutlineSystemInstruction(language, isRestricted);
 
     // Inject prompt injections from config
-    const promptInjectionEnabled = currentSettings.extra?.promptInjectionEnabled;
+    const promptInjectionEnabled =
+      currentSettings.extra?.promptInjectionEnabled;
     if (promptInjectionEnabled && promptInjectionData) {
       const loweredModelId = modelId.toLowerCase();
-      console.log(`[PromptInjection] Checking for prompts to inject for model ${modelId}`);
-      const matchedPrompt = promptInjectionData.prompts.find((p) => p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())));
+      console.log(
+        `[PromptInjection] Checking for prompts to inject for model ${modelId}`,
+      );
+      const matchedPrompt = promptInjectionData.prompts.find((p) =>
+        p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())),
+      );
       if (matchedPrompt) {
         systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
-        console.warn(`[PromptInjection] Injecting outline prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")})`);
+        console.warn(
+          `[PromptInjection] Injecting outline prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")})`,
+        );
       }
     }
   }
@@ -1175,15 +1182,18 @@ function processFinishTurnResponse(
 
   // Extract RAG filter flags
   if (finishTurnData.ragCurrentForkOnly !== undefined) {
-    accumulatedResponse.ragCurrentForkOnly = finishTurnData.ragCurrentForkOnly as boolean;
+    accumulatedResponse.ragCurrentForkOnly =
+      finishTurnData.ragCurrentForkOnly as boolean;
   }
   if (finishTurnData.ragBeforeCurrentTurn !== undefined) {
-    accumulatedResponse.ragBeforeCurrentTurn = finishTurnData.ragBeforeCurrentTurn as boolean;
+    accumulatedResponse.ragBeforeCurrentTurn =
+      finishTurnData.ragBeforeCurrentTurn as boolean;
   }
 
   // Extract ending type - "continue" means no ending, story continues
   if (finishTurnData.ending && finishTurnData.ending !== "continue") {
-    accumulatedResponse.ending = finishTurnData.ending as GameResponse["ending"];
+    accumulatedResponse.ending =
+      finishTurnData.ending as GameResponse["ending"];
   }
 
   // Extract forceEnd flag (handle null from OpenAI strict schema)
@@ -1192,9 +1202,8 @@ function processFinishTurnResponse(
   }
 
   // Attach the FINAL STATE from the DB
-  (
-    accumulatedResponse as GameResponse & { finalState: unknown }
-  ).finalState = db.getState();
+  (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
+    db.getState();
 }
 
 export interface TurnContext {
@@ -1239,11 +1248,17 @@ export const generateAdventureTurn = async (
   const promptInjectionEnabled = currentSettings.extra?.promptInjectionEnabled;
   if (promptInjectionEnabled && promptInjectionData) {
     const loweredModelId = modelId.toLowerCase();
-    console.log(`[PromptInjection] Checking for prompts to inject for model ${modelId}`);
-    const matchedPrompt = promptInjectionData.prompts.find((p) => p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())));
+    console.log(
+      `[PromptInjection] Checking for prompts to inject for model ${modelId}`,
+    );
+    const matchedPrompt = promptInjectionData.prompts.find((p) =>
+      p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())),
+    );
     if (matchedPrompt) {
       systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
-      console.warn(`[PromptInjection] Injecting prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")}`);
+      console.warn(
+        `[PromptInjection] Injecting prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")}`,
+      );
     }
   }
 
@@ -1498,7 +1513,9 @@ const runAgenticLoop = async (
       let toolCalls: UnifiedToolCallResult[] = functionCalls;
 
       // **REORDER: Ensure finish_turn is the last tool call**
-      const finishTurnIndex = toolCalls.findIndex((tc) => tc.name === "finish_turn");
+      const finishTurnIndex = toolCalls.findIndex(
+        (tc) => tc.name === "finish_turn",
+      );
       if (finishTurnIndex !== -1 && finishTurnIndex !== toolCalls.length - 1) {
         console.log(
           `[Agentic Loop] Reordering finish_turn from position ${finishTurnIndex} to last position`,
@@ -1653,8 +1670,7 @@ const runAgenticLoop = async (
               (sum, log) => sum + (log.toolCalls?.length || 0),
               0,
             ),
-            narrative:
-              accumulatedResponse.narrative?.substring(0, 100) + "...",
+            narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
             choices: accumulatedResponse.choices,
             atmosphere: accumulatedResponse.atmosphere,
           },
@@ -1702,7 +1718,9 @@ const runAgenticLoop = async (
   }
 
   // Max turns reached without finish_turn
-  console.warn(`[Agentic Loop] Max turns (${maxTurns}) reached without finish_turn`);
+  console.warn(
+    `[Agentic Loop] Max turns (${maxTurns}) reached without finish_turn`,
+  );
   return { response: accumulatedResponse, logs: allLogs, usage: totalUsage };
 };
 
@@ -1879,7 +1897,8 @@ async function executeRagSearch(
   if (!ragService) {
     return {
       success: false,
-      error: "RAG search is not available. RAG service has not been initialized.",
+      error:
+        "RAG search is not available. RAG service has not been initialized.",
       hint: "Use query_* tools to search specific entity types instead.",
     };
   }
@@ -1932,9 +1951,7 @@ async function executeRagSearch(
       }
     }
 
-    const combinedContext = results
-      .map((r) => r.document.content)
-      .join("\n\n");
+    const combinedContext = results.map((r) => r.document.content).join("\n\n");
 
     return {
       success: true,

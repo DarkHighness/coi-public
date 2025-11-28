@@ -14,8 +14,8 @@
 
 /// <reference lib="webworker" />
 
-import { RAGDatabase } from './database';
-import { LRUCacheManager } from './lruCache';
+import { RAGDatabase } from "./database";
+import { LRUCacheManager } from "./lruCache";
 import {
   DEFAULT_RAG_CONFIG,
   type RAGConfig,
@@ -36,7 +36,7 @@ import {
   type ModelMismatchInfo,
   type StorageOverflowInfo,
   type GlobalStorageStats,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // SharedWorker Type Definition
@@ -53,10 +53,10 @@ interface SharedWorkerGlobalScope {
 let database: RAGDatabase | null = null;
 let cache: LRUCacheManager | null = null;
 let config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
-let credentials: InitPayload['credentials'] | null = null;
+let credentials: InitPayload["credentials"] | null = null;
 let currentSaveId: string | null = null;
 let currentForkId: number = 0;
-let forkTree: SwitchSavePayload['forkTree'] | null = null;
+let forkTree: SwitchSavePayload["forkTree"] | null = null;
 let isInitialized = false;
 let isSearching = false;
 let lastError: string | null = null;
@@ -87,7 +87,8 @@ self.onconnect = (event: MessageEvent) => {
         data: result,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       lastError = errorMessage;
       response = {
         id: request.id,
@@ -100,12 +101,15 @@ self.onconnect = (event: MessageEvent) => {
   };
 
   port.onmessageerror = (e) => {
-    console.error('[RAGWorker] Message error:', e);
+    console.error("[RAGWorker] Message error:", e);
   };
 
   // Send ready event if already initialized
   if (isInitialized) {
-    port.postMessage({ type: 'ready', data: { initialized: true } } as RAGEvent);
+    port.postMessage({
+      type: "ready",
+      data: { initialized: true },
+    } as RAGEvent);
   }
 
   port.start();
@@ -117,52 +121,52 @@ self.onconnect = (event: MessageEvent) => {
 
 async function handleRequest(request: RAGWorkerRequest): Promise<any> {
   switch (request.type) {
-    case 'init':
+    case "init":
       return handleInit(request.payload as InitPayload);
 
-    case 'addDocuments':
+    case "addDocuments":
       return handleAddDocuments(request.payload as AddDocumentsPayload);
 
-    case 'updateDocument':
+    case "updateDocument":
       return handleUpdateDocument(request.payload as UpdateDocumentPayload);
 
-    case 'deleteDocuments':
+    case "deleteDocuments":
       return handleDeleteDocuments(request.payload as DeleteDocumentsPayload);
 
-    case 'search':
+    case "search":
       return handleSearch(request.payload as SearchPayload);
 
-    case 'switchSave':
+    case "switchSave":
       return handleSwitchSave(request.payload as SwitchSavePayload);
 
-    case 'getSaveStats':
+    case "getSaveStats":
       return handleGetSaveStats(request.payload?.saveId);
 
-    case 'cleanup':
+    case "cleanup":
       return handleCleanup();
 
-    case 'updateConfig':
+    case "updateConfig":
       return handleUpdateConfig(request.payload);
 
-    case 'getStatus':
+    case "getStatus":
       return handleGetStatus();
 
-    case 'clearSave':
+    case "clearSave":
       return handleClearSave(request.payload?.saveId);
 
-    case 'checkModelMismatch':
+    case "checkModelMismatch":
       return handleCheckModelMismatch(request.payload?.saveId);
 
-    case 'rebuildForModel':
+    case "rebuildForModel":
       return handleRebuildForModel(request.payload?.saveId);
 
-    case 'checkStorageOverflow':
+    case "checkStorageOverflow":
       return handleCheckStorageOverflow();
 
-    case 'deleteOldestSaves':
+    case "deleteOldestSaves":
       return handleDeleteOldestSaves(request.payload?.saveIds);
 
-    case 'getAllSaveStats':
+    case "getAllSaveStats":
       return handleGetAllSaveStats();
 
     default:
@@ -196,13 +200,15 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   isInitialized = true;
 
   // Broadcast ready event to all ports
-  broadcastEvent({ type: 'ready', data: { initialized: true } });
+  broadcastEvent({ type: "ready", data: { initialized: true } });
 
-  console.log('[RAGWorker] Initialized successfully');
+  console.log("[RAGWorker] Initialized successfully");
   return { success: true };
 }
 
-async function handleAddDocuments(payload: AddDocumentsPayload): Promise<{ count: number }> {
+async function handleAddDocuments(
+  payload: AddDocumentsPayload,
+): Promise<{ count: number }> {
   ensureInitialized();
 
   const documents: RAGDocument[] = [];
@@ -246,27 +252,31 @@ async function handleAddDocuments(payload: AddDocumentsPayload): Promise<{ count
   const overflow = await database!.checkStorageOverflow();
   if (overflow) {
     broadcastEvent({
-      type: 'storageOverflow',
+      type: "storageOverflow",
       data: overflow,
     });
   }
 
   // Add to cache if from current save
   if (currentSaveId) {
-    const docsForCurrentSave = documents.filter(d => d.saveId === currentSaveId);
+    const docsForCurrentSave = documents.filter(
+      (d) => d.saveId === currentSaveId,
+    );
     cache!.setMany(docsForCurrentSave);
   }
 
   // Broadcast update event
   broadcastEvent({
-    type: 'indexUpdated',
-    data: { count: documents.length, saveId: documents[0]?.saveId }
+    type: "indexUpdated",
+    data: { count: documents.length, saveId: documents[0]?.saveId },
   });
 
   return { count: documents.length };
 }
 
-async function handleUpdateDocument(payload: UpdateDocumentPayload): Promise<{ success: boolean }> {
+async function handleUpdateDocument(
+  payload: UpdateDocumentPayload,
+): Promise<{ success: boolean }> {
   ensureInitialized();
 
   const now = Date.now();
@@ -300,7 +310,9 @@ async function handleUpdateDocument(payload: UpdateDocumentPayload): Promise<{ s
   return { success: true };
 }
 
-async function handleDeleteDocuments(payload: DeleteDocumentsPayload): Promise<{ deleted: number }> {
+async function handleDeleteDocuments(
+  payload: DeleteDocumentsPayload,
+): Promise<{ deleted: number }> {
   ensureInitialized();
 
   let deleted = 0;
@@ -315,7 +327,10 @@ async function handleDeleteDocuments(payload: DeleteDocumentsPayload): Promise<{
     }
   } else if (payload.entityIds) {
     for (const entityId of payload.entityIds) {
-      const docs = await database!.getDocumentsByEntity(entityId, currentSaveId || '');
+      const docs = await database!.getDocumentsByEntity(
+        entityId,
+        currentSaveId || "",
+      );
       for (const doc of docs) {
         await database!.deleteDocument(doc.id);
         cache!.delete(doc.id);
@@ -331,7 +346,7 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   ensureInitialized();
 
   if (!currentSaveId) {
-    throw new Error('No save context set. Call switchSave first.');
+    throw new Error("No save context set. Call switchSave first.");
   }
 
   isSearching = true;
@@ -343,9 +358,10 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
       : await generateEmbedding(payload.query);
 
     // Build ancestor fork IDs for filtering
-    const allowedForkIds = payload.options.currentForkOnly && forkTree
-      ? getAncestorForkIds(currentForkId, forkTree)
-      : undefined;
+    const allowedForkIds =
+      payload.options.currentForkOnly && forkTree
+        ? getAncestorForkIds(currentForkId, forkTree)
+        : undefined;
 
     // Search database
     const results = await database!.searchSimilar(
@@ -357,11 +373,11 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
         types: payload.options.types,
         forkIds: allowedForkIds,
         beforeTurn: payload.options.beforeTurn,
-      }
+      },
     );
 
     // Apply priority adjustments
-    const adjustedResults = results.map(result => {
+    const adjustedResults = results.map((result) => {
       const doc = result.document;
       let adjustedScore = result.score;
 
@@ -406,7 +422,9 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   }
 }
 
-async function handleSwitchSave(payload: SwitchSavePayload): Promise<{ success: boolean }> {
+async function handleSwitchSave(
+  payload: SwitchSavePayload,
+): Promise<{ success: boolean }> {
   ensureInitialized();
 
   currentSaveId = payload.saveId;
@@ -417,7 +435,10 @@ async function handleSwitchSave(payload: SwitchSavePayload): Promise<{ success: 
   cache!.switchSave(payload.saveId, payload.forkId, payload.forkTree);
 
   // Preload documents from this save into cache
-  const docs = await database!.getDocumentsForSave(payload.saveId, config.maxMemoryDocuments);
+  const docs = await database!.getDocumentsForSave(
+    payload.saveId,
+    config.maxMemoryDocuments,
+  );
 
   // Load full documents with embeddings
   const fullDocs: RAGDocument[] = [];
@@ -430,7 +451,9 @@ async function handleSwitchSave(payload: SwitchSavePayload): Promise<{ success: 
 
   cache!.setMany(fullDocs);
 
-  console.log(`[RAGWorker] Switched to save ${payload.saveId}, fork ${payload.forkId}, loaded ${fullDocs.length} documents`);
+  console.log(
+    `[RAGWorker] Switched to save ${payload.saveId}, fork ${payload.forkId}, loaded ${fullDocs.length} documents`,
+  );
 
   return { success: true };
 }
@@ -453,29 +476,47 @@ async function handleGetSaveStats(saveId?: string): Promise<SaveStats | null> {
   return stats;
 }
 
-async function handleCleanup(): Promise<{ deletedVersions: number; deletedStorage: number }> {
+async function handleCleanup(): Promise<{
+  deletedVersions: number;
+  deletedStorage: number;
+}> {
   ensureInitialized();
 
   broadcastEvent({
-    type: 'progress',
-    data: { phase: 'cleanup', current: 0, total: 2, message: 'Cleaning up old versions...' }
+    type: "progress",
+    data: {
+      phase: "cleanup",
+      current: 0,
+      total: 2,
+      message: "Cleaning up old versions...",
+    },
   });
 
   const deletedVersions = await database!.cleanupOldVersions();
 
   broadcastEvent({
-    type: 'progress',
-    data: { phase: 'cleanup', current: 1, total: 2, message: 'Enforcing storage limits...' }
+    type: "progress",
+    data: {
+      phase: "cleanup",
+      current: 1,
+      total: 2,
+      message: "Enforcing storage limits...",
+    },
   });
 
   const deletedStorage = await database!.enforceStorageLimits();
 
-  broadcastEvent({ type: 'cleanupComplete', data: { deletedVersions, deletedStorage } });
+  broadcastEvent({
+    type: "cleanupComplete",
+    data: { deletedVersions, deletedStorage },
+  });
 
   return { deletedVersions, deletedStorage };
 }
 
-async function handleUpdateConfig(newConfig: Partial<RAGConfig>): Promise<{ success: boolean }> {
+async function handleUpdateConfig(
+  newConfig: Partial<RAGConfig>,
+): Promise<{ success: boolean }> {
   config = { ...config, ...newConfig };
   cache?.updateConfig(config);
   return { success: true };
@@ -512,7 +553,9 @@ async function handleClearSave(saveId?: string): Promise<{ deleted: number }> {
   return { deleted };
 }
 
-async function handleCheckModelMismatch(saveId?: string): Promise<ModelMismatchInfo | null> {
+async function handleCheckModelMismatch(
+  saveId?: string,
+): Promise<ModelMismatchInfo | null> {
   ensureInitialized();
 
   const targetSaveId = saveId || currentSaveId;
@@ -521,12 +564,12 @@ async function handleCheckModelMismatch(saveId?: string): Promise<ModelMismatchI
   const mismatch = await database!.checkModelMismatch(
     targetSaveId,
     config.modelId,
-    config.provider
+    config.provider,
   );
 
   if (mismatch) {
     broadcastEvent({
-      type: 'modelMismatch',
+      type: "modelMismatch",
       data: mismatch,
     });
   }
@@ -534,7 +577,9 @@ async function handleCheckModelMismatch(saveId?: string): Promise<ModelMismatchI
   return mismatch;
 }
 
-async function handleRebuildForModel(saveId?: string): Promise<{ deleted: number }> {
+async function handleRebuildForModel(
+  saveId?: string,
+): Promise<{ deleted: number }> {
   ensureInitialized();
 
   const targetSaveId = saveId || currentSaveId;
@@ -549,9 +594,9 @@ async function handleRebuildForModel(saveId?: string): Promise<{ deleted: number
   }
 
   broadcastEvent({
-    type: 'progress',
+    type: "progress",
     data: {
-      phase: 'cleanup',
+      phase: "cleanup",
       current: deleted,
       total: deleted,
       message: `Cleared ${deleted} documents for model rebuild`,
@@ -568,7 +613,7 @@ async function handleCheckStorageOverflow(): Promise<StorageOverflowInfo | null>
 
   if (overflow) {
     broadcastEvent({
-      type: 'storageOverflow',
+      type: "storageOverflow",
       data: overflow,
     });
   }
@@ -576,7 +621,9 @@ async function handleCheckStorageOverflow(): Promise<StorageOverflowInfo | null>
   return overflow;
 }
 
-async function handleDeleteOldestSaves(saveIds?: string[]): Promise<{ deleted: number }> {
+async function handleDeleteOldestSaves(
+  saveIds?: string[],
+): Promise<{ deleted: number }> {
   ensureInitialized();
 
   if (!saveIds || saveIds.length === 0) return { deleted: 0 };
@@ -604,16 +651,16 @@ async function handleGetAllSaveStats(): Promise<GlobalStorageStats> {
 
 async function generateEmbedding(text: string): Promise<Float32Array> {
   if (!credentials) {
-    throw new Error('No credentials configured for embedding generation');
+    throw new Error("No credentials configured for embedding generation");
   }
 
   // Use the appropriate provider based on config
   switch (config.provider) {
-    case 'gemini':
+    case "gemini":
       return generateGeminiEmbedding(text);
-    case 'openai':
+    case "openai":
       return generateOpenAIEmbedding(text);
-    case 'openrouter':
+    case "openrouter":
       return generateOpenRouterEmbedding(text);
     default:
       throw new Error(`Unknown embedding provider: ${config.provider}`);
@@ -622,20 +669,20 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
 
 async function generateGeminiEmbedding(text: string): Promise<Float32Array> {
   const apiKey = credentials?.gemini?.apiKey;
-  if (!apiKey) throw new Error('Gemini API key not configured');
+  if (!apiKey) throw new Error("Gemini API key not configured");
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${config.modelId}:embedContent?key=${apiKey}`,
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: `models/${config.modelId}`,
         content: { parts: [{ text }] },
-        taskType: 'RETRIEVAL_DOCUMENT',
+        taskType: "RETRIEVAL_DOCUMENT",
         ...(config.dimensions && { outputDimensionality: config.dimensions }),
       }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -649,15 +696,15 @@ async function generateGeminiEmbedding(text: string): Promise<Float32Array> {
 
 async function generateOpenAIEmbedding(text: string): Promise<Float32Array> {
   const apiKey = credentials?.openai?.apiKey;
-  if (!apiKey) throw new Error('OpenAI API key not configured');
+  if (!apiKey) throw new Error("OpenAI API key not configured");
 
-  const baseUrl = credentials?.openai?.baseUrl || 'https://api.openai.com/v1';
+  const baseUrl = credentials?.openai?.baseUrl || "https://api.openai.com/v1";
 
   const response = await fetch(`${baseUrl}/embeddings`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: config.modelId,
@@ -675,16 +722,18 @@ async function generateOpenAIEmbedding(text: string): Promise<Float32Array> {
   return new Float32Array(data.data[0].embedding);
 }
 
-async function generateOpenRouterEmbedding(text: string): Promise<Float32Array> {
+async function generateOpenRouterEmbedding(
+  text: string,
+): Promise<Float32Array> {
   const apiKey = credentials?.openrouter?.apiKey;
-  if (!apiKey) throw new Error('OpenRouter API key not configured');
+  if (!apiKey) throw new Error("OpenRouter API key not configured");
 
-  const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
-    method: 'POST',
+  const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://chronicles-of-infinity.app',
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://chronicles-of-infinity.app",
     },
     body: JSON.stringify({
       model: config.modelId,
@@ -707,13 +756,13 @@ async function generateOpenRouterEmbedding(text: string): Promise<Float32Array> 
 
 function ensureInitialized(): void {
   if (!isInitialized || !database || !cache) {
-    throw new Error('RAG Worker not initialized. Call init first.');
+    throw new Error("RAG Worker not initialized. Call init first.");
   }
 }
 
 function getAncestorForkIds(
   forkId: number,
-  tree: { nodes: Record<number, { id: number; parentId: number | null }> }
+  tree: { nodes: Record<number, { id: number; parentId: number | null }> },
 ): number[] {
   const ancestors: number[] = [forkId];
   let currentId: number | null = forkId;

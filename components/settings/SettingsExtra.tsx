@@ -32,7 +32,8 @@ export const SettingsExtra: React.FC<SettingsExtraProps> = ({
             {t("settings.extra.title") || "Extra Settings"}
           </label>
           <p className="text-xs text-theme-muted mt-1 italic">
-            {t("settings.extra.description") || "Additional configuration options"}
+            {t("settings.extra.description") ||
+              "Additional configuration options"}
           </p>
         </div>
       </div>
@@ -42,7 +43,8 @@ export const SettingsExtra: React.FC<SettingsExtraProps> = ({
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.detailedDescription") || "Detailed Descriptions"}
+              {t("settings.extra.detailedDescription") ||
+                "Detailed Descriptions"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.detailedDescriptionHelp") ||
@@ -50,7 +52,9 @@ export const SettingsExtra: React.FC<SettingsExtraProps> = ({
             </div>
           </div>
           <button
-            onClick={() => updateExtra("detailedDescription", !extra.detailedDescription)}
+            onClick={() =>
+              updateExtra("detailedDescription", !extra.detailedDescription)
+            }
             className={`w-10 h-5 rounded-full relative transition-colors ${
               extra.detailedDescription ? "bg-green-500" : "bg-theme-border"
             }`}
@@ -62,7 +66,6 @@ export const SettingsExtra: React.FC<SettingsExtraProps> = ({
             />
           </button>
         </div>
-
 
         {/* Prompt Injection Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
@@ -77,7 +80,10 @@ export const SettingsExtra: React.FC<SettingsExtraProps> = ({
           </div>
           <button
             onClick={() =>
-              updateExtra("promptInjectionEnabled", !extra.promptInjectionEnabled)
+              updateExtra(
+                "promptInjectionEnabled",
+                !extra.promptInjectionEnabled,
+              )
             }
             className={`w-10 h-5 rounded-full relative transition-colors ${
               extra.promptInjectionEnabled ? "bg-green-500" : "bg-theme-border"

@@ -41,7 +41,12 @@ import {
   AIProviderError,
   MalformedToolCallError,
 } from "./types";
-import { compileToolsForOpenAI, createOpenAITool, zodToOpenAIResponseFormat, zodToOpenAISchema } from "../zodCompiler";
+import {
+  compileToolsForOpenAI,
+  createOpenAITool,
+  zodToOpenAIResponseFormat,
+  zodToOpenAISchema,
+} from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 
 // ============================================================================
@@ -283,9 +288,7 @@ export async function generateContent(
     tools,
     tool_choice: tools ? "auto" : undefined,
 
-    response_format: schema
-      ? zodToOpenAIResponseFormat(schema)
-      : undefined,
+    response_format: schema ? zodToOpenAIResponseFormat(schema) : undefined,
   };
 
   let content = "";

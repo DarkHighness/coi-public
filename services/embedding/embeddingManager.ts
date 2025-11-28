@@ -1516,7 +1516,8 @@ export class EmbeddingManager {
       finalDocs = afterTypeEviction
         .slice(0, config.maxStorageDocuments)
         .map((item) => item.doc);
-      globalEvictedCount = afterTypeEviction.length - config.maxStorageDocuments;
+      globalEvictedCount =
+        afterTypeEviction.length - config.maxStorageDocuments;
     } else {
       finalDocs = afterTypeEviction.map((item) => item.doc);
     }

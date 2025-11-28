@@ -5,7 +5,7 @@
  * Supports Gemini, OpenAI, and OpenRouter providers.
  */
 
-import type { RAGConfig } from './types';
+import type { RAGConfig } from "./types";
 
 export interface EmbeddingCredentials {
   gemini?: { apiKey: string };
@@ -22,11 +22,11 @@ export interface EmbeddingResult {
 }
 
 export type EmbeddingTaskType =
-  | 'retrieval_query'
-  | 'retrieval_document'
-  | 'semantic_similarity'
-  | 'classification'
-  | 'clustering';
+  | "retrieval_query"
+  | "retrieval_document"
+  | "semantic_similarity"
+  | "classification"
+  | "clustering";
 
 // ============================================================================
 // Embedding Provider Class
@@ -53,7 +53,7 @@ export class EmbeddingProvider {
    */
   async embed(
     text: string,
-    taskType: EmbeddingTaskType = 'retrieval_document'
+    taskType: EmbeddingTaskType = "retrieval_document",
   ): Promise<Float32Array> {
     const result = await this.embedBatch([text], taskType);
     return result.embeddings[0];
@@ -64,17 +64,17 @@ export class EmbeddingProvider {
    */
   async embedBatch(
     texts: string[],
-    taskType: EmbeddingTaskType = 'retrieval_document'
+    taskType: EmbeddingTaskType = "retrieval_document",
   ): Promise<EmbeddingResult> {
     const { provider } = this.config;
 
     return this.withRetry(async () => {
       switch (provider) {
-        case 'gemini':
+        case "gemini":
           return this.generateGeminiEmbedding(texts, taskType);
-        case 'openai':
+        case "openai":
           return this.generateOpenAIEmbedding(texts, taskType);
-        case 'openrouter':
+        case "openrouter":
           return this.generateOpenRouterEmbedding(texts, taskType);
         default:
           throw new Error(`Unknown embedding provider: ${provider}`);
@@ -86,7 +86,7 @@ export class EmbeddingProvider {
    * Generate embedding for query (search)
    */
   async embedQuery(query: string): Promise<Float32Array> {
-    return this.embed(query, 'retrieval_query');
+    return this.embed(query, "retrieval_query");
   }
 
   // ==========================================================================
@@ -95,11 +95,11 @@ export class EmbeddingProvider {
 
   private async generateGeminiEmbedding(
     texts: string[],
-    taskType: EmbeddingTaskType
+    taskType: EmbeddingTaskType,
   ): Promise<EmbeddingResult> {
     const creds = this.credentials.gemini;
     if (!creds?.apiKey) {
-      throw new Error('Gemini API key not configured');
+      throw new Error("Gemini API key not configured");
     }
 
     const { modelId, dimensions } = this.config;
@@ -110,59 +110,65 @@ export class EmbeddingProvider {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:batchEmbedContents?key=${creds.apiKey}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          requests: texts.map(text => ({
+          requests: texts.map((text) => ({
             model: `models/${modelId}`,
             content: { parts: [{ text }] },
             taskType: geminiTaskType,
             outputDimensionality: dimensions,
           })),
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Gemini embedding failed: ${error.error?.message || response.statusText}`);
+      throw new Error(
+        `Gemini embedding failed: ${error.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
-    const embeddings = data.embeddings.map((e: any) => new Float32Array(e.values));
+    const embeddings = data.embeddings.map(
+      (e: any) => new Float32Array(e.values),
+    );
 
     return { embeddings };
   }
 
   private async generateOpenAIEmbedding(
     texts: string[],
-    taskType: EmbeddingTaskType
+    taskType: EmbeddingTaskType,
   ): Promise<EmbeddingResult> {
     const creds = this.credentials.openai;
     if (!creds?.apiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error("OpenAI API key not configured");
     }
 
     const { modelId, dimensions } = this.config;
-    const baseUrl = creds.baseUrl || 'https://api.openai.com/v1';
+    const baseUrl = creds.baseUrl || "https://api.openai.com/v1";
 
     const response = await fetch(`${baseUrl}/embeddings`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${creds.apiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${creds.apiKey}`,
       },
       body: JSON.stringify({
         model: modelId,
         input: texts,
         dimensions: dimensions,
-        encoding_format: 'float',
+        encoding_format: "float",
       }),
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI embedding failed: ${error.error?.message || response.statusText}`);
+      throw new Error(
+        `OpenAI embedding failed: ${error.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -172,43 +178,50 @@ export class EmbeddingProvider {
 
     return {
       embeddings,
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens,
-        totalTokens: data.usage.total_tokens,
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined,
     };
   }
 
   private async generateOpenRouterEmbedding(
     texts: string[],
-    taskType: EmbeddingTaskType
+    taskType: EmbeddingTaskType,
   ): Promise<EmbeddingResult> {
     const creds = this.credentials.openrouter;
     if (!creds?.apiKey) {
-      throw new Error('OpenRouter API key not configured');
+      throw new Error("OpenRouter API key not configured");
     }
 
     const { modelId, dimensions } = this.config;
 
-    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
-      method: 'POST',
+    const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${creds.apiKey}`,
-        'HTTP-Referer': typeof location !== 'undefined' ? location.origin : 'https://coi.game',
-        'X-Title': 'Chain of Infinity',
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${creds.apiKey}`,
+        "HTTP-Referer":
+          typeof location !== "undefined"
+            ? location.origin
+            : "https://coi.game",
+        "X-Title": "Chain of Infinity",
       },
       body: JSON.stringify({
         model: modelId,
         input: texts,
         dimensions: dimensions,
-        encoding_format: 'float',
+        encoding_format: "float",
       }),
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`OpenRouter embedding failed: ${error.error?.message || response.statusText}`);
+      throw new Error(
+        `OpenRouter embedding failed: ${error.error?.message || response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -218,10 +231,12 @@ export class EmbeddingProvider {
 
     return {
       embeddings,
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens,
-        totalTokens: data.usage.total_tokens,
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens,
+            totalTokens: data.usage.total_tokens,
+          }
+        : undefined,
     };
   }
 
@@ -231,35 +246,35 @@ export class EmbeddingProvider {
 
   private mapToGeminiTaskType(taskType: EmbeddingTaskType): string {
     const mapping: Record<EmbeddingTaskType, string> = {
-      'retrieval_query': 'RETRIEVAL_QUERY',
-      'retrieval_document': 'RETRIEVAL_DOCUMENT',
-      'semantic_similarity': 'SEMANTIC_SIMILARITY',
-      'classification': 'CLASSIFICATION',
-      'clustering': 'CLUSTERING',
+      retrieval_query: "RETRIEVAL_QUERY",
+      retrieval_document: "RETRIEVAL_DOCUMENT",
+      semantic_similarity: "SEMANTIC_SIMILARITY",
+      classification: "CLASSIFICATION",
+      clustering: "CLUSTERING",
     };
-    return mapping[taskType] || 'RETRIEVAL_DOCUMENT';
+    return mapping[taskType] || "RETRIEVAL_DOCUMENT";
   }
 
   private async withRetry<T>(
     fn: () => Promise<T>,
     retries = 3,
-    baseDelay = 1000
+    baseDelay = 1000,
   ): Promise<T> {
     try {
       return await fn();
     } catch (error: any) {
       const isRateLimited =
         error?.status === 429 ||
-        error?.message?.includes('429') ||
-        error?.message?.includes('Too Many Requests') ||
-        error?.message?.includes('rate limit');
+        error?.message?.includes("429") ||
+        error?.message?.includes("Too Many Requests") ||
+        error?.message?.includes("rate limit");
 
       if (retries > 0 && isRateLimited) {
         const delay = baseDelay * Math.pow(2, 3 - retries);
         console.warn(
-          `[EmbeddingProvider] Rate limited. Retrying in ${delay}ms... (${retries} retries left)`
+          `[EmbeddingProvider] Rate limited. Retrying in ${delay}ms... (${retries} retries left)`,
         );
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.withRetry(fn, retries - 1, baseDelay);
       }
       throw error;
@@ -277,23 +292,58 @@ export interface EmbeddingModelInfo {
   dimensions: number;
 }
 
-export const EMBEDDING_MODELS: Record<'gemini' | 'openai' | 'openrouter', EmbeddingModelInfo[]> = {
+export const EMBEDDING_MODELS: Record<
+  "gemini" | "openai" | "openrouter",
+  EmbeddingModelInfo[]
+> = {
   gemini: [
-    { id: 'text-embedding-004', name: 'Gemini Text Embedding 004', dimensions: 768 },
-    { id: 'embedding-001', name: 'Gemini Embedding 001', dimensions: 768 },
+    {
+      id: "text-embedding-004",
+      name: "Gemini Text Embedding 004",
+      dimensions: 768,
+    },
+    { id: "embedding-001", name: "Gemini Embedding 001", dimensions: 768 },
   ],
   openai: [
-    { id: 'text-embedding-3-small', name: 'OpenAI Text Embedding 3 Small', dimensions: 1536 },
-    { id: 'text-embedding-3-large', name: 'OpenAI Text Embedding 3 Large', dimensions: 3072 },
-    { id: 'text-embedding-ada-002', name: 'OpenAI Ada 002', dimensions: 1536 },
+    {
+      id: "text-embedding-3-small",
+      name: "OpenAI Text Embedding 3 Small",
+      dimensions: 1536,
+    },
+    {
+      id: "text-embedding-3-large",
+      name: "OpenAI Text Embedding 3 Large",
+      dimensions: 3072,
+    },
+    { id: "text-embedding-ada-002", name: "OpenAI Ada 002", dimensions: 1536 },
   ],
   openrouter: [
-    { id: 'openai/text-embedding-3-small', name: 'OpenAI Text Embedding 3 Small', dimensions: 1536 },
-    { id: 'openai/text-embedding-3-large', name: 'OpenAI Text Embedding 3 Large', dimensions: 3072 },
-    { id: 'cohere/embed-english-v3.0', name: 'Cohere Embed English v3', dimensions: 1024 },
-    { id: 'cohere/embed-multilingual-v3.0', name: 'Cohere Embed Multilingual v3', dimensions: 1024 },
-    { id: 'google/gecko', name: 'Google Gecko', dimensions: 768 },
-    { id: 'voyage/voyage-large-2', name: 'Voyage Large 2', dimensions: 1536 },
-    { id: 'nomic-ai/nomic-embed-text-v1.5', name: 'Nomic Embed Text v1.5', dimensions: 768 },
+    {
+      id: "openai/text-embedding-3-small",
+      name: "OpenAI Text Embedding 3 Small",
+      dimensions: 1536,
+    },
+    {
+      id: "openai/text-embedding-3-large",
+      name: "OpenAI Text Embedding 3 Large",
+      dimensions: 3072,
+    },
+    {
+      id: "cohere/embed-english-v3.0",
+      name: "Cohere Embed English v3",
+      dimensions: 1024,
+    },
+    {
+      id: "cohere/embed-multilingual-v3.0",
+      name: "Cohere Embed Multilingual v3",
+      dimensions: 1024,
+    },
+    { id: "google/gecko", name: "Google Gecko", dimensions: 768 },
+    { id: "voyage/voyage-large-2", name: "Voyage Large 2", dimensions: 1536 },
+    {
+      id: "nomic-ai/nomic-embed-text-v1.5",
+      name: "Nomic Embed Text v1.5",
+      dimensions: 768,
+    },
   ],
 };

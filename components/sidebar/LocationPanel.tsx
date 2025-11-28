@@ -145,95 +145,95 @@ const LocationItem: React.FC<LocationItemProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-          <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
-            {locationData ? (
-              <div className="space-y-3 text-xs animate-fade-in">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                    {t("description") || "Description"}
-                  </span>
-                  <p className="text-theme-text leading-relaxed pl-1">
-                    {locationData.visible?.description ||
-                      t("noDescription") ||
-                      "No description available."}
-                  </p>
-                </div>
-
-                {/* Unlocked Hidden Secrets */}
-                {locationData.unlocked && (
-                  <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 flex items-center gap-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {t("hidden.secrets")}
+            <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
+              {locationData ? (
+                <div className="space-y-3 text-xs animate-fade-in">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                      {t("description") || "Description"}
                     </span>
-                    {locationData.hidden?.fullDescription && (
-                      <p className="leading-relaxed text-theme-text mb-2">
-                        {locationData.hidden.fullDescription}
-                      </p>
-                    )}
-
-                    {locationData.hidden?.hiddenFeatures &&
-                      locationData.hidden.hiddenFeatures.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                            {t("hidden.features")}:
-                          </span>
-                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                            {locationData.hidden.hiddenFeatures.map(
-                              (feature, i) => (
-                                <li key={i}>{feature}</li>
-                              ),
-                            )}
-                          </ul>
-                        </div>
-                      )}
-
-                    {locationData.hidden?.secrets &&
-                      locationData.hidden.secrets.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                            {t("hidden.secrets")}:
-                          </span>
-                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                            {locationData.hidden.secrets.map((secret, i) => (
-                              <li key={i}>{secret}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                  </div>
-                )}
-
-                {locationData.lore && (
-                  <div className="pt-2 border-t border-theme-border/20 mt-1">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("history")}
-                    </span>
-                    <p className="text-theme-muted italic pl-1">
-                      {locationData.lore}
+                    <p className="text-theme-text leading-relaxed pl-1">
+                      {locationData.visible?.description ||
+                        t("noDescription") ||
+                        "No description available."}
                     </p>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-xs text-theme-muted italic opacity-50">
-                {t("noInfoAvailable")}
-              </div>
-            )}
+
+                  {/* Unlocked Hidden Secrets */}
+                  {locationData.unlocked && (
+                    <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 flex items-center gap-1">
+                        <svg
+                          className="w-3 h-3"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {t("hidden.secrets")}
+                      </span>
+                      {locationData.hidden?.fullDescription && (
+                        <p className="leading-relaxed text-theme-text mb-2">
+                          {locationData.hidden.fullDescription}
+                        </p>
+                      )}
+
+                      {locationData.hidden?.hiddenFeatures &&
+                        locationData.hidden.hiddenFeatures.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                              {t("hidden.features")}:
+                            </span>
+                            <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                              {locationData.hidden.hiddenFeatures.map(
+                                (feature, i) => (
+                                  <li key={i}>{feature}</li>
+                                ),
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                      {locationData.hidden?.secrets &&
+                        locationData.hidden.secrets.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                              {t("hidden.secrets")}:
+                            </span>
+                            <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                              {locationData.hidden.secrets.map((secret, i) => (
+                                <li key={i}>{secret}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {locationData.lore && (
+                    <div className="pt-2 border-t border-theme-border/20 mt-1">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                        {t("history")}
+                      </span>
+                      <p className="text-theme-muted italic pl-1">
+                        {locationData.lore}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-theme-muted italic opacity-50">
+                  {t("noInfoAvailable")}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-          </div>
-        </div>
+      </div>
 
       {isEditMode && (
         <div
@@ -433,31 +433,31 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-        <div className="space-y-3">
-          {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
-              {t("noKnownLocations")}
-            </div>
-          ) : (
-            visibleItems.map((item) => (
-              <LocationItem
-                key={item.id}
-                item={item}
-                expandedLocations={expandedLocations}
-                isEditMode={isEditMode}
-                draggedId={draggedId}
-                onLocationClick={handleLocationClick}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onTogglePin={togglePin}
-                isPinned={isPinned}
-                t={t}
-              />
-            ))
-          )}
-        </div>
+          <div className="space-y-3">
+            {visibleItems.length === 0 ? (
+              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+                {t("noKnownLocations")}
+              </div>
+            ) : (
+              visibleItems.map((item) => (
+                <LocationItem
+                  key={item.id}
+                  item={item}
+                  expandedLocations={expandedLocations}
+                  isEditMode={isEditMode}
+                  draggedId={draggedId}
+                  onLocationClick={handleLocationClick}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                  onTogglePin={togglePin}
+                  isPinned={isPinned}
+                  t={t}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

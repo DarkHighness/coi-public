@@ -599,7 +599,7 @@ import { createOpenRouterTool } from "../zodCompiler";
  */
 function convertToOpenAITools(tools: GenerateContentOptions["tools"]): any[] {
   return (tools || []).map((tool) =>
-    createOpenRouterTool(tool.name, tool.description, tool.parameters)
+    createOpenRouterTool(tool.name, tool.description, tool.parameters),
   );
 }
 

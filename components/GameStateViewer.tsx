@@ -455,31 +455,32 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       {t("gameViewer.influence")}: {faction.visible.influence}
                     </div>
                   )}
-                  {(faction.unlocked || gameState.unlockMode) && faction.hidden && (
-                    <HiddenContent
-                      t={t}
-                      content={
-                        <div className="space-y-1">
-                          {faction.hidden.agenda && (
-                            <p>
-                              <span className="text-theme-warning/60">
-                                {t("gameViewer.secretAgenda")}:
-                              </span>{" "}
-                              {faction.hidden.agenda}
-                            </p>
-                          )}
-                          {faction.hidden.influence && (
-                            <p>
-                              <span className="text-theme-warning/60">
-                                {t("gameViewer.trueInfluence")}:
-                              </span>{" "}
-                              {faction.hidden.influence}
-                            </p>
-                          )}
-                        </div>
-                      }
-                    />
-                  )}
+                  {(faction.unlocked || gameState.unlockMode) &&
+                    faction.hidden && (
+                      <HiddenContent
+                        t={t}
+                        content={
+                          <div className="space-y-1">
+                            {faction.hidden.agenda && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.secretAgenda")}:
+                                </span>{" "}
+                                {faction.hidden.agenda}
+                              </p>
+                            )}
+                            {faction.hidden.influence && (
+                              <p>
+                                <span className="text-theme-warning/60">
+                                  {t("gameViewer.trueInfluence")}:
+                                </span>{" "}
+                                {faction.hidden.influence}
+                              </p>
+                            )}
+                          </div>
+                        }
+                      />
+                    )}
                 </div>
               ))}
             </div>
@@ -539,7 +540,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {char.attributes.map((attr, idx) => (
-                <div key={attr.label || idx} className="flex items-center gap-2">
+                <div
+                  key={attr.label || idx}
+                  className="flex items-center gap-2"
+                >
                   <span className="text-theme-muted text-sm min-w-[80px]">
                     {attr.label}:
                   </span>
@@ -860,7 +864,8 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                               <p>
                                 <span className="text-theme-warning/60">
                                   {t("gameViewer.trueRelationship") ||
-                                    "True Relationship"}:
+                                    "True Relationship"}
+                                  :
                                 </span>{" "}
                                 {rel.hidden.relationshipType}
                               </p>
@@ -1242,7 +1247,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             <div className="space-y-2">
               <InfoRow
                 label={t("embedding.phase") || "Phase"}
-                value={t(`embedding.phase.${embeddingProgress.stage}`) || embeddingProgress.stage}
+                value={
+                  t(`embedding.phase.${embeddingProgress.stage}`) ||
+                  embeddingProgress.stage
+                }
               />
               <InfoRow
                 label={t("embedding.progress") || "Progress"}
@@ -1257,7 +1265,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 <div
                   className="h-full bg-theme-primary transition-all duration-300"
                   style={{
-                    width: `${embeddingProgress.total > 0 ? (embeddingProgress.current / embeddingProgress.total) * 100 : 0}%`
+                    width: `${embeddingProgress.total > 0 ? (embeddingProgress.current / embeddingProgress.total) * 100 : 0}%`,
                   }}
                 />
               </div>
@@ -1265,7 +1273,8 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           </Section>
         ) : (
           <div className="p-4 text-center text-theme-muted italic">
-            {t("gameViewer.noEmbeddingActivity") || "No active embedding tasks."}
+            {t("gameViewer.noEmbeddingActivity") ||
+              "No active embedding tasks."}
           </div>
         )}
       </div>

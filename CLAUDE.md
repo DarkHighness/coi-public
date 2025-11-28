@@ -29,6 +29,7 @@ npx ts-node scripts/addStoryTheme.ts
 ## Architecture
 
 ### Data Flow
+
 ```
 User Input → useGameEngine Hook → aiService.generateAdventureTurn()
     → AI Provider (Gemini/OpenAI/OpenRouter)
@@ -38,16 +39,16 @@ User Input → useGameEngine Hook → aiService.generateAdventureTurn()
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `services/aiService.ts` (70KB) | Unified AI service layer - content generation, agentic loops |
-| `services/prompts.ts` (122KB) | AI prompt templates for story generation |
-| `services/zodSchemas.ts` (44KB) | Zod schemas for AI output validation |
-| `services/tools.ts` (43KB) | Tool definitions for agentic loops |
-| `services/gameDatabase.ts` | Game entity management with unique IDs |
-| `hooks/useGameEngine.ts` (54KB) | Main orchestration hook |
-| `hooks/useGamePersistence.ts` (21KB) | IndexedDB persistence |
-| `types.ts` (25KB) | Application-level TypeScript types |
+| File                                 | Purpose                                                      |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `services/aiService.ts` (70KB)       | Unified AI service layer - content generation, agentic loops |
+| `services/prompts.ts` (122KB)        | AI prompt templates for story generation                     |
+| `services/zodSchemas.ts` (44KB)      | Zod schemas for AI output validation                         |
+| `services/tools.ts` (43KB)           | Tool definitions for agentic loops                           |
+| `services/gameDatabase.ts`           | Game entity management with unique IDs                       |
+| `hooks/useGameEngine.ts` (54KB)      | Main orchestration hook                                      |
+| `hooks/useGamePersistence.ts` (21KB) | IndexedDB persistence                                        |
+| `types.ts` (25KB)                    | Application-level TypeScript types                           |
 
 ### Core Systems
 
@@ -76,23 +77,29 @@ components/
 ## Key Patterns
 
 ### Dual-Layer Entity System
+
 Every game entity (items, NPCs, locations) has:
+
 - `visible`: What the player knows
 - `hidden`: GM-only truth (revealed via `unlocked` flag)
 
 ### Schema Validation
+
 - Zod schemas define AI output structure (`zodSchemas.ts`)
 - `zodCompiler.ts` converts schemas to provider-specific formats
 - Application types in `types.ts` wrap Zod types with system fields
 
 ### State Management
+
 GameState contains:
+
 - `nodes`: Story tree (branching narrative)
 - Entity arrays: inventory, relationships, locations, quests, knowledge, factions, timeline
 - `character`: Player status
 - `currentPhase`: "outline" or "game"
 
 ### Agentic Loop
+
 1. Send context + tools to AI
 2. AI responds with text + tool_calls
 3. System executes tools sequentially

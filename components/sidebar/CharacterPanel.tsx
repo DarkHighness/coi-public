@@ -312,59 +312,62 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         }`}
       >
         <div className="overflow-hidden">
-        <div className="px-2 pb-2 pt-0">
-          <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
-            {skill.visible?.description || t("noDescription") || "No description"}
-          </p>
+          <div className="px-2 pb-2 pt-0">
+            <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
+              {skill.visible?.description ||
+                t("noDescription") ||
+                "No description"}
+            </p>
 
-          {/* Unlocked Hidden Truth */}
-          {skill.unlocked && skill.hidden?.trueDescription && (
-            <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
-              <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
-                <svg
-                  className="w-2.5 h-2.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {t("hidden.truth")}
-              </span>
-              <p className="leading-relaxed text-theme-text text-[10px]">
-                {skill.hidden.trueDescription}
-              </p>
-              {skill.hidden.hiddenEffects &&
-                skill.hidden.hiddenEffects.length > 0 && (
-                  <div className="mt-1.5">
-                    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                      {t("hidden.effects")}:
-                    </span>
-                    <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
-                      {skill.hidden.hiddenEffects.map((effect, i) => (
-                        <li key={i}>{effect}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              {skill.hidden.drawbacks && skill.hidden.drawbacks.length > 0 && (
-                <div className="mt-1.5">
-                  <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                    {t("hidden.drawbacks")}:
-                  </span>
-                  <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
-                    {skill.hidden.drawbacks.map((drawback, i) => (
-                      <li key={i}>{drawback}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            {/* Unlocked Hidden Truth */}
+            {skill.unlocked && skill.hidden?.trueDescription && (
+              <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
+                <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {t("hidden.truth")}
+                </span>
+                <p className="leading-relaxed text-theme-text text-[10px]">
+                  {skill.hidden.trueDescription}
+                </p>
+                {skill.hidden.hiddenEffects &&
+                  skill.hidden.hiddenEffects.length > 0 && (
+                    <div className="mt-1.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("hidden.effects")}:
+                      </span>
+                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                        {skill.hidden.hiddenEffects.map((effect, i) => (
+                          <li key={i}>{effect}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {skill.hidden.drawbacks &&
+                  skill.hidden.drawbacks.length > 0 && (
+                    <div className="mt-1.5">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("hidden.drawbacks")}:
+                      </span>
+                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                        {skill.hidden.drawbacks.map((drawback, i) => (
+                          <li key={i}>{drawback}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
