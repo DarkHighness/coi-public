@@ -68,6 +68,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
     >
       <InventoryItemHeader
         name={item.name}
+        icon={item.icon}
         isOpen={isOpen}
         isHighlight={isHighlight}
         onClick={handleClick}

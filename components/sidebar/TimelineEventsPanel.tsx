@@ -93,6 +93,7 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
                   )}
                 </div>
                 <div className="text-xs text-theme-text/90 leading-snug break-words whitespace-normal">
+                  {event.icon && <span className="mr-1">{event.icon}</span>}
                   {event.visible.description}
                 </div>
                 {event.visible.causedBy && (

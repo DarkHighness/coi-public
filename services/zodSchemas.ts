@@ -90,7 +90,7 @@ export const inventoryItemSchema = z.object({
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.optional(),
   lore: z.string().optional().describe("Brief lore or history of the item."),
-  icon: z.string().optional().describe("Icon identifier for the item."),
+  icon: z.string().optional().describe("A single emoji representing this item."),
   unlocked: z
     .boolean()
     .optional()
@@ -198,6 +198,7 @@ export const relationshipSchema = z.object({
     .describe(
       "AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, or psychic tech.",
     ),
+  icon: z.string().optional().describe("A single emoji representing this character."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
@@ -250,6 +251,7 @@ export const locationSchema = z.object({
     .describe(
       "AI DECISION: Set true when story context reveals location's secrets.",
     ),
+  icon: z.string().optional().describe("A single emoji representing this location."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
   discoveredAt: z.number().optional(),
@@ -302,6 +304,7 @@ export const questSchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when quest's hidden purpose is revealed."),
+  icon: z.string().optional().describe("A single emoji representing this quest."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
@@ -346,6 +349,7 @@ export const skillSchema = z.object({
     .describe(
       "AI DECISION: Set true when skill's hidden nature is understood.",
     ),
+  icon: z.string().optional().describe("A single emoji representing this skill."),
   highlight: z.boolean().optional(),
 });
 
@@ -415,6 +419,7 @@ export const conditionSchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when true cause/cure revealed."),
+  icon: z.string().optional().describe("A single emoji representing this condition."),
   highlight: z.boolean().optional(),
 });
 
@@ -470,6 +475,7 @@ export const knowledgeEntrySchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when full truth discovered."),
+  icon: z.string().optional().describe("A single emoji representing this knowledge entry."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
@@ -529,6 +535,7 @@ export const timelineEventSchema = z.object({
     .describe(
       "AI DECISION: Set true when event's true cause/consequences uncovered.",
     ),
+  icon: z.string().optional().describe("A single emoji representing this event."),
   known: z
     .boolean()
     .optional()
@@ -655,6 +662,7 @@ export const factionSchema = z.object({
     .boolean()
     .optional()
     .describe("True when secret agenda is revealed."),
+  icon: z.string().optional().describe("A single emoji representing this faction."),
   highlight: z.boolean().optional(),
 });
 
@@ -680,6 +688,7 @@ export const characterAttributeSchema = z.object({
   value: z.number().int().describe("Current value."),
   maxValue: z.number().int().describe("Maximum value."),
   color: attributeColorSchema.describe("Visual color hint."),
+  icon: z.string().optional().describe("A single emoji representing this attribute."),
 });
 
 /** 隐藏特质 */

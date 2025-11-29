@@ -235,6 +235,12 @@ export const getCoreRules = (): string => `
     - **Type 2 (Player Perspective)**: What player sees.
     - **Generate**: Only for significant scenes. Default to false for dialogue/routine.
   </rule>
+
+  <rule name="ICONS">
+    - **MANDATORY**: You MUST generate a single emoji \`icon\` for EVERY new or updated entity (Item, Location, Knowledge, Status, Skill, Relationship, Faction, TimelineEvent, Attribute, Quest).
+    - **Relevance**: The emoji must be visually relevant to the entity's name or nature (e.g., "Sword" -> ⚔️, "Forest" -> 🌲, "Secret" -> 🤫).
+    - **Consistency**: Try to keep icons consistent for similar types of entities.
+  </rule>
 </core_rules>
 `;
 

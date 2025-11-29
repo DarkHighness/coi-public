@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 interface InventoryItemHeaderProps {
   name: string;
+  icon?: string;
   isOpen: boolean;
   isHighlight: boolean;
   onClick: () => void;
@@ -13,6 +14,7 @@ interface InventoryItemHeaderProps {
 
 export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
   name,
+  icon,
   isOpen,
   isHighlight,
   onClick,
@@ -36,6 +38,7 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
           className="font-medium mr-2 break-words whitespace-normal"
           title={name}
         >
+          {icon && <span className="mr-2">{icon}</span>}
           {name}
         </span>
         <div className="flex items-center gap-2">

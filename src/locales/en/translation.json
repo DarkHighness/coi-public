@@ -893,6 +893,7 @@
     "addButton": "Add",
     "saveChanges": "Save Changes",
     "addFromTemplateTitle": "Add Provider from Template",
+    "leaveEmptyToKeep": "Leave empty to keep current value",
     "selectTemplate": "Select Template",
     "apiKeyRequired": "API Key *",
     "addProviderButton": "Add Provider",

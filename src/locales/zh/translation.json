@@ -852,6 +852,7 @@
     "noProviders": "尚未配置提供商。添加一个以开始使用。",
     "noAvailableProviders": "当前没有可用的提供商。",
     "noAvailableProvidersDesc": "请检查提供商配置。",
+    "leaveEmptyToKeep": "留空以保留当前值",
     "inUseBy": "使用于：",
     "delete": "删除",
     "protocol": "协议：",

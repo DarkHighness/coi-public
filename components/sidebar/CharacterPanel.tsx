@@ -250,6 +250,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
     >
       <div className="flex justify-between items-center px-2 py-1.5">
         <span className="text-xs text-theme-text font-medium flex items-center gap-1">
+          {skill.icon && <span className="mr-1">{skill.icon}</span>}
           {skill.name}
           {skill.unlocked && (
             <svg
@@ -363,7 +364,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
       <div className="p-2">
         <div className="flex justify-between items-center mb-0.5">
           <span className="font-bold flex items-center gap-1">
-            {icon}
+            {condition.icon ? <span className="mr-1">{condition.icon}</span> : icon}
             {condition.name}
             {condition.unlocked && (
               <svg
@@ -563,6 +564,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] text-theme-muted uppercase tracking-wider truncate">
+                      {attr.icon && <span className="mr-1">{attr.icon}</span>}
                       {attr.label}
                     </span>
                     <span className="text-xs font-bold text-theme-text">
