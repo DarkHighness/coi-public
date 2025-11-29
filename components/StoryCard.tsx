@@ -11,7 +11,7 @@ import {
 import {
   getSceneImagePrompt,
   createImageGenerationContext,
-} from "../services/prompts";
+} from "../services/prompts/index";
 import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";

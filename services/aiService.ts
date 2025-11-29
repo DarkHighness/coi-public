@@ -135,7 +135,7 @@ import {
   getOutlinePhase5Prompt,
   getPhaseAcknowledgment,
   OUTLINE_PHASES,
-} from "./prompts";
+} from "./prompts/index";
 import { TOOLS } from "./tools";
 import {
   UnifiedMessage,

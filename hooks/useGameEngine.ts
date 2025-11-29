@@ -20,7 +20,7 @@ import {
   summarizeContext,
   type OutlinePhaseProgress,
 } from "../services/aiService";
-import { createImageGenerationContext } from "../services/prompts";
+import { createImageGenerationContext } from "../services/prompts/index";
 import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
 import {
   createStateSnapshot,
