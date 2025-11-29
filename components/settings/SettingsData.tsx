@@ -22,7 +22,17 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   useEffect(() => {
     fetchStorageEstimate();
     fetchRagStats();
-  }, []);
+
+    // Poll for RAG stats updates
+    let intervalId: NodeJS.Timeout;
+    if (ragState.isInitialized) {
+      intervalId = setInterval(fetchRagStats, 5000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [ragState.isInitialized]);
 
   const fetchStorageEstimate = async () => {
     if ("storage" in navigator && "estimate" in navigator.storage) {

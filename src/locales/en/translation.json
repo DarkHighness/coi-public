@@ -50,6 +50,9 @@
   "affinity": "Affinity",
   "unknown": "???",
   "decided": "You decided to:",
+  "dialogueStyle": "Dialogue Style",
+  "resources": "Resources",
+  "usage": "Usage",
   "placeholder": "Or write your own path...",
   "act": "Act",
   "loading": "Story is unfolding...",
@@ -569,7 +572,9 @@
     "cure": "Cure",
     "personality": "Real Personality",
     "motives": "Real Motives",
-    "affinity": "True Affinity"
+    "affinity": "True Affinity",
+    "routine": "Routine",
+    "dangers": "Dangers"
   },
   "commands": {
     "godMode": {
@@ -874,7 +879,7 @@
     "baseUrl": "Base URL:",
     "apiKeyLabel": "API Key:",
     "deleteConfirm": "Delete",
-    "deleteConfirmMessage": "Delete \"{name}\"?",
+    "deleteConfirmMessage": "Delete \"{{name}}\"?",
     "testing": "Testing...",
     "addProviderTitle": "Add Provider",
     "editProviderTitle": "Edit Provider",
@@ -894,7 +899,9 @@
     "gemini": "Gemini",
     "openai": "OpenAI",
     "openrouter": "OpenRouter",
-    "claude": "Claude"
+    "claude": "Claude",
+    "restrictedChannel": "Restricted Channel",
+    "restrictedChannelDesc": "Enable if this provider does not support the 'system' role. System instructions will be converted into the first user message."
   },
   "audio": {
     "voices": {

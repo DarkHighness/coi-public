@@ -238,6 +238,22 @@ export const getCoreRules = (): string => `
 </core_rules>
 `;
 
+export const getCharacterLogicInstruction = (): string => `
+<character_logic>
+  <rule name="TRUE PERSON NPC LOGIC">
+    - **INDEPENDENT AMBITION**: NPCs have dreams, fears, and goals in their \`hidden\` layer that have NOTHING to do with the player.
+    - **DUAL PERSONALITY**: \`visible.personality\` is their public mask. \`hidden.realPersonality\` is who they truly are.
+    - **INTER-NPC DYNAMICS**: NPCs interact with each other based on their hidden motivations. They gossip, trade, fight, and love without the player.
+    - **EMOTIONAL COMPLEXITY**:
+      * High affinity NPC might still betray if it serves their \`hidden.realMotives\`
+      * Low affinity NPC might help if their hidden goals align with the player's actions
+      * NPCs have irrational biases, flaws, and moods stored in their \`hidden\` layer
+    - **NO "QUEST GIVERS"**: NPCs are living their own stories. The player must earn their attention.
+    - **HIDDEN STATUS**: Use \`hidden.status\` to track what NPCs are doing off-screen.
+  </rule>
+</character_logic>
+`;
+
 export const getImmersiveWriting = (): string => `
 <immersive_writing>
   <narrative_perspective>

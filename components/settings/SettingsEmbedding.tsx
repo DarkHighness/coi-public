@@ -20,9 +20,22 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const isEnabled = config?.enabled ?? false;
 
   // State for dynamically fetched models (keyed by providerId)
-  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(
-    {},
-  );
+  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(() => {
+    try {
+      const cached = localStorage.getItem("chronicles_embedding_models_cache");
+      if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        // Cache valid for 24 hours
+        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load embedding models cache", e);
+    }
+    return {};
+  });
+
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
     {},
   );
@@ -30,6 +43,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   // Fetch models from API for a provider
   const fetchModelsForProvider = useCallback(
     async (providerId: string) => {
+      // If we already have models and they are not empty, don't auto-refetch immediately
+      // unless explicitly requested (which we don't have a UI for yet)
+      if (models[providerId]?.length > 0 && !loadingModels[providerId]) return;
       if (loadingModels[providerId]) return;
 
       setLoadingModels((prev) => ({ ...prev, [providerId]: true }));
@@ -39,7 +55,18 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           providerId,
         );
         if (fetchedModels.length > 0) {
-          setModels((prev) => ({ ...prev, [providerId]: fetchedModels }));
+          setModels((prev) => {
+            const newModels = { ...prev, [providerId]: fetchedModels };
+            // Update cache
+            localStorage.setItem(
+              "chronicles_embedding_models_cache",
+              JSON.stringify({
+                timestamp: Date.now(),
+                data: newModels,
+              })
+            );
+            return newModels;
+          });
         }
       } catch (error) {
         console.error(
@@ -51,7 +78,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         setLoadingModels((prev) => ({ ...prev, [providerId]: false }));
       }
     },
-    [loadingModels],
+    [loadingModels, models, currentSettings],
   );
 
   // Fetch models when provider changes or component mounts

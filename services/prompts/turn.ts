@@ -25,11 +25,13 @@ import {
   StorySegment,
   TimelineEvent,
 } from "../../types";
+import { THEMES } from "../../utils/constants/themes";
 import {
   getRoleInstruction,
   getCoreRules,
   getImmersiveWriting,
   getCulturalAdaptationInstruction,
+  getCharacterLogicInstruction,
 } from "./common";
 import {
   buildLayeredContext,
@@ -53,31 +55,37 @@ export const getCoreSystemInstruction = (
   detailedDescription?: boolean,
   ragEnabled?: boolean,
   isGemini?: boolean,
-): string => `
-${getRoleInstruction()}
-
-<objective>
-You are running a **Living World Simulation**. Your purpose is NOT to tell a story, but to **simulate reality**.
-The narrative emerges from the interaction between the player's choices and the world's immutable laws.
-</objective>
-
-${
-  isRestricted
-    ? `
+  gameState?: GameState,
+): string => {
+  const restrictedInstruction =
+    gameState && THEMES[gameState.atmosphere.envTheme]?.restricted
+      ? `
+<mode_strict>
+  <warning>STRICT MODE ENABLED - RESTRICTED THEME</warning>
+  <guidelines>
+    <rule>CRITICAL: This is a RESTRICTED THEME based on an existing IP. You must respect the original plot, history, and character personalities.</rule>
+    <rule>AGENCY & CONVERGENCE: The player has freedom to influence the story within the gaps of the canon. However, major "Convergence Points" (e.g., key historical events, major character deaths, critical plot turns) MUST occur as established in the source material.</rule>
+    <rule>FLEXIBILITY: Allow the player to change *how* events happen or *minor* outcomes, but ensure the *major* consequences align with the canon timeline.</rule>
+    <rule>If the player attempts to prevent a Convergence Point, make it difficult or have the universe "correct" itself, unless their action is overwhelmingly significant and logical.</rule>
+    <rule>Source Fidelity: Mechanics/Magic/Tech/Geography MUST match source. No new systems.</rule>
+    <rule>Atmosphere: Emulate specific source atmosphere (e.g., cosmic horror, whimsical magic).</rule>
+    <rule>Culture: Integrate specific slang/norms. NPCs react by faction/race prejudices.</rule>
+  </guidelines>
+</mode_strict>
+`
+      : isRestricted
+      ? `
 <mode_strict>
   <warning>STRICT MODE ENABLED</warning>
   <guidelines>
     <rule>Follow defined Narrative Style, Background Template, and Example.</rule>
     <rule>Do NOT deviate from setting/tone.</rule>
     <rule>Do NOT improvise outside bounds.</rule>
-    <rule>Source Fidelity: Mechanics/Magic/Tech/Geography MUST match source. No new systems.</rule>
-    <rule>Atmosphere: Emulate specific source atmosphere (e.g., cosmic horror, whimsical magic).</rule>
-    <rule>Culture: Integrate specific slang/norms. NPCs react by faction/race prejudices.</rule>
     <rule>No Tropes: Avoid generic "isekai"/"system" tropes unless in theme.</rule>
   </guidelines>
 </mode_strict>
 `
-    : `
+      : `
 <mode_creative>
   <guidelines>
     <rule>Background Template and Examples are for INSPIRATION ONLY.</rule>
@@ -86,12 +94,23 @@ ${
     <rule>Create original twists, characters, and scenarios that fit the theme.</rule>
   </guidelines>
 </mode_creative>
-`
-}
+`;
+
+  return `
+${getRoleInstruction()}
+
+<objective>
+You are running a **Living World Simulation**. Your purpose is NOT to tell a story, but to **simulate reality**.
+The narrative emerges from the interaction between the player's choices and the world's immutable laws.
+</objective>
+
+${restrictedInstruction}
 
 ${getCulturalAdaptationInstruction(language)}
 
 ${getCoreRules()}
+
+${getCharacterLogicInstruction()}
 
 ${getImmersiveWriting()}
 
@@ -109,8 +128,9 @@ ${getImmersiveWriting()}
     - **unlocked: false** → Player does NOT know the hidden truth. Describe only from \`visible\`.
     - **unlocked: true** → Player HAS discovered the truth. You may now reference \`hidden\` info in narrative.
     - Use your GM knowledge to:
-      * Make NPCs act according to their TRUE motives (hidden.realMotives)
+      * Make NPCs act according to their TRUE motives (hidden.realMotives) and routine (hidden.routine)
       * Have items exhibit their TRUE effects (hidden.truth)
+      * Trigger hidden dangers (hidden.dangers) in locations
       * Create foreshadowing based on secrets the player hasn't discovered
       * Ensure logical consistency in the world
   </how_to_use>
@@ -220,6 +240,7 @@ ${
   </choice_generation_rules>
 </tool_use_instruction>
 `;
+};
 
 // ============================================================================
 // 完整 Prompt 构建
@@ -278,6 +299,7 @@ export function buildTurnPrompt(options: TurnPromptOptions): string {
     detailedDescription,
     ragEnabled,
     isGemini,
+    gameState,
   );
 
   // 构建上下文选项

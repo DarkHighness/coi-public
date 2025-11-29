@@ -179,6 +179,16 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                   </p>
                 </div>
               )}
+              {rel.visible?.dialogueStyle && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    {t("dialogueStyle") || "Dialogue Style"}
+                  </span>
+                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic">
+                    "{rel.visible.dialogueStyle}"
+                  </p>
+                </div>
+              )}
               {rel.visible?.currentImpression && (
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
@@ -236,6 +246,17 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       </span>
                       <p className="leading-relaxed text-theme-text">
                         {rel.hidden.realMotives}
+                      </p>
+                    </div>
+                  )}
+
+                  {rel.hidden?.routine && (
+                    <div className="mb-2">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("hidden.routine") || "Routine"}:
+                      </span>
+                      <p className="leading-relaxed text-theme-text">
+                        {rel.hidden.routine}
                       </p>
                     </div>
                   )}

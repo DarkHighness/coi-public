@@ -617,6 +617,7 @@ export interface InventoryAction {
   // Dual-layer support
   visible?: {
     description?: string;
+    usage?: string;
     notes?: string;
   };
   hidden?: {
@@ -657,12 +658,15 @@ export interface RelationshipAction {
     appearance?: string;
     relationshipType?: string;
     currentImpression?: string;
+    personality?: string;
+    dialogueStyle?: string;
     affinity?: number;
     affinityKnown?: boolean;
   };
   hidden?: {
     realPersonality?: string;
     realMotives?: string;
+    routine?: string;
     secrets?: string[];
     trueAffinity?: number;
     relationshipType?: string;
@@ -682,9 +686,11 @@ export interface LocationAction {
   visible?: {
     description?: string;
     knownFeatures?: string[];
+    resources?: string[];
   };
   hidden?: {
     fullDescription?: string;
+    dangers?: string[];
     hiddenFeatures?: string[];
     secrets?: string[];
   };
@@ -870,6 +876,7 @@ export interface ProviderInstance {
   baseUrl: string; // API 基础 URL
   apiKey: string; // API 密钥
   enabled: boolean; // 是否启用
+  isRestrictedChannel?: boolean; // 是否为受限渠道（不支持 system role）
   createdAt: number; // 创建时间
   lastModified: number; // 最后修改时间
 }

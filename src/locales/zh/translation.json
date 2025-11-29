@@ -53,6 +53,9 @@
   "affinity": "好感度",
   "unknown": "未知",
   "decided": "你决定：",
+  "dialogueStyle": "对话风格",
+  "resources": "资源",
+  "usage": "用途",
   "placeholder": "或者书写你自己的道路...",
   "act": "行动",
   "loading": "故事正在展开...",
@@ -570,7 +573,9 @@
     "cure": "治愈方法",
     "personality": "真实性格",
     "motives": "真实动机",
-    "affinity": "真实好感度"
+    "affinity": "真实好感度",
+    "routine": "日常行动",
+    "dangers": "潜在危险"
   },
   "commands": {
     "godMode": {
@@ -853,7 +858,7 @@
     "baseUrl": "Base URL：",
     "apiKeyLabel": "API Key：",
     "deleteConfirm": "删除",
-    "deleteConfirmMessage": "删除 \"{name}\"？",
+    "deleteConfirmMessage": "删除 \"{{name}}\"？",
     "testing": "测试中...",
     "addProviderTitle": "添加提供商",
     "editProviderTitle": "编辑提供商",
@@ -873,7 +878,9 @@
     "gemini": "Gemini",
     "openai": "OpenAI",
     "openrouter": "OpenRouter",
-    "claude": "Claude"
+    "claude": "Claude",
+    "restrictedChannel": "受限渠道",
+    "restrictedChannelDesc": "如果此提供商不支持 'system' 角色，请启用此选项。系统指令将成为到第一条用户消息。"
   },
   "audio": {
     "voices": {

@@ -96,6 +96,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
           details={{
             description:
               item.visible?.description || "No description available.",
+            usage: item.visible?.usage,
             lore: item.lore || "",
             unlocked: item.unlocked || false,
             hiddenTruth: item.hidden?.truth || "",

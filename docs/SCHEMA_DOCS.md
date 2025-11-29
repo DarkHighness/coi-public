@@ -31,6 +31,7 @@
 | Field | Type | Description | Mutability | Visibility |
 | :--- | :--- | :--- | :--- | :--- |
 | `description` | string | Visual description of the item. | **[STATIC]** | **[VISIBLE]** |
+| `usage` | string (opt) | How to use the item. | **[STATIC]** | **[VISIBLE]** |
 | `notes` | string (opt) | Player's notes about the item. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### inventoryItemHiddenSchema
@@ -70,6 +71,7 @@
 | `relationshipType` | string | Relationship status from player's perspective. | **[SEMI-STATIC]** | **[VISIBLE]** |
 | `currentImpression` | string (opt) | The NPC's current state from the protagonist's perspective. | **[DYNAMIC]** | **[VISIBLE]** |
 | `personality` | string (opt) | Public perception of personality - what people SAY about them. | **[STATIC]** | **[VISIBLE]** |
+| `dialogueStyle` | string (opt) | How they speak (e.g. "Formal", "Slang", "Riddles"). | **[STATIC]** | **[VISIBLE]** |
 | `affinity` | number | Affinity score 0-100. | **[DYNAMIC]** | **[VISIBLE]** |
 | `affinityKnown` | boolean (opt) | Whether the player knows the affinity level. | **[DYNAMIC]** | **[VISIBLE]** |
 
@@ -82,6 +84,7 @@
 | `trueName` | string (opt) | The character's real name (if different). | **[STATIC]** | **[CONDITIONAL]** |
 | `realPersonality` | string | True personality - what they REALLY are like. | **[STATIC]** | **[CONDITIONAL]** |
 | `realMotives` | string | True underlying motives and goals. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `routine` | string (opt) | Daily schedule/activities. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 | `secrets` | string (opt) | Character's secrets. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 | `trueAffinity` | number (opt) | True affinity score. | **[DYNAMIC]** | **[CONDITIONAL]** |
 | `relationshipType` | string | Relationship status from NPC's perspective. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
@@ -110,6 +113,7 @@
 | Field | Type | Description | Mutability | Visibility |
 | :--- | :--- | :--- | :--- | :--- |
 | `description` | string | Visual description of the location. | **[STATIC]** | **[VISIBLE]** |
+| `resources` | string (opt) | Gatherable resources or items. | **[SEMI-STATIC]** | **[VISIBLE]** |
 | `knownFeatures` | string | Known features of the location. | **[SEMI-STATIC]** | **[VISIBLE]** |
 
 ### locationHiddenSchema
@@ -117,6 +121,7 @@
 | Field | Type | Description | Mutability | Visibility |
 | :--- | :--- | :--- | :--- | :--- |
 | `fullDescription` | string | True nature of the location. | **[STATIC]** | **[CONDITIONAL]** |
+| `dangers` | string (opt) | Hidden dangers or traps. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 | `hiddenFeatures` | string | Hidden features not yet discovered. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 | `secrets` | string | Location secrets. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 

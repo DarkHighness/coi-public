@@ -138,6 +138,7 @@ import {
 import { TOOLS } from "./tools";
 import {
   UnifiedMessage,
+  MessageRole,
   createUserMessage,
   createToolCallMessage,
   createToolResponseMessage,
@@ -764,12 +765,78 @@ export const generateContentUnified = async (
     }
   }
 
+  // Handle Restricted Channel (No System Role)
+  // If the provider is marked as restricted, we must merge the system instruction
+  // into the first user message and clear the system instruction argument.
+  const instance = settings.providers.instances.find(
+    (p) => p.protocol === protocol && createProviderConfig(p).apiKey === config.apiKey
+  );
+
+  let finalSystemInstruction = systemInstruction;
+  let finalContents = contents;
+
+  if (instance?.isRestrictedChannel) {
+    // 1. Convert to UnifiedMessage[] to safely manipulate
+    let unifiedContents: UnifiedMessage[] = [];
+
+    // Check format
+    const isUnifiedFormat =
+      Array.isArray(contents) &&
+      contents.length > 0 &&
+      typeof contents[0] === "object" &&
+      "content" in contents[0] &&
+      Array.isArray((contents[0] as UnifiedMessage).content);
+
+    const isGeminiFormat =
+      Array.isArray(contents) &&
+      contents.length > 0 &&
+      typeof contents[0] === "object" &&
+      "parts" in contents[0];
+
+    if (isUnifiedFormat) {
+      unifiedContents = [...(contents as UnifiedMessage[])];
+    } else if (isGeminiFormat) {
+      // Convert from Gemini format
+      // We need a helper for this, but for now let's assume we can use the internal helper
+      // or just manually convert if simple.
+      // Actually, generateContentUnifiedInternal handles conversion.
+      // To avoid duplicating conversion logic, we might need to rely on generateContentUnifiedInternal
+      // BUT we need to modify the message structure BEFORE calling it.
+
+      // Let's use the fromGeminiFormat helper if available, but it's not exported.
+      // Wait, fromGeminiFormat IS used in generateContentUnifiedInternal (line 608).
+      // I should probably move the restricted channel logic INTO generateContentUnifiedInternal
+      // where format conversion is already handled.
+
+      // OR, I can just handle the simple case here or duplicate the conversion.
+      // Since I cannot easily access internal helpers, I will try to handle it here
+      // by converting Gemini parts to Unified content.
+
+      unifiedContents = (contents as Array<{ role: string; parts: Array<{ text?: string }> }>).map(msg => ({
+        role: msg.role === "model" ? "assistant" : (msg.role as MessageRole),
+        content: msg.parts.map(p => ({ type: "text", text: p.text || "" }))
+      }));
+    } else {
+      // Unknown format, try to cast
+      unifiedContents = contents as UnifiedMessage[];
+    }
+
+    // 2. Add system instruction as a separate user message at the beginning
+    unifiedContents.unshift({
+      role: "user",
+      content: [{ type: "text", text: `[System Instruction]\n${systemInstruction}` }]
+    });
+
+    finalSystemInstruction = "";
+    finalContents = unifiedContents;
+  }
+
   return generateContentUnifiedInternal(
     protocol,
     config,
     actualModelId,
-    systemInstruction,
-    contents,
+    finalSystemInstruction,
+    finalContents,
     schema,
     options,
   );

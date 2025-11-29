@@ -766,6 +766,10 @@ function extractNPCContent(npc: Relationship): string {
       );
     if (npc.visible.personality)
       parts.push(`    <personality>${npc.visible.personality}</personality>`);
+    if (npc.visible.dialogueStyle)
+      parts.push(
+        `    <dialogue_style>${npc.visible.dialogueStyle}</dialogue_style>`,
+      );
     if (npc.visible.currentImpression)
       parts.push(
         `    <impression>${npc.visible.currentImpression}</impression>`,
@@ -774,8 +778,8 @@ function extractNPCContent(npc: Relationship): string {
     parts.push("  </visible>");
   }
 
-  // Hidden info (if unlocked)
-  if (npc.unlocked && npc.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (npc.hidden) {
     parts.push('  <hidden status="unlocked">');
     if (npc.hidden.realPersonality)
       parts.push(
@@ -783,6 +787,8 @@ function extractNPCContent(npc: Relationship): string {
       );
     if (npc.hidden.realMotives)
       parts.push(`    <true_motives>${npc.hidden.realMotives}</true_motives>`);
+    if (npc.hidden.routine)
+      parts.push(`    <routine>${npc.hidden.routine}</routine>`);
     if (npc.hidden.secrets?.length)
       parts.push(`    <secrets>${npc.hidden.secrets.join("; ")}</secrets>`);
     parts.push("  </hidden>");
@@ -809,6 +815,10 @@ function extractLocationContent(location: Location): string {
         `    <features>${location.visible.knownFeatures.join("; ")}</features>`,
       );
     }
+    if (location.visible.resources?.length)
+      parts.push(
+        `    <resources>${location.visible.resources.join("; ")}</resources>`,
+      );
     parts.push("  </visible>");
   }
 
@@ -816,12 +826,20 @@ function extractLocationContent(location: Location): string {
     parts.push(`  <environment>${location.environment}</environment>`);
   if (location.lore) parts.push(`  <lore>${location.lore}</lore>`);
 
-  // Hidden info (if unlocked)
-  if (location.unlocked && location.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (location.hidden) {
     parts.push('  <hidden status="unlocked">');
     if (location.hidden.fullDescription)
       parts.push(
-        `    <full_description>${location.hidden.fullDescription}</full_description>`,
+        `    <true_description>${location.hidden.fullDescription}</true_description>`,
+      );
+    if (location.hidden.hiddenFeatures?.length)
+      parts.push(
+        `    <hidden_features>${location.hidden.hiddenFeatures.join("; ")}</hidden_features>`,
+      );
+    if (location.hidden.dangers?.length)
+      parts.push(
+        `    <dangers>${location.hidden.dangers.join("; ")}</dangers>`,
       );
     if (location.hidden.secrets?.length)
       parts.push(
@@ -844,6 +862,8 @@ function extractItemContent(item: InventoryItem): string {
     parts.push("  <visible>");
     if (item.visible.description)
       parts.push(`    <description>${item.visible.description}</description>`);
+    if (item.visible.usage)
+      parts.push(`    <usage>${item.visible.usage}</usage>`);
     if (item.visible.notes)
       parts.push(`    <notes>${item.visible.notes}</notes>`);
     parts.push("  </visible>");
@@ -851,11 +871,11 @@ function extractItemContent(item: InventoryItem): string {
 
   if (item.lore) parts.push(`  <lore>${item.lore}</lore>`);
 
-  // Hidden info (if unlocked)
-  if (item.unlocked && item.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (item.hidden) {
     parts.push('  <hidden status="unlocked">');
     if (item.hidden.truth)
-      parts.push(`    <true_nature>${item.hidden.truth}</true_nature>`);
+      parts.push(`    <truth>${item.hidden.truth}</truth>`);
     if (item.hidden.secrets?.length)
       parts.push(`    <secrets>${item.hidden.secrets.join("; ")}</secrets>`);
     parts.push("  </hidden>");
@@ -884,10 +904,15 @@ function extractKnowledgeContent(knowledge: KnowledgeEntry): string {
     parts.push("  </visible>");
   }
 
-  if (knowledge.unlocked && knowledge.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (knowledge.hidden) {
     parts.push('  <hidden status="unlocked">');
     if (knowledge.hidden.fullTruth)
       parts.push(`    <truth>${knowledge.hidden.fullTruth}</truth>`);
+    if (knowledge.hidden.misconceptions?.length)
+      parts.push(
+        `    <misconceptions>${knowledge.hidden.misconceptions.join("; ")}</misconceptions>`,
+      );
     if (knowledge.hidden.toBeRevealed?.length)
       parts.push(
         `    <implications>${knowledge.hidden.toBeRevealed.join("; ")}</implications>`,
@@ -917,8 +942,13 @@ function extractQuestContent(quest: Quest): string {
     parts.push("  </visible>");
   }
 
-  if (quest.unlocked && quest.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (quest.hidden) {
     parts.push('  <hidden status="unlocked">');
+    if (quest.hidden.trueDescription)
+      parts.push(
+        `    <true_description>${quest.hidden.trueDescription}</true_description>`,
+      );
     if (quest.hidden.trueObjectives?.length)
       parts.push(
         `    <true_objectives>${quest.hidden.trueObjectives.join("; ")}</true_objectives>`,
@@ -950,7 +980,8 @@ function extractEventContent(event: TimelineEvent): string {
     parts.push("  </visible>");
   }
 
-  if (event.unlocked && event.hidden) {
+  // Hidden info (Always visible to AI/GM)
+  if (event.hidden) {
     parts.push('  <hidden status="unlocked">');
     if (event.hidden.trueDescription)
       parts.push(

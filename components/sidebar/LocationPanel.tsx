@@ -158,7 +158,19 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         "No description available."}
                     </p>
                   </div>
-
+                  {locationData.visible?.resources &&
+                    locationData.visible.resources.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("resources") || "Resources"}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                          {locationData.visible.resources.map((res, i) => (
+                            <li key={i}>{res}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   {/* Unlocked Hidden Secrets */}
                   {locationData.unlocked && (
                     <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
@@ -181,6 +193,33 @@ const LocationItem: React.FC<LocationItemProps> = ({
                           {locationData.hidden.fullDescription}
                         </p>
                       )}
+
+                      {locationData.hidden?.dangers &&
+                        locationData.hidden.dangers.length > 0 && (
+                          <div className="mt-2 text-theme-error/90">
+                            <span className="text-[9px] uppercase tracking-wider font-bold block mb-0.5 flex items-center gap-1">
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                              </svg>
+                              {t("hidden.dangers") || "Dangers"}:
+                            </span>
+                            <ul className="list-disc list-inside space-y-0.5">
+                              {locationData.hidden.dangers.map((danger, i) => (
+                                <li key={i}>{danger}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
                       {locationData.hidden?.hiddenFeatures &&
                         locationData.hidden.hiddenFeatures.length > 0 && (

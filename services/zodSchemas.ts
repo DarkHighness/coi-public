@@ -70,6 +70,7 @@ export const hiddenInfoSchema = z.object({
 /** 物品可见层 */
 export const inventoryItemVisibleSchema = z.object({
   description: z.string().describe("Visual description of the item."),
+  usage: z.string().optional().describe("How to use the item."),
   notes: z.string().optional().describe("Player's notes about the item."),
 });
 
@@ -131,6 +132,10 @@ export const relationshipVisibleSchema = z.object({
     .string()
     .optional()
     .describe("Public perception of personality - what people SAY about them."),
+  dialogueStyle: z
+    .string()
+    .optional()
+    .describe("How they speak (e.g. 'Formal', 'Slang', 'Riddles')."),
   affinity: z
     .number()
     .int()
@@ -155,6 +160,7 @@ export const relationshipHiddenSchema = z.object({
     .string()
     .describe("True personality - what they REALLY are like."),
   realMotives: z.string().describe("True underlying motives and goals."),
+  routine: z.string().optional().describe("Daily schedule/activities."),
   secrets: z.array(z.string()).optional().describe("Character's secrets."),
   trueAffinity: z.number().int().optional().describe("True affinity score."),
   relationshipType: z
@@ -210,11 +216,16 @@ export const locationVisibleSchema = z.object({
   knownFeatures: z
     .array(z.string())
     .describe("Known features of the location."),
+  resources: z
+    .array(z.string())
+    .optional()
+    .describe("Gatherable resources or items."),
 });
 
 /** 地点隐藏层 */
 export const locationHiddenSchema = z.object({
   fullDescription: z.string().describe("True nature of the location."),
+  dangers: z.array(z.string()).optional().describe("Hidden dangers or traps."),
   hiddenFeatures: z
     .array(z.string())
     .describe("Hidden features not yet discovered."),

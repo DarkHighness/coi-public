@@ -24,6 +24,7 @@ interface ProviderFormData {
   baseUrl: string;
   apiKey: string;
   enabled: boolean;
+  isRestrictedChannel: boolean;
 }
 
 type ModalMode = "add" | "edit" | "template" | null;
@@ -50,6 +51,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     baseUrl: "",
     apiKey: "",
     enabled: true,
+    isRestrictedChannel: false,
   });
   const [selectedTemplate, setSelectedTemplate] =
     useState<ProviderTemplateKey>("openai");
@@ -114,6 +116,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: DEFAULT_BASE_URLS["openai"],
       apiKey: "",
       enabled: true,
+      isRestrictedChannel: false,
     });
     setModalMode("add");
   };
@@ -134,6 +137,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: instance.baseUrl,
       apiKey: "", // Clear API key - leave empty to keep current
       enabled: instance.enabled,
+      isRestrictedChannel: instance.isRestrictedChannel || false,
     });
     setModalMode("edit");
   };
@@ -173,6 +177,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: finalBaseUrl,
       apiKey: formData.apiKey,
       enabled: formData.enabled,
+      isRestrictedChannel: formData.isRestrictedChannel,
       createdAt: Date.now(),
       lastModified: Date.now(),
     };
@@ -253,6 +258,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             baseUrl: finalBaseUrl,
             apiKey: newApiKey,
             enabled: formData.enabled,
+            isRestrictedChannel: formData.isRestrictedChannel,
             lastModified: Date.now(),
           }
         : inst,
@@ -807,6 +813,27 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     />
                     {t("providers.enableProvider")}
                   </label>
+                </div>
+
+                {/* Restricted Channel */}
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-theme-text">
+                    <input
+                      type="checkbox"
+                      checked={formData.isRestrictedChannel}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          isRestrictedChannel: e.target.checked,
+                        })
+                      }
+                      className="rounded"
+                    />
+                    {t("providers.restrictedChannel")}
+                  </label>
+                  <p className="text-xs text-theme-muted mt-1 ml-6">
+                    {t("providers.restrictedChannelDesc")}
+                  </p>
                 </div>
 
                 {/* Actions */}

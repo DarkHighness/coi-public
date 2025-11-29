@@ -408,9 +408,11 @@ Each location needs:
 - **visible**:
   - description: What players see (sensory details)
   - knownFeatures: Array of notable features
+  - resources: Array of gatherable resources/items
 - **hidden**:
   - fullDescription: True nature of the location
   - hiddenFeatures: Secret areas, passages, mechanisms
+  - dangers: Hidden traps, monsters, or hazards
   - secrets: Array of location secrets (DETAILED)
 
 **factions** (2-3 major power groups):
@@ -452,11 +454,13 @@ Each NPC needs:
   - appearance: Physical description (DETAILED: height, clothing, features)
   - relationshipType: Player's view (friend, mentor, rival, etc.)
   - personality: What people SAY about them
+  - dialogueStyle: How they speak (e.g., "Formal", "Slang", "Riddles")
   - affinity: 0-100 score
 - **hidden**:
   - trueName: Real name (if different)
   - realPersonality: What they REALLY are like
   - realMotives: True underlying goals (DETAILED - specific plans)
+  - routine: Daily schedule/activities
   - secrets: Array of character secrets
   - relationshipType: NPC's view of player (tool, prey, etc.)
   - status: Current condition (plotting, traveling, etc.)
@@ -467,6 +471,7 @@ Each item needs:
 - **lore**: Brief history (who made it, what happened to it)
 - **visible**:
   - description: Appearance and apparent use
+  - usage: How to use the item
   - notes: Any player notes (optional)
 - **hidden** (if item has secrets):
   - truth: True nature/power (DETAILED - origin, mechanics, side effects)

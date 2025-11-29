@@ -4,6 +4,7 @@ import { ItemLore } from "./ItemLore";
 
 interface ItemDetails {
   description: string;
+  usage?: string;
   lore: string;
   unlocked?: boolean;
   hiddenTruth?: string;
@@ -64,6 +65,15 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({
         </span>
         <p className="leading-relaxed pl-1">{details.description}</p>
       </div>
+
+      {details.usage && (
+        <div className="text-xs text-theme-muted/90 italic">
+          <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+            {t("usage") || "Usage"}
+          </span>
+          <p className="leading-relaxed pl-1">{details.usage}</p>
+        </div>
+      )}
 
       {/* Unlocked Hidden Truth */}
       {details.unlocked && details.hiddenTruth && (

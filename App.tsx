@@ -114,23 +114,31 @@ export default function App() {
   };
 
   // Initialize RAG service when embedding is enabled and settings are available
+  // Also re-initialize if configuration changes
+  const lastInitializedConfigRef = useRef<string>("");
+
   useEffect(() => {
     const initRAG = async () => {
-      if (
+      const currentConfigKey = `${aiSettings.embedding?.providerId}:${aiSettings.embedding?.modelId}:${aiSettings.embedding?.dimensions}`;
+
+      const shouldInit =
         aiSettings.embedding?.enabled &&
-        !ragState.isInitialized &&
-        !ragState.isLoading
-      ) {
-        console.log("[App] Initializing RAG service immediately...");
+        (!ragState.isInitialized || lastInitializedConfigRef.current !== currentConfigKey) &&
+        !ragState.isLoading;
+
+      if (shouldInit) {
+        console.log("[App] Initializing RAG service (Config changed or first init)...");
         const success = await ragActions.initialize(aiSettings);
         if (success) {
           console.log("[App] RAG service initialized successfully");
+          lastInitializedConfigRef.current = currentConfigKey;
         } else {
           console.warn("[App] RAG service initialization failed");
         }
       } else if (!aiSettings.embedding?.enabled && ragState.isInitialized) {
         console.log("[App] Embedding disabled, terminating RAG service...");
         ragActions.terminate();
+        lastInitializedConfigRef.current = "";
       }
     };
 
@@ -139,6 +147,7 @@ export default function App() {
     aiSettings.embedding?.enabled,
     aiSettings.embedding?.providerId,
     aiSettings.embedding?.modelId,
+    aiSettings.embedding?.dimensions,
   ]);
 
   // Track previous embedding enabled state to detect when it becomes enabled
