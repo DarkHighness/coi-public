@@ -11,6 +11,9 @@ import {
   CharacterStatus,
   CharacterAttribute,
   Atmosphere,
+  VersionedTimestamp,
+  AccessTimestamp,
+  createVersionedTimestamp,
 } from "../types";
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
 import type { AtmosphereObject } from "../utils/constants/atmosphere";
@@ -159,6 +162,19 @@ export class GameDatabase {
 
   public getState(): GameState {
     return this.state;
+  }
+
+  // --- Versioned Timestamp Helper ---
+
+  /**
+   * 创建当前版本化时间戳
+   * 用于记录实体修改时间，支持分叉比较
+   */
+  private createCurrentTimestamp(): VersionedTimestamp {
+    return createVersionedTimestamp({
+      forkId: this.state.forkId || 0,
+      turnNumber: this.state.turnNumber || 0,
+    });
   }
 
   // --- Pending Consequences Query ---
@@ -310,12 +326,14 @@ export class GameDatabase {
   // --- Query Methods ---
 
   // Helper to update lastAccess for queried entities
-  private updateLastAccess<T extends { id: string; lastAccess?: number }>(
+  private updateLastAccess<T extends { id: string; lastAccess?: AccessTimestamp | Partial<AccessTimestamp> }>(
     items: T[],
   ): T[] {
+    const forkId = this.state.forkId || 0;
     const turnNumber = this.state.turnNumber || 0;
+    const timestamp = Date.now();
     items.forEach((item) => {
-      item.lastAccess = turnNumber;
+      item.lastAccess = { forkId, turnNumber, timestamp };
     });
     return items;
   }
@@ -613,7 +631,8 @@ export class GameDatabase {
           secrets: data.hidden?.secrets,
         },
         createdAt: Date.now(),
-        lastModified: Date.now(),
+        modifiedAt: this.createCurrentTimestamp(),
+        lastModified: Date.now(), // Keep for backward compatibility
         lore: data.lore,
         unlocked: data.unlocked ?? false,
         highlight: true,
@@ -670,7 +689,8 @@ export class GameDatabase {
       if (data.lore !== undefined) item.lore = data.lore;
       if (data.unlocked !== undefined) item.unlocked = data.unlocked;
       item.highlight = true;
-      item.lastModified = Date.now();
+      item.modifiedAt = this.createCurrentTimestamp();
+      item.lastModified = Date.now(); // Keep for backward compatibility
 
       return createSuccess(item, `Updated item: ${item.name}`);
     }
@@ -729,7 +749,8 @@ export class GameDatabase {
         },
         known: data.known ?? true,
         createdAt: Date.now(),
-        lastModified: Date.now(),
+        modifiedAt: this.createCurrentTimestamp(),
+        lastModified: Date.now(), // Keep for backward compatibility
         notes: data.notes,
         unlocked: data.unlocked ?? false,
         highlight: true,
@@ -792,7 +813,8 @@ export class GameDatabase {
       }
       if (data.unlocked !== undefined) npc.unlocked = data.unlocked;
       npc.highlight = true;
-      npc.lastModified = Date.now();
+      npc.modifiedAt = this.createCurrentTimestamp();
+      npc.lastModified = Date.now(); // Keep for backward compatibility
 
       return createSuccess(npc, `Updated NPC: ${npc.visible.name}`);
     }
@@ -842,7 +864,7 @@ export class GameDatabase {
           hiddenFeatures: data.hidden?.hiddenFeatures || [],
           secrets: data.hidden?.secrets || [],
         },
-        isVisited: true,
+        isVisited: data.isVisited || true,
         environment: data.environment || "Unknown",
         createdAt: Date.now(),
         unlocked: data.unlocked ?? false,
@@ -963,7 +985,8 @@ export class GameDatabase {
           secretOutcome: data.hidden?.secretOutcome,
         },
         createdAt: Date.now(),
-        lastModified: Date.now(),
+        modifiedAt: this.createCurrentTimestamp(),
+        lastModified: Date.now(), // Keep for backward compatibility
         unlocked: data.unlocked ?? false,
         highlight: true,
       };
@@ -1018,7 +1041,8 @@ export class GameDatabase {
       if (data.hidden) mergeWithNullDeletion(quest.hidden, data.hidden);
       if (data.unlocked !== undefined) quest.unlocked = data.unlocked;
       quest.highlight = true;
-      quest.lastModified = Date.now();
+      quest.modifiedAt = this.createCurrentTimestamp();
+      quest.lastModified = Date.now(); // Keep for backward compatibility
 
       return createSuccess(
         quest,
@@ -1067,7 +1091,8 @@ export class GameDatabase {
         relatedTo: data.relatedTo,
         unlocked: data.unlocked ?? false,
         createdAt: Date.now(),
-        lastModified: Date.now(),
+        modifiedAt: this.createCurrentTimestamp(),
+        lastModified: Date.now(), // Keep for backward compatibility
         highlight: true,
       };
       this.state.knowledge.push(newKnowledge);
@@ -1104,7 +1129,8 @@ export class GameDatabase {
       }
       if (data.unlocked !== undefined) k.unlocked = data.unlocked;
       k.highlight = true;
-      k.lastModified = Date.now();
+      k.modifiedAt = this.createCurrentTimestamp();
+      k.lastModified = Date.now(); // Keep for backward compatibility
 
       return createSuccess(k, `Updated knowledge: ${k.title}`);
     }
@@ -1537,7 +1563,7 @@ export class GameDatabase {
         involvedEntities: data.involvedEntities,
         chainId: data.chainId,
         unlocked: data.unlocked ?? false,
-        known: data.known ?? true,
+        known: data.known ?? false,
         highlight: true,
       };
       this.state.timeline.push(newEvent);

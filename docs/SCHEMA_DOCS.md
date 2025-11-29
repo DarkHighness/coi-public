@@ -1,202 +1,230 @@
 # Game Data Schema Documentation
 
-> Auto-generated from `services/zodSchemas.ts`
+## Definitions
+
+| Column | Description |
+| :--- | :--- |
+| **Field** | The name of the field in the JSON object. |
+| **Type** | The data type (e.g., string, number, boolean, array, object). For `enum`, allowed values are listed in parentheses. |
+| **Description** | A brief explanation of the field's purpose and content. |
+| **Mutability** | **[STATIC]**: Never changes. **[SEMI-STATIC]**: Changes rarely (e.g., major plot points). **[DYNAMIC]**: Changes frequently. **[MIXED]**: Contains both static and dynamic fields. |
+| **Visibility** | **[VISIBLE]**: Always visible to the AI. **[INVISIBLE]**: Never visible to the AI (internal state). **[CONDITIONAL]**: Visible only when specific conditions are met. |
 
 ## General
 
 ### visibleInfoSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Visual or public description. |
-| `notes` | string (opt) | Player or public notes. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Visual or public description. | **[STATIC]** | **[VISIBLE]** |
+| `notes` | string (opt) | Player or public notes. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### hiddenInfoSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `truth` | string | The hidden truth or real nature. |
-| `secrets` | string (opt) | Hidden secrets. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `truth` | string | The hidden truth or real nature. | **[STATIC]** | **[CONDITIONAL]** |
+| `secrets` | string (opt) | Hidden secrets. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### inventoryItemVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Visual description of the item. |
-| `notes` | string (opt) | Player's notes about the item. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Visual description of the item. | **[STATIC]** | **[VISIBLE]** |
+| `notes` | string (opt) | Player's notes about the item. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### inventoryItemHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `truth` | string | True nature/power of the item. |
-| `secrets` | string (opt) | Hidden secrets about the item. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `truth` | string | True nature/power of the item. | **[STATIC]** | **[CONDITIONAL]** |
+| `secrets` | string (opt) | Hidden secrets about the item. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### inventoryItemSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: inv:N |
-| `name` | string | Name of the item. |
-| `visible` | [inventoryItemVisibleSchema](#inventoryitemvisibleschema) | - |
-| `hidden` | [inventoryItemHiddenSchema](#inventoryitemhiddenschema) (opt) | - |
-| `lore` | string (opt) | Brief lore or history of the item. |
-| `icon` | string (opt) | Icon identifier for the item. |
-| `unlocked` | unknown (opt) | - |
-| `highlight` | unknown (opt) | True when updated in current turn (for UI). |
-| `createdAt` | number (opt) | - |
-| `lastModified` | number (opt) | - |
-| `lastAccess` | number (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: inv:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Name of the item. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [inventoryItemVisibleSchema](#inventoryitemvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [inventoryItemHiddenSchema](#inventoryitemhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `lore` | string (opt) | Brief lore or history of the item. | **[STATIC]** | **[VISIBLE]** |
+| `icon` | string (opt) | Icon identifier for the item. | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when hidden truth discovered. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | True when updated in current turn (for UI). | **[DYNAMIC]** | **[VISIBLE]** |
+| `createdAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `lastModified` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
 
 ### relationshipVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Name/Title the player knows them by. |
-| `description` | unknown | Public perception - how others view this NPC. |
-| `appearance` | string (opt) | Physical appearance details. |
-| `relationshipType` | unknown | - |
-| `currentImpression` | unknown (opt) | The NPC's current state from the protagonist's perspective. |
-| `personality` | unknown (opt) | Public perception of personality - what people SAY about them. |
-| `affinity` | unknown | - |
-| `affinityKnown` | unknown (opt) | Whether the player knows the affinity level. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | string | Name/Title the player knows them by. | **[STATIC]** | **[VISIBLE]** |
+| `description` | string | Public perception - how others view this NPC. | **[STATIC]** | **[VISIBLE]** |
+| `appearance` | string (opt) | Physical appearance details. | **[STATIC]** | **[VISIBLE]** |
+| `relationshipType` | string | Relationship status from player's perspective. | **[SEMI-STATIC]** | **[VISIBLE]** |
+| `currentImpression` | string (opt) | The NPC's current state from the protagonist's perspective. | **[DYNAMIC]** | **[VISIBLE]** |
+| `personality` | string (opt) | Public perception of personality - what people SAY about them. | **[STATIC]** | **[VISIBLE]** |
+| `affinity` | number | Affinity score 0-100. | **[DYNAMIC]** | **[VISIBLE]** |
+| `affinityKnown` | boolean (opt) | Whether the player knows the affinity level. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### relationshipHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueName` | unknown (opt) | The character's real name (if different). |
-| `realPersonality` | unknown | True personality - what they REALLY are like. |
-| `realMotives` | string | True underlying motives and goals. |
-| `secrets` | string (opt) | Character's secrets. |
-| `trueAffinity` | number (opt) | True affinity score. |
-| `relationshipType` | unknown | - |
-| `status` | unknown | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueName` | string (opt) | The character's real name (if different). | **[STATIC]** | **[CONDITIONAL]** |
+| `realPersonality` | string | True personality - what they REALLY are like. | **[STATIC]** | **[CONDITIONAL]** |
+| `realMotives` | string | True underlying motives and goals. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `secrets` | string (opt) | Character's secrets. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `trueAffinity` | number (opt) | True affinity score. | **[DYNAMIC]** | **[CONDITIONAL]** |
+| `relationshipType` | string | Relationship status from NPC's perspective. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `status` | string | Current state/condition of the NPC. | **[DYNAMIC]** | **[CONDITIONAL]** |
 
 ### relationshipSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: npc:N |
-| `known` | unknown (opt) | Whether the player knows this character. |
-| `currentLocation` | unknown (opt) | The NPC's current location ID (e.g., 'loc:1'). |
-| `visible` | [relationshipVisibleSchema](#relationshipvisibleschema) | - |
-| `hidden` | [relationshipHiddenSchema](#relationshiphiddenschema) | - |
-| `notes` | unknown (opt) | NPC's observations of player's displayed knowledge/behavior. |
-| `unlocked` | unknown (opt) | - |
-| `highlight` | boolean (opt) | - |
-| `createdAt` | number (opt) | - |
-| `lastModified` | number (opt) | - |
-| `lastAccess` | number (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: npc:N | **[STATIC]** | **[VISIBLE]** |
+| `known` | boolean (opt) | Whether the player knows this character. | **[DYNAMIC]** | **[VISIBLE]** |
+| `currentLocation` | string (opt) | The NPC's current location ID (e.g., 'loc:1'). | **[DYNAMIC]** | **[VISIBLE]** |
+| `visible` | [relationshipVisibleSchema](#relationshipvisibleschema) | - | **[MIXED]** | **[VISIBLE]** |
+| `hidden` | [relationshipHiddenSchema](#relationshiphiddenschema) | - | **[MIXED]** | **[CONDITIONAL]** |
+| `notes` | string (opt) | NPC's observations of player's displayed knowledge/behavior. | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, etc. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `createdAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `lastModified` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
 
 ### locationVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Visual description of the location. |
-| `knownFeatures` | string | Known features of the location. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Visual description of the location. | **[STATIC]** | **[VISIBLE]** |
+| `knownFeatures` | string | Known features of the location. | **[SEMI-STATIC]** | **[VISIBLE]** |
 
 ### locationHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `fullDescription` | string | True nature of the location. |
-| `hiddenFeatures` | string | Hidden features not yet discovered. |
-| `secrets` | string | Location secrets. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `fullDescription` | string | True nature of the location. | **[STATIC]** | **[CONDITIONAL]** |
+| `hiddenFeatures` | string | Hidden features not yet discovered. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `secrets` | string | Location secrets. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### locationSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: loc:N |
-| `name` | string | Name of the location. |
-| `visible` | [locationVisibleSchema](#locationvisibleschema) | - |
-| `hidden` | [locationHiddenSchema](#locationhiddenschema) (opt) | - |
-| `environment` | string (opt) | Atmosphere/Environment tag. |
-| `lore` | string (opt) | Location history or lore. |
-| `isVisited` | unknown (opt) | Whether the location has been visited. |
-| `unlocked` | unknown (opt) | - |
-| `highlight` | boolean (opt) | - |
-| `createdAt` | number (opt) | - |
-| `discoveredAt` | number (opt) | - |
-| `lastAccess` | number (opt) | - |
-| `notes` | string (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: loc:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Name of the location. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [locationVisibleSchema](#locationvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [locationHiddenSchema](#locationhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `environment` | string (opt) | Atmosphere/Environment tag. | **[STATIC]** | **[VISIBLE]** |
+| `lore` | string (opt) | Location history or lore. | **[STATIC]** | **[VISIBLE]** |
+| `isVisited` | boolean (opt) | Whether the location has been visited. | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when story context reveals location's secrets. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `createdAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `discoveredAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
+| `notes` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### questVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | The apparent objective. |
-| `objectives` | string | Visible quest objectives. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | The apparent objective. | **[STATIC]** | **[VISIBLE]** |
+| `objectives` | string | Visible quest objectives. | **[SEMI-STATIC]** | **[VISIBLE]** |
 
 ### questHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueDescription` | unknown (opt) | The hidden truth or real purpose. |
-| `trueObjectives` | string (opt) | True hidden objectives. |
-| `secretOutcome` | unknown (opt) | Secret outcome if quest is completed. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueDescription` | string (opt) | The hidden truth or real purpose. | **[STATIC]** | **[CONDITIONAL]** |
+| `trueObjectives` | string (opt) | True hidden objectives. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `secretOutcome` | string (opt) | Secret outcome if quest is completed. | **[STATIC]** | **[CONDITIONAL]** |
 
 ### questSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: quest:N |
-| `title` | string | Quest title. |
-| `type` | [questTypeSchema](#questtypeschema) | Quest type: main, side, or hidden. |
-| `status` | [questStatusSchema](#queststatusschema) (opt) | - |
-| `visible` | [questVisibleSchema](#questvisibleschema) | - |
-| `hidden` | [questHiddenSchema](#questhiddenschema) (opt) | - |
-| `unlocked` | unknown (opt) | AI DECISION: Set true when quest's hidden purpose is revealed. |
-| `highlight` | boolean (opt) | - |
-| `createdAt` | number (opt) | - |
-| `lastModified` | number (opt) | - |
-| `lastAccess` | number (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: quest:N | **[STATIC]** | **[VISIBLE]** |
+| `title` | string | Quest title. | **[STATIC]** | **[VISIBLE]** |
+| `type` | enum (main, side, hidden) | Quest type: main, side, or hidden. | **[STATIC]** | **[VISIBLE]** |
+| `status` | enum (active, completed, failed) (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `visible` | [questVisibleSchema](#questvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [questHiddenSchema](#questhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when quest's hidden purpose is revealed. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `createdAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `lastModified` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
 
 ### skillVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Publicly known description. |
-| `knownEffects` | string | Known effects of the skill. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Publicly known description. | **[STATIC]** | **[VISIBLE]** |
+| `knownEffects` | string | Known effects of the skill. | **[SEMI-STATIC]** | **[VISIBLE]** |
 
 ### skillHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueDescription` | string | True nature/power of the skill. |
-| `hiddenEffects` | string | Hidden effects not yet discovered. |
-| `drawbacks` | string (opt) | Hidden drawbacks or costs. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueDescription` | string | True nature/power of the skill. | **[STATIC]** | **[CONDITIONAL]** |
+| `hiddenEffects` | string | Hidden effects not yet discovered. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `drawbacks` | string (opt) | Hidden drawbacks or costs. | **[STATIC]** | **[CONDITIONAL]** |
 
 ### skillSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: skill:N |
-| `name` | string | Skill name. |
-| `level` | string | Skill level (e.g. Novice, Master, 1-100). |
-| `visible` | [skillVisibleSchema](#skillvisibleschema) | - |
-| `hidden` | [skillHiddenSchema](#skillhiddenschema) (opt) | - |
-| `category` | string (opt) | Skill category. |
-| `experience` | number (opt) | - |
-| `unlocked` | unknown (opt) | - |
-| `highlight` | boolean (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: skill:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Skill name. | **[STATIC]** | **[VISIBLE]** |
+| `level` | string | Skill level (e.g. Novice, Master, 1-100). | **[DYNAMIC]** | **[VISIBLE]** |
+| `visible` | [skillVisibleSchema](#skillvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [skillHiddenSchema](#skillhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `category` | string (opt) | Skill category. | **[STATIC]** | **[VISIBLE]** |
+| `experience` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when skill's hidden nature is understood. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### conditionVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Visible description of the condition. |
-| `perceivedSeverity` | unknown (opt) | How severe it appears to be. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Visible description of the condition. | **[STATIC]** | **[VISIBLE]** |
+| `perceivedSeverity` | string (opt) | How severe it appears to be. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### conditionHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueCause` | string | The true cause of this condition. |
-| `actualSeverity` | unknown (opt) | Actual severity level. |
-| `progression` | unknown (opt) | How the condition will progress. |
-| `cure` | string (opt) | How to cure or remove this condition. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueCause` | string | The true cause of this condition. | **[STATIC]** | **[CONDITIONAL]** |
+| `actualSeverity` | number (opt) | Actual severity level. | **[DYNAMIC]** | **[CONDITIONAL]** |
+| `progression` | string (opt) | How the condition will progress. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `cure` | string (opt) | How to cure or remove this condition. | **[STATIC]** | **[CONDITIONAL]** |
 
 ### conditionEffectsSchema
 
@@ -207,471 +235,519 @@
 
 ### conditionSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: cond:N |
-| `name` | string | Condition name. |
-| `type` | [conditionTypeSchema](#conditiontypeschema) | - |
-| `visible` | [conditionVisibleSchema](#conditionvisibleschema) | - |
-| `hidden` | [conditionHiddenSchema](#conditionhiddenschema) (opt) | - |
-| `effects` | [conditionEffectsSchema](#conditioneffectsschema) | - |
-| `duration` | number (opt) | Duration in turns. |
-| `startTime` | number (opt) | - |
-| `unlocked` | unknown (opt) | AI DECISION: Set true when true cause/cure revealed. |
-| `highlight` | boolean (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: cond:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Condition name. | **[STATIC]** | **[VISIBLE]** |
+| `type` | enum (normal, wound, poison, buff, debuff, mental, curse, stun, unconscious, tired, dead) | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [conditionVisibleSchema](#conditionvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [conditionHiddenSchema](#conditionhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `effects` | [conditionEffectsSchema](#conditioneffectsschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `duration` | number (opt) | Duration in turns. | **[DYNAMIC]** | **[VISIBLE]** |
+| `startTime` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when true cause/cure revealed. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### knowledgeVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | What is commonly known about this topic. |
-| `details` | string (opt) | Additional details or context. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | What is commonly known about this topic. | **[STATIC]** | **[VISIBLE]** |
+| `details` | string (opt) | Additional details or context. | **[STATIC]** | **[VISIBLE]** |
 
 ### knowledgeHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `fullTruth` | string | The complete truth (GM knowledge). |
-| `misconceptions` | string (opt) | Common misconceptions. |
-| `toBeRevealed` | string (opt) | Info to be revealed later. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `fullTruth` | string | The complete truth (GM knowledge). | **[STATIC]** | **[CONDITIONAL]** |
+| `misconceptions` | string (opt) | Common misconceptions. | **[STATIC]** | **[CONDITIONAL]** |
+| `toBeRevealed` | string (opt) | Info to be revealed later. | **[STATIC]** | **[CONDITIONAL]** |
 
 ### knowledgeEntrySchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: know:N |
-| `title` | string | Title of the knowledge entry. |
-| `category` | [knowledgeCategorySchema](#knowledgecategoryschema) | Category for organization. |
-| `visible` | [knowledgeVisibleSchema](#knowledgevisibleschema) | - |
-| `hidden` | [knowledgeHiddenSchema](#knowledgehiddenschema) (opt) | - |
-| `discoveredAt` | unknown (opt) | When this knowledge was discovered. |
-| `relatedTo` | string (opt) | Related entity IDs. |
-| `unlocked` | unknown (opt) | AI DECISION: Set true when full truth discovered. |
-| `highlight` | boolean (opt) | - |
-| `createdAt` | number (opt) | - |
-| `lastModified` | number (opt) | - |
-| `lastAccess` | number (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: know:N | **[STATIC]** | **[VISIBLE]** |
+| `title` | string | Title of the knowledge entry. | **[STATIC]** | **[VISIBLE]** |
+| `category` | enum (landscape, history, item, legend, faction, culture, magic, technology, other) | Category for organization. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [knowledgeVisibleSchema](#knowledgevisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [knowledgeHiddenSchema](#knowledgehiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `discoveredAt` | string (opt) | When this knowledge was discovered. | **[STATIC]** | **[VISIBLE]** |
+| `relatedTo` | string (opt) | Related entity IDs. | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when full truth discovered. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `createdAt` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `lastModified` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
 
 ### timelineEventVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Publicly known description of the event. |
-| `causedBy` | unknown (opt) | Publicly known cause or instigator. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Publicly known description of the event. | **[STATIC]** | **[VISIBLE]** |
+| `causedBy` | string (opt) | Publicly known cause or instigator. | **[STATIC]** | **[VISIBLE]** |
 
 ### timelineEventHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueDescription` | unknown | The true nature of the event (GM knowledge). |
-| `trueCausedBy` | string (opt) | The real instigator or cause. |
-| `consequences` | string (opt) | Hidden consequences or future implications. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueDescription` | string | The true nature of the event (GM knowledge). | **[STATIC]** | **[CONDITIONAL]** |
+| `trueCausedBy` | string (opt) | The real instigator or cause. | **[STATIC]** | **[CONDITIONAL]** |
+| `consequences` | string (opt) | Hidden consequences or future implications. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### timelineEventSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string | Unique ID for the event. Format: evt:N |
-| `gameTime` | string | When the event happened in game time. |
-| `category` | [timelineEventCategorySchema](#timelineeventcategoryschema) | Category of the event. |
-| `visible` | [timelineEventVisibleSchema](#timelineeventvisibleschema) | - |
-| `hidden` | [timelineEventHiddenSchema](#timelineeventhiddenschema) (opt) | - |
-| `involvedEntities` | string (opt) | IDs of involved entities. |
-| `chainId` | string (opt) | Link to a CausalChain. |
-| `unlocked` | unknown (opt) | - |
-| `known` | unknown (opt) | Set to true if the player witnessed or heard about this event. |
-| `lastAccess` | number (opt) | - |
-| `highlight` | boolean (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string | Unique ID for the event. Format: evt:N | **[STATIC]** | **[VISIBLE]** |
+| `gameTime` | string | When the event happened in game time. | **[STATIC]** | **[VISIBLE]** |
+| `category` | enum (player_action, npc_action, world_event, consequence) | Category of the event. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [timelineEventVisibleSchema](#timelineeventvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [timelineEventHiddenSchema](#timelineeventhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `involvedEntities` | string (opt) | IDs of involved entities. | **[STATIC]** | **[VISIBLE]** |
+| `chainId` | string (opt) | Link to a CausalChain. | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | AI DECISION: Set true when event's true cause/consequences uncovered. | **[DYNAMIC]** | **[VISIBLE]** |
+| `known` | boolean (opt) | Set to true if the player witnessed or heard about this event. | **[DYNAMIC]** | **[VISIBLE]** |
+| `lastAccess` | number (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### pendingConsequenceSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string | Unique ID for tracking. |
-| `description` | string | What could happen if triggered. |
-| `readyAfterTurn` | unknown | The consequence CAN'T trigger UNTIL after this turn number. |
-| `createdAtTurn` | unknown (opt) | Turn when this consequence was created. |
-| `conditions` | string (opt) | Narrative conditions you'll check when deciding to trigger. |
-| `triggered` | unknown (opt) | True once consequence has been triggered. |
-| `triggeredAtTurn` | number (opt) | Turn when triggered. |
-| `known` | unknown (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string | Unique ID for tracking. | **[STATIC]** | **[VISIBLE]** |
+| `description` | string | What could happen if triggered. | **[STATIC]** | **[VISIBLE]** |
+| `readyAfterTurn` | number | The consequence CAN'T trigger UNTIL after this turn number. | **[STATIC]** | **[VISIBLE]** |
+| `createdAtTurn` | number (opt) | Turn when this consequence was created. | **[STATIC]** | **[VISIBLE]** |
+| `conditions` | string (opt) | Narrative conditions you'll check when deciding to trigger. | **[STATIC]** | **[VISIBLE]** |
+| `triggered` | boolean (opt) | True once consequence has been triggered. | **[DYNAMIC]** | **[VISIBLE]** |
+| `triggeredAtTurn` | number (opt) | Turn when triggered. | **[DYNAMIC]** | **[VISIBLE]** |
+| `known` | boolean (opt) | Will the player know when this happens? Default false. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### rootCauseSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `eventId` | string | ID of the root cause event. |
-| `description` | string | Description of the root cause. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `eventId` | string | ID of the root cause event. | **[STATIC]** | **[VISIBLE]** |
+| `description` | string | Description of the root cause. | **[STATIC]** | **[VISIBLE]** |
 
 ### causalChainSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `chainId` | string | Format: chain:N |
-| `rootCause` | [rootCauseSchema](#rootcauseschema) | - |
-| `events` | [timelineEventSchema](#timelineeventschema) (opt) | Events in this chain. |
-| `status` | [causalChainStatusSchema](#causalchainstatusschema) | Current status of the chain. |
-| `pendingConsequences` | [pendingConsequenceSchema](#pendingconsequenceschema) (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `chainId` | string | Format: chain:N | **[STATIC]** | **[VISIBLE]** |
+| `rootCause` | [rootCauseSchema](#rootcauseschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `events` | [timelineEventSchema](#timelineeventschema) (opt) | Events in this chain. | **[DYNAMIC]** | **[VISIBLE]** |
+| `status` | enum (active, resolved, interrupted) | Current status of the chain. | **[DYNAMIC]** | **[VISIBLE]** |
+| `pendingConsequences` | [pendingConsequenceSchema](#pendingconsequenceschema) (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### factionMemberSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Name of the member. |
-| `title` | string (opt) | Optional title or role. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | string | Name of the member. | **[STATIC]** | **[VISIBLE]** |
+| `title` | string (opt) | Optional title or role. | **[STATIC]** | **[VISIBLE]** |
 
 ### factionRelationSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `target` | string | Target faction name. |
-| `status` | string | Relationship status. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `target` | string | Target faction name. | **[STATIC]** | **[VISIBLE]** |
+| `status` | string | Relationship status. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### factionVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `agenda` | string | Public agenda/reputation. |
-| `members` | [factionMemberSchema](#factionmemberschema) (opt) | Publicly known members. |
-| `influence` | string (opt) | Perceived influence description. |
-| `relations` | [factionRelationSchema](#factionrelationschema) (opt) | Public alliances/rivalries. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `agenda` | string | Public agenda/reputation. | **[STATIC]** | **[VISIBLE]** |
+| `members` | [factionMemberSchema](#factionmemberschema) (opt) | Publicly known members. | **[STATIC]** | **[VISIBLE]** |
+| `influence` | string (opt) | Perceived influence description. | **[SEMI-STATIC]** | **[VISIBLE]** |
+| `relations` | [factionRelationSchema](#factionrelationschema) (opt) | Public alliances/rivalries. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### factionHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `agenda` | string | Secret agenda/corruption. |
-| `members` | [factionMemberSchema](#factionmemberschema) (opt) | Secret members/leaders. |
-| `influence` | string (opt) | True influence description. |
-| `relations` | [factionRelationSchema](#factionrelationschema) (opt) | Secret alliances/rivalries. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `agenda` | string | Secret agenda/corruption. | **[STATIC]** | **[CONDITIONAL]** |
+| `members` | [factionMemberSchema](#factionmemberschema) (opt) | Secret members/leaders. | **[STATIC]** | **[CONDITIONAL]** |
+| `influence` | string (opt) | True influence description. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
+| `relations` | [factionRelationSchema](#factionrelationschema) (opt) | Secret alliances/rivalries. | **[DYNAMIC]** | **[CONDITIONAL]** |
 
 ### factionSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: fac:N |
-| `name` | string | Faction name. |
-| `visible` | [factionVisibleSchema](#factionvisibleschema) | - |
-| `hidden` | [factionHiddenSchema](#factionhiddenschema) | - |
-| `unlocked` | unknown (opt) | True when secret agenda is revealed. |
-| `highlight` | boolean (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: fac:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Faction name. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [factionVisibleSchema](#factionvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [factionHiddenSchema](#factionhiddenschema) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `unlocked` | boolean (opt) | True when secret agenda is revealed. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### characterAttributeSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `label` | unknown | Name of attribute (e.g. Health, Sanity, Credits). |
-| `value` | number | Current value. |
-| `maxValue` | number | Maximum value. |
-| `color` | [attributeColorSchema](#attributecolorschema) | Visual color hint. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `label` | string | Name of attribute (e.g. Health, Sanity, Credits). | **[STATIC]** | **[VISIBLE]** |
+| `value` | number | Current value. | **[DYNAMIC]** | **[VISIBLE]** |
+| `maxValue` | number | Maximum value. | **[SEMI-STATIC]** | **[VISIBLE]** |
+| `color` | enum (red, blue, green, yellow, purple, gray) | Visual color hint. | **[STATIC]** | **[VISIBLE]** |
 
 ### hiddenTraitSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string (opt) | Format: trait:N |
-| `name` | string | Trait name. |
-| `description` | string | Description of the trait. |
-| `effects` | string | Effects when triggered. |
-| `triggerConditions` | string (opt) | Conditions to trigger the trait. |
-| `unlocked` | unknown | - |
-| `highlight` | boolean (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | string (opt) | Format: trait:N | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | Trait name. | **[STATIC]** | **[VISIBLE]** |
+| `description` | string | Description of the trait. | **[STATIC]** | **[VISIBLE]** |
+| `effects` | string | Effects when triggered. | **[STATIC]** | **[VISIBLE]** |
+| `triggerConditions` | string (opt) | Conditions to trigger the trait. | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean | Set to true when the triggerConditions are met. | **[DYNAMIC]** | **[VISIBLE]** |
+| `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### characterStatusSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Name of the protagonist. |
-| `title` | string | Starting Class/Role/Title. |
-| `status` | string | Initial condition (e.g. Healthy, Amnesiac). |
-| `attributes` | [characterAttributeSchema](#characterattributeschema) | Character attributes. |
-| `skills` | array | Character skills. |
-| `conditions` | array | Active conditions. |
-| `hiddenTraits` | [hiddenTraitSchema](#hiddentraitschema) (opt) | Hidden personality traits. |
-| `appearance` | string | Detailed physical appearance. |
-| `profession` | string | Character's occupation or class. |
-| `background` | string | Brief life story and background. |
-| `race` | unknown | The character's race (e.g. Human, Elf, Dwarf, etc.). |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | string | Name of the protagonist. | **[STATIC]** | **[VISIBLE]** |
+| `title` | string | Starting Class/Role/Title. | **[STATIC]** | **[VISIBLE]** |
+| `status` | string | Initial condition (e.g. Healthy, Amnesiac). | **[DYNAMIC]** | **[VISIBLE]** |
+| `attributes` | [characterAttributeSchema](#characterattributeschema) | Character attributes. | **[DYNAMIC]** | **[VISIBLE]** |
+| `skills` | array | Character skills. | **[DYNAMIC]** | **[VISIBLE]** |
+| `conditions` | array | Active conditions. | **[DYNAMIC]** | **[VISIBLE]** |
+| `hiddenTraits` | [hiddenTraitSchema](#hiddentraitschema) (opt) | Hidden personality traits. | **[STATIC]** | **[CONDITIONAL]** |
+| `appearance` | string | Detailed physical appearance. | **[STATIC]** | **[VISIBLE]** |
+| `profession` | string | Character's occupation or class. | **[STATIC]** | **[VISIBLE]** |
+| `background` | string | Brief life story and background. | **[STATIC]** | **[VISIBLE]** |
+| `race` | string | The character's race (e.g. Human, Elf, Dwarf, etc.). | **[STATIC]** | **[VISIBLE]** |
 
 ### worldSettingVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | Common knowledge about the world. |
-| `rules` | unknown (opt) | Known rules or laws of the world (magic, physics, society). |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | Common knowledge about the world. | **[STATIC]** | **[VISIBLE]** |
+| `rules` | string (opt) | Known rules or laws of the world (magic, physics, society). | **[STATIC]** | **[VISIBLE]** |
 
 ### worldSettingHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `hiddenRules` | unknown (opt) | Secret rules or laws unknown to most. |
-| `secrets` | string (opt) | World-level secrets and hidden truths. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `hiddenRules` | string (opt) | Secret rules or laws unknown to most. | **[STATIC]** | **[CONDITIONAL]** |
+| `secrets` | string (opt) | World-level secrets and hidden truths. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### worldSettingSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `visible` | [worldSettingVisibleSchema](#worldsettingvisibleschema) | - |
-| `hidden` | [worldSettingHiddenSchema](#worldsettinghiddenschema) | Secret truths about the world. |
-| `history` | string | Ancient events that shape the present. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `visible` | [worldSettingVisibleSchema](#worldsettingvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [worldSettingHiddenSchema](#worldsettinghiddenschema) | Secret truths about the world. | **[STATIC]** | **[CONDITIONAL]** |
+| `history` | string | Ancient events that shape the present. | **[STATIC]** | **[VISIBLE]** |
 
 ### mainGoalVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `description` | string | The apparent main motivation or task. |
-| `conditions` | string | Known conditions for achieving the goal. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | string | The apparent main motivation or task. | **[STATIC]** | **[VISIBLE]** |
+| `conditions` | string | Known conditions for achieving the goal. | **[SEMI-STATIC]** | **[VISIBLE]** |
 
 ### mainGoalHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `trueDescription` | unknown | The hidden true nature or purpose of the goal. |
-| `trueConditions` | string | Secret conditions for the true goal. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `trueDescription` | string | The hidden true nature or purpose of the goal. | **[STATIC]** | **[CONDITIONAL]** |
+| `trueConditions` | string | Secret conditions for the true goal. | **[SEMI-STATIC]** | **[CONDITIONAL]** |
 
 ### mainGoalSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `visible` | [mainGoalVisibleSchema](#maingoalvisibleschema) | The apparent goal. |
-| `hidden` | [mainGoalHiddenSchema](#maingoalhiddenschema) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `visible` | [mainGoalVisibleSchema](#maingoalvisibleschema) | The apparent goal. | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [mainGoalHiddenSchema](#maingoalhiddenschema) | - | **[STATIC]** | **[CONDITIONAL]** |
 
 ### atmosphereSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `envTheme` | [envThemeSchema](#envthemeschema) | - |
-| `ambience` | [ambienceSchema](#ambienceschema) | - |
-| `weather` | [weatherEffectSchema](#weathereffectschema) (opt) | Specific visual weather effect to render. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `envTheme` | enum (fantasy, scifi, cyberpunk, horror, mystery, romance, royal, wuxia, demonic, ethereal, modern, gold, villain, sepia, rose, war, sunset, cold, violet, nature, artdeco, intrigue, wasteland, patriotic, cyan, silver, obsidian) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `ambience` | enum (cave, city, combat, desert, dungeon, forest, horror, market, mystical, ocean, quiet, rain, scifi, snow, storm, tavern) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `weather` | enum (none, rain, snow, fog, embers, flicker, sunny) (opt) | Specific visual weather effect to render. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### storyOutlineSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `title` | string | A creative title for the adventure. |
-| `initialTime` | unknown | - |
-| `premise` | string | The inciting incident and setting setup. |
-| `mainGoal` | [mainGoalSchema](#maingoalschema) | The primary driving force of the story. |
-| `quests` | [questSchema](#questschema) | Initial quests (at least one main quest is required). |
-| `worldSetting` | [worldSettingSchema](#worldsettingschema) | Dual-layer world setting. |
-| `factions` | [factionSchema](#factionschema) | Major power groups or factions. |
-| `locations` | [locationSchema](#locationschema) | Initial locations with full details. |
-| `knowledge` | [knowledgeEntrySchema](#knowledgeentryschema) | Initial knowledge entries about the world. |
-| `timeline` | [timelineEventSchema](#timelineeventschema) | Initial timeline events representing the backstory. |
-| `character` | [characterStatusSchema](#characterstatusschema) | - |
-| `inventory` | [inventoryItemSchema](#inventoryitemschema) | Initial items in the inventory (1-3 items). |
-| `relationships` | [relationshipSchema](#relationshipschema) | Initial relationships (1-2 NPCs). |
-| `initialAtmosphere` | [atmosphereSchema](#atmosphereschema) | - |
-| `worldSettingUnlocked` | unknown (opt) | True when worldSetting.hidden is revealed. |
-| `mainGoalUnlocked` | unknown (opt) | True when mainGoal.hidden is revealed. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `title` | string | A creative title for the adventure. | **[STATIC]** | **[VISIBLE]** |
+| `initialTime` | string | The starting time of the story. | **[STATIC]** | **[VISIBLE]** |
+| `premise` | string | The inciting incident and setting setup. | **[STATIC]** | **[VISIBLE]** |
+| `mainGoal` | [mainGoalSchema](#maingoalschema) | The primary driving force of the story. | **[STATIC]** | **[VISIBLE]** |
+| `quests` | [questSchema](#questschema) | Initial quests (at least one main quest is required). | **[STATIC]** | **[VISIBLE]** |
+| `worldSetting` | [worldSettingSchema](#worldsettingschema) | Dual-layer world setting. | **[STATIC]** | **[VISIBLE]** |
+| `factions` | [factionSchema](#factionschema) | Major power groups or factions. | **[STATIC]** | **[VISIBLE]** |
+| `locations` | [locationSchema](#locationschema) | Initial locations with full details. | **[STATIC]** | **[VISIBLE]** |
+| `knowledge` | [knowledgeEntrySchema](#knowledgeentryschema) | Initial knowledge entries about the world. | **[STATIC]** | **[VISIBLE]** |
+| `timeline` | [timelineEventSchema](#timelineeventschema) | Initial timeline events representing the backstory. | **[STATIC]** | **[VISIBLE]** |
+| `character` | [characterStatusSchema](#characterstatusschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `inventory` | [inventoryItemSchema](#inventoryitemschema) | Initial items in the inventory (1-3 items). | **[STATIC]** | **[VISIBLE]** |
+| `relationships` | [relationshipSchema](#relationshipschema) | Initial relationships (1-2 NPCs). | **[STATIC]** | **[VISIBLE]** |
+| `initialAtmosphere` | [atmosphereSchema](#atmosphereschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `worldSettingUnlocked` | boolean (opt) | True when worldSetting.hidden is revealed. | **[DYNAMIC]** | **[VISIBLE]** |
+| `mainGoalUnlocked` | boolean (opt) | True when mainGoal.hidden is revealed. | **[DYNAMIC]** | **[VISIBLE]** |
 
 ### outlinePhase1Schema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `title` | string | A creative title for the adventure. |
-| `initialTime` | unknown | - |
-| `premise` | unknown | The inciting incident and setting setup (2-3 paragraphs). |
-| `worldSetting` | [worldSettingSchema](#worldsettingschema) | - |
-| `mainGoal` | [mainGoalSchema](#maingoalschema) | The primary driving force of the story. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `title` | string | A creative title for the adventure. | **[STATIC]** | **[VISIBLE]** |
+| `initialTime` | string | The starting time of the story. | **[STATIC]** | **[VISIBLE]** |
+| `premise` | string | The inciting incident and setting setup (2-3 paragraphs). | **[STATIC]** | **[VISIBLE]** |
+| `worldSetting` | [worldSettingSchema](#worldsettingschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `mainGoal` | [mainGoalSchema](#maingoalschema) | The primary driving force of the story. | **[STATIC]** | **[VISIBLE]** |
 
 ### outlinePhase2Schema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `character` | [characterStatusSchema](#characterstatusschema) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `character` | [characterStatusSchema](#characterstatusschema) | - | **[STATIC]** | **[VISIBLE]** |
 
 ### outlinePhase3Schema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `locations` | [locationSchema](#locationschema) | 1-2 initial locations with detailed visible and hidden layers. |
-| `factions` | [factionSchema](#factionschema) | 2-3 major power groups with visible and hidden agendas. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `locations` | [locationSchema](#locationschema) | 1-2 initial locations with detailed visible and hidden layers. | **[STATIC]** | **[VISIBLE]** |
+| `factions` | [factionSchema](#factionschema) | 2-3 major power groups with visible and hidden agendas. | **[STATIC]** | **[VISIBLE]** |
 
 ### outlinePhase4Schema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `relationships` | [relationshipSchema](#relationshipschema) | - |
-| `inventory` | [inventoryItemSchema](#inventoryitemschema) | 1-3 starting items with detailed lore and hidden properties. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `relationships` | [relationshipSchema](#relationshipschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `inventory` | [inventoryItemSchema](#inventoryitemschema) | 1-3 starting items with detailed lore and hidden properties. | **[STATIC]** | **[VISIBLE]** |
 
 ### outlinePhase5Schema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `quests` | [questSchema](#questschema) | - |
-| `knowledge` | [knowledgeEntrySchema](#knowledgeentryschema) | 2-3 initial knowledge entries about the world. |
-| `timeline` | [timelineEventSchema](#timelineeventschema) | 3-5 backstory timeline events with visible and hidden layers. |
-| `initialAtmosphere` | [atmosphereSchema](#atmosphereschema) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `quests` | [questSchema](#questschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `knowledge` | [knowledgeEntrySchema](#knowledgeentryschema) | 2-3 initial knowledge entries about the world. | **[STATIC]** | **[VISIBLE]** |
+| `timeline` | [timelineEventSchema](#timelineeventschema) | 3-5 backstory timeline events with visible and hidden layers. | **[STATIC]** | **[VISIBLE]** |
+| `initialAtmosphere` | [atmosphereSchema](#atmosphereschema) | - | **[STATIC]** | **[VISIBLE]** |
 
 ### summaryVisibleSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `narrative` | string | Narrative summary from player perspective. |
-| `majorEvents` | string | List of major events player witnessed. |
-| `characterDevelopment` | unknown | Character development from player's view. |
-| `worldState` | string | World state as player understands it. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `narrative` | string | Narrative summary from player perspective. | **[STATIC]** | **[VISIBLE]** |
+| `majorEvents` | string | List of major events player witnessed. | **[STATIC]** | **[VISIBLE]** |
+| `characterDevelopment` | string | Character development from player's view. | **[STATIC]** | **[VISIBLE]** |
+| `worldState` | string | World state as player understands it. | **[STATIC]** | **[VISIBLE]** |
 
 ### summaryHiddenSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `truthNarrative` | unknown | Objective truth narrative of what really happened. |
-| `hiddenPlots` | string | Hidden plots developing in the background. |
-| `npcActions` | string | NPC actions player didn't witness. |
-| `worldTruth` | string | Real state of the world. |
-| `unrevealed` | string | Secrets not yet revealed to player. |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `truthNarrative` | string | Objective truth narrative of what really happened. | **[STATIC]** | **[CONDITIONAL]** |
+| `hiddenPlots` | string | Hidden plots developing in the background. | **[STATIC]** | **[CONDITIONAL]** |
+| `npcActions` | string | NPC actions player didn't witness. | **[STATIC]** | **[CONDITIONAL]** |
+| `worldTruth` | string | Real state of the world. | **[STATIC]** | **[CONDITIONAL]** |
+| `unrevealed` | string | Secrets not yet revealed to player. | **[STATIC]** | **[CONDITIONAL]** |
 
 ### storySummarySchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | number (opt) | - |
-| `displayText` | unknown | - |
-| `visible` | [summaryVisibleSchema](#summaryvisibleschema) | - |
-| `hidden` | [summaryHiddenSchema](#summaryhiddenschema) | - |
-| `timeRange` | string | - |
-| `from` | string | - |
-| `to` | string | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | number (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `displayText` | string | Concise 2-3 sentence summary for UI display. | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [summaryVisibleSchema](#summaryvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [summaryHiddenSchema](#summaryhiddenschema) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `timeRange` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `from` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `to` | string | - | **[STATIC]** | **[VISIBLE]** |
 
 ### gameResponseSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `narrative` | unknown | - |
-| `choices` | string | 2-4 options for the player's next action. |
-| `imagePrompt` | unknown (opt) | - |
-| `generateImage` | unknown (opt) | Whether to generate an image for this turn. |
-| `atmosphere` | [atmosphereSchema](#atmosphereschema) (opt) | - |
-| `narrativeTone` | unknown (opt) | - |
-| `inventoryActions` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `name` | string | - |
-| `visible` | [inventoryItemVisibleSchema](#inventoryitemvisibleschema) (opt) | - |
-| `hidden` | [inventoryItemHiddenSchema](#inventoryitemhiddenschema) (opt) | - |
-| `lore` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `relationshipActions` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `known` | boolean (opt) | - |
-| `visible` | [relationshipVisibleSchema](#relationshipvisibleschema) (opt) | - |
-| `hidden` | [relationshipHiddenSchema](#relationshiphiddenschema) (opt) | - |
-| `notes` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `locationActions` | enum | - |
-| `type` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `name` | string | - |
-| `visible` | [locationVisibleSchema](#locationvisibleschema) (opt) | - |
-| `hidden` | [locationHiddenSchema](#locationhiddenschema) (opt) | - |
-| `lore` | string (opt) | - |
-| `environment` | string (opt) | - |
-| `notes` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `questActions` | enum | - |
-| `action` | enum | - |
-| `id` | string | - |
-| `title` | string (opt) | - |
-| `type` | [questTypeSchema](#questtypeschema) (opt) | - |
-| `visible` | [questVisibleSchema](#questvisibleschema) (opt) | - |
-| `hidden` | [questHiddenSchema](#questhiddenschema) (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `knowledgeActions` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `title` | string (opt) | - |
-| `category` | [knowledgeCategorySchema](#knowledgecategoryschema) (opt) | - |
-| `visible` | [knowledgeVisibleSchema](#knowledgevisibleschema) (opt) | - |
-| `hidden` | [knowledgeHiddenSchema](#knowledgehiddenschema) (opt) | - |
-| `discoveredAt` | string (opt) | - |
-| `relatedTo` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `factionActions` | enum | - |
-| `action` | enum | - |
-| `id` | string | - |
-| `name` | string | - |
-| `visible` | string (opt) | - |
-| `hidden` | string (opt) | - |
-| `characterUpdates` | enum | - |
-| `attributes` | enum | - |
-| `action` | enum | - |
-| `name` | string | - |
-| `value` | number (opt) | - |
-| `maxValue` | number (opt) | - |
-| `color` | [attributeColorSchema](#attributecolorschema) (opt) | - |
-| `skills` | enum | - |
-| `action` | enum | - |
-| `name` | string | - |
-| `level` | string (opt) | - |
-| `visible` | [skillVisibleSchema](#skillvisibleschema) (opt) | - |
-| `hidden` | [skillHiddenSchema](#skillhiddenschema) (opt) | - |
-| `category` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `conditions` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `name` | string | - |
-| `type` | [conditionTypeSchema](#conditiontypeschema) (opt) | - |
-| `visible` | [conditionVisibleSchema](#conditionvisibleschema) (opt) | - |
-| `hidden` | [conditionHiddenSchema](#conditionhiddenschema) (opt) | - |
-| `effects` | [conditionEffectsSchema](#conditioneffectsschema) (opt) | - |
-| `duration` | number (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `hiddenTraits` | enum | - |
-| `action` | enum | - |
-| `id` | string (opt) | - |
-| `name` | string | - |
-| `description` | string (opt) | - |
-| `effects` | string (opt) | - |
-| `triggerConditions` | string (opt) | - |
-| `unlocked` | boolean (opt) | - |
-| `profile` | string (opt) | - |
-| `status` | string (opt) | - |
-| `appearance` | string (opt) | - |
-| `profession` | string (opt) | - |
-| `background` | string (opt) | - |
-| `race` | string (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `narrative` | string | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `choices` | string[] | 2-4 options for the player's next action. | **[DYNAMIC]** | **[VISIBLE]** |
+| `imagePrompt` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `generateImage` | boolean (opt) | Whether to generate an image for this turn. | **[DYNAMIC]** | **[VISIBLE]** |
+| `atmosphere` | [atmosphereSchema](#atmosphereschema) (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `narrativeTone` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `inventoryActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, remove, update) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [inventoryItemVisibleSchema](#inventoryitemvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [inventoryItemHiddenSchema](#inventoryitemhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `lore` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `relationshipActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, remove) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `known` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `visible` | [relationshipVisibleSchema](#relationshipvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [relationshipHiddenSchema](#relationshiphiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `notes` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `locationActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `type` | enum (current, known) | - | **[STATIC]** | **[VISIBLE]** |
+| `action` | enum (update, add) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [locationVisibleSchema](#locationvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [locationHiddenSchema](#locationhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `lore` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `environment` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `notes` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `questActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, complete, fail) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `title` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `type` | [questTypeSchema](#questtypeschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [questVisibleSchema](#questvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [questHiddenSchema](#questhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `knowledgeActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `title` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `category` | [knowledgeCategorySchema](#knowledgecategoryschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [knowledgeVisibleSchema](#knowledgevisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [knowledgeHiddenSchema](#knowledgehiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `discoveredAt` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `relatedTo` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `factionActions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (update) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | string (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `characterUpdates` | object | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `attributes` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, remove) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `value` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `maxValue` | number (opt) | - | **[SEMI-STATIC]** | **[VISIBLE]** |
+| `color` | [attributeColorSchema](#attributecolorschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `skills` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, remove) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `level` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `visible` | [skillVisibleSchema](#skillvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [skillHiddenSchema](#skillhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `category` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `conditions` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, remove) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `type` | [conditionTypeSchema](#conditiontypeschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `visible` | [conditionVisibleSchema](#conditionvisibleschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `hidden` | [conditionHiddenSchema](#conditionhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
+| `effects` | [conditionEffectsSchema](#conditioneffectsschema) (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `duration` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `hiddenTraits` | array | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `action` | enum (add, update, remove) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `id` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `description` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `effects` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `triggerConditions` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `unlocked` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `profile` | object (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `status` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `appearance` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `profession` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `background` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `race` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
 
 ### finishTurnSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `narrative` | string | - |
-| `choices` | string | - |
-| `imagePrompt` | unknown (opt) | Optional prompt for generating an image of the current scene. |
-| `generateImage` | unknown (opt) | Whether to generate an image for this turn. |
-| `atmosphere` | [atmosphereSchema](#atmosphereschema) (opt) | - |
-| `narrativeTone` | unknown (opt) | - |
-| `aliveEntities` | string (opt) | Item IDs (inv:N) relevant for next turn. |
-| `inventory` | string (opt) | Item IDs (inv:N) relevant for next turn. |
-| `relationships` | string (opt) | NPC IDs (npc:N) relevant for next turn. |
-| `locations` | string (opt) | Location IDs (loc:N) relevant for next turn. |
-| `quests` | string (opt) | Quest IDs (quest:N) relevant for next turn. |
-| `knowledge` | string (opt) | Knowledge IDs (know:N) relevant for next turn. |
-| `timeline` | string (opt) | Event IDs (evt:N) relevant for next turn. |
-| `skills` | string (opt) | Character skill IDs relevant for next turn. |
-| `conditions` | string (opt) | Character condition IDs relevant for next turn. |
-| `hiddenTraits` | string (opt) | Character hidden trait IDs relevant for next turn. |
-| `causalChains` | string (opt) | - |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `narrative` | string | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `choices` | string[] | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `imagePrompt` | string (opt) | Optional prompt for generating an image of the current scene. | **[DYNAMIC]** | **[VISIBLE]** |
+| `generateImage` | boolean (opt) | Whether to generate an image for this turn. | **[DYNAMIC]** | **[VISIBLE]** |
+| `atmosphere` | [atmosphereSchema](#atmosphereschema) (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `narrativeTone` | string (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
+| `aliveEntities` | object (opt) | Item IDs (inv:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `inventory` | string[] (opt) | Item IDs (inv:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `relationships` | string[] (opt) | NPC IDs (npc:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `locations` | string[] (opt) | Location IDs (loc:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `quests` | string[] (opt) | Quest IDs (quest:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `knowledge` | string[] (opt) | Knowledge IDs (know:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `timeline` | string[] (opt) | Event IDs (evt:N) relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `skills` | string[] (opt) | Character skill IDs relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `conditions` | string[] (opt) | Character condition IDs relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `hiddenTraits` | string[] (opt) | Character hidden trait IDs relevant for next turn. | **[DYNAMIC]** | **[INVISIBLE]** |
+| `causalChains` | string[] (opt) | - | **[DYNAMIC]** | **[INVISIBLE]** |
+| `ending` | enum (continue, death, victory, true_ending, bad_ending, neutral_ending) (opt) | Story continuation status. | **[DYNAMIC]** | **[VISIBLE]** |
+| `forceEnd` | boolean (opt) | If true, game ends permanently. | **[DYNAMIC]** | **[VISIBLE]** |
+| `ragQueries` | string[] (opt) | Semantic search queries for next turn context. | **[DYNAMIC]** | **[INVISIBLE]** |
 
 ### translationSchema
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `segments` | string | - |
-| `id` | string | - |
-| `text` | string | - |
-| `choices` | string | - |
-| `inventory` | string (opt) | - |
-| `character` | string (opt) | - |
-| `name` | string (opt) | - |
-| `title` | string (opt) | - |
-| `appearance` | string (opt) | - |
-| `profession` | string (opt) | - |
-| `background` | string (opt) | - |
-| `race` | string (opt) | - |
-
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| Field | Type | Description | Mutability | Visibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `segments` | array | - | **[STATIC]** | **[VISIBLE]** |
+| `id` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `text` | string | - | **[STATIC]** | **[VISIBLE]** |
+| `choices` | string[] | - | **[STATIC]** | **[VISIBLE]** |
+| `inventory` | string[] (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `character` | object (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `name` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `title` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `appearance` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `profession` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `background` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |
+| `race` | string (opt) | - | **[STATIC]** | **[VISIBLE]** |

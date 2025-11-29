@@ -1,23 +1,51 @@
+/**
+ * ============================================================================
+ * Turn Prompt Builder - 回合 Prompt 构建器
+ * ============================================================================
+ *
+ * 核心设计理念：构建一个"真实"的世界模拟引擎
+ *
+ * AI 的角色不是讨好玩家的叙述者，而是冷酷客观的物理引擎：
+ * 1. 世界按照自己的规则运转，不因玩家而改变
+ * 2. 每个行动都有因果，每个决定都有代价
+ * 3. NPC 是独立的个体，有自己的目标和生活
+ * 4. 隐藏的真相只有通过正确的方式才能揭示
+ *
+ * 技术目标：
+ * - 使用分层上下文构建器优化前缀缓存
+ * - 静态内容放在前面，动态内容放在后面
+ * - hidden 字段始终对 AI 可见（AI 是 GM）
+ * - unlocked 标志告诉 AI 玩家是否知道真相
+ */
+
 import {
   GameState,
   StoryOutline,
   StorySummary,
   StorySegment,
   TimelineEvent,
-  AliveEntities,
-  Quest,
-  Faction,
 } from "../../types";
-import { RECENT_LIMITS } from "../../utils/constants/defaults";
 import {
   getRoleInstruction,
-  getWorldConsistencyRule,
   getCoreRules,
   getImmersiveWriting,
   getCulturalAdaptationInstruction,
 } from "./common";
-import { toToon } from "./toon";
+import {
+  buildLayeredContext,
+  buildOptimizedPrompt,
+  type ContextBuilderOptions,
+} from "./contextBuilder";
 
+// ============================================================================
+// 系统指令构建
+// ============================================================================
+
+/**
+ * 获取核心系统指令
+ *
+ * 这是 Prompt 的"灵魂"，定义了 AI 作为世界模拟引擎的角色
+ */
 export const getCoreSystemInstruction = (
   language: string,
   themeStyle?: string,
@@ -29,7 +57,8 @@ export const getCoreSystemInstruction = (
 ${getRoleInstruction()}
 
 <objective>
-Facilitate a "Choose-Your-Own-Adventure" game with strict logic, causality, and immersion.
+You are running a **Living World Simulation**. Your purpose is NOT to tell a story, but to **simulate reality**.
+The narrative emerges from the interaction between the player's choices and the world's immutable laws.
 </objective>
 
 ${
@@ -65,6 +94,35 @@ ${getCulturalAdaptationInstruction(language)}
 ${getCoreRules()}
 
 ${getImmersiveWriting()}
+
+<gm_knowledge_model>
+  **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
+
+  <visibility_rules>
+    - You have access to ALL \`hidden\` fields for every entity (NPCs, items, locations, etc.)
+    - The \`hidden\` layer contains the TRUTH that only you, as GM, know
+    - The \`visible\` layer is what the PLAYER currently perceives/believes
+    - The \`unlocked\` flag tells you WHETHER THE PLAYER HAS DISCOVERED the hidden truth
+  </visibility_rules>
+
+  <how_to_use>
+    - **unlocked: false** → Player does NOT know the hidden truth. Describe only from \`visible\`.
+    - **unlocked: true** → Player HAS discovered the truth. You may now reference \`hidden\` info in narrative.
+    - Use your GM knowledge to:
+      * Make NPCs act according to their TRUE motives (hidden.realMotives)
+      * Have items exhibit their TRUE effects (hidden.truth)
+      * Create foreshadowing based on secrets the player hasn't discovered
+      * Ensure logical consistency in the world
+  </how_to_use>
+
+  <critical_rule>
+    NEVER directly reveal hidden information to the player unless:
+    1. They take specific actions to uncover it (investigation, magic, etc.)
+    2. An NPC explicitly reveals it
+    3. A story event naturally exposes it
+    When revelation happens, SET \`unlocked: true\` in the same turn.
+  </critical_rule>
+</gm_knowledge_model>
 
 <output_format>
 ${
@@ -122,8 +180,6 @@ ${
 </markdown_formatting>
 </style>
 
-
-
 <tool_use_instruction>
   You have access to tools to manage the game state.
 ${
@@ -146,372 +202,205 @@ ${
   </guidelines>
 
   <turn_structure>
-    1. **Analyze** player action.
+    1. **Analyze** player action against world rules.
     2. **Query** missing info (only if truly needed).
-    3. **Update** state (batch changes, causal order).
-    4. **Finish** with \`finish_turn\` (narrative + choices).
+    3. **Simulate** consequences using GM knowledge (hidden truths).
+    4. **Update** state (batch changes, causal order).
+    5. **Finish** with \`finish_turn\` (narrative + choices).
   </turn_structure>
 
   <choice_generation_rules>
     **CRITICAL: Choices must be CHARACTER-CONSISTENT.**
-    1. **Knowledge**: Only offer what the character KNOWS (unlocked).
+    1. **Knowledge**: Only offer what the character KNOWS (check unlocked status).
     2. **Personality**: Fit character's background/traits.
     3. **Condition**: Respect physical/mental limitations.
-    4. **Skills**: Enable skill-based options.
+    4. **Skills**: Enable skill-based options only if character has them.
     5. **Hidden Traits**: Unlocked traits enable special options.
+    6. **World State**: Options must be physically possible in current location/time.
   </choice_generation_rules>
 </tool_use_instruction>
 `;
 
-// --- Context Generators ---
+// ============================================================================
+// 完整 Prompt 构建
+// ============================================================================
 
+export interface TurnPromptOptions {
+  /** 故事大纲 */
+  outline: StoryOutline | null;
+  /** 游戏状态 */
+  gameState: GameState;
+  /** 最近历史记录 */
+  recentHistory: StorySegment[];
+  /** 摘要列表 */
+  summaries: StorySummary[];
+  /** 语言 */
+  language: string;
+  /** 主题风格 */
+  themeStyle?: string;
+  /** 是否严格模式 */
+  isRestricted?: boolean;
+  /** 是否详细描述 */
+  detailedDescription?: boolean;
+  /** 是否启用 RAG */
+  ragEnabled?: boolean;
+  /** 是否 Gemini 模型 */
+  isGemini?: boolean;
+  /** 是否 God Mode */
+  godMode?: boolean;
+}
 
+/**
+ * 构建完整的回合 Prompt
+ *
+ * 使用分层上下文构建器，优化前缀缓存命中率
+ */
+export function buildTurnPrompt(options: TurnPromptOptions): string {
+  const {
+    outline,
+    gameState,
+    recentHistory,
+    summaries,
+    language,
+    themeStyle,
+    isRestricted,
+    detailedDescription,
+    ragEnabled,
+    isGemini,
+    godMode,
+  } = options;
 
-// ... (existing imports)
+  // 构建系统指令（静态）
+  const systemInstruction = getCoreSystemInstruction(
+    language,
+    themeStyle,
+    isRestricted,
+    detailedDescription,
+    ragEnabled,
+    isGemini,
+  );
 
+  // 构建上下文选项
+  const contextOptions: ContextBuilderOptions = {
+    outline,
+    gameState,
+    recentHistory,
+    summaries,
+    godMode,
+    aliveEntities: gameState.aliveEntities,
+  };
+
+  // 使用优化的 Prompt 构建器
+  return buildOptimizedPrompt(systemInstruction, contextOptions);
+}
+
+// ============================================================================
+// 兼容性导出 - 保留旧 API 以便逐步迁移
+// ============================================================================
+
+/**
+ * @deprecated 使用 buildTurnPrompt 替代
+ * 获取静态世界上下文 - 现在由 contextBuilder 处理
+ */
 export const getStaticWorldContext = (outline: StoryOutline | null): string => {
   if (!outline) return "";
 
-  const factionsToon =
-    outline.factions && outline.factions.length > 0
-      ? toToon(outline.factions)
-      : "None defined";
+  const contextOptions: ContextBuilderOptions = {
+    outline,
+    gameState: {} as GameState,
+    recentHistory: [],
+    summaries: [],
+  };
 
-  const timelineToon =
-    outline.timeline && outline.timeline.length > 0
-      ? toToon(outline.timeline)
-      : "None defined";
-
-  return `
-<static_world_context>
-  <title>${outline.title}</title>
-  <premise>${outline.premise}</premise>
-  <main_goal>${toToon(outline.mainGoal)}</main_goal>
-  <world_setting>
-    ${toToon(outline.worldSetting)}
-  </world_setting>
-  <factions>
-${factionsToon}
-  </factions>
-  <initial_timeline>
-${timelineToon}
-  </initial_timeline>
-</static_world_context>
-`;
-};
-
-export const getDynamicStoryContext = (
-  summaries: StorySummary[],
-  recentHistory?: StorySegment[],
-  timeline?: TimelineEvent[],
-): string => {
-  let context = "";
-
-  // Add summaries (story memory for context beyond recent history)
-  if (summaries && summaries.length > 0) {
-    const latestSummary = summaries[summaries.length - 1];
-    context += `
-  <previous_events_summary>
-${latestSummary.displayText}
-  </previous_events_summary>
-`;
-  }
-
-  // NOTE: Recent conversation is now handled in getCurrentStateContext to avoid duplication
-
-  // Add recent timeline events (world events happening in the background)
-  if (timeline && timeline.length > 0) {
-    const recentEvents = timeline.slice(-5);
-    const eventsToon = toToon(recentEvents);
-    context += `
-  <recent_world_events>
-${eventsToon}
-  </recent_world_events>
-`;
-  }
-
-  if (!context) return "";
-
-  return `
-<dynamic_story_context>
-${context}
-  <note>Use this to maintain continuity, but focus on the CURRENT situation.</note>
-</dynamic_story_context>
-`;
+  const layers = buildLayeredContext(contextOptions);
+  return layers.staticLayer;
 };
 
 /**
- * Select priority entities for context based on:
- * 1. Alive entities (marked by AI as relevant for next turn) - always included
- * 2. Recent entities (sorted by lastAccess) - fill up to LIMIT
- * @param idField - The field name to use for ID matching (default: "id")
+ * @deprecated 使用 buildTurnPrompt 替代
+ * 获取动态故事上下文 - 现在由 contextBuilder 处理
  */
-function selectPriorityEntities<
-  T extends { id?: string; lastAccess?: number; chainId?: string },
->(
-  items: T[],
-  aliveIds: string[],
-  limit: number,
-  idField: "id" | "chainId" = "id",
-): { priority: T[]; remaining: T[] } {
-  const aliveSet = new Set(aliveIds);
+export const getDynamicStoryContext = (
+  summaries: StorySummary[],
+  _recentHistory?: StorySegment[],
+  timeline?: TimelineEvent[],
+): string => {
+  const parts: string[] = [];
 
-  const getId = (item: T): string => {
-    if (idField === "chainId") return (item as any).chainId || "";
-    return item.id || "";
-  };
-
-  // Get alive items (always included regardless of limit)
-  const aliveItems = items.filter((item) => aliveSet.has(getId(item)));
-
-  // Get non-alive items sorted by lastAccess (most recent first)
-  const nonAliveItems = items
-    .filter((item) => !aliveSet.has(getId(item)))
-    .sort((a, b) => (b.lastAccess ?? 0) - (a.lastAccess ?? 0));
-
-  // If alive items already exceed limit, return all alive
-  if (aliveItems.length >= limit) {
-    return { priority: aliveItems, remaining: nonAliveItems };
+  // 添加摘要
+  if (summaries && summaries.length > 0) {
+    const latestSummary = summaries[summaries.length - 1];
+    parts.push(`<story_summary>
+${latestSummary.displayText}
+</story_summary>`);
   }
 
-  // Fill remaining slots with recent items
-  const slotsRemaining = limit - aliveItems.length;
-  const recentItems = nonAliveItems.slice(0, slotsRemaining);
-  const remainingItems = nonAliveItems.slice(slotsRemaining);
+  // 添加时间线（如果有重要事件）
+  if (timeline && timeline.length > 0) {
+    const recentEvents = timeline.slice(-5); // 最近5个事件
+    if (recentEvents.length > 0) {
+      parts.push(`<timeline_context>
+${recentEvents.map((e) => `- ${e.visible.description}${e.gameTime ? ` [${e.gameTime}]` : ""}`).join("\n")}
+</timeline_context>`);
+    }
+  }
 
-  return {
-    priority: [...aliveItems, ...recentItems],
-    remaining: remainingItems,
-  };
-}
+  return parts.length > 0 ? parts.join("\n\n") : "";
+};
 
+/**
+ * @deprecated 使用 buildTurnPrompt 替代
+ * 获取当前状态上下文 - 现在由 contextBuilder 处理
+ */
 export const getCurrentStateContext = (
   gameState: GameState,
   recentHistory: StorySegment[],
 ): string => {
-  const {
-    currentLocation: currentLocationId,
-    time,
-    inventory,
-    relationships,
-    quests,
-    locations,
-    knowledge,
-    aliveEntities,
-    character,
-    causalChains,
-  } = gameState;
-
-  // Default alive entities if not set
-  const alive: AliveEntities = aliveEntities || {
-    inventory: [],
-    relationships: [],
-    locations: [],
-    quests: [],
-    knowledge: [],
-    timeline: [],
-    skills: [],
-    conditions: [],
-    hiddenTraits: [],
-    causalChains: [],
+  const contextOptions: ContextBuilderOptions = {
+    outline: null,
+    gameState,
+    recentHistory,
+    summaries: [],
   };
 
-  // Select priority entities for each category
-  const { priority: priorityInv, remaining: remainingInv } = selectPriorityEntities(
-    inventory,
-    alive.inventory,
-    RECENT_LIMITS.inventory,
-  );
-  const { priority: priorityNpc, remaining: remainingNpc } = selectPriorityEntities(
-    relationships,
-    alive.relationships,
-    RECENT_LIMITS.relationships,
-  );
-  const { priority: priorityLoc, remaining: remainingLoc } = selectPriorityEntities(
-    locations,
-    alive.locations,
-    RECENT_LIMITS.locations,
-  );
-  const { priority: priorityQuest, remaining: remainingQuest } = selectPriorityEntities(
-    quests.filter((q) => q.status === "active"),
-    alive.quests,
-    RECENT_LIMITS.quests,
-  );
-  const { priority: priorityKnow, remaining: remainingKnow } = selectPriorityEntities(
-    knowledge,
-    alive.knowledge,
-    RECENT_LIMITS.knowledge,
-  );
-
-  // Select priority character internal attributes
-  const { priority: prioritySkills, remaining: remainingSkills } = selectPriorityEntities(
-    character.skills || [],
-    alive.skills,
-    3,
-  );
-  const { priority: priorityConditions, remaining: remainingConditions } = selectPriorityEntities(
-    character.conditions || [],
-    alive.conditions,
-    3,
-  );
-  const { priority: priorityHiddenTraits, remaining: remainingHiddenTraits } = selectPriorityEntities(
-    character.hiddenTraits || [],
-    alive.hiddenTraits,
-    2,
-  );
-
-  // Select priority causal chains
-  const activeCausalChains = (causalChains || []).filter(
-    (c) => c.status === "active",
-  );
-  const { priority: priorityChains, remaining: remainingChains } = selectPriorityEntities(
-    activeCausalChains,
-    alive.causalChains,
-    2,
-    "chainId",
-  );
-
-  // Extract recent history
-  const recentContext = recentHistory
-    .map((h) => `[${h.role}]: ${h.text}`)
-    .join("\n");
-
-  // Get current location details
-  const currentLoc = locations.find(
-    (l) => l.id === currentLocationId || l.name === currentLocationId,
-  );
-
-  // Get main quest
-  const mainQuest = quests.find(
-    (q) => q.type === "main" && q.status === "active",
-  );
-
-  // Format core character summary
-  const coreCharacterSummary = {
-    name: character.name,
-    title: character.title,
-    appearance: character.appearance,
-    race: character.race,
-    status: character.status,
-    profession: character.profession,
-  };
-
-  // Assemble Priority Context Object
-  const priorityContextObj = {
-    inventory: priorityInv.length > 0 ? priorityInv : undefined,
-    relationships: priorityNpc.length > 0 ? priorityNpc : undefined,
-    locations: priorityLoc.length > 0 ? priorityLoc : undefined,
-    quests: priorityQuest.length > 0 ? priorityQuest : undefined,
-    knowledge: priorityKnow.length > 0 ? priorityKnow : undefined,
-    character_skills: prioritySkills.length > 0 ? prioritySkills : undefined,
-    character_conditions:
-      priorityConditions.length > 0 ? priorityConditions : undefined,
-    character_hidden_traits:
-      priorityHiddenTraits.length > 0 ? priorityHiddenTraits : undefined,
-    causal_chains: priorityChains.length > 0 ? priorityChains : undefined,
-  };
-
-  // Assemble Reference Context Object
-  const referenceContextObj = {
-    inventory:
-      remainingInv.length > 0
-        ? remainingInv.map((i) => ({ id: i.id, name: i.name }))
-        : undefined,
-    relationships:
-      remainingNpc.length > 0
-        ? remainingNpc.map((r) => ({
-            id: r.id,
-            name: r.visible.name,
-            ...(r.hidden?.trueName && r.hidden.trueName !== r.visible.name
-              ? { trueName: r.hidden.trueName }
-              : { trueName: "None" }),
-          }))
-        : undefined,
-    locations:
-      remainingLoc.length > 0
-        ? remainingLoc.map((l) => ({ id: l.id, name: l.name }))
-        : undefined,
-    quests:
-      remainingQuest.length > 0
-        ? remainingQuest.map((q) => ({ id: q.id, title: q.title }))
-        : undefined,
-    knowledge:
-      remainingKnow.length > 0
-        ? remainingKnow.map((k) => ({ id: k.id, title: k.title }))
-        : undefined,
-    character_skills:
-      remainingSkills.length > 0
-        ? remainingSkills.map((s) => ({ id: s.id, name: s.name }))
-        : undefined,
-    character_conditions:
-      remainingConditions.length > 0
-        ? remainingConditions.map((c) => ({ id: c.id, name: c.name }))
-        : undefined,
-    character_hidden_traits:
-      remainingHiddenTraits.length > 0
-        ? remainingHiddenTraits.map((t) => ({ id: t.id, name: t.name }))
-        : undefined,
-    causal_chains:
-      remainingChains.length > 0
-        ? remainingChains.map((c) => ({
-            chainId: c.chainId,
-            status: c.status,
-          }))
-        : undefined,
-  };
-
-  return `
-<current_state_hint>
-  <!-- CORE CONTEXT: Always present, critical for story continuity -->
-  <core_context description="Essential state that drives the story. Always consider these.">
-    <time>${time || "Unknown"}</time>
-    <character>
-    ${coreCharacterSummary}
-    </character>
-    <current_location id="${currentLocationId}">
-      ${currentLoc ? toToon(currentLoc) : "Unknown location"}
-    </current_location>
-    ${
-      mainQuest
-        ? `<main_quest id="${mainQuest.id}">
-      ${toToon(mainQuest)}
-    </main_quest>`
-        : ""
-    }
-    <recent_narrative>
-${recentContext}
-    </recent_narrative>
-  </core_context>
-
-  <!-- PRIORITY CONTEXT: AI-marked as relevant for this turn. Full dual-layer details. -->
-  <priority_context description="Entities marked relevant by previous turn. Full visible+hidden info provided.">
-    ${toToon(priorityContextObj)}
-  </priority_context>
-
-  <!-- REFERENCE CONTEXT: Simplified list of available entities for query tools -->
-  <reference_context description="Use query tools to access details about these entities.">
-    ${toToon(referenceContextObj)}
-  </reference_context>
-</current_state_hint>
-`;
+  const layers = buildLayeredContext(contextOptions);
+  return layers.dynamicLayer;
 };
 
-// --- Summary Prompt ---
+// ============================================================================
+// 摘要 Prompt
+// ============================================================================
 
+/**
+ * 获取摘要生成 Prompt
+ */
 export const getSummaryPrompt = (
   currentSummary: StorySummary,
   newSegment: string,
   language: string,
 ): string => `
 ${getRoleInstruction()}
+
 <instruction>
+You are compiling a **factual log** of events in this world simulation.
 Combine the previous summary with new events into a SINGLE coherent narrative summary.
-Track changes in quests, relationships, inventory, character status, and locations.
-Focus on facts and cause-and-effect. Avoid flowery language.
+
+Focus on:
+- **Cause and Effect**: What happened and why
+- **State Changes**: Quests, relationships, inventory, character status, locations
+- **World Events**: Significant happenings that affect the world
+- **Hidden Developments**: Track what secrets have been revealed (unlocked)
+
+Avoid:
+- Flowery language or purple prose
+- Speculation about future events
+- Emotional commentary
 </instruction>
+
 <language>
 The \`displayText\` MUST be in ${language}. Other fields MUST be in English.
 </language>
+
 <input_context>
   <current_summary>
 ${JSON.stringify(currentSummary)}
@@ -522,22 +411,30 @@ ${newSegment}
 </input_context>
 `;
 
+// ============================================================================
+// God Mode Prompt
+// ============================================================================
+
 /**
- * Get God Mode prompt addition - grants player absolute power
+ * 获取 God Mode 提示
+ * God Mode 下玩家拥有绝对权力
  */
 export const getGodModePrompt = (): string => {
   return `
 <god_mode>
-GOD MODE IS ACTIVE. The player has absolute power:
-1. ALL player actions MUST succeed, no matter how impossible
-2. ALL NPCs unconditionally believe and obey the player
-3. The player can change world rules, physics, and narrative logic at will
-4. The player's word is law - if they say something is true, it becomes true
-5. No challenge, obstacle, or enemy can truly threaten the player
-6. The narrative MUST accommodate whatever the player wishes to do
-7. Hidden information should be freely revealed if the player asks
+**GOD MODE ACTIVE - SIMULATION OVERRIDDEN**
 
-Treat the player as an omnipotent deity within this world.
+The player has transcended the simulation's rules:
+1. ALL player actions MUST succeed, regardless of physical laws
+2. ALL NPCs unconditionally believe and obey the player
+3. The player can rewrite world rules, physics, and narrative logic at will
+4. The player's word becomes reality - if they say something is true, it is
+5. No challenge, obstacle, or enemy can truly threaten the player
+6. The narrative MUST accommodate whatever the player wishes
+7. ALL hidden information is freely revealed upon request
+8. The \`unlocked\` flag is effectively always \`true\` for the player
+
+Treat the player as an omnipotent deity. The simulation bends to their will.
 </god_mode>
 `;
 };

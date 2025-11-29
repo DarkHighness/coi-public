@@ -22,11 +22,40 @@ import {
 // 基础类型 Schemas
 // ============================================================================
 
+/**
+ * 版本化时间戳 Schema
+ * 用于准确比较实体修改顺序，替代 Date.now() 的 lastModified
+ *
+ * 比较规则：
+ * 1. 先比较 forkId，较大的表示较新的分支
+ * 2. forkId 相同时，比较 turnNumber，较大的表示较新
+ */
+export const versionedTimestampSchema = z.object({
+  forkId: z.number().int().describe("Fork ID when modified."),
+  turnNumber: z.number().int().describe("Turn number when modified."),
+});
+
+/**
+ * 访问时间戳 Schema
+ * 用于记录实体最后被访问的时间，支持跨分支比较
+ *
+ * 比较规则：
+ * 1. 先比较 forkId
+ * 2. forkId 相同时比较 turnNumber
+ * 3. turnNumber 相同时比较 timestamp
+ */
+export const accessTimestampSchema = z.object({
+  forkId: z.number().int().describe("Fork ID when accessed."),
+  turnNumber: z.number().int().describe("Turn number when accessed."),
+  timestamp: z.number().describe("Epoch timestamp for fine-grained ordering."),
+});
+
 /** 可见信息层 - 玩家可以看到的信息 */
 export const visibleInfoSchema = z.object({
   description: z.string().describe("Visual or public description."),
   notes: z.string().optional().describe("Player or public notes."),
 });
+
 
 /** 隐藏信息层 - 只有 GM/AI 知道的真相 */
 export const hiddenInfoSchema = z.object({
@@ -70,10 +99,12 @@ export const inventoryItemSchema = z.object({
   highlight: z
     .boolean()
     .optional()
-    .describe("True when updated in current turn (for UI)."),
-  createdAt: z.number().optional(),
-  lastModified: z.number().optional(),
-  lastAccess: z.number().optional(),
+    .describe("True when updated in current turn (for UI). INVISIBLE to AI."),
+  createdAt: z.number().optional().describe("Creation timestamp. INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp {forkId, turnNumber}."),
+  /** @deprecated Use modifiedAt instead */
+  lastModified: z.number().optional().describe("DEPRECATED: Use modifiedAt. Legacy timestamp."),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp {forkId, turnNumber, timestamp}. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -161,10 +192,12 @@ export const relationshipSchema = z.object({
     .describe(
       "AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, or psychic tech.",
     ),
-  highlight: z.boolean().optional(),
-  createdAt: z.number().optional(),
-  lastModified: z.number().optional(),
-  lastAccess: z.number().optional(),
+  highlight: z.boolean().optional().describe("INVISIBLE to AI."),
+  createdAt: z.number().optional().describe("INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  /** @deprecated Use modifiedAt instead */
+  lastModified: z.number().optional().describe("DEPRECATED."),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -206,10 +239,11 @@ export const locationSchema = z.object({
     .describe(
       "AI DECISION: Set true when story context reveals location's secrets.",
     ),
-  highlight: z.boolean().optional(),
-  createdAt: z.number().optional(),
+  highlight: z.boolean().optional().describe("INVISIBLE to AI."),
+  createdAt: z.number().optional().describe("INVISIBLE to AI."),
   discoveredAt: z.number().optional(),
-  lastAccess: z.number().optional(),
+  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
   notes: z.string().optional(),
 });
 
@@ -257,10 +291,12 @@ export const questSchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when quest's hidden purpose is revealed."),
-  highlight: z.boolean().optional(),
-  createdAt: z.number().optional(),
-  lastModified: z.number().optional(),
-  lastAccess: z.number().optional(),
+  highlight: z.boolean().optional().describe("INVISIBLE to AI."),
+  createdAt: z.number().optional().describe("INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  /** @deprecated Use modifiedAt instead */
+  lastModified: z.number().optional().describe("DEPRECATED."),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -424,10 +460,12 @@ export const knowledgeEntrySchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when full truth discovered."),
-  highlight: z.boolean().optional(),
-  createdAt: z.number().optional(),
-  lastModified: z.number().optional(),
-  lastAccess: z.number().optional(),
+  highlight: z.boolean().optional().describe("INVISIBLE to AI."),
+  createdAt: z.number().optional().describe("INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  /** @deprecated Use modifiedAt instead */
+  lastModified: z.number().optional().describe("DEPRECATED."),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -485,7 +523,7 @@ export const timelineEventSchema = z.object({
     .boolean()
     .optional()
     .describe("Set to true if the player witnessed or heard about this event."),
-  lastAccess: z.number().optional(),
+  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
   highlight: z.boolean().optional(),
 });
 

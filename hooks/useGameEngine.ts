@@ -884,19 +884,35 @@ export const useGameEngine = () => {
         isProcessing: false,
       }));
 
+      // Check if we have saved conversation state from previous phases
+      const savedConversation = gameStateRef.current.outlineConversation;
+      const hasProgress = savedConversation && savedConversation.currentPhase > 0;
+
       // Show alert asking if user wants to retry
-      const shouldRetry = window.confirm(
-        `${errorMessage}\n\nWould you like to retry generating the story outline?`,
-      );
+      const retryMessage = hasProgress
+        ? `${errorMessage}\n\nYou have progress saved from phase ${savedConversation.currentPhase}. Would you like to resume from where you left off?`
+        : `${errorMessage}\n\nWould you like to retry generating the story outline?`;
+
+      const shouldRetry = window.confirm(retryMessage);
 
       if (shouldRetry) {
-        // Retry outline generation
-        return startNewGame(
-          selectedTheme,
-          customContext,
-          onStream,
-          onPhaseProgress,
-        );
+        // If we have saved progress, use resumeOutlineGeneration to continue from saved state
+        if (hasProgress) {
+          console.log(`[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhase}`);
+          // Set processing state back
+          setGameState((prev) => ({ ...prev, isProcessing: true }));
+          // Call resumeOutlineGeneration instead of starting over
+          return resumeOutlineGeneration(onStream, onPhaseProgress);
+        } else {
+          // No saved progress, start fresh but keep the same slot
+          console.log("[StartNewGame] No saved progress, retrying from scratch");
+          return startNewGame(
+            selectedTheme,
+            customContext,
+            onStream,
+            onPhaseProgress,
+          );
+        }
       } else {
         // User chose not to retry - clean up and go back
         deleteSlot(slotId);

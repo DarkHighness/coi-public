@@ -117,15 +117,11 @@ import {
 import { getEnvApiKey } from "../utils/env";
 import {
   getCoreSystemInstruction,
-  getStaticWorldContext,
-  getDynamicStoryContext,
   getSceneImagePrompt,
   getTranslationPrompt,
   getOutlinePrompt,
   getSummaryPrompt,
-  getCurrentStateContext,
   getVeoScriptPrompt,
-  getGodModePrompt,
   // Phased outline generation
   getOutlineSystemInstruction,
   getOutlinePhase1Prompt,
@@ -135,6 +131,9 @@ import {
   getOutlinePhase5Prompt,
   getPhaseAcknowledgment,
   OUTLINE_PHASES,
+  // New context builder system
+  buildLayeredContext,
+  type ContextBuilderOptions,
 } from "./prompts/index";
 import { TOOLS } from "./tools";
 import {
@@ -1259,112 +1258,80 @@ const resolveThemeConfig = (
 };
 
 /**
- * Build system instruction - contains STATIC content that rarely changes.
- * This is placed in the system role for optimal KV Cache utilization.
+ * Build turn messages using the new layered context system.
+ *
+ * Message structure optimized for prefix caching:
+ * 1. System instruction (getCoreSystemInstruction) - in systemInstruction
+ * 2. Static context (world outline, character base, entities static) - changes rarely
+ * 3. Semi-static context (summaries, entity descriptions) - changes occasionally
+ * 4. Dynamic context (current state, recent history) - changes every turn
+ * 5. RAG context (if enabled) - changes based on semantic search
+ * 6. User action - the actual player input
  */
-const buildSystemContext = (
-  language: string,
-  narrativeStyle: string,
-  example: string | undefined,
-  isRestricted: boolean,
-  outline: StoryOutline | null,
-  godMode?: boolean,
-  detailedDescription?: boolean,
-  ragEnabled?: boolean,
-  isGemini?: boolean,
-): string => {
-  const coreSystemInstruction = getCoreSystemInstruction(
-    language,
-    narrativeStyle,
-    isRestricted,
-    detailedDescription,
-    ragEnabled,
-    isGemini,
-  );
-  const staticWorldContext = getStaticWorldContext(outline);
-
-  // Add God Mode prompt if active
-  const godModeSection = godMode ? getGodModePrompt() : "";
-
-  return `${coreSystemInstruction}\n\n${staticWorldContext}${godModeSection}`;
-};
-
-/**
- * Build turn contents with optimized message structure for KV Cache.
- */
-const buildTurnContents = (
-  summaries: StorySummary[],
-  currentStateContext: string,
+const buildTurnMessages = (
+  layers: ReturnType<typeof buildLayeredContext>,
   recentHistory: StorySegment[],
-  timeline: TimelineEvent[],
   userAction: string,
   ragContext?: string,
 ): { messages: UnifiedMessage[]; dynamicContext: string } => {
   const messages: UnifiedMessage[] = [];
 
-  // === Message 1: Story Memory (STATIC - changes only after summarization) ===
-  const dynamicContext = getDynamicStoryContext(
-    summaries,
-    recentHistory,
-    timeline,
-  );
-
-  if (dynamicContext) {
+  // === Message 1: Static Layer (rarely changes - best for prefix cache) ===
+  if (layers.staticLayer) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Story Memory]\n<story_memory>\n${dynamicContext}\n</story_memory>`,
+        `[CONTEXT: World Foundation]\n${layers.staticLayer}`,
       ),
     );
     messages.push({
       role: "assistant",
-      content: [{ type: "text", text: "[Memory acknowledged.]" }],
+      content: [{ type: "text", text: "[World foundation acknowledged.]" }],
     });
   }
 
-  // === Message 2: RAG Context (DYNAMIC - semantic search results) ===
+  // === Message 2: Semi-Static Layer (summaries, descriptions) ===
+  if (layers.semiStaticLayer) {
+    messages.push(
+      createUserMessage(
+        `[CONTEXT: Story Background]\n${layers.semiStaticLayer}`,
+      ),
+    );
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[Background acknowledged.]" }],
+    });
+  }
+
+  // === Message 3: RAG Context (semantic search results) ===
   if (ragContext && ragContext.trim()) {
     messages.push(
       createUserMessage(
-        `[CONTEXT: Relevant Background]\n<semantic_context>\n${ragContext}\n</semantic_context>`,
+        `[CONTEXT: Relevant Lore]\n<semantic_context>\n${ragContext}\n</semantic_context>`,
       ),
     );
     messages.push({
       role: "assistant",
-      content: [{ type: "text", text: "[Background context acknowledged.]" }],
+      content: [{ type: "text", text: "[Lore context acknowledged.]" }],
     });
   }
 
-  // === Message 3: Recent History (DYNAMIC - before current state) ===
-  if (recentHistory.length > 0) {
-    const historyText = recentHistory
-      .map((seg) => `[${seg.role.toUpperCase()}]: ${seg.text}`)
-      .join("\n\n");
-
-    messages.push(
-      createUserMessage(
-        `[CONTEXT: Recent Conversation]\n<recent_history>\n${historyText}\n</recent_history>`,
-      ),
-    );
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[History acknowledged.]" }],
-    });
-  }
-
-  // === Message 4: Current State Hints (SEMI-STATIC - IDs and names) ===
+  // === Message 4: Dynamic Layer (current state, entities state) ===
   messages.push(
-    createUserMessage(`[CONTEXT: Current State]\n${currentStateContext}`),
+    createUserMessage(
+      `[CONTEXT: Current Situation]\n${layers.dynamicLayer}`,
+    ),
   );
   messages.push({
     role: "assistant",
     content: [
-      { type: "text", text: "[State acknowledged. Awaiting player action.]" },
+      { type: "text", text: "[Current situation acknowledged. Awaiting player action.]" },
     ],
   });
 
-  // === Final Message: User Action with Instructions ===
+  // === Final Message: User Action ===
   messages.push(createUserMessage(userAction));
-  return { messages, dynamicContext };
+
+  return { messages, dynamicContext: layers.dynamicLayer };
 };
 
 // ============================================================================
@@ -1469,7 +1436,7 @@ export const generateAdventureTurn = async (
     throw new Error("Story provider not configured");
   }
   const { instance, modelId } = providerInfo;
-  const { narrativeStyle, example, isRestricted } = resolveThemeConfig(
+  const { narrativeStyle, isRestricted } = resolveThemeConfig(
     context.themeKey,
     context.language,
     context.tFunc as (key: string, options?: Record<string, unknown>) => string,
@@ -1481,18 +1448,17 @@ export const generateAdventureTurn = async (
   // Check if provider is Gemini
   const isGemini = instance.protocol === "gemini";
 
-  let systemInstruction = buildSystemContext(
+  // ===== NEW: Build system instruction using getCoreSystemInstruction =====
+  let systemInstruction = getCoreSystemInstruction(
     context.language,
     narrativeStyle,
-    example,
     isRestricted,
-    gameState.outline,
-    gameState.godMode,
     settings.extra?.detailedDescription,
     isRAGEnabled,
     isGemini,
   );
 
+  // Handle prompt injection if enabled
   const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
   if (promptInjectionEnabled && promptInjectionData) {
     const loweredModelId = modelId.toLowerCase();
@@ -1510,17 +1476,24 @@ export const generateAdventureTurn = async (
     }
   }
 
-  // Try to get RAG context if embedding is enabled
-  // Note: RAG context is now provided via context.ragContext parameter
-  // The new RAG service (services/rag) is integrated through hooks/useRAG.ts
-  // and the context is passed in from the game engine layer
-  let ragContext: string | undefined = context.ragContext;
+  // ===== NEW: Build layered context using contextBuilder =====
+  const contextOptions: ContextBuilderOptions = {
+    outline: gameState.outline,
+    gameState,
+    recentHistory: context.recentHistory,
+    summaries: gameState.summaries,
+    godMode: gameState.godMode,
+    aliveEntities: gameState.aliveEntities,
+  };
+  const layers = buildLayeredContext(contextOptions);
 
-  const { messages, dynamicContext } = buildTurnContents(
-    gameState.summaries,
-    getCurrentStateContext(gameState, context.recentHistory),
+  // Get RAG context from parameter
+  const ragContext: string | undefined = context.ragContext;
+
+  // ===== NEW: Build messages using layered context =====
+  const { messages, dynamicContext } = buildTurnMessages(
+    layers,
     context.recentHistory,
-    gameState.timeline || [],
     context.userAction,
     ragContext,
   );

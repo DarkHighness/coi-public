@@ -1,6 +1,135 @@
 import type { AtmosphereObject } from "./utils/constants/atmosphere";
 
 // ============================================================================
+// 版本化时间戳类型
+// ============================================================================
+
+/**
+ * 版本化时间戳 - 用于准确比较实体修改顺序
+ *
+ * 设计理由：
+ * - 分叉后，不同分支的 turnNumber 可能相同
+ * - 使用 {forkId, turnNumber} 可以准确判断修改顺序
+ * - 当前两者都无法判断时，使用 timestamp 作为 fallback
+ *
+ * 比较规则：
+ * 1. 先比较 forkId，较大的表示较新的分支
+ * 2. forkId 相同时，比较 turnNumber，较大的表示较新
+ * 3. 都相同时，比较 timestamp
+ */
+export interface VersionedTimestamp {
+  forkId: number;
+  turnNumber: number;
+  timestamp: number; // Date.now() 作为 fallback
+}
+
+/**
+ * 访问时间戳 - 用于记录实体最后被访问的时间
+ *
+ * 比较规则：
+ * 1. 先比较 forkId
+ * 2. forkId 相同时比较 turnNumber
+ * 3. turnNumber 相同时比较 timestamp
+ */
+export interface AccessTimestamp {
+  forkId: number;
+  turnNumber: number;
+  timestamp: number;
+}
+
+/**
+ * 比较两个版本化时间戳
+ * @returns 负数表示 a 在 b 之前，正数表示 a 在 b 之后，0 表示相同
+ */
+export function compareVersionedTimestamp(
+  a: VersionedTimestamp | undefined,
+  b: VersionedTimestamp | undefined,
+): number {
+  // undefined 视为最早
+  if (!a && !b) return 0;
+  if (!a) return -1;
+  if (!b) return 1;
+
+  // 先比较 forkId
+  if (a.forkId !== b.forkId) {
+    return a.forkId - b.forkId;
+  }
+  // 相同 forkId 时比较 turnNumber
+  if (a.turnNumber !== b.turnNumber) {
+    return a.turnNumber - b.turnNumber;
+  }
+  // 都相同时比较 timestamp
+  return a.timestamp - b.timestamp;
+}
+
+/**
+ * 比较两个访问时间戳
+ * @returns 负数表示 a 在 b 之前，正数表示 a 在 b 之后，0 表示相同
+ */
+export function compareAccessTimestamp(
+  a: AccessTimestamp | undefined,
+  b: AccessTimestamp | undefined,
+): number {
+  // undefined 视为最早（最不活跃）
+  if (!a && !b) return 0;
+  if (!a) return -1;
+  if (!b) return 1;
+
+  // 先比较 forkId
+  if (a.forkId !== b.forkId) {
+    return a.forkId - b.forkId;
+  }
+  // 相同 forkId 时比较 turnNumber
+  if (a.turnNumber !== b.turnNumber) {
+    return a.turnNumber - b.turnNumber;
+  }
+  // 都相同时比较 timestamp
+  return a.timestamp - b.timestamp;
+}
+
+/**
+ * 创建当前版本化时间戳
+ */
+export function createVersionedTimestamp(state: {
+  forkId: number;
+  turnNumber: number;
+}): VersionedTimestamp {
+  return {
+    forkId: state.forkId,
+    turnNumber: state.turnNumber,
+    timestamp: Date.now(),
+  };
+}
+
+/**
+ * 从旧格式的 lastModified/lastAccess（Date.now()）迁移到版本化时间戳
+ * 用于向后兼容
+ */
+export function migrateFromLegacyTimestamp(
+  legacyTimestamp: number | VersionedTimestamp | undefined,
+  defaultForkId: number = 0,
+  defaultTurnNumber: number = 0,
+): VersionedTimestamp {
+  if (!legacyTimestamp) {
+    return { forkId: defaultForkId, turnNumber: defaultTurnNumber, timestamp: Date.now() };
+  }
+  if (typeof legacyTimestamp === "object" && "forkId" in legacyTimestamp) {
+    // 已经是新格式，确保有 timestamp
+    return {
+      forkId: legacyTimestamp.forkId,
+      turnNumber: legacyTimestamp.turnNumber,
+      timestamp: legacyTimestamp.timestamp ?? Date.now(),
+    };
+  }
+  // 旧格式是 Date.now()，保留作为 timestamp
+  return {
+    forkId: defaultForkId,
+    turnNumber: defaultTurnNumber,
+    timestamp: typeof legacyTimestamp === "number" ? legacyTimestamp : Date.now(),
+  };
+}
+
+// ============================================================================
 // 从 zodSchemas.ts 导入统一的类型
 // ============================================================================
 // 这些类型由 Zod schema 推导而来，确保 AI 生成验证和 TypeScript 类型的一致性
@@ -42,6 +171,23 @@ import type {
 
 /** 辅助类型：确保 id 和 createdAt 等系统字段是必需的 */
 type WithRequiredId<T> = T & { id: string };
+
+/**
+ * 带版本化时间戳的类型
+ * - modifiedAt: 版本化时间戳 {forkId, turnNumber}
+ * - createdAt: 创建时的时间戳（保持 Date.now() 格式用于 UI 显示）
+ * - lastModified: 保留用于向后兼容
+ */
+type WithVersionedTimestamps<T> = T & {
+  createdAt: number;
+  modifiedAt?: VersionedTimestamp;
+  lastModified: number; // Keep for backward compatibility
+};
+
+/**
+ * @deprecated 使用 WithVersionedTimestamps 替代
+ * 保留用于向后兼容
+ */
 type WithRequiredTimestamps<T> = T & {
   createdAt: number;
   lastModified: number;
@@ -49,18 +195,19 @@ type WithRequiredTimestamps<T> = T & {
 
 // 导出应用层类型（带必需的系统字段）
 export type InventoryItem = WithRequiredId<
-  WithRequiredTimestamps<ZodInventoryItem>
+  WithVersionedTimestamps<ZodInventoryItem>
 >;
 export type Relationship = WithRequiredId<
-  WithRequiredTimestamps<ZodRelationship>
+  WithVersionedTimestamps<ZodRelationship>
 >;
 export type Location = WithRequiredId<ZodLocation> & {
   isVisited: boolean;
   createdAt: number;
+  modifiedAt?: VersionedTimestamp;
 };
-export type Quest = WithRequiredId<WithRequiredTimestamps<ZodQuest>>;
+export type Quest = WithRequiredId<WithVersionedTimestamps<ZodQuest>>;
 export type KnowledgeEntry = WithRequiredId<
-  WithRequiredTimestamps<ZodKnowledgeEntry>
+  WithVersionedTimestamps<ZodKnowledgeEntry>
 >;
 export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
