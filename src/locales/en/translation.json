@@ -256,7 +256,8 @@
     "maxMemory": "Max Memory Documents",
     "selectModel": "Please select an embedding model",
     "noModelsAvailable": "No embedding models available, please check provider settings.",
-    "noModels": "No embedding model selected."
+    "noModels": "No embedding model selected.",
+    "providerDisabled": "Provider has been disabled."
   },
   "themeMode": "Theme Mode",
   "settings": {
@@ -704,8 +705,7 @@
     "noHiddenTraitsRevealed": "No hidden traits revealed.",
     "trueName": "True Name",
     "trueRelationship": "True Relationship",
-    "trueStatus": "True Status",
-    "providerDisabled": "Provider has been disabled."
+    "trueStatus": "True Status"
   },
   "gameOver": "GAME OVER",
   "victory": "VICTORY",

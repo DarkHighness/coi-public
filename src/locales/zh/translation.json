@@ -244,7 +244,8 @@
     "maxMemory": "最大内存文档数",
     "selectModel": "请选择嵌入模型",
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
-    "noModels": "未选择嵌入模型。"
+    "noModels": "未选择嵌入模型。",
+    "providerDisabled": "提供商已禁用"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
@@ -706,8 +707,7 @@
     "noHiddenTraitsRevealed": "暂无已揭示的隐藏特质。",
     "trueName": "真实姓名",
     "trueRelationship": "真实关系",
-    "trueStatus": "真实状态",
-    "providerDisabled": "提供商已禁用"
+    "trueStatus": "真实状态"
   },
   "gameOver": "游戏结束",
   "victory": "胜利",
