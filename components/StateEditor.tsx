@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState } from "../types";
+import { getValidIcon } from "../utils/emojiValidator";
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -257,7 +258,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                         : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                     }`}
                   >
-                    <span className="text-lg">{config.icon}</span>
+                    <span className="text-lg">{getValidIcon(config.icon, "📖")}</span>
                     <span className="text-sm font-medium md:truncate">
                       {t(config.labelKey) || section}
                     </span>
@@ -273,7 +274,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-hidden">
                 <span className="text-lg flex-none">
-                  {SECTION_CONFIGS[activeSection].icon}
+                  {getValidIcon(SECTION_CONFIGS[activeSection].icon, "📖")}
                 </span>
                 <span className="font-medium text-theme-text truncate">
                   {t(SECTION_CONFIGS[activeSection].labelKey) || activeSection}

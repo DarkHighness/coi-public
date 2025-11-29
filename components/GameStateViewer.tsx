@@ -15,6 +15,7 @@ import {
   StorySummary,
 } from "../types";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
+import { getValidIcon } from "../utils/emojiValidator";
 
 interface GameStateViewerProps {
   isOpen: boolean;
@@ -1215,7 +1216,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   key={item.id || idx}
                   className="p-2 bg-theme-bg/50 rounded border border-theme-border/50 flex items-center gap-2"
                 >
-                  <span className="text-lg">{item.icon || "📦"}</span>
+                  <span className="text-lg">{getValidIcon(item.icon, "📦")}</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-theme-text text-sm truncate">
                       {item.name}
@@ -1390,7 +1391,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                   }`}
                 >
-                  <span>{config.icon}</span>
+                  <span>{getValidIcon(config.icon, "📖")}</span>
                   <span className="text-sm font-medium">
                     {t(config.labelKey) || tab}
                   </span>

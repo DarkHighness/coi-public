@@ -22,6 +22,7 @@ export {
   envThemeSchema,
   ambienceSchema,
   finishTurnSchema,
+  forceUpdateSchema,
   // 分阶段 Outline Schemas
   outlinePhase1Schema,
   outlinePhase2Schema,
@@ -65,6 +66,7 @@ export type {
   EnvTheme,
   Ambience,
   FinishTurnResponse,
+  ForceUpdateResponse,
   // 分阶段 Outline 类型
   OutlinePhase1,
   OutlinePhase2,

@@ -23,7 +23,17 @@ interface ActionPanelProps {
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
   onRetry?: () => void;
+  onForceUpdate?: (prompt: string) => void;
 }
+
+const SUPPORTED_COMMANDS = [
+  { cmd: "/god", desc: "Toggle God Mode" },
+  { cmd: "/unlock", desc: "Unlock All Info" },
+  { cmd: "/edit", desc: "Edit State" },
+  { cmd: "/rag", desc: "RAG Debugger" },
+  { cmd: "/view", desc: "View State" },
+  { cmd: "/sudo", desc: "Force Update" },
+];
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
   gameState,
@@ -37,6 +47,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenViewer,
   onTriggerSave,
   onRetry,
+  onForceUpdate,
 }) => {
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
@@ -64,8 +75,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     if (typeof choice === "string") return choice;
     if (typeof choice === "object" && choice !== null) {
       // Handle cases where AI returns { choice: "...", effect: "..." }
+      // Also handle new schema { description: "...", consequence: "..." }
       return (
-        choice.choice || choice.text || choice.label || JSON.stringify(choice)
+        choice.description ||
+        choice.choice ||
+        choice.text ||
+        choice.label ||
+        JSON.stringify(choice)
       );
     }
     return String(choice);
@@ -156,6 +172,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       onOpenRAG?.();
     } else if (action.type === "open_viewer") {
       onOpenViewer?.();
+    } else if (action.type === "force_update") {
+      onForceUpdate?.(action.prompt);
     } else {
       executeCommandAction(action, gameState, setGameState);
 
@@ -342,27 +360,34 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                       >
                         <button
                           onClick={() => onAction(label)}
-                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left"
+                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
                         >
                           <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             {idx + 1}
                           </span>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => (
-                                <span className="inline">{children}</span>
-                              ),
-                              strong: ({ children }) => (
-                                <span className="font-bold">{children}</span>
-                              ),
-                              em: ({ children }) => (
-                                <span className="italic">{children}</span>
-                              ),
-                            }}
-                          >
-                            {label}
-                          </ReactMarkdown>
+                          <div className="font-medium">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => (
+                                  <span className="inline">{children}</span>
+                                ),
+                                strong: ({ children }) => (
+                                  <span className="font-bold">{children}</span>
+                                ),
+                                em: ({ children }) => (
+                                  <span className="italic">{children}</span>
+                                ),
+                              }}
+                            >
+                              {label}
+                            </ReactMarkdown>
+                          </div>
+                          {(rawChoice as any).consequence && (
+                            <span className="text-[10px] opacity-80 mt-0.5 font-normal italic block">
+                              {(rawChoice as any).consequence}
+                            </span>
+                          )}
                         </button>
                         <button
                           onClick={(e) => handleRollClick(e, label)}
@@ -389,6 +414,21 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 </div>
               </div>
             )}
+
+          {/* Command Hints */}
+          <div className="flex flex-wrap gap-2 justify-center px-4">
+            {SUPPORTED_COMMANDS.map((cmd) => (
+              <button
+                key={cmd.cmd}
+                onClick={() => setCustomInput(cmd.cmd + " ")}
+                disabled={isDisabled}
+                className="px-2 py-1 text-[10px] bg-theme-surface/30 border border-theme-border/50 rounded-md text-theme-muted hover:text-theme-primary hover:border-theme-primary/50 transition-colors"
+                title={cmd.desc}
+              >
+                {cmd.cmd}
+              </button>
+            ))}
+          </div>
 
           {/* Input Bar */}
           <div className="relative">

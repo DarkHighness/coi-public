@@ -89,6 +89,7 @@ interface GamePageProps {
   currentSlotId: string | null;
   onViewedSegmentChange: (segment: StorySegment) => void;
   triggerSave?: () => void;
+  handleForceUpdate: (prompt: string) => void;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
@@ -113,6 +114,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   currentSlotId,
   onViewedSegmentChange,
   triggerSave,
+  handleForceUpdate,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -346,6 +348,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
           onTriggerSave={triggerSave}
+          onForceUpdate={handleForceUpdate}
         />
 
         <DesktopGameLayout
@@ -400,6 +403,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
           onTriggerSave={triggerSave}
+          onForceUpdate={handleForceUpdate}
         />
 
         {/* Mobile Bottom Navigation */}

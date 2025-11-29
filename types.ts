@@ -519,15 +519,22 @@ export interface UIState {
 
 // Relationship 从 zodSchemas.ts 导入
 
+// Choice Interface for structured choices
+export interface Choice {
+  text: string;
+  consequence?: string;
+}
+
 export interface StorySegment {
   id: string;
   parentId: string | null; // Pointer to parent for Tree Structure
   text: string;
-  choices: string[];
+  choices: (string | Choice)[]; // Support both string (legacy) and Choice object
+
   imagePrompt: string;
   imageUrl?: string;
   audioKey?: string; // Key for cached TTS audio in IndexedDB
-  role: "user" | "model";
+  role: "user" | "model" | "system" | "command";
   timestamp: number;
   summarySnapshot?: StorySummary; // If this node triggered a summary, store it here
   usage?: TokenUsage;
@@ -556,6 +563,20 @@ export type EndingType =
   | "true_ending" // Secret/True ending discovered
   | "bad_ending" // Bad outcome but not death
   | "neutral_ending"; // Story concluded without clear win/loss
+
+/**
+ * Context for generating a turn
+ */
+export interface TurnContext {
+  recentHistory: StorySegment[];
+  userAction: string;
+  language: string;
+  themeKey: string;
+  tFunc: (key: string) => string;
+  ragContext?: string;
+  previousError?: string;
+  settings: AISettings;
+}
 
 export interface GameStateSnapshot {
   // Entity State (Dual-layer)
@@ -1076,11 +1097,7 @@ export interface ImageGenerationContext {
   worldSetting?: string; // 世界设定描述
   storyTitle?: string; // 故事标题 - 备用，用于匹配特定 IP 的艺术风格
   time?: string;
-  location?: {
-    name: string;
-    environment: string;
-    details: string;
-  };
+  location?: string;
   character?: {
     name: string;
     race: string;
@@ -1094,4 +1111,32 @@ export interface ImageGenerationContext {
     appearance: string;
     status: string;
   }[];
+  weather?: string;
+  season?: string;
+  mood?: string;
+}
+export interface UnifiedMessage {
+  role: "user" | "model" | "system" | "assistant" | "tool";
+  content: Array<{
+    type: "text" | "image" | "audio" | "tool_use" | "tool_result";
+    text?: string;
+    image?: { url: string };
+    audio?: { url: string };
+    toolUse?: {
+      id: string;
+      name: string;
+      args: Record<string, unknown>;
+    };
+    toolResult?: {
+      id: string;
+      content: unknown;
+      isError?: boolean;
+    };
+  }>;
+}
+
+export interface UnifiedToolCallResult {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
 }

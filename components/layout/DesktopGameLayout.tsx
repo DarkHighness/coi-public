@@ -48,6 +48,7 @@ interface DesktopGameLayoutProps {
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
+  onForceUpdate?: (prompt: string) => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -83,6 +84,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenRAG,
   onOpenViewer,
   onTriggerSave,
+  onForceUpdate,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -176,6 +178,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onOpenViewer={onOpenViewer}
               onTriggerSave={onTriggerSave}
               onRetry={onRetry}
+              onForceUpdate={onForceUpdate}
             />
           </div>
         </div>

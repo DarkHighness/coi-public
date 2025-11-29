@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Faction, StoryOutline } from "../../types";
 import { MarkdownText } from "../render/MarkdownText";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface WorldInfoPanelProps {
   history?: string;
@@ -211,7 +212,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold text-xs text-theme-primary">
-                        {faction.icon && <span className="mr-1">{faction.icon}</span>}
+                        <span className="mr-1">{getValidIcon(faction.icon, "⚔️")}</span>
                         {faction.name}
                       </span>
                       {/* Unlocked indicator */}

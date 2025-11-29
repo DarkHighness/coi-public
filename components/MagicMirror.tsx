@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { generateVeoVideo } from "../services/aiService";
 import type { AISettings } from "../types";
+import { getValidIcon } from "../utils/emojiValidator";
 
 interface MagicMirrorProps {
   isOpen: boolean;
@@ -280,7 +281,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
                           : "bg-theme-surface-highlight border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-primary/50"
                       }`}
                 >
-                  <span>{tmpl.icon}</span>
+                  <span>{getValidIcon(tmpl.icon, "✨")}</span>
                   <span>{tmpl.id}</span>
                 </button>
               ))}

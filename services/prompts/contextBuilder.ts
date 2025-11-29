@@ -648,7 +648,13 @@ ${latestSummary.displayText}
   // 3. 最近对话
   if (recentHistory && recentHistory.length > 0) {
     const recentContext = recentHistory
-      .map((h) => `[${h.role}]: ${h.text}`)
+      .map((h) => {
+        if (h.role === "user" && h.text.trim().startsWith("/sudo")) {
+          const commandContent = h.text.trim().replace(/^\/sudo\s*/i, "");
+          return `===FORCE UPDATE=== ${commandContent} ======`;
+        }
+        return `[${h.role}]: ${h.text}`;
+      })
       .join("\n");
     dynamicParts.push(`
 <recent_narrative>

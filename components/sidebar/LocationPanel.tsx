@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -93,7 +94,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                 isCurrent ? "text-theme-primary" : ""
               }`}
             >
-              {locationData.icon && <span className="mr-1">{locationData.icon}</span>}
+              <span className="mr-1">{getValidIcon(locationData.icon, "📍")}</span>
               {item.name}
               {locationData.unlocked && (
                 <svg

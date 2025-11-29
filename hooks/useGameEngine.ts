@@ -9,6 +9,7 @@ import {
   Relationship,
   Location as GameLocation,
   OutlineConversationState,
+  TurnContext,
 } from "../types";
 import { useGameState } from "./useGameState";
 import { useGamePersistence } from "./useGamePersistence";
@@ -18,6 +19,7 @@ import {
   generateSceneImage,
   generateStoryOutlinePhased,
   summarizeContext,
+  generateForceUpdate,
   type OutlinePhaseProgress,
 } from "../services/aiService";
 import { createImageGenerationContext } from "../services/prompts/index";
@@ -296,6 +298,34 @@ export const useGameEngine = () => {
     let effectiveParentId = parentId;
     let reuseExistingNode = false;
 
+    // Fork Logic: If we are branching from a node that is not the active tip, create a fork
+    let currentForkId = gameStateRef.current.forkId;
+    let currentForkTree = gameStateRef.current.forkTree;
+
+    if (!isInit && parentId && parentId !== gameStateRef.current.activeNodeId) {
+      const forkResult = createFork(
+        currentForkId,
+        currentForkTree,
+        parentId,
+        gameStateRef.current.turnNumber,
+      );
+      currentForkId = forkResult.newForkId;
+      currentForkTree = forkResult.newForkTree;
+      console.log(
+        `[HandleAction] Created implicit fork ${currentForkId} from node ${parentId}`,
+      );
+
+      // Update RAG context in background
+      if (aiSettings.embedding?.enabled) {
+        const ragService = getRAGService();
+        if (ragService && currentSlotId) {
+          ragService
+            .switchSave(currentSlotId, currentForkId, currentForkTree)
+            .catch(console.error);
+        }
+      }
+    }
+
     if (!isInit && parentId) {
       const parentNode = gameStateRef.current.nodes[parentId];
       // If the active node is a USER node and has the same text, we are retrying
@@ -475,7 +505,9 @@ export const useGameEngine = () => {
       }
 
       // We send everything from the last summarized point onwards
-      let segmentsToSend = contextNodes.slice(lastIndex);
+      // FIX: Include the last summarized node for context overlap if available
+      const startIndex = Math.max(0, lastIndex - 1);
+      let segmentsToSend = contextNodes.slice(startIndex);
 
       // Generate Turn - pass GameState directly with TurnContext
       const {
@@ -492,16 +524,15 @@ export const useGameEngine = () => {
         settings: aiSettings,
       });
 
-      // Sanitize choices to ensure strict string array
+      // Sanitize choices to ensure valid structure
       const sanitizedChoices = Array.isArray(response.choices)
         ? response.choices.map((c) => {
             if (typeof c === "object" && c !== null) {
-              const obj = c as {
-                choice?: string;
-                text?: string;
-                label?: string;
+              const obj = c as any;
+              return {
+                text: obj.text || obj.choice || obj.label || "Continue",
+                consequence: obj.consequence,
               };
-              return obj.choice || obj.text || obj.label || JSON.stringify(c);
             }
             return String(c);
           })
@@ -651,17 +682,9 @@ export const useGameEngine = () => {
           theme: finalState.theme,
           worldSetting: finalState.outline?.worldSetting?.visible?.description,
           time: finalState.time,
-          location: currentLoc
-            ? {
-                name: currentLoc.name,
-                environment: currentLoc.environment || "Unknown",
-                details: currentLoc.visible?.description || "",
-              }
-            : {
-                name: finalState.currentLocation,
-                environment: "Unknown",
-                details: "",
-              },
+            location: currentLoc
+              ? `${currentLoc.name} (${currentLoc.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`
+              : `${finalState.currentLocation} (Unknown Environment)`,
           character: {
             name: finalState.character?.name || "Unknown",
             race: finalState.character?.race || "Unknown",
@@ -676,6 +699,10 @@ export const useGameEngine = () => {
             appearance: r.visible.appearance || "Unknown",
             status: r.visible.relationshipType,
           })),
+            // Add missing fields derived from atmosphere/environment
+            weather: responseAtmosphere.weather || "Clear",
+            season: "Unknown", // Season tracking not yet implemented in core state
+            mood: responseAtmosphere.ambience || "Neutral",
         };
 
         const imageTimeout = setTimeout(
@@ -1456,6 +1483,140 @@ export const useGameEngine = () => {
     }));
   };
 
+  /**
+   * Handle Force Update Command (/sudo)
+   */
+  const handleForceUpdate = async (prompt: string) => {
+    if (processingRef.current || gameStateRef.current.isProcessing) return;
+
+    processingRef.current = true;
+    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+
+    try {
+      // Construct TurnContext
+      const recentHistory = deriveHistory(
+        gameStateRef.current.nodes,
+        gameStateRef.current.activeNodeId,
+      );
+
+      const context: TurnContext = {
+        recentHistory,
+        userAction: prompt,
+        language: LANG_MAP[language],
+        themeKey: gameStateRef.current.theme,
+        tFunc: t,
+        settings: aiSettings,
+      };
+
+      const response = await generateForceUpdate(
+        prompt,
+        gameStateRef.current,
+        context,
+      );
+
+      const finalState = response.finalState;
+      if (!finalState) {
+        throw new Error("Force update failed: No final state returned.");
+      }
+
+      // Resolve atmosphere
+      const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
+        response.atmosphere || gameStateRef.current.atmosphere,
+      );
+
+      // Create a command node to record the user's intent
+      const newSegmentId = Date.now().toString();
+      const commandNodeId = `command-${newSegmentId}`;
+      const parentId = gameStateRef.current.activeNodeId;
+
+      const commandNode: StorySegment = {
+        id: commandNodeId,
+        parentId: parentId,
+        text: prompt, // Just the command text
+        choices: [],
+        imagePrompt: "",
+        role: "command", // New role for sudo commands
+        timestamp: Date.now(),
+        atmosphere: gameStateRef.current.atmosphere,
+        ending: "continue",
+        // Snapshot the state BEFORE the update
+        stateSnapshot: createStateSnapshot(gameStateRef.current, {
+          summaries: gameStateRef.current.summaries,
+          lastSummarizedIndex: gameStateRef.current.lastSummarizedIndex,
+          currentLocation: gameStateRef.current.currentLocation,
+          time: gameStateRef.current.time,
+          atmosphere: gameStateRef.current.atmosphere,
+          veoScript: gameStateRef.current.veoScript,
+          uiState: gameStateRef.current.uiState,
+        }),
+      };
+
+      // Create a system node for the RESULT
+      const resultNodeId = `system-${newSegmentId}`;
+      const resultNode: StorySegment = {
+        id: resultNodeId,
+        parentId: commandNodeId,
+        text: `===FORCE UPDATE===\n${response.narrative}\n======`,
+        choices: ["Continue"],
+        imagePrompt: response.imagePrompt || "",
+        role: "system",
+        timestamp: Date.now() + 1,
+        atmosphere: responseAtmosphere,
+        ending: "continue",
+        stateSnapshot: createStateSnapshot(finalState, {
+          summaries: gameStateRef.current.summaries,
+          lastSummarizedIndex: gameStateRef.current.lastSummarizedIndex,
+          currentLocation: finalState.currentLocation,
+          time: finalState.time,
+          atmosphere: responseAtmosphere,
+          veoScript: gameStateRef.current.veoScript,
+          uiState: gameStateRef.current.uiState,
+        }),
+      };
+
+      setGameState((prev) => ({
+        ...prev,
+        nodes: {
+          ...prev.nodes,
+          [commandNodeId]: commandNode,
+          [resultNodeId]: resultNode,
+        },
+        activeNodeId: resultNodeId,
+        // Update state
+        inventory: finalState.inventory,
+        relationships: finalState.relationships,
+        quests: finalState.quests,
+        currentLocation: finalState.currentLocation,
+        locations: finalState.locations,
+        character: finalState.character,
+        knowledge: finalState.knowledge,
+        factions: finalState.factions,
+        time: finalState.time,
+        nextIds: finalState.nextIds,
+        timeline: finalState.timeline,
+        causalChains: finalState.causalChains,
+        aliveEntities: normalizeAliveEntities(response.aliveEntities),
+        atmosphere: responseAtmosphere,
+        isProcessing: false,
+      }));
+
+      processingRef.current = false;
+      triggerSave();
+      return { success: true };
+    } catch (error: unknown) {
+      console.error("Force update failed:", error);
+      const errorMsg =
+        error instanceof Error ? error.message : "Force update failed";
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+        error: errorMsg,
+      }));
+      processingRef.current = false;
+      return { success: false, error: errorMsg };
+    }
+  };
+
   return {
     language,
     setLanguage,
@@ -1470,6 +1631,7 @@ export const useGameEngine = () => {
     setIsMagicMirrorOpen,
     magicMirrorImage,
     setMagicMirrorImage,
+    handleForceUpdate,
     isVeoScriptOpen,
     setIsVeoScriptOpen,
     isSettingsOpen,

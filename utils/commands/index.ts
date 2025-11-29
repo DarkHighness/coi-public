@@ -18,6 +18,7 @@ export type CommandAction =
   | { type: "open_editor" }
   | { type: "open_rag" }
   | { type: "open_viewer" }
+  | { type: "force_update"; prompt: string }
   | { type: "none" };
 
 export interface CommandContext {
@@ -33,6 +34,7 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/edit": handleOpenEditor,
   "/rag": handleOpenRAG,
   "/view": handleOpenViewer,
+  "/sudo": handleForceUpdate,
   "/help": handleHelp,
 };
 
@@ -154,6 +156,36 @@ function handleOpenViewer(
 }
 
 /**
+ * /sudo - Force World Update
+ */
+function handleForceUpdate(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
+  const { t } = context;
+  const prompt = args.join(" ");
+
+  if (!prompt) {
+    return {
+      handled: true,
+      preventAction: true,
+      message: t("commands.sudo.missingPrompt") || "Usage: /sudo <instruction>",
+    };
+  }
+
+  const confirmMessage =
+    t("commands.sudo.confirm") ||
+    `⚠️ FORCE UPDATE ⚠️\n\nYou are about to force the following change:\n"${prompt}"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?`;
+
+  return {
+    handled: true,
+    preventAction: true,
+    action: { type: "force_update", prompt },
+    message: confirmMessage,
+  };
+}
+
+/**
  * /help - Show available commands
  */
 function handleHelp(args: string[], context: CommandContext): CommandResult {
@@ -167,6 +199,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 /edit - Open GameState editor
 /rag - Open RAG Debugger
 /view - Open Game State Viewer
+/sudo <prompt> - Force world update (one-time)
 /help - Show this help message`;
 
   return {

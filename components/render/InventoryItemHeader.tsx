@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface InventoryItemHeaderProps {
   name: string;
@@ -38,7 +39,7 @@ export const InventoryItemHeader: React.FC<InventoryItemHeaderProps> = ({
           className="font-medium mr-2 break-words whitespace-normal"
           title={name}
         >
-          {icon && <span className="mr-2">{icon}</span>}
+          <span className="mr-2">{getValidIcon(icon, "📦")}</span>
           {name}
         </span>
         <div className="flex items-center gap-2">

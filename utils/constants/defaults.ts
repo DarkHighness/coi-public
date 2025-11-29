@@ -157,3 +157,11 @@ export const DEFAULTS: AISettings = {
     },
   },
 };
+
+export const OUTLINE_PHASES = {
+  PHASE_1_PREMISE: 1,
+  PHASE_2_WORLD: 2,
+  PHASE_3_CHARACTERS: 3,
+  PHASE_4_PLOT: 4,
+  PHASE_5_START: 5,
+};

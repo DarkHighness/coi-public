@@ -53,6 +53,7 @@ interface MobileGameLayoutProps {
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
+  onForceUpdate?: (prompt: string) => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -90,6 +91,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenRAG,
   onOpenViewer,
   onTriggerSave,
+  onForceUpdate,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -135,6 +137,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onOpenViewer={onOpenViewer}
             onTriggerSave={onTriggerSave}
             onRetry={onRetry}
+            onForceUpdate={onForceUpdate}
           />
         </div>
       </div>

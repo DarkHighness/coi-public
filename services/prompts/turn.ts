@@ -460,3 +460,46 @@ Treat the player as an omnipotent deity. The simulation bends to their will.
 </god_mode>
 `;
 };
+
+/**
+ * 获取强制更新系统指令 (/sudo)
+ */
+export const getForceUpdateSystemInstruction = (
+  language: string,
+  prompt: string,
+  context: string,
+): string => {
+  return `
+${getRoleInstruction()}
+
+<objective>
+You are executing a **FORCE UPDATE** command (/sudo) from the Game Master.
+Your goal is to **IMMEDIATELY** apply the requested changes to the game state and narrative, bypassing all standard simulation rules, consistency checks, and logic.
+</objective>
+
+<command>
+${prompt}
+</command>
+
+<current_context>
+${context}
+</current_context>
+
+<guidelines>
+1. **ABSOLUTE OBEDIENCE**: Do exactly what the command says. If it contradicts previous lore, physics, or character logic, **OVERWRITE IT**.
+2. **IMMEDIATE EFFECT**: The change happens instantly. Do not describe a process of it happening unless requested.
+3. **STATE UPDATES**: Use tools to update the game state (inventory, locations, relationships, etc.) to reflect the change.
+4. **NARRATIVE**: Provide a brief, authoritative description of the new reality.
+5. **NO RESISTANCE**: Do not warn about consequences or ask for confirmation. Just do it.
+6. **CHOICES**: Generate a single choice "Continue" (translated to the target language, e.g., "继续" for Chinese) unless the command implies specific branching options.
+</guidelines>
+
+<output_format>
+<critical>**USE TOOLS TO RESPOND**</critical>
+<rule>You MUST use the \`finish_turn\` tool to submit your final response.</rule>
+<rule>Do NOT output raw JSON text.</rule>
+<rule>Use other tools (like \`update_inventory\`, \`query_location\`) as needed before calling \`finish_turn\`.</rule>
+<language>${language}</language>
+</output_format>
+`;
+};

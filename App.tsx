@@ -26,6 +26,7 @@ import {
   SectionErrorBoundary,
 } from "./components/common/ErrorBoundary";
 import { useRAG } from "./hooks/useRAG";
+import { ToastContainer, useToastManager } from "./components/Toast";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>
@@ -73,6 +74,7 @@ export default function App() {
     navigateToNode,
     generateImageForNode,
     triggerSave,
+    handleForceUpdate,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -83,11 +85,9 @@ export default function App() {
   const [ragState, ragActions] = useRAG(aiSettings.embedding?.enabled);
 
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
-  const [notification, setNotification] = useState<{
-    show: boolean;
-    msg: string;
-    type: "info" | "error";
-  }>({ show: false, msg: "", type: "info" });
+
+  // Use Toast Manager
+  const { toasts, pushToast, removeToast } = useToastManager();
 
   // Track currently viewed segment for dynamic theme/background
   const [viewedSegment, setViewedSegment] = useState<any | null>(null);
@@ -401,12 +401,8 @@ export default function App() {
     return undefined;
   }, [viewedSegment, currentHistory, isStartScreen]);
 
-  const showToast = (msg: string, type: "info" | "error" = "info") => {
-    setNotification({ show: true, msg, type });
-    setTimeout(
-      () => setNotification({ show: false, msg: "", type: "info" }),
-      3000,
-    );
+  const showToast = (msg: string, type: "info" | "error" | "success" = "info") => {
+    pushToast(msg, type);
   };
 
   // Helper: Get provider instance by ID
@@ -754,6 +750,9 @@ export default function App() {
     <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-theme-bg text-theme-text font-sans transition-colors duration-1000 relative">
       <GlobalStyles themeConfig={currentThemeConfig} />
 
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
       {/* Environmental Overlay */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <Suspense
@@ -846,6 +845,7 @@ export default function App() {
                   currentSlotId={currentSlotId}
                   onViewedSegmentChange={setViewedSegment}
                   triggerSave={triggerSave}
+                  handleForceUpdate={handleForceUpdate}
                 />
               </SectionErrorBoundary>
             }
@@ -895,41 +895,24 @@ export default function App() {
                 {persistenceError || appError || componentError}
               </p>
             </div>
-            {componentError && !persistenceError && !appError ? (
-              <>
-                <p className="text-xs text-theme-muted/80">
-                  {t("app.errors.tryDismiss") ||
-                    "You can try dismissing this error and continue. If the problem persists, reset the game data."}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setComponentError(null)}
-                    className="flex-1 py-2 bg-theme-primary/20 hover:bg-theme-primary/30 text-theme-primary border border-theme-primary/30 rounded font-bold transition-colors text-xs"
-                  >
-                    {t("app.errors.dismissButton") || "Dismiss & Continue"}
-                  </button>
-                  <button
-                    onClick={hardReset}
-                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors text-xs"
-                  >
-                    {t("app.errors.resetButton") || "Reset Game"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-xs text-theme-muted/80">
-                  {t("app.errors.resetDescription") ||
-                    "To fix this, you need to reset the game data. This will clear all saves and settings."}
-                </p>
-                <button
-                  onClick={hardReset}
-                  className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors uppercase tracking-wider text-xs"
-                >
-                  {t("app.errors.resetButton") || "Clear Data & Reset Game"}
-                </button>
-              </>
-            )}
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                onClick={() => {
+                  setAppError(null);
+                  setComponentError(null);
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-theme-surface border border-theme-border hover:bg-theme-surface-highlight rounded-lg transition-colors text-sm"
+              >
+                {t("app.errors.reload") || "Reload App"}
+              </button>
+              <button
+                onClick={hardReset}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold"
+              >
+                {t("app.errors.reset") || "Factory Reset"}
+              </button>
+            </div>
           </div>
         </div>
       )}

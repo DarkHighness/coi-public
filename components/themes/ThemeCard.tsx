@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
 import { ENV_THEMES } from "../../utils/constants";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface ThemeCardProps {
   themeKey: string;
@@ -55,7 +56,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg">
-                {themeConfig.icon || "📖"}
+                {getValidIcon(themeConfig.icon, "📖")}
               </span>
               <h3 className="text-lg md:text-xl font-bold text-theme-text group-hover:text-theme-primary transition-colors truncate">
                 {t(`${themeKey}.name`, { ns: "themes" })}

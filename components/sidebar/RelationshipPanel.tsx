@@ -4,6 +4,7 @@ import { TFunction } from "i18next";
 import { Relationship, ListState, Location } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface RelationshipPanelProps {
   relationships: Relationship[];
@@ -107,7 +108,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               className="font-bold text-theme-text text-sm flex items-center gap-1 break-words whitespace-normal"
               title={rel.visible?.name || t("unknown") || "Unknown"}
             >
-              {rel.icon && <span className="mr-1">{rel.icon}</span>}
+              <span className="mr-1">{getValidIcon(rel.icon, "👤")}</span>
               {rel.visible?.name || t("unknown") || "Unknown"}
               {rel.unlocked && (
                 <svg

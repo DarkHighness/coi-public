@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Quest } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
+import { getValidIcon } from "../../utils/emojiValidator";
 
 interface QuestPanelProps {
   quests: Quest[];
@@ -76,7 +77,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               className="font-bold text-theme-text text-xs break-words whitespace-normal"
               title={q.title}
             >
-              {q.icon && <span className="mr-1">{q.icon}</span>}
+              <span className="mr-1">{getValidIcon(q.icon, q.type === "main" ? "🎯" : "📜")}</span>
               {q.title}
             </span>
             {/* Unlocked indicator */}

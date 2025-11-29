@@ -1077,7 +1077,15 @@ export const gameResponseSchema = z.object({
       "The main story segment text. Write in coherent, flowing paragraphs.",
     ),
   choices: z
-    .array(z.string())
+    .array(
+      z.object({
+        text: z.string().describe("The text of the choice."),
+        consequence: z
+          .string()
+          .optional()
+          .describe("A brief hint about the likely consequence of this choice."),
+      }),
+    )
     .min(2)
     .max(4)
     .describe("2-4 options for the player's next action."),
@@ -1366,7 +1374,15 @@ Use \`inline code\` for in-world technical terms, spell incantations, or foreign
 Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.`,
   ),
   choices: z
-    .array(z.string())
+    .array(
+      z.object({
+        text: z.string().describe("The text of the choice."),
+        consequence: z
+          .string()
+          .optional()
+          .describe("A brief hint about the likely consequence of this choice."),
+      }),
+    )
     .min(2)
     .max(4)
     .describe(
@@ -1497,8 +1513,14 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
     ),
 });
 
+export const forceUpdateSchema = z.object({
+  narrative: z.string().describe("The narrative description of the changes made to the world."),
+  stateUpdates: z.record(z.any()).optional().describe("A summary of the state updates applied (for logging)."),
+});
+
 /** finish_turn 响应类型 */
 export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;
+export type ForceUpdateResponse = z.infer<typeof forceUpdateSchema>;
 
 // ============================================================================
 // 翻译 Schema

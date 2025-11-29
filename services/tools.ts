@@ -49,6 +49,7 @@ import {
   factionRelationSchema,
   causalChainStatusSchema,
   finishTurnSchema,
+  forceUpdateSchema,
 } from "./zodSchemas";
 
 export const ID_PREFIXES = {
@@ -1033,6 +1034,18 @@ export const FINISH_TURN_TOOL: ZodToolDefinition = {
 // 工具列表导出
 // ============================================================================
 
+export const COMPLETE_FORCE_UPDATE_TOOL: ZodToolDefinition = {
+  name: "complete_force_update",
+  description: `Complete the force update (sudo command) and return the narrative result.
+Use this tool to finalize the changes made via other tools and provide a summary of what happened.
+This tool does NOT accept choices or ending types, as force updates are direct interventions.`,
+  parameters: forceUpdateSchema,
+};
+
+// ============================================================================
+// 工具列表导出
+// ============================================================================
+
 export const TOOLS: ZodToolDefinition[] = [
   // Query Tools
   QUERY_INVENTORY_TOOL,
@@ -1061,4 +1074,5 @@ export const TOOLS: ZodToolDefinition[] = [
   UPDATE_GLOBAL_TOOL,
   // Turn Control
   FINISH_TURN_TOOL,
+  COMPLETE_FORCE_UPDATE_TOOL,
 ];
