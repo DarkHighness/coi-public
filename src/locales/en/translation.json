@@ -268,7 +268,7 @@
       "detailedDescription": "Detailed Descriptions",
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
       "promptInjection": "Prompt Injection",
-      "promptInjectionHelp": "Inject custom prompts based on model keywords from prompt.toml."
+      "promptInjectionHelp": "Inject jailbreak prompts based on model keywords."
     }
   },
   "narrator": "Narrator",
@@ -704,7 +704,8 @@
     "noHiddenTraitsRevealed": "No hidden traits revealed.",
     "trueName": "True Name",
     "trueRelationship": "True Relationship",
-    "trueStatus": "True Status"
+    "trueStatus": "True Status",
+    "providerDisabled": "Provider has been disabled."
   },
   "gameOver": "GAME OVER",
   "victory": "VICTORY",
@@ -912,7 +913,11 @@
     "openrouter": "OpenRouter",
     "claude": "Claude",
     "restrictedChannel": "Restricted Channel",
-    "restrictedChannelDesc": "Enable if this provider does not support the 'system' role. System instructions will be converted into the first user message."
+    "restrictedChannelDesc": "Enable if this provider does not support the 'system' role. System instructions will be converted into the first user message.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "missingApiKey": "Missing API Key",
+    "inUse": "In use: {{features}}"
   },
   "audio": {
     "voices": {

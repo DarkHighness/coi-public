@@ -147,17 +147,57 @@ async function indexInitialEntities(
     await ragService.addDocuments(
       documents.map((doc) => ({
         ...doc,
-        ...doc,
-        saveId: saveId,
+        saveId,
         forkId: state.forkId || 0,
         turnNumber: state.turnNumber || 0,
       })),
     );
-    console.log(`[RAG Init] Indexed ${documents.length} documents`);
+    console.log(`[RAG Init] Indexed ${documents.length} initial documents`);
   } catch (error) {
     console.error("[RAG Init] Failed:", error);
   }
 }
+
+/**
+ * Helper to update provider token statistics
+ */
+const updateProviderStats = (
+  settings: AISettings,
+  updateSettings: (s: AISettings) => void,
+  providerId: string,
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number },
+) => {
+  if (!usage || !providerId) return;
+
+  const providerIndex = settings.providers.instances.findIndex(
+    (p) => p.id === providerId,
+  );
+
+  if (providerIndex === -1) return;
+
+  const instance = settings.providers.instances[providerIndex];
+  const newStats = {
+    promptTokens: (instance.tokenStats?.promptTokens || 0) + usage.promptTokens,
+    completionTokens:
+      (instance.tokenStats?.completionTokens || 0) + usage.completionTokens,
+    totalTokens: (instance.tokenStats?.totalTokens || 0) + usage.totalTokens,
+  };
+
+  const newInstances = [...settings.providers.instances];
+  newInstances[providerIndex] = {
+    ...instance,
+    tokenStats: newStats,
+    lastModified: Date.now(),
+  };
+
+  updateSettings({
+    ...settings,
+    providers: {
+      ...settings.providers,
+      instances: newInstances,
+    },
+  });
+};
 
 export const useGameEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
@@ -516,6 +556,13 @@ export const useGameEngine = () => {
               (sumResult.log.usage?.cacheWrite || 0),
           },
         }));
+
+        updateProviderStats(
+          aiSettings,
+          handleSaveSettings,
+          aiSettings.story.providerId,
+          sumResult.log.usage,
+        );
       } else {
         // Ensure lastIndex is at least baseIndex to prevent regression
         lastIndex = Math.max(lastIndex, baseIndex);
@@ -719,6 +766,14 @@ export const useGameEngine = () => {
       };
     });
 
+    // Update provider stats
+    updateProviderStats(
+      aiSettings,
+      handleSaveSettings,
+      aiSettings.story.providerId,
+      usage,
+    );
+
       // Async Image Gen with Timeout
       if (
         response.generateImage &&
@@ -810,6 +865,14 @@ export const useGameEngine = () => {
                   }
                 : prev.nodes,
             }));
+
+            // Update provider stats for image generation
+            updateProviderStats(
+              aiSettings,
+              handleSaveSettings,
+              aiSettings.image.providerId,
+              log.usage,
+            );
           })
           .then(() => {
             triggerSave();

@@ -116,7 +116,7 @@ export function processFinishTurnResponse(
     db.getState();
 }
 
-interface AgenticLoopResult {
+export interface AgenticLoopResult {
   response: GameResponse;
   logs: LogEntry[];
   usage: TokenUsage;

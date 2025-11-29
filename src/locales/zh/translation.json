@@ -258,7 +258,7 @@
       "detailedDescription": "详细描述",
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
       "promptInjection": "提示词注入",
-      "promptInjectionHelp": "基于模型关键词从 prompt.toml 注入自定义提示词。"
+      "promptInjectionHelp": "基于模型关键词注入越狱提示词"
     }
   },
   "themeMode": "主题模式",
@@ -558,10 +558,11 @@
   },
   "confirm": "确认",
   "errorPanel": {
-    "componentError": "出现错误",
+    "componentError": "组件发生错误",
     "componentDescription": "此部分遇到错误。您可以重试或继续使用应用的其他部分。",
     "retry": "重试"
   },
+
   "hidden": {
     "truth": "隐藏真相",
     "secrets": "秘密",
@@ -594,7 +595,7 @@
       "success": "🔓 所有隐藏信息已解锁！"
     },
     "sudo": {
-      "confirm": "⚠️ Sudo ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
+      "confirm": "⚠️ SUDO ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
       "missingPrompt": "使用方法: /sudo <prompt>"
     },
     "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/help - 显示帮助信息"
@@ -705,7 +706,8 @@
     "noHiddenTraitsRevealed": "暂无已揭示的隐藏特质。",
     "trueName": "真实姓名",
     "trueRelationship": "真实关系",
-    "trueStatus": "真实状态"
+    "trueStatus": "真实状态",
+    "providerDisabled": "提供商已禁用"
   },
   "gameOver": "游戏结束",
   "victory": "胜利",
@@ -715,7 +717,7 @@
   "endingHint": "你可以从之前的节点分支尝试不同的路线",
   "endingFinal": "这个故事已经结束了",
   "unlocked": "已解锁",
-  "secretAgenda": "隐藏议程",
+
   "tokenStats": {
     "promptTokens": "提示词 Token",
     "completionTokens": "生成 Token",
@@ -891,7 +893,11 @@
     "openrouter": "OpenRouter",
     "claude": "Claude",
     "restrictedChannel": "受限渠道",
-    "restrictedChannelDesc": "如果此提供商不支持 'system' 角色，请启用此选项。系统指令将成为到第一条用户消息。"
+    "restrictedChannelDesc": "如果此提供商不支持 'system' 角色，请启用此选项。系统指令将转换为第一条用户消息。",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "missingApiKey": "缺少 API Key",
+    "inUse": "被以下功能使用: {{features}}"
   },
   "audio": {
     "voices": {

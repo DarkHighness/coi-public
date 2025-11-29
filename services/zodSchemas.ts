@@ -1515,7 +1515,7 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
 
 export const forceUpdateSchema = z.object({
   narrative: z.string().describe("The narrative description of the changes made to the world."),
-  stateUpdates: z.record(z.any()).optional().describe("A summary of the state updates applied (for logging)."),
+  stateUpdates: z.string().optional().describe("A summary of the state updates applied (for logging)."),
 });
 
 /** finish_turn 响应类型 */

@@ -459,7 +459,11 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                         ? "bg-theme-primary border-theme-primary"
                         : "bg-theme-bg border-theme-border"
                     }`}
-                    title={instance.enabled ? "Enabled" : "Disabled"}
+                    title={
+                      instance.enabled
+                        ? t("providers.enabled")
+                        : t("providers.disabled")
+                    }
                   >
                     {instance.enabled && (
                       <svg
@@ -492,12 +496,28 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     {instance.name}
                   </span>
 
+                  {/* Token Stats */}
+                  {instance.tokenStats && (
+                    <div className="hidden sm:flex flex-col items-end mr-2 text-[10px] text-theme-muted leading-tight">
+                      <span title={t("tokenStats.totalTokens")}>
+                        {instance.tokenStats.totalTokens.toLocaleString()} T
+                      </span>
+                      <span
+                        className="opacity-70"
+                        title={`${t("tokenStats.in")} / ${t("tokenStats.out")}`}
+                      >
+                        {instance.tokenStats.promptTokens.toLocaleString()} /{" "}
+                        {instance.tokenStats.completionTokens.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Status indicators */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {!hasApiKey && (
                       <span
                         className="text-yellow-500 text-xs"
-                        title="Missing API Key"
+                        title={t("providers.missingApiKey")}
                       >
                         <svg
                           className="w-4 h-4"
@@ -517,7 +537,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     {inUse && (
                       <span
                         className="text-theme-primary text-xs"
-                        title={`In use: ${features.join(", ")}`}
+                        title={t("providers.inUse", {
+                          features: features.join(", "),
+                        })}
                       >
                         <svg
                           className="w-4 h-4"

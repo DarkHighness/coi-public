@@ -530,7 +530,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
 
         {/* Alive Entities (Context) */}
-        <Section
+        {/* <Section
           id="aliveEntities"
           title={t("gameViewer.aliveEntities") || "Alive Entities (Context)"}
           icon="🧠"
@@ -583,7 +583,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               </ul>
             </div>
           )}
-        </Section>
+        </Section> */}
       </div>
     );
   };

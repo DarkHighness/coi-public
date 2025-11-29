@@ -894,6 +894,12 @@ export type LanguageCode = "en" | "zh";
 export type ProviderProtocol = "gemini" | "openai" | "openrouter" | "claude";
 
 /** Provider 实例配置 */
+export interface TokenStats {
+  totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface ProviderInstance {
   id: string; // 唯一标识符，如 "provider-1", "provider-2"
   name: string; // 用户自定义名称，如 "OpenAI Official", "DeepSeek"
@@ -904,6 +910,7 @@ export interface ProviderInstance {
   isRestrictedChannel?: boolean; // 是否为受限渠道（不支持 system role）
   createdAt: number; // 创建时间
   lastModified: number; // 最后修改时间
+  tokenStats?: TokenStats; // 历史 Token 统计
 }
 
 /** Provider 管理配置 */
