@@ -45,7 +45,8 @@ import {
   createLogEntry,
 } from "./utils";
 
-import promptInjectionData from "../../data/prompt_injections.json";
+// @ts-ignore
+import promptInjectionData from "@/src/prompt/prompt.toml";
 
 // ============================================================================
 // Phased Story Outline Generation

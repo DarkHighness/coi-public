@@ -189,25 +189,22 @@ const runForceUpdateLoop = async (
     let retryCount = 0;
     let lastError: Error | null = null;
 
-    // Last round: don't provide tools, force schema response
-    // IMPORTANT: For Gemini, we cannot use both tools AND schema simultaneously
+    // Provider-specific schema handling
+    // IMPORTANT: Gemini 2.5 (non-Pro) CANNOT use schema+tools simultaneously
     // - When tools are provided: Gemini ignores the schema (see geminiProvider.ts line 466)
-    // - When no tools: Gemini uses the schema for structured output
-    // Solution: Only apply schema on the last round when tools are disabled
-    const isLastRound = turnCount === maxTurns - 1;
-    const effectiveToolConfig = isLastRound ? undefined : toolConfig;
-    const effectiveSchema = isLastRound ? forceUpdateSchema : undefined;
+    // - Other providers (OpenAI, Claude, OpenRouter) CAN use both together
+    // Solution: For Gemini, never use schema (rely on complete_force_update tool instead)
+    //           For others, always use schema (for structured output guarantee)
 
-    if (isLastRound) {
-      console.log(
-        `[Force Update Loop] LAST ROUND - No tools available, forcing complete_force_update schema response`,
-      );
-      conversationHistory.push(
-        createUserMessage(
-          `[SYSTEM: FINAL ROUND]\nThis is the final round. You MUST return a JSON response matching the complete_force_update schema. No tools are available.`,
-        ),
-      );
-    }
+    const isGeminiProvider = protocol === "gemini";
+
+    // Keep tools available (including complete_force_update) in ALL rounds
+    const effectiveToolConfig = toolConfig;
+
+    // Schema behavior:
+    // - Gemini: NEVER use schema (conflicts with tools), rely on complete_force_update tool
+    // - Others: ALWAYS use schema for structured output guarantee
+    const effectiveSchema = isGeminiProvider ? undefined : forceUpdateSchema;
 
     while (retryCount <= maxRetries) {
       try {

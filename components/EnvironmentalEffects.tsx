@@ -8,7 +8,7 @@ import {
 
 import React, { useEffect, useState, useMemo } from "react";
 
-import { imageLoader } from "../utils/imageLoader";
+
 
 interface EnvironmentalEffectsProps {
   currentText: string;
@@ -86,27 +86,11 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
       }
     }
 
-    // If we have a background source, try to load it
+    // If we have a background source, set it directly
+    // We skip imageLoader to avoid CORS issues with external providers (like pollinations.ai)
+    // CSS background-image handles cross-origin resources more gracefully than JS Image objects
     if (bgSource) {
-      // For pollinations.ai images (fallback), use the imageLoader
-      if (isFallback && bgSource.includes("pollinations.ai")) {
-        imageLoader
-          .load(bgSource, { crossOrigin: "anonymous" })
-          .then((url) => {
-            setLoadedBgSource(url);
-          })
-          .catch((err) => {
-            console.warn("Failed to load fallback background image:", err);
-            // Don't clear loadedBgSource on error to keep previous image
-          });
-      } else {
-        // For non-fallback images (local or direct), use them directly
-        // We could also use imageLoader here for consistency, but let's stick to direct set for now
-        // unless we want to cache user uploaded images too?
-        // Let's use imageLoader for everything to ensure smooth loading!
-        // Actually, user images might be local blobs or base64, so maybe just direct set.
-        setLoadedBgSource(bgSource);
-      }
+      setLoadedBgSource(bgSource);
     } else {
       // If no background, we might want to keep the old one or clear it?
       // Clearing it might cause a flash to black/transparent.

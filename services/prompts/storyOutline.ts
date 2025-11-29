@@ -124,7 +124,14 @@ ${
   <instruction>Ensure the story feels fresh and distinct from the template.</instruction>
 </creative_freedom>
 `
-    : ""
+    : `
+<restricted_mode>
+  <instruction>CRITICAL: You MUST strictly adhere to the original work's plot, characters, and setting.</instruction>
+  <instruction>Do NOT deviate from the established protagonist name, appearance, or background.</instruction>
+  <instruction>Do NOT exercise creative freedom with the core narrative or world rules.</instruction>
+  <instruction>Your goal is to faithfully recreate the experience of the original work.</instruction>
+</restricted_mode>
+`
 }
 
 ${getCulturalAdaptationInstruction(language)}

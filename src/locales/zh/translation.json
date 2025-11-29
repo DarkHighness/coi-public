@@ -99,6 +99,10 @@
   "system": "系统",
   "newGame": "新游戏",
   "continueGame": "继续旅程",
+  "initialPrompt": {
+    "begin": "开始{{theme}}故事。",
+    "context": "背景"
+  },
   "saveGame": "保存",
   "loadGame": "读取",
   "autoSaving": "已自动保存",
@@ -589,6 +593,10 @@
       "confirm": "⚠️ 全部解锁 ⚠️\n\n这将揭示所有隐藏信息：\n• 物品的秘密和真实本质\n• NPC 的真实性格和动机\n• 地点的隐藏特性\n• 任务的真正目标\n• 知识的隐藏真相\n\n此操作无法撤销，可能会剧透故事。\n\n确定吗？",
       "success": "🔓 所有隐藏信息已解锁！"
     },
+    "sudo": {
+      "confirm": "⚠️ Sudo ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
+      "missingPrompt": "使用方法: /sudo <prompt>"
+    },
     "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/help - 显示帮助信息"
   },
   "stateEditor": {
@@ -755,8 +763,10 @@
     "total": "总计:",
     "cacheRead": "缓存读取:",
     "cacheWrite": "缓存写入:",
-    "noLogs": "本次会话暂无日志记录。"
+    "noLogs": "本次会话暂无日志记录。",
+    "parsedResult": "解析结果"
   },
+  "new-game": "旅程尚未开始...",
   "saveManager": {
     "startPrompt": "开始新游戏以创建第一个存档",
     "current": "当前",

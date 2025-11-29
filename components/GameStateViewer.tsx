@@ -200,6 +200,29 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           {outline?.premise && (
             <InfoRow label={t("gameViewer.premise")} value={outline.premise} />
           )}
+          {gameState.tokenUsage && (
+            <div className="mt-2 pt-2 border-t border-theme-border/30">
+              <span className="text-theme-muted text-sm block mb-1">
+                {t("sidebar.tokens")}:
+              </span>
+              <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-2">
+                <div>Total: {gameState.tokenUsage.totalTokens.toLocaleString()}</div>
+                <div>Prompt: {gameState.tokenUsage.promptTokens.toLocaleString()}</div>
+                <div>Compl: {gameState.tokenUsage.completionTokens.toLocaleString()}</div>
+                {(gameState.tokenUsage.cacheRead ||
+                  gameState.tokenUsage.cacheWrite) && (
+                  <>
+                    <div className="text-theme-success/80">
+                      Cache+: {gameState.tokenUsage.cacheWrite?.toLocaleString()}
+                    </div>
+                    <div className="text-theme-success/80">
+                      Cache-: {gameState.tokenUsage.cacheRead?.toLocaleString()}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </Section>
 
         {/* Character Quick View */}
@@ -502,6 +525,62 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                     )}
                 </div>
               ))}
+            </div>
+          )}
+        </Section>
+
+        {/* Alive Entities (Context) */}
+        <Section
+          id="aliveEntities"
+          title={t("gameViewer.aliveEntities") || "Alive Entities (Context)"}
+          icon="🧠"
+          isExpanded={expandedSections.has("aliveEntities")}
+          onToggle={toggleSection}
+        >
+          {!gameState.aliveEntities ||
+          Object.values(gameState.aliveEntities).every(
+            (arr) => !arr || arr.length === 0,
+          ) ? (
+            <p className="text-theme-muted text-sm italic">
+              {t("gameViewer.noAliveEntities") || "No active entities in context"}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {Object.entries(gameState.aliveEntities).map(([key, ids]) => {
+                if (!ids || ids.length === 0) return null;
+                return (
+                  <div key={key} className="flex flex-col gap-1">
+                    <span className="text-xs text-theme-muted uppercase font-bold tracking-wider">
+                      {key}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {ids.map((id: string) => (
+                        <span
+                          key={id}
+                          className="px-1.5 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded text-[10px] font-mono text-theme-primary"
+                        >
+                          {id}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {gameState.ragQueries && gameState.ragQueries.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-theme-border/30">
+              <span className="text-xs text-theme-muted uppercase font-bold tracking-wider block mb-1">
+                {t("gameViewer.ragQueries") || "RAG Queries"}
+              </span>
+              <ul className="list-disc pl-4 space-y-1">
+                {gameState.ragQueries.map((query, idx) => (
+                  <li key={idx} className="text-xs text-theme-text/80 italic">
+                    "{query}"
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </Section>

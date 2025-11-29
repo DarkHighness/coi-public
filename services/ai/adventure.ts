@@ -46,7 +46,8 @@ import {
 } from "./utils";
 
 // Import prompt injection data
-import promptInjectionData from "../../data/prompt_injections.json";
+// @ts-ignore
+import promptInjectionData from "@/src/prompt/prompt.toml";
 
 // ============================================================================
 // Turn Context and Agentic Loop
@@ -431,26 +432,22 @@ export const runAgenticLoop = async (
     let retryCount = 0;
     let lastError: Error | null = null;
 
-    // Last round: don't provide tools, force schema response
-    // IMPORTANT: For Gemini, we cannot use both tools AND schema simultaneously
+    // Provider-specific schema handling
+    // IMPORTANT: Gemini 2.5 (non-Pro) CANNOT use schema+tools simultaneously
     // - When tools are provided: Gemini ignores the schema (see geminiProvider.ts line 466)
-    // - When no tools: Gemini uses the schema for structured output
-    // Solution: Only apply schema on the last round when tools are disabled
-    const isLastRound = turnCount === maxTurns - 1;
-    const effectiveToolConfig = isLastRound ? undefined : toolConfig;
-    const effectiveSchema = isLastRound ? finishTurnSchema : undefined;
+    // - Other providers (OpenAI, Claude, OpenRouter) CAN use both together
+    // Solution: For Gemini, never use schema (rely on finish_turn tool instead)
+    //           For others, always use schema (for structured output guarantee)
 
-    if (isLastRound) {
-      console.log(
-        `[Agentic Loop] LAST ROUND - No tools available, forcing finish_turn schema response`,
-      );
-      // Add a system message to inform the model
-      conversationHistory.push(
-        createUserMessage(
-          `[SYSTEM: FINAL ROUND]\nThis is the final round. You MUST return a JSON response matching the finish_turn schema. No tools are available.`,
-        ),
-      );
-    }
+    const isGeminiProvider = protocol === "gemini";
+
+    // Keep tools available (including finish_turn) in ALL rounds
+    const effectiveToolConfig = toolConfig;
+
+    // Schema behavior:
+    // - Gemini: NEVER use schema (conflicts with tools), rely on finish_turn tool
+    // - Others: ALWAYS use schema for structured output guarantee
+    const effectiveSchema = isGeminiProvider ? undefined : finishTurnSchema;
 
     while (retryCount <= maxRetries) {
       try {

@@ -175,6 +175,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         content={
                           latestSave.summary || t("continueLastAdventure")
                         }
+                        disableIndent
                       />
                     </div>
                     <div className="relative z-10 text-[10px] mt-2 text-theme-muted/70 uppercase tracking-wider">

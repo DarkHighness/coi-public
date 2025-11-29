@@ -309,6 +309,7 @@ export interface GameState {
   nodes: Record<string, StorySegment>;
   activeNodeId: string | null; // The leaf node of the current path
   rootNodeId: string | null;
+  currentFork: StorySegment[]; // The full segment list of the current fork
 
   inventory: InventoryItem[];
   relationships: Relationship[];
@@ -339,7 +340,7 @@ export interface GameState {
   time: string; // In-game time tracking
 
   // Stats & Logs
-  totalTokens: number;
+  tokenUsage: TokenUsage;
   logs: LogEntry[];
 
   // Cached Veo Script
@@ -538,6 +539,9 @@ export interface StorySegment {
   timestamp: number;
   summarySnapshot?: StorySummary; // If this node triggered a summary, store it here
   usage?: TokenUsage;
+
+  // Segment index
+  segmentIdx: number; // The index of this segment in the history chain of the current fork
 
   // Fork-safe Summary State
   summaries?: StorySummary[]; // The total summary of the story up to this point (Dual-layer)

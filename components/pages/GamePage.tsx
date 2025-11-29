@@ -165,9 +165,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     isRAGDebuggerOpen ||
     isGameStateViewerOpen;
 
-  // Play ambience when story is visible and no menus are blocking
-  // FIXED: Don't tie ambience to isTyping - ambience should continue playing
-  const shouldPlayAmbience = !isAnyMenuOpen && mobileTab === "story";
+  // Play ambience when no menus are blocking
+  const shouldPlayAmbience = !isAnyMenuOpen;
 
   const currentSegment = currentHistory[currentHistory.length - 1];
 
@@ -277,8 +276,10 @@ export const GamePage: React.FC<GamePageProps> = ({
     navigate("/");
   };
 
+  const themeName = t(`${gameState.theme}.name`, { ns: "themes" });
+  const prompt = t("initialPrompt.begin", { theme: themeName });
   const defaultContinuePrompt =
-    gameState.initialPrompt || `Continue the ${gameState.theme} story`;
+    gameState.initialPrompt || prompt;
 
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
@@ -310,21 +311,24 @@ export const GamePage: React.FC<GamePageProps> = ({
           onGenerateImage={generateImageForNode}
           onRetry={() => {
             // Find the last user segment to retry from
-            const lastUserSegment = [...currentHistory]
+            const lastSegment = [...currentHistory]
               .reverse()
-              .find((seg) => seg.role === "user");
+              .find((seg) => seg.role === "user" || seg.role === "command");
 
-            if (lastUserSegment) {
+            if (lastSegment.role === "user") {
               // Retry using the SAME parent ID as the original user segment
-              // This creates a sibling node (fork) at the same level
               handleAction(
-                lastUserSegment.text,
+                lastSegment.text,
                 false,
                 undefined,
-                lastUserSegment.parentId || undefined,
+                lastSegment.parentId || undefined,
               );
+            } else if (lastSegment.role === "command") {
+              // We must encoutnered a command segment
+              // Currently, only /sudo command has `command` role
+              handleForceUpdate(lastSegment.text)
             } else {
-              // Fallback if no user segment found (shouldn't happen in game)
+              // The last segment is not a user segment, so we retry from the initial prompt
               handleAction(defaultContinuePrompt);
             }
           }}
@@ -367,19 +371,24 @@ export const GamePage: React.FC<GamePageProps> = ({
           onGenerateImage={generateImageForNode}
           onRetry={() => {
             // Find the last user segment to retry from
-            const lastUserSegment = [...currentHistory]
+            const lastSegment = [...currentHistory]
               .reverse()
-              .find((seg) => seg.role === "user");
+              .find((seg) => seg.role === "user" || seg.role === "command");
 
-            if (lastUserSegment) {
+            if (lastSegment.role === "user") {
               // Retry using the SAME parent ID as the original user segment
               handleAction(
-                lastUserSegment.text,
+                lastSegment.text,
                 false,
                 undefined,
-                lastUserSegment.parentId || undefined,
+                lastSegment.parentId || undefined,
               );
+            } else if (lastSegment.role === "command") {
+              // We must encoutnered a command segment
+              // Currently, only /sudo command has `command` role
+              handleForceUpdate(lastSegment.text)
             } else {
+              // The last segment is not a user segment, so we retry from the initial prompt
               handleAction(defaultContinuePrompt);
             }
           }}

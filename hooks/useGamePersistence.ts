@@ -15,6 +15,7 @@ import {
   clearDatabase,
 } from "../utils/indexedDB";
 import { getRAGService } from "../services/rag";
+import { useTranslation } from "react-i18next";
 
 // Default nextIds structure for recovery
 const DEFAULT_NEXT_IDS = {
@@ -53,6 +54,8 @@ export const useGamePersistence = (
     const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
     return sorted[0].id;
   }, [saveSlots]);
+
+  const { t } = useTranslation();
 
   /**
    * Comprehensive state sanitization and repair.
@@ -256,14 +259,95 @@ export const useGamePersistence = (
         }
       }
 
-      // Log repairs if any
-      if (repairLog.length > 0) {
-        console.warn("[Save Repair]", repairLog);
+      // === 10. Fix segmentIdx and currentFork ===
+      if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
+        parsed.currentFork = [];
       }
+
+      // Helper to get depth (memoized)
+      const depthCache: Record<string, number> = {};
+      const getDepth = (
+        nodeId: string,
+        nodes: Record<string, any>,
+      ): number => {
+        if (depthCache[nodeId] !== undefined) return depthCache[nodeId];
+        const node = nodes[nodeId];
+        if (!node) return 0;
+        if (!node.parentId) {
+          depthCache[nodeId] = 0;
+          return 0;
+        }
+        // Prevent infinite loops in circular references (shouldn't happen but safety first)
+        if (depthCache[nodeId] === -1) return 0;
+        depthCache[nodeId] = -1; // Mark as visiting
+
+        const d = getDepth(node.parentId, nodes) + 1;
+        depthCache[nodeId] = d;
+        return d;
+      };
+
+      // === 10. Fix segmentIdx and currentFork ===
+  if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
+    parsed.currentFork = [];
+  }
+
+  // === 11. Fix tokenUsage ===
+  if (!parsed.tokenUsage) {
+    parsed.tokenUsage = {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: parsed.totalTokens || 0,
+    };
+  }
+
+  // Repair segmentIdx if missing (legacy saves)
+  // We need to traverse from root to leaves or just iterate all nodes and fix chains
+  // Since we can't easily traverse full tree here without recursion, let's do a best-effort fix
+  // by sorting keys or just relying on the fact that we will fix it on load if needed.
+  // Actually, let's just ensure every node has a segmentIdx.
+  Object.values(parsed.nodes).forEach((node: any) => {
+    if (typeof node.segmentIdx !== "number") {
+      node.segmentIdx = 0; // Default to 0, will be fixed by deriveHistory if needed
+    }
+  });
+
+  // Reconstruct currentFork if empty but we have an active node
+  if (parsed.currentFork.length === 0 && parsed.activeNodeId) {
+    // We need a simple deriveHistory here.
+    // Since we can't import deriveHistory from useGameEngine (circular dependency risk or just unavailable),
+    // we implement a simple version here.
+    const history: any[] = [];
+    let curr = parsed.activeNodeId;
+    while (curr && parsed.nodes[curr]) {
+      history.unshift(parsed.nodes[curr]);
+      curr = parsed.nodes[curr].parentId;
+    }
+    // Fix segmentIdx in the chain
+    history.forEach((node, idx) => {
+      node.segmentIdx = idx;
+    });
+    parsed.currentFork = history;
+  }
 
       // Fix initial prompt if missing
       if (typeof parsed.initialPrompt !== "string") {
-        parsed.initialPrompt = "Continue the story";
+        const theme = parsed.theme;
+        const customContext = parsed?.customContext;
+
+        const themeName = t(`themes.${theme}.name`, theme);
+        const prompt = t("initialPrompt.begin", { theme: themeName }) + (customContext ? ` ${t("initialPrompt.context")}: ${customContext}` : "");
+        parsed.initialPrompt = prompt;
+      }
+
+      // Fix tokenUsage
+      if (!parsed.tokenUsage) {
+        parsed.tokenUsage = {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: parsed.totalTokens || 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        };
       }
 
       return parsed as GameState;
@@ -538,7 +622,7 @@ export const useGamePersistence = (
       name: `Save ${saveSlots.length + 1}`,
       timestamp: Date.now(),
       theme,
-      summary: "New Game",
+      summary: t("new-game"),
     };
     const newSlots = [...saveSlots, newSlot];
     setSaveSlots(newSlots);

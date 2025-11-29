@@ -148,10 +148,45 @@ ${getImmersiveWriting()}
 ${
   isGemini
     ? `
-  <critical>**USE TOOLS TO RESPOND**</critical>
-  <rule>You MUST use the \`finish_turn\` tool to submit your final response.</rule>
-  <rule>Do NOT output raw JSON text. Do NOT output markdown text (unless inside the tool argument).</rule>
-  <rule>Use other tools (like \`update_inventory\`, \`query_location\`) as needed before calling \`finish_turn\`.</rule>
+  <critical>**YOU MUST USE THE finish_turn TOOL**</critical>
+
+  <when_to_call_finish_turn>
+    Call the \`finish_turn\` tool when you have:
+    1. Completed all necessary state queries (query_inventory, query_location, etc.)
+    2. Applied all state updates (update_inventory, update_relationship, etc.)
+    3. Generated the final narrative and player choices
+
+    **DO NOT**:
+    - Return raw JSON text directly
+    - Wait for a "final round" signal
+    - Skip calling finish_turn even if you've done other tool calls
+  </when_to_call_finish_turn>
+
+  <finish_turn_parameters>
+    The finish_turn tool requires these exact parameters:
+
+    {
+      "narrative": "string - Your complete narrative response in ${language}",
+      "choices": ["array", "of", "choice", "strings"],
+      "atmosphere": {
+        "envTheme": "string",
+        "visualEffect": "string",
+        "audioEffect": "string",
+        "mood": "string"
+      },
+      "endingType": "optional - only if story ends"
+    }
+
+    **CRITICAL**:
+    - \`narrative\` is REQUIRED (must not be empty or undefined)
+    - \`choices\` is REQUIRED (array with at least 2-4 options)
+    - \`atmosphere\` is REQUIRED
+    - Use the finish_turn tool EVERY turn - there is no schema fallback for you
+  </finish_turn_parameters>
+
+  <rule>Do NOT output markdown text outside of tool arguments.</rule>
+  <rule>Use other tools (update_inventory, query_location, etc.) BEFORE calling finish_turn.</rule>
+  <rule>finish_turn MUST be your LAST tool call in every turn.</rule>
 `
     : `
   <critical>**STRICT JSON OUTPUT ONLY**</critical>
@@ -495,10 +530,56 @@ ${context}
 </guidelines>
 
 <output_format>
-<critical>**USE TOOLS TO RESPOND**</critical>
-<rule>You MUST use the \`finish_turn\` tool to submit your final response.</rule>
-<rule>Do NOT output raw JSON text.</rule>
-<rule>Use other tools (like \`update_inventory\`, \`query_location\`) as needed before calling \`finish_turn\`.</rule>
+<critical>**YOU MUST USE TOOLS TO MODIFY GAME STATE**</critical>
+<critical>**DO NOT USE PYTHON CODE (e.g. print()). USE JSON FORMAT FOR TOOLS.**</critical>
+
+<workflow>
+  **STEP-BY-STEP PROCESS FOR FORCE UPDATE**:
+
+  1. **ANALYZE the command**: Understand what needs to change
+     Example: "Add a magic sword to inventory" → Need to use update_inventory
+     Example: "Make the player king" → Need to update_character, possibly update_relationship, update_location
+
+  2. **CALL UPDATE TOOLS**: Use appropriate tools to make the requested changes
+     - \`update_inventory\` - Add/remove/modify items
+     - \`update_character\` - Change character stats/skills/conditions
+     - \`update_location\` - Modify locations or move player
+     - \`update_relationship\` - Add/modify NPCs
+     - \`update_quest\` - Add/complete quests
+     - \`update_knowledge\` - Add knowledge entries
+     - \`update_timeline\` - Add events to timeline
+     - etc.
+
+  3. **CALL finish_turn**: After all updates, use \`finish_turn\` with:
+     - \`narrative\`: Brief description of the change in ${language}
+     - \`choices\`: Single choice ["Continue"] unless command specifies options
+     - \`atmosphere\`: Current atmosphere
+
+  **CRITICAL**:
+  - DO call the appropriate update tools FIRST
+  - THEN call finish_turn LAST
+  - DO NOT just write narrative without calling tools
+  - DO NOT return raw JSON
+</workflow>
+
+<example>
+Command: "Add a legendary sword to player"
+
+Step 1: Call update_inventory tool
+  {
+    "action": "add",
+    "name": "Legendary Sword",
+    "visible": { "description": "A legendary blade..." }
+  }
+
+Step 2: Call finish_turn tool
+  {
+    "narrative": "A legendary sword materializes in your hands...",
+    "choices": ["Continue"],
+    "atmosphere": { ... }
+  }
+</example>
+
 <language>${language}</language>
 </output_format>
 `;

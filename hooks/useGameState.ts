@@ -40,6 +40,7 @@ const INITIAL_STATE: GameState = {
   nodes: {},
   activeNodeId: null,
   rootNodeId: null,
+  currentFork: [],
   inventory: [],
   relationships: [],
   quests: [],
@@ -69,7 +70,13 @@ const INITIAL_STATE: GameState = {
   theme: "fantasy",
   atmosphere: { envTheme: "fantasy", ambience: "quiet" }, // Unified atmosphere
   generatingNodeId: null,
-  totalTokens: 0,
+  tokenUsage: {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+  },
   logs: [],
   time: "Day 1, 08:00",
 
@@ -113,7 +120,6 @@ export const useGameState = () => {
       rootNodeId: null,
       activeNodeId: null,
       outline: null,
-      totalTokens: 0,
       logs: [],
       // Reset context priority system
       aliveEntities: EMPTY_ALIVE_ENTITIES,

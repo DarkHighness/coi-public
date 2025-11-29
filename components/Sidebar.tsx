@@ -72,9 +72,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider drop-shadow-sm text-center`}
         >
           {t("titlePart1")}
-          <div className="text-[10px] text-theme-muted/50 font-mono text-center mt-2">
-            {t("sidebar.tokens") || "Tokens:"}{" "}
-            {gameState.totalTokens.toLocaleString()}
+          <div className="text-[10px] text-theme-muted/50 font-mono text-center mt-2 flex flex-col gap-0.5">
+            {/* Mobile View (Stacked) */}
+            <div className="md:hidden flex flex-col gap-0.5">
+              <div>
+                {t("sidebar.tokens") || "Tokens:"}{" "}
+                {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+              </div>
+              {gameState.tokenUsage && (
+                <>
+                  <div className="opacity-70 text-[9px]">
+                    (In: {gameState.tokenUsage.promptTokens.toLocaleString()} / Out:{" "}
+                    {gameState.tokenUsage.completionTokens.toLocaleString()})
+                  </div>
+                  {(gameState.tokenUsage.cacheRead ||
+                    gameState.tokenUsage.cacheWrite) && (
+                    <div className="opacity-60 text-[8px] italic">
+                      (Cache: +
+                      {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} / -
+                      {gameState.tokenUsage.cacheRead?.toLocaleString() || 0})
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Desktop View (Single Line) */}
+            <div className="hidden md:block">
+              <div>
+                {t("sidebar.tokens") || "Tokens:"}{" "}
+                {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+                {gameState.tokenUsage && (
+                  <span className="opacity-70 ml-1">
+                    ({gameState.tokenUsage.promptTokens.toLocaleString()} +{" "}
+                    {gameState.tokenUsage.completionTokens.toLocaleString()})
+                  </span>
+                )}
+              </div>
+              {(gameState.tokenUsage?.cacheRead ||
+                gameState.tokenUsage?.cacheWrite) && (
+                <div className="opacity-60 text-[8px] italic">
+                  Cache: +{gameState.tokenUsage.cacheWrite?.toLocaleString() || 0}{" "}
+                  / -{gameState.tokenUsage.cacheRead?.toLocaleString() || 0}
+                </div>
+              )}
+            </div>
           </div>
         </h1>
 
@@ -203,7 +245,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Status Bar */}
       <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
         <span>
-          {t("sidebar.tokens")} {gameState.totalTokens.toLocaleString()}
+          {t("sidebar.tokens")} {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+          {gameState.tokenUsage && (
+            <span className="hidden md:inline opacity-70 ml-1">
+              ({gameState.tokenUsage.promptTokens.toLocaleString()} +{" "}
+              {gameState.tokenUsage.completionTokens.toLocaleString()})
+            </span>
+          )}
         </span>
         <div className="flex gap-4">
           <button

@@ -282,7 +282,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     <button
                       onClick={onRetry}
                       disabled={isDisabled}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-warning/50 rounded-full text-xs font-bold text-theme-warning uppercase tracking-widest hover:bg-theme-warning hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       title={t("retryGeneration")}
                     >
                       <svg
@@ -383,7 +383,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                               {label}
                             </ReactMarkdown>
                           </div>
-                          {(rawChoice as any).consequence && (
+                          {(rawChoice as any).consequence && gameState.unlockMode && (
                             <span className="text-[10px] opacity-80 mt-0.5 font-normal italic block">
                               {(rawChoice as any).consequence}
                             </span>
@@ -415,20 +415,22 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               </div>
             )}
 
-          {/* Command Hints */}
-          <div className="flex flex-wrap gap-2 justify-center px-4">
-            {SUPPORTED_COMMANDS.map((cmd) => (
-              <button
-                key={cmd.cmd}
-                onClick={() => setCustomInput(cmd.cmd + " ")}
-                disabled={isDisabled}
-                className="px-2 py-1 text-[10px] bg-theme-surface/30 border border-theme-border/50 rounded-md text-theme-muted hover:text-theme-primary hover:border-theme-primary/50 transition-colors"
-                title={cmd.desc}
-              >
-                {cmd.cmd}
-              </button>
-            ))}
-          </div>
+          {/* Command Hints - Only show when user starts with / */}
+          {customInput.startsWith("/") && (
+            <div className="flex flex-wrap gap-2 justify-center px-4">
+              {SUPPORTED_COMMANDS.map((cmd) => (
+                <button
+                  key={cmd.cmd}
+                  onClick={() => setCustomInput(cmd.cmd + " ")}
+                  disabled={isDisabled}
+                  className="px-2 py-1 text-[10px] bg-theme-surface/30 border border-theme-border/50 rounded-md text-theme-muted hover:text-theme-primary hover:border-theme-primary/50 transition-colors"
+                  title={cmd.desc}
+                >
+                  {cmd.cmd}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Input Bar */}
           <div className="relative">

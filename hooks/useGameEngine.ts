@@ -44,12 +44,25 @@ import { preloadAudio } from "../utils/audioLoader";
 const deriveHistory = (
   nodes: Record<string, StorySegment>,
   leafId: string | null,
+  truncateToLastSummary: boolean = false,
 ): StorySegment[] => {
   const history: StorySegment[] = [];
   let currentId = leafId;
+
+  // Get cutoff index from leaf node if truncating
+  let cutoffIndex = -1;
+  if (truncateToLastSummary && leafId && nodes[leafId]) {
+    cutoffIndex = nodes[leafId].summarizedIndex || 0;
+  }
+
   while (currentId && nodes[currentId]) {
-    history.unshift(nodes[currentId]);
-    currentId = nodes[currentId].parentId;
+    const node = nodes[currentId];
+    if (!truncateToLastSummary || node.segmentIdx >= cutoffIndex) {
+      history.unshift(node);
+      currentId = node.parentId;
+    } else {
+      break;
+    }
   }
   return history;
 };
@@ -364,27 +377,36 @@ export const useGameEngine = () => {
         }
 
         // Otherwise add new node
+        // Otherwise add new node
+        const newNode: StorySegment = {
+          segmentIdx:
+            (gameStateRef.current.nodes[effectiveParentId]?.segmentIdx ?? -1) +
+            1,
+          id: userNodeId,
+          parentId: parentId,
+          text: action,
+          choices: [],
+          imagePrompt: "",
+          role: "user",
+          timestamp: Date.now(),
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          summaries: baseSummaries,
+          summarizedIndex: baseIndex,
+          ending: "continue",
+        };
+
+        const newNodes = {
+          ...prev.nodes,
+          [userNodeId]: newNode,
+        };
+
         return {
           ...prev,
           isProcessing: true,
           error: null,
-          nodes: {
-            ...prev.nodes,
-            [userNodeId]: {
-              id: userNodeId,
-              parentId: parentId,
-              text: action,
-              choices: [],
-              imagePrompt: "",
-              role: "user",
-              timestamp: Date.now(),
-              usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-              summaries: baseSummaries,
-              summarizedIndex: baseIndex,
-              ending: "continue",
-            },
-          },
+          nodes: newNodes,
           activeNodeId: userNodeId,
+          currentFork: deriveHistory(newNodes, userNodeId),
         };
       });
     } else {
@@ -400,6 +422,8 @@ export const useGameEngine = () => {
 
       // Create temp user node for context calculation
       const tempUserNode: StorySegment = {
+        segmentIdx:
+          (gameStateRef.current.nodes[effectiveParentId]?.segmentIdx ?? -1) + 1,
         id: effectiveUserNodeId,
         parentId: effectiveParentId,
         text: action,
@@ -422,17 +446,14 @@ export const useGameEngine = () => {
       let summarySnapshot: StorySummary;
 
       const totalLength = contextNodes.length;
-      const keepFresh = 4;
-      const summarizeEnd = Math.max(lastIndex, totalLength - keepFresh);
-      const nodesToSummarizeCount = summarizeEnd - lastIndex;
+      const nodesToSummarizeCount = totalLength - lastIndex;
 
-      if (nodesToSummarizeCount >= summaryStep && summarizeEnd > lastIndex) {
-        const toSummarize = contextNodes.slice(lastIndex, summarizeEnd);
+      if (nodesToSummarizeCount >= summaryStep) {
+        const toSummarize = contextNodes.slice(lastIndex, totalLength);
         const textBlock = toSummarize
           .map((s) => `${s.role}: ${s.text}`)
           .join("\n");
 
-        // Get previous summary text for context
         // Get previous summary text for context
         const lastSummary =
           effectiveSummaries.length > 0
@@ -471,14 +492,29 @@ export const useGameEngine = () => {
 
         // Extract displayText for UI
         summarySnapshot = sumResult.summary || sumResult.summary;
-        lastIndex = summarizeEnd;
+        lastIndex = totalLength;
 
         // Log the summary action
         setGameState((prev) => ({
           ...prev,
           logs: [sumResult.log, ...prev.logs].slice(0, 50),
-          totalTokens:
-            prev.totalTokens + (sumResult.log.usage?.totalTokens || 0),
+          tokenUsage: {
+            promptTokens:
+              (prev.tokenUsage?.promptTokens || 0) +
+              (sumResult.log.usage?.promptTokens || 0),
+            completionTokens:
+              (prev.tokenUsage?.completionTokens || 0) +
+              (sumResult.log.usage?.completionTokens || 0),
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) +
+              (sumResult.log.usage?.totalTokens || 0),
+            cacheRead:
+              (prev.tokenUsage?.cacheRead || 0) +
+              (sumResult.log.usage?.cacheRead || 0),
+            cacheWrite:
+              (prev.tokenUsage?.cacheWrite || 0) +
+              (sumResult.log.usage?.cacheWrite || 0),
+          },
         }));
       } else {
         // Ensure lastIndex is at least baseIndex to prevent regression
@@ -488,20 +524,27 @@ export const useGameEngine = () => {
       // Update the user node in state with the FINAL summary state for this turn
       // This ensures that if we fork from here later, we have the correct state
       if (!isInit) {
-        setGameState((prev) => ({
-          ...prev,
-          nodes: {
+        setGameState((prev) => {
+          const updatedUserNode = {
+            ...prev.nodes[effectiveUserNodeId],
+            summaries: effectiveSummaries,
+            summarizedIndex: lastIndex,
+          };
+
+          const newNodes = {
             ...prev.nodes,
-            [effectiveUserNodeId]: {
-              ...prev.nodes[effectiveUserNodeId],
-              summaries: effectiveSummaries,
-              summarizedIndex: lastIndex,
-            },
-          },
-          // Update global view for UI (optional, but good for debugging)
-          summaries: effectiveSummaries,
-          lastSummarizedIndex: lastIndex,
-        }));
+            [effectiveUserNodeId]: updatedUserNode,
+          };
+
+          return {
+            ...prev,
+            nodes: newNodes,
+            // Update global view for UI (optional, but good for debugging)
+            summaries: effectiveSummaries,
+            lastSummarizedIndex: lastIndex,
+            currentFork: deriveHistory(newNodes, effectiveUserNodeId),
+          };
+        });
       }
 
       // We send everything from the last summarized point onwards
@@ -586,6 +629,9 @@ export const useGameEngine = () => {
       );
 
       const modelNode: StorySegment = {
+        segmentIdx:
+          (gameStateRef.current.nodes[effectiveUserNodeId]?.segmentIdx ?? -1) +
+          1,
         id: modelNodeId,
         parentId: isInit ? null : effectiveUserNodeId,
         text: response.narrative || "...",
@@ -617,18 +663,23 @@ export const useGameEngine = () => {
       };
 
       // Update State with Response
-      setGameState((prev) => ({
-        ...prev,
-        nodes: {
+      setGameState((prev) => {
+        const newNodes = {
           ...prev.nodes,
           [modelNodeId]: modelNode,
-        },
-        activeNodeId: modelNodeId,
-        rootNodeId: prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
+        };
 
-        // Apply the full new state from the database
-        inventory: finalState.inventory,
-        relationships: finalState.relationships,
+        return {
+          ...prev,
+          nodes: newNodes,
+          activeNodeId: modelNodeId,
+          rootNodeId:
+            prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
+          currentFork: deriveHistory(newNodes, modelNodeId),
+
+          // Apply the full new state from the database
+          inventory: finalState.inventory,
+          relationships: finalState.relationships,
         quests: finalState.quests,
         currentLocation: finalState.currentLocation,
         locations: finalState.locations,
@@ -651,9 +702,22 @@ export const useGameEngine = () => {
         atmosphere: responseAtmosphere,
         theme: prev.theme,
         logs: [...turnLogs, ...prev.logs].slice(0, 100),
-        totalTokens: prev.totalTokens + usage.totalTokens,
+        tokenUsage: {
+          promptTokens:
+            (prev.tokenUsage?.promptTokens || 0) + (usage.promptTokens || 0),
+          completionTokens:
+            (prev.tokenUsage?.completionTokens || 0) +
+            (usage.completionTokens || 0),
+          totalTokens:
+            (prev.tokenUsage?.totalTokens || 0) + (usage.totalTokens || 0),
+          cacheRead:
+            (prev.tokenUsage?.cacheRead || 0) + (usage.cacheRead || 0),
+          cacheWrite:
+            (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
+        },
         generateImage: response.generateImage,
-      }));
+      };
+    });
 
       // Async Image Gen with Timeout
       if (
@@ -730,7 +794,12 @@ export const useGameEngine = () => {
               isImageGenerating: false,
               generatingNodeId: null,
               logs: [log, ...prev.logs].slice(0, 50),
-              totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+              tokenUsage: {
+                ...prev.tokenUsage,
+                totalTokens:
+                  (prev.tokenUsage?.totalTokens || 0) +
+                  (log.usage?.totalTokens || 0),
+              },
               nodes: url
                 ? {
                     ...prev.nodes,
@@ -1038,7 +1107,10 @@ export const useGameEngine = () => {
         },
         isProcessing: true, // Keep processing true while generating first turn
         logs: [...logs, ...prev.logs],
-        totalTokens: prev.totalTokens + totalPhaseTokens,
+        tokenUsage: {
+          ...prev.tokenUsage,
+          totalTokens: (prev.tokenUsage?.totalTokens || 0) + totalPhaseTokens,
+        },
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
@@ -1068,7 +1140,8 @@ export const useGameEngine = () => {
           // when documents are added. No manual initialization needed.
           // The RAG service should already be initialized via App.tsx
 
-          const prompt = `Begin the ${selectedTheme} story. ${customContext ? `Context: ${customContext}` : ""}`;
+          const themeName = t(`themes.${selectedTheme}.name`, selectedTheme);
+          const prompt = t("initialPrompt.begin", { theme: themeName });
 
           // Store initial prompt for retry
           setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
@@ -1251,7 +1324,12 @@ export const useGameEngine = () => {
         },
         isProcessing: true,
         logs: [...logs, ...gameStateRef.current.logs],
-        totalTokens: gameStateRef.current.totalTokens + totalPhaseTokens,
+        tokenUsage: {
+          ...gameStateRef.current.tokenUsage,
+          totalTokens:
+            (gameStateRef.current.tokenUsage?.totalTokens || 0) +
+            totalPhaseTokens,
+        },
         generateImage: false,
         summaries: [],
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
@@ -1271,7 +1349,8 @@ export const useGameEngine = () => {
         try {
           // RAG is now managed by the SharedWorker - no manual initialization needed
 
-          const prompt = `Begin the ${theme} story. ${customContext ? `Context: ${customContext}` : ""}`;
+          const themeName = t(`themes.${theme}.name`, theme);
+          const prompt = t("initialPrompt.begin", { theme: themeName }) + (customContext ? ` ${t("initialPrompt.context")}: ${customContext}` : "");
           setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
 
           const result = await handleAction(prompt, true, theme);
@@ -1450,7 +1529,12 @@ export const useGameEngine = () => {
           ...prev,
           isImageGenerating: false,
           logs: [log, ...prev.logs].slice(0, 50),
-          totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+          tokenUsage: {
+            ...prev.tokenUsage,
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) +
+              (log.usage?.totalTokens || 0),
+          },
           nodes: {
             ...prev.nodes,
             [nodeId]: { ...prev.nodes[nodeId], imageUrl: url },
@@ -1463,7 +1547,12 @@ export const useGameEngine = () => {
           ...prev,
           isImageGenerating: false,
           logs: [log, ...prev.logs].slice(0, 50),
-          totalTokens: prev.totalTokens + (log.usage?.totalTokens || 0),
+          tokenUsage: {
+            ...prev.tokenUsage,
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) +
+              (log.usage?.totalTokens || 0),
+          },
         }));
       }
     } catch (e) {
@@ -1497,6 +1586,7 @@ export const useGameEngine = () => {
       const recentHistory = deriveHistory(
         gameStateRef.current.nodes,
         gameStateRef.current.activeNodeId,
+        true, // Truncate to last summary
       );
 
       const context: TurnContext = {
@@ -1529,7 +1619,14 @@ export const useGameEngine = () => {
       const commandNodeId = `command-${newSegmentId}`;
       const parentId = gameStateRef.current.activeNodeId;
 
+      // Inherit summaries from parent
+      const parentNode = gameStateRef.current.nodes[parentId];
+      const baseSummaries = parentNode?.summaries || [];
+      const baseIndex = parentNode?.summarizedIndex || 0;
+
       const commandNode: StorySegment = {
+        segmentIdx:
+          (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
         id: commandNodeId,
         parentId: parentId,
         text: prompt, // Just the command text
@@ -1539,10 +1636,12 @@ export const useGameEngine = () => {
         timestamp: Date.now(),
         atmosphere: gameStateRef.current.atmosphere,
         ending: "continue",
+        summaries: baseSummaries,
+        summarizedIndex: baseIndex,
         // Snapshot the state BEFORE the update
         stateSnapshot: createStateSnapshot(gameStateRef.current, {
-          summaries: gameStateRef.current.summaries,
-          lastSummarizedIndex: gameStateRef.current.lastSummarizedIndex,
+          summaries: baseSummaries,
+          lastSummarizedIndex: baseIndex,
           currentLocation: gameStateRef.current.currentLocation,
           time: gameStateRef.current.time,
           atmosphere: gameStateRef.current.atmosphere,
@@ -1554,18 +1653,21 @@ export const useGameEngine = () => {
       // Create a system node for the RESULT
       const resultNodeId = `system-${newSegmentId}`;
       const resultNode: StorySegment = {
+        segmentIdx: (commandNode.segmentIdx ?? -1) + 1,
         id: resultNodeId,
         parentId: commandNodeId,
-        text: `===FORCE UPDATE===\n${response.narrative}\n======`,
-        choices: ["Continue"],
+        text: response.narrative, // Remove FORCE UPDATE markers - cleaner display
+        choices: [t("continue")],
         imagePrompt: response.imagePrompt || "",
         role: "system",
         timestamp: Date.now() + 1,
         atmosphere: responseAtmosphere,
         ending: "continue",
+        summaries: baseSummaries,
+        summarizedIndex: baseIndex,
         stateSnapshot: createStateSnapshot(finalState, {
-          summaries: gameStateRef.current.summaries,
-          lastSummarizedIndex: gameStateRef.current.lastSummarizedIndex,
+          summaries: baseSummaries,
+          lastSummarizedIndex: baseIndex,
           currentLocation: finalState.currentLocation,
           time: finalState.time,
           atmosphere: responseAtmosphere,
@@ -1574,17 +1676,21 @@ export const useGameEngine = () => {
         }),
       };
 
-      setGameState((prev) => ({
-        ...prev,
-        nodes: {
+      setGameState((prev) => {
+        const newNodes = {
           ...prev.nodes,
           [commandNodeId]: commandNode,
           [resultNodeId]: resultNode,
-        },
-        activeNodeId: resultNodeId,
-        // Update state
-        inventory: finalState.inventory,
-        relationships: finalState.relationships,
+        };
+
+        return {
+          ...prev,
+          nodes: newNodes,
+          activeNodeId: resultNodeId,
+          currentFork: deriveHistory(newNodes, resultNodeId),
+          // Update state
+          inventory: finalState.inventory,
+          relationships: finalState.relationships,
         quests: finalState.quests,
         currentLocation: finalState.currentLocation,
         locations: finalState.locations,
@@ -1598,7 +1704,8 @@ export const useGameEngine = () => {
         aliveEntities: normalizeAliveEntities(response.aliveEntities),
         atmosphere: responseAtmosphere,
         isProcessing: false,
-      }));
+      };
+    });
 
       processingRef.current = false;
       triggerSave();

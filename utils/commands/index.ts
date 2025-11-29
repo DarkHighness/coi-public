@@ -24,7 +24,7 @@ export type CommandAction =
 export interface CommandContext {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string>) => string;
 }
 
 // Available commands
@@ -174,7 +174,7 @@ function handleForceUpdate(
   }
 
   const confirmMessage =
-    t("commands.sudo.confirm") ||
+    t("commands.sudo.confirm", { prompt: prompt }) ||
     `⚠️ FORCE UPDATE ⚠️\n\nYou are about to force the following change:\n"${prompt}"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?`;
 
   return {

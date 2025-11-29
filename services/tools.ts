@@ -268,6 +268,10 @@ IMPORTANT: To REMOVE an optional property (like clearing lore), set it to null.`
         .boolean()
         .optional()
         .describe("Whether the hidden truth is revealed to the player."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this item."),
     }),
     // Update action - id is required
     z.object({
@@ -286,6 +290,10 @@ IMPORTANT: To REMOVE an optional property (like clearing lore), set it to null.`
         .boolean()
         .optional()
         .describe("Whether the hidden truth is revealed to the player."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this item."),
     }),
     // Remove action - id is required
     z.object({
@@ -331,6 +339,10 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .boolean()
         .optional()
         .describe("Whether hidden info is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this character."),
     }),
     // Update action - id is required
     z.object({
@@ -359,6 +371,10 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .boolean()
         .optional()
         .describe("Whether hidden info is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this character."),
     }),
     // Remove action - id is required
     z.object({
@@ -403,6 +419,10 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .boolean()
         .optional()
         .describe("Whether hidden secrets are discovered."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this location."),
     }),
     // Update action - id is required
     z.object({
@@ -429,6 +449,10 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .boolean()
         .optional()
         .describe("Whether hidden secrets are discovered."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this location."),
     }),
     // Remove action - id is required
     z.object({
@@ -461,6 +485,10 @@ export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether true objectives are revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this quest."),
     }),
     // Update action - id is required
     z.object({
@@ -476,6 +504,10 @@ export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether true objectives are revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this quest."),
     }),
     // Complete action - id is required
     z.object({
@@ -532,6 +564,10 @@ export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether full truth is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this knowledge entry."),
     }),
     // Update action - id is required
     z.object({
@@ -554,6 +590,10 @@ export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether full truth is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this knowledge entry."),
     }),
   ]),
 };
@@ -597,6 +637,10 @@ export const UPDATE_TIMELINE_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether true cause is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this event."),
     }),
     // Update action - id is required
     z.object({
@@ -629,6 +673,10 @@ export const UPDATE_TIMELINE_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether true cause is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this event."),
     }),
   ]),
 };
@@ -802,6 +850,10 @@ export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether hidden agenda is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this faction."),
     }),
     // Remove action - id is required
     z.object({
@@ -845,31 +897,36 @@ IMPORTANT: Only unlock world info when the player achieves significant story mil
 export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
   name: "update_character",
   description:
-    "Update character profile, attributes, skills, conditions, or hidden traits.",
+    "Update character profile fields (name, title, status, appearance, profession, background, race), attributes, skills, conditions, or hidden traits.",
   parameters: z.object({
-    profile: z
-      .object({
-        status: z
-          .string()
-          .optional()
-          .describe("Current condition (e.g., 'Healthy', 'Injured')."),
-        appearance: z
-          .string()
-          .optional()
-          .describe("Physical appearance description."),
-        profession: z
-          .string()
-          .optional()
-          .describe("Character's profession/class."),
-        background: z
-          .string()
-          .optional()
-          .describe("Character's background story."),
-        race: z.string().optional().describe("Character's race."),
-        title: z.string().optional().describe("Character's title/role."),
-      })
+    name: z
+      .string()
       .optional()
-      .describe("Updates to core profile fields."),
+      .describe("Character name/protagonist name."),
+    title: z
+      .string()
+      .optional()
+      .describe("Character's title/role/class."),
+    status: z
+      .string()
+      .optional()
+      .describe("Current condition (e.g., 'Healthy', 'Injured', 'Exhausted')."),
+    appearance: z
+      .string()
+      .optional()
+      .describe("Physical appearance description."),
+    profession: z
+      .string()
+      .optional()
+      .describe("Character's profession/occupation/class."),
+    background: z
+      .string()
+      .optional()
+      .describe("Character's background story."),
+    race: z
+      .string()
+      .optional()
+      .describe("Character's race (e.g., Human, Elf, Dwarf)."),
     attributes: z
       .array(
         z.object({
@@ -896,6 +953,10 @@ export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
           hidden: skillHiddenSchema.partial().optional(),
           category: z.string().optional(),
           unlocked: z.boolean().optional(),
+          icon: z
+            .string()
+            .optional()
+            .describe("A single emoji representing this skill."),
         }),
       )
       .optional()
@@ -917,6 +978,10 @@ export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
             .optional(),
           duration: z.number().int().optional().describe("Duration in turns."),
           unlocked: z.boolean().optional(),
+          icon: z
+            .string()
+            .optional()
+            .describe("A single emoji representing this condition."),
         }),
       )
       .optional()

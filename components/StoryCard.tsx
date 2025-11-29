@@ -74,6 +74,38 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     return <UserActionCard text={segment.text} labelDecided={labels.decided} />;
   }
 
+  if (segment.role === "command") {
+    return (
+      <div className="flex justify-center my-6 animate-fade-in w-full max-w-3xl mx-auto px-4">
+        <div className="w-full border border-theme-primary/40 rounded-md overflow-hidden shadow-lg backdrop-blur-sm group hover:border-theme-primary/60 transition-colors">
+          <div className="bg-theme-primary/10 px-3 py-1 border-b border-theme-primary/20 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+            <div className="ml-2 text-[10px] font-mono text-theme-primary/60">
+              /bin/zsh
+            </div>
+          </div>
+          <div className="p-3 font-mono text-sm text-theme-primary flex items-center gap-2">
+            <span className="text-theme-accent select-none shrink-0">$ /sudo</span>
+            <span className="break-all">{segment.text}</span>
+            <span className="w-2 h-4 bg-theme-primary/50 animate-pulse inline-block ml-1" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (segment.role === "system") {
+    return (
+      <div className="flex justify-center my-8 animate-fade-in">
+        <div className="text-center max-w-lg text-theme-muted text-sm italic border-y border-theme-border/30 py-4 px-8 bg-theme-surface/10">
+          {segment.text}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col mb-16 animate-slide-in space-y-6 group/card max-w-3xl mx-auto">
       {/* Summary Snapshot Display */}

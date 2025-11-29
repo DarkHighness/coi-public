@@ -651,10 +651,11 @@ ${latestSummary.displayText}
       .map((h) => {
         if (h.role === "user" && h.text.trim().startsWith("/sudo")) {
           const commandContent = h.text.trim().replace(/^\/sudo\s*/i, "");
-          return `===FORCE UPDATE=== ${commandContent} ======`;
+          return undefined; // Force update commands don't show in history - result already displayed separately
         }
         return `[${h.role}]: ${h.text}`;
       })
+      .filter(Boolean)
       .join("\n");
     dynamicParts.push(`
 <recent_narrative>

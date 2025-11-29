@@ -167,7 +167,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
   onRemove,
 }) => {
   return (
-    <div className="fixed top-36 right-4 z-100 flex flex-col gap-2 max-w-[90vw] md:max-w-sm">
+    <div className="fixed top-16 right-4 z-100 flex flex-col gap-2 max-w-[90vw] md:max-w-sm">
       {toasts.map((toast) => (
         <SingleToast key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
