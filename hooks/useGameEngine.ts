@@ -109,10 +109,7 @@ async function updateRAGDocumentsBackground(
 /**
  * Index initial entities when game starts (outline + first turn)
  */
-async function indexInitialEntities(
-  state: any,
-  saveId: string,
-): Promise<void> {
+async function indexInitialEntities(state: any, saveId: string): Promise<void> {
   try {
     const ragService = getRAGService();
     if (!ragService) return;
@@ -165,7 +162,11 @@ const updateProviderStats = (
   settings: AISettings,
   updateSettings: (s: AISettings) => void,
   providerId: string,
-  usage?: { promptTokens: number; completionTokens: number; totalTokens: number },
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  },
 ) => {
   if (!usage || !providerId) return;
 
@@ -727,52 +728,52 @@ export const useGameEngine = () => {
           // Apply the full new state from the database
           inventory: finalState.inventory,
           relationships: finalState.relationships,
-        quests: finalState.quests,
-        currentLocation: finalState.currentLocation,
-        locations: finalState.locations,
-        character: finalState.character,
-        knowledge: finalState.knowledge,
-        factions: finalState.factions,
-        time: finalState.time,
-        nextIds: finalState.nextIds,
-        timeline: finalState.timeline,
-        causalChains: finalState.causalChains,
+          quests: finalState.quests,
+          currentLocation: finalState.currentLocation,
+          locations: finalState.locations,
+          character: finalState.character,
+          knowledge: finalState.knowledge,
+          factions: finalState.factions,
+          time: finalState.time,
+          nextIds: finalState.nextIds,
+          timeline: finalState.timeline,
+          causalChains: finalState.causalChains,
 
-        // Context Priority System: update alive entities and increment turn
-        aliveEntities: normalizeAliveEntities(response.aliveEntities),
-        turnNumber: prev.turnNumber + 1,
+          // Context Priority System: update alive entities and increment turn
+          aliveEntities: normalizeAliveEntities(response.aliveEntities),
+          turnNumber: prev.turnNumber + 1,
 
-        summaries: effectiveSummaries,
-        isProcessing: false,
-        isImageGenerating: true,
-        generatingNodeId: modelNodeId,
-        atmosphere: responseAtmosphere,
-        theme: prev.theme,
-        logs: [...turnLogs, ...prev.logs].slice(0, 100),
-        tokenUsage: {
-          promptTokens:
-            (prev.tokenUsage?.promptTokens || 0) + (usage.promptTokens || 0),
-          completionTokens:
-            (prev.tokenUsage?.completionTokens || 0) +
-            (usage.completionTokens || 0),
-          totalTokens:
-            (prev.tokenUsage?.totalTokens || 0) + (usage.totalTokens || 0),
-          cacheRead:
-            (prev.tokenUsage?.cacheRead || 0) + (usage.cacheRead || 0),
-          cacheWrite:
-            (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
-        },
-        generateImage: response.generateImage,
-      };
-    });
+          summaries: effectiveSummaries,
+          isProcessing: false,
+          isImageGenerating: true,
+          generatingNodeId: modelNodeId,
+          atmosphere: responseAtmosphere,
+          theme: prev.theme,
+          logs: [...turnLogs, ...prev.logs].slice(0, 100),
+          tokenUsage: {
+            promptTokens:
+              (prev.tokenUsage?.promptTokens || 0) + (usage.promptTokens || 0),
+            completionTokens:
+              (prev.tokenUsage?.completionTokens || 0) +
+              (usage.completionTokens || 0),
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) + (usage.totalTokens || 0),
+            cacheRead:
+              (prev.tokenUsage?.cacheRead || 0) + (usage.cacheRead || 0),
+            cacheWrite:
+              (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
+          },
+          generateImage: response.generateImage,
+        };
+      });
 
-    // Update provider stats
-    updateProviderStats(
-      aiSettings,
-      handleSaveSettings,
-      aiSettings.story.providerId,
-      usage,
-    );
+      // Update provider stats
+      updateProviderStats(
+        aiSettings,
+        handleSaveSettings,
+        aiSettings.story.providerId,
+        usage,
+      );
 
       // Async Image Gen with Timeout
       if (
@@ -801,9 +802,9 @@ export const useGameEngine = () => {
           theme: finalState.theme,
           worldSetting: finalState.outline?.worldSetting?.visible?.description,
           time: finalState.time,
-            location: currentLoc
-              ? `${currentLoc.name} (${currentLoc.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`
-              : `${finalState.currentLocation} (Unknown Environment)`,
+          location: currentLoc
+            ? `${currentLoc.name} (${currentLoc.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`
+            : `${finalState.currentLocation} (Unknown Environment)`,
           character: {
             name: finalState.character?.name || "Unknown",
             race: finalState.character?.race || "Unknown",
@@ -818,10 +819,10 @@ export const useGameEngine = () => {
             appearance: r.visible.appearance || "Unknown",
             status: r.visible.relationshipType,
           })),
-            // Add missing fields derived from atmosphere/environment
-            weather: responseAtmosphere.weather || "Clear",
-            season: "Unknown", // Season tracking not yet implemented in core state
-            mood: responseAtmosphere.ambience || "Neutral",
+          // Add missing fields derived from atmosphere/environment
+          weather: responseAtmosphere.weather || "Clear",
+          season: "Unknown", // Season tracking not yet implemented in core state
+          mood: responseAtmosphere.ambience || "Neutral",
         };
 
         const imageTimeout = setTimeout(
@@ -1052,7 +1053,8 @@ export const useGameEngine = () => {
 
       // Check if we have saved conversation state from previous phases
       const savedConversation = gameStateRef.current.outlineConversation;
-      const hasProgress = savedConversation && savedConversation.currentPhase > 0;
+      const hasProgress =
+        savedConversation && savedConversation.currentPhase > 0;
 
       // Show alert asking if user wants to retry
       const retryMessage = hasProgress
@@ -1064,14 +1066,18 @@ export const useGameEngine = () => {
       if (shouldRetry) {
         // If we have saved progress, use resumeOutlineGeneration to continue from saved state
         if (hasProgress) {
-          console.log(`[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhase}`);
+          console.log(
+            `[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhase}`,
+          );
           // Set processing state back
           setGameState((prev) => ({ ...prev, isProcessing: true }));
           // Call resumeOutlineGeneration instead of starting over
           return resumeOutlineGeneration(onStream, onPhaseProgress);
         } else {
           // No saved progress, start fresh but keep the same slot
-          console.log("[StartNewGame] No saved progress, retrying from scratch");
+          console.log(
+            "[StartNewGame] No saved progress, retrying from scratch",
+          );
           return startNewGame(
             selectedTheme,
             customContext,
@@ -1224,15 +1230,15 @@ export const useGameEngine = () => {
           } else if (result && result.success) {
             // On success, index initial entities in background (non-blocking)
             if (aiSettings.embedding?.enabled) {
-            indexInitialEntities(gameStateRef.current, slotId).catch(
-              (error) => {
-                console.error(
-                  "[RAG Init] Failed to index initial entities:",
-                  error,
-                );
-              },
-            );
-          }
+              indexInitialEntities(gameStateRef.current, slotId).catch(
+                (error) => {
+                  console.error(
+                    "[RAG Init] Failed to index initial entities:",
+                    error,
+                  );
+                },
+              );
+            }
           }
           // On success, we're already in /game with content showing
         } catch (error) {
@@ -1413,7 +1419,11 @@ export const useGameEngine = () => {
           // RAG is now managed by the SharedWorker - no manual initialization needed
 
           const themeName = t(`themes.${theme}.name`, theme);
-          const prompt = t("initialPrompt.begin", { theme: themeName }) + (customContext ? ` ${t("initialPrompt.context")}: ${customContext}` : "");
+          const prompt =
+            t("initialPrompt.begin", { theme: themeName }) +
+            (customContext
+              ? ` ${t("initialPrompt.context")}: ${customContext}`
+              : "");
           setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
 
           const result = await handleAction(prompt, true, theme);
@@ -1754,21 +1764,21 @@ export const useGameEngine = () => {
           // Update state
           inventory: finalState.inventory,
           relationships: finalState.relationships,
-        quests: finalState.quests,
-        currentLocation: finalState.currentLocation,
-        locations: finalState.locations,
-        character: finalState.character,
-        knowledge: finalState.knowledge,
-        factions: finalState.factions,
-        time: finalState.time,
-        nextIds: finalState.nextIds,
-        timeline: finalState.timeline,
-        causalChains: finalState.causalChains,
-        aliveEntities: normalizeAliveEntities(response.aliveEntities),
-        atmosphere: responseAtmosphere,
-        isProcessing: false,
-      };
-    });
+          quests: finalState.quests,
+          currentLocation: finalState.currentLocation,
+          locations: finalState.locations,
+          character: finalState.character,
+          knowledge: finalState.knowledge,
+          factions: finalState.factions,
+          time: finalState.time,
+          nextIds: finalState.nextIds,
+          timeline: finalState.timeline,
+          causalChains: finalState.causalChains,
+          aliveEntities: normalizeAliveEntities(response.aliveEntities),
+          atmosphere: responseAtmosphere,
+          isProcessing: false,
+        };
+      });
 
       processingRef.current = false;
       triggerSave();

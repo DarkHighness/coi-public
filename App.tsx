@@ -123,11 +123,14 @@ export default function App() {
 
       const shouldInit =
         aiSettings.embedding?.enabled &&
-        (!ragState.isInitialized || lastInitializedConfigRef.current !== currentConfigKey) &&
+        (!ragState.isInitialized ||
+          lastInitializedConfigRef.current !== currentConfigKey) &&
         !ragState.isLoading;
 
       if (shouldInit) {
-        console.log("[App] Initializing RAG service (Config changed or first init)...");
+        console.log(
+          "[App] Initializing RAG service (Config changed or first init)...",
+        );
         const success = await ragActions.initialize(aiSettings);
         if (success) {
           console.log("[App] RAG service initialized successfully");
@@ -401,7 +404,10 @@ export default function App() {
     return undefined;
   }, [viewedSegment, currentHistory, isStartScreen]);
 
-  const showToast = (msg: string, type: "info" | "error" | "success" = "info") => {
+  const showToast = (
+    msg: string,
+    type: "info" | "error" | "success" = "info",
+  ) => {
     pushToast(msg, type);
   };
 

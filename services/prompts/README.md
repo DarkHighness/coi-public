@@ -27,6 +27,6 @@ Import from the directory root:
 import {
   getCoreSystemInstruction,
   getOutlinePrompt,
-  getVeoScriptPrompt
+  getVeoScriptPrompt,
 } from "./services/prompts";
 ```

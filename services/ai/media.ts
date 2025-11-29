@@ -31,13 +31,9 @@ import {
   generateSpeech as generateOpenRouterSpeech,
 } from "../providers/openRouterProvider";
 
-import {
-  generateSpeech as generateClaudeSpeech,
-} from "../providers/claudeProvider";
+import { generateSpeech as generateClaudeSpeech } from "../providers/claudeProvider";
 
-import {
-  translationSchema,
-} from "../schemas";
+import { translationSchema } from "../schemas";
 
 import {
   getSceneImagePrompt,
@@ -45,23 +41,15 @@ import {
   getVeoScriptPrompt,
 } from "../prompts/index";
 
-import {
-  GenerateContentResult,
-  generateContentUnified,
-} from "./core";
+import { GenerateContentResult, generateContentUnified } from "./core";
 
-import {
-  getProviderConfig,
-  createLogEntry,
-} from "./utils";
+import { getProviderConfig, createLogEntry } from "./utils";
 
 import { GameState } from "../../types";
 
 // ============================================================================
 // Image/Video/Speech Generation
 // ============================================================================
-
-
 
 /**
  * 生成场景图片

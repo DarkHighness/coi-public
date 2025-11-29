@@ -94,7 +94,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
                 isCurrent ? "text-theme-primary" : ""
               }`}
             >
-              <span className="mr-1">{getValidIcon(locationData.icon, "📍")}</span>
+              <span className="mr-1">
+                {getValidIcon(locationData.icon, "📍")}
+              </span>
               {item.name}
               {locationData.unlocked && (
                 <svg

@@ -213,7 +213,6 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
         </button>
       </div>
 
-
       {/* RAG Statistics */}
       <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
         <div className="flex justify-between items-center mb-4">

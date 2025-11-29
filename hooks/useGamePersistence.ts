@@ -266,10 +266,7 @@ export const useGamePersistence = (
 
       // Helper to get depth (memoized)
       const depthCache: Record<string, number> = {};
-      const getDepth = (
-        nodeId: string,
-        nodes: Record<string, any>,
-      ): number => {
+      const getDepth = (nodeId: string, nodes: Record<string, any>): number => {
         if (depthCache[nodeId] !== undefined) return depthCache[nodeId];
         const node = nodes[nodeId];
         if (!node) return 0;
@@ -287,47 +284,47 @@ export const useGamePersistence = (
       };
 
       // === 10. Fix segmentIdx and currentFork ===
-  if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
-    parsed.currentFork = [];
-  }
+      if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
+        parsed.currentFork = [];
+      }
 
-  // === 11. Fix tokenUsage ===
-  if (!parsed.tokenUsage) {
-    parsed.tokenUsage = {
-      promptTokens: 0,
-      completionTokens: 0,
-      totalTokens: parsed.totalTokens || 0,
-    };
-  }
+      // === 11. Fix tokenUsage ===
+      if (!parsed.tokenUsage) {
+        parsed.tokenUsage = {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: parsed.totalTokens || 0,
+        };
+      }
 
-  // Repair segmentIdx if missing (legacy saves)
-  // We need to traverse from root to leaves or just iterate all nodes and fix chains
-  // Since we can't easily traverse full tree here without recursion, let's do a best-effort fix
-  // by sorting keys or just relying on the fact that we will fix it on load if needed.
-  // Actually, let's just ensure every node has a segmentIdx.
-  Object.values(parsed.nodes).forEach((node: any) => {
-    if (typeof node.segmentIdx !== "number") {
-      node.segmentIdx = 0; // Default to 0, will be fixed by deriveHistory if needed
-    }
-  });
+      // Repair segmentIdx if missing (legacy saves)
+      // We need to traverse from root to leaves or just iterate all nodes and fix chains
+      // Since we can't easily traverse full tree here without recursion, let's do a best-effort fix
+      // by sorting keys or just relying on the fact that we will fix it on load if needed.
+      // Actually, let's just ensure every node has a segmentIdx.
+      Object.values(parsed.nodes).forEach((node: any) => {
+        if (typeof node.segmentIdx !== "number") {
+          node.segmentIdx = 0; // Default to 0, will be fixed by deriveHistory if needed
+        }
+      });
 
-  // Reconstruct currentFork if empty but we have an active node
-  if (parsed.currentFork.length === 0 && parsed.activeNodeId) {
-    // We need a simple deriveHistory here.
-    // Since we can't import deriveHistory from useGameEngine (circular dependency risk or just unavailable),
-    // we implement a simple version here.
-    const history: any[] = [];
-    let curr = parsed.activeNodeId;
-    while (curr && parsed.nodes[curr]) {
-      history.unshift(parsed.nodes[curr]);
-      curr = parsed.nodes[curr].parentId;
-    }
-    // Fix segmentIdx in the chain
-    history.forEach((node, idx) => {
-      node.segmentIdx = idx;
-    });
-    parsed.currentFork = history;
-  }
+      // Reconstruct currentFork if empty but we have an active node
+      if (parsed.currentFork.length === 0 && parsed.activeNodeId) {
+        // We need a simple deriveHistory here.
+        // Since we can't import deriveHistory from useGameEngine (circular dependency risk or just unavailable),
+        // we implement a simple version here.
+        const history: any[] = [];
+        let curr = parsed.activeNodeId;
+        while (curr && parsed.nodes[curr]) {
+          history.unshift(parsed.nodes[curr]);
+          curr = parsed.nodes[curr].parentId;
+        }
+        // Fix segmentIdx in the chain
+        history.forEach((node, idx) => {
+          node.segmentIdx = idx;
+        });
+        parsed.currentFork = history;
+      }
 
       // Fix initial prompt if missing
       if (typeof parsed.initialPrompt !== "string") {
@@ -335,7 +332,11 @@ export const useGamePersistence = (
         const customContext = parsed?.customContext;
 
         const themeName = t(`themes.${theme}.name`, theme);
-        const prompt = t("initialPrompt.begin", { theme: themeName }) + (customContext ? ` ${t("initialPrompt.context")}: ${customContext}` : "");
+        const prompt =
+          t("initialPrompt.begin", { theme: themeName }) +
+          (customContext
+            ? ` ${t("initialPrompt.context")}: ${customContext}`
+            : "");
         parsed.initialPrompt = prompt;
       }
 

@@ -11,7 +11,7 @@ export const getVeoScriptPrompt = (
   // Build recent narrative flow in XML format (no truncation)
   const recentHistoryXml = history
     .slice(-20)
-    .filter(h => h.role === "user" || h.role === "system")
+    .filter((h) => h.role === "user" || h.role === "system")
     .map((h) => `<turn role="${h.role}">${h.text}</turn>`)
     .join("\n");
 

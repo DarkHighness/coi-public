@@ -56,7 +56,6 @@ export const visibleInfoSchema = z.object({
   notes: z.string().optional().describe("Player or public notes."),
 });
 
-
 /** 隐藏信息层 - 只有 GM/AI 知道的真相 */
 export const hiddenInfoSchema = z.object({
   truth: z.string().describe("The hidden truth or real nature."),
@@ -90,7 +89,10 @@ export const inventoryItemSchema = z.object({
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.optional(),
   lore: z.string().optional().describe("Brief lore or history of the item."),
-  icon: z.string().optional().describe("A single emoji representing this item."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this item."),
   unlocked: z
     .boolean()
     .optional()
@@ -101,11 +103,23 @@ export const inventoryItemSchema = z.object({
     .boolean()
     .optional()
     .describe("True when updated in current turn (for UI). INVISIBLE to AI."),
-  createdAt: z.number().optional().describe("Creation timestamp. INVISIBLE to AI."),
-  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp {forkId, turnNumber}."),
+  createdAt: z
+    .number()
+    .optional()
+    .describe("Creation timestamp. INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema
+    .optional()
+    .describe("Version-aware modification timestamp {forkId, turnNumber}."),
   /** @deprecated Use modifiedAt instead */
-  lastModified: z.number().optional().describe("DEPRECATED: Use modifiedAt. Legacy timestamp."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp {forkId, turnNumber, timestamp}. INVISIBLE to AI."),
+  lastModified: z
+    .number()
+    .optional()
+    .describe("DEPRECATED: Use modifiedAt. Legacy timestamp."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe(
+      "Last access timestamp {forkId, turnNumber, timestamp}. INVISIBLE to AI.",
+    ),
 });
 
 // ============================================================================
@@ -198,13 +212,20 @@ export const relationshipSchema = z.object({
     .describe(
       "AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, or psychic tech.",
     ),
-  icon: z.string().optional().describe("A single emoji representing this character."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this character."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
-  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  modifiedAt: versionedTimestampSchema
+    .optional()
+    .describe("Version-aware modification timestamp."),
   /** @deprecated Use modifiedAt instead */
   lastModified: z.number().optional().describe("DEPRECATED."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -251,12 +272,19 @@ export const locationSchema = z.object({
     .describe(
       "AI DECISION: Set true when story context reveals location's secrets.",
     ),
-  icon: z.string().optional().describe("A single emoji representing this location."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this location."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
   discoveredAt: z.number().optional(),
-  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema
+    .optional()
+    .describe("Version-aware modification timestamp."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe("Last access timestamp. INVISIBLE to AI."),
   notes: z.string().optional(),
 });
 
@@ -304,13 +332,20 @@ export const questSchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when quest's hidden purpose is revealed."),
-  icon: z.string().optional().describe("A single emoji representing this quest."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this quest."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
-  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  modifiedAt: versionedTimestampSchema
+    .optional()
+    .describe("Version-aware modification timestamp."),
   /** @deprecated Use modifiedAt instead */
   lastModified: z.number().optional().describe("DEPRECATED."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -349,7 +384,10 @@ export const skillSchema = z.object({
     .describe(
       "AI DECISION: Set true when skill's hidden nature is understood.",
     ),
-  icon: z.string().optional().describe("A single emoji representing this skill."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this skill."),
   highlight: z.boolean().optional(),
 });
 
@@ -419,7 +457,10 @@ export const conditionSchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when true cause/cure revealed."),
-  icon: z.string().optional().describe("A single emoji representing this condition."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this condition."),
   highlight: z.boolean().optional(),
 });
 
@@ -475,13 +516,20 @@ export const knowledgeEntrySchema = z.object({
     .boolean()
     .optional()
     .describe("AI DECISION: Set true when full truth discovered."),
-  icon: z.string().optional().describe("A single emoji representing this knowledge entry."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this knowledge entry."),
   highlight: z.boolean().optional().describe("INVISIBLE to AI."),
   createdAt: z.number().optional().describe("INVISIBLE to AI."),
-  modifiedAt: versionedTimestampSchema.optional().describe("Version-aware modification timestamp."),
+  modifiedAt: versionedTimestampSchema
+    .optional()
+    .describe("Version-aware modification timestamp."),
   /** @deprecated Use modifiedAt instead */
   lastModified: z.number().optional().describe("DEPRECATED."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe("Last access timestamp. INVISIBLE to AI."),
 });
 
 // ============================================================================
@@ -535,12 +583,17 @@ export const timelineEventSchema = z.object({
     .describe(
       "AI DECISION: Set true when event's true cause/consequences uncovered.",
     ),
-  icon: z.string().optional().describe("A single emoji representing this event."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this event."),
   known: z
     .boolean()
     .optional()
     .describe("Set to true if the player witnessed or heard about this event."),
-  lastAccess: accessTimestampSchema.optional().describe("Last access timestamp. INVISIBLE to AI."),
+  lastAccess: accessTimestampSchema
+    .optional()
+    .describe("Last access timestamp. INVISIBLE to AI."),
   highlight: z.boolean().optional(),
 });
 
@@ -662,7 +715,10 @@ export const factionSchema = z.object({
     .boolean()
     .optional()
     .describe("True when secret agenda is revealed."),
-  icon: z.string().optional().describe("A single emoji representing this faction."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this faction."),
   highlight: z.boolean().optional(),
 });
 
@@ -688,7 +744,10 @@ export const characterAttributeSchema = z.object({
   value: z.number().int().describe("Current value."),
   maxValue: z.number().int().describe("Maximum value."),
   color: attributeColorSchema.describe("Visual color hint."),
-  icon: z.string().optional().describe("A single emoji representing this attribute."),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this attribute."),
 });
 
 /** 隐藏特质 */
@@ -1083,7 +1142,9 @@ export const gameResponseSchema = z.object({
         consequence: z
           .string()
           .optional()
-          .describe("A brief hint about the likely consequence of this choice."),
+          .describe(
+            "A brief hint about the likely consequence of this choice.",
+          ),
       }),
     )
     .min(2)
@@ -1380,7 +1441,9 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
         consequence: z
           .string()
           .optional()
-          .describe("A brief hint about the likely consequence of this choice."),
+          .describe(
+            "A brief hint about the likely consequence of this choice.",
+          ),
       }),
     )
     .min(2)
@@ -1514,8 +1577,13 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
 });
 
 export const forceUpdateSchema = z.object({
-  narrative: z.string().describe("The narrative description of the changes made to the world."),
-  stateUpdates: z.string().optional().describe("A summary of the state updates applied (for logging)."),
+  narrative: z
+    .string()
+    .describe("The narrative description of the changes made to the world."),
+  stateUpdates: z
+    .string()
+    .optional()
+    .describe("A summary of the state updates applied (for logging)."),
 });
 
 /** finish_turn 响应类型 */

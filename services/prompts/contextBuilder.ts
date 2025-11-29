@@ -70,7 +70,9 @@ const INVISIBLE_FIELDS = new Set([
  * 注意：hidden 字段始终对 AI 可见（AI 是 GM，知道一切真相）
  * unlocked 字段用于告诉 AI 玩家是否已知道 hidden 中的信息
  */
-function filterInvisibleFields<T extends Record<string, any>>(obj: T): Partial<T> {
+function filterInvisibleFields<T extends Record<string, any>>(
+  obj: T,
+): Partial<T> {
   const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (INVISIBLE_FIELDS.has(key)) continue;
@@ -144,8 +146,8 @@ interface ItemStatic {
 interface ItemSemiStatic {
   id: string;
   visible: { description: string };
-  hidden?: { truth: string; secrets?: string[] };  // AI 始终可见
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  hidden?: { truth: string; secrets?: string[] }; // AI 始终可见
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface ItemDynamic {
@@ -169,10 +171,12 @@ function splitInventoryItem(item: InventoryItem): {
       id: item.id,
       visible: { description: item.visible.description },
       // AI 作为 GM 始终能看到 hidden，unlocked 告诉 AI 玩家是否知道
-      hidden: item.hidden ? {
-        truth: item.hidden.truth,
-        secrets: item.hidden.secrets,
-      } : undefined,
+      hidden: item.hidden
+        ? {
+            truth: item.hidden.truth,
+            secrets: item.hidden.secrets,
+          }
+        : undefined,
       unlocked: item.unlocked,
     },
     dynamic: {
@@ -202,7 +206,7 @@ interface NpcSemiStatic {
   realPersonality?: string;
   realMotives?: string;
   secrets?: string[];
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface NpcDynamic {
@@ -277,7 +281,7 @@ interface LocationSemiStatic {
   fullDescription?: string;
   hiddenFeatures?: string[];
   secrets?: string[];
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface LocationDynamic {
@@ -334,7 +338,7 @@ interface QuestSemiStatic {
   trueDescription?: string;
   trueObjectives?: string[];
   secretOutcome?: string;
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface QuestDynamic {
@@ -387,7 +391,7 @@ interface KnowledgeSemiStatic {
   // hidden 始终对 AI 可见
   fullTruth?: string;
   misconceptions?: string[];
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface KnowledgeDynamic {
@@ -442,7 +446,7 @@ interface SkillSemiStatic {
   trueDescription?: string;
   hiddenEffects?: string[];
   drawbacks?: string[];
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface SkillDynamic {
@@ -499,7 +503,7 @@ interface ConditionSemiStatic {
   progression?: string;
   cure?: string;
   hiddenEffects?: string[];
-  unlocked?: boolean;  // 告诉 AI 玩家是否知道 hidden 内容
+  unlocked?: boolean; // 告诉 AI 玩家是否知道 hidden 内容
 }
 
 interface ConditionDynamic {
@@ -594,7 +598,9 @@ const DEFAULT_LIMITS = {
  * 2. 动态层包含最小必要信息，减少 Token 消耗
  * 3. 实体按 ID 关联，不重复传输静态信息
  */
-export function buildLayeredContext(options: ContextBuilderOptions): LayeredContext {
+export function buildLayeredContext(
+  options: ContextBuilderOptions,
+): LayeredContext {
   const {
     outline,
     gameState,
@@ -619,13 +625,17 @@ export function buildLayeredContext(options: ContextBuilderOptions): LayeredCont
   staticParts.push(buildCharacterStaticContext(gameState.character));
 
   // 3. 所有已知实体的静态信息（ID + 名称 + 不变属性）
-  staticParts.push(buildEntitiesStaticContext(gameState, mergedLimits, aliveEntities));
+  staticParts.push(
+    buildEntitiesStaticContext(gameState, mergedLimits, aliveEntities),
+  );
 
   // ========== 半静态层 ==========
   const semiStaticParts: string[] = [];
 
   // 1. 实体的描述性内容（visible/hidden 层）
-  semiStaticParts.push(buildEntitiesSemiStaticContext(gameState, mergedLimits, aliveEntities));
+  semiStaticParts.push(
+    buildEntitiesSemiStaticContext(gameState, mergedLimits, aliveEntities),
+  );
 
   // 2. 历史摘要
   if (summaries && summaries.length > 0) {
@@ -643,7 +653,9 @@ ${latestSummary.displayText}
   dynamicParts.push(buildCurrentStateContext(gameState));
 
   // 2. 实体的动态属性（状态、好感度等）
-  dynamicParts.push(buildEntitiesDynamicContext(gameState, mergedLimits, aliveEntities));
+  dynamicParts.push(
+    buildEntitiesDynamicContext(gameState, mergedLimits, aliveEntities),
+  );
 
   // 3. 最近对话
   if (recentHistory && recentHistory.length > 0) {
@@ -761,7 +773,9 @@ function buildEntitiesStaticContext(
   // 地点静态信息
   if (priorityLocations.length > 0) {
     const locsStatic = priorityLocations.map((l) => splitLocation(l).static);
-    parts.push(`<locations_static>\n${toToon(locsStatic)}\n</locations_static>`);
+    parts.push(
+      `<locations_static>\n${toToon(locsStatic)}\n</locations_static>`,
+    );
   }
 
   // 任务静态信息
@@ -772,8 +786,12 @@ function buildEntitiesStaticContext(
 
   // 知识静态信息
   if (priorityKnowledge.length > 0) {
-    const knowledgeStatic = priorityKnowledge.map((k) => splitKnowledge(k).static);
-    parts.push(`<knowledge_static>\n${toToon(knowledgeStatic)}\n</knowledge_static>`);
+    const knowledgeStatic = priorityKnowledge.map(
+      (k) => splitKnowledge(k).static,
+    );
+    parts.push(
+      `<knowledge_static>\n${toToon(knowledgeStatic)}\n</knowledge_static>`,
+    );
   }
 
   // 技能静态信息
@@ -794,11 +812,17 @@ function buildEntitiesStaticContext(
     limits.conditions,
   );
   if (priorityConditions.length > 0) {
-    const conditionsStatic = priorityConditions.map((c) => splitCondition(c).static);
-    parts.push(`<conditions_static>\n${toToon(conditionsStatic)}\n</conditions_static>`);
+    const conditionsStatic = priorityConditions.map(
+      (c) => splitCondition(c).static,
+    );
+    parts.push(
+      `<conditions_static>\n${toToon(conditionsStatic)}\n</conditions_static>`,
+    );
   }
 
-  return parts.length > 0 ? `\n<entities_static>\n${parts.join("\n")}\n</entities_static>` : "";
+  return parts.length > 0
+    ? `\n<entities_static>\n${parts.join("\n")}\n</entities_static>`
+    : "";
 }
 
 function buildEntitiesSemiStaticContext(
@@ -838,32 +862,46 @@ function buildEntitiesSemiStaticContext(
 
   // 物品半静态信息（描述）
   if (priorityItems.length > 0) {
-    const itemsSemiStatic = priorityItems.map((i) => splitInventoryItem(i).semiStatic);
+    const itemsSemiStatic = priorityItems.map(
+      (i) => splitInventoryItem(i).semiStatic,
+    );
     parts.push(`<items_desc>\n${toToon(itemsSemiStatic)}\n</items_desc>`);
   }
 
   // NPC 半静态信息
   if (priorityNpcs.length > 0) {
-    const npcsSemiStatic = priorityNpcs.map((n) => splitRelationship(n).semiStatic);
+    const npcsSemiStatic = priorityNpcs.map(
+      (n) => splitRelationship(n).semiStatic,
+    );
     parts.push(`<npcs_desc>\n${toToon(npcsSemiStatic)}\n</npcs_desc>`);
   }
 
   // 地点半静态信息
   if (priorityLocations.length > 0) {
-    const locsSemiStatic = priorityLocations.map((l) => splitLocation(l).semiStatic);
-    parts.push(`<locations_desc>\n${toToon(locsSemiStatic)}\n</locations_desc>`);
+    const locsSemiStatic = priorityLocations.map(
+      (l) => splitLocation(l).semiStatic,
+    );
+    parts.push(
+      `<locations_desc>\n${toToon(locsSemiStatic)}\n</locations_desc>`,
+    );
   }
 
   // 任务半静态信息
   if (priorityQuests.length > 0) {
-    const questsSemiStatic = priorityQuests.map((q) => splitQuest(q).semiStatic);
+    const questsSemiStatic = priorityQuests.map(
+      (q) => splitQuest(q).semiStatic,
+    );
     parts.push(`<quests_desc>\n${toToon(questsSemiStatic)}\n</quests_desc>`);
   }
 
   // 知识半静态信息
   if (priorityKnowledge.length > 0) {
-    const knowledgeSemiStatic = priorityKnowledge.map((k) => splitKnowledge(k).semiStatic);
-    parts.push(`<knowledge_desc>\n${toToon(knowledgeSemiStatic)}\n</knowledge_desc>`);
+    const knowledgeSemiStatic = priorityKnowledge.map(
+      (k) => splitKnowledge(k).semiStatic,
+    );
+    parts.push(
+      `<knowledge_desc>\n${toToon(knowledgeSemiStatic)}\n</knowledge_desc>`,
+    );
   }
 
   // 技能半静态信息
@@ -873,7 +911,9 @@ function buildEntitiesSemiStaticContext(
     limits.skills,
   );
   if (prioritySkills.length > 0) {
-    const skillsSemiStatic = prioritySkills.map((s) => splitSkill(s).semiStatic);
+    const skillsSemiStatic = prioritySkills.map(
+      (s) => splitSkill(s).semiStatic,
+    );
     parts.push(`<skills_desc>\n${toToon(skillsSemiStatic)}\n</skills_desc>`);
   }
 
@@ -884,11 +924,17 @@ function buildEntitiesSemiStaticContext(
     limits.conditions,
   );
   if (priorityConditions.length > 0) {
-    const conditionsSemiStatic = priorityConditions.map((c) => splitCondition(c).semiStatic);
-    parts.push(`<conditions_desc>\n${toToon(conditionsSemiStatic)}\n</conditions_desc>`);
+    const conditionsSemiStatic = priorityConditions.map(
+      (c) => splitCondition(c).semiStatic,
+    );
+    parts.push(
+      `<conditions_desc>\n${toToon(conditionsSemiStatic)}\n</conditions_desc>`,
+    );
   }
 
-  return parts.length > 0 ? `\n<entities_descriptions>\n${parts.join("\n")}\n</entities_descriptions>` : "";
+  return parts.length > 0
+    ? `\n<entities_descriptions>\n${parts.join("\n")}\n</entities_descriptions>`
+    : "";
 }
 
 function buildEntitiesDynamicContext(
@@ -930,7 +976,7 @@ function buildEntitiesDynamicContext(
   // 物品动态信息
   const itemsDynamic = priorityItems
     .map((i) => splitInventoryItem(i).dynamic)
-    .filter((d) => d.notes);  // notes 是唯一的动态字段
+    .filter((d) => d.notes); // notes 是唯一的动态字段
   if (itemsDynamic.length > 0) {
     parts.push(`<items_state>\n${toToon(itemsDynamic)}\n</items_state>`);
   }
@@ -944,7 +990,7 @@ function buildEntitiesDynamicContext(
   // 地点动态信息
   const locsDynamic = priorityLocations
     .map((l) => splitLocation(l).dynamic)
-    .filter((d) => d.isVisited || d.notes);  // unlocked 已移到 semiStatic
+    .filter((d) => d.isVisited || d.notes); // unlocked 已移到 semiStatic
   if (locsDynamic.length > 0) {
     parts.push(`<locations_state>\n${toToon(locsDynamic)}\n</locations_state>`);
   }
@@ -958,9 +1004,11 @@ function buildEntitiesDynamicContext(
   // 知识动态信息
   const knowledgeDynamic = priorityKnowledge
     .map((k) => splitKnowledge(k).dynamic)
-    .filter((d) => d.relatedTo);  // unlocked 已移到 semiStatic
+    .filter((d) => d.relatedTo); // unlocked 已移到 semiStatic
   if (knowledgeDynamic.length > 0) {
-    parts.push(`<knowledge_state>\n${toToon(knowledgeDynamic)}\n</knowledge_state>`);
+    parts.push(
+      `<knowledge_state>\n${toToon(knowledgeDynamic)}\n</knowledge_state>`,
+    );
   }
 
   // 技能动态信息
@@ -980,9 +1028,13 @@ function buildEntitiesDynamicContext(
     alive.conditions,
     limits.conditions,
   );
-  const conditionsDynamic = priorityConditions.map((c) => splitCondition(c).dynamic);
+  const conditionsDynamic = priorityConditions.map(
+    (c) => splitCondition(c).dynamic,
+  );
   if (conditionsDynamic.length > 0) {
-    parts.push(`<conditions_state>\n${toToon(conditionsDynamic)}\n</conditions_state>`);
+    parts.push(
+      `<conditions_state>\n${toToon(conditionsDynamic)}\n</conditions_state>`,
+    );
   }
 
   // 角色属性（高度动态）
@@ -992,15 +1044,21 @@ function buildEntitiesDynamicContext(
       value: a.value,
       max: a.maxValue,
     }));
-    parts.push(`<character_attributes>\n${toToon(attrs)}\n</character_attributes>`);
+    parts.push(
+      `<character_attributes>\n${toToon(attrs)}\n</character_attributes>`,
+    );
   }
 
-  return parts.length > 0 ? `\n<entities_state>\n${parts.join("\n")}\n</entities_state>` : "";
+  return parts.length > 0
+    ? `\n<entities_state>\n${parts.join("\n")}\n</entities_state>`
+    : "";
 }
 
 function buildCurrentStateContext(gameState: GameState): string {
   const currentLoc = gameState.locations.find(
-    (l) => l.id === gameState.currentLocation || l.name === gameState.currentLocation,
+    (l) =>
+      l.id === gameState.currentLocation ||
+      l.name === gameState.currentLocation,
   );
 
   return `
@@ -1015,23 +1073,28 @@ function buildCurrentStateContext(gameState: GameState): string {
 
 function buildPendingConsequencesContext(gameState: GameState): string {
   const activeCausalChains = (gameState.causalChains || []).filter(
-    (c) => c.status === "active" && c.pendingConsequences?.some((p) => !p.triggered),
+    (c) =>
+      c.status === "active" && c.pendingConsequences?.some((p) => !p.triggered),
   );
 
   if (activeCausalChains.length === 0) return "";
 
-  const pendingInfo = activeCausalChains.map((chain) => ({
-    chainId: chain.chainId,
-    rootCause: chain.rootCause.description,
-    pending: chain.pendingConsequences
-      ?.filter((p) => !p.triggered && p.readyAfterTurn < (gameState.turnNumber || 0))
-      .map((p) => ({
-        id: p.id,
-        description: p.description,
-        readyAfter: p.readyAfterTurn,
-        conditions: p.conditions,
-      })),
-  })).filter((c) => c.pending && c.pending.length > 0);
+  const pendingInfo = activeCausalChains
+    .map((chain) => ({
+      chainId: chain.chainId,
+      rootCause: chain.rootCause.description,
+      pending: chain.pendingConsequences
+        ?.filter(
+          (p) => !p.triggered && p.readyAfterTurn < (gameState.turnNumber || 0),
+        )
+        .map((p) => ({
+          id: p.id,
+          description: p.description,
+          readyAfter: p.readyAfterTurn,
+          conditions: p.conditions,
+        })),
+    }))
+    .filter((c) => c.pending && c.pending.length > 0);
 
   if (pendingInfo.length === 0) return "";
 
@@ -1074,11 +1137,12 @@ function createEmptyAliveEntities(): AliveEntities {
  *
  * 注意：lastAccess 可能是新的 AccessTimestamp 格式或旧的 number 格式
  */
-function selectPriorityEntities<T extends { id?: string; lastAccess?: AccessTimestamp | Partial<AccessTimestamp> }>(
-  items: T[],
-  aliveIds: string[],
-  limit: number,
-): T[] {
+function selectPriorityEntities<
+  T extends {
+    id?: string;
+    lastAccess?: AccessTimestamp | Partial<AccessTimestamp>;
+  },
+>(items: T[], aliveIds: string[], limit: number): T[] {
   const aliveSet = new Set(aliveIds);
 
   // 分离 alive 和非 alive 实体

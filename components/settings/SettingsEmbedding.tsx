@@ -20,21 +20,25 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const isEnabled = config?.enabled ?? false;
 
   // State for dynamically fetched models (keyed by providerId)
-  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(() => {
-    try {
-      const cached = localStorage.getItem("chronicles_embedding_models_cache");
-      if (cached) {
-        const { timestamp, data } = JSON.parse(cached);
-        // Cache valid for 24 hours
-        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-          return data;
+  const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(
+    () => {
+      try {
+        const cached = localStorage.getItem(
+          "chronicles_embedding_models_cache",
+        );
+        if (cached) {
+          const { timestamp, data } = JSON.parse(cached);
+          // Cache valid for 24 hours
+          if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+            return data;
+          }
         }
+      } catch (e) {
+        console.warn("Failed to load embedding models cache", e);
       }
-    } catch (e) {
-      console.warn("Failed to load embedding models cache", e);
-    }
-    return {};
-  });
+      return {};
+    },
+  );
 
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
     {},
@@ -63,7 +67,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               JSON.stringify({
                 timestamp: Date.now(),
                 data: newModels,
-              })
+              }),
             );
             return newModels;
           });

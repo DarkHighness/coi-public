@@ -16,7 +16,8 @@
  * - Emoji modifiers (skin tones, gender, etc.)
  * - Zero-width joiners for compound emojis
  */
-const EMOJI_REGEX = /^(?:[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}])+$/u;
+const EMOJI_REGEX =
+  /^(?:[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}])+$/u;
 
 /**
  * Check if a value is a valid emoji
@@ -24,7 +25,7 @@ const EMOJI_REGEX = /^(?:[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\
  * @returns true if the value is a valid emoji, false otherwise
  */
 export function isValidEmoji(value: string | undefined): boolean {
-  if (!value || typeof value !== 'string') {
+  if (!value || typeof value !== "string") {
     return false;
   }
 
@@ -46,6 +47,9 @@ export function isValidEmoji(value: string | undefined): boolean {
  * @param fallback - The fallback icon to use if validation fails
  * @returns The icon if valid, otherwise the fallback
  */
-export function getValidIcon(icon: string | undefined, fallback: string): string {
+export function getValidIcon(
+  icon: string | undefined,
+  fallback: string,
+): string {
   return isValidEmoji(icon) ? icon!.trim() : fallback;
 }

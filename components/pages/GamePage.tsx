@@ -278,8 +278,7 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   const themeName = t(`${gameState.theme}.name`, { ns: "themes" });
   const prompt = t("initialPrompt.begin", { theme: themeName });
-  const defaultContinuePrompt =
-    gameState.initialPrompt || prompt;
+  const defaultContinuePrompt = gameState.initialPrompt || prompt;
 
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
@@ -326,7 +325,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             } else if (lastSegment.role === "command") {
               // We must encoutnered a command segment
               // Currently, only /sudo command has `command` role
-              handleForceUpdate(lastSegment.text)
+              handleForceUpdate(lastSegment.text);
             } else {
               // The last segment is not a user segment, so we retry from the initial prompt
               handleAction(defaultContinuePrompt);
@@ -386,7 +385,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             } else if (lastSegment.role === "command") {
               // We must encoutnered a command segment
               // Currently, only /sudo command has `command` role
-              handleForceUpdate(lastSegment.text)
+              handleForceUpdate(lastSegment.text);
             } else {
               // The last segment is not a user segment, so we retry from the initial prompt
               handleAction(defaultContinuePrompt);

@@ -62,7 +62,9 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">
-              {isValidEmoji(k.icon) ? k.icon : (CATEGORY_ICONS[k.category] || "📖")}
+              {isValidEmoji(k.icon)
+                ? k.icon
+                : CATEGORY_ICONS[k.category] || "📖"}
             </span>
             <h4 className="text-sm font-bold text-theme-primary truncate flex items-center gap-2">
               {k.title}

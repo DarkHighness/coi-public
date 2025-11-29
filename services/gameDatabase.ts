@@ -326,9 +326,12 @@ export class GameDatabase {
   // --- Query Methods ---
 
   // Helper to update lastAccess for queried entities
-  private updateLastAccess<T extends { id: string; lastAccess?: AccessTimestamp | Partial<AccessTimestamp> }>(
-    items: T[],
-  ): T[] {
+  private updateLastAccess<
+    T extends {
+      id: string;
+      lastAccess?: AccessTimestamp | Partial<AccessTimestamp>;
+    },
+  >(items: T[]): T[] {
     const forkId = this.state.forkId || 0;
     const turnNumber = this.state.turnNumber || 0;
     const timestamp = Date.now();

@@ -258,7 +258,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                         : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                     }`}
                   >
-                    <span className="text-lg">{getValidIcon(config.icon, "📖")}</span>
+                    <span className="text-lg">
+                      {getValidIcon(config.icon, "📖")}
+                    </span>
                     <span className="text-sm font-medium md:truncate">
                       {t(config.labelKey) || section}
                     </span>

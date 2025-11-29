@@ -12,10 +12,7 @@ import {
   GameResponse,
 } from "../../types";
 
-import {
-  ToolCallResult,
-  MalformedToolCallError,
-} from "../providers/types";
+import { ToolCallResult, MalformedToolCallError } from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
 import { TOOLS } from "../tools";
@@ -32,10 +29,7 @@ import {
   createToolResponseMessage,
 } from "../messageTypes";
 
-import {
-  GenerateContentResult,
-  generateContentUnifiedInternal,
-} from "./core";
+import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
 
 import {
   getProviderConfig,
@@ -85,7 +79,11 @@ export const generateForceUpdate = async (
   const fullContext = `${layers.staticLayer}\n${layers.semiStaticLayer}\n${layers.dynamicLayer}`;
 
   // 3. 构建系统指令
-  const systemInstruction = getForceUpdateSystemInstruction(language, prompt, fullContext);
+  const systemInstruction = getForceUpdateSystemInstruction(
+    language,
+    prompt,
+    fullContext,
+  );
 
   // 4. 准备初始消息
   // We don't need to pass currentStateSummary in the user message anymore because it's in the system instruction context
@@ -308,8 +306,9 @@ const runForceUpdateLoop = async (
           // unless we want to show them. For now, narrative is enough.
 
           // Attach final state
-          (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
-            db.getState();
+          (
+            accumulatedResponse as GameResponse & { finalState: unknown }
+          ).finalState = db.getState();
 
           return accumulatedResponse;
         }
@@ -328,8 +327,9 @@ const runForceUpdateLoop = async (
       try {
         const updateData = forceUpdateSchema.parse(result);
         accumulatedResponse.narrative = updateData.narrative;
-        (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
-          db.getState();
+        (
+          accumulatedResponse as GameResponse & { finalState: unknown }
+        ).finalState = db.getState();
         return accumulatedResponse;
       } catch (validationError) {
         console.error(
@@ -338,15 +338,18 @@ const runForceUpdateLoop = async (
         );
         // Fallback
         if (result && (result as GameResponse).narrative) {
-           accumulatedResponse.narrative = (result as GameResponse).narrative;
-           (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
-            db.getState();
-           return accumulatedResponse;
+          accumulatedResponse.narrative = (result as GameResponse).narrative;
+          (
+            accumulatedResponse as GameResponse & { finalState: unknown }
+          ).finalState = db.getState();
+          return accumulatedResponse;
         }
-         // Last resort
-        accumulatedResponse.narrative = typeof result === "string" ? result : JSON.stringify(result);
-        (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
-            db.getState();
+        // Last resort
+        accumulatedResponse.narrative =
+          typeof result === "string" ? result : JSON.stringify(result);
+        (
+          accumulatedResponse as GameResponse & { finalState: unknown }
+        ).finalState = db.getState();
         return accumulatedResponse;
       }
     }

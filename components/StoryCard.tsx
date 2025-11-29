@@ -87,7 +87,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             </div>
           </div>
           <div className="p-3 font-mono text-sm text-theme-primary flex items-center gap-2">
-            <span className="text-theme-accent select-none shrink-0">$ /sudo</span>
+            <span className="text-theme-accent select-none shrink-0">
+              $ /sudo
+            </span>
             <span className="break-all">{segment.text}</span>
             <span className="w-2 h-4 bg-theme-primary/50 animate-pulse inline-block ml-1" />
           </div>

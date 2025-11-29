@@ -74,7 +74,7 @@ export const getCoreSystemInstruction = (
 </mode_strict>
 `
       : isRestricted
-      ? `
+        ? `
 <mode_strict>
   <warning>STRICT MODE ENABLED</warning>
   <guidelines>
@@ -85,7 +85,7 @@ export const getCoreSystemInstruction = (
   </guidelines>
 </mode_strict>
 `
-      : `
+        : `
 <mode_creative>
   <guidelines>
     <rule>Background Template and Examples are for INSPIRATION ONLY.</rule>

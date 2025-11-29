@@ -899,14 +899,8 @@ export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
   description:
     "Update character profile fields (name, title, status, appearance, profession, background, race), attributes, skills, conditions, or hidden traits.",
   parameters: z.object({
-    name: z
-      .string()
-      .optional()
-      .describe("Character name/protagonist name."),
-    title: z
-      .string()
-      .optional()
-      .describe("Character's title/role/class."),
+    name: z.string().optional().describe("Character name/protagonist name."),
+    title: z.string().optional().describe("Character's title/role/class."),
     status: z
       .string()
       .optional()
@@ -919,10 +913,7 @@ export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
       .string()
       .optional()
       .describe("Character's profession/occupation/class."),
-    background: z
-      .string()
-      .optional()
-      .describe("Character's background story."),
+    background: z.string().optional().describe("Character's background story."),
     race: z
       .string()
       .optional()

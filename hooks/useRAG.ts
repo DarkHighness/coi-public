@@ -502,17 +502,18 @@ export function useRAG(
   // Stats
   // ============================================================================
 
-  const getAllSaveStats = useCallback(async (): Promise<GlobalStorageStats | null> => {
-    const service = serviceRef.current;
-    if (!service) return null;
+  const getAllSaveStats =
+    useCallback(async (): Promise<GlobalStorageStats | null> => {
+      const service = serviceRef.current;
+      if (!service) return null;
 
-    try {
-      return await service.getAllSaveStats();
-    } catch (error) {
-      console.error("[useRAG] Get all save stats failed:", error);
-      return null;
-    }
-  }, []);
+      try {
+        return await service.getAllSaveStats();
+      } catch (error) {
+        console.error("[useRAG] Get all save stats failed:", error);
+        return null;
+      }
+    }, []);
 
   // ============================================================================
   // Cleanup

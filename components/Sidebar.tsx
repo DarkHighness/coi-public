@@ -82,15 +82,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {gameState.tokenUsage && (
                 <>
                   <div className="opacity-70 text-[9px]">
-                    (In: {gameState.tokenUsage.promptTokens.toLocaleString()} / Out:{" "}
+                    (In: {gameState.tokenUsage.promptTokens.toLocaleString()} /
+                    Out:{" "}
                     {gameState.tokenUsage.completionTokens.toLocaleString()})
                   </div>
                   {(gameState.tokenUsage.cacheRead ||
                     gameState.tokenUsage.cacheWrite) && (
                     <div className="opacity-60 text-[8px] italic">
                       (Cache: +
-                      {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} / -
-                      {gameState.tokenUsage.cacheRead?.toLocaleString() || 0})
+                      {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} /
+                      -{gameState.tokenUsage.cacheRead?.toLocaleString() || 0})
                     </div>
                   )}
                 </>
@@ -112,8 +113,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {(gameState.tokenUsage?.cacheRead ||
                 gameState.tokenUsage?.cacheWrite) && (
                 <div className="opacity-60 text-[8px] italic">
-                  Cache: +{gameState.tokenUsage.cacheWrite?.toLocaleString() || 0}{" "}
-                  / -{gameState.tokenUsage.cacheRead?.toLocaleString() || 0}
+                  Cache: +
+                  {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} / -
+                  {gameState.tokenUsage.cacheRead?.toLocaleString() || 0}
                 </div>
               )}
             </div>
@@ -245,7 +247,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Status Bar */}
       <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
         <span>
-          {t("sidebar.tokens")} {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+          {t("sidebar.tokens")}{" "}
+          {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
           {gameState.tokenUsage && (
             <span className="hidden md:inline opacity-70 ml-1">
               ({gameState.tokenUsage.promptTokens.toLocaleString()} +{" "}

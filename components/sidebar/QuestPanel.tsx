@@ -77,7 +77,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               className="font-bold text-theme-text text-xs break-words whitespace-normal"
               title={q.title}
             >
-              <span className="mr-1">{getValidIcon(q.icon, q.type === "main" ? "🎯" : "📜")}</span>
+              <span className="mr-1">
+                {getValidIcon(q.icon, q.type === "main" ? "🎯" : "📜")}
+              </span>
               {q.title}
             </span>
             {/* Unlocked indicator */}

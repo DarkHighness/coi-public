@@ -292,7 +292,7 @@ export const getModels = async (
 export const validateConnection = async (
   settings: AISettings,
   providerId: string,
-  ): Promise<{ isValid: boolean; error?: string }> => {
+): Promise<{ isValid: boolean; error?: string }> => {
   // 直接查找 provider 实例，不检查 enabled 状态
   const instance = settings.providers.instances.find(
     (p) => p.id === providerId,

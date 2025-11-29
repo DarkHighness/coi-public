@@ -111,7 +111,11 @@ export function migrateFromLegacyTimestamp(
   defaultTurnNumber: number = 0,
 ): VersionedTimestamp {
   if (!legacyTimestamp) {
-    return { forkId: defaultForkId, turnNumber: defaultTurnNumber, timestamp: Date.now() };
+    return {
+      forkId: defaultForkId,
+      turnNumber: defaultTurnNumber,
+      timestamp: Date.now(),
+    };
   }
   if (typeof legacyTimestamp === "object" && "forkId" in legacyTimestamp) {
     // 已经是新格式，确保有 timestamp
@@ -125,7 +129,8 @@ export function migrateFromLegacyTimestamp(
   return {
     forkId: defaultForkId,
     turnNumber: defaultTurnNumber,
-    timestamp: typeof legacyTimestamp === "number" ? legacyTimestamp : Date.now(),
+    timestamp:
+      typeof legacyTimestamp === "number" ? legacyTimestamp : Date.now(),
   };
 }
 

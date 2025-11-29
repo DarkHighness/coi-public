@@ -383,11 +383,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                               {label}
                             </ReactMarkdown>
                           </div>
-                          {(rawChoice as any).consequence && gameState.unlockMode && (
-                            <span className="text-[10px] opacity-80 mt-0.5 font-normal italic block">
-                              {(rawChoice as any).consequence}
-                            </span>
-                          )}
+                          {(rawChoice as any).consequence &&
+                            gameState.unlockMode && (
+                              <span className="text-[10px] opacity-80 mt-0.5 font-normal italic block">
+                                {(rawChoice as any).consequence}
+                              </span>
+                            )}
                         </button>
                         <button
                           onClick={(e) => handleRollClick(e, label)}

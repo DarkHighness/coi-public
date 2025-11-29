@@ -1,8 +1,4 @@
-import {
-  AISettings,
-  EmbeddingModelInfo,
-  EmbeddingConfig,
-} from "../../types";
+import { AISettings, EmbeddingModelInfo, EmbeddingConfig } from "../../types";
 
 import {
   GeminiConfig,
@@ -31,10 +27,7 @@ import {
   generateEmbedding as generateClaudeEmbedding,
 } from "../providers/claudeProvider";
 
-import {
-  getProviderInstance,
-  createProviderConfig,
-} from "./utils";
+import { getProviderInstance, createProviderConfig } from "./utils";
 
 // ============================================================================
 // Embedding Functions

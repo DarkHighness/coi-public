@@ -101,13 +101,18 @@ class ImageLoader {
     img.onerror = () => {
       if (task.retries < 3) {
         // Retry
-        console.warn(`Failed to load image ${task.url}, retrying (${task.retries + 1}/3)...`);
+        console.warn(
+          `Failed to load image ${task.url}, retrying (${task.retries + 1}/3)...`,
+        );
         task.retries++;
         // Put back at the front of the queue or retry immediately?
         // Let's retry immediately but with a small delay to be nice
-        setTimeout(() => {
-          this.loadImage(task);
-        }, 1000 * (task.retries + 1));
+        setTimeout(
+          () => {
+            this.loadImage(task);
+          },
+          1000 * (task.retries + 1),
+        );
       } else {
         this.activeLoads--;
         task.reject(new Error(`Failed to load image: ${task.url}`));

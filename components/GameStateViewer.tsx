@@ -206,14 +206,22 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 {t("sidebar.tokens")}:
               </span>
               <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-2">
-                <div>Total: {gameState.tokenUsage.totalTokens.toLocaleString()}</div>
-                <div>Prompt: {gameState.tokenUsage.promptTokens.toLocaleString()}</div>
-                <div>Compl: {gameState.tokenUsage.completionTokens.toLocaleString()}</div>
+                <div>
+                  Total: {gameState.tokenUsage.totalTokens.toLocaleString()}
+                </div>
+                <div>
+                  Prompt: {gameState.tokenUsage.promptTokens.toLocaleString()}
+                </div>
+                <div>
+                  Compl:{" "}
+                  {gameState.tokenUsage.completionTokens.toLocaleString()}
+                </div>
                 {(gameState.tokenUsage.cacheRead ||
                   gameState.tokenUsage.cacheWrite) && (
                   <>
                     <div className="text-theme-success/80">
-                      Cache+: {gameState.tokenUsage.cacheWrite?.toLocaleString()}
+                      Cache+:{" "}
+                      {gameState.tokenUsage.cacheWrite?.toLocaleString()}
                     </div>
                     <div className="text-theme-success/80">
                       Cache-: {gameState.tokenUsage.cacheRead?.toLocaleString()}
@@ -1295,7 +1303,9 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   key={item.id || idx}
                   className="p-2 bg-theme-bg/50 rounded border border-theme-border/50 flex items-center gap-2"
                 >
-                  <span className="text-lg">{getValidIcon(item.icon, "📦")}</span>
+                  <span className="text-lg">
+                    {getValidIcon(item.icon, "📦")}
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-theme-text text-sm truncate">
                       {item.name}

@@ -17,21 +17,13 @@ import {
   UnifiedMessage as ProviderUnifiedMessage,
 } from "../providers/types";
 
-import {
-  generateContent as generateGeminiContent,
-} from "../providers/geminiProvider";
+import { generateContent as generateGeminiContent } from "../providers/geminiProvider";
 
-import {
-  generateContent as generateOpenAIContent,
-} from "../providers/openaiProvider";
+import { generateContent as generateOpenAIContent } from "../providers/openaiProvider";
 
-import {
-  generateContent as generateOpenRouterContent,
-} from "../providers/openRouterProvider";
+import { generateContent as generateOpenRouterContent } from "../providers/openRouterProvider";
 
-import {
-  generateContent as generateClaudeContent,
-} from "../providers/claudeProvider";
+import { generateContent as generateClaudeContent } from "../providers/claudeProvider";
 
 import {
   UnifiedMessage,
@@ -316,7 +308,9 @@ export const generateContentUnified = async (
   // If the provider is marked as restricted, we must merge the system instruction
   // into the first user message and clear the system instruction argument.
   const instance = settings.providers.instances.find(
-    (p) => p.protocol === protocol && createProviderConfig(p).apiKey === config.apiKey
+    (p) =>
+      p.protocol === protocol &&
+      createProviderConfig(p).apiKey === config.apiKey,
   );
 
   let finalSystemInstruction = systemInstruction;
@@ -344,9 +338,11 @@ export const generateContentUnified = async (
       unifiedContents = [...(contents as UnifiedMessage[])];
     } else if (isGeminiFormat) {
       // Convert from Gemini format
-      unifiedContents = (contents as Array<{ role: string; parts: Array<{ text?: string }> }>).map(msg => ({
+      unifiedContents = (
+        contents as Array<{ role: string; parts: Array<{ text?: string }> }>
+      ).map((msg) => ({
         role: msg.role === "model" ? "assistant" : (msg.role as MessageRole),
-        content: msg.parts.map(p => ({ type: "text", text: p.text || "" }))
+        content: msg.parts.map((p) => ({ type: "text", text: p.text || "" })),
       }));
     } else {
       // Unknown format, try to cast
@@ -356,7 +352,9 @@ export const generateContentUnified = async (
     // 2. Add system instruction as a separate user message at the beginning
     unifiedContents.unshift({
       role: "user",
-      content: [{ type: "text", text: `[System Instruction]\n${systemInstruction}` }]
+      content: [
+        { type: "text", text: `[System Instruction]\n${systemInstruction}` },
+      ],
     });
 
     finalSystemInstruction = "";

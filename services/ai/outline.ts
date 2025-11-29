@@ -30,20 +30,11 @@ import {
   getSummaryPrompt,
 } from "../prompts/index";
 
-import {
-  THEMES,
-  OUTLINE_PHASES,
-} from "../../utils/constants";
+import { THEMES, OUTLINE_PHASES } from "../../utils/constants";
 
-import {
-  GenerateContentResult,
-  generateContentUnified,
-} from "./core";
+import { GenerateContentResult, generateContentUnified } from "./core";
 
-import {
-  getProviderConfig,
-  createLogEntry,
-} from "./utils";
+import { getProviderConfig, createLogEntry } from "./utils";
 
 // @ts-ignore
 import promptInjectionData from "@/src/prompt/prompt.toml";

@@ -365,7 +365,11 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
       <div className="p-2">
         <div className="flex justify-between items-center mb-0.5">
           <span className="font-bold flex items-center gap-1">
-            {condition.icon && getValidIcon(condition.icon, "") ? <span className="mr-1">{getValidIcon(condition.icon, "")}</span> : icon}
+            {condition.icon && getValidIcon(condition.icon, "") ? (
+              <span className="mr-1">{getValidIcon(condition.icon, "")}</span>
+            ) : (
+              icon
+            )}
             {condition.name}
             {condition.unlocked && (
               <svg
@@ -565,7 +569,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] text-theme-muted uppercase tracking-wider truncate">
-                      <span className="mr-1">{getValidIcon(attr.icon, "📊")}</span>
+                      <span className="mr-1">
+                        {getValidIcon(attr.icon, "📊")}
+                      </span>
                       {attr.label}
                     </span>
                     <span className="text-xs font-bold text-theme-text">

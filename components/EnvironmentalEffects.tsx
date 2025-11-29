@@ -8,8 +8,6 @@ import {
 
 import React, { useEffect, useState, useMemo } from "react";
 
-
-
 interface EnvironmentalEffectsProps {
   currentText: string;
   imagePrompt?: string;

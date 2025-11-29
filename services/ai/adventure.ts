@@ -13,10 +13,7 @@ import {
   GameResponse,
 } from "../../types";
 
-import {
-  ToolCallResult,
-  MalformedToolCallError,
-} from "../providers/types";
+import { ToolCallResult, MalformedToolCallError } from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
 import { TOOLS } from "../tools";
@@ -33,10 +30,7 @@ import {
   createToolResponseMessage,
 } from "../messageTypes";
 
-import {
-  GenerateContentResult,
-  generateContentUnifiedInternal,
-} from "./core";
+import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
 
 import {
   getProviderConfig,
@@ -66,7 +60,8 @@ export function processFinishTurnResponse(
   accumulatedResponse.narrative = (finishTurnData.narrative as string)
     ?.replace(/\\n/g, "\n")
     .replace(/\\"/g, '"');
-  accumulatedResponse.choices = finishTurnData.choices as GameResponse["choices"];
+  accumulatedResponse.choices =
+    finishTurnData.choices as GameResponse["choices"];
   accumulatedResponse.imagePrompt = finishTurnData.imagePrompt as string;
   accumulatedResponse.generateImage = finishTurnData.generateImage as boolean;
 
@@ -145,9 +140,7 @@ export const buildTurnMessages = (
   // === Message 1: Static Layer (rarely changes - best for prefix cache) ===
   if (layers.staticLayer) {
     messages.push(
-      createUserMessage(
-        `[CONTEXT: World Foundation]\n${layers.staticLayer}`,
-      ),
+      createUserMessage(`[CONTEXT: World Foundation]\n${layers.staticLayer}`),
     );
     messages.push({
       role: "assistant",
@@ -183,14 +176,15 @@ export const buildTurnMessages = (
 
   // === Message 4: Dynamic Layer (current state, entities state) ===
   messages.push(
-    createUserMessage(
-      `[CONTEXT: Current Situation]\n${layers.dynamicLayer}`,
-    ),
+    createUserMessage(`[CONTEXT: Current Situation]\n${layers.dynamicLayer}`),
   );
   messages.push({
     role: "assistant",
     content: [
-      { type: "text", text: "[Current situation acknowledged. Awaiting player action.]" },
+      {
+        type: "text",
+        text: "[Current situation acknowledged. Awaiting player action.]",
+      },
     ],
   });
 
@@ -247,8 +241,11 @@ export const generateAdventureTurn = async (
     console.log(
       `[PromptInjection] Checking for prompts to inject for model ${modelId}`,
     );
-    const matchedPrompt = promptInjectionData.prompts.find((p: { keywords: string[] }) =>
-      p.keywords.some((k: string) => loweredModelId.includes(k.toLowerCase())),
+    const matchedPrompt = promptInjectionData.prompts.find(
+      (p: { keywords: string[] }) =>
+        p.keywords.some((k: string) =>
+          loweredModelId.includes(k.toLowerCase()),
+        ),
     );
     if (matchedPrompt) {
       systemInstruction = `${(matchedPrompt as { prompt: string }).prompt}\n\n${systemInstruction}`;
