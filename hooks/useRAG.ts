@@ -34,6 +34,7 @@ import {
   type SearchOptions,
   type ModelMismatchInfo,
   type StorageOverflowInfo,
+  type GlobalStorageStats,
   type DocumentType,
   type RAGDocumentMeta,
 } from "../services/rag";
@@ -76,6 +77,7 @@ export interface RAGHookActions {
     action: "rebuild" | "disable" | "continue",
   ) => Promise<void>;
   handleStorageOverflow: (saveIdsToDelete: string[]) => Promise<void>;
+  getAllSaveStats: () => Promise<GlobalStorageStats | null>;
   cleanup: () => Promise<void>;
   terminate: () => void;
 }
@@ -497,6 +499,22 @@ export function useRAG(
   );
 
   // ============================================================================
+  // Stats
+  // ============================================================================
+
+  const getAllSaveStats = useCallback(async (): Promise<GlobalStorageStats | null> => {
+    const service = serviceRef.current;
+    if (!service) return null;
+
+    try {
+      return await service.getAllSaveStats();
+    } catch (error) {
+      console.error("[useRAG] Get all save stats failed:", error);
+      return null;
+    }
+  }, []);
+
+  // ============================================================================
   // Cleanup
   // ============================================================================
 
@@ -548,6 +566,7 @@ export function useRAG(
       getRAGContext,
       handleModelMismatch,
       handleStorageOverflow,
+      getAllSaveStats,
       cleanup,
       terminate,
     },

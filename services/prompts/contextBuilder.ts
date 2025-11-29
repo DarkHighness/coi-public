@@ -122,7 +122,6 @@ interface DynamicEntityFields {
   currentLocation?: string;
   currentImpression?: string;
   level?: string;
-  experience?: number;
   duration?: number;
   isVisited?: boolean;
   unlocked?: boolean;
@@ -449,7 +448,6 @@ interface SkillSemiStatic {
 interface SkillDynamic {
   id?: string;
   level: string;
-  experience?: number;
 }
 
 function splitSkill(skill: Skill): {
@@ -476,7 +474,6 @@ function splitSkill(skill: Skill): {
     dynamic: {
       id: skill.id,
       level: skill.level,
-      experience: skill.experience,
     },
   };
 }

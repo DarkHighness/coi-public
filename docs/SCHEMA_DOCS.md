@@ -202,7 +202,6 @@
 | `visible` | [skillVisibleSchema](#skillvisibleschema) | - | **[STATIC]** | **[VISIBLE]** |
 | `hidden` | [skillHiddenSchema](#skillhiddenschema) (opt) | - | **[STATIC]** | **[CONDITIONAL]** |
 | `category` | string (opt) | Skill category. | **[STATIC]** | **[VISIBLE]** |
-| `experience` | number (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 | `unlocked` | boolean (opt) | AI DECISION: Set true when skill's hidden nature is understood. | **[DYNAMIC]** | **[VISIBLE]** |
 | `highlight` | boolean (opt) | - | **[DYNAMIC]** | **[VISIBLE]** |
 

@@ -325,11 +325,10 @@ export const skillHiddenSchema = z.object({
 export const skillSchema = z.object({
   id: z.string().optional().describe("Format: skill:N"),
   name: z.string().describe("Skill name."),
-  level: z.string().describe("Skill level (e.g. Novice, Master, 1-100)."),
+  level: z.string().describe("Skill level (e.g. Novice, Master)."),
   visible: skillVisibleSchema,
   hidden: skillHiddenSchema.optional(),
   category: z.string().optional().describe("Skill category."),
-  experience: z.number().optional(),
   unlocked: z
     .boolean()
     .optional()

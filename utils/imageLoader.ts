@@ -12,6 +12,7 @@ type LoadTask = {
   resolve: (url: string) => void;
   reject: (error: Error) => void;
   retries: number;
+  options?: { crossOrigin?: string };
 };
 
 class ImageLoader {
@@ -19,9 +20,6 @@ class ImageLoader {
   private activeLoads = 0;
   private maxConcurrent = 2;
   private cache = new Map<string, string>();
-  private pendingUrl: string | null = null;
-  private debounceTimer: NodeJS.Timeout | null = null;
-  private debounceDelay = 300; // ms
 
   constructor() {
     // Singleton instance
@@ -33,7 +31,10 @@ class ImageLoader {
    * If a request is already pending for this URL, it joins the queue.
    * Uses debouncing to prevent rapid changes from triggering multiple loads.
    */
-  public load(url: string): Promise<string> {
+  public load(
+    url: string,
+    options?: { crossOrigin?: string },
+  ): Promise<string> {
     // 1. Check cache
     if (this.cache.has(url)) {
       return Promise.resolve(url);
@@ -51,7 +52,7 @@ class ImageLoader {
 
     // We'll implement a simple queue here.
     return new Promise((resolve, reject) => {
-      this.queue.push({ url, resolve, reject, retries: 0 });
+      this.queue.push({ url, resolve, reject, retries: 0, options });
       this.processQueue();
     });
   }
@@ -86,6 +87,9 @@ class ImageLoader {
 
   private loadImage(task: LoadTask) {
     const img = new Image();
+    if (task.options?.crossOrigin) {
+      img.crossOrigin = task.options.crossOrigin;
+    }
 
     img.onload = () => {
       this.cache.set(task.url, task.url);

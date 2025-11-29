@@ -91,7 +91,13 @@ async function updateRAGDocumentsBackground(
 /**
  * Index initial entities when game starts (outline + first turn)
  */
-async function indexInitialEntities(state: any): Promise<void> {
+/**
+ * Index initial entities when game starts (outline + first turn)
+ */
+async function indexInitialEntities(
+  state: any,
+  saveId: string,
+): Promise<void> {
   try {
     const ragService = getRAGService();
     if (!ragService) return;
@@ -126,7 +132,8 @@ async function indexInitialEntities(state: any): Promise<void> {
     await ragService.addDocuments(
       documents.map((doc) => ({
         ...doc,
-        saveId: state.saveId || "unknown",
+        ...doc,
+        saveId: saveId,
         forkId: state.forkId || 0,
         turnNumber: state.turnNumber || 0,
       })),
@@ -1054,13 +1061,15 @@ export const useGameEngine = () => {
           } else if (result && result.success) {
             // On success, index initial entities in background (non-blocking)
             if (aiSettings.embedding?.enabled) {
-              indexInitialEntities(gameStateRef.current).catch((error) => {
+            indexInitialEntities(gameStateRef.current, slotId).catch(
+              (error) => {
                 console.error(
                   "[RAG Init] Failed to index initial entities:",
                   error,
                 );
-              });
-            }
+              },
+            );
+          }
           }
           // On success, we're already in /game with content showing
         } catch (error) {

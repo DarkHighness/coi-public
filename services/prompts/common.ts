@@ -283,5 +283,12 @@ export const getImmersiveWriting = (): string => `
     - **Combat/Puzzle/Exploration**: Slow down. Allow detailed exploration of the environment and mechanics. Give the player agency to investigate details.
     - **NO REPETITION**: Never repeat descriptions. The world must evolve.
   </narrative_pacing>
+
+  <dialogue_progression>
+    - **NO REDUNDANT CHATTER**: Do not have characters repeat what has already been said or agreed upon.
+    - **FORWARD MOMENTUM**: Every line of dialogue must advance the plot, reveal character, or deepen relationships.
+    - **AVOID CYCLICAL CONVERSATIONS**: If a topic is resolved, move on. Do not circle back unless new information changes the context.
+    - **PURPOSEFUL REPETITION**: Only repeat dialogue if it serves a clear narrative purpose (e.g., emphasis, madness, ritual).
+  </dialogue_progression>
 </immersive_writing>
 `;

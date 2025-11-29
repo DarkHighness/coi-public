@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { formatBytes } from "../../utils/formatters";
 import { SettingsDataProps } from "./types";
+import { useRAG } from "../../hooks/useRAG";
+import { GlobalStorageStats } from "../../services/rag";
 
 export const SettingsData: React.FC<SettingsDataProps> = ({
   saveCount = 0,
@@ -10,13 +12,16 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
+  const [ragState, ragActions] = useRAG();
   const [storageEstimate, setStorageEstimate] = useState<{
     usage: number;
     quota: number;
   } | null>(null);
+  const [ragStats, setRagStats] = useState<GlobalStorageStats | null>(null);
 
   useEffect(() => {
     fetchStorageEstimate();
+    fetchRagStats();
   }, []);
 
   const fetchStorageEstimate = async () => {
@@ -32,6 +37,13 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       } catch (error) {
         console.error("Failed to fetch storage estimate:", error);
       }
+    }
+  };
+
+  const fetchRagStats = async () => {
+    if (ragState.isInitialized) {
+      const stats = await ragActions.getAllSaveStats();
+      setRagStats(stats);
     }
   };
 
@@ -189,6 +201,64 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
           </svg>
           {t("data.clearSaves")}
         </button>
+      </div>
+
+
+      {/* RAG Statistics */}
+      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
+            {t("data.ragStats")}
+          </h3>
+          <button
+            onClick={fetchRagStats}
+            className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+            disabled={!ragState.isInitialized}
+          >
+            {t("refresh")}
+          </button>
+        </div>
+
+        <div className="space-y-3 text-sm">
+          {ragState.isInitialized ? (
+            ragStats ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-theme-muted">
+                    {t("data.totalDocuments")}:
+                  </span>
+                  <span className="text-theme-text font-mono">
+                    {ragStats.totalDocuments}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-theme-muted">
+                    {t("data.totalSaves")}:
+                  </span>
+                  <span className="text-theme-text font-mono">
+                    {ragStats.totalSaves}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-theme-muted">
+                    {t("data.estimatedSize")}:
+                  </span>
+                  <span className="text-theme-text font-mono">
+                    {formatBytes(ragStats.estimatedStorageBytes)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-theme-muted italic">
+                {t("loading")}...
+              </p>
+            )
+          ) : (
+            <p className="text-xs text-theme-muted italic">
+              {t("data.ragUnavailable")}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

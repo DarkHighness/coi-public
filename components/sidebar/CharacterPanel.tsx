@@ -163,7 +163,7 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+        style: "text-theme-primary border-theme-muted/20",
       };
     case "curse":
       return {

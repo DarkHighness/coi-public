@@ -91,7 +91,7 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
       // For pollinations.ai images (fallback), use the imageLoader
       if (isFallback && bgSource.includes("pollinations.ai")) {
         imageLoader
-          .load(bgSource)
+          .load(bgSource, { crossOrigin: "anonymous" })
           .then((url) => {
             setLoadedBgSource(url);
           })
