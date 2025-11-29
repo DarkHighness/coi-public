@@ -52,7 +52,7 @@ const DesktopGameLayout = React.lazy(() =>
   })),
 );
 const RAGDebugger = React.lazy(() =>
-  import("../RAGDebugger").then((module) => ({
+  import("../ragDebugger").then((module) => ({
     default: module.RAGDebugger,
   })),
 );
