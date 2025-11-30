@@ -8,8 +8,6 @@ interface TimelineEventsPanelProps {
   themeFont: string;
 }
 
-
-
 // Sub-component for individual timeline events
 const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
   const { t } = useTranslation();

@@ -110,7 +110,10 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                 {t("description") || "Description"}
               </span>
               <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
-                <MarkdownText content={k.visible?.description || ""} indentSize={2}/>
+                <MarkdownText
+                  content={k.visible?.description || ""}
+                  indentSize={2}
+                />
               </div>
             </div>
 
@@ -120,7 +123,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   {t("details") || "Details"}
                 </span>
                 <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
-                  <MarkdownText content={k.visible.details} indentSize={2}/>
+                  <MarkdownText content={k.visible.details} indentSize={2} />
                 </div>
               </div>
             )}
@@ -143,7 +146,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   {t("hidden.truth")}
                 </span>
                 <div className="text-theme-text/90 bg-theme-surface/50 p-3 rounded border border-theme-unlocked/20">
-                  <MarkdownText content={k.hidden.fullTruth} indentSize={2}/>
+                  <MarkdownText content={k.hidden.fullTruth} indentSize={2} />
 
                   {k.hidden.misconceptions &&
                     k.hidden.misconceptions.length > 0 && (
@@ -154,7 +157,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                         <ul className="list-disc list-inside text-theme-danger/80 space-y-1 pl-2">
                           {k.hidden.misconceptions.map((misc, i) => (
                             <li key={i}>
-                              <MarkdownText content={misc} indentSize={2} inline />
+                              <MarkdownText
+                                content={misc}
+                                indentSize={2}
+                                inline
+                              />
                             </li>
                           ))}
                         </ul>
@@ -170,7 +177,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                         <ul className="list-disc list-inside text-theme-primary/80 space-y-1 pl-2">
                           {k.hidden.toBeRevealed.map((mystery, i) => (
                             <li key={i}>
-                              <MarkdownText content={mystery} indentSize={2} inline />
+                              <MarkdownText
+                                content={mystery}
+                                indentSize={2}
+                                inline
+                              />
                             </li>
                           ))}
                         </ul>

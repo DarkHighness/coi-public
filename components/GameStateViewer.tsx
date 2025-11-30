@@ -153,20 +153,20 @@ const InfoRow = ({
   }
 
   return (
-  <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 py-2 border-b border-theme-border/30 last:border-0">
-    <span className="text-theme-primary text-xs uppercase tracking-wider font-bold min-w-[120px] flex-shrink-0 pt-0.5">
-      {label}:
-    </span>
-    <div
-      className={`text-sm flex-1 ${
-        hidden ? "text-theme-unlocked" : "text-theme-text"
-      }`}
-    >
-      <MarkdownText content={valueStr} />
+    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 py-2 border-b border-theme-border/30 last:border-0">
+      <span className="text-theme-primary text-xs uppercase tracking-wider font-bold min-w-[120px] flex-shrink-0 pt-0.5">
+        {label}:
+      </span>
+      <div
+        className={`text-sm flex-1 ${
+          hidden ? "text-theme-unlocked" : "text-theme-text"
+        }`}
+      >
+        <MarkdownText content={valueStr} />
+      </div>
     </div>
-  </div>
-);
-}
+  );
+};
 
 export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   isOpen,
@@ -230,25 +230,30 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               </span>
               <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg/30 p-2 rounded border border-theme-border/30">
                 <div>
-                  {t("token.totalTokens")}: {gameState.tokenUsage.totalTokens.toLocaleString()}
+                  {t("token.totalTokens")}:{" "}
+                  {gameState.tokenUsage.totalTokens.toLocaleString()}
                 </div>
                 <div>
-                  {t("token.promptTokens")}: {gameState.tokenUsage.promptTokens.toLocaleString()}
+                  {t("token.promptTokens")}:{" "}
+                  {gameState.tokenUsage.promptTokens.toLocaleString()}
                 </div>
                 <div>
-                  {t("token.completionTokens")}: {gameState.tokenUsage.completionTokens.toLocaleString()}
+                  {t("token.completionTokens")}:{" "}
+                  {gameState.tokenUsage.completionTokens.toLocaleString()}
                 </div>
-                {(gameState.tokenUsage.cacheRead &&
-                  gameState.tokenUsage.cacheWrite) && (
-                  <>
-                    <div className="text-theme-success/80">
-                      {t("token.cacheWrite")}: {gameState.tokenUsage.cacheWrite?.toLocaleString()}
-                    </div>
-                    <div className="text-theme-success/80">
-                      {t("token.cacheRead")}: {gameState.tokenUsage.cacheRead?.toLocaleString()}
-                    </div>
-                  </>
-                )}
+                {gameState.tokenUsage.cacheRead &&
+                  gameState.tokenUsage.cacheWrite && (
+                    <>
+                      <div className="text-theme-success/80">
+                        {t("token.cacheWrite")}:{" "}
+                        {gameState.tokenUsage.cacheWrite?.toLocaleString()}
+                      </div>
+                      <div className="text-theme-success/80">
+                        {t("token.cacheRead")}:{" "}
+                        {gameState.tokenUsage.cacheRead?.toLocaleString()}
+                      </div>
+                    </>
+                  )}
               </div>
             </div>
           )}
@@ -1101,7 +1106,8 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                         <div>
                           <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                             {t("gameViewer.trueConditions") ||
-                              "True Conditions"}:
+                              "True Conditions"}
+                            :
                           </span>
                           <MarkdownText
                             content={

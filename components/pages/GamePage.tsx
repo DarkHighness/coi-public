@@ -282,7 +282,9 @@ export const GamePage: React.FC<GamePageProps> = ({
     const prompt = t("initialPrompt.begin", { theme: themeName });
     const defaultInitialPrompt = gameState.initialPrompt || prompt;
 
-    console.log("[GamePage] handleRetry called", { currentHistoryLength: currentHistory.length });
+    console.log("[GamePage] handleRetry called", {
+      currentHistoryLength: currentHistory.length,
+    });
 
     // If the length of currentHistory is 1, we are retrying to regenerate the first turn
     // We need to remove the first segment from currentHistory
@@ -321,7 +323,7 @@ export const GamePage: React.FC<GamePageProps> = ({
       // This implies we are restarting or lost context
       handleAction(defaultInitialPrompt, false, undefined, undefined, true);
     }
-  }
+  };
 
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">

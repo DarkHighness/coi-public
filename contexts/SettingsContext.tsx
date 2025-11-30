@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { AISettings, ModelInfo, LanguageCode } from "../types";
 import { DEFAULTS } from "../utils/constants";
@@ -26,7 +33,9 @@ const SettingsContext = createContext<SettingsContextType | null>(null);
 export const useSettingsContext = () => {
   const context = useContext(SettingsContext);
   if (!context) {
-    throw new Error("useSettingsContext must be used within a SettingsProvider");
+    throw new Error(
+      "useSettingsContext must be used within a SettingsProvider",
+    );
   }
   return context;
 };
@@ -69,7 +78,9 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   };
 }
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { i18n } = useTranslation();
 
   // Initialize settings from localStorage

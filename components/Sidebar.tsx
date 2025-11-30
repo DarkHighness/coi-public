@@ -75,16 +75,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="text-sm text-theme-muted/80 font-mono text-center mt-2 flex flex-col gap-0.5">
             {/* Mobile View (Stacked) */}
             <div className="md:hidden flex flex-col gap-0.5">
-              <div>
-                {gameState.outline.title}
-              </div>
+              <div>{gameState.outline.title}</div>
             </div>
 
             {/* Desktop View (Single Line) */}
             <div className="hidden md:block">
-              <div>
-                {gameState.outline.title}
-              </div>
+              <div>{gameState.outline.title}</div>
             </div>
           </div>
         </h1>

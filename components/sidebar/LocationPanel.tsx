@@ -175,7 +175,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
                           {locationData.visible.resources.map((res, i) => (
                             <li key={i}>
-                              <MarkdownText content={res} indentSize={2} inline />
+                              <MarkdownText
+                                content={res}
+                                indentSize={2}
+                                inline
+                              />
                             </li>
                           ))}
                         </ul>
@@ -201,7 +205,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       </span>
                       {locationData.hidden?.fullDescription && (
                         <div className="leading-relaxed text-theme-text mb-2">
-                          <MarkdownText content={locationData.hidden.fullDescription} indentSize={2}/>
+                          <MarkdownText
+                            content={locationData.hidden.fullDescription}
+                            indentSize={2}
+                          />
                         </div>
                       )}
 
@@ -227,7 +234,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             <ul className="list-disc list-inside space-y-0.5">
                               {locationData.hidden.dangers.map((danger, i) => (
                                 <li key={i}>
-                                  <MarkdownText content={danger} indentSize={2} inline />
+                                  <MarkdownText
+                                    content={danger}
+                                    indentSize={2}
+                                    inline
+                                  />
                                 </li>
                               ))}
                             </ul>
@@ -244,7 +255,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                               {locationData.hidden.hiddenFeatures.map(
                                 (feature, i) => (
                                   <li key={i}>
-                                    <MarkdownText content={feature} indentSize={2} inline />
+                                    <MarkdownText
+                                      content={feature}
+                                      indentSize={2}
+                                      inline
+                                    />
                                   </li>
                                 ),
                               )}
@@ -261,7 +276,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             <ul className="list-disc list-inside text-theme-text space-y-0.5">
                               {locationData.hidden.secrets.map((secret, i) => (
                                 <li key={i}>
-                                  <MarkdownText content={secret} indentSize={2} inline />
+                                  <MarkdownText
+                                    content={secret}
+                                    indentSize={2}
+                                    inline
+                                  />
                                 </li>
                               ))}
                             </ul>
@@ -276,7 +295,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         {t("history")}
                       </span>
                       <div className="text-theme-muted pl-1">
-                        <MarkdownText content={locationData.lore} indentSize={2}/>
+                        <MarkdownText
+                          content={locationData.lore}
+                          indentSize={2}
+                        />
                       </div>
                     </div>
                   )}

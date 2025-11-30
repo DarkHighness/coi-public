@@ -110,7 +110,9 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               className="font-bold text-theme-text text-xs flex items-center gap-1 break-words whitespace-normal"
               title={rel.visible?.name || t("unknown") || "Unknown"}
             >
-              <span className="mr-1 text-base">{getValidIcon(rel.icon, "👤")}</span>
+              <span className="mr-1 text-base">
+                {getValidIcon(rel.icon, "👤")}
+              </span>
               {rel.visible?.name || t("unknown") || "Unknown"}
               {rel.unlocked && (
                 <svg
@@ -189,7 +191,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       {t("appearance") || "Appearance"}
                     </span>
                     <div className="text-theme-muted/80">
-                      <MarkdownText content={rel.visible.appearance} indentSize={2}/>
+                      <MarkdownText
+                        content={rel.visible.appearance}
+                        indentSize={2}
+                      />
                     </div>
                   </div>
                 )}
@@ -199,7 +204,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       {t("dialogueStyle") || "Dialogue Style"}
                     </span>
                     <div className="text-theme-muted/80">
-                      <MarkdownText content={`"${rel.visible.dialogueStyle}"`} indentSize={2}/>
+                      <MarkdownText
+                        content={`"${rel.visible.dialogueStyle}"`}
+                        indentSize={2}
+                      />
                     </div>
                   </div>
                 )}
@@ -209,7 +217,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       {t("currentImpression") || "Current Impression"}
                     </span>
                     <div className="text-theme-muted/80 text-theme-accent">
-                      <MarkdownText content={rel.visible.currentImpression} indentSize={2}/>
+                      <MarkdownText
+                        content={rel.visible.currentImpression}
+                        indentSize={2}
+                      />
                     </div>
                   </div>
                 )}
@@ -248,7 +259,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                           {t("hidden.personality")}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
-                          <MarkdownText content={rel.hidden.realPersonality} indentSize={2}/>
+                          <MarkdownText
+                            content={rel.hidden.realPersonality}
+                            indentSize={2}
+                          />
                         </div>
                       </div>
                     )}
@@ -259,7 +273,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                           {t("hidden.motives")}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
-                          <MarkdownText content={rel.hidden.realMotives} indentSize={2}/>
+                          <MarkdownText
+                            content={rel.hidden.realMotives}
+                            indentSize={2}
+                          />
                         </div>
                       </div>
                     )}
@@ -270,7 +287,10 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                           {t("hidden.routine") || "Routine"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
-                          <MarkdownText content={rel.hidden.routine} indentSize={2}/>
+                          <MarkdownText
+                            content={rel.hidden.routine}
+                            indentSize={2}
+                          />
                         </div>
                       </div>
                     )}
@@ -283,7 +303,11 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
                           {rel.hidden.secrets.map((secret, i) => (
                             <li key={i}>
-                              <MarkdownText content={secret} indentSize={2} inline />
+                              <MarkdownText
+                                content={secret}
+                                indentSize={2}
+                                inline
+                              />
                             </li>
                           ))}
                         </ul>

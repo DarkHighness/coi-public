@@ -5,12 +5,19 @@ import {
   StorySummary,
   LanguageCode,
 } from "../types";
-import { createFork, createStateSnapshot, normalizeAliveEntities } from "../utils/snapshotManager";
+import {
+  createFork,
+  createStateSnapshot,
+  normalizeAliveEntities,
+} from "../utils/snapshotManager";
 import { getRAGService } from "../services/rag";
 import { deriveHistory } from "../utils/storyUtils";
 import { summarizeContext } from "../services/aiService";
 import { LANG_MAP } from "../utils/constants";
-import { AtmosphereObject, normalizeAtmosphere } from "../utils/constants/atmosphere";
+import {
+  AtmosphereObject,
+  normalizeAtmosphere,
+} from "../utils/constants/atmosphere";
 
 /**
  * Helper to update provider token statistics
@@ -66,9 +73,13 @@ export const handleForking = (
   preventFork: boolean,
   isInit: boolean,
   aiSettings: AISettings,
-  currentSlotId: string | null
+  currentSlotId: string | null,
 ): { currentForkId: number; currentForkTree: any } => {
-  console.log("[gameActionHelpers] handleForking called", { parentId, preventFork, isInit });
+  console.log("[gameActionHelpers] handleForking called", {
+    parentId,
+    preventFork,
+    isInit,
+  });
   let currentForkId = gameState.forkId;
   let currentForkTree = gameState.forkTree;
 
@@ -124,10 +135,7 @@ export const handleSummarization = async (
   contextNodes: StorySegment[];
   log?: any;
 }> => {
-  let contextNodes = deriveHistory(
-    gameState.nodes,
-    effectiveParentId,
-  );
+  let contextNodes = deriveHistory(gameState.nodes, effectiveParentId);
 
   // Create temp user node for context calculation
   const tempUserNode: StorySegment = {
@@ -160,9 +168,7 @@ export const handleSummarization = async (
 
   if (nodesToSummarizeCount >= summaryStep) {
     const toSummarize = contextNodes.slice(lastIndex, totalLength);
-    const textBlock = toSummarize
-      .map((s) => `${s.role}: ${s.text}`)
-      .join("\n");
+    const textBlock = toSummarize.map((s) => `${s.role}: ${s.text}`).join("\n");
 
     // Get previous summary text for context
     const lastSummary =
@@ -232,22 +238,26 @@ export const createModelNode = (
   usage: any,
   newSegmentId: string,
   forceTheme?: string,
-): { modelNode: StorySegment; responseAtmosphere: AtmosphereObject; modelNodeId: string } => {
+): {
+  modelNode: StorySegment;
+  responseAtmosphere: AtmosphereObject;
+  modelNodeId: string;
+} => {
   const modelNodeId = `model-${newSegmentId}`;
   const finalState = response.finalState;
 
   // Sanitize choices to ensure valid structure
   const sanitizedChoices = Array.isArray(response.choices)
     ? response.choices.map((c: any) => {
-      if (typeof c === "object" && c !== null) {
-        const obj = c as any;
-        return {
-          text: obj.text || obj.choice || obj.label || "Continue",
-          consequence: obj.consequence,
-        };
-      }
-      return String(c);
-    })
+        if (typeof c === "object" && c !== null) {
+          const obj = c as any;
+          return {
+            text: obj.text || obj.choice || obj.label || "Continue",
+            consequence: obj.consequence,
+          };
+        }
+        return String(c);
+      })
     : [];
 
   // Resolve atmosphere from response
@@ -264,9 +274,7 @@ export const createModelNode = (
   }
 
   const modelNode: StorySegment = {
-    segmentIdx:
-      (gameState.nodes[effectiveUserNodeId]?.segmentIdx ?? -1) +
-      1,
+    segmentIdx: (gameState.nodes[effectiveUserNodeId]?.segmentIdx ?? -1) + 1,
     id: modelNodeId,
     parentId: isInit ? null : effectiveUserNodeId,
     text: response.narrative || "...",
@@ -283,18 +291,15 @@ export const createModelNode = (
     imageSkipped: !response.generateImage,
     ending: response.ending || "continue",
     forceEnd: response.forceEnd,
-    stateSnapshot: createStateSnapshot(
-      finalState,
-      {
-        summaries: effectiveSummaries,
-        lastSummarizedIndex: lastIndex,
-        currentLocation: finalState.currentLocation,
-        time: finalState.time,
-        atmosphere: responseAtmosphere,
-        veoScript: gameState.veoScript,
-        uiState: gameState.uiState,
-      },
-    ),
+    stateSnapshot: createStateSnapshot(finalState, {
+      summaries: effectiveSummaries,
+      lastSummarizedIndex: lastIndex,
+      currentLocation: finalState.currentLocation,
+      time: finalState.time,
+      atmosphere: responseAtmosphere,
+      veoScript: gameState.veoScript,
+      uiState: gameState.uiState,
+    }),
   };
 
   return { modelNode, responseAtmosphere, modelNodeId };

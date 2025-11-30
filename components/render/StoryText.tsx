@@ -85,7 +85,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
             enableMarkdown={true}
           />
         ) : (
-          <MarkdownText content={text}/>
+          <MarkdownText content={text} />
         )}
       </div>
     </div>

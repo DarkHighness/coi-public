@@ -110,7 +110,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {t("worldInfo.history") || "History"}
               </h4>
               <div className="text-xs text-theme-text/90 leading-relaxed pl-2 border-l-2 border-theme-border/50">
-                <MarkdownText content={history} indentSize={2}/>
+                <MarkdownText content={history} indentSize={2} />
               </div>
             </div>
           )}
@@ -124,12 +124,18 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {t("worldInfo.setting") || "Setting"}
               </h4>
               <div className="text-xs text-theme-text/90 leading-relaxed pl-2 border-l-2 border-theme-border/50">
-                <MarkdownText content={worldSetting.visible.description} indentSize={2}/>
+                <MarkdownText
+                  content={worldSetting.visible.description}
+                  indentSize={2}
+                />
               </div>
               {worldSetting.visible?.rules && (
                 <div className="text-xs text-theme-muted mt-2 pl-2">
                   <span className="font-bold">📜 Rules:</span>{" "}
-                  <MarkdownText content={worldSetting.visible.rules} indentSize={2}/>
+                  <MarkdownText
+                    content={worldSetting.visible.rules}
+                    indentSize={2}
+                  />
                 </div>
               )}
 
@@ -152,7 +158,10 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                   </div>
                   {worldSetting.hidden?.hiddenRules && (
                     <div className="text-xs text-theme-danger/90 mb-2">
-                      <MarkdownText content={worldSetting.hidden.hiddenRules} indentSize={2}/>
+                      <MarkdownText
+                        content={worldSetting.hidden.hiddenRules}
+                        indentSize={2}
+                      />
                     </div>
                   )}
                   {worldSetting.hidden?.secrets &&
@@ -160,7 +169,11 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       <ul className="text-xs text-theme-danger/80 mt-2 list-disc pl-4 space-y-1">
                         {worldSetting.hidden.secrets.map((secret, idx) => (
                           <li key={idx}>
-                            <MarkdownText content={secret} indentSize={2} inline />
+                            <MarkdownText
+                              content={secret}
+                              indentSize={2}
+                              inline
+                            />
                           </li>
                         ))}
                       </ul>
@@ -199,7 +212,10 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {outline.mainGoal.hidden?.trueConditions && (
                   <div className="mt-2 text-xs text-theme-danger/70 border-t border-theme-danger/10 pt-2">
                     <span className="font-bold">📝 Conditions:</span>{" "}
-                    <MarkdownText content={outline.mainGoal.hidden.trueConditions} indentSize={2} />
+                    <MarkdownText
+                      content={outline.mainGoal.hidden.trueConditions}
+                      indentSize={2}
+                    />
                   </div>
                 )}
               </div>
@@ -252,7 +268,10 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       )}
                     </div>
                     <div className="text-xs text-theme-text/80 mb-3">
-                      <MarkdownText content={faction.visible?.agenda || ""} indentSize={2}/>
+                      <MarkdownText
+                        content={faction.visible?.agenda || ""}
+                        indentSize={2}
+                      />
                     </div>
 
                     {/* Visible Extended Info */}
@@ -329,7 +348,10 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           {t("secretAgenda") || "Secret Agenda"}
                         </div>
                         <div className="text-xs text-theme-danger/90 mb-3">
-                          <MarkdownText content={faction.hidden?.agenda || ""} indentSize={2}/>
+                          <MarkdownText
+                            content={faction.hidden?.agenda || ""}
+                            indentSize={2}
+                          />
                         </div>
 
                         {/* Hidden Extended Info */}

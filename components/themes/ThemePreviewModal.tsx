@@ -72,7 +72,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70">
               {t("narrativeStyle")}
             </h3>
-            <p className="text-theme-muted text-sm leading-relaxed">
+            <p className="text-theme-muted text-sm leading-relaxed line-clamp-4 md:line-clamp-6 lg:line-clamp-none">
               {t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
             </p>
           </div>
@@ -82,7 +82,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
               "
             </div>
             <p
-              className={`text-theme-text/90 leading-loose ${
+              className={`text-theme-text/90 leading-loose line-clamp-4 md:line-clamp-6 lg:line-clamp-none ${
                 (envTheme?.fontClass || "font-sans") === "font-serif"
                   ? "font-serif text-base"
                   : "font-sans text-sm"

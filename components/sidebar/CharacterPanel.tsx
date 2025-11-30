@@ -253,7 +253,9 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
     >
       <div className="flex justify-between items-center px-3 py-2.5">
         <span className="text-xs text-theme-text font-medium flex items-center gap-2">
-          <span className="mr-1 text-base">{getValidIcon(skill.icon, "⭐")}</span>
+          <span className="mr-1 text-base">
+            {getValidIcon(skill.icon, "⭐")}
+          </span>
           {skill.name}
           {skill.unlocked && (
             <svg
@@ -308,7 +310,10 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
                   {t("hidden.truth")}
                 </span>
                 <div className="text-xs text-theme-text leading-relaxed">
-                  <MarkdownText content={skill.hidden.trueDescription} indentSize={2}/>
+                  <MarkdownText
+                    content={skill.hidden.trueDescription}
+                    indentSize={2}
+                  />
                 </div>
                 {skill.hidden.hiddenEffects &&
                   skill.hidden.hiddenEffects.length > 0 && (
@@ -319,7 +324,11 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
                       <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
                         {skill.hidden.hiddenEffects.map((effect, i) => (
                           <li key={i}>
-                            <MarkdownText content={effect} indentSize={2} inline />
+                            <MarkdownText
+                              content={effect}
+                              indentSize={2}
+                              inline
+                            />
                           </li>
                         ))}
                       </ul>
@@ -334,7 +343,11 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
                       <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
                         {skill.hidden.drawbacks.map((drawback, i) => (
                           <li key={i}>
-                            <MarkdownText content={drawback} indentSize={2} inline />
+                            <MarkdownText
+                              content={drawback}
+                              indentSize={2}
+                              inline
+                            />
                           </li>
                         ))}
                       </ul>
@@ -379,7 +392,9 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
         <div className="flex justify-between items-center mb-1">
           <span className="font-bold flex items-center gap-2 text-xs">
             {condition.icon && getValidIcon(condition.icon, "") ? (
-              <span className="mr-1 text-base">{getValidIcon(condition.icon, "")}</span>
+              <span className="mr-1 text-base">
+                {getValidIcon(condition.icon, "")}
+              </span>
             ) : (
               icon
             )}
@@ -401,7 +416,10 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 
         {condition.visible?.description && (
           <div className="text-xs leading-relaxed opacity-90">
-            <MarkdownText content={condition.visible.description} indentSize={2}/>
+            <MarkdownText
+              content={condition.visible.description}
+              indentSize={2}
+            />
           </div>
         )}
 
@@ -442,7 +460,10 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 
                   {condition.hidden?.trueCause && (
                     <div className="text-xs text-theme-text leading-relaxed">
-                      <MarkdownText content={condition.hidden.trueCause} indentSize={2}/>
+                      <MarkdownText
+                        content={condition.hidden.trueCause}
+                        indentSize={2}
+                      />
                     </div>
                   )}
                   {condition.hidden?.actualSeverity && (
@@ -458,7 +479,10 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
                       <span className="font-semibold text-theme-primary block mb-0.5">
                         {t("hidden.progression")}:
                       </span>{" "}
-                      <MarkdownText content={condition.hidden.progression} indentSize={2}/>
+                      <MarkdownText
+                        content={condition.hidden.progression}
+                        indentSize={2}
+                      />
                     </div>
                   )}
                   {condition.hidden?.cure && (
@@ -466,7 +490,10 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
                       <span className="font-semibold text-theme-primary block mb-0.5">
                         {t("hidden.cure")}:
                       </span>{" "}
-                      <MarkdownText content={condition.hidden.cure} indentSize={2}/>
+                      <MarkdownText
+                        content={condition.hidden.cure}
+                        indentSize={2}
+                      />
                     </div>
                   )}
                   {condition.effects?.hidden &&
@@ -478,7 +505,11 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
                         <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
                           {condition.effects.hidden.map((effect, i) => (
                             <li key={i}>
-                              <MarkdownText content={effect} indentSize={2} inline />
+                              <MarkdownText
+                                content={effect}
+                                indentSize={2}
+                                inline
+                              />
                             </li>
                           ))}
                         </ul>
@@ -519,7 +550,9 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
         <div className="flex justify-between items-center mb-1">
           <span className="font-bold flex items-center gap-2 text-xs text-theme-text">
             {trait.icon && (
-              <span className="mr-1 text-base">{getValidIcon(trait.icon, "🧩")}</span>
+              <span className="mr-1 text-base">
+                {getValidIcon(trait.icon, "🧩")}
+              </span>
             )}
             {trait.name}
           </span>
@@ -542,7 +575,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
         {trait.description && (
           <div className="text-xs text-theme-muted leading-relaxed">
-            <MarkdownText content={trait.description} indentSize={2}/>
+            <MarkdownText content={trait.description} indentSize={2} />
           </div>
         )}
 
@@ -567,20 +600,21 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
                   </ul>
                 </div>
               )}
-              {trait.triggerConditions && trait.triggerConditions.length > 0 && (
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
-                    {t("triggerConditions") || "Triggers"}:
-                  </span>
-                  <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
-                    {trait.triggerConditions.map((cond, i) => (
-                      <li key={i}>
-                        <MarkdownText content={cond} indentSize={2} inline />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {trait.triggerConditions &&
+                trait.triggerConditions.length > 0 && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
+                      {t("triggerConditions") || "Triggers"}:
+                    </span>
+                    <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
+                      {trait.triggerConditions.map((cond, i) => (
+                        <li key={i}>
+                          <MarkdownText content={cond} indentSize={2} inline />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
           </div>
         </div>
@@ -600,53 +634,53 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
   return (
     <div>
-    <div
-      onClick={() => setExpanded(!expanded)}
-      className={`flex items-center justify-between cursor-pointer group ${
-        expanded ? "mb-4" : "mb-0"
-      }`}
-    >
       <div
-        className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
+        onClick={() => setExpanded(!expanded)}
+        className={`flex items-center justify-between cursor-pointer group ${
+          expanded ? "mb-4" : "mb-0"
+        }`}
       >
-        <span className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            ></path>
-          </svg>
-          {t("character.title") || "Character"}
-        </span>
-      </div>
+        <div
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
+        >
+          <span className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              ></path>
+            </svg>
+            {t("character.title") || "Character"}
+          </span>
+        </div>
 
-      <div className="flex items-center gap-2">
-        <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
-          <svg
-            className={`w-5 h-5 transition-transform duration-300 ${
-              expanded ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
+        <div className="flex items-center gap-2">
+          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+            <svg
+              className={`w-5 h-5 transition-transform duration-300 ${
+                expanded ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
+            </svg>
+          </div>
         </div>
       </div>
-    </div>
       {expanded && (
         <div className="space-y-6 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
@@ -819,7 +853,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </svg>
               </summary>
               <div className="mt-3 text-theme-text-secondary leading-relaxed pl-3 border-l-2 border-theme-border">
-                <MarkdownText content={character.appearance} indentSize={2}/>
+                <MarkdownText content={character.appearance} indentSize={2} />
               </div>
             </details>
           )}

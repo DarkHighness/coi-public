@@ -267,7 +267,7 @@ export const useGameEngine = () => {
     let selectedTheme =
       initialTheme ||
       Object.keys(THEMES)[
-      Math.floor(Math.random() * Object.keys(THEMES).length)
+        Math.floor(Math.random() * Object.keys(THEMES).length)
       ];
 
     // Preload audio in background if not muted (Mobile optimization: trigger on user click)

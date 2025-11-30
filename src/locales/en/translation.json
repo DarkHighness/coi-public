@@ -953,7 +953,7 @@
   "component": "Component:",
   "devModeError": "💡 Dev Mode: Error will be re-thrown to DevTools",
   "triggerConditions": "Trigger",
-  "effects":"Effects",
+  "effects": "Effects",
   "insight": "Insight",
   "token": {
     "tokens": "Token",

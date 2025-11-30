@@ -407,10 +407,7 @@ export const conditionVisibleSchema = z.object({
 /** 条件隐藏层 */
 export const conditionHiddenSchema = z.object({
   trueCause: z.string().describe("The true cause of this condition."),
-  actualSeverity: z
-    .string()
-    .optional()
-    .describe("Actual severity level."),
+  actualSeverity: z.string().optional().describe("Actual severity level."),
   progression: z
     .string()
     .optional()

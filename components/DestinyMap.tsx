@@ -322,8 +322,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             const isActivePath = node.isMainPath;
 
             let ending = node.segment.ending;
-            if (ending === "continue")
-              ending = null;
+            if (ending === "continue") ending = null;
 
             // Determine ending-specific styling
             const getEndingColor = () => {
@@ -469,7 +468,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                       )}
                     </div>
                     <p className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80">
-                      <MarkdownText content={node.segment.text} disableIndent/>
+                      <MarkdownText content={node.segment.text} disableIndent />
                     </p>
                   </div>
                 </foreignObject>

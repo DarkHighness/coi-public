@@ -416,7 +416,7 @@ export const useGamePersistence = (
               if (embeddingIndex) {
                 console.log(
                   `[Persistence] Save has embedding index with ${embeddingIndex.documents.length} documents, ` +
-                  `model: ${embeddingIndex.modelId}`,
+                    `model: ${embeddingIndex.modelId}`,
                 );
               }
             }
@@ -561,12 +561,12 @@ export const useGamePersistence = (
         const updatedSlots = saveSlots.map((s) =>
           s.id === currentSlotId
             ? {
-              ...s,
-              timestamp: Date.now(),
-              theme: gameState.theme,
-              summary: summaryText,
-              previewImage,
-            }
+                ...s,
+                timestamp: Date.now(),
+                theme: gameState.theme,
+                summary: summaryText,
+                previewImage,
+              }
             : s,
         );
 

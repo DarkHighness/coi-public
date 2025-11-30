@@ -50,10 +50,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   ) => (
     <div
       key={q.id}
-      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${q.type === "main"
+      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${
+        q.type === "main"
           ? "border-l-4 border-l-theme-primary"
           : "border-l-4 border-l-theme-muted"
-        }`}
+      }`}
     >
       <div
         className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-start justify-between gap-2"
@@ -62,10 +63,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${q.type === "main"
+              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
+                q.type === "main"
                   ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
                   : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
-                }`}
+              }`}
             >
               {q.type === "main"
                 ? t("mainQuest") || "Main"
@@ -200,8 +202,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     <div>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer group ${isOpen ? "mb-3" : "mb-0"
-          }`}
+        className={`flex items-center justify-between cursor-pointer group ${
+          isOpen ? "mb-3" : "mb-0"
+        }`}
       >
         <div
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
@@ -242,8 +245,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           )}
           <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""
-                }`}
+              className={`w-4 h-4 transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -260,8 +264,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       </div>
 
       <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
+        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
       >
         <div className="overflow-hidden">
           <div className="space-y-3">

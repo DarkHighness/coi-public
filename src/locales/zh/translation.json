@@ -933,7 +933,7 @@
   "component": "组件：",
   "devModeError": "💡 开发模式：错误将重新抛出到开发工具",
   "triggerConditions": "触发条件",
-  "effects":"效果",
+  "effects": "效果",
   "insight": "洞察",
   "token": {
     "tokens": "Token",

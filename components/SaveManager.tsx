@@ -140,7 +140,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                           {t(`${slot.theme}.name`, { ns: "themes" })}
                         </p>
                         <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
-                          <MarkdownText content={slot.summary} disableIndent/>
+                          <MarkdownText content={slot.summary} disableIndent />
                         </div>
                         <div className="flex items-center gap-4 mt-3 text-[10px] text-theme-muted/60">
                           <span className="flex items-center gap-1">

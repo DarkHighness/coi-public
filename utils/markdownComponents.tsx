@@ -38,7 +38,9 @@ export const markdownComponents = {
   ol: ({ node, ...props }: any) => (
     <ol className="list-decimal list-inside my-2 space-y-1" {...props} />
   ),
-  li: ({ node, ...props }: any) => <li className="ml-2 flex items-center" {...props} />,
+  li: ({ node, ...props }: any) => (
+    <li className="ml-2 flex items-center" {...props} />
+  ),
   h1: ({ node, ...props }: any) => (
     <h1 className="text-2xl font-bold my-4 text-theme-primary" {...props} />
   ),
