@@ -779,7 +779,6 @@ export const characterStatusSchema = z.object({
     .describe("The character's race (e.g. Human, Elf, Dwarf, etc.)."),
   currentLocation: z
     .string()
-    .nullish()
     .describe("The protagonist's current location name."),
 });
 

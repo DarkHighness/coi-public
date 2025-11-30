@@ -499,7 +499,7 @@ interface ConditionSemiStatic {
   visibleEffects: string[];
   // hidden 始终对 AI 可见
   trueCause?: string;
-  actualSeverity?: number;
+  actualSeverity?: string;
   progression?: string;
   cure?: string;
   hiddenEffects?: string[];
@@ -508,7 +508,7 @@ interface ConditionSemiStatic {
 
 interface ConditionDynamic {
   id?: string;
-  duration?: number;
+  severity?: string;
 }
 
 function splitCondition(condition: Condition): {
@@ -537,7 +537,7 @@ function splitCondition(condition: Condition): {
     },
     dynamic: {
       id: condition.id,
-      duration: condition.duration,
+      severity: condition.severity,
     },
   };
 }

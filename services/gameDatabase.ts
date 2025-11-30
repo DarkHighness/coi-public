@@ -1428,11 +1428,11 @@ export class GameDatabase {
               },
               hidden: cond.hidden || {
                 trueCause: "",
-                actualSeverity: 0,
+                actualSeverity: "",
                 progression: "",
               },
               effects: cond.effects || { visible: [], hidden: [] },
-              duration: cond.duration,
+              severity: cond.severity,
               unlocked: cond.unlocked ?? false,
               highlight: true,
             });
@@ -1461,11 +1461,11 @@ export class GameDatabase {
                 existing.effects = cond.effects;
               }
             }
-            if (cond.duration !== undefined) {
-              if (cond.duration === null) {
-                delete existing.duration;
+            if (cond.severity !== undefined) {
+              if (cond.severity === null) {
+                delete existing.severity;
               } else {
-                existing.duration = cond.duration;
+                existing.severity = cond.severity;
               }
             }
             if (cond.unlocked !== undefined) existing.unlocked = cond.unlocked;
