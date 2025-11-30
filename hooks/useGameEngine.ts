@@ -250,7 +250,7 @@ export const useGameEngine = () => {
   // --- Core Game Loop ---
   // Note: generateImageForNode is defined later but we can reference it here
   // because hooks are called in order and we'll pass the actual function
-  const  { handleAction } = useGameAction({
+  const { handleAction } = useGameAction({
     gameState,
     setGameState,
     aiSettings,
@@ -258,7 +258,10 @@ export const useGameEngine = () => {
     language,
     isTranslating,
     currentSlotId,
-    generateImageForNode: async (nodeId: string, nodeOverride?: StorySegment) => {
+    generateImageForNode: async (
+      nodeId: string,
+      nodeOverride?: StorySegment,
+    ) => {
       // Forward to the actual implementation defined below
       await generateImageForNode(nodeId, nodeOverride);
     },
@@ -542,9 +545,14 @@ export const useGameEngine = () => {
             setTimeout(async () => {
               try {
                 await saveToSlot(slotId, gameStateRef.current);
-                console.log("[StartNewGame] First turn auto-saved successfully");
+                console.log(
+                  "[StartNewGame] First turn auto-saved successfully",
+                );
               } catch (saveError) {
-                console.error("[StartNewGame] Failed to auto-save after first turn:", saveError);
+                console.error(
+                  "[StartNewGame] Failed to auto-save after first turn:",
+                  saveError,
+                );
                 // Non-critical error - game can still continue
               }
             }, 100);

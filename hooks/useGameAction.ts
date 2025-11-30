@@ -431,10 +431,7 @@ export const useGameAction = ({
           );
           // Call async but don't await - let it run in background
           generateImageForNode(modelNodeId, modelNode).catch((error) => {
-            console.error(
-              "[handleAction] Image generation failed:",
-              error,
-            );
+            console.error("[handleAction] Image generation failed:", error);
           });
         }
 

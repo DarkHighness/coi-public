@@ -118,7 +118,12 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   };
 
   // Early return: Global image disable
-  if (disableImages || typeof imagePrompt !== "string" || imagePrompt.trim() === "") return null;
+  if (
+    disableImages ||
+    typeof imagePrompt !== "string" ||
+    imagePrompt.trim() === ""
+  )
+    return null;
 
   // Copy Prompt Button Component (defined early for use in multiple states)
   const CopyPromptButton = () => (

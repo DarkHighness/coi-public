@@ -89,10 +89,7 @@ export const inventoryItemSchema = z.object({
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.nullish(),
   lore: z.string().nullish().describe("Brief lore or history of the item."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this item."),
+  icon: z.string().nullish().describe("A single emoji representing this item."),
   unlocked: z
     .boolean()
     .nullish()
@@ -1346,7 +1343,9 @@ export const gameResponseSchema = z.object({
   timeUpdate: z
     .string()
     .nullish()
-    .describe("The new time string if time has passed. Can be null or omitted."),
+    .describe(
+      "The new time string if time has passed. Can be null or omitted.",
+    ),
   worldInfoUpdates: z
     .array(
       z.object({
