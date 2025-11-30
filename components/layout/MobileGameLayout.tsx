@@ -57,6 +57,7 @@ interface MobileGameLayoutProps {
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
   saveId?: string;
+  failedImageNodes?: Set<string>;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -98,6 +99,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onImageUpload,
   onImageDelete,
   saveId,
+  failedImageNodes,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -130,6 +132,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onImageUpload={onImageUpload}
           onImageDelete={onImageDelete}
           saveId={saveId}
+          failedImageNodes={failedImageNodes}
         />
 
         {/* Action Panel fixed at bottom of feed */}

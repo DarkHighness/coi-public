@@ -28,6 +28,7 @@ interface StoryFeedProps {
   sidebarCollapsed?: boolean;
   timelineCollapsed?: boolean;
   saveId?: string;
+  failedImageNodes?: Set<string>;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -51,6 +52,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   sidebarCollapsed = false,
   timelineCollapsed = false,
   saveId,
+  failedImageNodes,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -356,6 +358,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                         onImageDelete={onImageDelete}
                         gameState={gameState}
                         saveId={saveId}
+                        hasFailed={failedImageNodes?.has(segment.id)}
                       />
                     </div>
                   </React.Fragment>
@@ -423,6 +426,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     onImageDelete={onImageDelete}
                     gameState={gameState}
                     saveId={saveId}
+                    hasFailed={failedImageNodes?.has(activeSegment.id)}
                   />
                 </div>
               )}

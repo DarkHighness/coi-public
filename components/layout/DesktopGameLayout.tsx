@@ -52,6 +52,7 @@ interface DesktopGameLayoutProps {
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
   saveId?: string;
+  failedImageNodes?: Set<string>;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -91,6 +92,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onImageUpload,
   onImageDelete,
   saveId,
+  failedImageNodes,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -171,6 +173,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             sidebarCollapsed={sidebarCollapsed}
             timelineCollapsed={timelineCollapsed}
             saveId={saveId}
+            failedImageNodes={failedImageNodes}
           />
 
           {/* Action Panel */}

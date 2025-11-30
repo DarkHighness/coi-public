@@ -85,6 +85,7 @@ interface StoryImageProps {
   themeFont?: string;
   onUpload?: () => void;
   onDelete?: () => void;
+  hasFailed?: boolean;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
@@ -103,6 +104,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   themeFont,
   onUpload,
   onDelete,
+  hasFailed,
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
@@ -117,7 +119,6 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   // Copy prompt to clipboard
   const handleCopyPrompt = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Prefer fullImagePrompt if available, otherwise use imagePrompt
     const promptToCopy = fullImagePrompt || imagePrompt;
     if (!promptToCopy) return;
 
@@ -134,193 +135,56 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   if (disableImages) return null;
 
   // If no image prompt and no image (ID or URL) and no upload handler, don't show anything
-  // But if we have an upload handler, we might want to show the placeholder to allow uploading
   if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl && !onUpload)
     return null;
 
-  // Copy Prompt Button Component (defined early for use in multiple states)
-  const CopyPromptButton = () => (
-    <button
-      onClick={handleCopyPrompt}
-      className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-      title={copied ? t("storyImage.promptCopied") : t("storyImage.copyPrompt")}
-    >
-      {copied ? (
-        <svg
-          className="w-5 h-5 text-green-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      ) : (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-          />
-        </svg>
-      )}
-    </button>
-  );
+  // Determine state
+  const hasImage = !!displayUrl;
+  const hasPrompt = !!(imagePrompt && imagePrompt.trim().length > 0);
 
-  // Case 1.2: Has imagePrompt but NO image provider configured
-  // Don't show image container - copy button will be shown on StoryCard header instead
-  if (imagePrompt && imagePrompt.trim().length > 0 && !imageGenerationEnabled) {
-    return null;
-  }
+  // Transient failure state detection (passed via props or inferred)
+  const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
 
-  // State 3: Has imageUrl (regardless of prompt) - Show image with action buttons
-  if (displayUrl) {
-    return (
-      <>
-        <div
-          className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group cursor-zoom-in"
-          onClick={() => setLightboxImage(displayUrl)}
-        >
-          <img
-            src={displayUrl}
-            alt={t("storyImage.sceneVisualization")}
-            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-in-out group-hover:scale-105 opacity-90 hover:opacity-100 animate-[blur-in_1s_ease-out]"
-            style={{
-              animation: "blur-in 1s ease-out forwards",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent opacity-30 pointer-events-none"></div>
+  // Use explicit hasFailed prop if provided, otherwise fallback to inference (though inference is less reliable for transient errors)
+  const actuallyFailed = hasFailed || (!hasImage && !isGenerating && canRegenerate && !manualImageGen && hasPrompt && hasFailed === undefined); // Fallback only if undefined
 
-          {/* Action Buttons Container */}
-          <div className="absolute top-3 right-3 flex gap-2">
-            {/* Upload Button */}
-            {onUpload && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpload();
-                }}
-                className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-                title={t("uploadImage", "Upload Image")}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  ></path>
-                </svg>
-              </button>
-            )}
+  const shouldShowGenerating = isGenerating && !manualImageGen;
 
-            {/* Delete Button */}
-            {onDelete && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="bg-black/60 hover:bg-theme-error text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-                title={t("deleteImage", "Delete Image")}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  ></path>
-                </svg>
-              </button>
-            )}
-
-            {/* Copy Prompt Button - Show if imagePrompt exists */}
-            {imagePrompt && <CopyPromptButton />}
-
-            {/* Regenerate Button - Only show if onRegenerate callback exists */}
-            {onRegenerate && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRegenerate();
-                }}
-                className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-                title={t("storyImage.regenerate")}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  ></path>
-                </svg>
-              </button>
-            )}
-
-            {/* Magic Mirror Button */}
-            {onAnimate && (
-              <MagicMirrorButton onAnimate={() => onAnimate(displayUrl)} />
-            )}
-          </div>
-        </div>
-
-        <ImageLightbox
-          imageUrl={lightboxImage}
-          onClose={() => setLightboxImage(null)}
-        />
-      </>
-    );
-  }
-
-  // State 2: Has imagePrompt but NO imageUrl - Provider is enabled, show placeholder
-  if (imagePrompt && !displayUrl) {
-    const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
-    // Manual mode: waiting for user to click generate
-    // Failed mode: generation attempted but failed (not generating, not manual mode)
-    const actuallyFailed = !isGenerating && canRegenerate && !manualImageGen;
-    // When manualImageGen is enabled, never show "generating" state for new segments
-    const shouldShowGenerating = isGenerating && !manualImageGen;
-
-    return (
+  // Render content
+  return (
+    <>
       <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
-        <ImagePlaceholder
-          isGenerating={shouldShowGenerating}
-          hasFailed={actuallyFailed}
-          labelVision={labelVision}
-          labelUnavailable={labelUnavailable}
-          themeFont={themeFont}
-          onRegenerate={canRegenerate ? onRegenerate : undefined}
-        />
-        {/* Copy Prompt Button - Always available when imagePrompt exists */}
+        {hasImage ? (
+          // Image Display
+          <div
+            className="w-full h-full cursor-zoom-in"
+            onClick={() => setLightboxImage(displayUrl)}
+          >
+            <img
+              src={displayUrl}
+              alt={t("storyImage.sceneVisualization")}
+              className="w-full h-full object-cover transition-transform duration-[2000ms] ease-in-out group-hover:scale-105 opacity-90 hover:opacity-100 animate-[blur-in_1s_ease-out]"
+              style={{
+                animation: "blur-in 1s ease-out forwards",
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent opacity-30 pointer-events-none"></div>
+          </div>
+        ) : (
+          // Placeholder Display
+          <ImagePlaceholder
+            isGenerating={shouldShowGenerating}
+            hasFailed={actuallyFailed}
+            labelVision={labelVision}
+            labelUnavailable={labelUnavailable}
+            themeFont={themeFont}
+            onRegenerate={canRegenerate ? onRegenerate : undefined}
+          />
+        )}
+
+        {/* Action Buttons Container */}
         <div className="absolute top-3 right-3 flex gap-2">
-          {/* Upload Button */}
+          {/* Upload Button - Always visible if handler provided */}
           {onUpload && (
             <button
               onClick={(e) => {
@@ -346,64 +210,89 @@ export const StoryImage: React.FC<StoryImageProps> = ({
             </button>
           )}
 
-          {/* Delete Button - Also show in placeholder state if image exists (though here it's mostly for failed state if we want to allow deleting the "attempt")
-              But wait, this block is for "Has imagePrompt but NO imageUrl".
-              If there is no image URL, there is nothing to delete from the view,
-              BUT there might be a failed record in DB?
-              Actually, if !displayUrl, we assume no image.
-              However, the user might want to "clear" the prompt or the failed state?
-              For now, let's only show delete if there is an actual image (previous block).
-              Or if the user wants to remove the "Vision" placeholder?
-              The requirement says "delete image from segment".
-              If there is no image, maybe we don't need delete button here.
-              Let's stick to the image view (previous block).
-          */}
+          {/* Delete Button - Visible if image exists */}
+          {hasImage && onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="bg-black/60 hover:bg-theme-error text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              title={t("deleteImage", "Delete Image")}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                ></path>
+              </svg>
+            </button>
+          )}
 
-          <CopyPromptButton />
+          {/* Copy Prompt Button - Visible if prompt exists */}
+          {hasPrompt && (
+            <button
+              onClick={handleCopyPrompt}
+              className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              title={copied ? t("storyImage.promptCopied") : t("storyImage.copyPrompt")}
+            >
+              {copied ? (
+                <svg
+                  className="w-5 h-5 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+
+          {/* Regenerate Button - Visible if can regenerate and image exists (for placeholder it's handled inside ImagePlaceholder) */}
+          {/* Actually, we want regenerate button on top of image too if needed, or just rely on placeholder for failed state */}
+          {/* Requirement says: "Copy Prompt Button only when imagePrompt exists" - handled */}
+          {/* "Upload Button always visible" - handled */}
+
+          {/* Magic Mirror Button - Visible if image exists */}
+          {hasImage && onAnimate && (
+            <MagicMirrorButton onAnimate={() => onAnimate(displayUrl)} />
+          )}
         </div>
       </div>
-    );
-  }
 
-  // State 1: No imagePrompt and No imageUrl - Image was never intended
-  // If we have onUpload, show a placeholder with the upload button
-  return (
-    <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
-      <ImagePlaceholder
-        isGenerating={false}
-        hasFailed={false}
-        labelVision={labelVision}
-        labelUnavailable={labelUnavailable}
-        themeFont={themeFont}
-        onRegenerate={undefined}
-      />
-      {/* Upload Button */}
-      {onUpload && (
-        <div className="absolute top-3 right-3 flex gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onUpload();
-            }}
-            className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-            title={t("uploadImage", "Upload Image")}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-              ></path>
-            </svg>
-          </button>
-        </div>
+      {hasImage && (
+        <ImageLightbox
+          imageUrl={lightboxImage}
+          onClose={() => setLightboxImage(null)}
+        />
       )}
-    </div>
+    </>
   );
 };

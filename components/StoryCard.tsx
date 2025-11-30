@@ -40,6 +40,7 @@ export interface StoryCardProps {
   gameState: GameState;
   saveId?: string;
   onImageDelete?: (id: string) => void;
+  hasFailed?: boolean;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -58,6 +59,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   gameState,
   saveId,
   onImageDelete,
+  hasFailed,
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
@@ -120,7 +122,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   };
 
   const handleDeleteClick = async () => {
-    if (!segment.imageId && !segment.imageUrl) return;
+    // Allow delete if image exists OR if prompt exists (to clear placeholder)
+    if (!segment.imageId && !segment.imageUrl && !segment.imagePrompt) return;
 
     if (
       !window.confirm(
@@ -231,10 +234,12 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         manualImageGen={aiSettings?.manualImageGen}
         onUpload={onImageUpload ? handleUploadClick : undefined}
         onDelete={
-          (segment.imageId || segment.imageUrl) && onImageDelete
+          (segment.imageId || segment.imageUrl || segment.imagePrompt) &&
+          onImageDelete
             ? handleDeleteClick
             : undefined
         }
+        hasFailed={hasFailed}
       />
 
       {/* Hidden File Input */}

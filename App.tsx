@@ -75,6 +75,7 @@ export default function App() {
     generateImageForNode,
     triggerSave,
     handleForceUpdate,
+    failedImageNodes,
   } = useGameEngine();
 
   const { t } = useTranslation();
@@ -852,6 +853,7 @@ export default function App() {
                   onViewedSegmentChange={setViewedSegment}
                   triggerSave={triggerSave}
                   handleForceUpdate={handleForceUpdate}
+                  failedImageNodes={failedImageNodes}
                 />
               </SectionErrorBoundary>
             }

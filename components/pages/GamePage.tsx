@@ -79,7 +79,11 @@ interface GamePageProps {
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
   navigateToNode: (nodeId: string, isFork?: boolean) => void;
-  generateImageForNode: (nodeId: string) => Promise<void>;
+  generateImageForNode: (
+    nodeId: string,
+    nodeOverride?: StorySegment,
+    isManualClick?: boolean,
+  ) => Promise<void>;
   showToast: (msg: string, type?: "info" | "error") => void;
   onOpenSettings: () => void;
   onOpenSaves: () => void;
@@ -91,6 +95,7 @@ interface GamePageProps {
   onViewedSegmentChange: (segment: StorySegment) => void;
   triggerSave?: () => void;
   handleForceUpdate: (prompt: string) => void;
+  failedImageNodes?: Set<string>;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
@@ -116,6 +121,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   onViewedSegmentChange,
   triggerSave,
   handleForceUpdate,
+  failedImageNodes,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -393,7 +399,9 @@ export const GamePage: React.FC<GamePageProps> = ({
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={generateImageForNode}
+          onGenerateImage={(nodeId) =>
+            generateImageForNode(nodeId, undefined, true)
+          }
           onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -419,6 +427,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
           saveId={currentSlotId || "unsaved"}
+          failedImageNodes={failedImageNodes}
         />
 
         <DesktopGameLayout
@@ -434,7 +443,9 @@ export const GamePage: React.FC<GamePageProps> = ({
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={generateImageForNode}
+          onGenerateImage={(nodeId) =>
+            generateImageForNode(nodeId, undefined, true)
+          }
           onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -460,6 +471,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
           saveId={currentSlotId || "unsaved"}
+          failedImageNodes={failedImageNodes}
         />
 
         {/* Mobile Bottom Navigation */}
