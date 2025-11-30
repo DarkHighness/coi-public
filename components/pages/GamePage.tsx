@@ -351,6 +351,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         nodes: newNodes,
       };
     });
+    triggerSave?.();
     showToast(t("imageUploaded", "Image uploaded successfully"), "info");
   };
 
@@ -369,6 +370,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         nodes: newNodes,
       };
     });
+    triggerSave?.();
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 

@@ -728,6 +728,10 @@ export const useGamePersistence = (
         setGameState(sanitized);
         setCurrentSlotId(id);
 
+        // Update refs to prevent auto-save from triggering immediately due to "active node change"
+        lastSavedActiveNodeRef.current = sanitized.activeNodeId;
+        lastSavedNodeIdRef.current = sanitized.activeNodeId;
+
         return {
           success: true,
           embeddingIndex,

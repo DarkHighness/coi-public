@@ -27,11 +27,12 @@ type EditableSection =
   | "factions"
   | "timeline"
   | "causalChains"
-  | "global";
+  | "global"
+  | "segments";
 
 const SECTION_CONFIGS: Record<
   EditableSection,
-  { icon: string; labelKey: string; stateKey: keyof GameState | "global" }
+  { icon: string; labelKey: string; stateKey: keyof GameState | "global" | "segments" }
 > = {
   character: {
     icon: "👤",
@@ -75,6 +76,7 @@ const SECTION_CONFIGS: Record<
     stateKey: "causalChains",
   },
   global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
+  segments: { icon: "📄", labelKey: "stateEditor.segments", stateKey: "segments" },
 };
 
 export const StateEditor: React.FC<StateEditorProps> = ({
@@ -91,6 +93,51 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Helper to get segment context (current + 3 ancestors + 3 descendants)
+  const getSegmentContext = (state: GameState) => {
+    if (!state.activeNodeId) return [];
+
+    const segments = [];
+    const nodes = state.nodes;
+    let currentId: string | null = state.activeNodeId;
+
+    // 1. Get current node
+    const currentNode = nodes[currentId];
+    if (!currentNode) return [];
+
+    // 2. Get up to 3 ancestors
+    const ancestors = [];
+    let ancestorId = currentNode.parentId;
+    for (let i = 0; i < 3 && ancestorId; i++) {
+      const ancestor = nodes[ancestorId];
+      if (ancestor) {
+        ancestors.unshift(ancestor); // Add to beginning to keep order
+        ancestorId = ancestor.parentId;
+      } else {
+        break;
+      }
+    }
+
+    // 3. Get up to 3 descendants (following latest path)
+    const descendants = [];
+    let descendantParentId = currentId;
+    for (let i = 0; i < 3; i++) {
+      // Find children of current descendantParentId
+      const children = Object.values(nodes).filter(
+        (n) => n.parentId === descendantParentId
+      );
+
+      if (children.length === 0) break;
+
+      // Pick the latest child (by timestamp)
+      const latestChild = children.sort((a, b) => b.timestamp - a.timestamp)[0];
+      descendants.push(latestChild);
+      descendantParentId = latestChild.id;
+    }
+
+    return [...ancestors, currentNode, ...descendants];
+  };
+
   // Extract the current section's data
   const getSectionData = (section: EditableSection): any => {
     if (section === "global") {
@@ -103,6 +150,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         unlockMode: gameState.unlockMode,
         turnNumber: gameState.turnNumber,
       };
+    }
+    if (section === "segments") {
+      return getSegmentContext(gameState);
     }
     return gameState[SECTION_CONFIGS[section].stateKey as keyof GameState];
   };
@@ -119,6 +169,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Validate JSON on change
   const handleJsonChange = (value: string) => {
+    // Read-only check
+    if (activeSection === "segments") return;
+
     setJsonText(value);
     setHasChanges(true);
     try {
@@ -131,6 +184,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Apply changes to GameState
   const handleApply = () => {
+    if (activeSection === "segments") return; // Read-only
+
     if (error) {
       onShowToast?.(
         t("stateEditor.fixErrors") || "Fix JSON errors before applying",
@@ -187,6 +242,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Format/prettify JSON
   const handleFormat = () => {
+    if (activeSection === "segments") return; // Read-only (already formatted on load)
     try {
       const parsed = JSON.parse(jsonText);
       setJsonText(JSON.stringify(parsed, null, 2));
@@ -200,6 +256,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const lineCount = useMemo(() => jsonText.split("\n").length, [jsonText]);
 
   if (!isOpen) return null;
+
+  const isReadOnly = activeSection === "segments";
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
@@ -284,20 +342,27 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <span className="text-xs text-theme-muted flex-none hidden sm:inline">
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
-                {hasChanges && (
+                {hasChanges && !isReadOnly && (
                   <span className="px-2 py-0.5 bg-theme-warning/20 text-theme-warning text-xs rounded-full flex-none">
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
+                {isReadOnly && (
+                  <span className="px-2 py-0.5 bg-theme-info/20 text-theme-info text-xs rounded-full flex-none">
+                    {t("stateEditor.readOnly") || "Read Only"}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 flex-none">
-                <button
-                  onClick={handleFormat}
-                  className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
-                  title={t("stateEditor.format") || "Format JSON"}
-                >
-                  {t("stateEditor.format") || "Format"}
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={handleFormat}
+                    className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
+                    title={t("stateEditor.format") || "Format JSON"}
+                  >
+                    {t("stateEditor.format") || "Format"}
+                  </button>
+                )}
                 <button
                   onClick={handleReset}
                   className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
@@ -313,9 +378,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               <textarea
                 value={jsonText}
                 onChange={(e) => handleJsonChange(e.target.value)}
+                readOnly={isReadOnly}
                 className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
                   error ? "border-2 border-theme-error/50" : ""
-                }`}
+                } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
                 spellCheck={false}
                 placeholder={t("loadingGeneric") || "Loading..."}
               />
@@ -343,17 +409,19 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             >
               {t("close") || "Close"}
             </button>
-            <button
-              onClick={handleApply}
-              disabled={!!error || !hasChanges}
-              className={`px-6 py-2 rounded-lg font-bold transition-colors ${
-                error || !hasChanges
-                  ? "bg-theme-muted/20 text-theme-muted cursor-not-allowed"
-                  : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg"
-              }`}
-            >
-              {t("stateEditor.apply") || "Apply Changes"}
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleApply}
+                disabled={!!error || !hasChanges}
+                className={`px-6 py-2 rounded-lg font-bold transition-colors ${
+                  error || !hasChanges
+                    ? "bg-theme-muted/20 text-theme-muted cursor-not-allowed"
+                    : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg"
+                }`}
+              >
+                {t("stateEditor.apply") || "Apply Changes"}
+              </button>
+            )}
           </div>
         </div>
       </div>
