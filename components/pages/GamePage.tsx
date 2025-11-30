@@ -330,6 +330,24 @@ export const GamePage: React.FC<GamePageProps> = ({
     }
   };
 
+  const handleImageUpload = (nodeId: string, imageId: string) => {
+    setGameState((prev) => {
+      const newNodes = { ...prev.nodes };
+      if (newNodes[nodeId]) {
+        newNodes[nodeId] = {
+          ...newNodes[nodeId],
+          imageId: imageId,
+          imageUrl: undefined, // Clear legacy URL to prefer ID
+        };
+      }
+      return {
+        ...prev,
+        nodes: newNodes,
+      };
+    });
+    showToast(t("imageUploaded", "Image uploaded successfully"), "info");
+  };
+
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
       <Suspense
@@ -380,6 +398,8 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
           onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
+          onImageUpload={handleImageUpload}
+          saveId={currentSlotId || "unsaved"}
         />
 
         <DesktopGameLayout
@@ -418,6 +438,8 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
           onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
+          onImageUpload={handleImageUpload}
+          saveId={currentSlotId || "unsaved"}
         />
 
         {/* Mobile Bottom Navigation */}

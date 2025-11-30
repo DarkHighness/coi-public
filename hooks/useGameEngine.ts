@@ -39,6 +39,7 @@ import { getRAGService } from "../services/rag";
 import { extractDocumentsFromState } from "./useRAG";
 import { deriveHistory } from "../utils/storyUtils";
 import { useGameAction } from "./useGameAction";
+import { saveImage } from "../utils/imageStorage";
 
 import { preloadAudio } from "../utils/audioLoader";
 
@@ -916,16 +917,53 @@ export const useGameEngine = () => {
         snapshot,
       );
 
-      const { url, log } = await generateSceneImage(
+      const { url, log, blob } = await generateSceneImage(
         node.imagePrompt,
         aiSettings,
         imageContext,
       );
       clearTimeout(imageTimeout);
 
-      if (url && url.trim()) {
+      if (blob) {
+        // Save to IndexedDB
+        const imageId = await saveImage(blob, {
+          saveId: currentSlotId || "unsaved",
+          forkId: gameStateRef.current.forkId,
+          turnIdx: node.segmentIdx || gameStateRef.current.turnNumber,
+          imagePrompt: node.imagePrompt,
+        });
+
         console.log(
-          "Image generated successfully for node:",
+          "Image generated and saved to DB for node:",
+          nodeId,
+          "ImageID:",
+          imageId,
+        );
+
+        setGameState((prev) => ({
+          ...prev,
+          isImageGenerating: false,
+          logs: [log, ...prev.logs].slice(0, 50),
+          tokenUsage: {
+            ...prev.tokenUsage,
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) +
+              (log.usage?.totalTokens || 0),
+          },
+          nodes: {
+            ...prev.nodes,
+            [nodeId]: {
+              ...prev.nodes[nodeId],
+              imageId: imageId,
+              imageUrl: undefined, // Clear legacy URL if present
+            },
+          },
+        }));
+        triggerSave();
+      } else if (url && url.trim()) {
+        // Fallback for non-blob URLs (e.g. external URLs if supported later)
+        console.log(
+          "Image generated (URL only) for node:",
           nodeId,
           "URL:",
           url.substring(0, 50) + "...",

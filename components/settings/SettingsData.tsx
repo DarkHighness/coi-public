@@ -4,6 +4,7 @@ import { formatBytes } from "../../utils/formatters";
 import { SettingsDataProps } from "./types";
 import { useRAG } from "../../hooks/useRAG";
 import { GlobalStorageStats } from "../../services/rag";
+import { getImageStorageStats } from "../../utils/imageStorage";
 
 export const SettingsData: React.FC<SettingsDataProps> = ({
   saveCount = 0,
@@ -18,10 +19,15 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
     quota: number;
   } | null>(null);
   const [ragStats, setRagStats] = useState<GlobalStorageStats | null>(null);
+  const [imageStats, setImageStats] = useState<{
+    count: number;
+    size: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchStorageEstimate();
     fetchRagStats();
+    fetchImageStats();
 
     // Poll for RAG stats updates
     let intervalId: NodeJS.Timeout;
@@ -54,6 +60,15 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
     if (ragState.isInitialized) {
       const stats = await ragActions.getAllSaveStats();
       setRagStats(stats);
+    }
+  };
+
+  const fetchImageStats = async () => {
+    try {
+      const stats = await getImageStorageStats();
+      setImageStats(stats);
+    } catch (error) {
+      console.error("Failed to fetch image stats:", error);
     }
   };
 
@@ -135,6 +150,46 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
         </div>
       </div>
 
+      {/* Image Storage Statistics */}
+      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
+            {t("data.imageStorageInfo", "Image Storage")}
+          </h3>
+          <button
+            onClick={fetchImageStats}
+            className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+          >
+            {t("refresh")}
+          </button>
+        </div>
+
+        <div className="space-y-3 text-sm">
+          {imageStats ? (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-theme-muted">
+                  {t("data.totalImages", "Total Images")}:
+                </span>
+                <span className="text-theme-text font-mono">
+                  {imageStats.count}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-theme-muted">
+                  {t("data.totalImageSize", "Total Size")}:
+                </span>
+                <span className="text-theme-text font-mono">
+                  {formatBytes(imageStats.size)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-theme-muted italic">{t("loading")}...</p>
+          )}
+        </div>
+      </div>
+
       {/* Reset Settings */}
       <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
@@ -210,6 +265,89 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
             ></path>
           </svg>
           {t("data.clearSaves")}
+        </button>
+      </div>
+
+      {/* Clear Images */}
+      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+        <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
+          {t("data.clearImages")}
+        </h3>
+        <p className="text-xs text-theme-muted mb-4">
+          {t("data.clearImagesDesc")}
+        </p>
+        <button
+          onClick={async () => {
+            if (window.confirm(t("data.confirmClearImages"))) {
+              try {
+                const { clearAllImages } = await import(
+                  "../../utils/imageStorage"
+                );
+                await clearAllImages();
+                showToast(t("data.clearImagesSuccess"), "info");
+                fetchImageStats();
+              } catch (error) {
+                console.error("Failed to clear images:", error);
+                showToast("Failed to clear images", "error");
+              }
+            }
+          }}
+          className="w-full px-4 py-3 bg-theme-surface border border-theme-border hover:border-theme-primary text-theme-text rounded hover:bg-theme-surface-highlight transition-colors font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            ></path>
+          </svg>
+          {t("data.clearImages")}
+        </button>
+      </div>
+
+      {/* Clear RAG */}
+      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+        <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
+          {t("data.clearRag")}
+        </h3>
+        <p className="text-xs text-theme-muted mb-4">
+          {t("data.clearRagDesc")}
+        </p>
+        <button
+          onClick={async () => {
+            if (window.confirm(t("data.confirmClearRag"))) {
+              try {
+                await ragActions.cleanup();
+                showToast(t("data.clearRagSuccess"), "info");
+                fetchRagStats();
+              } catch (error) {
+                console.error("Failed to clear RAG:", error);
+                showToast("Failed to clear RAG", "error");
+              }
+            }
+          }}
+          className="w-full px-4 py-3 bg-theme-surface border border-theme-border hover:border-theme-primary text-theme-text rounded hover:bg-theme-surface-highlight transition-colors font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+            ></path>
+          </svg>
+          {t("data.clearRag")}
         </button>
       </div>
 

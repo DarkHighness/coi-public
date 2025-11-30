@@ -155,7 +155,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       !formData.baseUrl.trim() ||
       !formData.apiKey.trim()
     ) {
-      showToast("Name, Base URL, and API Key are required", "error");
+      showToast(t("providers.validation.requiredFields"), "error");
       return;
     }
 
@@ -191,14 +191,14 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     };
 
     onUpdateSettings(newSettings);
-    showToast(`Provider "${formData.name}" added successfully`, "info");
+    showToast(t("providers.toast.added", { name: formData.name }), "info");
     handleCloseModal();
   };
 
   // Add from template
   const handleAddFromTemplate = () => {
     if (!templateApiKey.trim()) {
-      showToast("API Key is required", "error");
+      showToast(t("providers.validation.apiKeyRequired"), "error");
       return;
     }
 
@@ -217,7 +217,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     };
 
     onUpdateSettings(newSettings);
-    showToast(`Provider "${newInstance.name}" added successfully`, "info");
+    showToast(t("providers.toast.added", { name: newInstance.name }), "info");
     handleCloseModal();
   };
 
@@ -226,7 +226,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     if (!editingId) return;
 
     if (!formData.name.trim() || !formData.baseUrl.trim()) {
-      showToast("Name and Base URL are required", "error");
+      showToast(t("providers.validation.nameUrlRequired"), "error");
       return;
     }
 
@@ -273,7 +273,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     };
 
     onUpdateSettings(newSettings);
-    showToast(`Provider "${formData.name}" updated successfully`, "info");
+    showToast(t("providers.toast.updated", { name: formData.name }), "info");
     handleCloseModal();
   };
 
@@ -289,9 +289,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     if (inUse) {
       const featureList = features.join(", ");
       if (
-        !confirm(
-          `Warning: This provider is currently used by: ${featureList}\n\nDeleting it will cause these features to stop working. Continue?`,
-        )
+        !confirm(t("providers.confirm.deleteInUse", { features: featureList }))
       ) {
         return;
       }
@@ -310,7 +308,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     };
 
     onUpdateSettings(newSettings);
-    showToast(`Provider "${instance.name}" deleted`, "info");
+    showToast(t("providers.toast.deleted", { name: instance.name }), "info");
     setShowDeleteConfirm(null);
   };
 
@@ -329,7 +327,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
         const featureList = features.join(", ");
         if (
           !confirm(
-            `Warning: This provider is currently used by: ${featureList}\n\nDisabling it will cause these features to stop working. Continue?`,
+            t("providers.confirm.disableInUse", { features: featureList }),
           )
         ) {
           return;
@@ -353,7 +351,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
 
     onUpdateSettings(newSettings);
     showToast(
-      `Provider "${instance.name}" ${newEnabled ? "enabled" : "disabled"}`,
+      newEnabled
+        ? t("providers.toast.enabled", { name: instance.name })
+        : t("providers.toast.disabled", { name: instance.name }),
       "info",
     );
   };

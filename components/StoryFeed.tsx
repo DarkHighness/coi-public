@@ -23,8 +23,10 @@ interface StoryFeedProps {
   onToggleMute?: () => void;
   onViewedSegmentChange?: (segment: StorySegment) => void;
   onAudioGenerated?: (id: string, key: string) => void;
+  onImageUpload?: (id: string, imageId: string) => void;
   sidebarCollapsed?: boolean;
   timelineCollapsed?: boolean;
+  saveId?: string;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
@@ -43,8 +45,10 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onToggleMute,
   onViewedSegmentChange,
   onAudioGenerated,
+  onImageUpload,
   sidebarCollapsed = false,
   timelineCollapsed = false,
+  saveId,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -346,7 +350,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                           }
                         }}
                         onAudioGenerated={onAudioGenerated}
+                        onImageUpload={onImageUpload}
                         gameState={gameState}
+                        saveId={saveId}
                       />
                     </div>
                   </React.Fragment>
@@ -410,7 +416,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     aiSettings={aiSettings}
                     onTypingComplete={undefined} // Stack mode doesn't animate typing usually
                     onAudioGenerated={onAudioGenerated}
+                    onImageUpload={onImageUpload}
                     gameState={gameState}
+                    saveId={saveId}
                   />
                 </div>
               )}

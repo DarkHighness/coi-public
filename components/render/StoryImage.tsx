@@ -66,9 +66,11 @@ import { MagicMirrorButton } from "./MagicMirrorButton";
 import { ImagePlaceholder } from "./ImagePlaceholder";
 import { ImageLightbox } from "./ImageLightbox";
 import { useTranslation } from "react-i18next";
+import { useImageURL } from "../../hooks/useImageStorage";
 
 interface StoryImageProps {
-  imageUrl?: string;
+  imageId?: string; // New prop for IndexedDB image ID
+  imageUrl?: string; // Legacy/Fallback URL
   imagePrompt?: string;
   /** The full styled prompt used for image generation (includes context, style, etc.) */
   fullImagePrompt?: string;
@@ -81,10 +83,12 @@ interface StoryImageProps {
   imageGenerationEnabled: boolean;
   manualImageGen?: boolean;
   themeFont?: string;
+  onUpload?: () => void;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
-  imageUrl,
+  imageId,
+  imageUrl: legacyImageUrl,
   imagePrompt,
   fullImagePrompt,
   isGenerating,
@@ -96,10 +100,17 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   imageGenerationEnabled,
   manualImageGen,
   themeFont,
+  onUpload,
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+
+  // Resolve image URL from ID if provided
+  const { url: resolvedUrl, isLoading } = useImageURL(imageId);
+
+  // Use resolved URL or legacy URL
+  const displayUrl = resolvedUrl || legacyImageUrl;
 
   // Copy prompt to clipboard
   const handleCopyPrompt = async (e: React.MouseEvent) => {
@@ -118,11 +129,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   };
 
   // Early return: Global image disable
-  if (
-    disableImages ||
-    typeof imagePrompt !== "string" ||
-    imagePrompt.trim() === ""
-  )
+  if (disableImages) return null;
+
+  // If no image prompt and no image (ID or URL) and no upload handler, don't show anything
+  // But if we have an upload handler, we might want to show the placeholder to allow uploading
+  if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl && !onUpload)
     return null;
 
   // Copy Prompt Button Component (defined early for use in multiple states)
@@ -171,15 +182,15 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   }
 
   // State 3: Has imagePrompt AND imageUrl - Show image with action buttons
-  if (imageUrl && imagePrompt) {
+  if (displayUrl && imagePrompt) {
     return (
       <>
         <div
           className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group cursor-zoom-in"
-          onClick={() => setLightboxImage(imageUrl)}
+          onClick={() => setLightboxImage(displayUrl)}
         >
           <img
-            src={imageUrl}
+            src={displayUrl}
             alt={t("storyImage.sceneVisualization")}
             className="w-full h-full object-cover transition-transform duration-[2000ms] ease-in-out group-hover:scale-105 opacity-90 hover:opacity-100 animate-[blur-in_1s_ease-out]"
             style={{
@@ -190,6 +201,32 @@ export const StoryImage: React.FC<StoryImageProps> = ({
 
           {/* Action Buttons Container */}
           <div className="absolute top-3 right-3 flex gap-2">
+            {/* Upload Button */}
+            {onUpload && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpload();
+                }}
+                className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+                title={t("uploadImage", "Upload Image")}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  ></path>
+                </svg>
+              </button>
+            )}
+
             {/* Copy Prompt Button - Show if imagePrompt exists */}
             {imagePrompt && <CopyPromptButton />}
 
@@ -221,7 +258,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
 
             {/* Magic Mirror Button */}
             {onAnimate && (
-              <MagicMirrorButton onAnimate={() => onAnimate(imageUrl)} />
+              <MagicMirrorButton onAnimate={() => onAnimate(displayUrl)} />
             )}
           </div>
         </div>
@@ -235,7 +272,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   }
 
   // State 2: Has imagePrompt but NO imageUrl - Provider is enabled, show placeholder
-  if (imagePrompt && !imageUrl) {
+  if (imagePrompt && !displayUrl) {
     const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
     // Manual mode: waiting for user to click generate
     // Failed mode: generation attempted but failed (not generating, not manual mode)
@@ -255,6 +292,31 @@ export const StoryImage: React.FC<StoryImageProps> = ({
         />
         {/* Copy Prompt Button - Always available when imagePrompt exists */}
         <div className="absolute top-3 right-3 flex gap-2">
+          {/* Upload Button */}
+          {onUpload && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpload();
+              }}
+              className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              title={t("uploadImage", "Upload Image")}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                ></path>
+              </svg>
+            </button>
+          )}
           <CopyPromptButton />
         </div>
       </div>
@@ -262,9 +324,9 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   }
 
   // State 1: No imagePrompt and No imageUrl - Image was never intended
-  // Show unavailable message (no button)
+  // If we have onUpload, show a placeholder with the upload button
   return (
-    <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black">
+    <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
       <ImagePlaceholder
         isGenerating={false}
         hasFailed={false}
@@ -273,6 +335,33 @@ export const StoryImage: React.FC<StoryImageProps> = ({
         themeFont={themeFont}
         onRegenerate={undefined}
       />
+      {/* Upload Button */}
+      {onUpload && (
+        <div className="absolute top-3 right-3 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpload();
+            }}
+            className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+            title={t("uploadImage", "Upload Image")}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

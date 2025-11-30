@@ -12,6 +12,7 @@ import {
   getSceneImagePrompt,
   createImageGenerationContext,
 } from "../services/prompts/index";
+import { useImageStorageContext } from "../contexts/ImageStorageContext";
 import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";
@@ -35,7 +36,9 @@ export interface StoryCardProps {
   aiSettings?: AISettings;
   onTypingComplete?: () => void;
   onAudioGenerated?: (id: string, key: string) => void;
+  onImageUpload?: (id: string, imageId: string) => void;
   gameState: GameState;
+  saveId?: string;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -50,9 +53,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   aiSettings,
   onTypingComplete,
   onAudioGenerated,
+  onImageUpload,
   gameState,
+  saveId,
 }) => {
   const { t } = useTranslation();
+  const { saveImage } = useImageStorageContext();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCopyPrompt = () => {
     if (!segment.imagePrompt) return "";
@@ -63,6 +70,51 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     );
 
     return getSceneImagePrompt(segment.imagePrompt, imageContext);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !onImageUpload) return;
+
+    // Check for existing image and confirm overwrite
+    if (segment.imageId || segment.imageUrl) {
+      if (
+        !window.confirm(
+          t(
+            "overwriteImageConfirm",
+            "This segment already has an image. Do you want to overwrite it?",
+          ),
+        )
+      ) {
+        // Reset input so change event fires again if same file selected later
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    }
+
+    try {
+      // Save to IndexedDB
+      const imageId = await saveImage(file, {
+        saveId: saveId || "unsaved",
+        forkId: gameState.forkId,
+        turnIdx: segment.segmentIdx || gameState.turnNumber,
+        imagePrompt: "", // Requirement: imagePrompt should be empty
+      });
+
+      onImageUpload(segment.id, imageId);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      // TODO: Show error toast
+    } finally {
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   if (segment.role === "user") {
@@ -133,6 +185,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       )}
 
       <StoryImage
+        imageId={segment.imageId}
         imageUrl={segment.imageUrl}
         imagePrompt={segment.imagePrompt}
         fullImagePrompt={segment.imagePrompt ? handleCopyPrompt() : undefined}
@@ -148,6 +201,18 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
         manualImageGen={aiSettings?.manualImageGen}
+        onUpload={
+          onImageUpload && !disableImages ? handleUploadClick : undefined
+        }
+      />
+
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleFileChange}
       />
 
       {/* Manual Image Generation Button */}

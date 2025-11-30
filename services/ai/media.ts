@@ -61,7 +61,7 @@ export const generateSceneImage = async (
   prompt: string,
   settings: AISettings,
   context: ImageGenerationContext,
-): Promise<{ url: string | null; log: LogEntry }> => {
+): Promise<{ url: string | null; log: LogEntry; blob?: Blob }> => {
   const providerInfo = getProviderConfig(settings, "image");
   if (!providerInfo || !providerInfo.enabled) {
     return {
@@ -75,6 +75,7 @@ export const generateSceneImage = async (
   let url: string | null;
   let usage: TokenUsage | undefined;
   let raw: unknown;
+  let blob: Blob | undefined;
 
   console.log(
     "Generating image for prompt:",
@@ -121,6 +122,18 @@ export const generateSceneImage = async (
     );
   }
 
+  // If we have a URL, try to fetch it as a blob to store in IndexedDB
+  if (url) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        blob = await response.blob();
+      }
+    } catch (error) {
+      console.warn("Failed to fetch image blob from URL:", url, error);
+    }
+  }
+
   const log = createLogEntry(
     instance.protocol,
     modelId,
@@ -129,7 +142,7 @@ export const generateSceneImage = async (
     raw,
     usage,
   );
-  return { url, log };
+  return { url, log, blob };
 };
 
 /**

@@ -286,7 +286,7 @@
     "selectModel": "请选择嵌入模型",
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
     "noModels": "未选择嵌入模型。",
-    "providerDisabled": "提供商已禁用"
+    "providerDisabled": "提供商已被禁用。"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
@@ -550,8 +550,20 @@
     "storageUsed": "已用空间",
     "storageQuota": "总空间",
     "storageUsage": "存储使用率",
-    "storageUnavailable": "存储信息不可用"
+    "storageUnavailable": "存储信息不可用",
+    "imageStorageInfo": "图片存储信息",
+    "totalImages": "图片总数",
+    "totalImageSize": "总大小",
+    "clearImages": "清空图片缓存",
+    "clearImagesDesc": "删除所有缓存的图片数据。这将释放存储空间，但会导致历史记录中的图片丢失。",
+    "confirmClearImages": "确定要清空所有图片缓存吗？此操作无法撤销。",
+    "clearImagesSuccess": "图片缓存已清空。",
+    "clearRag": "清空 RAG 知识库",
+    "clearRagDesc": "删除所有 RAG 索引和向量数据。下次加载存档时将重新构建索引。",
+    "confirmClearRag": "确定要清空 RAG 知识库吗？这将需要重新处理文档。",
+    "clearRagSuccess": "RAG 知识库已清空。"
   },
+  "imageUploaded": "图片上传成功",
   "customTips": "添加细节以指导你的冒险故事",
   "tip": "提示",
   "customWritingTips": "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
@@ -941,7 +953,23 @@
     "enabled": "已启用",
     "disabled": "已禁用",
     "missingApiKey": "缺少 API Key",
-    "inUse": "被以下功能使用: {{features}}"
+    "inUse": "被以下功能使用: {{features}}",
+    "validation": {
+      "requiredFields": "名称、基础 URL 和 API 密钥为必填项",
+      "apiKeyRequired": "API 密钥为必填项",
+      "nameUrlRequired": "名称和基础 URL 为必填项"
+    },
+    "toast": {
+      "added": "提供商 \"{{name}}\" 添加成功",
+      "updated": "提供商 \"{{name}}\" 更新成功",
+      "deleted": "提供商 \"{{name}}\" 已删除",
+      "enabled": "提供商 \"{{name}}\" 已启用",
+      "disabled": "提供商 \"{{name}}\" 已禁用"
+    },
+    "confirm": {
+      "deleteInUse": "警告：此提供商当前正被以下功能使用：{{features}}\n\n删除它将导致这些功能停止工作。是否继续？",
+      "disableInUse": "警告：此提供商当前正被以下功能使用：{{features}}\n\n禁用它将导致这些功能停止工作。是否继续？"
+    }
   },
   "audio": {
     "voices": {
@@ -985,5 +1013,6 @@
     "completionTokens": "输出 Token",
     "cacheRead": "缓存读取",
     "cacheWrite": "缓存写入"
-  }
+  },
+  "overwriteImageConfirm": "此片段已有图片。是否要覆盖它？"
 }

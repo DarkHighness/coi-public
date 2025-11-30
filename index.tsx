@@ -5,6 +5,7 @@ import "./utils/i18n";
 import "./index.css";
 import App from "./App";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import { ImageStorageProvider } from "./contexts/ImageStorageContext";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -56,7 +57,9 @@ root.render(
   <React.StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <SettingsProvider>
-        <App />
+        <ImageStorageProvider>
+          <App />
+        </ImageStorageProvider>
       </SettingsProvider>
     </BrowserRouter>
   </React.StrictMode>,

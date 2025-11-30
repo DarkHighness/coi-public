@@ -54,6 +54,8 @@ interface MobileGameLayoutProps {
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
+  onImageUpload?: (id: string, imageId: string) => void;
+  saveId?: string;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -92,6 +94,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenViewer,
   onTriggerSave,
   onForceUpdate,
+  onImageUpload,
+  saveId,
 }) => {
   const { t } = useTranslation();
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
@@ -121,6 +125,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onToggleMute={onToggleMute}
           onViewedSegmentChange={onViewedSegmentChange}
           onAudioGenerated={onAudioGenerated}
+          onImageUpload={onImageUpload}
+          saveId={saveId}
         />
 
         {/* Action Panel fixed at bottom of feed */}

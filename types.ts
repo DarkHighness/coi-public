@@ -539,6 +539,7 @@ export interface StorySegment {
 
   imagePrompt: string;
   imageUrl?: string;
+  imageId?: string; // ID of the image in IndexedDB
   audioKey?: string; // Key for cached TTS audio in IndexedDB
   role: "user" | "model" | "system" | "command";
   timestamp: number;

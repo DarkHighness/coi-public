@@ -566,6 +566,17 @@
     "storageQuota": "Storage Quota",
     "storageUsage": "Storage Usage",
     "storageUnavailable": "Storage information unavailable",
+    "imageStorageInfo": "Image Storage Info",
+    "totalImages": "Total Images",
+    "totalImageSize": "Total Size",
+    "clearImages": "Clear Image Cache",
+    "clearImagesDesc": "Delete all cached image data. This frees up storage but will remove images from history.",
+    "confirmClearImages": "Are you sure you want to clear all image cache? This cannot be undone.",
+    "clearImagesSuccess": "Image cache cleared.",
+    "clearRag": "Clear RAG Knowledge Base",
+    "clearRagDesc": "Delete all RAG indices and vector data. Indices will be rebuilt on next load.",
+    "confirmClearRag": "Are you sure you want to clear the RAG knowledge base? This will require reprocessing documents.",
+    "clearRagSuccess": "RAG knowledge base cleared.",
     "export": "Export Data",
     "exportDesc": "Download all game data as a JSON file",
     "import": "Import Data",
@@ -798,6 +809,7 @@
     "copyPrompt": "Copy Image Generation Prompt",
     "promptCopied": "Prompt Copied"
   },
+  "overwriteImageConfirm": "This segment already has an image. Do you want to overwrite it?",
   "magicMirrorAction": {
     "animate": "Animate"
   },
@@ -806,6 +818,7 @@
     "location": "Location",
     "music": "Music"
   },
+  "imageUploaded": "Image Uploaded!",
   "logPanel": {
     "input": "Input",
     "output": "Output",
@@ -961,7 +974,23 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "missingApiKey": "Missing API Key",
-    "inUse": "In use: {{features}}"
+    "inUse": "In use: {{features}}",
+    "validation": {
+      "requiredFields": "Name, Base URL, and API Key are required",
+      "apiKeyRequired": "API Key is required",
+      "nameUrlRequired": "Name and Base URL are required"
+    },
+    "toast": {
+      "added": "Provider \"{{name}}\" added successfully",
+      "updated": "Provider \"{{name}}\" updated successfully",
+      "deleted": "Provider \"{{name}}\" deleted",
+      "enabled": "Provider \"{{name}}\" enabled",
+      "disabled": "Provider \"{{name}}\" disabled"
+    },
+    "confirm": {
+      "deleteInUse": "Warning: This provider is currently used by: {{features}}\n\nDeleting it will cause these features to stop working. Continue?",
+      "disableInUse": "Warning: This provider is currently used by: {{features}}\n\nDisabling it will cause these features to stop working. Continue?"
+    }
   },
   "audio": {
     "voices": {

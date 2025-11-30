@@ -14,6 +14,7 @@ import {
   getStorageEstimate,
   clearDatabase,
 } from "../utils/indexedDB";
+import { deleteImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "../services/rag";
 import { useTranslation } from "react-i18next";
 
@@ -409,6 +410,63 @@ export const useGamePersistence = (
               const embeddingIndex = data._embeddingIndex;
 
               const sanitized = sanitizeState(data);
+
+              // === MIGRATION: Legacy Base64 Images to IndexedDB ===
+              let migrationCount = 0;
+              const nodes = sanitized.nodes || {};
+
+              // We need to import saveImage dynamically or assume it's available
+              // Since we can't easily dynamic import in this context without async complexity,
+              // we'll rely on the imported saveImage from utils/imageStorage
+              // Note: We need to make sure saveImage is imported at the top of the file
+
+              const migrationPromises = Object.values(nodes).map(
+                async (node: any) => {
+                  if (
+                    node.imageUrl &&
+                    node.imageUrl.startsWith("data:image") &&
+                    !node.imageId
+                  ) {
+                    try {
+                      // Convert base64 to blob
+                      const response = await fetch(node.imageUrl);
+                      const blob = await response.blob();
+
+                      // Save to IDB
+                      const imageId = await saveImage(blob, {
+                        saveId: lastSlotId,
+                        forkId: sanitized.forkId || 0,
+                        turnIdx: node.segmentIdx || 0,
+                        imagePrompt: node.imagePrompt || "",
+                      });
+
+                      // Update node
+                      node.imageId = imageId;
+                      delete node.imageUrl; // Remove legacy base64
+                      migrationCount++;
+                    } catch (err) {
+                      console.error(
+                        "Failed to migrate image for node",
+                        node.id,
+                        err,
+                      );
+                    }
+                  }
+                },
+              );
+
+              if (migrationPromises.length > 0) {
+                await Promise.all(migrationPromises);
+                if (migrationCount > 0) {
+                  console.log(
+                    `[Persistence] Migrated ${migrationCount} legacy images to IndexedDB`,
+                  );
+                  // Save the migrated state back to DB immediately
+                  await saveGameState(lastSlotId, sanitized);
+                }
+              }
+              // === END MIGRATION ===
+
               setGameState(sanitized);
               setCurrentSlotId(lastSlotId);
 
@@ -690,11 +748,13 @@ export const useGamePersistence = (
     setSaveSlots(newSlots);
 
     // Update IndexedDB asynchronously
-    Promise.all([saveMetadata("slots", newSlots), deleteGameState(id)]).catch(
-      (error) => {
-        console.error("Failed to delete slot:", error);
-      },
-    );
+    Promise.all([
+      saveMetadata("slots", newSlots),
+      deleteGameState(id),
+      deleteImagesBySaveId(id),
+    ]).catch((error) => {
+      console.error("Failed to delete slot:", error);
+    });
 
     if (currentSlotId === id) {
       setCurrentSlotId(latestSlotId);
@@ -706,6 +766,7 @@ export const useGamePersistence = (
       // Clear all save data from IndexedDB
       for (const slot of saveSlots) {
         await deleteGameState(slot.id);
+        await deleteImagesBySaveId(slot.id);
       }
 
       // Clear metadata

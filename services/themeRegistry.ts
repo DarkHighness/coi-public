@@ -1,6 +1,9 @@
 import themeStyles from "../src/resources/theme_styles.json";
 
-const THEME_STYLES: Record<string, string> = themeStyles as Record<string, string>;
+const THEME_STYLES: Record<string, string> = themeStyles as Record<
+  string,
+  string
+>;
 
 /**
  * Get the visual style description for a given theme key.

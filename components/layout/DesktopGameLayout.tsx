@@ -49,6 +49,8 @@ interface DesktopGameLayoutProps {
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
+  onImageUpload?: (id: string, imageId: string) => void;
+  saveId?: string;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -85,6 +87,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenViewer,
   onTriggerSave,
   onForceUpdate,
+  onImageUpload,
+  saveId,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
@@ -160,8 +164,10 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onToggleMute={onToggleMute}
             onViewedSegmentChange={onViewedSegmentChange}
             onAudioGenerated={onAudioGenerated}
+            onImageUpload={onImageUpload}
             sidebarCollapsed={sidebarCollapsed}
             timelineCollapsed={timelineCollapsed}
+            saveId={saveId}
           />
 
           {/* Action Panel */}

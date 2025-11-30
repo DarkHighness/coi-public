@@ -21,10 +21,11 @@ const decompress = async (buffer: ArrayBuffer): Promise<string> => {
 import { getMigrationManager } from "../services/migrationManager";
 
 const DB_NAME = "ChroniclesOfInfinity";
-const DB_VERSION = 2;
-const SAVES_STORE = "saves";
-const META_STORE = "meta";
-const AUDIO_STORE = "audio";
+const DB_VERSION = 4;
+export const SAVES_STORE = "saves";
+export const META_STORE = "meta";
+export const AUDIO_STORE = "audio";
+export const IMAGES_STORE = "images";
 
 interface DBConnection {
   db: IDBDatabase;
@@ -35,7 +36,7 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 /**
  * Initialize and open the IndexedDB database
  */
-const openDB = (): Promise<IDBDatabase> => {
+export const openDB = (): Promise<IDBDatabase> => {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve, reject) => {
@@ -66,6 +67,27 @@ const openDB = (): Promise<IDBDatabase> => {
       // Create audio store if it doesn't exist
       if (!db.objectStoreNames.contains(AUDIO_STORE)) {
         db.createObjectStore(AUDIO_STORE);
+      }
+
+      // Create images store if it doesn't exist
+      if (!db.objectStoreNames.contains(IMAGES_STORE)) {
+        const store = db.createObjectStore(IMAGES_STORE, { keyPath: "id" });
+        // Create index for saveId to allow bulk deletion
+        store.createIndex("saveId", "saveId", { unique: false });
+        // Create compound index for uniqueness
+        store.createIndex("segment_unique", ["saveId", "forkId", "turnIdx"], {
+          unique: true,
+        });
+      } else {
+        // Upgrade existing store
+        const store = (
+          event.target as IDBOpenDBRequest
+        ).transaction!.objectStore(IMAGES_STORE);
+        if (!store.indexNames.contains("segment_unique")) {
+          store.createIndex("segment_unique", ["saveId", "forkId", "turnIdx"], {
+            unique: true,
+          });
+        }
       }
     };
   });

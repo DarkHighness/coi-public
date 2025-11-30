@@ -9,6 +9,48 @@ import { SaveSlot } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
+import { getImage } from "../utils/imageStorage";
+
+// Helper component for async image loading
+const PreviewBackground: React.FC<{ imageId: string }> = ({ imageId }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        // Check if it's a legacy data URL
+        if (imageId.startsWith("data:")) {
+          if (active) setImageUrl(imageId);
+          return;
+        }
+
+        // Load from IndexedDB
+        const blob = await getImage(imageId);
+        if (blob && active) {
+          const url = URL.createObjectURL(blob);
+          setImageUrl(url);
+          return () => URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        console.error("Failed to load preview image:", err);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [imageId]);
+
+  if (!imageUrl) return null;
+
+  return (
+    <div
+      className="absolute inset-0 bg-cover bg-center opacity-20 blur-md transition-opacity duration-1000 pointer-events-none animate-fade-in"
+      style={{ backgroundImage: `url(${imageUrl})` }}
+    />
+  );
+};
 
 // Lazy load SaveManager to enable proper code splitting (also dynamically imported in App.tsx)
 const SaveManager = lazy(() =>
@@ -119,10 +161,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       >
         {/* Save Preview Background */}
         {latestSave?.previewImage && (
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-20 blur-md transition-opacity duration-1000 pointer-events-none"
-            style={{ backgroundImage: `url(${latestSave.previewImage})` }}
-          />
+          <PreviewBackground imageId={latestSave.previewImage} />
         )}
 
         {/* Top Bar */}
