@@ -5,6 +5,7 @@ import { Relationship, ListState, Location } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface RelationshipPanelProps {
   relationships: Relationship[];
@@ -74,8 +75,9 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
   return (
     <div
       key={rel.id}
-      className={`bg-theme-surface-highlight/30 rounded border border-theme-border transition-all duration-300 ease-in-out mb-2 group/item flex items-center gap-1
+      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 ease-in-out mb-3 group/item
         ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
+        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       draggable={isEditMode}
@@ -90,7 +92,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <svg
-              className={`w-3 h-3 text-theme-muted transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-theme-muted transition-transform duration-200 ${
                 isExpanded ? "rotate-90" : ""
               }`}
               fill="none"
@@ -105,14 +107,14 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               />
             </svg>
             <span
-              className="font-bold text-theme-text text-sm flex items-center gap-1 break-words whitespace-normal"
+              className="font-bold text-theme-text text-xs flex items-center gap-1 break-words whitespace-normal"
               title={rel.visible?.name || t("unknown") || "Unknown"}
             >
-              <span className="mr-1">{getValidIcon(rel.icon, "👤")}</span>
+              <span className="mr-1 text-base">{getValidIcon(rel.icon, "👤")}</span>
               {rel.visible?.name || t("unknown") || "Unknown"}
               {rel.unlocked && (
                 <svg
-                  className="w-3 h-3 text-yellow-400"
+                  className="w-3.5 h-3.5 text-yellow-400"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -142,7 +144,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
               title={pinned ? "Unpin" : "Pin to top"}
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill={pinned ? "currentColor" : "none"}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -158,169 +160,182 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
           </div>
         </div>
 
-        {isExpanded && (
-          <div className="animate-[fade-in_0.2s_ease-in-out]">
-            <div className="text-xs text-theme-muted italic mb-2 leading-snug space-y-2 mt-2">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                  {t("description") || "Description"}
-                </span>
-                <p className="pl-1">
-                  {rel.visible?.description ||
-                    t("noDescription") ||
-                    "No description available."}
-                </p>
-              </div>
-              {rel.visible?.appearance && (
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="px-3 pb-3 pt-0 space-y-3">
+              <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                    {t("appearance") || "Appearance"}
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    {t("description") || "Description"}
                   </span>
-                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
-                    {rel.visible.appearance}
+                  <div className="pl-1">
+                    <MarkdownText
+                      content={
+                        rel.visible?.description ||
+                        t("noDescription") ||
+                        "No description available."
+                      }
+                      indentSize={2}
+                    />
+                  </div>
+                </div>
+                {rel.visible?.appearance && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("appearance") || "Appearance"}
+                    </span>
+                    <div className="text-theme-muted/80">
+                      <MarkdownText content={rel.visible.appearance} indentSize={2}/>
+                    </div>
+                  </div>
+                )}
+                {rel.visible?.dialogueStyle && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("dialogueStyle") || "Dialogue Style"}
+                    </span>
+                    <div className="text-theme-muted/80">
+                      <MarkdownText content={`"${rel.visible.dialogueStyle}"`} indentSize={2}/>
+                    </div>
+                  </div>
+                )}
+                {rel.visible?.currentImpression && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("currentImpression") || "Current Impression"}
+                    </span>
+                    <div className="text-theme-muted/80 text-theme-accent">
+                      <MarkdownText content={rel.visible.currentImpression} indentSize={2}/>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location Display */}
+                <div className="mt-2">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    {t("location.current") || "Location"}
+                  </span>
+                  <p className="text-theme-muted/80">
+                    {getLocationName(rel.currentLocation)}
                   </p>
                 </div>
-              )}
-              {rel.visible?.dialogueStyle && (
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                    {t("dialogueStyle") || "Dialogue Style"}
-                  </span>
-                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic">
-                    "{rel.visible.dialogueStyle}"
-                  </p>
-                </div>
-              )}
-              {rel.visible?.currentImpression && (
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                    {t("currentImpression") || "Current Impression"}
-                  </span>
-                  <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2 italic text-theme-accent">
-                    {rel.visible.currentImpression}
-                  </p>
-                </div>
-              )}
 
-              {/* Location Display */}
-              <div className="mt-2">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-                  {t("location.current") || "Location"}
-                </span>
-                <p className="text-theme-muted/80 border-l-2 border-theme-border pl-2">
-                  {getLocationName(rel.currentLocation)}
-                </p>
-              </div>
-
-              {/* Unlocked Hidden Truth */}
-              {rel.unlocked && (
-                <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
-                    <svg
-                      className="w-3 h-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {t("hidden.truth")}
-                  </span>
-
-                  {rel.hidden?.realPersonality && (
-                    <div className="mb-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("hidden.personality")}:
-                      </span>
-                      <p className="leading-relaxed text-theme-text">
-                        {rel.hidden.realPersonality}
-                      </p>
-                    </div>
-                  )}
-
-                  {rel.hidden?.realMotives && (
-                    <div className="mb-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("hidden.motives")}:
-                      </span>
-                      <p className="leading-relaxed text-theme-text">
-                        {rel.hidden.realMotives}
-                      </p>
-                    </div>
-                  )}
-
-                  {rel.hidden?.routine && (
-                    <div className="mb-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("hidden.routine") || "Routine"}:
-                      </span>
-                      <p className="leading-relaxed text-theme-text">
-                        {rel.hidden.routine}
-                      </p>
-                    </div>
-                  )}
-
-                  {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("hidden.secrets")}:
-                      </span>
-                      <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                        {rel.hidden.secrets.map((secret, i) => (
-                          <li key={i}>{secret}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {rel.hidden?.trueAffinity !== undefined && (
-                    <div className="mt-2 text-[10px] flex items-center gap-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80">
-                        {t("hidden.affinity")}:
-                      </span>
-                      <span
-                        className={`font-mono font-bold ${
-                          (rel.hidden.trueAffinity || 0) >
-                          (rel.visible?.affinity || 0)
-                            ? "text-theme-success"
-                            : (rel.hidden.trueAffinity || 0) <
-                                (rel.visible?.affinity || 0)
-                              ? "text-theme-error"
-                              : "text-theme-text"
-                        }`}
+                {/* Unlocked Hidden Truth - Outer Layer */}
+                {rel.unlocked && (
+                  <div className="pt-2 mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
                       >
-                        {rel.hidden.trueAffinity}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {t("hidden.truth")}
+                    </span>
 
-            {/* Affinity Bar */}
-            <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
-              <span className="text-theme-muted font-bold">
-                {t("affinity") || "Affinity"}
-              </span>
-              <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
-                {isUnknown ? (
-                  <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
-                ) : (
-                  <div
-                    className={`h-full ${getAffinityColor(rel.visible?.affinity || 0)} transition-all duration-500`}
-                    style={{ width: `${rel.visible?.affinity || 0}%` }}
-                  ></div>
+                    {rel.hidden?.realPersonality && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.personality")}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText content={rel.hidden.realPersonality} indentSize={2}/>
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.realMotives && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.motives")}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText content={rel.hidden.realMotives} indentSize={2}/>
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.routine && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.routine") || "Routine"}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText content={rel.hidden.routine} indentSize={2}/>
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.secrets")}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                          {rel.hidden.secrets.map((secret, i) => (
+                            <li key={i}>
+                              <MarkdownText content={secret} indentSize={2} inline />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {rel.hidden?.trueAffinity !== undefined && (
+                      <div className="mt-2 text-[10px] flex items-center gap-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80">
+                          {t("hidden.affinity")}:
+                        </span>
+                        <span
+                          className={`font-mono font-bold ${
+                            (rel.hidden.trueAffinity || 0) >
+                            (rel.visible?.affinity || 0)
+                              ? "text-theme-success"
+                              : (rel.hidden.trueAffinity || 0) <
+                                  (rel.visible?.affinity || 0)
+                                ? "text-theme-error"
+                                : "text-theme-text"
+                          }`}
+                        >
+                          {rel.hidden.trueAffinity}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-              <span className="text-theme-text w-8 text-right font-mono">
-                {isUnknown ? t("unknown") : `${rel.visible?.affinity || 0}%`}
-              </span>
+
+              {/* Affinity Bar */}
+              <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
+                <span className="text-theme-muted font-bold">
+                  {t("affinity") || "Affinity"}
+                </span>
+                <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
+                  {isUnknown ? (
+                    <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
+                  ) : (
+                    <div
+                      className={`h-full ${getAffinityColor(rel.visible?.affinity || 0)} transition-all duration-500`}
+                      style={{ width: `${rel.visible?.affinity || 0}%` }}
+                    ></div>
+                  )}
+                </div>
+                <span className="text-theme-text w-8 text-right font-mono">
+                  {isUnknown ? t("unknown") : `${rel.visible?.affinity || 0}%`}
+                </span>
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {isEditMode && (
@@ -442,7 +457,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-3" : "mb-0"
+          isOpen ? "mb-4" : "mb-0"
         }`}
       >
         <div
@@ -450,7 +465,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         >
           <span className="flex items-center gap-2">
             <svg
-              className="w-3 h-3"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -484,7 +499,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           >
             {isEditMode ? (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -498,7 +513,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               </svg>
             ) : (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -523,7 +538,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
               title={t("viewAll")}
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -540,7 +555,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
 
           <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${
+              className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
               }`}
               fill="none"
@@ -563,7 +578,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-3 pt-1">
+          <div className="space-y-4 pt-1">
             {visibleItems.length === 0 ? (
               <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
                 {t("emptyRelationships")}

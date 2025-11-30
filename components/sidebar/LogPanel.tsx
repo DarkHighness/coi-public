@@ -33,15 +33,15 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
         className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] text-theme-muted opacity-50">
+          <span className="text-xs text-theme-muted opacity-50">
             #{index + 1}
           </span>
           <span
-            className={`text-xs font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}
+            className={`text-sm font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}
           >
             {call.name}
           </span>
-          <span className={`text-[10px] ${statusColor}`}>
+          <span className={`text-xs ${statusColor}`}>
             {isSuccess ? "✓" : "✗"}
           </span>
         </div>
@@ -63,23 +63,23 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
       {isExpanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-theme-border/20 pt-2">
           <div>
-            <label className="text-[9px] uppercase tracking-widest text-green-500 font-bold block mb-1">
+            <label className="text-xs uppercase tracking-widest text-green-500 font-bold block mb-1">
               {/* @ts-ignore */}
               {t("logPanel.input") || "Input"}
             </label>
-            <pre className="text-[10px] text-theme-muted/80 bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words">
+            <pre className="text-xs text-theme-muted/80 bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words">
               {JSON.stringify(call.input, null, 2)}
             </pre>
           </div>
           <div>
             <label
-              className={`text-[9px] uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-theme-info" : "text-theme-error"}`}
+              className={`text-xs uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-theme-info" : "text-theme-error"}`}
             >
               {/* @ts-ignore */}
               {t("logPanel.output") || "Output"}
             </label>
             <pre
-              className={`text-[10px] bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words ${isSuccess ? "text-theme-muted/80" : "text-theme-error"}`}
+              className={`text-xs bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words ${isSuccess ? "text-theme-muted/80" : "text-theme-error"}`}
             >
               {JSON.stringify(call.output, null, 2)}
             </pre>
@@ -138,13 +138,13 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             {t("apiConsole") || "API Console"}
           </h2>
           <div className="flex items-center gap-4 mt-1">
-            <span className="text-xs text-theme-muted">
+            <span className="text-sm text-theme-muted">
               {logs.length} {t("turn") || "turns"}
             </span>
-            <span className="text-xs text-theme-primary">
+            <span className="text-sm text-theme-primary">
               {totalToolCalls} {t("logPanel.calls") || "tool calls"}
             </span>
-            <span className="text-xs text-theme-muted">
+            <span className="text-sm text-theme-muted">
               {totalTokens.toLocaleString()} {t("logPanel.tokens") || "tokens"}
             </span>
           </div>
@@ -208,7 +208,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
               >
                 <div className="flex items-center gap-2 md:gap-4 flex-wrap">
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
                       isError
                         ? "bg-theme-error text-white"
                         : isComplete
@@ -218,22 +218,22 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   >
                     {log.provider}
                   </span>
-                  <span className="text-xs md:text-sm font-bold text-theme-text">
+                  <span className="text-sm md:text-base font-bold text-theme-text">
                     {log.endpoint}
                   </span>
                   {hasToolCalls && (
-                    <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="text-xs text-theme-primary bg-theme-primary/10 px-1.5 py-0.5 rounded">
                       {log.toolCalls!.length} {t("logPanel.calls") || "calls"}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
                   {log.usage && (
-                    <span className="text-[10px] text-theme-muted hidden md:inline">
+                    <span className="text-xs text-theme-muted hidden md:inline">
                       {log.usage.totalTokens} {t("logPanel.tokens") || "tokens"}
                     </span>
                   )}
-                  <span className="text-[10px] text-theme-muted">
+                  <span className="text-xs text-theme-muted">
                     {new Date(log.timestamp).toLocaleTimeString()}
                   </span>
                   <svg
@@ -258,18 +258,18 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   {/* Generation Details Section */}
                   {log.generationDetails && (
                     <div className="space-y-4 border-b border-theme-border/30 pb-4">
-                      <label className="text-[10px] uppercase tracking-widest text-theme-primary font-bold block mb-2">
+                      <label className="text-xs uppercase tracking-widest text-theme-primary font-bold block mb-2">
                         {t("logPanel.generationContext") ||
                           "Generation Context"}
                       </label>
 
                       {log.generationDetails.userPrompt && (
                         <div className="space-y-1">
-                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                          <span className="text-xs text-theme-muted uppercase font-bold">
                             {t("logPanel.userAction") || "User Action"}
                           </span>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-2">
-                            <pre className="text-[10px] text-theme-text whitespace-pre-wrap wrap-break-words">
+                            <pre className="text-xs text-theme-text whitespace-pre-wrap wrap-break-words">
                               {log.generationDetails.userPrompt}
                             </pre>
                           </div>
@@ -278,12 +278,12 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
                       {log.generationDetails.dynamicContext && (
                         <div className="space-y-1">
-                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                          <span className="text-xs text-theme-muted uppercase font-bold">
                             {t("logPanel.dynamicStoryMemory") ||
                               "Dynamic Story Memory"}
                           </span>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
-                            <pre className="text-[10px] text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
+                            <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
                               {log.generationDetails.dynamicContext}
                             </pre>
                           </div>
@@ -292,11 +292,11 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
                       {log.generationDetails.ragContext && (
                         <div className="space-y-1">
-                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                          <span className="text-xs text-theme-muted uppercase font-bold">
                             {t("logPanel.ragContext") || "RAG Context"}
                           </span>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
-                            <pre className="text-[10px] text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
+                            <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
                               {log.generationDetails.ragContext}
                             </pre>
                           </div>
@@ -306,14 +306,14 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       {log.generationDetails.ragQueries &&
                         log.generationDetails.ragQueries.length > 0 && (
                           <div className="space-y-1">
-                            <span className="text-[9px] text-theme-muted uppercase font-bold">
+                            <span className="text-xs text-theme-muted uppercase font-bold">
                               {t("logPanel.ragQueries") || "RAG Queries"}
                             </span>
                             <div className="flex flex-wrap gap-2">
                               {log.generationDetails.ragQueries.map((q, i) => (
                                 <span
                                   key={i}
-                                  className="text-[10px] bg-theme-surface-highlight border border-theme-border/50 px-2 py-1 rounded text-theme-muted"
+                                  className="text-xs bg-theme-surface-highlight border border-theme-border/50 px-2 py-1 rounded text-theme-muted"
                                 >
                                   {q}
                                 </span>
@@ -324,18 +324,18 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
                       {log.generationDetails.systemPrompt && (
                         <div className="space-y-1">
-                          <span className="text-[9px] text-theme-muted uppercase font-bold">
+                          <span className="text-xs text-theme-muted uppercase font-bold">
                             {t("logPanel.systemPrompt") || "System Prompt"}
                           </span>
                           <details className="group">
-                            <summary className="text-[10px] cursor-pointer hover:text-theme-primary transition-colors select-none">
+                            <summary className="text-xs cursor-pointer hover:text-theme-primary transition-colors select-none">
                               {t("logPanel.showSystemPrompt") ||
                                 "Show System Prompt"}{" "}
                               ({log.generationDetails.systemPrompt.length}{" "}
                               {t("logPanel.chars") || "chars"})
                             </summary>
                             <div className="bg-black/10 rounded border border-theme-border/30 p-2 mt-2 max-h-[200px] overflow-auto">
-                              <pre className="text-[10px] text-theme-muted/60 whitespace-pre-wrap wrap-break-words">
+                              <pre className="text-xs text-theme-muted/60 whitespace-pre-wrap wrap-break-words">
                                 {log.generationDetails.systemPrompt}
                               </pre>
                             </div>
@@ -348,7 +348,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   {/* Tool Calls Section */}
                   {hasToolCalls && (
                     <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-widest text-theme-primary font-bold block">
+                      <label className="text-xs uppercase tracking-widest text-theme-primary font-bold block">
                         {t("logPanel.toolCalls") || "Tool Calls"} (
                         {log.toolCalls!.length})
                       </label>
@@ -365,11 +365,11 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {log.request && (
                         <div className="space-y-2 min-w-0">
-                          <label className="text-[10px] uppercase tracking-widest text-green-500 font-bold block">
+                          <label className="text-xs uppercase tracking-widest text-green-500 font-bold block">
                             {t("logPanel.request") || "Request"}
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
-                            <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
+                            <pre className="text-sm text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
                               {typeof log.request === "string"
                                 ? log.request
                                 : JSON.stringify(log.request, null, 2)}
@@ -380,13 +380,13 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       {log.response && (
                         <div className="space-y-2 min-w-0">
                           <label
-                            className={`text-[10px] uppercase tracking-widest font-bold block ${isError ? "text-theme-error" : "text-theme-info"}`}
+                            className={`text-xs uppercase tracking-widest font-bold block ${isError ? "text-theme-error" : "text-theme-info"}`}
                           >
                             {t("logPanel.response") || "Response"}
                           </label>
                           <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
                             <pre
-                              className={`text-xs whitespace-pre-wrap wrap-break-words ${isError ? "text-theme-error" : "text-theme-muted/80"}`}
+                              className={`text-sm whitespace-pre-wrap wrap-break-words ${isError ? "text-theme-error" : "text-theme-muted/80"}`}
                             >
                               {typeof log.response === "string"
                                 ? log.response
@@ -397,11 +397,11 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                       )}
                       {log.parsedResult && (
                         <div className="space-y-2 min-w-0">
-                          <label className="text-[10px] uppercase tracking-widest font-bold block text-theme-success">
+                          <label className="text-xs uppercase tracking-widest font-bold block text-theme-success">
                             {t("logPanel.parsedResult") || "Parsed Result"}
                           </label>
                           <div className="bg-black/10 rounded border border-theme-success/30 p-3 overflow-auto max-h-[300px]">
-                            <pre className="text-xs whitespace-pre-wrap wrap-break-words text-theme-muted/80">
+                            <pre className="text-sm whitespace-pre-wrap wrap-break-words text-theme-muted/80">
                               {typeof log.parsedResult === "string"
                                 ? log.parsedResult
                                 : JSON.stringify(log.parsedResult, null, 2)}
@@ -414,7 +414,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
                   {/* Token Usage Footer */}
                   {log.usage && (
-                    <div className="pt-2 border-t border-theme-border/30 flex flex-wrap justify-end gap-4 text-xs text-theme-primary/80 items-center">
+                    <div className="pt-2 border-t border-theme-border/30 flex flex-wrap justify-end gap-4 text-sm text-theme-primary/80 items-center">
                       <span>
                         <strong className="text-theme-primary">
                           {t("logPanel.prompt") || "Prompt:"}

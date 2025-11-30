@@ -77,7 +77,7 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({
 
       {/* Unlocked Hidden Truth */}
       {details.unlocked && details.hiddenTruth && (
-        <div className="text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+        <div className="text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-surface/50 py-2 rounded-r">
           <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 flex items-center gap-1">
             <svg
               className="w-3 h-3"

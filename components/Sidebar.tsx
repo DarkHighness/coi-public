@@ -72,52 +72,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider drop-shadow-sm text-center`}
         >
           {t("titlePart1")}
-          <div className="text-[10px] text-theme-muted/50 font-mono text-center mt-2 flex flex-col gap-0.5">
+          <div className="text-sm text-theme-muted/80 font-mono text-center mt-2 flex flex-col gap-0.5">
             {/* Mobile View (Stacked) */}
             <div className="md:hidden flex flex-col gap-0.5">
               <div>
-                {t("sidebar.tokens") || "Tokens:"}{" "}
-                {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+                {gameState.outline.title}
               </div>
-              {gameState.tokenUsage && (
-                <>
-                  <div className="opacity-70 text-[9px]">
-                    (In: {gameState.tokenUsage.promptTokens.toLocaleString()} /
-                    Out:{" "}
-                    {gameState.tokenUsage.completionTokens.toLocaleString()})
-                  </div>
-                  {(gameState.tokenUsage.cacheRead ||
-                    gameState.tokenUsage.cacheWrite) && (
-                    <div className="opacity-60 text-[8px] italic">
-                      (Cache: +
-                      {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} /
-                      -{gameState.tokenUsage.cacheRead?.toLocaleString() || 0})
-                    </div>
-                  )}
-                </>
-              )}
             </div>
 
             {/* Desktop View (Single Line) */}
             <div className="hidden md:block">
               <div>
-                {t("sidebar.tokens") || "Tokens:"}{" "}
-                {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
-                {gameState.tokenUsage && (
-                  <span className="opacity-70 ml-1">
-                    ({gameState.tokenUsage.promptTokens.toLocaleString()} +{" "}
-                    {gameState.tokenUsage.completionTokens.toLocaleString()})
-                  </span>
-                )}
+                {gameState.outline.title}
               </div>
-              {(gameState.tokenUsage?.cacheRead ||
-                gameState.tokenUsage?.cacheWrite) && (
-                <div className="opacity-60 text-[8px] italic">
-                  Cache: +
-                  {gameState.tokenUsage.cacheWrite?.toLocaleString() || 0} / -
-                  {gameState.tokenUsage.cacheRead?.toLocaleString() || 0}
-                </div>
-              )}
             </div>
           </div>
         </h1>
@@ -274,9 +241,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 space-y-4 hidden md:block">
+      <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 hidden md:block">
         {/* Map and Viewer buttons row */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-4">
           <button
             onClick={onOpenMap}
             className="flex-1 py-2 text-sm bg-theme-surface-highlight/50 border border-theme-border hover:border-theme-primary text-theme-text rounded transition-colors flex items-center justify-center gap-1.5"
@@ -323,8 +290,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {showSystemFooter && (
-          <div>
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+            showSystemFooter
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
             <SystemFooter
               themeFont={currentThemeConfig.fontClass}
               onMagicMirror={onMagicMirror}
@@ -336,7 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onVeoScript={onVeoScript}
             />
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

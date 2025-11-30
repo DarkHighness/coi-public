@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import "./utils/i18n";
 import "./index.css";
 import App from "./App";
+import { SettingsProvider } from "./contexts/SettingsContext";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -54,7 +55,9 @@ const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <App />
+      <SettingsProvider>
+        <App />
+      </SettingsProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

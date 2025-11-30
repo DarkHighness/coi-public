@@ -951,5 +951,16 @@
     "chinese": "中文 (Chinese)"
   },
   "component": "Component:",
-  "devModeError": "💡 Dev Mode: Error will be re-thrown to DevTools"
+  "devModeError": "💡 Dev Mode: Error will be re-thrown to DevTools",
+  "triggerConditions": "Trigger",
+  "effects":"Effects",
+  "insight": "Insight",
+  "token": {
+    "tokens": "Token",
+    "totalTokens": "Total Tokens",
+    "promptTokens": "Prompt Token",
+    "completionTokens": "Completion Token",
+    "cacheRead": "Cache Read",
+    "cacheWrite": "Cache Write"
+  }
 }

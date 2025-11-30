@@ -4,8 +4,10 @@ import {
   CharacterStatus,
   CharacterSkill,
   CharacterCondition,
+  HiddenTrait,
 } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -29,7 +31,7 @@ const getStatusConfig = (condition: CharacterCondition) => {
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -42,14 +44,14 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-purple-500/10 text-purple-300 border-purple-500/20",
+        style: "text-purple-500",
       };
     case "wound":
     case "debuff":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -62,13 +64,13 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-red-500/10 text-red-300 border-red-500/20",
+        style: "text-red-500",
       };
     case "normal":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -81,13 +83,13 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+        style: "text-emerald-500",
       };
     case "buff":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -100,14 +102,14 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+        style: "text-amber-500",
       };
     case "dead":
     case "unconscious":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -120,13 +122,13 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-gray-700/50 text-gray-400 border-gray-600/50",
+        style: "text-gray-500",
       };
     case "tired":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -139,13 +141,13 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-orange-500/10 text-orange-300 border-orange-500/20",
+        style: "text-orange-500",
       };
     case "mental":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -170,7 +172,7 @@ const getStatusConfig = (condition: CharacterCondition) => {
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -183,13 +185,13 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-pink-500/10 text-pink-300 border-pink-500/20",
+        style: "text-pink-400",
       };
     case "stun":
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -202,14 +204,14 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
+        style: "text-yellow-500",
       };
     default:
       // Default generic
       return {
         icon: (
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -243,19 +245,19 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
   return (
     <div
-      className={`bg-theme-surface/50 rounded border border-theme-border/50 transition-all duration-300 cursor-pointer group w-full
-        ${isExpanded ? "bg-theme-surface-highlight/30 border-theme-primary/30" : "hover:bg-theme-surface-highlight/20 hover:border-theme-primary/20"}
+      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer group w-full mb-3
+        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
       onClick={handleClick}
     >
-      <div className="flex justify-between items-center px-2 py-1.5">
-        <span className="text-xs text-theme-text font-medium flex items-center gap-1">
-          <span className="mr-1">{getValidIcon(skill.icon, "⭐")}</span>
+      <div className="flex justify-between items-center px-3 py-2.5">
+        <span className="text-xs text-theme-text font-medium flex items-center gap-2">
+          <span className="mr-1 text-base">{getValidIcon(skill.icon, "⭐")}</span>
           {skill.name}
           {skill.unlocked && (
             <svg
-              className="w-3 h-3 text-theme-primary"
+              className="w-3.5 h-3.5 text-theme-primary"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -264,7 +266,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
           )}
         </span>
         {skill.level && (
-          <span className="text-[10px] text-theme-primary bg-theme-primary/10 px-1.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
+          <span className="text-xs text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
             {skill.level}
           </span>
         )}
@@ -276,19 +278,24 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-2 pb-2 pt-0">
-            <p className="text-[10px] text-theme-muted italic leading-snug border-t border-theme-border/30 pt-1 mt-1">
-              {skill.visible?.description ||
-                t("noDescription") ||
-                "No description"}
-            </p>
+          <div className="px-3 pb-3 pt-0 space-y-3">
+            <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
+              <MarkdownText
+                content={
+                  skill.visible?.description ||
+                  t("noDescription") ||
+                  "No description"
+                }
+                indentSize={2}
+              />
+            </div>
 
-            {/* Unlocked Hidden Truth */}
+            {/* Unlocked Hidden Truth - Outer Layer */}
             {skill.unlocked && skill.hidden?.trueDescription && (
-              <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
-                <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
+              <div className="pt-2">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                   <svg
-                    className="w-2.5 h-2.5"
+                    className="w-3 h-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -300,31 +307,35 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
                   </svg>
                   {t("hidden.truth")}
                 </span>
-                <p className="leading-relaxed text-theme-text text-[10px]">
-                  {skill.hidden.trueDescription}
-                </p>
+                <div className="text-xs text-theme-text leading-relaxed">
+                  <MarkdownText content={skill.hidden.trueDescription} indentSize={2}/>
+                </div>
                 {skill.hidden.hiddenEffects &&
                   skill.hidden.hiddenEffects.length > 0 && (
-                    <div className="mt-1.5">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                    <div className="mt-2">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
                         {t("hidden.effects")}:
                       </span>
-                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                      <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
                         {skill.hidden.hiddenEffects.map((effect, i) => (
-                          <li key={i}>{effect}</li>
+                          <li key={i}>
+                            <MarkdownText content={effect} indentSize={2} inline />
+                          </li>
                         ))}
                       </ul>
                     </div>
                   )}
                 {skill.hidden.drawbacks &&
                   skill.hidden.drawbacks.length > 0 && (
-                    <div className="mt-1.5">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                    <div className="mt-2">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
                         {t("hidden.drawbacks")}:
                       </span>
-                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
+                      <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
                         {skill.hidden.drawbacks.map((drawback, i) => (
-                          <li key={i}>{drawback}</li>
+                          <li key={i}>
+                            <MarkdownText content={drawback} indentSize={2} inline />
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -357,23 +368,25 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 
   return (
     <div
-      className={`rounded border text-xs cursor-pointer transition-all duration-300 ${style}
+      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer mb-3
+        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+        ${style}
       `}
       onClick={handleClick}
     >
-      <div className="p-2">
-        <div className="flex justify-between items-center mb-0.5">
-          <span className="font-bold flex items-center gap-1">
+      <div className="p-3">
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-bold flex items-center gap-2 text-xs">
             {condition.icon && getValidIcon(condition.icon, "") ? (
-              <span className="mr-1">{getValidIcon(condition.icon, "")}</span>
+              <span className="mr-1 text-base">{getValidIcon(condition.icon, "")}</span>
             ) : (
               icon
             )}
             {condition.name}
             {condition.unlocked && (
               <svg
-                className="w-3 h-3 text-theme-primary"
+                className="w-3.5 h-3.5 text-theme-primary"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -382,87 +395,195 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
             )}
           </span>
           {condition.duration && (
-            <span className="text-[10px] opacity-70">{condition.duration}</span>
+            <span className="text-xs opacity-80">{condition.duration}</span>
           )}
         </div>
 
         {condition.visible?.description && (
-          <p className="text-[11px]">{condition.visible.description}</p>
-        )}
-
-        {/* Expanded content with unlocked information */}
-        {isExpanded && (
-          <div className="mt-2 pt-2 border-t border-current/20">
-            {condition.visible?.perceivedSeverity && (
-              <p className="text-[10px] opacity-70">
-                <span className="font-semibold">
-                  {t("character.severity") || "Severity:"}
-                </span>{" "}
-                {condition.visible.perceivedSeverity}
-              </p>
-            )}
-
-            {/* Unlocked Hidden Information */}
-            {condition.unlocked && (
-              <div className="mt-2 text-xs border-l-2 border-theme-primary/50 pl-2 bg-theme-primary/10 py-1.5 rounded-r">
-                <span className="text-[9px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-0.5">
-                  <svg
-                    className="w-2.5 h-2.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {t("hidden.cause")}
-                </span>
-                {condition.hidden?.trueCause && (
-                  <p className="leading-relaxed text-theme-text text-[10px] mb-1">
-                    {condition.hidden.trueCause}
-                  </p>
-                )}
-                {condition.hidden?.actualSeverity && (
-                  <p className="text-[10px] text-theme-text">
-                    <span className="font-semibold">
-                      {t("hidden.severity")}:
-                    </span>{" "}
-                    {condition.hidden.actualSeverity}
-                  </p>
-                )}
-                {condition.hidden?.progression && (
-                  <p className="text-[10px] text-theme-text mt-1">
-                    <span className="font-semibold">
-                      {t("hidden.progression")}:
-                    </span>{" "}
-                    {condition.hidden.progression}
-                  </p>
-                )}
-                {condition.hidden?.cure && (
-                  <p className="text-[10px] text-theme-text mt-1">
-                    <span className="font-semibold">{t("hidden.cure")}:</span>{" "}
-                    {condition.hidden.cure}
-                  </p>
-                )}
-                {condition.effects?.hidden &&
-                  condition.effects.hidden.length > 0 && (
-                    <div className="mt-1.5">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("hidden.effects")}:
-                      </span>
-                      <ul className="list-disc list-inside text-theme-text space-y-0.5 text-[10px]">
-                        {condition.effects.hidden.map((effect, i) => (
-                          <li key={i}>{effect}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-              </div>
-            )}
+          <div className="text-xs leading-relaxed opacity-90">
+            <MarkdownText content={condition.visible.description} indentSize={2}/>
           </div>
         )}
+
+        {/* Expanded content */}
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ${
+            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="pt-3 border-t border-current/20 mt-3 space-y-3">
+              {condition.visible?.perceivedSeverity && (
+                <p className="text-xs opacity-80">
+                  <span className="font-semibold uppercase tracking-wider text-[10px]">
+                    {t("character.severity") || "Severity:"}
+                  </span>{" "}
+                  {condition.visible.perceivedSeverity}
+                </p>
+              )}
+
+              {/* Unlocked Hidden Information - Outer Layer */}
+              {condition.unlocked && (
+                <div className="pt-1 space-y-2">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
+                    <svg
+                      className="w-3 h-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {t("hidden.truth")}
+                  </span>
+
+                  {condition.hidden?.trueCause && (
+                    <div className="text-xs text-theme-text leading-relaxed">
+                      <MarkdownText content={condition.hidden.trueCause} indentSize={2}/>
+                    </div>
+                  )}
+                  {condition.hidden?.actualSeverity && (
+                    <p className="text-xs text-theme-text">
+                      <span className="font-semibold text-theme-primary">
+                        {t("hidden.severity")}:
+                      </span>{" "}
+                      {condition.hidden.actualSeverity}
+                    </p>
+                  )}
+                  {condition.hidden?.progression && (
+                    <div className="text-xs text-theme-text">
+                      <span className="font-semibold text-theme-primary block mb-0.5">
+                        {t("hidden.progression")}:
+                      </span>{" "}
+                      <MarkdownText content={condition.hidden.progression} indentSize={2}/>
+                    </div>
+                  )}
+                  {condition.hidden?.cure && (
+                    <div className="text-xs text-theme-text">
+                      <span className="font-semibold text-theme-primary block mb-0.5">
+                        {t("hidden.cure")}:
+                      </span>{" "}
+                      <MarkdownText content={condition.hidden.cure} indentSize={2}/>
+                    </div>
+                  )}
+                  {condition.effects?.hidden &&
+                    condition.effects.hidden.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
+                          {t("hidden.effects")}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
+                          {condition.effects.hidden.map((effect, i) => (
+                            <li key={i}>
+                              <MarkdownText content={effect} indentSize={2} inline />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Sub-component for individual traits to handle expansion state
+const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(trait.highlight || false);
+
+  const handleClick = () => {
+    setIsExpanded(!isExpanded);
+    if (isHighlight) {
+      setIsHighlight(false);
+    }
+  };
+
+  return (
+    <div
+      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer mb-3
+        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
+        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+      `}
+      onClick={handleClick}
+    >
+      <div className="p-3">
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-bold flex items-center gap-2 text-xs text-theme-text">
+            {trait.icon && (
+              <span className="mr-1 text-base">{getValidIcon(trait.icon, "🧩")}</span>
+            )}
+            {trait.name}
+          </span>
+          <svg
+            className={`w-3.5 h-3.5 text-theme-primary transition-transform duration-300 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </div>
+
+        {trait.description && (
+          <div className="text-xs text-theme-muted leading-relaxed">
+            <MarkdownText content={trait.description} indentSize={2}/>
+          </div>
+        )}
+
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ${
+            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="pt-3 border-t border-theme-primary/20 mt-3 space-y-3">
+              {trait.effects && trait.effects.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
+                    {t("effects") || "Effects"}:
+                  </span>
+                  <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
+                    {trait.effects.map((effect, i) => (
+                      <li key={i}>
+                        <MarkdownText content={effect} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {trait.triggerConditions && trait.triggerConditions.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
+                    {t("triggerConditions") || "Triggers"}:
+                  </span>
+                  <ul className="list-disc list-inside text-theme-text space-y-1 text-xs">
+                    {trait.triggerConditions.map((cond, i) => (
+                      <li key={i}>
+                        <MarkdownText content={cond} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -482,7 +603,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
     <div
       onClick={() => setExpanded(!expanded)}
       className={`flex items-center justify-between cursor-pointer group ${
-        expanded ? "mb-3" : "mb-0"
+        expanded ? "mb-4" : "mb-0"
       }`}
     >
       <div
@@ -490,7 +611,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       >
         <span className="flex items-center gap-2">
           <svg
-            className="w-4 h-4"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -509,7 +630,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       <div className="flex items-center gap-2">
         <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
           <svg
-            className={`w-4 h-4 transition-transform duration-300 ${
+            className={`w-5 h-5 transition-transform duration-300 ${
               expanded ? "rotate-180" : ""
             }`}
             fill="none"
@@ -527,29 +648,29 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       </div>
     </div>
       {expanded && (
-        <div className="space-y-4 animate-[fade-in_0.3s_ease-in]">
+        <div className="space-y-6 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
-          <div className="bg-theme-surface-highlight/30 p-3 rounded border border-theme-border">
-            <div className="flex justify-between items-start mb-2">
+          <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+            <div className="flex justify-between items-start mb-3">
               <div>
                 <h3
-                  className={`text-lg font-bold text-theme-primary ${themeFont}`}
+                  className={`text-xl font-bold text-theme-primary ${themeFont}`}
                 >
                   {character.name}
                 </h3>
               </div>
               {character.race && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">
                   {character.race}
                 </span>
               )}
             </div>
 
             {/* Status & Profession */}
-            <div className="flex flex-col gap-1 text-xs mt-2">
+            <div className="flex flex-col gap-2 text-xs mt-2">
               {character.profession && (
                 <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-12">
+                  <span className="text-theme-muted w-16">
                     {t("role") || "Role"}:
                   </span>
                   <span>{character.profession}</span>
@@ -557,7 +678,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               )}
               {character.status && (
                 <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-12">
+                  <span className="text-theme-muted w-16">
                     {t("status") || "Status"}:
                   </span>
                   <span className="text-theme-primary font-medium">
@@ -570,15 +691,15 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Attributes Grid */}
           {character.attributes && character.attributes.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-3">
               {character.attributes.map((attr, idx) => (
                 <div
                   key={idx}
-                  className="bg-theme-surface-highlight/20 p-2 rounded border border-theme-border/50 flex flex-col"
+                  className="bg-theme-surface-highlight/20 p-3 rounded border border-theme-border/50 flex flex-col"
                 >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] text-theme-muted uppercase tracking-wider truncate">
-                      <span className="mr-1">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-theme-muted uppercase tracking-wider truncate">
+                      <span className="mr-1.5 text-xs">
                         {getValidIcon(attr.icon, "📊")}
                       </span>
                       {attr.label}
@@ -589,7 +710,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     </span>
                   </div>
                   {attr.maxValue && (
-                    <div className="h-1 w-full bg-theme-bg rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-theme-bg rounded-full overflow-hidden">
                       <div
                         className={`h-full ${
                           colorMap[attr.color || "gray"]
@@ -610,10 +731,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           {/* Skills List */}
           {character.skills && character.skills.length > 0 && (
             <div>
-              <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold">
+              <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold">
                 {t("skills")}
               </h4>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {character.skills.map((skill, idx) => (
                   <SkillItem key={idx} skill={skill} />
                 ))}
@@ -623,17 +744,17 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Conditions List */}
           <div>
-            <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold mt-3">
+            <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold mt-4">
               {t("conditions") || "Conditions"}
             </h4>
             {character.conditions && character.conditions.length > 0 ? (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {character.conditions.map((cond, idx) => (
                   <ConditionItem key={idx} condition={cond} />
                 ))}
               </div>
             ) : (
-              <div className="text-theme-muted text-xs italic p-2 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
                 {t("noConditions") || "No active conditions."}
               </div>
             )}
@@ -644,9 +765,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             character.hiddenTraits.length > 0 &&
             character.hiddenTraits.some((t) => t.unlocked) && (
               <div>
-                <h4 className="text-[10px] text-theme-primary uppercase tracking-wider mb-2 font-bold mt-3 flex items-center gap-1">
+                <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-3 font-bold mt-4 flex items-center gap-1.5">
                   <svg
-                    className="w-3 h-3 shrink-0"
+                    className="w-4 h-4 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -666,23 +787,11 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   </svg>
                   {t("traits") || "Traits"}
                 </h4>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col">
                   {character.hiddenTraits
                     .filter((t) => t.unlocked)
                     .map((trait, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-2 rounded border bg-theme-primary/10 border-theme-primary/20 text-theme-text text-xs ${
-                          trait.highlight
-                            ? "animate-pulse ring-2 ring-theme-primary/50"
-                            : ""
-                        }`}
-                      >
-                        <div className="font-bold mb-0.5">{trait.name}</div>
-                        {trait.description && (
-                          <p className="text-[10px]">{trait.description}</p>
-                        )}
-                      </div>
+                      <TraitItem key={idx} trait={trait} />
                     ))}
                 </div>
               </div>
@@ -691,12 +800,12 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           {/* Appearance (Collapsible) */}
           {character.appearance && (
             <details className="group text-xs">
-              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-1">
-                <span className="uppercase tracking-wider text-[10px] font-bold">
-                  {t("appearance") || "Appearance"}
+              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
+                <span className="uppercase tracking-wider text-xs font-bold">
+                  🧐 {t("appearance") || "Appearance"}
                 </span>
                 <svg
-                  className="w-3 h-3 transition-transform group-open:rotate-90"
+                  className="w-4 h-4 transition-transform group-open:rotate-90"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -709,9 +818,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   />
                 </svg>
               </summary>
-              <p className="mt-2 text-theme-text-secondary italic leading-relaxed pl-2 border-l-2 border-theme-border">
-                {character.appearance}
-              </p>
+              <div className="mt-3 text-theme-text-secondary leading-relaxed pl-3 border-l-2 border-theme-border">
+                <MarkdownText content={character.appearance} indentSize={2}/>
+              </div>
             </details>
           )}
         </div>

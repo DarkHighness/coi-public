@@ -123,18 +123,18 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex flex-col">
-                <span className="text-theme-muted text-[10px]">
+                <span className="text-theme-muted text-xs">
                   {t("rag.totalDocs", "Total Docs")}
                 </span>
-                <span className="font-mono text-theme-text font-bold text-sm">
+                <span className="font-mono text-theme-text font-bold text-xs">
                   {stats.totalDocs}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-theme-muted text-[10px]">
+                <span className="text-theme-muted text-xs">
                   {t("rag.pending", "Pending")}
                 </span>
-                <span className="font-mono text-theme-text font-bold text-sm">
+                <span className="font-mono text-theme-text font-bold text-xs">
                   {stats.pendingRequests}
                 </span>
               </div>
@@ -145,10 +145,10 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
           {progress && (
             <div className="bg-theme-surface-highlight/20 p-2 rounded border border-theme-border/50">
               <div className="flex justify-between text-xs text-theme-muted mb-1">
-                <span className="text-[10px] uppercase tracking-wider">
+                <span className="text-xs uppercase tracking-wider">
                   {t(`embedding.phase.${progress.stage}`) || progress.stage}
                 </span>
-                <span className="text-[10px] font-mono">
+                <span className="text-xs font-mono">
                   {progress.current} / {progress.total}
                 </span>
               </div>
@@ -159,7 +159,7 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
                 />
               </div>
               {progress.message && (
-                <p className="text-[10px] text-theme-muted italic mt-1">
+                <p className="text-xs text-theme-muted mt-1">
                   {progress.message}
                 </p>
               )}

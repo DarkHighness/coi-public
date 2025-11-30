@@ -931,5 +931,16 @@
     "chinese": "中文"
   },
   "component": "组件：",
-  "devModeError": "💡 开发模式：错误将重新抛出到开发工具"
+  "devModeError": "💡 开发模式：错误将重新抛出到开发工具",
+  "triggerConditions": "触发条件",
+  "effects":"效果",
+  "insight": "洞察",
+  "token": {
+    "tokens": "Token",
+    "totalTokens": "Tokens",
+    "promptTokens": "输入 Token",
+    "completionTokens": "输出 Token",
+    "cacheRead": "缓存读取",
+    "cacheWrite": "缓存写入"
+  }
 }

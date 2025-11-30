@@ -16,6 +16,7 @@ import {
 } from "../types";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 import { getValidIcon } from "../utils/emojiValidator";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface GameStateViewerProps {
   isOpen: boolean;
@@ -65,17 +66,19 @@ const Section = ({
   onToggle: (id: string) => void;
 }) => {
   return (
-    <div className="border border-theme-border rounded-lg overflow-hidden mb-3 bg-theme-bg/30">
+    <div className="border border-theme-border rounded-lg overflow-hidden mb-4 bg-theme-bg/30">
       <button
         onClick={() => onToggle(id)}
         className="w-full px-4 py-3 bg-theme-bg/50 flex items-center justify-between hover:bg-theme-surface/50 transition-colors"
       >
-        <span className="flex items-center gap-2">
-          <span>{icon}</span>
-          <span className="font-medium text-theme-text">{title}</span>
+        <span className="flex items-center gap-3">
+          <span className="text-xl">{icon}</span>
+          <span className="font-bold text-theme-primary uppercase tracking-wider text-sm">
+            {title}
+          </span>
         </span>
         <svg
-          className={`w-4 h-4 text-theme-muted transition-transform duration-300 ${
+          className={`w-5 h-5 text-theme-muted transition-transform duration-300 ${
             isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
@@ -115,11 +118,18 @@ const HiddenContent = ({
   label?: string;
   t: any;
 }) => (
-  <div className="mt-2 p-2 bg-theme-warning/10 border border-theme-warning/30 rounded">
-    <span className="text-theme-warning text-xs font-medium">
-      🔓 {label || t("gameViewer.hiddenRevealed")}
+  <div className="mt-3 p-3 bg-theme-surface/50 border border-theme-unlocked/30 rounded">
+    <span className="text-theme-unlocked text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2">
+      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+          clipRule="evenodd"
+        />
+      </svg>
+      {label || t("gameViewer.hiddenRevealed")}
     </span>
-    <div className="text-theme-warning/80 text-sm mt-1">{content}</div>
+    <div className="text-theme-text/90 text-sm leading-relaxed">{content}</div>
   </div>
 );
 
@@ -132,18 +142,31 @@ const InfoRow = ({
   label: string;
   value: React.ReactNode;
   hidden?: boolean;
-}) => (
-  <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 py-1.5 border-b border-theme-border/30 last:border-0">
-    <span className="text-theme-muted text-sm min-w-[120px] flex-shrink-0">
+}) => {
+  let valueStr;
+  if (typeof value === "string") {
+    valueStr = value;
+  } else if (typeof value === "number") {
+    valueStr = value.toString();
+  } else {
+    valueStr = JSON.stringify(value);
+  }
+
+  return (
+  <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 py-2 border-b border-theme-border/30 last:border-0">
+    <span className="text-theme-primary text-xs uppercase tracking-wider font-bold min-w-[120px] flex-shrink-0 pt-0.5">
       {label}:
     </span>
-    <span
-      className={`text-sm ${hidden ? "text-theme-warning/80 italic" : "text-theme-text"}`}
+    <div
+      className={`text-sm flex-1 ${
+        hidden ? "text-theme-unlocked" : "text-theme-text"
+      }`}
     >
-      {value || <span className="text-theme-muted italic">—</span>}
-    </span>
+      <MarkdownText content={valueStr} />
+    </div>
   </div>
 );
+}
 
 export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   isOpen,
@@ -201,30 +224,28 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             <InfoRow label={t("gameViewer.premise")} value={outline.premise} />
           )}
           {gameState.tokenUsage && (
-            <div className="mt-2 pt-2 border-t border-theme-border/30">
-              <span className="text-theme-muted text-sm block mb-1">
-                {t("sidebar.tokens")}:
+            <div className="mt-3 pt-3 border-t border-theme-border/30">
+              <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
+                {t("token.tokens")}
               </span>
-              <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-2">
+              <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg/30 p-2 rounded border border-theme-border/30">
                 <div>
-                  Total: {gameState.tokenUsage.totalTokens.toLocaleString()}
+                  {t("token.totalTokens")}: {gameState.tokenUsage.totalTokens.toLocaleString()}
                 </div>
                 <div>
-                  Prompt: {gameState.tokenUsage.promptTokens.toLocaleString()}
+                  {t("token.promptTokens")}: {gameState.tokenUsage.promptTokens.toLocaleString()}
                 </div>
                 <div>
-                  Compl:{" "}
-                  {gameState.tokenUsage.completionTokens.toLocaleString()}
+                  {t("token.completionTokens")}: {gameState.tokenUsage.completionTokens.toLocaleString()}
                 </div>
-                {(gameState.tokenUsage.cacheRead ||
+                {(gameState.tokenUsage.cacheRead &&
                   gameState.tokenUsage.cacheWrite) && (
                   <>
                     <div className="text-theme-success/80">
-                      Cache+:{" "}
-                      {gameState.tokenUsage.cacheWrite?.toLocaleString()}
+                      {t("token.cacheWrite")}: {gameState.tokenUsage.cacheWrite?.toLocaleString()}
                     </div>
                     <div className="text-theme-success/80">
-                      Cache-: {gameState.tokenUsage.cacheRead?.toLocaleString()}
+                      {t("token.cacheRead")}: {gameState.tokenUsage.cacheRead?.toLocaleString()}
                     </div>
                   </>
                 )}
@@ -251,18 +272,18 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             />
           )}
           {char.attributes.length > 0 && (
-            <div className="mt-2">
-              <span className="text-theme-muted text-sm block mb-2">
+            <div className="mt-3 pt-2 border-t border-theme-border/30">
+              <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
                 {t("gameViewer.attributes")}:
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {char.attributes.map((attr, idx) => (
                   <div
                     key={attr.label || idx}
-                    className="flex items-center gap-2 text-sm"
+                    className="flex items-center justify-between p-2 bg-theme-bg/30 rounded border border-theme-border/30 text-sm"
                   >
                     <span className="text-theme-muted">{attr.label}:</span>
-                    <span className="text-theme-text">
+                    <span className="text-theme-text font-medium">
                       {attr.value}/{attr.maxValue}
                     </span>
                   </div>
@@ -282,23 +303,24 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         >
           {gameState.quests.filter((q) => q.status === "active").length ===
           0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noActiveQuests")}
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {gameState.quests
                 .filter((q) => q.status === "active")
                 .map((quest, idx) => (
                   <div
                     key={quest.id || idx}
-                    className="p-2 bg-theme-bg/50 rounded border border-theme-border/50"
+                    className="p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                   >
-                    <div className="font-medium text-theme-text text-sm">
+                    <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-1">
+                      <span>{getValidIcon(quest.icon, "📜")}</span>
                       {quest.title}
                     </div>
-                    <div className="text-theme-muted text-xs mt-1">
-                      {quest.visible.description}
+                    <div className="text-theme-text/90 text-sm pl-6 border-l-2 border-theme-border/50 ml-1">
+                      <MarkdownText content={quest.visible.description} />
                     </div>
                   </div>
                 ))}
@@ -344,55 +366,74 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         >
           {outline?.worldSetting ? (
             <>
-              <div className="prose prose-sm prose-invert max-w-none">
-                <p className="text-theme-text text-sm leading-relaxed">
-                  {outline.worldSetting.visible?.description}
-                </p>
+              <div className="text-theme-text text-sm leading-relaxed">
+                <MarkdownText
+                  content={outline.worldSetting.visible?.description || ""}
+                />
                 {outline.worldSetting.visible?.rules && (
-                  <p className="text-theme-muted text-xs mt-2">
-                    📜 {outline.worldSetting.visible.rules}
-                  </p>
+                  <div className="mt-3 pt-2 border-t border-theme-border/30">
+                    <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("gameViewer.rules") || "Rules"}
+                    </span>
+                    <MarkdownText
+                      content={outline.worldSetting.visible.rules}
+                    />
+                  </div>
                 )}
               </div>
               {(gameState.outline?.worldSettingUnlocked ||
                 gameState.unlockMode) &&
                 outline.worldSetting.hidden && (
-                  <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
-                    <span className="text-theme-warning text-xs font-medium">
-                      🔓 {t("gameViewer.hiddenRevealed")}
-                    </span>
-                    {outline.worldSetting.hidden.hiddenRules && (
-                      <p className="text-theme-warning/80 text-sm mt-1">
-                        {outline.worldSetting.hidden.hiddenRules}
-                      </p>
-                    )}
-                    {outline.worldSetting.hidden.secrets &&
-                      outline.worldSetting.hidden.secrets.length > 0 && (
-                        <ul className="text-theme-warning/80 text-sm mt-1 list-disc pl-4">
-                          {outline.worldSetting.hidden.secrets.map(
-                            (secret, idx) => (
-                              <li key={idx}>{secret}</li>
-                            ),
+                  <HiddenContent
+                    t={t}
+                    content={
+                      <div className="space-y-2">
+                        {outline.worldSetting.hidden.hiddenRules && (
+                          <div>
+                            <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                              {t("gameViewer.hiddenRules") || "Hidden Rules"}:
+                            </span>
+                            <MarkdownText
+                              content={outline.worldSetting.hidden.hiddenRules}
+                            />
+                          </div>
+                        )}
+                        {outline.worldSetting.hidden.secrets &&
+                          outline.worldSetting.hidden.secrets.length > 0 && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                {t("gameViewer.secrets")}:
+                              </span>
+                              <ul className="list-disc list-inside space-y-1 pl-2">
+                                {outline.worldSetting.hidden.secrets.map(
+                                  (secret, idx) => (
+                                    <li key={idx}>
+                                      <MarkdownText content={secret} inline />
+                                    </li>
+                                  ),
+                                )}
+                              </ul>
+                            </div>
                           )}
-                        </ul>
-                      )}
-                  </div>
+                      </div>
+                    }
+                  />
                 )}
               {(gameState.outline?.worldSettingUnlocked ||
                 gameState.unlockMode) &&
                 outline.worldSetting.history && (
-                  <div className="mt-3">
-                    <span className="text-theme-muted text-xs">
+                  <div className="mt-4 pt-3 border-t border-theme-border/30">
+                    <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
                       {t("gameViewer.worldHistory")}:
                     </span>
-                    <p className="text-theme-text/80 text-sm mt-1">
-                      {outline.worldSetting.history}
-                    </p>
+                    <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                      <MarkdownText content={outline.worldSetting.history} />
+                    </div>
                   </div>
                 )}
             </>
           ) : (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noWorldInfo")}
             </p>
           )}
@@ -407,7 +448,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.locations.length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noLocations")}
             </p>
           ) : (
@@ -415,55 +456,66 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {gameState.locations.map((loc, idx) => (
                 <div
                   key={loc.id || idx}
-                  className={`p-3 rounded border ${
+                  className={`p-4 rounded border ${
                     loc.id === gameState.currentLocation
-                      ? "bg-theme-primary/10 border-theme-primary/50"
-                      : "bg-theme-bg/50 border-theme-border/50"
+                      ? "bg-theme-primary/10 border-theme-primary/50 ring-1 ring-theme-primary/30"
+                      : "bg-theme-surface-highlight/30 border-theme-border/50"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-theme-text">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-bold text-theme-primary text-base flex items-center gap-2">
+                      <span>{getValidIcon(loc.icon, "📍")}</span>
                       {loc.name}
                     </span>
                     {loc.id === gameState.currentLocation && (
-                      <span className="text-xs px-2 py-0.5 bg-theme-primary/20 text-theme-primary rounded">
+                      <span className="text-xs px-2 py-0.5 bg-theme-primary/20 text-theme-primary rounded font-bold uppercase tracking-wider">
                         {t("gameViewer.currentLabel")}
                       </span>
                     )}
                     {loc.isVisited && (
-                      <span className="text-xs text-theme-muted">
+                      <span className="text-xs text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
                         ✓ {t("gameViewer.visited")}
                       </span>
                     )}
                   </div>
-                  <p className="text-theme-muted text-sm mt-1">
-                    {loc.visible.description}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={loc.visible.description} />
+                  </div>
                   {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
                     <HiddenContent
                       t={t}
                       content={
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {loc.hidden.fullDescription && (
-                            <p>{loc.hidden.fullDescription}</p>
+                            <MarkdownText
+                              content={loc.hidden.fullDescription}
+                            />
                           )}
                           {loc.hidden.hiddenFeatures &&
                             loc.hidden.hiddenFeatures.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.hiddenFeatures")}:
-                                </span>{" "}
-                                {loc.hidden.hiddenFeatures.join(", ")}
-                              </p>
+                                </span>
+                                <p className="pl-2">
+                                  {loc.hidden.hiddenFeatures.join(", ")}
+                                </p>
+                              </div>
                             )}
                           {loc.hidden.secrets &&
                             loc.hidden.secrets.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.secrets")}:
-                                </span>{" "}
-                                {loc.hidden.secrets.join(", ")}
-                              </p>
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.secrets.map((secret, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={secret} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             )}
                         </div>
                       }
@@ -484,7 +536,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.factions.length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noFactions")}
             </p>
           ) : (
@@ -492,17 +544,21 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {gameState.factions.map((faction, idx) => (
                 <div
                   key={faction.id || idx}
-                  className="p-3 bg-theme-bg/50 rounded border border-theme-border/50"
+                  className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                 >
-                  <div className="font-medium text-theme-text">
+                  <div className="font-bold text-theme-primary text-base flex items-center gap-2 mb-2">
+                    <span>{getValidIcon(faction.icon, "⚔️")}</span>
                     {faction.name}
                   </div>
-                  <p className="text-theme-muted text-sm mt-1">
-                    {faction.visible.agenda}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={faction.visible.agenda} />
+                  </div>
                   {faction.visible.influence && (
-                    <div className="text-xs text-theme-muted mt-2">
-                      {t("gameViewer.influence")}: {faction.visible.influence}
+                    <div className="text-xs text-theme-muted mt-2 pl-2">
+                      <span className="font-bold uppercase tracking-wider">
+                        {t("gameViewer.influence")}:
+                      </span>{" "}
+                      {faction.visible.influence}
                     </div>
                   )}
                   {(faction.unlocked || gameState.unlockMode) &&
@@ -510,22 +566,24 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       <HiddenContent
                         t={t}
                         content={
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {faction.hidden.agenda && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.secretAgenda")}:
-                                </span>{" "}
-                                {faction.hidden.agenda}
-                              </p>
+                                </span>
+                                <MarkdownText content={faction.hidden.agenda} />
+                              </div>
                             )}
                             {faction.hidden.influence && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueInfluence")}:
-                                </span>{" "}
-                                {faction.hidden.influence}
-                              </p>
+                                </span>
+                                <MarkdownText
+                                  content={faction.hidden.influence}
+                                />
+                              </div>
                             )}
                           </div>
                         }
@@ -536,62 +594,6 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             </div>
           )}
         </Section>
-
-        {/* Alive Entities (Context) */}
-        {/* <Section
-          id="aliveEntities"
-          title={t("gameViewer.aliveEntities") || "Alive Entities (Context)"}
-          icon="🧠"
-          isExpanded={expandedSections.has("aliveEntities")}
-          onToggle={toggleSection}
-        >
-          {!gameState.aliveEntities ||
-          Object.values(gameState.aliveEntities).every(
-            (arr) => !arr || arr.length === 0,
-          ) ? (
-            <p className="text-theme-muted text-sm italic">
-              {t("gameViewer.noAliveEntities") || "No active entities in context"}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {Object.entries(gameState.aliveEntities).map(([key, ids]) => {
-                if (!ids || ids.length === 0) return null;
-                return (
-                  <div key={key} className="flex flex-col gap-1">
-                    <span className="text-xs text-theme-muted uppercase font-bold tracking-wider">
-                      {key}
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {ids.map((id: string) => (
-                        <span
-                          key={id}
-                          className="px-1.5 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded text-[10px] font-mono text-theme-primary"
-                        >
-                          {id}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {gameState.ragQueries && gameState.ragQueries.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-theme-border/30">
-              <span className="text-xs text-theme-muted uppercase font-bold tracking-wider block mb-1">
-                {t("gameViewer.ragQueries") || "RAG Queries"}
-              </span>
-              <ul className="list-disc pl-4 space-y-1">
-                {gameState.ragQueries.map((query, idx) => (
-                  <li key={idx} className="text-xs text-theme-text/80 italic">
-                    "{query}"
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </Section> */}
       </div>
     );
   };
@@ -644,17 +646,17 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("charAttrs")}
             onToggle={toggleSection}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {char.attributes.map((attr, idx) => (
                 <div
                   key={attr.label || idx}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3 p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                 >
-                  <span className="text-theme-muted text-sm min-w-[80px]">
+                  <span className="text-theme-primary text-sm font-bold uppercase tracking-wider min-w-[80px]">
                     {attr.label}:
                   </span>
-                  <div className="flex-1 flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-theme-border/30 rounded-full overflow-hidden">
+                  <div className="flex-1 flex items-center gap-3">
+                    <div className="flex-1 h-2.5 bg-theme-bg/50 rounded-full overflow-hidden border border-theme-border/30">
                       <div
                         className={`h-full rounded-full bg-${attr.color}-500`}
                         style={{
@@ -662,7 +664,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                         }}
                       />
                     </div>
-                    <span className="text-theme-text text-sm min-w-[50px] text-right">
+                    <span className="text-theme-text text-sm font-mono font-bold min-w-[50px] text-right">
                       {attr.value}/{attr.maxValue}
                     </span>
                   </div>
@@ -681,52 +683,69 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("charSkills")}
             onToggle={toggleSection}
           >
-            <div className="space-y-2">
+            <div className="space-y-3">
               {char.skills.map((skill, idx) => (
                 <div
                   key={skill.id || idx}
-                  className={`p-2 rounded border ${
+                  className={`p-4 rounded border ${
                     skill.highlight
-                      ? "bg-theme-primary/10 border-theme-primary/50"
-                      : "bg-theme-bg/50 border-theme-border/50"
+                      ? "bg-theme-surface-highlight/30 border-theme-border/50 ring-2 ring-theme-primary/50"
+                      : "bg-theme-surface-highlight/30 border-theme-border/50"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-theme-text text-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-theme-primary text-sm flex items-center gap-2">
+                      <span>{getValidIcon(skill.icon, "⚡")}</span>
                       {skill.name}
                     </span>
-                    <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted">
+                    <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted border border-theme-border/50">
                       {skill.level}
                     </span>
                   </div>
-                  <p className="text-theme-muted text-xs mt-1">
-                    {skill.visible.description}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={skill.visible.description} />
+                  </div>
                   {(skill.unlocked || gameState.unlockMode) && skill.hidden && (
                     <HiddenContent
                       t={t}
                       content={
-                        <div className="space-y-1 text-xs">
+                        <div className="space-y-2">
                           {skill.hidden.trueDescription && (
-                            <p>{skill.hidden.trueDescription}</p>
+                            <MarkdownText
+                              content={skill.hidden.trueDescription}
+                            />
                           )}
                           {skill.hidden.hiddenEffects &&
                             skill.hidden.hiddenEffects.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.hiddenEffects")}:
-                                </span>{" "}
-                                {skill.hidden.hiddenEffects.join(", ")}
-                              </p>
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {skill.hidden.hiddenEffects.map(
+                                    (effect, i) => (
+                                      <li key={i}>
+                                        <MarkdownText content={effect} inline />
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
                             )}
                           {skill.hidden.drawbacks &&
                             skill.hidden.drawbacks.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-danger/80 block mb-1">
                                   {t("gameViewer.drawbacks")}:
-                                </span>{" "}
-                                {skill.hidden.drawbacks.join(", ")}
-                              </p>
+                                </span>
+                                <ul className="list-disc list-inside pl-2 text-theme-danger/80">
+                                  {skill.hidden.drawbacks.map((drawback, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={drawback} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             )}
                         </div>
                       }
@@ -747,60 +766,63 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("charConditions")}
             onToggle={toggleSection}
           >
-            <div className="space-y-2">
+            <div className="space-y-3">
               {char.conditions.map((cond, idx) => (
                 <div
                   key={cond.id || idx}
-                  className={`p-2 rounded border ${
+                  className={`p-4 rounded border ${
                     cond.type === "buff"
                       ? "bg-green-500/10 border-green-500/30"
                       : cond.type === "debuff"
                         ? "bg-red-500/10 border-red-500/30"
-                        : "bg-theme-bg/50 border-theme-border/50"
+                        : "bg-theme-surface-highlight/30 border-theme-border/50"
                   }`}
                 >
-                  <span className="font-medium text-theme-text text-sm">
+                  <span className="font-bold text-theme-text text-sm flex items-center gap-2 mb-2">
+                    <span>{getValidIcon(cond.icon, "💫")}</span>
                     {cond.name}
                   </span>
-                  <p className="text-theme-muted text-xs mt-1">
-                    {cond.visible.description}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={cond.visible.description} />
+                  </div>
                   {(cond.unlocked || gameState.unlockMode) && cond.hidden && (
                     <HiddenContent
                       t={t}
                       content={
-                        <div className="space-y-1 text-xs">
+                        <div className="space-y-2">
                           {cond.hidden.trueCause && (
-                            <p>
-                              <span className="text-theme-warning/60">
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                 {t("gameViewer.trueCause")}:
-                              </span>{" "}
-                              {cond.hidden.trueCause}
-                            </p>
+                              </span>
+                              <MarkdownText content={cond.hidden.trueCause} />
+                            </div>
                           )}
                           {cond.hidden.progression && (
-                            <p>
-                              <span className="text-theme-warning/60">
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                 {t("gameViewer.progression")}:
-                              </span>{" "}
-                              {cond.hidden.progression}
-                            </p>
+                              </span>
+                              <MarkdownText content={cond.hidden.progression} />
+                            </div>
                           )}
                           {cond.hidden.cure && (
-                            <p>
-                              <span className="text-theme-warning/60">
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                 {t("gameViewer.cure")}:
-                              </span>{" "}
-                              {cond.hidden.cure}
-                            </p>
+                              </span>
+                              <MarkdownText content={cond.hidden.cure} />
+                            </div>
                           )}
                           {cond.hidden.actualSeverity && (
-                            <p>
-                              <span className="text-theme-warning/60">
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                 {t("hidden.severity")}:
-                              </span>{" "}
-                              {cond.hidden.actualSeverity}
-                            </p>
+                              </span>
+                              <MarkdownText
+                                content={cond.hidden.actualSeverity}
+                              />
+                            </div>
                           )}
                         </div>
                       }
@@ -821,7 +843,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("charHiddenTraits")}
             onToggle={toggleSection}
           >
-            <div className="space-y-2">
+            <div className="space-y-3">
               {char.hiddenTraits.map((trait, idx) => {
                 const isRevealed = trait.unlocked || gameState.unlockMode;
                 if (!isRevealed) return null;
@@ -829,27 +851,30 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 return (
                   <div
                     key={trait.id || trait.name || idx}
-                    className="p-2 rounded border bg-theme-warning/5 border-theme-warning/20"
+                    className="p-4 rounded border bg-theme-unlocked/5 border-theme-unlocked/20"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-theme-text text-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-bold text-theme-text text-sm flex items-center gap-2">
+                        <span>{getValidIcon(trait.icon, "🎭")}</span>
                         {trait.name}
                       </span>
-                      <span className="text-xs px-2 py-0.5 bg-theme-warning/10 text-theme-warning rounded border border-theme-warning/20">
+                      <span className="text-xs px-2 py-0.5 bg-theme-unlocked/10 text-theme-unlocked rounded border border-theme-unlocked/20 uppercase tracking-wider font-bold">
                         {t("gameViewer.hidden")}
                       </span>
                     </div>
-                    <p className="text-theme-muted text-xs mt-1">
-                      {trait.description}
-                    </p>
+                    <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-unlocked/30">
+                      <MarkdownText content={trait.description} />
+                    </div>
                     {trait.effects && trait.effects.length > 0 && (
-                      <div className="mt-1">
-                        <span className="text-theme-warning/60 text-xs">
+                      <div className="mt-2">
+                        <span className="text-theme-unlocked/80 text-xs uppercase tracking-wider font-bold block mb-1">
                           {t("gameViewer.effects")}:
                         </span>
-                        <ul className="list-disc list-inside text-xs text-theme-text/80">
+                        <ul className="list-disc list-inside text-sm text-theme-text/80 pl-2">
                           {trait.effects.map((effect, i) => (
-                            <li key={i}>{effect}</li>
+                            <li key={i}>
+                              <MarkdownText content={effect} inline />
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -860,7 +885,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {char.hiddenTraits.every(
                 (t) => !(t.unlocked || gameState.unlockMode),
               ) && (
-                <p className="text-theme-muted text-sm italic">
+                <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
                   {t("gameViewer.noHiddenTraitsRevealed") ||
                     "No hidden traits revealed."}
                 </p>
@@ -886,7 +911,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           {gameState.relationships.filter(
             (r) => gameState.unlockMode || r.known !== false,
           ).length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noRelationships")}
             </p>
           ) : (
@@ -896,14 +921,15 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 .map((rel, idx) => (
                   <div
                     key={rel.id || idx}
-                    className="p-3 bg-theme-bg/50 rounded border border-theme-border/50"
+                    className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-theme-text">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-theme-primary text-base flex items-center gap-2">
+                        <span>{getValidIcon(rel.icon, "👤")}</span>
                         {rel.visible.name}
                       </span>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded ${
+                        className={`text-xs px-2 py-0.5 rounded font-bold ${
                           rel.visible.affinity > 50
                             ? "bg-green-500/20 text-green-400"
                             : rel.visible.affinity < -50
@@ -916,85 +942,99 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           : "?"}
                       </span>
                     </div>
-                    <p className="text-theme-muted text-sm mt-1">
-                      {rel.visible.description}
-                    </p>
+                    <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                      <MarkdownText content={rel.visible.description} />
+                    </div>
                     {(rel.unlocked || gameState.unlockMode) && rel.hidden && (
                       <HiddenContent
                         t={t}
                         content={
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {rel.hidden.trueName && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueName") || "True Name"}:
-                                </span>{" "}
-                                {rel.hidden.trueName}
-                              </p>
+                                </span>
+                                <MarkdownText content={rel.hidden.trueName} />
+                              </div>
                             )}
                             {rel.hidden.realPersonality && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.realPersonality")}:
-                                </span>{" "}
-                                {rel.hidden.realPersonality}
-                              </p>
+                                </span>
+                                <MarkdownText
+                                  content={rel.hidden.realPersonality}
+                                />
+                              </div>
                             )}
                             {rel.hidden.realMotives && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.realMotives")}:
-                                </span>{" "}
-                                {rel.hidden.realMotives}
-                              </p>
+                                </span>
+                                <MarkdownText
+                                  content={rel.hidden.realMotives}
+                                />
+                              </div>
                             )}
                             {rel.hidden.secrets &&
                               rel.hidden.secrets.length > 0 && (
-                                <p>
-                                  <span className="text-theme-warning/60">
+                                <div>
+                                  <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                     {t("gameViewer.secrets")}:
-                                  </span>{" "}
-                                  {rel.hidden.secrets.join(", ")}
-                                </p>
+                                  </span>
+                                  <ul className="list-disc list-inside pl-2">
+                                    {rel.hidden.secrets.map((secret, i) => (
+                                      <li key={i}>
+                                        <MarkdownText content={secret} inline />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               )}
                             {rel.hidden.trueAffinity !== undefined && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueAffinity")}:
-                                </span>{" "}
-                                {rel.hidden.trueAffinity > 0 ? "+" : ""}
-                                {rel.hidden.trueAffinity}
-                              </p>
+                                </span>
+                                <p className="pl-2">
+                                  {rel.hidden.trueAffinity > 0 ? "+" : ""}
+                                  {rel.hidden.trueAffinity}
+                                </p>
+                              </div>
                             )}
                             {rel.hidden.relationshipType && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueRelationship") ||
                                     "True Relationship"}
                                   :
-                                </span>{" "}
-                                {rel.hidden.relationshipType}
-                              </p>
+                                </span>
+                                <MarkdownText
+                                  content={rel.hidden.relationshipType}
+                                />
+                              </div>
                             )}
                             {rel.hidden.status && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueStatus") || "True Status"}:
-                                </span>{" "}
-                                {rel.hidden.status}
-                              </p>
+                                </span>
+                                <MarkdownText content={rel.hidden.status} />
+                              </div>
                             )}
                           </div>
                         }
                       />
                     )}
-                    <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                      <span className="text-theme-muted">
+                    <div className="flex flex-wrap gap-2 mt-3 text-xs pt-2 border-t border-theme-border/30">
+                      <span className="text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
                         {rel.visible.relationshipType}
                       </span>
                       {rel.currentLocation &&
                         rel.currentLocation !== "unknown" && (
-                          <span className="text-theme-muted">
+                          <span className="text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
                             📍 {rel.currentLocation}
                           </span>
                         )}
@@ -1027,31 +1067,52 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("mainGoal")}
             onToggle={toggleSection}
           >
-            <p className="text-theme-text text-sm">
-              {gameState.outline.mainGoal.visible?.description}
-            </p>
+            <div className="text-theme-text text-sm leading-relaxed">
+              <MarkdownText
+                content={gameState.outline.mainGoal.visible?.description || ""}
+              />
+            </div>
             {gameState.outline.mainGoal.visible?.conditions && (
-              <p className="text-theme-muted text-xs mt-2">
-                📝 {gameState.outline.mainGoal.visible.conditions}
-              </p>
+              <div className="mt-3 pt-2 border-t border-theme-border/30">
+                <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                  {t("gameViewer.conditions") || "Conditions"}
+                </span>
+                <div className="text-theme-muted text-sm pl-2 border-l-2 border-theme-border/50">
+                  <MarkdownText
+                    content={gameState.outline.mainGoal.visible.conditions}
+                  />
+                </div>
+              </div>
             )}
             {(gameState.outline.mainGoalUnlocked || gameState.unlockMode) &&
               gameState.outline.mainGoal.hidden && (
-                <div className="mt-3 p-3 bg-theme-warning/10 border border-theme-warning/30 rounded">
-                  <span className="text-theme-warning text-xs font-medium">
-                    🔓 {t("gameViewer.hiddenRevealed")}
-                  </span>
-                  {gameState.outline.mainGoal.hidden.trueDescription && (
-                    <p className="text-theme-warning/80 text-sm mt-1">
-                      {gameState.outline.mainGoal.hidden.trueDescription}
-                    </p>
-                  )}
-                  {gameState.outline.mainGoal.hidden.trueConditions && (
-                    <p className="text-theme-warning/70 text-xs mt-1">
-                      📝 {gameState.outline.mainGoal.hidden.trueConditions}
-                    </p>
-                  )}
-                </div>
+                <HiddenContent
+                  t={t}
+                  content={
+                    <div className="space-y-2">
+                      {gameState.outline.mainGoal.hidden.trueDescription && (
+                        <MarkdownText
+                          content={
+                            gameState.outline.mainGoal.hidden.trueDescription
+                          }
+                        />
+                      )}
+                      {gameState.outline.mainGoal.hidden.trueConditions && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                            {t("gameViewer.trueConditions") ||
+                              "True Conditions"}:
+                          </span>
+                          <MarkdownText
+                            content={
+                              gameState.outline.mainGoal.hidden.trueConditions
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
               )}
           </Section>
         )}
@@ -1065,7 +1126,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {activeQuests.length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noActiveQuests")}
             </p>
           ) : (
@@ -1073,52 +1134,70 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {activeQuests.map((quest, idx) => (
                 <div
                   key={quest.id || idx}
-                  className="p-3 bg-theme-primary/5 rounded border border-theme-primary/30"
+                  className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                 >
-                  <div className="font-medium text-theme-text">
+                  <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-2">
+                    <span>{getValidIcon(quest.icon, "📜")}</span>
                     {quest.title}
                   </div>
-                  <p className="text-theme-muted text-sm mt-1">
-                    {quest.visible.description}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={quest.visible.description} />
+                  </div>
                   {quest.visible.objectives &&
                     quest.visible.objectives.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {quest.visible.objectives.map((obj, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 text-xs"
-                          >
-                            <span className="text-theme-muted">○</span>
-                            <span className="text-theme-text">{obj}</span>
-                          </div>
-                        ))}
+                      <div className="mt-3 pt-2 border-t border-theme-border/30">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                          {t("gameViewer.objectives") || "Objectives"}
+                        </span>
+                        <div className="space-y-1">
+                          {quest.visible.objectives.map((obj, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2 text-sm"
+                            >
+                              <span className="text-theme-muted mt-1">○</span>
+                              <span className="text-theme-text">
+                                <MarkdownText content={obj} />
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   {(quest.unlocked || gameState.unlockMode) && quest.hidden && (
                     <HiddenContent
                       t={t}
                       content={
-                        <div className="space-y-1 text-xs">
+                        <div className="space-y-2">
                           {quest.hidden.trueDescription && (
-                            <p>{quest.hidden.trueDescription}</p>
+                            <MarkdownText
+                              content={quest.hidden.trueDescription}
+                            />
                           )}
                           {quest.hidden.trueObjectives &&
                             quest.hidden.trueObjectives.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.trueObjectives")}:
-                                </span>{" "}
-                                {quest.hidden.trueObjectives.join(", ")}
-                              </p>
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {quest.hidden.trueObjectives.map((obj, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={obj} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             )}
                           {quest.hidden.secretOutcome && (
-                            <p>
-                              <span className="text-theme-warning/60">
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                 {t("gameViewer.secretOutcome")}:
-                              </span>{" "}
-                              {quest.hidden.secretOutcome}
-                            </p>
+                              </span>
+                              <MarkdownText
+                                content={quest.hidden.secretOutcome}
+                              />
+                            </div>
                           )}
                         </div>
                       }
@@ -1143,9 +1222,12 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {completedQuests.map((quest, idx) => (
                 <div
                   key={quest.id || idx}
-                  className="p-2 bg-green-500/5 rounded border border-green-500/20"
+                  className="p-3 bg-green-500/5 rounded border border-green-500/20"
                 >
-                  <span className="text-theme-text text-sm">{quest.title}</span>
+                  <span className="text-theme-text text-sm flex items-center gap-2 font-medium">
+                    <span>{getValidIcon(quest.icon, "✅")}</span>
+                    {quest.title}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1165,9 +1247,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {failedQuests.map((quest, idx) => (
                 <div
                   key={quest.id || idx}
-                  className="p-2 bg-red-500/5 rounded border border-red-500/20"
+                  className="p-3 bg-red-500/5 rounded border border-red-500/20"
                 >
-                  <span className="text-theme-text text-sm line-through opacity-70">
+                  <span className="text-theme-text text-sm line-through opacity-70 flex items-center gap-2 font-medium">
+                    <span>{getValidIcon(quest.icon, "❌")}</span>
                     {quest.title}
                   </span>
                 </div>
@@ -1192,7 +1275,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.knowledge.length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noKnowledge")}
             </p>
           ) : (
@@ -1200,35 +1283,44 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
               {gameState.knowledge.map((entry, idx) => (
                 <div
                   key={entry.id || idx}
-                  className="p-3 bg-theme-bg/50 rounded border border-theme-border/50"
+                  className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-theme-text text-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-bold text-theme-primary text-sm flex items-center gap-2">
+                      <span>{getValidIcon(entry.icon, "📚")}</span>
                       {entry.title}
                     </span>
-                    <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted">
+                    <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted border border-theme-border/50 uppercase tracking-wider">
                       {entry.category}
                     </span>
                   </div>
-                  <p className="text-theme-muted text-sm mt-1">
-                    {entry.visible.description}
-                  </p>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={entry.visible.description} />
+                  </div>
                   {(entry.unlocked || gameState.unlockMode) && entry.hidden && (
                     <HiddenContent
                       t={t}
                       content={
-                        <div className="space-y-1 text-xs">
+                        <div className="space-y-2">
                           {entry.hidden.fullTruth && (
-                            <p>{entry.hidden.fullTruth}</p>
+                            <MarkdownText content={entry.hidden.fullTruth} />
                           )}
                           {entry.hidden.misconceptions &&
                             entry.hidden.misconceptions.length > 0 && (
-                              <p>
-                                <span className="text-theme-warning/60">
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.misconceptions")}:
-                                </span>{" "}
-                                {entry.hidden.misconceptions.join(", ")}
-                              </p>
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {entry.hidden.misconceptions.map(
+                                    (misc, i) => (
+                                      <li key={i}>
+                                        <MarkdownText content={misc} inline />
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
                             )}
                         </div>
                       }
@@ -1249,7 +1341,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.timeline.filter((e) => e.known).length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noEvents")}
             </p>
           ) : (
@@ -1265,19 +1357,20 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 .map((event, idx) => (
                   <div
                     key={event.id || idx}
-                    className="p-3 bg-theme-bg/50 rounded border border-theme-border/50"
+                    className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-theme-muted">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-theme-muted font-mono">
                         {event.gameTime}
                       </span>
-                      <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted">
+                      <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted flex items-center gap-1 border border-theme-border/50 uppercase tracking-wider">
+                        <span>{getValidIcon(event.icon, "⏳")}</span>
                         {event.category}
                       </span>
                     </div>
-                    <p className="text-theme-text text-sm mt-1">
-                      {event.visible.description}
-                    </p>
+                    <div className="text-theme-text text-sm pl-2 border-l-2 border-theme-border/50">
+                      <MarkdownText content={event.visible.description} />
+                    </div>
                   </div>
                 ))}
             </div>
@@ -1293,46 +1386,54 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.inventory.length === 0 ? (
-            <p className="text-theme-muted text-sm italic">
+            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
               {t("gameViewer.noItems")}
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {gameState.inventory.map((item, idx) => (
                 <div
                   key={item.id || idx}
-                  className="p-2 bg-theme-bg/50 rounded border border-theme-border/50 flex items-center gap-2"
+                  className="p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50 flex flex-col gap-2"
                 >
-                  <span className="text-lg">
-                    {getValidIcon(item.icon, "📦")}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-theme-text text-sm truncate">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">
+                      {getValidIcon(item.icon, "📦")}
+                    </span>
+                    <div className="font-bold text-theme-text text-sm truncate">
                       {item.name}
                     </div>
-                    <div className="text-theme-muted text-xs">
-                      {item.visible.description}
-                    </div>
-                    {(item.unlocked || gameState.unlockMode) && item.hidden && (
-                      <HiddenContent
-                        t={t}
-                        content={
-                          <div className="space-y-1 text-xs">
-                            {item.hidden.truth && <p>{item.hidden.truth}</p>}
-                            {item.hidden.secrets &&
-                              item.hidden.secrets.length > 0 && (
-                                <p>
-                                  <span className="text-theme-warning/60">
-                                    {t("gameViewer.secrets")}:
-                                  </span>{" "}
-                                  {item.hidden.secrets.join(", ")}
-                                </p>
-                              )}
-                          </div>
-                        }
-                      />
-                    )}
                   </div>
+                  <div className="text-theme-muted text-xs pl-1">
+                    <MarkdownText content={item.visible.description} />
+                  </div>
+                  {(item.unlocked || gameState.unlockMode) && item.hidden && (
+                    <HiddenContent
+                      t={t}
+                      content={
+                        <div className="space-y-1 text-xs">
+                          {item.hidden.truth && (
+                            <MarkdownText content={item.hidden.truth} />
+                          )}
+                          {item.hidden.secrets &&
+                            item.hidden.secrets.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.secrets")}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {item.hidden.secrets.map((secret, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={secret} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                      }
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -1346,12 +1447,12 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   const renderEmbedding = () => {
     return (
       <div className="space-y-4">
-        <div className="p-4 bg-theme-bg/50 rounded border border-theme-border/50 text-center">
-          <div className="text-4xl mb-2">🧠</div>
-          <h3 className="text-lg font-medium text-theme-text mb-1">
+        <div className="p-6 bg-theme-surface-highlight/20 rounded border border-theme-border/50 text-center">
+          <div className="text-5xl mb-3">🧠</div>
+          <h3 className="text-xl font-bold text-theme-primary mb-2 uppercase tracking-wider">
             {t("gameViewer.embeddingStatus") || "Embedding Status"}
           </h3>
-          <p className="text-theme-muted text-sm">
+          <p className="text-theme-muted text-sm max-w-md mx-auto">
             {t("gameViewer.embeddingDescription") ||
               "View the status of the RAG (Retrieval-Augmented Generation) system."}
           </p>
@@ -1365,7 +1466,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             isExpanded={expandedSections.has("embeddingStats")}
             onToggle={toggleSection}
           >
-            <div className="space-y-2">
+            <div className="space-y-3">
               <InfoRow
                 label={t("embedding.phase") || "Phase"}
                 value={
@@ -1378,13 +1479,13 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 value={`${embeddingProgress.current} / ${embeddingProgress.total}`}
               />
               {embeddingProgress.message && (
-                <div className="text-xs text-theme-muted italic mt-2">
+                <div className="text-xs text-theme-muted italic mt-2 p-2 bg-theme-bg/30 rounded border border-theme-border/30">
                   {embeddingProgress.message}
                 </div>
               )}
-              <div className="mt-2 h-2 bg-theme-border/30 rounded-full overflow-hidden">
+              <div className="mt-3 h-3 bg-theme-bg/50 rounded-full overflow-hidden border border-theme-border/30">
                 <div
-                  className="h-full bg-theme-primary transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-theme-primary to-theme-primary-hover transition-all duration-300"
                   style={{
                     width: `${embeddingProgress.total > 0 ? (embeddingProgress.current / embeddingProgress.total) * 100 : 0}%`,
                   }}
@@ -1393,7 +1494,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             </div>
           </Section>
         ) : (
-          <div className="p-4 text-center text-theme-muted italic">
+          <div className="p-6 text-center text-theme-muted italic border border-dashed border-theme-border/50 rounded bg-theme-surface-highlight/10">
             {t("gameViewer.noEmbeddingActivity") ||
               "No active embedding tasks."}
           </div>
@@ -1427,19 +1528,19 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden ring-1 ring-theme-border/50">
         {/* Header */}
-        <div className="flex-none p-4 border-b border-theme-border flex items-center justify-between bg-theme-bg/50">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden="true">
+        <div className="flex-none p-5 border-b border-theme-border flex items-center justify-between bg-theme-surface-highlight/10">
+          <div className="flex items-center gap-4">
+            <span className="text-3xl" aria-hidden="true">
               📖
             </span>
             <div>
-              <h2 className="text-xl font-bold text-theme-primary">
+              <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-widest">
                 {t("gameViewer.title") || "Chronicle"}
               </h2>
-              <p className="text-xs text-theme-muted">
+              <p className="text-xs text-theme-muted uppercase tracking-wider font-bold">
                 {t("gameViewer.subtitle") || "Your story at a glance"}
               </p>
             </div>
@@ -1449,7 +1550,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
             className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface rounded-lg transition-colors"
           >
             <svg
-              className="w-6 h-6"
+              className="w-8 h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -1466,7 +1567,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
 
         {/* Tab Bar */}
         <div className="flex-none border-b border-theme-border bg-theme-bg/30 overflow-x-auto scrollbar-hide">
-          <div className="flex">
+          <div className="flex px-2">
             {(Object.keys(TAB_CONFIGS) as ViewTab[]).map((tab) => {
               const config = TAB_CONFIGS[tab];
               const isActive = tab === activeTab;
@@ -1474,14 +1575,16 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-none px-4 py-3 flex items-center gap-2 transition-colors whitespace-nowrap border-b-2 ${
+                  className={`flex-none px-6 py-4 flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
                     isActive
-                      ? "border-theme-primary text-theme-primary bg-theme-primary/10"
+                      ? "border-theme-primary text-theme-primary bg-theme-primary/5"
                       : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                   }`}
                 >
-                  <span>{getValidIcon(config.icon, "📖")}</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-lg">
+                    {getValidIcon(config.icon, "📖")}
+                  </span>
+                  <span className="text-sm font-bold uppercase tracking-wider">
                     {t(config.labelKey) || tab}
                   </span>
                 </button>
@@ -1491,17 +1594,19 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">{renderTabContent()}</div>
+        <div className="flex-1 overflow-y-auto p-6 bg-theme-bg/20">
+          {renderTabContent()}
+        </div>
 
         {/* Footer */}
-        <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
-          <div className="text-xs text-theme-muted">
+        <div className="flex-none p-4 border-t border-theme-border bg-theme-surface-highlight/10 flex items-center justify-between">
+          <div className="text-xs text-theme-muted font-mono">
             {t("gameViewer.turnInfo", { turn: gameState.turnNumber }) ||
               `Turn ${gameState.turnNumber}`}
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded-lg transition-colors"
+            className="px-6 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded-lg transition-colors border border-transparent hover:border-theme-border uppercase text-xs font-bold tracking-wider"
           >
             {t("close") || "Close"}
           </button>

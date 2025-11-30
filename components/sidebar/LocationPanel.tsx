@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -66,9 +67,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
   return (
     <div
       key={item.id}
-      className={`mb-2 transition-all duration-300 ease-in-out rounded flex items-center gap-1
+      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 ease-in-out mb-3
         ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
+        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+        ${isCurrent ? "border-l-theme-primary bg-theme-surface-highlight/10" : ""}
       `}
       draggable={isEditMode}
       onDragStart={isEditMode ? (e) => onDragStart(e, item.id) : undefined}
@@ -79,11 +82,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
       <div className="flex-1 min-w-0">
         <button
           onClick={handleToggle}
-          className={`w-full text-left px-3 py-2 rounded border transition-all duration-300 flex justify-between items-center ${
-            isCurrent
-              ? "bg-theme-surface-highlight/50 border-theme-primary/30 text-theme-text hover:bg-theme-primary/10"
-              : "bg-theme-bg border-theme-border/50 text-theme-muted hover:text-theme-primary hover:border-theme-primary/50"
-          }`}
+          className="w-full text-left px-3 py-2.5 flex justify-between items-center focus:outline-none"
         >
           <div className="flex items-center gap-2 min-w-0">
             {isCurrent && (
@@ -91,16 +90,16 @@ const LocationItem: React.FC<LocationItemProps> = ({
             )}
             <span
               className={`font-bold tracking-wide text-xs flex items-center gap-1 break-words whitespace-normal ${
-                isCurrent ? "text-theme-primary" : ""
+                isCurrent ? "text-theme-primary" : "text-theme-text"
               }`}
             >
-              <span className="mr-1">
+              <span className="mr-1 text-base">
                 {getValidIcon(locationData.icon, "📍")}
               </span>
               {item.name}
               {locationData.unlocked && (
                 <svg
-                  className="w-3 h-3 text-theme-primary"
+                  className="w-3.5 h-3.5 text-theme-primary"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -119,14 +118,14 @@ const LocationItem: React.FC<LocationItemProps> = ({
               className={`p-1 rounded hover:bg-theme-bg transition-colors ${
                 pinned
                   ? "text-theme-primary"
-                  : "text-theme-muted hover:text-theme-text"
+                  : "text-theme-muted hover:text-theme-text opacity-0 group-hover:opacity-100"
               }`}
               title={
                 pinned ? t("unpin") || "Unpin" : t("pinToTop") || "Pin to top"
               }
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill={pinned ? "currentColor" : "none"}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -149,18 +148,23 @@ const LocationItem: React.FC<LocationItemProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="p-3 border-x border-b border-theme-border/30 rounded-b bg-black/5">
+            <div className="px-3 pb-3 pt-0 space-y-3">
               {locationData ? (
-                <div className="space-y-3 text-xs animate-fade-in">
+                <div className="text-xs animate-fade-in border-t border-theme-border/30 pt-2">
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("description") || "Description"}
                     </span>
-                    <p className="text-theme-text leading-relaxed pl-1">
-                      {locationData.visible?.description ||
-                        t("noDescription") ||
-                        "No description available."}
-                    </p>
+                    <div className="text-theme-text leading-relaxed pl-1">
+                      <MarkdownText
+                        content={
+                          locationData.visible?.description ||
+                          t("noDescription") ||
+                          "No description available."
+                        }
+                        indentSize={2}
+                      />
+                    </div>
                   </div>
                   {locationData.visible?.resources &&
                     locationData.visible.resources.length > 0 && (
@@ -170,14 +174,17 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         </span>
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
                           {locationData.visible.resources.map((res, i) => (
-                            <li key={i}>{res}</li>
+                            <li key={i}>
+                              <MarkdownText content={res} indentSize={2} inline />
+                            </li>
                           ))}
                         </ul>
                       </div>
                     )}
-                  {/* Unlocked Hidden Secrets */}
+
+                  {/* Unlocked Hidden Secrets - Outer Layer */}
                   {locationData.unlocked && (
-                    <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
+                    <div className="mt-2 pt-2">
                       <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold mb-1 flex items-center gap-1">
                         <svg
                           className="w-3 h-3"
@@ -193,9 +200,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         {t("hidden.secrets")}
                       </span>
                       {locationData.hidden?.fullDescription && (
-                        <p className="leading-relaxed text-theme-text mb-2">
-                          {locationData.hidden.fullDescription}
-                        </p>
+                        <div className="leading-relaxed text-theme-text mb-2">
+                          <MarkdownText content={locationData.hidden.fullDescription} indentSize={2}/>
+                        </div>
                       )}
 
                       {locationData.hidden?.dangers &&
@@ -219,7 +226,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             </span>
                             <ul className="list-disc list-inside space-y-0.5">
                               {locationData.hidden.dangers.map((danger, i) => (
-                                <li key={i}>{danger}</li>
+                                <li key={i}>
+                                  <MarkdownText content={danger} indentSize={2} inline />
+                                </li>
                               ))}
                             </ul>
                           </div>
@@ -234,7 +243,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             <ul className="list-disc list-inside text-theme-text space-y-0.5">
                               {locationData.hidden.hiddenFeatures.map(
                                 (feature, i) => (
-                                  <li key={i}>{feature}</li>
+                                  <li key={i}>
+                                    <MarkdownText content={feature} indentSize={2} inline />
+                                  </li>
                                 ),
                               )}
                             </ul>
@@ -249,7 +260,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             </span>
                             <ul className="list-disc list-inside text-theme-text space-y-0.5">
                               {locationData.hidden.secrets.map((secret, i) => (
-                                <li key={i}>{secret}</li>
+                                <li key={i}>
+                                  <MarkdownText content={secret} indentSize={2} inline />
+                                </li>
                               ))}
                             </ul>
                           </div>
@@ -258,13 +271,13 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   )}
 
                   {locationData.lore && (
-                    <div className="pt-2 border-t border-theme-border/20 mt-1">
+                    <div className="pt-2 border-t border-theme-border/20 mt-2">
                       <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                         {t("history")}
                       </span>
-                      <p className="text-theme-muted italic pl-1">
-                        {locationData.lore}
-                      </p>
+                      <div className="text-theme-muted pl-1">
+                        <MarkdownText content={locationData.lore} indentSize={2}/>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -372,7 +385,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   return (
     <div>
       <div
-        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+        className={`flex items-center justify-between ${isOpen ? "mb-4" : "mb-0"}`}
       >
         <div
           onClick={() => setIsOpen(!isOpen)}
@@ -415,7 +428,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
           >
             {isEditMode ? (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -429,7 +442,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               </svg>
             ) : (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -473,7 +486,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {visibleItems.length === 0 ? (
               <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
                 {t("noKnownLocations")}

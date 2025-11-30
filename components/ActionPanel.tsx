@@ -385,7 +385,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                           </div>
                           {(rawChoice as any).consequence &&
                             gameState.unlockMode && (
-                              <span className="text-[10px] opacity-80 mt-0.5 font-normal italic block">
+                              <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
                                 {(rawChoice as any).consequence}
                               </span>
                             )}

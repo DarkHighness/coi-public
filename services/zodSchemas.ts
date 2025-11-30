@@ -408,8 +408,7 @@ export const conditionVisibleSchema = z.object({
 export const conditionHiddenSchema = z.object({
   trueCause: z.string().describe("The true cause of this condition."),
   actualSeverity: z
-    .number()
-    .int()
+    .string()
     .optional()
     .describe("Actual severity level."),
   progression: z
@@ -765,6 +764,10 @@ export const hiddenTraitSchema = z.object({
     .describe(
       "Set to true when the triggerConditions are met and the trait is revealed to the player.",
     ),
+  icon: z
+    .string()
+    .optional()
+    .describe("A single emoji representing this trait."),
   highlight: z.boolean().optional(),
 });
 

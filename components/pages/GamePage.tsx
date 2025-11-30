@@ -74,6 +74,7 @@ interface GamePageProps {
     isInit?: boolean,
     forceTheme?: string,
     fromNodeId?: string,
+    preventFork?: boolean,
   ) => Promise<ActionResult | null>;
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
@@ -281,6 +282,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     const prompt = t("initialPrompt.begin", { theme: themeName });
     const defaultInitialPrompt = gameState.initialPrompt || prompt;
 
+    console.log("[GamePage] handleRetry called", { currentHistoryLength: currentHistory.length });
+
     // If the length of currentHistory is 1, we are retrying to regenerate the first turn
     // We need to remove the first segment from currentHistory
     if (currentHistory.length === 1) {
@@ -288,7 +291,8 @@ export const GamePage: React.FC<GamePageProps> = ({
         ...prev,
         currentHistory: [],
       }));
-      handleAction(defaultInitialPrompt);
+      // First turn retry - no parent yet, so preventFork is irrelevant but good practice
+      handleAction(defaultInitialPrompt, false, undefined, undefined, true);
       return;
     }
 
@@ -297,6 +301,8 @@ export const GamePage: React.FC<GamePageProps> = ({
       .reverse()
       .find((seg) => seg.role === "user" || seg.role === "command");
 
+    console.log("[GamePage] Retry lastSegment:", lastSegment);
+
     if (lastSegment && lastSegment.role === "user") {
       // Retry using the SAME parent ID as the original user segment
       handleAction(
@@ -304,6 +310,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         false,
         undefined,
         lastSegment.parentId || undefined,
+        true, // preventFork is explicitly true here
       );
     } else if (lastSegment && lastSegment.role === "command") {
       // We must encoutnered a command segment
@@ -311,7 +318,8 @@ export const GamePage: React.FC<GamePageProps> = ({
       handleForceUpdate(lastSegment.text);
     } else {
       // The last segment is not a user segment, so we retry from the initial prompt
-      handleAction(defaultInitialPrompt);
+      // This implies we are restarting or lost context
+      handleAction(defaultInitialPrompt, false, undefined, undefined, true);
     }
   }
 

@@ -50,11 +50,10 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   ) => (
     <div
       key={q.id}
-      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${
-        q.type === "main"
+      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${q.type === "main"
           ? "border-l-4 border-l-theme-primary"
           : "border-l-4 border-l-theme-muted"
-      }`}
+        }`}
     >
       <div
         className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-start justify-between gap-2"
@@ -63,11 +62,10 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
-                q.type === "main"
+              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${q.type === "main"
                   ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
                   : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
-              }`}
+                }`}
             >
               {q.type === "main"
                 ? t("mainQuest") || "Main"
@@ -95,7 +93,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                    d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -136,7 +134,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
 
             {/* Hidden content - only shown when unlocked */}
             {q.unlocked && q.hidden && (
-              <div className="mt-3 space-y-2 border-t border-theme-unlocked/20 pt-2">
+              <div className="mt-3 space-y-2 border-t border-theme-unlocked/20 pt-2 bg-theme-surface/50 rounded">
                 <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-1">
                   <svg
                     className="w-3 h-3"
@@ -145,7 +143,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                   >
                     <path
                       fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
                       clipRule="evenodd"
                     />
                   </svg>
@@ -202,9 +200,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     <div>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-3" : "mb-0"
-        }`}
+        className={`flex items-center justify-between cursor-pointer group ${isOpen ? "mb-3" : "mb-0"
+          }`}
       >
         <div
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
@@ -245,9 +242,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           )}
           <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
+              className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""
+                }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -264,9 +260,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       </div>
 
       <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
+        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
       >
         <div className="overflow-hidden">
           <div className="space-y-3">

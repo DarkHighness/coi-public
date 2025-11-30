@@ -11,7 +11,7 @@ interface TypewriterTextProps {
 
 export const TypewriterText: React.FC<TypewriterTextProps> = ({
   text,
-  speed = 20,
+  speed = 15,
   onComplete,
   instant = false,
   enableMarkdown = false,

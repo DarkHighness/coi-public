@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { KnowledgeEntry } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -51,22 +52,22 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
   return (
     <div
-      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2
+      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-3
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
       `}
     >
       <div
-        className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-center justify-between gap-2"
+        className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-center justify-between gap-3"
         onClick={handleToggle}
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">
+          <div className="flex items-center gap-2.5 mb-1">
+            <span className="text-xl">
               {isValidEmoji(k.icon)
                 ? k.icon
                 : CATEGORY_ICONS[k.category] || "📖"}
             </span>
-            <h4 className="text-sm font-bold text-theme-primary truncate flex items-center gap-2">
+            <h4 className="text-xs font-bold text-theme-primary truncate flex items-center gap-2">
               {k.title}
               {k.unlocked && (
                 <svg
@@ -81,7 +82,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
           </div>
         </div>
         <svg
-          className={`w-4 h-4 text-theme-muted transition-transform duration-300 ${
+          className={`w-5 h-5 text-theme-muted transition-transform duration-300 ${
             expandedSet.has(k.id) ? "rotate-180" : ""
           }`}
           fill="none"
@@ -103,29 +104,33 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
-            <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
-              {t("description") || "Description"}
-            </span>
-            <p className="pl-1 mb-2">{k.visible?.description}</p>
+          <div className="p-4 pt-0 text-xs text-theme-muted/90 leading-relaxed border-t border-theme-border/30 mt-1">
+            <div className="mt-3">
+              <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                {t("description") || "Description"}
+              </span>
+              <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
+                <MarkdownText content={k.visible?.description || ""} indentSize={2}/>
+              </div>
+            </div>
 
             {k.visible?.details && (
-              <div className="mt-2 pt-2 border-t border-theme-border/30">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+              <div className="mt-4 pt-3 border-t border-theme-border/30">
+                <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                   {t("details") || "Details"}
                 </span>
-                <div className="pl-1">
-                  <p>{k.visible.details}</p>
+                <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
+                  <MarkdownText content={k.visible.details} indentSize={2}/>
                 </div>
               </div>
             )}
 
-            {/* Unlocked Hidden Truth */}
+            {/* Unlocked Hidden Truth - Outer Layer */}
             {k.unlocked && k.hidden?.fullTruth && (
-              <div className="mt-3 text-xs border-l-2 border-theme-primary/50 pl-3 bg-theme-primary/10 py-2 rounded-r">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
+              <div className="mt-4 pt-3 border-t border-theme-unlocked/20">
+                <span className="text-xs uppercase tracking-wider text-theme-unlocked font-bold flex items-center gap-1.5 mb-2">
                   <svg
-                    className="w-3 h-3"
+                    className="w-3.5 h-3.5"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -137,45 +142,50 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   </svg>
                   {t("hidden.truth")}
                 </span>
-                <p className="leading-relaxed text-theme-text">
-                  {k.hidden.fullTruth}
-                </p>
+                <div className="text-theme-text/90 bg-theme-surface/50 p-3 rounded border border-theme-unlocked/20">
+                  <MarkdownText content={k.hidden.fullTruth} indentSize={2}/>
 
-                {k.hidden.misconceptions &&
-                  k.hidden.misconceptions.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary block mb-0.5">
-                        {t("hidden.misconceptions")}:
-                      </span>
-                      <ul className="list-disc list-inside text-red-500 space-y-0.5">
-                        {k.hidden.misconceptions.map((misc, i) => (
-                          <li key={i}>{misc}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {k.hidden.misconceptions &&
+                    k.hidden.misconceptions.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
+                        <span className="text-xs uppercase tracking-wider text-theme-danger/90 block mb-1">
+                          {t("hidden.misconceptions")}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-danger/80 space-y-1 pl-2">
+                          {k.hidden.misconceptions.map((misc, i) => (
+                            <li key={i}>
+                              <MarkdownText content={misc} indentSize={2} inline />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                {k.hidden.toBeRevealed && k.hidden.toBeRevealed.length > 0 && (
-                  <div className="mt-2">
-                    <span className="text-[9px] uppercase tracking-wider text-blue-400/70 block mb-0.5">
-                      {t("hidden.future")}:
-                    </span>
-                    <ul className="list-disc list-inside text-blue-500 space-y-0.5">
-                      {k.hidden.toBeRevealed.map((mystery, i) => (
-                        <li key={i}>{mystery}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {k.hidden.toBeRevealed &&
+                    k.hidden.toBeRevealed.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("hidden.future")}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-primary/80 space-y-1 pl-2">
+                          {k.hidden.toBeRevealed.map((mystery, i) => (
+                            <li key={i}>
+                              <MarkdownText content={mystery} indentSize={2} inline />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
               </div>
             )}
 
             {k.discoveredAt && (
-              <div className="mt-2 pt-2 border-t border-theme-border/30 flex justify-between items-center">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
+              <div className="mt-3 pt-2 border-t border-theme-border/30 flex justify-between items-center">
+                <span className="text-xs uppercase tracking-wider text-theme-primary font-bold">
                   {t("knowledgePanel.discovered") || "Discovered"}
                 </span>
-                <span className="text-[10px] text-theme-muted">
+                <span className="text-xs text-theme-muted">
                   {k.discoveredAt}
                 </span>
               </div>
@@ -236,16 +246,16 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-3" : "mb-0"
+          isOpen ? "mb-4" : "mb-0"
         }`}
       >
         <div
           className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
         >
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-theme-primary rounded-full animate-pulse"></span>
+            <span className="w-2.5 h-2.5 bg-theme-primary rounded-full animate-pulse"></span>
             {t("knowledgePanel.title")}
-            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            <span className="ml-2 text-xs text-theme-muted bg-theme-surface-highlight px-2 py-0.5 rounded border border-theme-border">
               {knowledge.length}
             </span>
           </span>
@@ -254,7 +264,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
         <div className="flex items-center gap-2">
           <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${
+              className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
               }`}
               fill="none"
@@ -273,7 +283,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       </div>
 
       {isOpen && (
-        <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
+        <div className="space-y-3 animate-[fade-in_0.3s_ease-in]">
           {displayKnowledge.map((k) => (
             <KnowledgeItem
               key={k.id}
@@ -286,7 +296,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           ))}
 
           {knowledge.length === 0 && (
-            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+            <div className="text-theme-muted text-xs italic p-4 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("knowledgePanel.empty")}
             </div>
           )}

@@ -241,6 +241,14 @@ export const getCoreRules = (): string => `
     - **Relevance**: The emoji must be visually relevant to the entity's name or nature (e.g., "Sword" -> ⚔️, "Forest" -> 🌲, "Secret" -> 🤫).
     - **Consistency**: Try to keep icons consistent for similar types of entities.
   </rule>
+
+  <rule name="FORMATTING">
+    - **MARKDOWN ALLOWED**: You MAY use Markdown formatting in \`description\`, \`truth\`, \`secrets\`, \`notes\`, and other text fields.
+    - **Bold**: Use **bold** for emphasis or key terms.
+    - **Italic**: Use *italics* for internal thoughts or whispers.
+    - **Lists**: Use bullet points for lists of features or secrets.
+    - **NO COMPLEX BLOCKS**: Avoid code blocks or complex HTML in descriptions.
+  </rule>
 </core_rules>
 `;
 
