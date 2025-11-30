@@ -409,8 +409,15 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
               </svg>
             )}
           </span>
-          {condition.duration && (
-            <span className="text-xs opacity-80">{condition.duration}</span>
+          {condition.startTime && (
+            <span className="text-xs opacity-80 text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
+              {condition.startTime}
+            </span>
+          )}
+          {condition.severity && (
+            <span className="text-xs opacity-80 text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
+              {condition.severity}
+            </span>
           )}
         </div>
 
@@ -723,7 +730,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               {character.currentLocation && (
                 <div className="flex items-center gap-2 text-theme-text">
                   <span className="text-theme-muted w-16">
-                    {t("location") || "Location"}:
+                    {t("location.current") || "Location"}:
                   </span>
                   <span className="text-theme-text font-medium flex items-center gap-1">
                     <svg

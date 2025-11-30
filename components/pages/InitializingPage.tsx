@@ -79,11 +79,22 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     }
   }, [isProcessing]);
 
-  // Get current phase texts
+  // Get current phase texts - using i18n translations
   const currentPhaseTexts = useMemo(() => {
-    if (!phaseProgress) return PHASE_DESCRIPTIONS[1];
-    return PHASE_DESCRIPTIONS[phaseProgress.phase] || PHASE_DESCRIPTIONS[1];
-  }, [phaseProgress?.phase]);
+    if (!phaseProgress) {
+      return (
+        (t("initializing.phaseDescriptions.1", {
+          returnObjects: true,
+        }) as string[]) || PHASE_DESCRIPTIONS[1]
+      );
+    }
+    const phaseKey = `initializing.phaseDescriptions.${phaseProgress.phase}`;
+    const translatedTexts = t(phaseKey, { returnObjects: true }) as string[];
+    // Fallback to English if translation not available
+    return Array.isArray(translatedTexts)
+      ? translatedTexts
+      : PHASE_DESCRIPTIONS[phaseProgress.phase] || PHASE_DESCRIPTIONS[1];
+  }, [phaseProgress?.phase, t]);
 
   // Typewriter effect for phase descriptions
   useEffect(() => {

@@ -357,8 +357,8 @@ export const useGameEngine = () => {
 
       // Show alert asking if user wants to retry
       const retryMessage = hasProgress
-        ? `${errorMessage}\n\nYou have progress saved from phase ${savedConversation.currentPhase}. Would you like to resume from where you left off?`
-        : `${errorMessage}\n\nWould you like to retry generating the story outline?`;
+        ? `${errorMessage}\n\n${t("initializing.errors.retryWithProgress", { phase: savedConversation.currentPhase })}`
+        : `${errorMessage}\n\n${t("initializing.errors.retryOutline")}`;
 
       const shouldRetry = window.confirm(retryMessage);
 

@@ -556,7 +556,6 @@ export interface StorySegment {
   atmosphere?: AtmosphereObject; // The unified atmosphere { envTheme, ambience }
 
   narrativeTone?: string; // The tone of the narrative (e.g. "suspenseful", "cheerful")
-  imageSkipped?: boolean; // Whether image generation was intentionally skipped by AI
   stateSnapshot?: GameStateSnapshot; // Snapshot of the game state at this point
 
   // Game Ending

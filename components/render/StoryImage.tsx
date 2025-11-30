@@ -1,3 +1,64 @@
+/**
+ * StoryImage Component - Handles image display logic for story segments
+ *
+ * SIMPLIFIED STATE HANDLING LOGIC (in priority order):
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * Priority 0: Global Disable
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ Condition: disableImages = true                                         │
+ * │ Action:    return null (no image container at all)                      │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * Priority 1: No Provider Configured (Case 1.2)
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ Condition: imagePrompt exists BUT imageGenerationEnabled = false        │
+ * │ Action:    return null (copy button shows in StoryTextHeader instead)   │
+ * │ Note:      If no provider is configured, image generation is impossible │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * Priority 2: Image Successfully Generated
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ Condition: imageUrl exists AND imagePrompt exists                       │
+ * │ Display:   Full image with action buttons:                              │
+ * │            • Copy prompt button (top-right)                              │
+ * │            • Regenerate button (if onRegenerate provided)                │
+ * │            • Magic Mirror button (if onAnimate provided)                 │
+ * │ Features:  Click to zoom (lightbox), hover effects                      │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * Priority 3: Waiting for Generation / Failed (Case 1.3 & 1.4)
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ Condition: imagePrompt exists BUT !imageUrl                             │
+ * │ Scenarios:                                                               │
+ * │   • isGenerating = true     → Show loading placeholder                  │
+ * │   • manualImageGen = true   → Show "Click to Generate" placeholder      │
+ * │   • actuallyFailed = true   → Show "Failed - Retry" placeholder         │
+ * │                                                                          │
+ * │ Display:   Placeholder with copy prompt button (top-right)              │
+ * │            Regenerate enabled if canRegenerate = true                   │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * Priority 4: No Image Intended (Case 1.1)
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ Condition: !imagePrompt AND !imageUrl                                   │
+ * │ Display:   Simple "Image Unavailable" placeholder                       │
+ * │ Note:      If AI doesn't want image, it won't provide imagePrompt       │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * STATE COMBINATION TABLE:
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * | Prompt | URL | Provider | Generating | Manual | Result      |
+ * |--------|-----|----------|------------|--------|-------------|
+ * |   ❌   | ❌  |    -     |     -      |   -    | Unavailable |
+ * |   ✅   | ❌  |    ❌    |     -      |   -    | null (1.2)  |
+ * |   ✅   | ❌  |    ✅    |    ✅      |   -    | Loading     |
+ * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    | Manual      |
+ * |   ✅   | ❌  |    ✅    |    ❌      |  ❌    | Failed      |
+ * |   ✅   | ✅  |    -     |     -      |   -    | Show Image  |
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
+
 import React from "react";
 import { MagicMirrorButton } from "./MagicMirrorButton";
 import { ImagePlaceholder } from "./ImagePlaceholder";
@@ -18,7 +79,6 @@ interface StoryImageProps {
   imageGenerationEnabled: boolean;
   manualImageGen?: boolean;
   themeFont?: string;
-  imageSkipped?: boolean;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
@@ -34,7 +94,6 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   imageGenerationEnabled,
   manualImageGen,
   themeFont,
-  imageSkipped,
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
@@ -56,12 +115,10 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     }
   };
 
+  // Early return: Global image disable
   if (disableImages) return null;
 
-  // If image was intentionally skipped by AI, do not render anything
-  if (imageSkipped && !imageUrl && !isGenerating) return null;
-
-  // Copy Prompt Button Component
+  // Copy Prompt Button Component (defined early for use in multiple states)
   const CopyPromptButton = () => (
     <button
       onClick={handleCopyPrompt}
@@ -100,10 +157,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     </button>
   );
 
-  if (disableImages) return null;
-
-  // If image was intentionally skipped by AI, do not render anything
-  if (imageSkipped && !imageUrl && !isGenerating) return null;
+  // Case 1.2: Has imagePrompt but NO image provider configured
+  // Don't show image container - copy button will be shown on StoryCard header instead
+  if (imagePrompt && imagePrompt.trim().length > 0 && !imageGenerationEnabled) {
+    return null;
+  }
 
   // State 3: Has imagePrompt AND imageUrl - Show image with action buttons
   if (imageUrl && imagePrompt) {
@@ -169,11 +227,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     );
   }
 
-  // State 2: Has imagePrompt but NO imageUrl - Generation was intended but may have failed
-  // Show regenerate button if generation is enabled, otherwise show unavailable
+  // State 2: Has imagePrompt but NO imageUrl - Provider is enabled, show placeholder
   if (imagePrompt && !imageUrl) {
     const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
-    // Only show as "failed" if it's not manual mode (in manual mode, it's just waiting for click)
+    // Manual mode: waiting for user to click generate
+    // Failed mode: generation attempted but failed (not generating, not manual mode)
     const actuallyFailed = !isGenerating && canRegenerate && !manualImageGen;
 
     return (

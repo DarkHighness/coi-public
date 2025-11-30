@@ -105,6 +105,47 @@
           "desc": "Generating quests and story threads"
         }
       }
+    },
+    "phaseDescriptions": {
+      "1": [
+        "Weaving the fabric of reality...",
+        "Establishing the laws of magic and nature...",
+        "Shaping mountains, rivers, and forgotten ruins...",
+        "Breathing life into ancient legends...",
+        "Defining the boundaries between light and shadow..."
+      ],
+      "2": [
+        "Sculpting the hero's destiny...",
+        "Inscribing hidden traits and secret powers...",
+        "Forging bonds of fate and fortune...",
+        "Awakening dormant memories...",
+        "Setting the stage for legendary deeds..."
+      ],
+      "3": [
+        "Populating realms with wonders and dangers...",
+        "Establishing factions vying for power...",
+        "Creating sanctuaries and forbidden zones...",
+        "Mapping the paths between worlds...",
+        "Hiding treasures in forgotten corners..."
+      ],
+      "4": [
+        "Weaving the web of alliances and enmities...",
+        "Distributing artifacts of power...",
+        "Establishing the hierarchy of realms...",
+        "Creating bonds that transcend time...",
+        "Planting seeds of future conflicts..."
+      ],
+      "5": [
+        "Inscribing quests in the book of fate...",
+        "Revealing fragments of ancient prophecy...",
+        "Setting the cosmic clock in motion...",
+        "Preparing trials for the worthy...",
+        "The chronicles await your arrival..."
+      ]
+    },
+    "errors": {
+      "retryWithProgress": "You have progress saved from phase {{phase}}. Would you like to resume from where you left off?",
+      "retryOutline": "Would you like to retry generating the story outline?"
     }
   },
   "noDescription": "No description available.",
@@ -810,8 +851,8 @@
       "label": "Error:",
       "resetDescription": "To fix this, you need to reset the game data. This will clear all saves and settings.",
       "resetButton": "Clear Data & Reset Game",
-      "reload":"Reload",
-      "reset":"Reset"
+      "reload": "Reload",
+      "reset": "Reset"
     }
   },
   "ragDebugger": {

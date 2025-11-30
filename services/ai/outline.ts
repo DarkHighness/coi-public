@@ -231,11 +231,7 @@ export const generateStoryOutlinePhased = async (
   if (startPhase <= 1) {
     reportProgress(1, "starting");
 
-    const phase1Prompt = getOutlinePhase1Prompt(
-      theme,
-      language,
-      customContext,
-    );
+    const phase1Prompt = getOutlinePhase1Prompt(theme, language, customContext);
     conversationHistory.push({ role: "user", parts: [{ text: phase1Prompt }] });
 
     try {

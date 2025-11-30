@@ -374,8 +374,14 @@ export const useGameAction = ({
 
             summaries: effectiveSummaries,
             isProcessing: false,
-            isImageGenerating: true,
-            generatingNodeId: modelNodeId,
+            // Only trigger image generation if there's a valid imagePrompt
+            isImageGenerating: !!(
+              modelNode.imagePrompt && modelNode.imagePrompt.trim()
+            ),
+            generatingNodeId:
+              modelNode.imagePrompt && modelNode.imagePrompt.trim()
+                ? modelNodeId
+                : null,
             atmosphere: responseAtmosphere,
             theme: prev.theme,
             logs: [...turnLogs, ...prev.logs].slice(0, 100),
@@ -393,7 +399,6 @@ export const useGameAction = ({
               cacheWrite:
                 (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
             },
-            generateImage: response.generateImage,
           };
         });
 

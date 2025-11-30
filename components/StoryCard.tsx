@@ -57,17 +57,12 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   const handleCopyPrompt = () => {
     if (!segment.imagePrompt) return "";
 
-    // If we have a snapshot, reconstruct the full prompt context
-    if (segment.stateSnapshot) {
-      const imageContext = createImageGenerationContext(
-        gameState,
-        segment.stateSnapshot,
-      );
-      return getSceneImagePrompt(segment.imagePrompt, imageContext);
-    }
+    const imageContext = createImageGenerationContext(
+      gameState,
+      segment.stateSnapshot,
+    );
 
-    // Fallback if no snapshot available
-    return segment.imagePrompt;
+    return getSceneImagePrompt(segment.imagePrompt, imageContext);
   };
 
   if (segment.role === "user") {
@@ -140,6 +135,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       <StoryImage
         imageUrl={segment.imageUrl}
         imagePrompt={segment.imagePrompt}
+        fullImagePrompt={segment.imagePrompt ? handleCopyPrompt() : undefined}
         isGenerating={isGenerating}
         labelVision={labels.vision}
         labelUnavailable={labels.unavailable}
@@ -152,7 +148,6 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
         manualImageGen={aiSettings?.manualImageGen}
-        imageSkipped={segment.imageSkipped}
       />
 
       {/* Manual Image Generation Button */}

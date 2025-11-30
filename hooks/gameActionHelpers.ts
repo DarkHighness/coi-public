@@ -288,7 +288,6 @@ export const createModelNode = (
     summarizedIndex: lastIndex,
     atmosphere: responseAtmosphere,
     narrativeTone: response.narrativeTone,
-    imageSkipped: !response.generateImage,
     ending: response.ending || "continue",
     forceEnd: response.forceEnd,
     stateSnapshot: createStateSnapshot(finalState, {

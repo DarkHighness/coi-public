@@ -438,8 +438,11 @@ export const conditionSchema = z.object({
   visible: conditionVisibleSchema,
   hidden: conditionHiddenSchema.optional(),
   effects: conditionEffectsSchema,
-  duration: z.number().int().optional().describe("Duration in turns."),
-  startTime: z.number().optional(),
+  severity: z
+    .string()
+    .optional()
+    .describe("Severity level (e.g. Mild, Severe). Must in target language."),
+  startTime: z.number().optional().describe("When the condition started."),
   unlocked: z
     .boolean()
     .optional()
@@ -1147,12 +1150,8 @@ export const gameResponseSchema = z.object({
     .string()
     .optional()
     .describe(
-      "A detailed prompt for generating an image of the current scene.",
+      "A detailed prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field or leave it empty.",
     ),
-  generateImage: z
-    .boolean()
-    .optional()
-    .describe("Whether to generate an image for this turn."),
   atmosphere: atmosphereSchema
     .optional()
     .describe(
@@ -1452,11 +1451,9 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
   imagePrompt: z
     .string()
     .optional()
-    .describe("Optional prompt for generating an image of the current scene."),
-  generateImage: z
-    .boolean()
-    .optional()
-    .describe("Whether to generate an image for this turn."),
+    .describe(
+      "Optional prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field or leave it empty.",
+    ),
   atmosphere: atmosphereSchema
     .optional()
     .describe(

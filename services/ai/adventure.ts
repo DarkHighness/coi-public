@@ -63,7 +63,6 @@ export function processFinishTurnResponse(
   accumulatedResponse.choices =
     finishTurnData.choices as GameResponse["choices"];
   accumulatedResponse.imagePrompt = finishTurnData.imagePrompt as string;
-  accumulatedResponse.generateImage = finishTurnData.generateImage as boolean;
 
   // Extract atmosphere
   if (finishTurnData.atmosphere) {

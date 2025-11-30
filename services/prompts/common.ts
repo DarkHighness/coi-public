@@ -233,7 +233,7 @@ export const getCoreRules = (): string => `
   <rule name="VISUALS">
     - **Type 1 (Bird's Eye)**: New location intro.
     - **Type 2 (Player Perspective)**: What player sees.
-    - **Generate**: Only for significant scenes. Default to false for dialogue/routine.
+    - **Image Generation**: Provide \`imagePrompt\` (a detailed scene description) if you want to generate an image for this turn. If not, omit the field or leave it empty. The presence of \`imagePrompt\` indicates your intent to generate an image.
   </rule>
 
   <rule name="ICONS">
