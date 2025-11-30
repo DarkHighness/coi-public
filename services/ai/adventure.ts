@@ -212,7 +212,13 @@ export const generateAdventureTurn = async (
     throw new Error("Story provider not configured");
   }
   const { instance, modelId } = providerInfo;
-  const { narrativeStyle, isRestricted } = resolveThemeConfig(
+  const {
+    narrativeStyle,
+    backgroundTemplate,
+    example,
+    worldSetting,
+    isRestricted,
+  } = resolveThemeConfig(
     context.themeKey,
     context.language,
     context.tFunc as (key: string, options?: Record<string, unknown>) => string,
@@ -232,6 +238,13 @@ export const generateAdventureTurn = async (
     settings.extra?.detailedDescription,
     isRAGEnabled,
     isGemini,
+    gameState,
+    gameState.character.name,
+    gameState.character.title,
+    gameState.character.currentLocation || "Unknown Location",
+    backgroundTemplate,
+    example,
+    worldSetting,
   );
 
   // Handle prompt injection if enabled

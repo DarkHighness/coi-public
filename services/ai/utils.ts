@@ -400,17 +400,41 @@ export const resolveThemeConfig = (
   themeKey: string,
   language: string,
   tFunc: (key: string, options?: Record<string, unknown>) => string,
-): { narrativeStyle: string; isRestricted: boolean } => {
+): {
+  narrativeStyle: string;
+  backgroundTemplate: string;
+  example: string;
+  worldSetting: string;
+  isRestricted: boolean;
+} => {
   const themeConfig = THEMES[themeKey] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
   let narrativeStyle = "";
+  let backgroundTemplate = "";
+  let example = "";
+  let worldSetting = "";
+
   if (tFunc) {
     narrativeStyle = tFunc(`${themeKey}.narrativeStyle`, { ns: "themes" });
+    backgroundTemplate = tFunc(`${themeKey}.backgroundTemplate`, {
+      ns: "themes",
+    });
+    example = tFunc(`${themeKey}.example`, { ns: "themes" });
+    worldSetting = tFunc(`${themeKey}.worldSetting`, { ns: "themes" });
   } else {
     // Fallback if tFunc not available (shouldn't happen in normal flow)
     narrativeStyle = "Standard narrative style.";
+    backgroundTemplate = "Standard background.";
+    example = "Standard example.";
+    worldSetting = "Standard world setting.";
   }
 
-  return { narrativeStyle, isRestricted };
+  return {
+    narrativeStyle,
+    backgroundTemplate,
+    example,
+    worldSetting,
+    isRestricted,
+  };
 };

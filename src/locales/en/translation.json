@@ -809,7 +809,9 @@
       "description": "The game encountered a critical error. This is likely due to data corruption, a PWA update issue, or network failure.",
       "label": "Error:",
       "resetDescription": "To fix this, you need to reset the game data. This will clear all saves and settings.",
-      "resetButton": "Clear Data & Reset Game"
+      "resetButton": "Clear Data & Reset Game",
+      "reload":"Reload",
+      "reset":"Reset"
     }
   },
   "ragDebugger": {
@@ -962,5 +964,19 @@
     "completionTokens": "Completion Token",
     "cacheRead": "Cache Read",
     "cacheWrite": "Cache Write"
+  },
+  "cang_yuan_tu": {
+    "name": "Azure Legacy (Cang Yuan Tu)",
+    "narrativeStyle": "[Core Style]: High-octane action, humanity's war song, God-Demon cultivation, fast-paced combat.\n[World View]: The human world is invaded by the Demon Race. Three major sects (Archean Mountain, Black Sand Grotto-Heaven, Two World Island) lead the resistance. Cultivation system: God-Demon system (Mortal - God-Demon - Great Solar - Dark Star - Inorganic - Creation - Emperor). Emphasizes extreme 'speed' and 'saber arts'.\n[Culture]: Humanity's resilience in desperation. Generations of God-Demons dying to protect mortal cities. Painting Dao: entering the Dao through painting.\n[Writing Guidelines]: Combat descriptions must be extremely fast, emphasizing 'lightning speed'. Protagonist is determined, willing to sacrifice everything to slay demons.",
+    "backgroundTemplate": "[World Background]: Azure Legacy World. The Demon Race invades through World Entrances. Humanity is in peril. You are a young genius from [Dongning Prefecture], practicing saber arts since childhood, determined to become a God-Demon and protect your home. Your father is the clan leader, and your mother went missing during a demon invasion (actually a God-Demon).\n[Current Situation]: You are participating in the entrance exam for [Archean Mountain], the supreme cultivation holy land. You must stand out, inherit the God-Demon legacy, and embark on a path of blood and fire to slay demons.",
+    "example": "A flash of saber light, too fast to even see the afterimage. The Second Firmament Demon King attempting a sneak attack didn't even have time to scream before its head flew high, foul demon blood splashing onto the broken city wall. You sheathe your saber, eyes cold as ice, lightning crackling around you. 'Too slow.' You whisper, turning to face the swarm of the demon army approaching in the distance, gripping your black iron saber. For the lights of the myriad homes behind you, today, you will kill to your heart's content!",
+    "worldSetting": "A high-martial world fully invaded by the Demon Race. Humanity hides within major cities protected by God-Demon experts. Outside is the domain of demons. God-Demons are humanity's backbone, possessing earth-shattering power but facing the constant risk of death. World Entrances are channels connecting to the Demon Realm and the frontlines of the war."
+  },
+  "cardcaptor_sakura": {
+    "name": "Cardcaptor Sakura",
+    "narrativeStyle": "[Core Style]: Heartwarming, healing, magical girl, school life, pure emotions.\n[World View]: Clow Cards with magical powers are scattered in Tomoeda Town, causing strange phenomena. Protagonist Sakura Kinomoto is chosen as the 'Cardcaptor' to seal them.\n[Culture]: Emphasizes the optimistic spirit of 'Everything will be alright'. Pure love and bonds between people.\n[Writing Guidelines]: Atmosphere should be lighthearted and full of 'shoujo' charm. Magic battles are not about destroying enemies but 'sealing' and 'protecting'. Focus on details like costumes, desserts, and cherry blossoms.",
+    "backgroundTemplate": "[World Background]: Tomoeda Town, a seemingly ordinary Japanese town with hidden undercurrents. You are a student at [Tomoeda Elementary School]. You accidentally discovered a glowing ancient book in your basement and released the Clow Cards within.\n[Current Situation]: The Guardian Beast [Kero] (Cerberus) awakens, gives you the Sealing Wand, and tells you to collect all scattered cards to prevent a catastrophe. Today, you sense a new Clow Card; it seems to be hiding in the school clock tower.",
+    "example": "Pink cherry blossom petals drift in the wind, landing on your fluffy battle costume. The tip of the Sealing Wand in your hand flashes with golden light. You take a deep breath, your eyes firm. 'Key that hides the power of the dark, reveal your true power before me! I, Sakura, command you under our contract—Release!' As you chant, the wand extends instantly, and a huge magic circle unfolds beneath your feet. Facing the violent Water Dragon formed by the 'Watery' card, you do not flinch but gently raise your wand: 'Return to your true form, Clow Card!'",
+    "worldSetting": "A modern daily world full of magic and miracles. Magic is not far away but hidden in ordinary life. Each Clow Card has a unique personality and ability (Wind, Fire, Water, Earth, Jump, Fly, etc.). Besides collecting cards, school life, family dinners, and playing with friends are essential parts of the story."
   }
 }

@@ -114,6 +114,12 @@ self.addEventListener("fetch", (event) => {
     return networkOnly(event);
   }
 
+  // 2. External Image Providers: Ignore (let browser handle directly)
+  // This fixes CORS/opaque response issues with background-image
+  if (url.hostname.includes("pollinations.ai")) {
+    return;
+  }
+
   // 2. Navigation (HTML): Stale-While-Revalidate
   if (event.request.mode === "navigate") {
     return staleWhileRevalidate(event);

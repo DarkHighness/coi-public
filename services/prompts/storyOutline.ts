@@ -54,6 +54,7 @@ export const getHiddenLayerRequirements = (): string => `
     - Include SPECIFIC names, dates, numbers, and conditions where appropriate
     - Hidden motives should explain the "why" behind visible behaviors
     - Every major secret should connect to at least one other secret in the outline
+    - **DEFAULT TO 'unlocked: false'**: Only set to 'true' if the protagonist has deeply internalized this secret as part of their backstory. Most secrets should be discovered during gameplay.
   </minimum_standards>
 
   <bad_examples>
@@ -258,6 +259,10 @@ export const OUTLINE_PHASES: OutlinePhaseInfo[] = [
 export const getOutlineSystemInstruction = (
   language: string,
   isRestricted?: boolean,
+  narrativeStyle?: string,
+  backgroundTemplate?: string,
+  example?: string,
+  worldSetting?: string,
 ): string => `
 ${getRoleInstruction()}
 
@@ -266,6 +271,21 @@ You are creating a structured TRPG story outline in multiple phases.
 Each phase generates a specific part of the complete outline.
 Maintain consistency across all phases - each phase builds on previous results.
 </objective>
+
+<theme_context>
+  ${worldSetting ? `<world_setting>${worldSetting}</world_setting>` : ""}
+  ${narrativeStyle ? `<narrative_style>${narrativeStyle}</narrative_style>` : ""}
+  ${
+    backgroundTemplate
+      ? `<background_template>Use this as reference${!isRestricted ? " (be creative, don't copy)" : " (follow closely)"}: "${backgroundTemplate}"</background_template>`
+      : ""
+  }
+  ${
+    example
+      ? `<example_for_reference>${!isRestricted ? "Use this for tone/style reference only. DO NOT copy plot/characters." : "CRITICAL: Study this example to understand the tone, complexity, and style expected. DO NOT copy it directly, but match its quality and depth:"}\n\n${example}\n</example_for_reference>`
+      : ""
+  }
+</theme_context>
 
 <dual_layer_reality>
 Every entity in this world has TWO layers:
@@ -314,16 +334,7 @@ export const getOutlinePhase1Prompt = (
   theme: string,
   language: string,
   customContext?: string,
-  worldSetting?: string,
-  backgroundTemplate?: string,
-  themeExample?: string,
-  isRestricted?: boolean,
-  narrativeStyle?: string,
 ): string => {
-  const worldSettingSection = worldSetting
-    ? `\n<world_setting>\n${worldSetting}\n</world_setting>`
-    : "";
-
   return `
 [PHASE 1 OF 5: WORLD FOUNDATION]
 
@@ -332,10 +343,6 @@ Create the foundational world framework for this story.
 <theme>${theme}</theme>
 <language>${language}</language>
 ${customContext ? `<custom_context>${customContext}</custom_context>` : ""}
-${worldSettingSection}
-${narrativeStyle ? `<narrative_style>${narrativeStyle}</narrative_style>` : ""}
-${backgroundTemplate ? `<background_template>${!isRestricted ? "Use as inspiration only, be creative:" : "Follow closely:"}\n${backgroundTemplate}</background_template>` : ""}
-${themeExample ? `<style_reference>${!isRestricted ? "For tone/style reference only, do NOT copy:" : "Study for quality:"}\n${themeExample}</style_reference>` : ""}
 
 Generate these fields:
 

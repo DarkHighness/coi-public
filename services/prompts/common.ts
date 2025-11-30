@@ -298,7 +298,40 @@ export const getImmersiveWriting = (): string => `
 
   <physical_realism>
     **WEIGHT & CONSEQUENCE**: Consider height, strength, fatigue, and environment.
+    **NPC PHYSICALITY & PRESENCE**:
+    - **Attraction & Chemistry**: When appropriate for the relationship/archetype, describe physical traits that create attraction (e.g., "beads of sweat on defined muscles", "calloused but gentle hands", "scent of sandalwood and rain").
+    - **Visceral Details**: Don't just say "he is strong". Say "the fabric of his shirt strains against his shoulders".
+    - **Archetype Specifics**:
+      * *Warrior/Rugged*: Focus on scars, sweat, muscle definition, rough textures, heat.
+      * *Scholar/Noble*: Focus on elegance, fine fabrics, scent, cool skin, precise movements.
+      * *Rogue/Mysterious*: Focus on shadows, fluid motion, hidden weapons, intense gaze.
   </physical_realism>
+
+  <dynamic_vividness>
+    **MOVEMENT & CHANGE**:
+    - Static descriptions are dead. Describe *movement*.
+    - **Bad**: "There is a candle on the table."
+    - **Good**: "The candle flame dances frantically, casting long, shivering shadows across the table."
+    - **Bad**: "He is angry."
+    - **Good**: "His knuckles whiten as he grips the table, veins pulsing against his temple."
+  </dynamic_vividness>
+
+  <character_vocabulary_resonance>
+    **MATCH WORDS TO SOUL**:
+    - **Warrior/Soldier**: Use hard, sharp, violent verbs (crush, slam, march, sever).
+    - **Scholar/Mage**: Use precise, flowery, intellectual verbs (analyze, weave, deduce, illuminate).
+    - **Rogue/Criminal**: Use slippery, quiet, dangerous verbs (slide, vanish, steal, slice).
+    - **Noble/Royal**: Use commanding, distant, refined verbs (decree, observe, dismiss, grace).
+  </character_vocabulary_resonance>
+
+  <theme_color_resonance>
+    **PAINT WITH THE THEME**:
+    - Use the current 'envTheme' color palette in your descriptions.
+    - **Obsidian/Dark**: Focus on shadows, gloss, cold surfaces, black, purple, deep blues.
+    - **Gold/Royal**: Focus on radiance, warmth, metallic glints, yellow, amber, white.
+    - **Nature/Forest**: Focus on organic textures, growth, decay, green, brown, earth tones.
+    - **Blood/War**: Focus on rust, iron, red, heat, visceral textures.
+  </theme_color_resonance>
 
   <narrative_pacing>
     **MANDATORY TENSION**:
@@ -321,4 +354,41 @@ export const getImmersiveWriting = (): string => `
     - **PURPOSEFUL REPETITION**: Only repeat dialogue if it serves a clear narrative purpose (e.g., emphasis, madness, ritual).
   </dialogue_progression>
 </immersive_writing>
+`;
+
+export const getIdentityEnforcement = (
+  name: string,
+  role: string,
+  location?: string,
+  backgroundTemplate?: string,
+): string => `
+<identity_enforcement>
+  <critical_rule>
+    **WHO IS "YOU"?**
+    - **YOU are ${name}**, the ${role}.
+    - **YOU ARE NOT THE NPC.** Do not confuse your internal thoughts, backstory, or actions with those of the person you are talking to.
+    - **Perspective**: The narrative is ALWAYS from ${name}'s perspective.
+  </critical_rule>
+
+  <dialogue_control>
+    - **Player Silence**: "You" NEVER speak unless the player explicitly chose a dialogue option.
+    - **NPC Focus**: Focus on what the NPC says and does. Do not put words in the player's mouth.
+  </dialogue_control>
+
+  <location_anchor>
+    - **Where are you?**: You are currently at **"${location || "Unknown Location"}"**.
+    - **Background**: The background description must match YOUR current location (${location || "Unknown"}), not the NPC's origin or a random place.
+    - **Consistency**: If the NPC is not at this location, explain why they are here or how you met.
+  </location_anchor>
+
+  ${
+    backgroundTemplate
+      ? `<background_enforcement>
+    - **Background Template**: You MUST strictly adhere to the following background template for identity and setting context:
+      "${backgroundTemplate}"
+    - **Constraint**: Do NOT generate arbitrary backgrounds that contradict this template.
+  </background_enforcement>`
+      : ""
+  }
+</identity_enforcement>
 `;

@@ -150,7 +150,14 @@ export const generateStoryOutlinePhased = async (
     );
   } else {
     // Build fresh system instruction
-    systemInstruction = getOutlineSystemInstruction(language, isRestricted);
+    systemInstruction = getOutlineSystemInstruction(
+      language,
+      isRestricted,
+      themeDataNarrativeStyle,
+      themeDataBackgroundTemplate,
+      themeDataExample,
+      themeDataWorldSetting,
+    );
 
     // Inject prompt injections from config
     const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
@@ -228,11 +235,6 @@ export const generateStoryOutlinePhased = async (
       theme,
       language,
       customContext,
-      themeDataWorldSetting,
-      themeDataBackgroundTemplate,
-      themeDataExample,
-      isRestricted,
-      themeDataNarrativeStyle,
     );
     conversationHistory.push({ role: "user", parts: [{ text: phase1Prompt }] });
 

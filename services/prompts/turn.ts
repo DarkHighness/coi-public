@@ -32,6 +32,7 @@ import {
   getImmersiveWriting,
   getCulturalAdaptationInstruction,
   getCharacterLogicInstruction,
+  getIdentityEnforcement,
 } from "./common";
 import {
   buildLayeredContext,
@@ -56,12 +57,18 @@ export const getCoreSystemInstruction = (
   ragEnabled?: boolean,
   isGemini?: boolean,
   gameState?: GameState,
+  protagonistName: string = "The Protagonist",
+  protagonistRole: string = "Traveler",
+  protagonistLocation: string = "Unknown Location",
+  backgroundTemplate: string = "",
+  example: string = "",
+  worldSetting: string = "",
 ): string => {
   const restrictedInstruction =
     gameState && THEMES[gameState.atmosphere.envTheme]?.restricted
       ? `
 <mode_strict>
-  <warning>STRICT MODE ENABLED - RESTRICTED THEME</warning>
+  <warning>CRITICAL: STRICT MODE ENABLED - RESTRICTED THEME</warning>
   <guidelines>
     <rule>CRITICAL: This is a RESTRICTED THEME based on an existing IP. You must respect the original plot, history, and character personalities.</rule>
     <rule>AGENCY & CONVERGENCE: The player has freedom to influence the story within the gaps of the canon. However, major "Convergence Points" (e.g., key historical events, major character deaths, critical plot turns) MUST occur as established in the source material.</rule>
@@ -99,6 +106,23 @@ export const getCoreSystemInstruction = (
   return `
 ${getRoleInstruction()}
 
+${getIdentityEnforcement(
+  protagonistName,
+  protagonistRole,
+  protagonistLocation,
+  backgroundTemplate,
+)}
+
+<theme_context>
+  ${worldSetting ? `<world_setting>${worldSetting}</world_setting>` : ""}
+  ${themeStyle ? `<narrative_style>${themeStyle}</narrative_style>` : ""}
+  ${
+    example
+      ? `<example_for_reference>${!isRestricted ? "Use this for tone/style reference only. DO NOT copy plot/characters." : "CRITICAL: Study this example to understand the tone, complexity, and style expected. DO NOT copy it directly, but match its quality and depth:"}\n\n${example}\n</example_for_reference>`
+      : ""
+  }
+</theme_context>
+
 <objective>
 You are running a **Living World Simulation**. Your purpose is NOT to tell a story, but to **simulate reality**.
 The narrative emerges from the interaction between the player's choices and the world's immutable laws.
@@ -106,13 +130,13 @@ The narrative emerges from the interaction between the player's choices and the 
 
 ${restrictedInstruction}
 
-${getCulturalAdaptationInstruction(language)}
-
 ${getCoreRules()}
 
-${getCharacterLogicInstruction()}
-
 ${getImmersiveWriting()}
+
+${getCulturalAdaptationInstruction(language)}
+
+${getCharacterLogicInstruction()}
 
 <gm_knowledge_model>
   **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
@@ -204,7 +228,13 @@ ${
 <style>
 ${themeStyle ? `<directive>Strictly adhere to: "${themeStyle}"</directive>` : "<directive>Descriptive, engaging, genre-suitable.</directive>"}
 <directive>Show, don't tell. Use vivid sensory details (sight, sound, smell, touch) to immerse the player.</directive>
-<directive>Focus on character emotions and atmospheric depth.</directive>
+<directive>Focus on character emotions, physical presence (sweat, tension, warmth), and atmospheric depth.</directive>
+<directive>
+  **VIVIDNESS CHECK**:
+  - If a sentence feels flat, rewrite it with a sensory verb.
+  - **Paint with the Theme**: Use the current 'envTheme' as a palette. If the theme is 'obsidian', describe things as dark, glossy, and cold. If 'gold', describe them as radiant and metallic.
+  - **Personality-Driven Action**: NPCs shouldn't just "do" things; they should do them *in their own style* (e.g., "He slammed the mug down" vs "He placed the mug down").
+</directive>
 ${
   detailedDescription
     ? `<directive>
@@ -326,6 +356,12 @@ export function buildTurnPrompt(options: TurnPromptOptions): string {
     godMode,
   } = options;
 
+  // Extract protagonist details
+  const protagonistName = gameState.character?.name || "The Protagonist";
+  const protagonistRole = gameState.character?.title || "Traveler";
+  const protagonistLocation =
+    gameState.character?.currentLocation || "Unknown Location";
+
   // 构建系统指令（静态）
   const systemInstruction = getCoreSystemInstruction(
     language,
@@ -335,6 +371,9 @@ export function buildTurnPrompt(options: TurnPromptOptions): string {
     ragEnabled,
     isGemini,
     gameState,
+    protagonistName,
+    protagonistRole,
+    protagonistLocation,
   );
 
   // 构建上下文选项

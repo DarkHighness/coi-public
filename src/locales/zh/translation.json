@@ -789,7 +789,9 @@
       "description": "游戏遇到严重错误。这可能是由于数据损坏、PWA 更新问题或网络故障引起的。",
       "label": "错误:",
       "resetDescription": "要解决此问题，您需要重置游戏数据。这将清除所有存档和设置。",
-      "resetButton": "清除数据并重置游戏"
+      "resetButton": "清除数据并重置游戏",
+      "reload":"重新加载",
+      "reset":"重置"
     }
   },
   "ragDebugger": {

@@ -839,15 +839,6 @@ export class GameDatabase {
 
       const exists = this.state.locations.find((l) => l.name === data.name);
       if (exists) {
-        if (data.isCurrent) {
-          this.state.currentLocation = data.name;
-          exists.isVisited = true;
-          exists.highlight = true;
-          return createSuccess(
-            exists,
-            `Moved to existing location: ${data.name}`,
-          );
-        }
         return createError(
           `Location "${data.name}" already exists`,
           "ALREADY_EXISTS",
@@ -875,6 +866,9 @@ export class GameDatabase {
       };
       this.state.locations.push(newLocation);
       this.state.currentLocation = data.name;
+      if (this.state.character) {
+        this.state.character.currentLocation = data.name;
+      }
 
       return createSuccess(
         newLocation,
@@ -940,11 +934,6 @@ export class GameDatabase {
       if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
       if (data.unlocked !== undefined) loc.unlocked = data.unlocked;
       loc.highlight = true;
-
-      if (data.isCurrent) {
-        this.state.currentLocation = loc.name;
-        loc.isVisited = true;
-      }
 
       return createSuccess(loc, `Updated location: ${loc.name}`);
     }
@@ -1310,6 +1299,17 @@ export class GameDatabase {
         this.state.character.background = data.profile.background;
       if (data.profile.race) this.state.character.race = data.profile.race;
       if (data.profile.title) this.state.character.title = data.profile.title;
+      if (data.profile.currentLocation) {
+        this.state.character.currentLocation = data.profile.currentLocation;
+        // Sync global location and isVisited
+        this.state.currentLocation = data.profile.currentLocation;
+        const loc = this.state.locations.find(
+          (l) => l.name === data.profile.currentLocation,
+        );
+        if (loc) {
+          loc.isVisited = true;
+        }
+      }
       updated.push("profile");
     }
 

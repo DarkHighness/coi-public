@@ -1074,6 +1074,20 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     categories: ["modern", "novel"],
     restricted: true,
   },
+  cang_yuan_tu: {
+    envTheme: "ethereal",
+    defaultAtmosphere: { envTheme: "ethereal", ambience: "mystical" },
+    icon: "⚡",
+    categories: ["ancient", "fantasy", "novel"],
+    restricted: true,
+  },
+  cardcaptor_sakura: {
+    envTheme: "romance",
+    defaultAtmosphere: { envTheme: "romance", ambience: "quiet" },
+    icon: "🌸",
+    categories: ["modern", "fantasy"],
+    restricted: true,
+  },
   peerless: {
     envTheme: "wuxia",
     defaultAtmosphere: { envTheme: "wuxia", ambience: "tavern" },

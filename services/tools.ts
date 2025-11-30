@@ -407,10 +407,6 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .string()
         .optional()
         .describe("Atmosphere/Environment tag."),
-      isCurrent: z
-        .boolean()
-        .optional()
-        .describe("Set to true if player moves here."),
       isVisited: z
         .boolean()
         .optional()
@@ -437,10 +433,6 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
         .string()
         .optional()
         .describe("Atmosphere/Environment tag."),
-      isCurrent: z
-        .boolean()
-        .optional()
-        .describe("Set to true if player moves here."),
       isVisited: z
         .boolean()
         .optional()
@@ -901,6 +893,10 @@ export const UPDATE_CHARACTER_TOOL: ZodToolDefinition = {
   parameters: z.object({
     name: z.string().optional().describe("Character name/protagonist name."),
     title: z.string().optional().describe("Character's title/role/class."),
+    currentLocation: z
+      .string()
+      .optional()
+      .describe("Character's current location name."),
     status: z
       .string()
       .optional()

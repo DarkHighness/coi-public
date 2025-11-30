@@ -110,11 +110,6 @@ export const inventoryItemSchema = z.object({
   modifiedAt: versionedTimestampSchema
     .optional()
     .describe("Version-aware modification timestamp {forkId, turnNumber}."),
-  /** @deprecated Use modifiedAt instead */
-  lastModified: z
-    .number()
-    .optional()
-    .describe("DEPRECATED: Use modifiedAt. Legacy timestamp."),
   lastAccess: accessTimestampSchema
     .optional()
     .describe(
@@ -221,8 +216,6 @@ export const relationshipSchema = z.object({
   modifiedAt: versionedTimestampSchema
     .optional()
     .describe("Version-aware modification timestamp."),
-  /** @deprecated Use modifiedAt instead */
-  lastModified: z.number().optional().describe("DEPRECATED."),
   lastAccess: accessTimestampSchema
     .optional()
     .describe("Last access timestamp. INVISIBLE to AI."),
@@ -341,8 +334,6 @@ export const questSchema = z.object({
   modifiedAt: versionedTimestampSchema
     .optional()
     .describe("Version-aware modification timestamp."),
-  /** @deprecated Use modifiedAt instead */
-  lastModified: z.number().optional().describe("DEPRECATED."),
   lastAccess: accessTimestampSchema
     .optional()
     .describe("Last access timestamp. INVISIBLE to AI."),
@@ -521,8 +512,6 @@ export const knowledgeEntrySchema = z.object({
   modifiedAt: versionedTimestampSchema
     .optional()
     .describe("Version-aware modification timestamp."),
-  /** @deprecated Use modifiedAt instead */
-  lastModified: z.number().optional().describe("DEPRECATED."),
   lastAccess: accessTimestampSchema
     .optional()
     .describe("Last access timestamp. INVISIBLE to AI."),
@@ -788,6 +777,10 @@ export const characterStatusSchema = z.object({
   race: z
     .string()
     .describe("The character's race (e.g. Human, Elf, Dwarf, etc.)."),
+  currentLocation: z
+    .string()
+    .optional()
+    .describe("The protagonist's current location name."),
 });
 
 // ============================================================================
