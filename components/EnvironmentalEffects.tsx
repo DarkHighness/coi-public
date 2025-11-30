@@ -119,26 +119,34 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-      {/* Background Layer 1 */}
-      <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
-          activeLayer === 1 ? "opacity-30" : "opacity-0"
-        }`}
-        style={{
-          backgroundImage: bg1 ? `url(${bg1})` : "none",
-          filter: "blur(8px) brightness(0.6)",
-        }}
-      />
-      {/* Background Layer 2 */}
-      <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
-          activeLayer === 2 ? "opacity-30" : "opacity-0"
-        }`}
-        style={{
-          backgroundImage: bg2 ? `url(${bg2})` : "none",
-          filter: "blur(8px) brightness(0.6)",
-        }}
-      />
+      {/* Background Layer 1 - Using img element for proper CORS handling */}
+      {bg1 && (
+        <img
+          src={bg1}
+          alt=""
+          crossOrigin="anonymous"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            activeLayer === 1 ? "opacity-30" : "opacity-0"
+          }`}
+          style={{
+            filter: "blur(8px) brightness(0.6)",
+          }}
+        />
+      )}
+      {/* Background Layer 2 - Using img element for proper CORS handling */}
+      {bg2 && (
+        <img
+          src={bg2}
+          alt=""
+          crossOrigin="anonymous"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            activeLayer === 2 ? "opacity-30" : "opacity-0"
+          }`}
+          style={{
+            filter: "blur(8px) brightness(0.6)",
+          }}
+        />
+      )}
 
       {effect === "rain" && (
         <div className="w-full h-full">

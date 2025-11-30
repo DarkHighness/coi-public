@@ -1137,9 +1137,9 @@ export const gameResponseSchema = z.object({
         text: z.string().describe("The text of the choice."),
         consequence: z
           .string()
-          .optional()
+          .nullish()
           .describe(
-            "A brief hint about the likely consequence of this choice.",
+            "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
           ),
       }),
     )
@@ -1148,9 +1148,9 @@ export const gameResponseSchema = z.object({
     .describe("2-4 options for the player's next action."),
   imagePrompt: z
     .string()
-    .optional()
+    .nullish()
     .describe(
-      "A detailed prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field or leave it empty.",
+      "A detailed prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field, leave it empty, or set to null.",
     ),
   atmosphere: atmosphereSchema
     .optional()
@@ -1159,19 +1159,19 @@ export const gameResponseSchema = z.object({
     ),
   narrativeTone: z
     .string()
-    .optional()
+    .nullish()
     .describe(
-      "The tone of the narrative (e.g. 'suspenseful', 'cheerful', 'melancholy').",
+      "The tone of the narrative (e.g. 'suspenseful', 'cheerful', 'melancholy'). Can be null or omitted.",
     ),
   inventoryActions: z
     .array(
       z.object({
         action: z.enum(["add", "remove", "update"]),
-        id: z.string().optional(),
+        id: z.string().nullish(),
         name: z.string(),
         visible: inventoryItemVisibleSchema.optional(),
         hidden: inventoryItemHiddenSchema.optional(),
-        lore: z.string().optional(),
+        lore: z.string().nullish(),
         unlocked: z.boolean().optional(),
       }),
     )
@@ -1181,11 +1181,11 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update", "remove"]),
-        id: z.string().optional(),
+        id: z.string().nullish(),
         known: z.boolean().optional(),
         visible: relationshipVisibleSchema.partial().optional(),
         hidden: relationshipHiddenSchema.partial().optional(),
-        notes: z.string().optional(),
+        notes: z.string().nullish(),
         unlocked: z.boolean().optional(),
       }),
     )
@@ -1196,13 +1196,13 @@ export const gameResponseSchema = z.object({
       z.object({
         type: z.enum(["current", "known"]),
         action: z.enum(["update", "add"]),
-        id: z.string().optional(),
+        id: z.string().nullish(),
         name: z.string(),
         visible: locationVisibleSchema.partial().optional(),
         hidden: locationHiddenSchema.partial().optional(),
-        lore: z.string().optional(),
-        environment: z.string().optional(),
-        notes: z.string().optional(),
+        lore: z.string().nullish(),
+        environment: z.string().nullish(),
+        notes: z.string().nullish(),
         unlocked: z.boolean().optional(),
       }),
     )
@@ -1213,7 +1213,7 @@ export const gameResponseSchema = z.object({
       z.object({
         action: z.enum(["add", "update", "complete", "fail"]),
         id: z.string(),
-        title: z.string().optional(),
+        title: z.string().nullish(),
         type: questTypeSchema.optional(),
         visible: questVisibleSchema.partial().optional(),
         hidden: questHiddenSchema.partial().optional(),
@@ -1226,12 +1226,12 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update"]),
-        id: z.string().optional(),
-        title: z.string().optional(),
+        id: z.string().nullish(),
+        title: z.string().nullish(),
         category: knowledgeCategorySchema.optional(),
         visible: knowledgeVisibleSchema.partial().optional(),
         hidden: knowledgeHiddenSchema.partial().optional(),
-        discoveredAt: z.string().optional(),
+        discoveredAt: z.string().nullish(),
         relatedTo: z.array(z.string()).optional(),
         unlocked: z.boolean().optional(),
       }),
@@ -1268,10 +1268,10 @@ export const gameResponseSchema = z.object({
           z.object({
             action: z.enum(["add", "update", "remove"]),
             name: z.string(),
-            level: z.string().optional(),
+            level: z.string().nullish(),
             visible: skillVisibleSchema.partial().optional(),
             hidden: skillHiddenSchema.partial().optional(),
-            category: z.string().optional(),
+            category: z.string().nullish(),
             unlocked: z.boolean().optional(),
           }),
         )
@@ -1280,7 +1280,7 @@ export const gameResponseSchema = z.object({
         .array(
           z.object({
             action: z.enum(["add", "update", "remove"]),
-            id: z.string().optional(),
+            id: z.string().nullish(),
             name: z.string(),
             type: conditionTypeSchema.optional(),
             visible: conditionVisibleSchema.partial().optional(),
@@ -1295,9 +1295,9 @@ export const gameResponseSchema = z.object({
         .array(
           z.object({
             action: z.enum(["add", "update", "remove"]),
-            id: z.string().optional(),
+            id: z.string().nullish(),
             name: z.string(),
-            description: z.string().optional(),
+            description: z.string().nullish(),
             effects: z.array(z.string()).optional(),
             triggerConditions: z.array(z.string()).optional(),
             unlocked: z.boolean().optional(),
@@ -1306,11 +1306,11 @@ export const gameResponseSchema = z.object({
         .optional(),
       profile: z
         .object({
-          status: z.string().optional(),
-          appearance: z.string().optional(),
-          profession: z.string().optional(),
-          background: z.string().optional(),
-          race: z.string().optional(),
+          status: z.string().nullish(),
+          appearance: z.string().nullish(),
+          profession: z.string().nullish(),
+          background: z.string().nullish(),
+          race: z.string().nullish(),
         })
         .optional(),
     })
@@ -1323,7 +1323,7 @@ export const gameResponseSchema = z.object({
         visible: timelineEventVisibleSchema,
         hidden: timelineEventHiddenSchema.optional(),
         involvedEntities: z.array(z.string()).optional(),
-        chainId: z.string().optional(),
+        chainId: z.string().nullish(),
         newChain: z
           .object({
             description: z.string(),
@@ -1345,8 +1345,8 @@ export const gameResponseSchema = z.object({
     .describe("New timeline events."),
   timeUpdate: z
     .string()
-    .optional()
-    .describe("The new time string if time has passed."),
+    .nullish()
+    .describe("The new time string if time has passed. Can be null or omitted."),
   worldInfoUpdates: z
     .array(
       z.object({

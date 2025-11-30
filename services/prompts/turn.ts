@@ -174,43 +174,119 @@ ${
     ? `
   <critical>**YOU MUST USE THE finish_turn TOOL**</critical>
 
+  <tool_calling_format>
+    **CRITICAL: Follow this EXACT format for ALL tool calls**:
+
+    1. Tool calls are JSON objects, NOT text
+    2. All string values must use DOUBLE quotes ("), never single quotes (')
+    3. No trailing commas in objects or arrays
+    4. Property names must be EXACTLY as specified (case-sensitive)
+    5. Do NOT include comments or extra whitespace
+    6. **OMIT fields you don't need** - don't set them to null or empty strings
+
+    **CORRECT Example**:
+    {
+      "name": "finish_turn",
+      "args": {
+        "narrative": "You enter the tavern...",
+        "choices": [
+          {"text": "Order a drink"},
+          {"text": "Talk to the barkeep", "consequence": "He might share rumors"}
+        ],
+        "atmosphere": {
+          "envTheme": "fantasy",
+          "visualEffect": "none",
+          "audioEffect": "none",
+          "mood": "tavern"
+        }
+        // Note: imagePrompt is OMITTED, not set to null or ""
+      }
+    }
+
+    **WRONG - Common Errors to AVOID**:
+    ❌ Using single quotes: 'narrative': 'text'
+    ❌ Missing quotes on property names: {narrative: "text"}
+    ❌ Trailing commas: {"narrative": "text",}
+    ❌ Null values: {"imagePrompt": null}  ← Just omit the field!
+    ❌ Empty strings: {"imagePrompt": ""}  ← Just omit the field!
+    ❌ Undefined values: {"narrative": undefined}
+    ❌ Extra properties not in the schema
+
+    **Field Omission Rule**:
+    - If a field is OPTIONAL and you don't need it: DON'T include it in JSON
+    - DO: {"narrative": "text", "choices": [...]}  ✅
+    - DON'T: {"narrative": "text", "choices": [...], "imagePrompt": null}  ❌
+  </tool_calling_format>
+
   <when_to_call_finish_turn>
-    Call the \`finish_turn\` tool when you have:
-    1. Completed all necessary state queries (query_inventory, query_location, etc.)
-    2. Applied all state updates (update_inventory, update_relationship, etc.)
-    3. Generated the final narrative and player choices
+    **SEQUENCE - Follow this order EVERY turn**:
+
+    1. First: Query/Update tools (if needed)
+       - query_inventory, query_location, etc.
+       - update_inventory, update_relationship, etc.
+
+    2. Last: Call finish_turn with all required parameters
 
     **DO NOT**:
     - Return raw JSON text directly
     - Wait for a "final round" signal
     - Skip calling finish_turn even if you've done other tool calls
+    - Call finish_turn multiple times in one turn
   </when_to_call_finish_turn>
 
   <finish_turn_parameters>
-    The finish_turn tool requires these exact parameters:
+    **REQUIRED Parameters** (check each one before calling):
 
-    {
-      "narrative": "string - Your complete narrative response in ${language}",
-      "choices": ["array", "of", "choice", "strings"],
-      "atmosphere": {
-        "envTheme": "string",
-        "visualEffect": "string",
-        "audioEffect": "string",
-        "mood": "string"
-      },
-      "endingType": "optional - only if story ends"
-    }
+    ✓ narrative (string):
+      - MUST be present and non-empty
+      - Your complete narrative response in ${language}
+      - Can contain markdown formatting
 
-    **CRITICAL**:
-    - \`narrative\` is REQUIRED (must not be empty or undefined)
-    - \`choices\` is REQUIRED (array with at least 2-4 options)
-    - \`atmosphere\` is REQUIRED
-    - Use the finish_turn tool EVERY turn - there is no schema fallback for you
+    ✓ choices (array of objects):
+      - MUST be an array with 2-4 choice objects
+      - Each choice object must have:
+        • text: string (the choice text)
+        • consequence: string or omit (optional hint about the outcome)
+      - Example: [
+          {"text": "Order a drink"},
+          {"text": "Talk to the barkeep", "consequence": "He might share rumors"},
+          {"text": "Leave quietly"}
+        ]
+
+    ✓ atmosphere (object) **[OPTIONAL but RECOMMENDED]**:
+      - When provided, must have these required fields:
+        • envTheme: string (e.g., "fantasy", "cyberpunk", "horror")
+        • ambience: string (audio environment, e.g., "tavern", "forest", "city")
+      - Optional field:
+        • weather: string (e.g., "rain", "snow", "fog", "none")
+      - Can be omitted if atmosphere doesn't change
+
+    ⚠ OPTIONAL Parameters:
+    - imagePrompt: string (only if generating an image)
+    - endingType: enum (only if story ends)
+      • Possible values: "death", "victory", "true_ending", "bad_ending", "neutral_ending"
+    - narrativeTone: string (e.g., "suspenseful", "cheerful")
+    - All entity action arrays (inventoryActions, relationshipActions, etc.)
+    - characterUpdates: object with attributes, skills, conditions, profile, etc.
+    - timelineEvents: array of timeline event objects
+    - timeUpdate: string (new time if time has passed)
+
+    **Pre-Call Checklist**:
+    Before calling finish_turn, verify:
+    1. ✓ narrative is a non-empty string
+    2. ✓ choices is an array with 2-4 choice objects (each with 'text' field)
+    3. ✓ atmosphere object has required fields (envTheme, ambience) if provided
+    4. ✓ All values use correct types (string/array/object)
+    5. ✓ No undefined, null, or missing required values in REQUIRED fields
   </finish_turn_parameters>
 
-  <rule>Do NOT output markdown text outside of tool arguments.</rule>
-  <rule>Use other tools (update_inventory, query_location, etc.) BEFORE calling finish_turn.</rule>
-  <rule>finish_turn MUST be your LAST tool call in every turn.</rule>
+  <rules>
+    <rule>Do NOT output markdown text outside of tool arguments.</rule>
+    <rule>Use other tools (update_inventory, query_location, etc.) BEFORE calling finish_turn.</rule>
+    <rule>finish_turn MUST be your LAST tool call in every turn.</rule>
+    <rule>NEVER skip finish_turn - it's required for EVERY turn.</rule>
+    <rule>Double-check JSON syntax before submitting tool call.</rule>
+  </rules>
 `
     : `
   <critical>**STRICT JSON OUTPUT ONLY**</critical>
@@ -218,6 +294,12 @@ ${
   <rule>Do NOT include any text outside the JSON block (no markdown code blocks, no explanations).</rule>
   <rule>The JSON must be minified/compact (no newlines, no indentation) to ensure integrity.</rule>
   <rule>Ensure all property names are enclosed in double quotes.</rule>
+  <rule>**OMIT optional fields** - If a field is optional and not needed, don't include it in the JSON. Don't set fields to null or empty strings.</rule>
+
+  **Field Omission Examples**:
+  - ✅ GOOD: {"narrative": "...", "choices": [...], "atmosphere": {...}}
+  - ❌ BAD: {"narrative": "...", "choices": [...], "atmosphere": {...}, "imagePrompt": null, "endingType": null}
+  - ❌ BAD: {"narrative": "...", "choices": [...], "atmosphere": {...}, "imagePrompt": ""}
   <rule>Escape all double quotes within string values (e.g., "He said, \\"Hello\\"").</rule>
   <rule>Example: {"narrative":"You walk forward.","choices":["Go left","Go right"]}</rule>
 `
