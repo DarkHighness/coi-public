@@ -87,7 +87,11 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     if (!file || !onImageUpload) return;
 
     // Check for existing image and confirm overwrite
-    if (segment.imageId || segment.imageUrl) {
+    const hasExistingImage =
+      !!segment.imageId ||
+      (!!segment.imageUrl && segment.imageUrl.trim() !== "");
+
+    if (hasExistingImage) {
       if (
         !window.confirm(
           t(
@@ -277,6 +281,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           audioKey={segment.audioKey}
           onAudioGenerated={(key) => onAudioGenerated?.(segment.id, key)}
           onCopyPrompt={segment.imagePrompt ? handleCopyPrompt : undefined}
+          onUpload={onImageUpload ? handleUploadClick : undefined}
         />
 
         {/* Ending Banner */}

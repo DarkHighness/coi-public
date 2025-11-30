@@ -34,7 +34,11 @@ type EditableSection =
 
 const SECTION_CONFIGS: Record<
   EditableSection,
-  { icon: string; labelKey: string; stateKey: keyof GameState | "global" | "segments" }
+  {
+    icon: string;
+    labelKey: string;
+    stateKey: keyof GameState | "global" | "segments";
+  }
 > = {
   character: {
     icon: "👤",
@@ -78,7 +82,11 @@ const SECTION_CONFIGS: Record<
     stateKey: "causalChains",
   },
   global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
-  segments: { icon: "📄", labelKey: "stateEditor.segmentsList", stateKey: "segments" },
+  segments: {
+    icon: "📄",
+    labelKey: "stateEditor.segmentsList",
+    stateKey: "segments",
+  },
 };
 
 export const StateEditor: React.FC<StateEditorProps> = ({
@@ -96,7 +104,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
 
   // Segment Viewer State
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
+    null,
+  );
 
   // Derive full history for the list view
   const history = useMemo(() => {
@@ -106,7 +116,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Set default selection when opening segments tab
   useEffect(() => {
-    if (activeSection === "segments" && !selectedSegmentId && gameState.activeNodeId) {
+    if (
+      activeSection === "segments" &&
+      !selectedSegmentId &&
+      gameState.activeNodeId
+    ) {
       setSelectedSegmentId(gameState.activeNodeId);
     }
   }, [activeSection, gameState.activeNodeId, selectedSegmentId]);
@@ -393,7 +407,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               )}
 
               {/* JSON Editor (Right side in split view, full width otherwise) */}
-              <div className={`flex-1 overflow-hidden relative ${activeSection === "segments" ? "w-2/3" : "w-full"}`}>
+              <div
+                className={`flex-1 overflow-hidden relative ${activeSection === "segments" ? "w-2/3" : "w-full"}`}
+              >
                 <textarea
                   value={jsonText}
                   onChange={(e) => handleJsonChange(e.target.value)}

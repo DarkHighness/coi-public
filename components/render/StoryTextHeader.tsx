@@ -7,6 +7,7 @@ interface StoryTextHeaderProps {
   onPlay: () => void;
   label: string;
   onCopyPrompt?: () => string | Promise<string>;
+  onUpload?: () => void;
 }
 
 export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
@@ -15,6 +16,7 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   onPlay,
   label,
   onCopyPrompt,
+  onUpload,
 }) => {
   const { t } = useTranslation();
   const [showCopied, setShowCopied] = React.useState(false);
@@ -37,6 +39,28 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
       </span>
 
       <div className="flex items-center gap-2">
+        {onUpload && (
+          <button
+            onClick={onUpload}
+            className="flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider text-theme-muted hover:text-theme-text transition-all"
+            title={t("uploadImage", "Upload Image")}
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+          </button>
+        )}
+
         {onCopyPrompt && (
           <button
             onClick={handleCopyPrompt}

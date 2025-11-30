@@ -20,6 +20,7 @@ interface StoryTextProps {
   audioKey?: string;
   onAudioGenerated?: (key: string) => void;
   onCopyPrompt?: () => string | Promise<string>;
+  onUpload?: () => void;
 }
 
 export const StoryText: React.FC<StoryTextProps> = ({
@@ -33,6 +34,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
   audioKey,
   onAudioGenerated,
   onCopyPrompt,
+  onUpload,
 }) => {
   const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
@@ -73,6 +75,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
         onPlay={playAudio}
         label={t("readAloud")}
         onCopyPrompt={onCopyPrompt}
+        onUpload={onUpload}
       />
 
       <div className="prose prose-invert prose-lg max-w-none text-theme-text leading-8 font-serif">

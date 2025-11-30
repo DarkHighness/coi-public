@@ -920,7 +920,11 @@ export const useGameEngine = () => {
           setGameState((prev) => {
             if (prev.isImageGenerating && prev.generatingNodeId === nodeId) {
               console.warn("Image generation timeout for node:", nodeId);
-              return { ...prev, isImageGenerating: false, generatingNodeId: null };
+              return {
+                ...prev,
+                isImageGenerating: false,
+                generatingNodeId: null,
+              };
             }
             return prev;
           });
@@ -1009,7 +1013,12 @@ export const useGameEngine = () => {
         }
       } catch (e) {
         clearTimeout(imageTimeout);
-        console.error("Failed to generate image for node:", nodeId, "Error:", e);
+        console.error(
+          "Failed to generate image for node:",
+          nodeId,
+          "Error:",
+          e,
+        );
         setGameState((prev) => ({
           ...prev,
           isImageGenerating: false,

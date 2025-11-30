@@ -134,9 +134,8 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   // Early return: Global image disable
   if (disableImages) return null;
 
-  // If no image prompt and no image (ID or URL) and no upload handler, don't show anything
-  if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl && !onUpload)
-    return null;
+  // If no image prompt and no image (ID or URL), don't show anything
+  if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl) return null;
 
   // Determine state
   const hasImage = !!displayUrl;
@@ -146,7 +145,14 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
 
   // Use explicit hasFailed prop if provided, otherwise fallback to inference (though inference is less reliable for transient errors)
-  const actuallyFailed = hasFailed || (!hasImage && !isGenerating && canRegenerate && !manualImageGen && hasPrompt && hasFailed === undefined); // Fallback only if undefined
+  const actuallyFailed =
+    hasFailed ||
+    (!hasImage &&
+      !isGenerating &&
+      canRegenerate &&
+      !manualImageGen &&
+      hasPrompt &&
+      hasFailed === undefined); // Fallback only if undefined
 
   const shouldShowGenerating = isGenerating && !manualImageGen;
 
@@ -241,7 +247,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
             <button
               onClick={handleCopyPrompt}
               className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-              title={copied ? t("storyImage.promptCopied") : t("storyImage.copyPrompt")}
+              title={
+                copied
+                  ? t("storyImage.promptCopied")
+                  : t("storyImage.copyPrompt")
+              }
             >
               {copied ? (
                 <svg
