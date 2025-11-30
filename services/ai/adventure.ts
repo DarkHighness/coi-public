@@ -437,7 +437,7 @@ export const runAgenticLoop = async (
     let raw: unknown;
 
     // Retry logic for transient errors like MALFORMED_FUNCTION_CALL
-    const maxRetries = 2;
+    let maxRetries = 2; // Changed to let to allow modification for Gemini fallback
     let retryCount = 0;
     let lastError: Error | null = null;
 
@@ -451,12 +451,12 @@ export const runAgenticLoop = async (
     const isGeminiProvider = protocol === "gemini";
 
     // Keep tools available (including finish_turn) in ALL rounds
-    const effectiveToolConfig = toolConfig;
+    let effectiveToolConfig = toolConfig; // Changed to let for fallback modification
 
     // Schema behavior:
     // - Gemini: NEVER use schema (conflicts with tools), rely on finish_turn tool
     // - Others: ALWAYS use schema for structured output guarantee
-    const effectiveSchema = isGeminiProvider ? undefined : finishTurnSchema;
+    let effectiveSchema = isGeminiProvider ? undefined : finishTurnSchema; // Changed to let
 
     while (retryCount <= maxRetries) {
       try {
@@ -476,7 +476,7 @@ export const runAgenticLoop = async (
         usage = resultData.usage;
         raw = resultData.raw;
         console.log(
-          `[Agentic Loop] Turn ${turnCount + 1} response received. Usage:`,
+          `[Agentic Loop] Turn ${turnCount + 1} response received. Schema: ${!!effectiveSchema}, Tools: ${!!effectiveToolConfig}, Usage:`,
           usage,
           `HasFunctionCalls: ${!!(result as { functionCalls?: unknown }).functionCalls}`,
         );
@@ -493,12 +493,27 @@ export const runAgenticLoop = async (
           errorMessage.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
-          if (retryCount <= maxRetries) {
+
+          // Special handling for Gemini: try fallback to schema-only mode after 2 failed attempts
+          if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
             console.warn(
-              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries})...`,
+              `[Agentic Loop] Gemini tools failing repeatedly. Attempting fallback to schema-only mode...`,
             );
-            // Small delay before retry
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            // Disable tools and use schema instead for remaining attempts
+            effectiveToolConfig = undefined;
+            effectiveSchema = finishTurnSchema;
+            maxRetries = 4; // Allow 2 more attempts in schema mode (total 5)
+            continue;
+          }
+
+          if (retryCount <= maxRetries) {
+            // Exponential backoff: 500ms, 1000ms, 2000ms, 4000ms
+            const delayMs = Math.min(500 * Math.pow(2, retryCount - 1), 4000);
+            console.warn(
+              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries}, waiting ${delayMs}ms)...`,
+            );
+            // Exponential backoff before retry
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
             continue;
           }
         }
