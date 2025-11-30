@@ -286,9 +286,11 @@ export const GamePage: React.FC<GamePageProps> = ({
       currentHistoryLength: currentHistory.length,
     });
 
-    // If the length of currentHistory is 1, we are retrying to regenerate the first turn
+    // If the length of currentHistory is 1 or 2, we are retrying to regenerate the first turn
     // We need to remove the first segment from currentHistory
-    if (currentHistory.length === 1) {
+    if ((currentHistory.length === 1 && currentHistory[0].role === "model") || (
+      currentHistory.length === 2 && currentHistory[0].role === "user" && currentHistory[1].role === "model"
+    )) {
       setGameState((prev) => ({
         ...prev,
         currentHistory: [],

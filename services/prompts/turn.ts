@@ -160,11 +160,44 @@ ${getCharacterLogicInstruction()}
   </how_to_use>
 
   <critical_rule>
+    **WHEN TO SET \`unlocked: true\` - STRICT CRITERIA**:
+
     NEVER directly reveal hidden information to the player unless:
     1. They take specific actions to uncover it (investigation, magic, etc.)
-    2. An NPC explicitly reveals it
-    3. A story event naturally exposes it
-    When revelation happens, SET \`unlocked: true\` in the same turn.
+    2. An NPC explicitly reveals it in dialogue
+    3. A story event naturally exposes it (e.g., villain monologue, finding documents)
+
+    **CRITICAL: \`unlocked: true\` means "Player NOW KNOWS the hidden truth"**
+
+    <unlock_requirements>
+      Before setting \`unlocked: true\`, ask yourself:
+      1. ✓ Has the player obtained DEFINITIVE PROOF of this truth?
+      2. ✓ Is the revelation COMPLETE (not partial or hinted)?
+      3. ✓ Would the player character LOGICALLY know this now?
+      4. ✓ Is this the RIGHT MOMENT (not too early)?
+
+      If ANY answer is NO → **KEEP \`unlocked: false\`**
+    </unlock_requirements>
+
+    <timing_philosophy>
+      - **Early Game (Turns 1-50)**: Almost NEVER unlock anything
+      - **Mid Game (Turns 51-150)**: Unlock only after significant discovery events
+      - **Late Game (Turns 151+)**: More liberal unlocking for climactic reveals
+      - **Some secrets**: NEVER unlock (player never discovers them - this is GOOD)
+    </timing_philosophy>
+
+    <wrong_vs_right>
+      ❌ WRONG: "Player suspects NPC is evil" → \`unlocked: true\`
+      ✅ RIGHT: "Player found NPC's confession letter and read it" → \`unlocked: true\`
+
+      ❌ WRONG: "Player enters cursed location" → unlock hidden dangers immediately
+      ✅ RIGHT: "Player triggered trap and saw the mechanism" → unlock that specific danger
+
+      ❌ WRONG: "It would be dramatic to reveal now" → \`unlocked: true\`
+      ✅ RIGHT: "Player completed investigation quest" → \`unlocked: true\`
+    </wrong_vs_right>
+
+    **DEFAULT**: When in doubt, KEEP LOCKED. Mystery > Premature revelation.
   </critical_rule>
 </gm_knowledge_model>
 
@@ -343,6 +376,7 @@ ${
   Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
   Use --- horizontal rules to separate distinct scenes or time jumps.
   Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
+  **CRITICAL: DO NOT USE CODE BLOCKS (\`\`\`). ALL CODE MUST BE INLINE (\`).**
   Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.
 </markdown_formatting>
 </style>

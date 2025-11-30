@@ -258,10 +258,11 @@ export const useGameEngine = () => {
     language,
     isTranslating,
     currentSlotId,
-    generateImageForNode: async (nodeId: string) => {
+    generateImageForNode: async (nodeId: string, nodeOverride?: StorySegment) => {
       // Forward to the actual implementation defined below
-      await generateImageForNode(nodeId);
+      await generateImageForNode(nodeId, nodeOverride);
     },
+    triggerSave,
   });
 
   const startNewGame = async (
@@ -533,6 +534,21 @@ export const useGameEngine = () => {
             );
             // Error state is already set by handleAction, player can use retry button
           } else if (result && result.success) {
+            console.log("[StartNewGame] First turn generated successfully");
+
+            // === Auto-save after first turn completes ===
+            // This ensures the initial game state with first node is persisted
+            // Use setTimeout to ensure state updates from handleAction have propagated
+            setTimeout(async () => {
+              try {
+                await saveToSlot(slotId, gameStateRef.current);
+                console.log("[StartNewGame] First turn auto-saved successfully");
+              } catch (saveError) {
+                console.error("[StartNewGame] Failed to auto-save after first turn:", saveError);
+                // Non-critical error - game can still continue
+              }
+            }, 100);
+
             // On success, index initial entities in background (non-blocking)
             if (aiSettings.embedding?.enabled) {
               indexInitialEntities(gameStateRef.current, slotId).catch(
@@ -847,8 +863,11 @@ export const useGameEngine = () => {
     }
   };
 
-  const generateImageForNode = async (nodeId: string) => {
-    const node = gameStateRef.current.nodes[nodeId];
+  const generateImageForNode = async (
+    nodeId: string,
+    nodeOverride?: StorySegment,
+  ) => {
+    const node = nodeOverride || gameStateRef.current.nodes[nodeId];
     if (!node || !node.imagePrompt) {
       console.warn(
         "Cannot generate image: missing node or imagePrompt for nodeId:",

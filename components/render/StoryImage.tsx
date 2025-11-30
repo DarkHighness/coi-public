@@ -52,11 +52,13 @@
  * |--------|-----|----------|------------|--------|-------------|
  * |   ❌   | ❌  |    -     |     -      |   -    | Unavailable |
  * |   ✅   | ❌  |    ❌    |     -      |   -    | null (1.2)  |
- * |   ✅   | ❌  |    ✅    |    ✅      |   -    | Loading     |
+ * |   ✅   | ❌  |    ✅    |    ✅      |  ❌    | Loading     |
  * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    | Manual      |
+ * |   ✅   | ❌  |    ✅    |    ✅      |  ✅    | Manual*     |
  * |   ✅   | ❌  |    ✅    |    ❌      |  ❌    | Failed      |
  * |   ✅   | ✅  |    -     |     -      |   -    | Show Image  |
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * * Manual mode overrides generating state (new segments show "Click to Generate")
  */
 
 import React from "react";
@@ -233,11 +235,13 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     // Manual mode: waiting for user to click generate
     // Failed mode: generation attempted but failed (not generating, not manual mode)
     const actuallyFailed = !isGenerating && canRegenerate && !manualImageGen;
+    // When manualImageGen is enabled, never show "generating" state for new segments
+    const shouldShowGenerating = isGenerating && !manualImageGen;
 
     return (
       <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
         <ImagePlaceholder
-          isGenerating={isGenerating || false}
+          isGenerating={shouldShowGenerating}
           hasFailed={actuallyFailed}
           labelVision={labelVision}
           labelUnavailable={labelUnavailable}

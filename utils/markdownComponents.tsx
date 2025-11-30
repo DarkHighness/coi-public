@@ -14,18 +14,13 @@ export const markdownComponents = {
   em: ({ node, ...props }: any) => (
     <em className="italic text-theme-text/90" {...props} />
   ),
-  code: ({ node, inline, ...props }: any) =>
-    inline ? (
-      <code
-        className="px-1 py-0.5 bg-theme-surface/60 rounded text-sm font-mono text-theme-accent"
-        {...props}
-      />
-    ) : (
-      <code
-        className="block p-3 bg-theme-surface/40 rounded font-mono text-sm my-2"
-        {...props}
-      />
-    ),
+  code: ({ node, inline, ...props }: any) => (
+    <code
+      className="px-1 py-0.5 bg-theme-surface/60 rounded text-sm font-mono text-theme-accent"
+      {...props}
+    />
+  ),
+  pre: ({ node, ...props }: any) => <span {...props} />,
   blockquote: ({ node, ...props }: any) => (
     <blockquote
       className="border-l-4 border-theme-primary/50 pl-4 my-4 italic text-theme-text/80"

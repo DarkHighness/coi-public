@@ -54,7 +54,20 @@ export const getHiddenLayerRequirements = (): string => `
     - Include SPECIFIC names, dates, numbers, and conditions where appropriate
     - Hidden motives should explain the "why" behind visible behaviors
     - Every major secret should connect to at least one other secret in the outline
-    - **DEFAULT TO 'unlocked: false'**: Only set to 'true' if the protagonist has deeply internalized this secret as part of their backstory. Most secrets should be discovered during gameplay.
+    - **CRITICAL: DEFAULT 'unlocked: false' FOR ALL SECRETS**:
+      • Only set 'unlocked: true' if this secret is DEEPLY INTERNALIZED as part of the protagonist's PERSONAL BACKSTORY
+      • Examples of valid unlocked: true cases:
+        - Protagonist's own childhood trauma they remember
+        - Family secrets they witnessed directly
+        - Personal skills/conditions they're aware of
+      • Examples where unlocked MUST be false:
+        - NPC's true motives (even trusted mentor) ❌
+        - Item's hidden properties (unless protagonist forged it themselves) ❌
+        - Location secrets (unless protagonist has been there before) ❌
+        - World secrets/conspiracies (discover during gameplay) ❌
+        - Quest true objectives (reveal through story) ❌
+      • **DEFAULT MINDSET**: Assume unlocked: false unless you have STRONG REASON for true
+      • **GOAL**: Create mystery and discovery opportunities for gameplay
   </minimum_standards>
 
   <bad_examples>

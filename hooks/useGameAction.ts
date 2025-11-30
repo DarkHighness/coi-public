@@ -27,7 +27,11 @@ interface UseGameActionProps {
   language: LanguageCode;
   isTranslating: boolean;
   currentSlotId: string | null;
-  generateImageForNode: (nodeId: string) => Promise<void>;
+  generateImageForNode: (
+    nodeId: string,
+    nodeOverride?: StorySegment,
+  ) => Promise<void>;
+  triggerSave: () => void;
 }
 
 export const useGameAction = ({
@@ -39,6 +43,7 @@ export const useGameAction = ({
   isTranslating,
   currentSlotId,
   generateImageForNode,
+  triggerSave,
 }: UseGameActionProps) => {
   const { t } = useTranslation();
 
@@ -348,7 +353,7 @@ export const useGameAction = ({
             [modelNodeId]: modelNode,
           };
 
-          return {
+          const updatedState = {
             ...prev,
             nodes: newNodes,
             activeNodeId: modelNodeId,
@@ -402,6 +407,11 @@ export const useGameAction = ({
                 (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
             },
           };
+
+          // CRITICAL: Update ref immediately to ensure generateImageForNode can see the new node
+          gameStateRef.current = updatedState;
+
+          return updatedState;
         });
 
         // Update provider stats
@@ -413,19 +423,23 @@ export const useGameAction = ({
         );
 
         // Trigger image generation if there's a valid imagePrompt
+        // The ref has been updated above, so this should work now
         if (modelNode.imagePrompt && modelNode.imagePrompt.trim()) {
           console.log(
             "[handleAction] Triggering image generation for node:",
             modelNodeId,
           );
           // Call async but don't await - let it run in background
-          generateImageForNode(modelNodeId).catch((error) => {
+          generateImageForNode(modelNodeId, modelNode).catch((error) => {
             console.error(
               "[handleAction] Image generation failed:",
               error,
             );
           });
         }
+
+        // Trigger auto-save after successful turn generation
+        triggerSave();
 
         return {
           success: true,
