@@ -7,6 +7,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState } from "../types";
 import { getValidIcon } from "../utils/emojiValidator";
+import { deriveHistory } from "../utils/storyUtils";
+import { StorySegment } from "../types";
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -76,7 +78,7 @@ const SECTION_CONFIGS: Record<
     stateKey: "causalChains",
   },
   global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
-  segments: { icon: "📄", labelKey: "stateEditor.segments", stateKey: "segments" },
+  segments: { icon: "📄", labelKey: "stateEditor.segmentsList", stateKey: "segments" },
 };
 
 export const StateEditor: React.FC<StateEditorProps> = ({
@@ -93,50 +95,21 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Helper to get segment context (current + 3 ancestors + 3 descendants)
-  const getSegmentContext = (state: GameState) => {
-    if (!state.activeNodeId) return [];
+  // Segment Viewer State
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
 
-    const segments = [];
-    const nodes = state.nodes;
-    let currentId: string | null = state.activeNodeId;
+  // Derive full history for the list view
+  const history = useMemo(() => {
+    if (activeSection !== "segments") return [];
+    return deriveHistory(gameState.nodes, gameState.activeNodeId);
+  }, [gameState.nodes, gameState.activeNodeId, activeSection]);
 
-    // 1. Get current node
-    const currentNode = nodes[currentId];
-    if (!currentNode) return [];
-
-    // 2. Get up to 3 ancestors
-    const ancestors = [];
-    let ancestorId = currentNode.parentId;
-    for (let i = 0; i < 3 && ancestorId; i++) {
-      const ancestor = nodes[ancestorId];
-      if (ancestor) {
-        ancestors.unshift(ancestor); // Add to beginning to keep order
-        ancestorId = ancestor.parentId;
-      } else {
-        break;
-      }
+  // Set default selection when opening segments tab
+  useEffect(() => {
+    if (activeSection === "segments" && !selectedSegmentId && gameState.activeNodeId) {
+      setSelectedSegmentId(gameState.activeNodeId);
     }
-
-    // 3. Get up to 3 descendants (following latest path)
-    const descendants = [];
-    let descendantParentId = currentId;
-    for (let i = 0; i < 3; i++) {
-      // Find children of current descendantParentId
-      const children = Object.values(nodes).filter(
-        (n) => n.parentId === descendantParentId
-      );
-
-      if (children.length === 0) break;
-
-      // Pick the latest child (by timestamp)
-      const latestChild = children.sort((a, b) => b.timestamp - a.timestamp)[0];
-      descendants.push(latestChild);
-      descendantParentId = latestChild.id;
-    }
-
-    return [...ancestors, currentNode, ...descendants];
-  };
+  }, [activeSection, gameState.activeNodeId, selectedSegmentId]);
 
   // Extract the current section's data
   const getSectionData = (section: EditableSection): any => {
@@ -152,7 +125,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       };
     }
     if (section === "segments") {
-      return getSegmentContext(gameState);
+      // Return the selected segment's data
+      if (!selectedSegmentId) return null;
+      return gameState.nodes[selectedSegmentId] || null;
     }
     return gameState[SECTION_CONFIGS[section].stateKey as keyof GameState];
   };
@@ -165,7 +140,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setError(null);
       setHasChanges(false);
     }
-  }, [isOpen, activeSection, gameState]);
+  }, [isOpen, activeSection, gameState, selectedSegmentId]); // Add selectedSegmentId dependency
 
   // Validate JSON on change
   const handleJsonChange = (value: string) => {
@@ -373,24 +348,69 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               </div>
             </div>
 
-            {/* JSON Editor */}
-            <div className="flex-1 overflow-hidden relative">
-              <textarea
-                value={jsonText}
-                onChange={(e) => handleJsonChange(e.target.value)}
-                readOnly={isReadOnly}
-                className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
-                  error ? "border-2 border-theme-error/50" : ""
-                } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
-                spellCheck={false}
-                placeholder={t("loadingGeneric") || "Loading..."}
-              />
-              {/* Error indicator */}
-              {error && (
-                <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
-                  <span aria-hidden="true">⚠️</span> {error}
+            {/* Content Area: Split View for Segments, Single View for others */}
+            <div className="flex-1 flex overflow-hidden relative">
+              {activeSection === "segments" && (
+                <div className="w-1/3 border-r border-theme-border flex flex-col overflow-hidden bg-theme-bg/10">
+                  <div className="p-2 border-b border-theme-border bg-theme-bg/20 text-xs font-bold text-theme-muted uppercase tracking-wider">
+                    {t("stateEditor.segmentsList") || "History Segments"}
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {history.map((segment) => {
+                      const isSelected = segment.id === selectedSegmentId;
+                      const isCurrent = segment.id === gameState.activeNodeId;
+                      return (
+                        <button
+                          key={segment.id}
+                          onClick={() => setSelectedSegmentId(segment.id)}
+                          className={`w-full text-left p-2 rounded text-xs transition-colors border ${
+                            isSelected
+                              ? "bg-theme-primary/20 border-theme-primary text-theme-text"
+                              : "bg-theme-surface border-transparent hover:bg-theme-surface/80 text-theme-muted hover:text-theme-text"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold uppercase opacity-70">
+                              {segment.role}
+                            </span>
+                            {isCurrent && (
+                              <span className="px-1.5 py-0.5 bg-theme-success/20 text-theme-success rounded-full text-[10px]">
+                                CURRENT
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate opacity-80">
+                            {segment.text || "(No text)"}
+                          </div>
+                          <div className="text-[10px] opacity-50 mt-1 font-mono">
+                            {segment.id}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
+
+              {/* JSON Editor (Right side in split view, full width otherwise) */}
+              <div className={`flex-1 overflow-hidden relative ${activeSection === "segments" ? "w-2/3" : "w-full"}`}>
+                <textarea
+                  value={jsonText}
+                  onChange={(e) => handleJsonChange(e.target.value)}
+                  readOnly={isReadOnly}
+                  className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
+                    error ? "border-2 border-theme-error/50" : ""
+                  } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
+                  spellCheck={false}
+                  placeholder={t("loadingGeneric") || "Loading..."}
+                />
+                {/* Error indicator */}
+                {error && (
+                  <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
+                    <span aria-hidden="true">⚠️</span> {error}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
