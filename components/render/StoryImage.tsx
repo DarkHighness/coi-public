@@ -183,8 +183,8 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     return null;
   }
 
-  // State 3: Has imagePrompt AND imageUrl - Show image with action buttons
-  if (displayUrl && imagePrompt) {
+  // State 3: Has imageUrl (regardless of prompt) - Show image with action buttons
+  if (displayUrl) {
     return (
       <>
         <div

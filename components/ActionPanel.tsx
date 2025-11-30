@@ -108,6 +108,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [availableChoices, isDisabled, onAction]);
 
+  // Auto-collapse choices on mobile when processing finishes
+  useEffect(() => {
+    if (!gameState.isProcessing) {
+      setIsChoicesExpanded(false);
+    }
+  }, [gameState.isProcessing]);
+
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customInput.trim()) return;
