@@ -618,15 +618,15 @@ export const useGameEngine = () => {
       // Sanitize choices to ensure valid structure
       const sanitizedChoices = Array.isArray(response.choices)
         ? response.choices.map((c) => {
-            if (typeof c === "object" && c !== null) {
-              const obj = c as any;
-              return {
-                text: obj.text || obj.choice || obj.label || "Continue",
-                consequence: obj.consequence,
-              };
-            }
-            return String(c);
-          })
+          if (typeof c === "object" && c !== null) {
+            const obj = c as any;
+            return {
+              text: obj.text || obj.choice || obj.label || "Continue",
+              consequence: obj.consequence,
+            };
+          }
+          return String(c);
+        })
         : [];
 
       const modelNodeId = `model-${newSegmentId}`;
@@ -858,12 +858,12 @@ export const useGameEngine = () => {
               },
               nodes: url
                 ? {
-                    ...prev.nodes,
-                    [modelNodeId]: {
-                      ...prev.nodes[modelNodeId],
-                      imageUrl: url,
-                    },
-                  }
+                  ...prev.nodes,
+                  [modelNodeId]: {
+                    ...prev.nodes[modelNodeId],
+                    imageUrl: url,
+                  },
+                }
                 : prev.nodes,
             }));
 
@@ -968,7 +968,7 @@ export const useGameEngine = () => {
     let selectedTheme =
       initialTheme ||
       Object.keys(THEMES)[
-        Math.floor(Math.random() * Object.keys(THEMES).length)
+      Math.floor(Math.random() * Object.keys(THEMES).length)
       ];
 
     // Preload audio in background if not muted (Mobile optimization: trigger on user click)
@@ -1209,7 +1209,7 @@ export const useGameEngine = () => {
           // when documents are added. No manual initialization needed.
           // The RAG service should already be initialized via App.tsx
 
-          const themeName = t(`themes.${selectedTheme}.name`, selectedTheme);
+          const themeName = t(`${selectedTheme}.name`, { ns: "themes" });
           const prompt = t("initialPrompt.begin", { theme: themeName });
 
           // Store initial prompt for retry
@@ -1418,7 +1418,7 @@ export const useGameEngine = () => {
         try {
           // RAG is now managed by the SharedWorker - no manual initialization needed
 
-          const themeName = t(`themes.${theme}.name`, theme);
+          const themeName = t(`${theme}.name`, { ns: "themes" });
           const prompt =
             t("initialPrompt.begin", { theme: themeName }) +
             (customContext

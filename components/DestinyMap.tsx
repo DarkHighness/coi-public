@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StorySegment, GameState } from "../types";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface DestinyMapProps {
   gameState: GameState;
@@ -319,7 +320,10 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             const isCurrent = node.id === activeNodeId;
             const isModel = node.segment.role === "model";
             const isActivePath = node.isMainPath;
-            const ending = node.segment.ending;
+
+            let ending = node.segment.ending;
+            if (ending === "continue")
+              ending = null;
 
             // Determine ending-specific styling
             const getEndingColor = () => {
@@ -465,7 +469,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                       )}
                     </div>
                     <p className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80">
-                      {node.segment.text}
+                      <MarkdownText content={node.segment.text} disableIndent/>
                     </p>
                   </div>
                 </foreignObject>

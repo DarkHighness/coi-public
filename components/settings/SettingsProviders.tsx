@@ -500,14 +500,14 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                   {instance.tokenStats && (
                     <div className="hidden sm:flex flex-col items-end mr-2 text-[10px] text-theme-muted leading-tight">
                       <span title={t("tokenStats.totalTokens")}>
-                        {instance.tokenStats.totalTokens.toLocaleString()} T
+                        {instance.tokenStats.totalTokens.toLocaleString()} Tokens
                       </span>
                       <span
                         className="opacity-70"
                         title={`${t("tokenStats.in")} / ${t("tokenStats.out")}`}
                       >
-                        {instance.tokenStats.promptTokens.toLocaleString()} /{" "}
-                        {instance.tokenStats.completionTokens.toLocaleString()}
+                        In: {instance.tokenStats.promptTokens.toLocaleString()} |{" "}
+                        Out: {instance.tokenStats.completionTokens.toLocaleString()}
                       </span>
                     </div>
                   )}

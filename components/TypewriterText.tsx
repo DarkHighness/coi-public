@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { markdownComponents } from "../utils/markdownComponents";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface TypewriterTextProps {
   text: string;
@@ -74,12 +72,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   return (
     <div className="story-text text-lg leading-relaxed text-theme-text">
       {enableMarkdown ? (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={markdownComponents}
-        >
-          {displayedText}
-        </ReactMarkdown>
+        <MarkdownText content={displayedText}/>
       ) : (
         <div className="whitespace-pre-line">{displayedText}</div>
       )}

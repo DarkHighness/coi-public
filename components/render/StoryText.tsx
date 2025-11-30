@@ -7,6 +7,7 @@ import { useStoryAudio } from "../../hooks/useStoryAudio";
 import { AISettings } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
 import { markdownComponents } from "../../utils/markdownComponents";
+import { MarkdownText } from "./MarkdownText";
 
 interface StoryTextProps {
   text: string;
@@ -84,12 +85,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
             enableMarkdown={true}
           />
         ) : (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
-            {text}
-          </ReactMarkdown>
+          <MarkdownText content={text}/>
         )}
       </div>
     </div>

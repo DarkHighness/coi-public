@@ -25,42 +25,56 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
 
   return (
     <div className="space-y-2">
-      <button
+      <div
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-xs uppercase tracking-widest text-theme-muted hover:text-theme-primary transition-colors py-1"
+        className={`flex items-center justify-between cursor-pointer group ${
+          expanded ? "mb-3" : "mb-0"
+        }`}
       >
-        <span className="flex items-center gap-2">
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          {t("worldInfo.recentEvents") || "Recent Events"}
-        </span>
-        <svg
-          className={`w-3 h-3 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <div
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          ></path>
-        </svg>
-      </button>
+          <span className="flex items-center gap-2">
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            {t("timeline.title") || "Timeline Events"}
+            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+              {events.length}
+            </span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+            <svg
+              className={`w-4 h-4 transition-transform duration-300 ${
+                expanded ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
+            </svg>
+          </div>
+        </div>
+      </div>
 
       {expanded && (
         <div className="space-y-3 pt-2 pl-2 animate-slide-in">

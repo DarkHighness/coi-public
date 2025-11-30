@@ -473,19 +473,24 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   themeFont,
 }) => {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(true);
+  const [expanded, setExpanded] = useState(true);
 
   if (!character) return null;
 
   return (
     <div>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont} ${isOpen ? "mb-3" : "mb-0"}`}
+    <div
+      onClick={() => setExpanded(!expanded)}
+      className={`flex items-center justify-between cursor-pointer group ${
+        expanded ? "mb-3" : "mb-0"
+      }`}
+    >
+      <div
+        className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
       >
-        <div className="flex items-center">
+        <span className="flex items-center gap-2">
           <svg
-            className="w-4 h-4 mr-2"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -497,24 +502,31 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             ></path>
           </svg>
-          {t("character.title")}
-        </div>
-        <svg
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          ></path>
-        </svg>
-      </button>
+          {t("character.title") || "Character"}
+        </span>
+      </div>
 
-      {isOpen && (
+      <div className="flex items-center gap-2">
+        <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <svg
+            className={`w-4 h-4 transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+      {expanded && (
         <div className="space-y-4 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
           <div className="bg-theme-surface-highlight/30 p-3 rounded border border-theme-border">
@@ -525,9 +537,6 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 >
                   {character.name}
                 </h3>
-                <span className="text-xs font-bold text-theme-muted uppercase tracking-wider">
-                  {t("character.severity") || "Severity:"}
-                </span>
               </div>
               {character.race && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">
@@ -613,18 +622,22 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           )}
 
           {/* Conditions List */}
-          {character.conditions && character.conditions.length > 0 && (
-            <div>
-              <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold mt-3">
-                {t("conditions") || "Conditions"}
-              </h4>
+          <div>
+            <h4 className="text-[10px] text-theme-muted uppercase tracking-wider mb-2 font-bold mt-3">
+              {t("conditions") || "Conditions"}
+            </h4>
+            {character.conditions && character.conditions.length > 0 ? (
               <div className="flex flex-col gap-1">
                 {character.conditions.map((cond, idx) => (
                   <ConditionItem key={idx} condition={cond} />
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-theme-muted text-xs italic p-2 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+                {t("noConditions") || "No active conditions."}
+              </div>
+            )}
+          </div>
 
           {/* Hidden Traits (Only Unlocked) */}
           {character.hiddenTraits &&

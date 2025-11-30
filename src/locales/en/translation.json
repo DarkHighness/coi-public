@@ -546,6 +546,7 @@
   "mainQuest": "Main",
   "sideQuest": "Side",
   "conditions": "Conditions",
+  "noConditions": "No active conditions.",
   "traits": "Traits",
   "apiConsole": "API Console",
   "apiConsoleDescription": "Trace raw API requests and token usage.",

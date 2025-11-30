@@ -276,9 +276,44 @@ export const GamePage: React.FC<GamePageProps> = ({
     navigate("/");
   };
 
-  const themeName = t(`${gameState.theme}.name`, { ns: "themes" });
-  const prompt = t("initialPrompt.begin", { theme: themeName });
-  const defaultContinuePrompt = gameState.initialPrompt || prompt;
+  const handleRetry = () => {
+    const themeName = t(`${gameState.theme}.name`, { ns: "themes" });
+    const prompt = t("initialPrompt.begin", { theme: themeName });
+    const defaultInitialPrompt = gameState.initialPrompt || prompt;
+
+    // If the length of currentHistory is 1, we are retrying to regenerate the first turn
+    // We need to remove the first segment from currentHistory
+    if (currentHistory.length === 1) {
+      setGameState((prev) => ({
+        ...prev,
+        currentHistory: [],
+      }));
+      handleAction(defaultInitialPrompt);
+      return;
+    }
+
+    // Find the last user segment to retry from
+    const lastSegment = [...currentHistory]
+      .reverse()
+      .find((seg) => seg.role === "user" || seg.role === "command");
+
+    if (lastSegment && lastSegment.role === "user") {
+      // Retry using the SAME parent ID as the original user segment
+      handleAction(
+        lastSegment.text,
+        false,
+        undefined,
+        lastSegment.parentId || undefined,
+      );
+    } else if (lastSegment && lastSegment.role === "command") {
+      // We must encoutnered a command segment
+      // Currently, only /sudo command has `command` role
+      handleForceUpdate(lastSegment.text);
+    } else {
+      // The last segment is not a user segment, so we retry from the initial prompt
+      handleAction(defaultInitialPrompt);
+    }
+  }
 
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
@@ -308,29 +343,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             setIsMagicMirrorOpen(true);
           }}
           onGenerateImage={generateImageForNode}
-          onRetry={() => {
-            // Find the last user segment to retry from
-            const lastSegment = [...currentHistory]
-              .reverse()
-              .find((seg) => seg.role === "user" || seg.role === "command");
-
-            if (lastSegment.role === "user") {
-              // Retry using the SAME parent ID as the original user segment
-              handleAction(
-                lastSegment.text,
-                false,
-                undefined,
-                lastSegment.parentId || undefined,
-              );
-            } else if (lastSegment.role === "command") {
-              // We must encoutnered a command segment
-              // Currently, only /sudo command has `command` role
-              handleForceUpdate(lastSegment.text);
-            } else {
-              // The last segment is not a user segment, so we retry from the initial prompt
-              handleAction(defaultContinuePrompt);
-            }
-          }}
+          onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
           onNewGame={handleNewGameClick}
@@ -368,29 +381,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             setIsMagicMirrorOpen(true);
           }}
           onGenerateImage={generateImageForNode}
-          onRetry={() => {
-            // Find the last user segment to retry from
-            const lastSegment = [...currentHistory]
-              .reverse()
-              .find((seg) => seg.role === "user" || seg.role === "command");
-
-            if (lastSegment.role === "user") {
-              // Retry using the SAME parent ID as the original user segment
-              handleAction(
-                lastSegment.text,
-                false,
-                undefined,
-                lastSegment.parentId || undefined,
-              );
-            } else if (lastSegment.role === "command") {
-              // We must encoutnered a command segment
-              // Currently, only /sudo command has `command` role
-              handleForceUpdate(lastSegment.text);
-            } else {
-              // The last segment is not a user segment, so we retry from the initial prompt
-              handleAction(defaultContinuePrompt);
-            }
-          }}
+          onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
           onNewGame={handleNewGameClick}

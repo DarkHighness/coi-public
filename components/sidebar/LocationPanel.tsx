@@ -374,9 +374,9 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
       <div
         className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
       >
-        <button
+        <div
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group cursor-pointer ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -397,11 +397,8 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
               d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
             ></path>
           </svg>
-          {t("location.known")}
-          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {locations.length}
-          </span>
-        </button>
+          {t("location.title") || "Location"}
+        </div>
 
         <div className="flex items-center gap-2">
           <button

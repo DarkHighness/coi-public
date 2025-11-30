@@ -65,30 +65,34 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
   return (
     <div>
       <div
-        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between cursor-pointer group ${
+          isOpen ? "mb-3" : "mb-0"
+        }`}
       >
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
+        <div
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
         >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-            ></path>
-          </svg>
-          {t("inventory")}
-          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {allItems.length}
+          <span className="flex items-center gap-2">
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              ></path>
+            </svg>
+            {t("inventory") || "Inventory"}
+            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+              {inventory.length}
+            </span>
           </span>
-        </button>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -159,12 +163,11 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             </button>
           )}
 
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-theme-muted hover:text-theme-primary p-1"
-          >
+          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              className={`w-4 h-4 transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -176,7 +179,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 d="M19 9l-7 7-7-7"
               ></path>
             </svg>
-          </button>
+          </div>
         </div>
       </div>
 

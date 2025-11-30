@@ -525,6 +525,7 @@
   "mainQuest": "主线",
   "sideQuest": "支线",
   "conditions": "状态",
+  "noConditions": "暂无状态",
   "traits": "特质",
   "apiConsole": "API 控制台",
   "apiConsoleDescription": "追踪原始 API 请求和令牌使用情况。",

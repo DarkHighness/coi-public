@@ -25,27 +25,29 @@ interface WorldInfoPanelProps {
 
 export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
   history,
-  factions,
+  factions = [],
   worldSetting,
   themeFont,
   outline,
   unlockMode,
 }) => {
-  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation();
 
   // Check if world info is unlocked (either via unlock mode or story progress)
-  const isWorldSettingUnlocked = unlockMode || outline?.worldSettingUnlocked;
-  const isMainGoalUnlocked = unlockMode || outline?.mainGoalUnlocked;
-
-  // Always render the panel, even if empty, so users can see the "World Info" button
-  // If empty, we'll show a message when expanded
+  const isWorldSettingUnlocked = unlockMode || outline?.worldSettingUnlocked || false;
+  const isMainGoalUnlocked = unlockMode || outline?.mainGoalUnlocked || false;
 
   return (
-    <div className="space-y-2">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-xs uppercase tracking-widest text-theme-muted hover:text-theme-primary transition-colors py-1"
+    <div>
+      <div
+      onClick={() => setExpanded(!expanded)}
+      className={`flex items-center justify-between cursor-pointer group ${
+        expanded ? "mb-3" : "mb-0"
+      }`}
+    >
+      <div
+        className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
       >
         <span className="flex items-center gap-2">
           <svg
@@ -63,25 +65,31 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
           </svg>
           {t("worldInfo.title") || "World Info"}
         </span>
-        <svg
-          className={`w-3 h-3 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          ></path>
-        </svg>
-      </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <svg
+            className={`w-4 h-4 transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    </div>
 
       {expanded && (
-        <div className="space-y-4 pt-2 pl-2 animate-slide-in">
+        <div className="space-y-4 pt-2 pl-2 animate-[fade-in_0.3s_ease-in]">
           {/* Empty State Check */}
           {!history &&
             !worldSetting?.visible?.description &&
@@ -117,14 +125,14 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
               <div className="text-xs text-theme-text/80 font-serif leading-relaxed">
                 <MarkdownText content={worldSetting.visible.description} />
               </div>
-              {worldSetting.visible.rules && (
+              {worldSetting.visible?.rules && (
                 <div className="text-[10px] text-theme-muted mt-1">
                   📜 {worldSetting.visible.rules}
                 </div>
               )}
 
               {/* Hidden World Setting - shown when unlocked */}
-              {isWorldSettingUnlocked && worldSetting.hidden && (
+              {isWorldSettingUnlocked && worldSetting?.hidden && (
                 <div className="mt-2 pt-2 border-t border-theme-unlocked/20">
                   <div className="flex items-center gap-1 text-theme-unlocked text-[9px] uppercase tracking-wider font-bold mb-1">
                     <svg
@@ -140,12 +148,12 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                     </svg>
                     {t("worldInfo.hiddenTruth") || "Hidden Truth"}
                   </div>
-                  {worldSetting.hidden.hiddenRules && (
+                  {worldSetting.hidden?.hiddenRules && (
                     <div className="text-[10px] text-theme-danger/80 italic">
                       <MarkdownText content={worldSetting.hidden.hiddenRules} />
                     </div>
                   )}
-                  {worldSetting.hidden.secrets &&
+                  {worldSetting.hidden?.secrets &&
                     worldSetting.hidden.secrets.length > 0 && (
                       <ul className="text-[10px] text-theme-danger/70 mt-1 list-disc pl-3">
                         {worldSetting.hidden.secrets.map((secret, idx) => (
@@ -178,12 +186,12 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 {t("worldInfo.secretObjective") || "Secret Objective"}
               </h4>
               <div className="text-xs text-theme-danger/80 font-serif leading-relaxed italic bg-theme-danger/5 p-2 rounded border border-theme-danger/20">
-                {outline.mainGoal.hidden.trueDescription && (
+                {outline.mainGoal.hidden?.trueDescription && (
                   <MarkdownText
                     content={outline.mainGoal.hidden.trueDescription}
                   />
                 )}
-                {outline.mainGoal.hidden.trueConditions && (
+                {outline.mainGoal.hidden?.trueConditions && (
                   <p className="mt-1 text-[10px] text-theme-danger/60">
                     📝 {outline.mainGoal.hidden.trueConditions}
                   </p>
@@ -238,12 +246,12 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                       )}
                     </div>
                     <div className="text-[10px] text-theme-text/70 italic">
-                      {faction.visible.agenda}
+                      {faction.visible?.agenda}
                     </div>
 
                     {/* Visible Extended Info */}
                     <div className="mt-2 space-y-1 border-t border-theme-border/30 pt-1">
-                      {faction.visible.members &&
+                      {faction.visible?.members &&
                         faction.visible.members.length > 0 && (
                           <div className="text-[10px] text-theme-muted">
                             <span className="text-theme-primary/80 font-bold block mb-1">
@@ -267,7 +275,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                             </div>
                           </div>
                         )}
-                      {faction.visible.influence && (
+                      {faction.visible?.influence && (
                         <div className="text-[10px] text-theme-muted flex items-start gap-1">
                           <span className="text-theme-primary/80 font-bold whitespace-nowrap">
                             {t("faction.influence") || "Influence"}:
@@ -277,7 +285,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           </span>
                         </div>
                       )}
-                      {faction.visible.relations &&
+                      {faction.visible?.relations &&
                         faction.visible.relations.length > 0 && (
                           <div className="text-[10px] text-theme-muted">
                             <span className="text-theme-primary/80 font-bold block mb-0.5">
@@ -315,12 +323,12 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           {t("secretAgenda") || "Secret Agenda"}
                         </div>
                         <div className="text-[10px] text-theme-danger/80 not-italic mb-2">
-                          {faction.hidden.agenda}
+                          {faction.hidden?.agenda}
                         </div>
 
                         {/* Hidden Extended Info */}
                         <div className="space-y-1">
-                          {faction.hidden.members &&
+                          {faction.hidden?.members &&
                             faction.hidden.members.length > 0 && (
                               <div className="text-[10px] text-theme-danger/60">
                                 <span className="text-theme-unlocked/80 font-bold block mb-1">
@@ -344,7 +352,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                 </div>
                               </div>
                             )}
-                          {faction.hidden.influence && (
+                          {faction.hidden?.influence && (
                             <div className="text-[10px] text-theme-danger/60 flex items-start gap-1">
                               <span className="text-theme-unlocked/80 font-bold whitespace-nowrap">
                                 {t("faction.influence") || "Influence"}:
@@ -352,7 +360,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                               <span>{faction.hidden.influence}</span>
                             </div>
                           )}
-                          {faction.hidden.relations &&
+                          {faction.hidden?.relations &&
                             faction.hidden.relations.length > 0 && (
                               <div className="text-[10px] text-theme-danger/60">
                                 <span className="text-theme-unlocked/80 font-bold block mb-0.5">

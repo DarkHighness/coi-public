@@ -201,18 +201,22 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   return (
     <div>
       <div
-        className={`flex items-center justify-between ${isOpen ? "mb-3" : "mb-0"}`}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between cursor-pointer group ${
+          isOpen ? "mb-3" : "mb-0"
+        }`}
       >
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest group ${themeFont}`}
+        <div
+          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
         >
-          <span className="w-2 h-2 bg-theme-primary rounded-full mr-2 animate-pulse"></span>
-          {t("questPanel.title")}
-          <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-            {allQuests.length}
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-theme-primary rounded-full animate-pulse"></span>
+            {t("questPanel.title")}
+            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+              {allQuests.length}
+            </span>
           </span>
-        </button>
+        </div>
 
         <div className="flex items-center gap-2">
           {allQuests.length > DISPLAY_LIMIT && (
@@ -239,12 +243,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               </svg>
             </button>
           )}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-theme-muted hover:text-theme-primary p-1"
-          >
+          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+              className={`w-4 h-4 transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -256,7 +259,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 d="M19 9l-7 7-7-7"
               ></path>
             </svg>
-          </button>
+          </div>
         </div>
       </div>
 

@@ -127,10 +127,10 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           </svg>
           <div className="flex-1">
             <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-1">
-              {t("models.noAvailableProviders") || "No Available Providers"}
+              {t("providers.noAvailableProviders") || "No Available Providers"}
             </h4>
             <p className="text-xs text-red-400">
-              {t("models.noAvailableProvidersDesc") ||
+              {t("providers.noAvailableProvidersDesc") ||
                 "No providers are available. Please go to the Providers tab to enable at least one provider and configure its API key."}
             </p>
           </div>
