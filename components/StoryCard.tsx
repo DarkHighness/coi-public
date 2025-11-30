@@ -39,6 +39,7 @@ export interface StoryCardProps {
   onImageUpload?: (id: string, imageId: string) => void;
   gameState: GameState;
   saveId?: string;
+  onImageDelete?: (id: string) => void;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -56,9 +57,10 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   onImageUpload,
   gameState,
   saveId,
+  onImageDelete,
 }) => {
   const { t } = useTranslation();
-  const { saveImage } = useImageStorageContext();
+  const { saveImage, deleteImage } = useImageStorageContext();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCopyPrompt = () => {
@@ -114,6 +116,32 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     } finally {
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    if (!segment.imageId && !segment.imageUrl) return;
+
+    if (
+      !window.confirm(
+        t("deleteImageConfirm", "Are you sure you want to delete this image?"),
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Delete from IndexedDB if we have an ID
+      if (segment.imageId) {
+        await deleteImage(segment.imageId);
+      }
+
+      // Update game state
+      if (onImageDelete) {
+        onImageDelete(segment.id);
+      }
+    } catch (error) {
+      console.error("Failed to delete image:", error);
     }
   };
 
@@ -201,8 +229,11 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
         manualImageGen={aiSettings?.manualImageGen}
-        onUpload={
-          onImageUpload && !disableImages ? handleUploadClick : undefined
+        onUpload={onImageUpload ? handleUploadClick : undefined}
+        onDelete={
+          (segment.imageId || segment.imageUrl) && onImageDelete
+            ? handleDeleteClick
+            : undefined
         }
       />
 

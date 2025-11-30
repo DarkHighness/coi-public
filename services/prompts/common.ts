@@ -273,7 +273,21 @@ export const getImmersiveWriting = (): string => `
   <narrative_perspective>
     **STRICT SECOND PERSON ("You")**:
     - The narrative MUST be told from the player's perspective using "You".
-    - **PROHIBITED**: Do NOT use Third Person (He/She/They) for the protagonist's actions or feelings.
+    - **ACTIONS**: Describe the protagonist's actions using "You" (e.g., "You walk...", "You pick up...").
+    - **THOUGHTS & FEELINGS**: Describe the protagonist's internal monologue and emotions using "You" (e.g., "You feel a chill...", "You wonder if...").
+    - **PROHIBITED**: Do NOT use Third Person (He/She/They) or the protagonist's name for the protagonist's actions, thoughts, or feelings.
+
+    <examples>
+      ❌ BAD (Third Person Action): "Li Qing draws his sword and charges."
+      ✅ GOOD (Second Person Action): "You draw your sword and charge."
+
+      ❌ BAD (Third Person Thought): "He wonders what lies ahead."
+      ✅ GOOD (Second Person Thought): "You wonder what lies ahead."
+
+      ❌ BAD (Name Usage): "Zhang Wei feels afraid."
+      ✅ GOOD (Second Person): "You feel afraid."
+    </examples>
+
     - **Exceptions**: Use Third Person ONLY for:
       1. Describing NPCs and their actions.
       2. Dialogue tags (e.g., 'She whispers', 'He laughs').

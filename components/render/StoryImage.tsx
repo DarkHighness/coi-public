@@ -84,6 +84,7 @@ interface StoryImageProps {
   manualImageGen?: boolean;
   themeFont?: string;
   onUpload?: () => void;
+  onDelete?: () => void;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
@@ -101,6 +102,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   manualImageGen,
   themeFont,
   onUpload,
+  onDelete,
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
@@ -227,6 +229,32 @@ export const StoryImage: React.FC<StoryImageProps> = ({
               </button>
             )}
 
+            {/* Delete Button */}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="bg-black/60 hover:bg-theme-error text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+                title={t("deleteImage", "Delete Image")}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  ></path>
+                </svg>
+              </button>
+            )}
+
             {/* Copy Prompt Button - Show if imagePrompt exists */}
             {imagePrompt && <CopyPromptButton />}
 
@@ -317,6 +345,20 @@ export const StoryImage: React.FC<StoryImageProps> = ({
               </svg>
             </button>
           )}
+
+          {/* Delete Button - Also show in placeholder state if image exists (though here it's mostly for failed state if we want to allow deleting the "attempt")
+              But wait, this block is for "Has imagePrompt but NO imageUrl".
+              If there is no image URL, there is nothing to delete from the view,
+              BUT there might be a failed record in DB?
+              Actually, if !displayUrl, we assume no image.
+              However, the user might want to "clear" the prompt or the failed state?
+              For now, let's only show delete if there is an actual image (previous block).
+              Or if the user wants to remove the "Vision" placeholder?
+              The requirement says "delete image from segment".
+              If there is no image, maybe we don't need delete button here.
+              Let's stick to the image view (previous block).
+          */}
+
           <CopyPromptButton />
         </div>
       </div>

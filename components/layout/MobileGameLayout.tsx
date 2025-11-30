@@ -55,6 +55,7 @@ interface MobileGameLayoutProps {
   onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
+  onImageDelete?: (id: string) => void;
   saveId?: string;
 }
 
@@ -95,6 +96,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onTriggerSave,
   onForceUpdate,
   onImageUpload,
+  onImageDelete,
   saveId,
 }) => {
   const { t } = useTranslation();
@@ -126,6 +128,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onViewedSegmentChange={onViewedSegmentChange}
           onAudioGenerated={onAudioGenerated}
           onImageUpload={onImageUpload}
+          onImageDelete={onImageDelete}
           saveId={saveId}
         />
 

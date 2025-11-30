@@ -39,16 +39,24 @@ export const saveImage = async (
       const existingImage = checkRequest.result as StoredImage | undefined;
 
       if (existingImage) {
-        // Update existing image
-        const updatedImage: StoredImage = {
-          ...existingImage,
-          blob,
-          imagePrompt: metadata.imagePrompt, // Update prompt if provided
-          timestamp: Date.now(),
+        // Delete existing image to force a new ID generation
+        // This ensures React components detect the change (since ID changes)
+        const deleteRequest = store.delete(existingImage.id);
+
+        deleteRequest.onsuccess = () => {
+          // Create new image with new ID
+          const id = crypto.randomUUID();
+          const newImage: StoredImage = {
+            id,
+            blob,
+            ...metadata,
+            timestamp: Date.now(),
+          };
+          const addRequest = store.add(newImage);
+          addRequest.onsuccess = () => resolve(id);
+          addRequest.onerror = () => reject(addRequest.error);
         };
-        const updateRequest = store.put(updatedImage);
-        updateRequest.onsuccess = () => resolve(existingImage.id);
-        updateRequest.onerror = () => reject(updateRequest.error);
+        deleteRequest.onerror = () => reject(deleteRequest.error);
       } else {
         // Create new image
         const id = crypto.randomUUID();

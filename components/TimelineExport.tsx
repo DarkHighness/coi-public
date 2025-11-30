@@ -10,6 +10,7 @@ import { THEMES, ENV_THEMES } from "../utils/constants";
 import { MarkdownText } from "./render/MarkdownText";
 import html2canvas from "html2canvas";
 import { useTranslation } from "react-i18next";
+import { getImage } from "../utils/imageStorage";
 
 export interface TimelineExportRef {
   startExport: () => Promise<void>;
@@ -50,7 +51,26 @@ export const TimelineExport = forwardRef<
       try {
         for (let i = 0; i < totalChunks; i++) {
           const chunk = segments.slice(i * chunkSize, (i + 1) * chunkSize);
-          setExportChunk(chunk);
+
+          // Resolve image IDs to URLs
+          const chunkWithImages = await Promise.all(
+            chunk.map(async (seg) => {
+              if (seg.imageId && !seg.imageUrl) {
+                try {
+                  const blob = await getImage(seg.imageId);
+                  if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    return { ...seg, imageUrl: url, _tempUrl: true };
+                  }
+                } catch (e) {
+                  console.error("Failed to load image for export:", e);
+                }
+              }
+              return seg;
+            }),
+          );
+
+          setExportChunk(chunkWithImages);
 
           // Wait for render and images
           await new Promise((resolve) => setTimeout(resolve, 100)); // Short wait for React render
@@ -112,6 +132,13 @@ export const TimelineExport = forwardRef<
               document.body.removeChild(link);
               URL.revokeObjectURL(url);
             }, "image/png");
+
+            // Cleanup temp URLs
+            chunkWithImages.forEach((seg: any) => {
+              if (seg._tempUrl && seg.imageUrl) {
+                URL.revokeObjectURL(seg.imageUrl);
+              }
+            });
           }
         }
       } catch (error) {

@@ -565,6 +565,7 @@
     "storageUsed": "Storage Used",
     "storageQuota": "Storage Quota",
     "storageUsage": "Storage Usage",
+
     "storageUnavailable": "Storage information unavailable",
     "imageStorageInfo": "Image Storage Info",
     "totalImages": "Total Images",
@@ -809,7 +810,7 @@
     "copyPrompt": "Copy Image Generation Prompt",
     "promptCopied": "Prompt Copied"
   },
-  "overwriteImageConfirm": "This segment already has an image. Do you want to overwrite it?",
+
   "magicMirrorAction": {
     "animate": "Animate"
   },
@@ -818,7 +819,7 @@
     "location": "Location",
     "music": "Music"
   },
-  "imageUploaded": "Image Uploaded!",
+
   "logPanel": {
     "input": "Input",
     "output": "Output",
@@ -1048,5 +1049,10 @@
     "backgroundTemplate": "[World Background]: Tomoeda Town, a seemingly ordinary Japanese town with hidden undercurrents. You are a student at [Tomoeda Elementary School]. You accidentally discovered a glowing ancient book in your basement and released the Clow Cards within.\n[Current Situation]: The Guardian Beast [Kero] (Cerberus) awakens, gives you the Sealing Wand, and tells you to collect all scattered cards to prevent a catastrophe. Today, you sense a new Clow Card; it seems to be hiding in the school clock tower.",
     "example": "Pink cherry blossom petals drift in the wind, landing on your fluffy battle costume. The tip of the Sealing Wand in your hand flashes with golden light. You take a deep breath, your eyes firm. 'Key that hides the power of the dark, reveal your true power before me! I, Sakura, command you under our contract—Release!' As you chant, the wand extends instantly, and a huge magic circle unfolds beneath your feet. Facing the violent Water Dragon formed by the 'Watery' card, you do not flinch but gently raise your wand: 'Return to your true form, Clow Card!'",
     "worldSetting": "A modern daily world full of magic and miracles. Magic is not far away but hidden in ordinary life. Each Clow Card has a unique personality and ability (Wind, Fire, Water, Earth, Jump, Fly, etc.). Besides collecting cards, school life, family dinners, and playing with friends are essential parts of the story."
-  }
+  },
+  "imageUploaded": "Image uploaded successfully",
+  "deleteImage": "Delete Image",
+  "deleteImageConfirm": "Are you sure you want to delete this image?",
+  "imageDeleted": "Image deleted successfully",
+  "overwriteImageConfirm": "This segment already has an image. Do you want to overwrite it?"
 }

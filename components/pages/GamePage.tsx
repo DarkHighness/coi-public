@@ -348,6 +348,24 @@ export const GamePage: React.FC<GamePageProps> = ({
     showToast(t("imageUploaded", "Image uploaded successfully"), "info");
   };
 
+  const handleImageDelete = (nodeId: string) => {
+    setGameState((prev) => {
+      const newNodes = { ...prev.nodes };
+      if (newNodes[nodeId]) {
+        newNodes[nodeId] = {
+          ...newNodes[nodeId],
+          imageId: undefined,
+          imageUrl: undefined,
+        };
+      }
+      return {
+        ...prev,
+        nodes: newNodes,
+      };
+    });
+    showToast(t("imageDeleted", "Image deleted successfully"), "info");
+  };
+
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
       <Suspense
@@ -399,6 +417,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
+          onImageDelete={handleImageDelete}
           saveId={currentSlotId || "unsaved"}
         />
 
@@ -439,6 +458,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
+          onImageDelete={handleImageDelete}
           saveId={currentSlotId || "unsaved"}
         />
 

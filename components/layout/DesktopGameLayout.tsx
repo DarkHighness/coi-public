@@ -50,6 +50,7 @@ interface DesktopGameLayoutProps {
   onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
+  onImageDelete?: (id: string) => void;
   saveId?: string;
 }
 
@@ -88,6 +89,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onTriggerSave,
   onForceUpdate,
   onImageUpload,
+  onImageDelete,
   saveId,
 }) => {
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
@@ -165,6 +167,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onViewedSegmentChange={onViewedSegmentChange}
             onAudioGenerated={onAudioGenerated}
             onImageUpload={onImageUpload}
+            onImageDelete={onImageDelete}
             sidebarCollapsed={sidebarCollapsed}
             timelineCollapsed={timelineCollapsed}
             saveId={saveId}

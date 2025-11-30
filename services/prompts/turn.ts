@@ -344,6 +344,7 @@ ${
 ${themeStyle ? `<directive>Strictly adhere to: "${themeStyle}"</directive>` : "<directive>Descriptive, engaging, genre-suitable.</directive>"}
 <directive>Show, don't tell. Use vivid sensory details (sight, sound, smell, touch) to immerse the player.</directive>
 <directive>Focus on character emotions, physical presence (sweat, tension, warmth), and atmospheric depth.</directive>
+<directive>ALWAYS use Second Person ("You") for the protagonist's actions, thoughts, and feelings. Never use their name or third person.</directive>
 <directive>
   **VIVIDNESS CHECK**:
   - If a sentence feels flat, rewrite it with a sensory verb.

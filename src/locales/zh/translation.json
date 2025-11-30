@@ -563,7 +563,7 @@
     "confirmClearRag": "确定要清空 RAG 知识库吗？这将需要重新处理文档。",
     "clearRagSuccess": "RAG 知识库已清空。"
   },
-  "imageUploaded": "图片上传成功",
+
   "customTips": "添加细节以指导你的冒险故事",
   "tip": "提示",
   "customWritingTips": "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
@@ -1012,7 +1012,12 @@
     "promptTokens": "输入 Token",
     "completionTokens": "输出 Token",
     "cacheRead": "缓存读取",
+
     "cacheWrite": "缓存写入"
   },
-  "overwriteImageConfirm": "此片段已有图片。是否要覆盖它？"
+  "imageUploaded": "图片上传成功",
+  "deleteImage": "删除图片",
+  "deleteImageConfirm": "确定要删除这张图片吗？",
+  "imageDeleted": "图片删除成功",
+  "overwriteImageConfirm": "该片段已有图片。是否覆盖？"
 }
