@@ -27,6 +27,7 @@ interface UseGameActionProps {
   language: LanguageCode;
   isTranslating: boolean;
   currentSlotId: string | null;
+  generateImageForNode: (nodeId: string) => Promise<void>;
 }
 
 export const useGameAction = ({
@@ -37,6 +38,7 @@ export const useGameAction = ({
   language,
   isTranslating,
   currentSlotId,
+  generateImageForNode,
 }: UseGameActionProps) => {
   const { t } = useTranslation();
 
@@ -409,6 +411,21 @@ export const useGameAction = ({
           aiSettings.story.providerId,
           usage,
         );
+
+        // Trigger image generation if there's a valid imagePrompt
+        if (modelNode.imagePrompt && modelNode.imagePrompt.trim()) {
+          console.log(
+            "[handleAction] Triggering image generation for node:",
+            modelNodeId,
+          );
+          // Call async but don't await - let it run in background
+          generateImageForNode(modelNodeId).catch((error) => {
+            console.error(
+              "[handleAction] Image generation failed:",
+              error,
+            );
+          });
+        }
 
         return {
           success: true,

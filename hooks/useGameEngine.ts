@@ -248,7 +248,9 @@ export const useGameEngine = () => {
   }, [view, gameState.activeNodeId, gameState.nodes]);
 
   // --- Core Game Loop ---
-  const { handleAction } = useGameAction({
+  // Note: generateImageForNode is defined later but we can reference it here
+  // because hooks are called in order and we'll pass the actual function
+  const  { handleAction } = useGameAction({
     gameState,
     setGameState,
     aiSettings,
@@ -256,6 +258,10 @@ export const useGameEngine = () => {
     language,
     isTranslating,
     currentSlotId,
+    generateImageForNode: async (nodeId: string) => {
+      // Forward to the actual implementation defined below
+      await generateImageForNode(nodeId);
+    },
   });
 
   const startNewGame = async (
