@@ -95,12 +95,8 @@ export function createClaudeClient(config: ClaudeConfig): Anthropic {
 export async function validateConnection(config: ClaudeConfig): Promise<void> {
   try {
     const client = createClaudeClient(config);
-    // Claude SDK 没有 list models API，我们通过创建一个最小请求来验证
-    await client.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1,
-      messages: [{ role: "user", content: "test" }],
-    });
+    // 使用 list models API 验证连接
+    await client.models.list({ limit: 1 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     throw new AIProviderError(
@@ -121,8 +117,27 @@ export async function validateConnection(config: ClaudeConfig): Promise<void> {
  *
  * 注意：Claude API 不提供模型列表端点，返回预定义的模型列表
  */
-export async function getModels(_config: ClaudeConfig): Promise<ModelInfo[]> {
-  return getDefaultModels();
+export async function getModels(config: ClaudeConfig): Promise<ModelInfo[]> {
+  try {
+    const client = createClaudeClient(config);
+    const response = await client.models.list({ limit: 100 });
+
+    return response.data.map((model) => ({
+      id: model.id,
+      name: model.display_name,
+      capabilities: {
+        text: true,
+        image: false, // Claude API currently doesn't support image generation
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    }));
+  } catch (error) {
+    console.warn("[Claude] Failed to fetch models, using defaults:", error);
+    return getDefaultModels();
+  }
 }
 
 /**
@@ -131,8 +146,8 @@ export async function getModels(_config: ClaudeConfig): Promise<ModelInfo[]> {
 function getDefaultModels(): ModelInfo[] {
   return [
     {
-      id: "claude-3-5-sonnet-20241022",
-      name: "Claude 3.5 Sonnet (New)",
+      id: "claude-sonnet-4-5-20250929",
+      name: "Claude Sonnet 4.5",
       capabilities: {
         text: true,
         image: false,
@@ -143,8 +158,68 @@ function getDefaultModels(): ModelInfo[] {
       },
     },
     {
-      id: "claude-3-5-sonnet-20240620",
-      name: "Claude 3.5 Sonnet",
+      id: "claude-haiku-4-5-20251001",
+      name: "Claude Haiku 4.5",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-opus-4-5-20251101",
+      name: "Claude Opus 4.5",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-opus-4-1-20250805",
+      name: "Claude Opus 4.1",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-sonnet-4-20250514",
+      name: "Claude Sonnet 4",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-3-7-sonnet-20250219",
+      name: "Claude 3.7 Sonnet",
+      capabilities: {
+        text: true,
+        image: false,
+        video: false,
+        audio: false,
+        tools: true,
+        parallelTools: true,
+      },
+    },
+    {
+      id: "claude-opus-4-20250514",
+      name: "Claude Opus 4",
       capabilities: {
         text: true,
         image: false,
@@ -167,30 +242,6 @@ function getDefaultModels(): ModelInfo[] {
       },
     },
     {
-      id: "claude-3-opus-20240229",
-      name: "Claude 3 Opus",
-      capabilities: {
-        text: true,
-        image: false,
-        video: false,
-        audio: false,
-        tools: true,
-        parallelTools: true,
-      },
-    },
-    {
-      id: "claude-3-sonnet-20240229",
-      name: "Claude 3 Sonnet",
-      capabilities: {
-        text: true,
-        image: false,
-        video: false,
-        audio: false,
-        tools: true,
-        parallelTools: true,
-      },
-    },
-    {
       id: "claude-3-haiku-20240307",
       name: "Claude 3 Haiku",
       capabilities: {
@@ -201,7 +252,7 @@ function getDefaultModels(): ModelInfo[] {
         tools: true,
         parallelTools: true,
       },
-    },
+    }
   ];
 }
 
@@ -230,13 +281,42 @@ export async function generateContent(
     ? convertToolsForClaude(options.tools)
     : undefined;
 
+  // 计算 thinking budget
+  let thinking: { type: "enabled"; budget_tokens: number } | undefined;
+  if (options?.thinkingLevel) {
+    const budgetMap = {
+      low: 2048,
+      medium: 4096,
+      high: 8192,
+    };
+    thinking = {
+      type: "enabled",
+      budget_tokens: budgetMap[options.thinkingLevel] || 2048,
+    };
+  }
+
+  // Chain of Thought prompt for tool use (Sonnet/Haiku)
+  let finalSystemInstruction = systemInstruction;
+  if (
+    tools &&
+    tools.length > 0 &&
+    (model.includes("sonnet") || model.includes("haiku"))
+  ) {
+    const cotPrompt = `
+Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis. First, think about which of the provided tools is the relevant tool to answer the user's request. Second, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, proceed with the tool call. BUT, if one of the values for a required parameter is missing, DO NOT invoke the function (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters. DO NOT ask for more information on optional parameters if it is not provided.
+`;
+    finalSystemInstruction = `${systemInstruction}\n\n${cotPrompt}`;
+  }
+
   // 构建请求参数
   const requestParams: MessageCreateParams = {
     model,
-    max_tokens: 8192, // Claude 需要显式指定 max_tokens
-    system: systemInstruction,
+    max_tokens: thinking ? 64000 : 8192, // Thinking 模式需要更大的 max_tokens
+    system: finalSystemInstruction,
     messages,
-    temperature: options?.temperature ?? 1.0,
+    // Thinking 模式下不能使用 temperature (必须为 1.0 或不传，SDK 默认处理)
+    // 但为了兼容非 thinking 模式，我们只在非 thinking 时传递 temperature
+    ...(thinking ? { thinking } : { temperature: options?.temperature ?? 1.0 }),
     top_p: options?.topP,
     tools,
   };
@@ -533,6 +613,8 @@ function convertToolsForClaude(
         type: "object" as const,
         ...(schema as object),
       },
+      // Enable strict tool use for better adherence
+      strict: true,
     };
   });
 }

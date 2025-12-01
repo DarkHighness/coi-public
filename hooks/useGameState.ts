@@ -136,7 +136,14 @@ export const useGameState = () => {
   };
 
   const updateCharacter = (char: CharacterStatus) => {
-    setGameState((prev) => ({ ...prev, character: char }));
+    setGameState((prev) => {
+      const newState = { ...prev, character: char };
+      // Sync global location if character location changed
+      if (char.currentLocation && char.currentLocation !== prev.currentLocation) {
+        newState.currentLocation = char.currentLocation;
+      }
+      return newState;
+    });
   };
 
   return {

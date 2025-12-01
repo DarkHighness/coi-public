@@ -892,14 +892,20 @@ export class GameDatabase {
         return createError(`Location "${identifier}" not found`, "NOT_FOUND");
       }
 
-      const removed = this.state.locations.splice(index, 1)[0];
+      const removed = this.state.locations[index];
+
+      // Prevent removing the current location
       if (
         this.state.currentLocation === removed.name ||
         this.state.currentLocation === removed.id
       ) {
-        this.state.currentLocation = this.state.locations[0]?.name || "";
+        return createError(
+          `Cannot remove current location "${removed.name}"`,
+          "INVALID_ACTION",
+        );
       }
 
+      this.state.locations.splice(index, 1);
       return createSuccess(
         { removed: removed.id },
         `Removed location: ${removed.name}`,
