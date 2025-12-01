@@ -197,18 +197,20 @@ export const TimelineExport = forwardRef<
           </div>
 
           {exportChunk.map((seg, index) => (
-            <div key={seg.id} className="relative pl-16">
-              {/* Timeline Node */}
-              <div
-                className="absolute left-[11px] top-1 w-4 h-4 rounded-full border-[3px] z-10"
-                style={{
-                  backgroundColor: "#0f172a", // slate-900
-                  borderColor: "#fbbf24", // amber-400
-                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-                }}
-              ></div>
+            <div key={seg.id} className="space-y-5">
+              {/* Header Row: Indicator + Metadata */}
+              <div className="flex items-baseline">
+                <div className="w-16 flex-shrink-0 flex justify-start items-center pl-[11px]">
+                  <div
+                    className="w-4 h-4 rounded-full border-[3px] z-10"
+                    style={{
+                      backgroundColor: "#0f172a", // slate-900
+                      borderColor: "#fbbf24", // amber-400
+                      boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                    }}
+                  ></div>
+                </div>
 
-              <div className="space-y-5">
                 {/* Metadata Header */}
                 <div
                   className="flex items-center gap-3 text-sm uppercase tracking-widest font-medium"
@@ -223,7 +225,9 @@ export const TimelineExport = forwardRef<
                   ></span>
                   <span>{seg.stateSnapshot?.currentLocation}</span>
                 </div>
+              </div>
 
+              <div className="pl-16 space-y-5">
                 {/* Image */}
                 {seg.imageUrl && (
                   <div

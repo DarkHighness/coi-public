@@ -917,6 +917,7 @@ export interface ProviderInstance {
   apiKey: string; // API 密钥
   enabled: boolean; // 是否启用
   isRestrictedChannel?: boolean; // 是否为受限渠道（不支持 system role）
+  geminiCompatibility?: boolean; // 是否开启 Gemini 兼容模式 (OpenAI protocol only)
   createdAt: number; // 创建时间
   lastModified: number; // 最后修改时间
   tokenStats?: TokenStats; // 历史 Token 统计

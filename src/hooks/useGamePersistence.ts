@@ -530,6 +530,7 @@ export const useGamePersistence = (
 
     // Skip if currently processing (AI is generating)
     if (gameState.isProcessing) {
+      console.log("Skipping save: isProcessing");
       return;
     }
 
@@ -559,6 +560,7 @@ export const useGamePersistence = (
     }
 
     if (!shouldSave) {
+      console.log("Skipping save: shouldSave");
       return;
     }
 

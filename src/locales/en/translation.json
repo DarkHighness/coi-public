@@ -157,6 +157,34 @@
         "Setting the cosmic clock in motion...",
         "Preparing trials for the worthy...",
         "The chronicles await your arrival..."
+      ],
+      "6": [
+        "Gathering starting equipment...",
+        "Forging unique items...",
+        "Discovering ancient artifacts...",
+        "Packing essential supplies...",
+        "Unlocking hidden potential..."
+      ],
+      "7": [
+        "Outlining the hero's journey...",
+        "Setting initial challenges...",
+        "Defining the path ahead...",
+        "Creating opportunities for adventure...",
+        "Establishing the call to action..."
+      ],
+      "8": [
+        "Compiling world lore...",
+        "Recording ancient history...",
+        "Gathering rumors and legends...",
+        "Defining common knowledge...",
+        "Uncovering forgotten truths..."
+      ],
+      "9": [
+        "Setting the mood and tone...",
+        "Establishing the timeline...",
+        "Creating the atmosphere...",
+        "Finalizing the world state...",
+        "Preparing for the adventure..."
       ]
     },
     "errors": {
@@ -164,6 +192,7 @@
       "retryOutline": "Would you like to retry generating the story outline?"
     }
   },
+  "knownFeatures": "Features",
   "noDescription": "No description available.",
   "translating": "Translating chronicles...",
   "system": "System",
@@ -526,7 +555,9 @@
     "geminiTitle": "Google Gemini Configuration",
     "openaiTitle": "OpenAI / OpenRouter Configuration",
     "apiKeyPlaceholder": "Paste API Key here...",
-    "baseUrlPlaceholder": "Base URL (Optional)"
+    "baseUrlPlaceholder": "Base URL (Optional)",
+    "geminiCompatibility": "Gemini Compatibility Mode",
+    "geminiCompatibilityHelp": "Enable special handling for Gemini models (e.g. Google AI Studio) via OpenAI-compatible endpoints."
   },
   "audioSettings": {
     "environment": "Environment Audio",

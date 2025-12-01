@@ -37,6 +37,9 @@ importers:
       i18next-browser-languagedetector:
         specifier: ^8.2.0
         version: 8.2.0
+      jsonrepair:
+        specifier: ^3.13.1
+        version: 3.13.1
       openai:
         specifier: ^4.104.0
         version: 4.104.0(ws@8.18.3)(zod@3.25.76)
@@ -2305,6 +2308,13 @@ packages:
       {
         integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==,
       }
+
+  jsonrepair@3.13.1:
+    resolution:
+      {
+        integrity: sha512-WJeiE0jGfxYmtLwBTEk8+y/mYcaleyLXWaqp5bJu0/ZTSeG0KQq/wWQ8pmnkKenEdN6pdnn6QtcoSUkbqDHWNw==,
+      }
+    hasBin: true
 
   jwa@2.0.1:
     resolution:
@@ -4835,6 +4845,8 @@ snapshots:
       universalify: 2.0.1
     optionalDependencies:
       graceful-fs: 4.2.11
+
+  jsonrepair@3.13.1: {}
 
   jwa@2.0.1:
     dependencies:

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Quest } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface QuestPanelProps {
   quests: Quest[];
@@ -130,9 +131,16 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
               {t("questPanel.description") || "Description"}
             </span>
-            <p className="pl-1">
-              {q.visible?.description || t("noDescription") || "No description"}
-            </p>
+            <div className="pl-1 text-theme-muted/90">
+              <MarkdownText
+                content={
+                  q.visible?.description ||
+                  t("noDescription") ||
+                  "No description"
+                }
+                indentSize={2}
+              />
+            </div>
 
             {/* Hidden content - only shown when unlocked */}
             {q.unlocked && q.hidden && (
@@ -158,9 +166,12 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-danger/80 font-bold block mb-0.5">
                       {t("questPanel.trueDescription") || "True Description"}
                     </span>
-                    <p className="text-theme-danger/80 not-italic">
-                      {q.hidden.trueDescription}
-                    </p>
+                    <div className="text-theme-danger/80 not-italic pl-1">
+                      <MarkdownText
+                        content={q.hidden.trueDescription}
+                        indentSize={2}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -173,7 +184,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                       </span>
                       <ul className="list-disc list-inside text-theme-danger/80 not-italic">
                         {q.hidden.trueObjectives.map((obj, idx) => (
-                          <li key={idx}>{obj}</li>
+                          <li key={idx}>
+                            <MarkdownText content={obj} indentSize={2} inline />
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -185,9 +198,12 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-secret/80 font-bold block mb-0.5">
                       {t("questPanel.secretOutcome") || "Secret Outcome"}
                     </span>
-                    <p className="text-theme-secret/80 not-italic">
-                      {q.hidden.secretOutcome}
-                    </p>
+                    <div className="text-theme-secret/80 not-italic pl-1">
+                      <MarkdownText
+                        content={q.hidden.secretOutcome}
+                        indentSize={2}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

@@ -61,7 +61,7 @@
  * * Manual mode overrides generating state (new segments show "Click to Generate")
  */
 
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { MagicMirrorButton } from "./MagicMirrorButton";
 import { ImagePlaceholder } from "./ImagePlaceholder";
 import { ImageLightbox } from "./ImageLightbox";
@@ -109,12 +109,25 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const [displayImage, setDisplayImage] = React.useState<{
+    url: string | null;
+    isLoading: boolean;
+  }>({ url: null, isLoading: false });
 
   // Resolve image URL from ID if provided
-  const { url: resolvedUrl, isLoading } = useImageURL(imageId);
+  const { url: resolvedUrl, isLoading: isResolving } = useImageURL(imageId);
 
-  // Use resolved URL or legacy URL
-  const displayUrl = resolvedUrl || legacyImageUrl;
+  useEffect(() => {
+    if (resolvedUrl) {
+      setDisplayImage({ url: resolvedUrl, isLoading: isResolving });
+    } else if (legacyImageUrl) {
+      setDisplayImage({ url: legacyImageUrl, isLoading: false });
+    } else {
+      setDisplayImage({ url: null, isLoading: isResolving });
+    }
+  }, [resolvedUrl, isResolving, legacyImageUrl]);
+
+  const displayUrl = displayImage.url;
 
   // Copy prompt to clipboard
   const handleCopyPrompt = async (e: React.MouseEvent) => {
@@ -132,7 +145,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   };
 
   // Early return: Global image disable
-  if (disableImages) return null;
+  if (disableImages && !displayUrl) return null;
 
   // If no image prompt and no image (ID or URL), don't show anything
   if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl) return null;

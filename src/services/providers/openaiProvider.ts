@@ -7,6 +7,7 @@
  * 包括：内容生成、图片生成、语音合成、嵌入向量生成
  */
 
+import { jsonrepair } from "jsonrepair";
 import OpenAI from "openai";
 import type {
   ChatCompletion,
@@ -51,6 +52,7 @@ import {
   isGeminiModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
+import { withRetry, validateSchema } from "./utils";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -263,6 +265,9 @@ function getDefaultModels(): ModelInfo[] {
 /**
  * 生成内容（对话/工具调用）
  */
+/**
+ * 生成内容（对话/工具调用）
+ */
 export async function generateContent(
   config: OpenAIConfig,
   model: string,
@@ -271,202 +276,220 @@ export async function generateContent(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<OpenAIContentGenerationResponse> {
-  const client = createOpenAIClient(config);
+  return withRetry(
+    async () => {
+      const client = createOpenAIClient(config);
 
-  // 检测是否为 Gemini 模型
-  const isGemini = isGeminiModel(model);
+      // 检测是否为 Gemini 模型 (并且强制开启兼容模式)
+      const isGemini = config.geminiCompatibility && isGeminiModel(model);
 
-  // 转换消息格式
-  const messages = convertToOpenAIMessages(systemInstruction, contents);
+      // 转换消息格式
+      const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-  // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 格式
-  const tools = options?.tools
-    ? isGemini
-      ? options.tools.map((t) =>
-          createGeminiTool(t.name, t.description, t.parameters),
-        )
-      : compileToolsForOpenAI(options.tools)
-    : undefined;
+      // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 格式
+      const tools = options?.tools
+        ? isGemini
+          ? options.tools.map((t) =>
+              createGeminiTool(t.name, t.description, t.parameters),
+            )
+          : compileToolsForOpenAI(options.tools)
+        : undefined;
 
-  // 构建请求参数
-  const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-    model,
-    messages,
-    temperature: options?.temperature ?? 1.0,
-    top_p: options?.topP,
-    stream: !!options?.onChunk,
-    // @ts-ignore
-    tools,
-    tool_choice: tools ? "auto" : undefined,
+      // 构建请求参数
+      const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams =
+        {
+          model,
+          messages,
+          temperature: options?.temperature ?? 1.0,
+          top_p: options?.topP,
+          stream: !!options?.onChunk,
+          // @ts-ignore
+          tools,
+          tool_choice: tools ? "auto" : undefined,
 
-    // 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
-    response_format: schema
-      ? isGemini
-        ? ({ type: "json_schema", schema: zodToGemini(schema) } as any)
-        : zodToOpenAIResponseFormat(schema)
-      : undefined,
-  };
+          // 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
+          response_format: schema
+            ? isGemini
+              ? ({ type: "json_schema", schema: zodToGemini(schema) } as any)
+              : zodToOpenAIResponseFormat(schema)
+            : undefined,
+        };
 
-  let content = "";
-  let toolCalls: ToolCallResult[] = [];
-  let usage: TokenUsage = {
-    promptTokens: 0,
-    completionTokens: 0,
-    totalTokens: 0,
-  };
-  let rawResponse:
-    | ChatCompletion
-    | ChatCompletionChunk
-    | AsyncIterable<ChatCompletionChunk>;
+      let content = "";
+      let toolCalls: ToolCallResult[] = [];
+      let usage: TokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      };
+      let rawResponse:
+        | ChatCompletion
+        | ChatCompletionChunk
+        | AsyncIterable<ChatCompletionChunk>;
 
-  console.log(
-    `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
-  );
+      console.log(
+        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
+      );
 
-  if (isGemini && schema) {
-    console.log(
-      "[OpenAI] Detected Gemini model, using Gemini schema format:",
-      JSON.stringify(requestParams.response_format, null, 2),
-    );
-  }
-
-  if (options?.onChunk) {
-    // 流式生成
-    const response = await client.chat.completions.create({
-      ...requestParams,
-      stream: true,
-    });
-
-    rawResponse = response;
-
-    // 累积工具调用信息
-    const accumulatedToolCalls: Map<
-      number,
-      { id: string; name: string; arguments: string }
-    > = new Map();
-
-    for await (const chunk of response) {
-      const choice = chunk.choices[0];
-      const delta = choice?.delta;
-
-      // 处理文本内容
-      if (delta?.content) {
-        content += delta.content;
-        options.onChunk(delta.content);
+      if (isGemini && schema) {
+        console.log(
+          "[OpenAI] Detected Gemini model, using Gemini schema format:",
+          JSON.stringify(requestParams.response_format, null, 2),
+        );
       }
 
-      // 处理工具调用 (流式模式下工具调用是增量传输的)
-      if (delta?.tool_calls) {
-        for (const tc of delta.tool_calls) {
-          const index = tc.index ?? 0;
-          const existing = accumulatedToolCalls.get(index);
-          if (existing) {
-            // 累加参数
-            if (tc.function?.arguments) {
-              existing.arguments += tc.function.arguments;
+      if (options?.onChunk) {
+        // 流式生成
+        const response = await client.chat.completions.create({
+          ...requestParams,
+          stream: true,
+        });
+
+        rawResponse = response;
+
+        // 累积工具调用信息
+        const accumulatedToolCalls: Map<
+          number,
+          { id: string; name: string; arguments: string }
+        > = new Map();
+
+        for await (const chunk of response) {
+          const choice = chunk.choices[0];
+          const delta = choice?.delta;
+
+          // 处理文本内容
+          if (delta?.content) {
+            content += delta.content;
+            options.onChunk(delta.content);
+          }
+
+          // 处理工具调用 (流式模式下工具调用是增量传输的)
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const index = tc.index ?? 0;
+              const existing = accumulatedToolCalls.get(index);
+              if (existing) {
+                // 累加参数
+                if (tc.function?.arguments) {
+                  existing.arguments += tc.function.arguments;
+                }
+              } else {
+                // 新工具调用
+                accumulatedToolCalls.set(index, {
+                  id: tc.id || `tool_${index}`,
+                  name: tc.function?.name || "",
+                  arguments: tc.function?.arguments || "",
+                });
+              }
             }
-          } else {
-            // 新工具调用
-            accumulatedToolCalls.set(index, {
-              id: tc.id || `tool_${index}`,
-              name: tc.function?.name || "",
-              arguments: tc.function?.arguments || "",
-            });
+          }
+
+          // 更新使用量
+          if (chunk.usage) {
+            usage = {
+              promptTokens: chunk.usage.prompt_tokens || 0,
+              completionTokens: chunk.usage.completion_tokens || 0,
+              totalTokens: chunk.usage.total_tokens || 0,
+              cacheRead: chunk.usage.prompt_tokens_details?.cached_tokens || 0,
+            };
           }
         }
-      }
 
-      // 更新使用量
-      if (chunk.usage) {
+        // 解析累积的工具调用
+        for (const [, tc] of accumulatedToolCalls) {
+          try {
+            toolCalls.push({
+              id: tc.id,
+              name: tc.name,
+              args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
+            });
+          } catch (parseError) {
+            console.error(
+              `[OpenAI] Failed to parse tool call arguments:`,
+              tc.arguments,
+            );
+            throw new MalformedToolCallError("openai", tc.name, tc.arguments);
+          }
+        }
+      } else {
+        // 非流式生成
+        const response = await client.chat.completions.create({
+          ...requestParams,
+          stream: false,
+        });
+
+        rawResponse = response;
+        const message = response.choices[0]?.message;
+        content = message?.content || "";
+
+        // 处理工具调用
+        if (message?.tool_calls) {
+          toolCalls = message.tool_calls.map((tc) => ({
+            id: tc.id,
+            name: tc.function.name,
+            args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+          }));
+        }
+
+        // 检查内容过滤
+        const finishReason = response.choices[0]?.finish_reason;
+        if (finishReason === "content_filter") {
+          throw new SafetyFilterError("openai");
+        }
+
         usage = {
-          promptTokens: chunk.usage.prompt_tokens || 0,
-          completionTokens: chunk.usage.completion_tokens || 0,
-          totalTokens: chunk.usage.total_tokens || 0,
-          cacheRead: chunk.usage.prompt_tokens_details?.cached_tokens || 0,
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+          cacheRead: response.usage?.prompt_tokens_details?.cached_tokens || 0,
         };
       }
-    }
 
-    // 解析累积的工具调用
-    for (const [, tc] of accumulatedToolCalls) {
-      try {
-        toolCalls.push({
-          id: tc.id,
-          name: tc.name,
-          args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
-        });
-      } catch (parseError) {
-        console.error(
-          `[OpenAI] Failed to parse tool call arguments:`,
-          tc.arguments,
-        );
-        throw new MalformedToolCallError("openai", tc.name, tc.arguments);
+      console.log(`[OpenAI] Generation complete. Usage:`, usage);
+
+      // 如果有工具调用，返回工具调用结果
+      if (toolCalls.length > 0) {
+        return {
+          result: { functionCalls: toolCalls },
+          usage,
+          raw: rawResponse,
+        };
       }
-    }
-  } else {
-    // 非流式生成
-    const response = await client.chat.completions.create({
-      ...requestParams,
-      stream: false,
-    });
 
-    rawResponse = response;
-    const message = response.choices[0]?.message;
-    content = message?.content || "";
+      // 没有内容也没有工具调用
+      if (!content) {
+        throw new AIProviderError("No content returned from OpenAI", "openai");
+      }
 
-    // 处理工具调用
-    if (message?.tool_calls) {
-      toolCalls = message.tool_calls.map((tc) => ({
-        id: tc.id,
-        name: tc.function.name,
-        args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-      }));
-    }
+      // 解析 JSON
+      try {
+        const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+        const result = JSON.parse(jsonrepair(cleanedContent));
 
-    // 检查内容过滤
-    const finishReason = response.choices[0]?.finish_reason;
-    if (finishReason === "content_filter") {
-      throw new SafetyFilterError("openai");
-    }
+        // Schema Validation
+        if (schema) {
+          validateSchema(result, schema, "openai");
+        }
 
-    usage = {
-      promptTokens: response.usage?.prompt_tokens || 0,
-      completionTokens: response.usage?.completion_tokens || 0,
-      totalTokens: response.usage?.total_tokens || 0,
-      cacheRead: response.usage?.prompt_tokens_details?.cached_tokens || 0,
-    };
-  }
-
-  console.log(`[OpenAI] Generation complete. Usage:`, usage);
-
-  // 如果有工具调用，返回工具调用结果
-  if (toolCalls.length > 0) {
-    return {
-      result: { functionCalls: toolCalls },
-      usage,
-      raw: rawResponse,
-    };
-  }
-
-  // 没有内容也没有工具调用
-  if (!content) {
-    throw new AIProviderError("No content returned from OpenAI", "openai");
-  }
-
-  // 解析 JSON
-  try {
-    const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-    const result = JSON.parse(cleanedContent);
-    return { result, usage, raw: rawResponse };
-  } catch (error) {
-    // 如果有 schema 但解析失败
-    if (schema) {
-      console.error(`[OpenAI] Failed to parse JSON content:`, content);
-      throw new JSONParseError("openai", content.substring(0, 500), error);
-    }
-    // 返回纯文本
-    return { result: { narrative: content }, usage, raw: rawResponse };
-  }
+        return { result, usage, raw: rawResponse };
+      } catch (error) {
+        // 如果有 schema 但解析失败
+        if (schema) {
+          console.error(`[OpenAI] Failed to parse JSON content:`, content);
+          // If it's already a SchemaValidationError, rethrow it
+          if (error instanceof AIProviderError) {
+            throw error;
+          }
+          throw new JSONParseError("openai", content.substring(0, 500), error);
+        }
+        // 返回纯文本
+        return { result: { narrative: content }, usage, raw: rawResponse };
+      }
+    },
+    3,
+    1000,
+    "openai",
+  );
 }
 
 /**

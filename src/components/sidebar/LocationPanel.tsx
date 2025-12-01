@@ -166,6 +166,42 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       />
                     </div>
                   </div>
+
+                  {locationData.environment && (
+                    <div className="mt-2">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("environment") || "Environment"}:
+                      </span>
+                      <div className="text-theme-text leading-relaxed pl-1">
+                        <MarkdownText
+                          content={locationData.environment}
+                          indentSize={2}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {locationData.visible?.knownFeatures &&
+                    locationData.visible.knownFeatures.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("knownFeatures") || "Known Features"}:
+                        </span>
+                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                          {locationData.visible.knownFeatures.map(
+                            (feature, i) => (
+                              <li key={i}>
+                                <MarkdownText
+                                  content={feature}
+                                  indentSize={2}
+                                  inline
+                                />
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    )}
                   {locationData.visible?.resources &&
                     locationData.visible.resources.length > 0 && (
                       <div className="mt-2">
@@ -297,6 +333,20 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       <div className="text-theme-muted pl-1">
                         <MarkdownText
                           content={locationData.lore}
+                          indentSize={2}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {locationData.notes && (
+                    <div className="pt-2 border-t border-theme-border/20 mt-2">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold block mb-1">
+                        {t("notes") || "Notes"}
+                      </span>
+                      <div className="text-theme-muted/80 pl-1 italic">
+                        <MarkdownText
+                          content={locationData.notes}
                           indentSize={2}
                         />
                       </div>

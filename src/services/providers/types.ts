@@ -24,6 +24,7 @@ export interface OpenAIConfig {
   apiKey: string;
   baseUrl: string;
   modelId?: string;
+  geminiCompatibility?: boolean;
 }
 
 /** OpenRouter Provider 配置 */
@@ -414,5 +415,18 @@ export class JSONParseError extends AIProviderError {
       cause,
     );
     this.name = "JSONParseError";
+  }
+}
+
+/** Schema 验证错误 */
+export class SchemaValidationError extends AIProviderError {
+  constructor(provider: string, details?: string, cause?: unknown) {
+    super(
+      `Schema validation failed${details ? `: ${details}` : ""}`,
+      provider,
+      "SCHEMA_VALIDATION_ERROR",
+      cause,
+    );
+    this.name = "SchemaValidationError";
   }
 }

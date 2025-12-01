@@ -25,6 +25,7 @@ interface ProviderFormData {
   apiKey: string;
   enabled: boolean;
   isRestrictedChannel: boolean;
+  geminiCompatibility?: boolean;
 }
 
 type ModalMode = "add" | "edit" | "template" | null;
@@ -52,6 +53,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     apiKey: "",
     enabled: true,
     isRestrictedChannel: false,
+    geminiCompatibility: false,
   });
   const [selectedTemplate, setSelectedTemplate] =
     useState<ProviderTemplateKey>("openai");
@@ -117,6 +119,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       apiKey: "",
       enabled: true,
       isRestrictedChannel: false,
+      geminiCompatibility: false,
     });
     setModalMode("add");
   };
@@ -138,6 +141,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       apiKey: "", // Clear API key - leave empty to keep current
       enabled: instance.enabled,
       isRestrictedChannel: instance.isRestrictedChannel || false,
+      geminiCompatibility: (instance as any).geminiCompatibility || false,
     });
     setModalMode("edit");
   };
@@ -178,6 +182,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       apiKey: formData.apiKey,
       enabled: formData.enabled,
       isRestrictedChannel: formData.isRestrictedChannel,
+      geminiCompatibility: formData.geminiCompatibility,
       createdAt: Date.now(),
       lastModified: Date.now(),
     };
@@ -259,6 +264,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             apiKey: newApiKey,
             enabled: formData.enabled,
             isRestrictedChannel: formData.isRestrictedChannel,
+            geminiCompatibility: formData.geminiCompatibility,
             lastModified: Date.now(),
           }
         : inst,
@@ -823,6 +829,35 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Gemini Compatibility Mode (Only for OpenAI protocol) */}
+                {formData.protocol === "openai" && (
+                  <div className="flex items-start gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="geminiCompatibility"
+                      checked={formData.geminiCompatibility}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          geminiCompatibility: e.target.checked,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="geminiCompatibility"
+                        className="block text-sm font-medium text-theme-text"
+                      >
+                        {t("creds.geminiCompatibility")}
+                      </label>
+                      <p className="text-xs text-theme-muted">
+                        {t("creds.geminiCompatibilityHelp")}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Enabled */}
                 <div>

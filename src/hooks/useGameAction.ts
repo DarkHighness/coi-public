@@ -357,8 +357,7 @@ export const useGameAction = ({
             ...prev,
             nodes: newNodes,
             activeNodeId: modelNodeId,
-            rootNodeId:
-              prev.rootNodeId || (isInit ? modelNodeId : prev.rootNodeId),
+            rootNodeId: isInit ? modelNodeId : prev.rootNodeId || modelNodeId,
             currentFork: deriveHistory(newNodes, modelNodeId),
 
             // Apply the full new state from the database
@@ -410,6 +409,9 @@ export const useGameAction = ({
 
           // CRITICAL: Update ref immediately to ensure generateImageForNode can see the new node
           gameStateRef.current = updatedState;
+
+          // Trigger save
+          triggerSave();
 
           return updatedState;
         });

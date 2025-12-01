@@ -7,6 +7,7 @@
  * 包括：内容生成、图片生成、视频生成、语音合成、嵌入向量生成
  */
 
+import { jsonrepair } from "jsonrepair";
 import {
   GoogleGenAI,
   Modality,
@@ -46,6 +47,7 @@ import {
 } from "./types";
 import { zodToGemini } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
+import { withRetry, validateSchema } from "./utils";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -218,6 +220,14 @@ function getDefaultModels(): ModelInfo[] {
  * - 解析后的 JSON 对象 如果有 schema
  * - { narrative: string } 如果是纯文本
  */
+/**
+ * 生成内容（对话/工具调用）
+ *
+ * 注意: 返回格式兼容旧 API，result 可能是:
+ * - { functionCalls: ToolCallResult[] } 如果有工具调用
+ * - 解析后的 JSON 对象 如果有 schema
+ * - { narrative: string } 如果是纯文本
+ */
 export async function generateContent(
   config: GeminiConfig,
   model: string,
@@ -226,123 +236,133 @@ export async function generateContent(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<GeminiContentGenerationResponse> {
-  const client = createGeminiClient(config);
+  return withRetry(
+    async () => {
+      const client = createGeminiClient(config);
 
-  // 构建生成配置
-  const generationConfig = buildGenerationConfig(
-    systemInstruction,
-    schema,
-    options,
-  );
-
-  let text = "";
-  let functionCalls: ToolCallResult[] = [];
-  let usageMetadata: {
-    promptTokenCount?: number;
-    candidatesTokenCount?: number;
-    totalTokenCount?: number;
-  } | null = null;
-  let rawResponse: unknown;
-
-  console.log(
-    `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`,
-  );
-
-  if (options?.onChunk) {
-    // 流式生成
-    const {
-      text: streamText,
-      functionCalls: streamCalls,
-      usage,
-      raw,
-    } = await streamGeneration(
-      client,
-      model,
-      contents,
-      generationConfig,
-      options.onChunk,
-    );
-    text = streamText;
-    functionCalls = streamCalls;
-    usageMetadata = usage;
-    rawResponse = raw;
-  } else {
-    // 非流式生成
-    const response = await client.models.generateContent({
-      model,
-      contents,
-      config: generationConfig,
-    });
-
-    rawResponse = response;
-    usageMetadata = response.usageMetadata || null;
-
-    // 处理响应
-    const candidate = response.candidates?.[0];
-    const finishReason = candidate?.finishReason;
-
-    // 检查错误原因
-    handleFinishReason(finishReason, candidate?.finishMessage);
-
-    // 提取工具调用
-    if (candidate?.content?.parts) {
-      const fcParts = candidate.content.parts.filter(
-        (p: Part): p is Part & { functionCall: FunctionCall } =>
-          p.functionCall !== undefined,
+      // 构建生成配置
+      const generationConfig = buildGenerationConfig(
+        systemInstruction,
+        schema,
+        options,
       );
 
-      if (fcParts.length > 0) {
-        functionCalls = fcParts.map((p, index) => ({
-          id: `gemini_call_${p.functionCall.name}_${index}`,
-          name: p.functionCall.name || "",
-          args: (p.functionCall.args as Record<string, unknown>) || {},
-        }));
+      let text = "";
+      let functionCalls: ToolCallResult[] = [];
+      let usageMetadata: {
+        promptTokenCount?: number;
+        candidatesTokenCount?: number;
+        totalTokenCount?: number;
+      } | null = null;
+      let rawResponse: unknown;
+
+      console.log(
+        `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`,
+      );
+
+      if (options?.onChunk) {
+        // 流式生成
+        const {
+          text: streamText,
+          functionCalls: streamCalls,
+          usage,
+          raw,
+        } = await streamGeneration(
+          client,
+          model,
+          contents,
+          generationConfig,
+          options.onChunk,
+        );
+        text = streamText;
+        functionCalls = streamCalls;
+        usageMetadata = usage;
+        rawResponse = raw;
+      } else {
+        // 非流式生成
+        const response = await client.models.generateContent({
+          model,
+          contents,
+          config: generationConfig,
+        });
+
+        rawResponse = response;
+        usageMetadata = response.usageMetadata || null;
+
+        // 处理响应
+        const candidate = response.candidates?.[0];
+        const finishReason = candidate?.finishReason;
+
+        // 检查错误原因
+        handleFinishReason(finishReason, candidate?.finishMessage);
+
+        // 提取工具调用
+        if (candidate?.content?.parts) {
+          const fcParts = candidate.content.parts.filter(
+            (p: Part): p is Part & { functionCall: FunctionCall } =>
+              p.functionCall !== undefined,
+          );
+
+          if (fcParts.length > 0) {
+            functionCalls = fcParts.map((p, index) => ({
+              id: `gemini_call_${p.functionCall.name}_${index}`,
+              name: p.functionCall.name || "",
+              args: (p.functionCall.args as Record<string, unknown>) || {},
+            }));
+          }
+        }
+
+        // 如果没有工具调用，提取文本
+        if (functionCalls.length === 0 && candidate?.content?.parts) {
+          const textParts = candidate.content.parts.filter(
+            (p: Part): p is Part & { text: string } => p.text !== undefined,
+          );
+          text = textParts.map((p) => p.text).join("");
+        }
       }
-    }
 
-    // 如果没有工具调用，提取文本
-    if (functionCalls.length === 0 && candidate?.content?.parts) {
-      const textParts = candidate.content.parts.filter(
-        (p: Part): p is Part & { text: string } => p.text !== undefined,
-      );
-      text = textParts.map((p) => p.text).join("");
-    }
-  }
+      const usage: TokenUsage = {
+        promptTokens: usageMetadata?.promptTokenCount || 0,
+        completionTokens: usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: usageMetadata?.totalTokenCount || 0,
+        cacheRead: (usageMetadata as any)?.cachedContentTokenCount || 0,
+      };
 
-  const usage: TokenUsage = {
-    promptTokens: usageMetadata?.promptTokenCount || 0,
-    completionTokens: usageMetadata?.candidatesTokenCount || 0,
-    totalTokens: usageMetadata?.totalTokenCount || 0,
-    cacheRead: (usageMetadata as any)?.cachedContentTokenCount || 0,
-  };
+      console.log(`[Gemini] Generation complete. Usage:`, usage);
 
-  console.log(`[Gemini] Generation complete. Usage:`, usage);
+      // 如果有工具调用，返回工具调用结果
+      if (functionCalls.length > 0) {
+        return {
+          result: { functionCalls },
+          usage,
+          raw: rawResponse,
+        };
+      }
 
-  // 如果有工具调用，返回工具调用结果
-  if (functionCalls.length > 0) {
-    return {
-      result: { functionCalls },
-      usage,
-      raw: rawResponse,
-    };
-  }
+      // 解析文本为 JSON (如果有 schema)
+      if (text && schema) {
+        const parsedResult = parseJSONResponse(text);
+        // Schema Validation
+        validateSchema(parsedResult, schema, "gemini");
 
-  // 解析文本为 JSON (如果有 schema)
-  if (text && schema) {
-    const parsedResult = parseJSONResponse(text);
-    return {
-      result: parsedResult as Record<string, unknown>,
-      usage,
-      raw: rawResponse,
-    };
-  }
+        return {
+          result: parsedResult as Record<string, unknown>,
+          usage,
+          raw: rawResponse,
+        };
+      }
 
-  // 返回纯文本或空结果
-  return {
-    result: text ? { narrative: text } : {},
-    usage,
-    raw: rawResponse,
-  };
+      // 返回纯文本或空结果
+      return {
+        result: text ? { narrative: text } : {},
+        usage,
+        raw: rawResponse,
+      };
+    },
+    3,
+    1000,
+    "gemini",
+  );
 }
 
 /**
@@ -530,25 +550,14 @@ function parseJSONResponse(text: string): unknown {
   try {
     // 清理 markdown 代码块
     let cleaned = text.replace(/```json\n?|```/g, "").trim();
-    // 压缩 JSON
-    cleaned = cleaned.replace(/\n\s*/g, "").replace(/\s{2,}/g, " ");
-    return JSON.parse(cleaned);
+    // 尝试使用 jsonrepair 修复并解析
+    return JSON.parse(jsonrepair(cleaned));
   } catch (error) {
-    console.warn("[Gemini] Initial JSON parse failed, attempting repair...");
-
-    try {
-      let cleaned = text.replace(/```json\n?|```/g, "").trim();
-      // 修复常见问题
-      const repaired = cleaned
-        .replace(/\n\s*/g, "")
-        .replace(/\s{2,}/g, " ")
-        .replace(/([{,]\s*)'([^']+)'(\s*:)/g, '$1"$2"$3')
-        .replace(/,(\s*[}\]])/g, "$1");
-      return JSON.parse(repaired);
-    } catch (error2) {
-      console.error("[Gemini] JSON parse failed completely. Full text:", text);
-      throw new JSONParseError("gemini", text.substring(0, 500), error2);
-    }
+    console.warn(
+      "[Gemini] JSON parse failed even with repair. Full text:",
+      text,
+    );
+    throw new JSONParseError("gemini", text.substring(0, 500), error);
   }
 }
 

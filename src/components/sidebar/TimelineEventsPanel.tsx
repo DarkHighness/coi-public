@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TimelineEvent } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
@@ -78,7 +79,11 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
           <span className="mr-1.5 inline-block">
             {getValidIcon(event.icon, "📅")}
           </span>
-          {event.visible.description}
+          <MarkdownText
+            content={event.visible.description}
+            inline
+            className="inline"
+          />
         </div>
 
         {event.visible.causedBy && (
@@ -87,7 +92,11 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
               {t("worldInfo.causedBy")}:
             </span>
             <span className="text-[10px] text-theme-text/80 italic">
-              {event.visible.causedBy}
+              <MarkdownText
+                content={event.visible.causedBy}
+                inline
+                className="inline"
+              />
             </span>
           </div>
         )}
@@ -120,9 +129,12 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
 
             <div className="space-y-2 pl-1">
               {event.hidden?.trueDescription && (
-                <p className="text-[10px] text-theme-text leading-relaxed">
-                  {event.hidden.trueDescription}
-                </p>
+                <div className="text-[10px] text-theme-text leading-relaxed">
+                  <MarkdownText
+                    content={event.hidden.trueDescription}
+                    indentSize={2}
+                  />
+                </div>
               )}
 
               {event.hidden?.trueCausedBy && (
@@ -131,12 +143,17 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
                     {t("hidden.cause")}:
                   </span>
                   <span className="text-theme-text/80 italic">
-                    {event.hidden.trueCausedBy}
+                    <MarkdownText
+                      content={event.hidden.trueCausedBy}
+                      inline
+                      className="inline"
+                    />
                   </span>
                 </div>
               )}
 
               {event.hidden?.consequences &&
+                Array.isArray(event.hidden.consequences) &&
                 event.hidden.consequences.length > 0 && (
                   <div>
                     <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-1">
@@ -144,7 +161,13 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
                     </span>
                     <ul className="list-disc list-inside text-theme-text/80 space-y-0.5 text-[10px]">
                       {event.hidden.consequences.map((cons, i) => (
-                        <li key={i}>{cons}</li>
+                        <li key={i}>
+                          <MarkdownText
+                            content={cons}
+                            inline
+                            className="inline"
+                          />
+                        </li>
                       ))}
                     </ul>
                   </div>

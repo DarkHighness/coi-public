@@ -9,6 +9,7 @@
  * 注意：Claude 不支持图片生成、视频生成、语音合成、嵌入向量生成
  */
 
+import { jsonrepair } from "jsonrepair";
 import Anthropic from "@anthropic-ai/sdk";
 import type {
   MessageParam,
@@ -44,6 +45,7 @@ import {
 } from "./types";
 import { compileToolsForOpenAI, zodToOpenAISchema } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
+import { withRetry, validateSchema } from "./utils";
 
 // ============================================================================
 // Configuration Types
@@ -263,6 +265,9 @@ function getDefaultModels(): ModelInfo[] {
 /**
  * 生成内容（对话/工具调用）
  */
+/**
+ * 生成内容（对话/工具调用）
+ */
 export async function generateContent(
   config: ClaudeConfig,
   model: string,
@@ -271,213 +276,228 @@ export async function generateContent(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<ClaudeContentGenerationResponse> {
-  const client = createClaudeClient(config);
+  return withRetry(
+    async () => {
+      const client = createClaudeClient(config);
 
-  // 转换消息格式
-  const messages = convertToClaudeMessages(contents);
+      // 转换消息格式
+      const messages = convertToClaudeMessages(contents);
 
-  // 转换工具定义 (Claude 使用与 OpenAI 相似的格式)
-  const tools = options?.tools
-    ? convertToolsForClaude(options.tools)
-    : undefined;
+      // 转换工具定义 (Claude 使用与 OpenAI 相似的格式)
+      const tools = options?.tools
+        ? convertToolsForClaude(options.tools)
+        : undefined;
 
-  // 计算 thinking budget
-  let thinking: { type: "enabled"; budget_tokens: number } | undefined;
-  if (options?.thinkingLevel) {
-    const budgetMap = {
-      low: 2048,
-      medium: 4096,
-      high: 8192,
-    };
-    thinking = {
-      type: "enabled",
-      budget_tokens: budgetMap[options.thinkingLevel] || 2048,
-    };
-  }
+      // 计算 thinking budget
+      let thinking: { type: "enabled"; budget_tokens: number } | undefined;
+      if (options?.thinkingLevel) {
+        const budgetMap = {
+          low: 2048,
+          medium: 4096,
+          high: 8192,
+        };
+        thinking = {
+          type: "enabled",
+          budget_tokens: budgetMap[options.thinkingLevel] || 2048,
+        };
+      }
 
-  // Chain of Thought prompt for tool use (Sonnet/Haiku)
-  let finalSystemInstruction = systemInstruction;
-  if (
-    tools &&
-    tools.length > 0 &&
-    (model.includes("sonnet") || model.includes("haiku"))
-  ) {
-    const cotPrompt = `
+      // Chain of Thought prompt for tool use (Sonnet/Haiku)
+      let finalSystemInstruction = systemInstruction;
+      if (
+        tools &&
+        tools.length > 0 &&
+        (model.includes("sonnet") || model.includes("haiku"))
+      ) {
+        const cotPrompt = `
 Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis. First, think about which of the provided tools is the relevant tool to answer the user's request. Second, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, proceed with the tool call. BUT, if one of the values for a required parameter is missing, DO NOT invoke the function (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters. DO NOT ask for more information on optional parameters if it is not provided.
 `;
-    finalSystemInstruction = `${systemInstruction}\n\n${cotPrompt}`;
-  }
+        finalSystemInstruction = `${systemInstruction}\n\n${cotPrompt}`;
+      }
 
-  // 构建请求参数
-  const requestParams: MessageCreateParams = {
-    model,
-    max_tokens: thinking ? 64000 : 8192, // Thinking 模式需要更大的 max_tokens
-    system: finalSystemInstruction,
-    messages,
-    // Thinking 模式下不能使用 temperature (必须为 1.0 或不传，SDK 默认处理)
-    // 但为了兼容非 thinking 模式，我们只在非 thinking 时传递 temperature
-    ...(thinking ? { thinking } : { temperature: options?.temperature ?? 1.0 }),
-    top_p: options?.topP,
-    tools,
-  };
+      // 构建请求参数
+      const requestParams: MessageCreateParams = {
+        model,
+        max_tokens: thinking ? 64000 : 8192, // Thinking 模式需要更大的 max_tokens
+        system: finalSystemInstruction,
+        messages,
+        // Thinking 模式下不能使用 temperature (必须为 1.0 或不传，SDK 默认处理)
+        // 但为了兼容非 thinking 模式，我们只在非 thinking 时传递 temperature
+        ...(thinking
+          ? { thinking }
+          : { temperature: options?.temperature ?? 1.0 }),
+        top_p: options?.topP,
+        tools,
+      };
 
-  let content = "";
-  let toolCalls: ToolCallResult[] = [];
-  let usage: TokenUsage = {
-    promptTokens: 0,
-    completionTokens: 0,
-    totalTokens: 0,
-  };
-  let rawResponse: Message | AsyncIterable<MessageStreamEvent>;
+      let content = "";
+      let toolCalls: ToolCallResult[] = [];
+      let usage: TokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      };
+      let rawResponse: Message | AsyncIterable<MessageStreamEvent>;
 
-  console.log(
-    `[Claude] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
-  );
+      console.log(
+        `[Claude] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
+      );
 
-  if (options?.onChunk) {
-    // 流式生成
-    const stream = await client.messages.create({
-      ...requestParams,
-      stream: true,
-    });
+      if (options?.onChunk) {
+        // 流式生成
+        const stream = await client.messages.create({
+          ...requestParams,
+          stream: true,
+        });
 
-    rawResponse = stream;
+        rawResponse = stream;
 
-    // 累积工具调用信息
-    const accumulatedToolCalls: Map<
-      number,
-      { id: string; name: string; input: string }
-    > = new Map();
+        // 累积工具调用信息
+        const accumulatedToolCalls: Map<
+          number,
+          { id: string; name: string; input: string }
+        > = new Map();
 
-    let currentToolIndex = -1;
+        let currentToolIndex = -1;
 
-    for await (const event of stream) {
-      // 处理不同类型的事件
-      if (event.type === "content_block_start") {
-        const block = event.content_block;
-        if (block.type === "tool_use") {
-          currentToolIndex++;
-          accumulatedToolCalls.set(currentToolIndex, {
-            id: block.id,
-            name: block.name,
-            input: "",
-          });
-        }
-      } else if (event.type === "content_block_delta") {
-        const delta = event.delta;
-        if (delta.type === "text_delta") {
-          // 文本内容
-          content += delta.text;
-          options.onChunk(delta.text);
-        } else if (delta.type === "input_json_delta") {
-          // 工具调用参数（增量）
-          const existing = accumulatedToolCalls.get(currentToolIndex);
-          if (existing) {
-            existing.input += delta.partial_json;
+        for await (const event of stream) {
+          // 处理不同类型的事件
+          if (event.type === "content_block_start") {
+            const block = event.content_block;
+            if (block.type === "tool_use") {
+              currentToolIndex++;
+              accumulatedToolCalls.set(currentToolIndex, {
+                id: block.id,
+                name: block.name,
+                input: "",
+              });
+            }
+          } else if (event.type === "content_block_delta") {
+            const delta = event.delta;
+            if (delta.type === "text_delta") {
+              // 文本内容
+              content += delta.text;
+              options.onChunk(delta.text);
+            } else if (delta.type === "input_json_delta") {
+              // 工具调用参数（增量）
+              const existing = accumulatedToolCalls.get(currentToolIndex);
+              if (existing) {
+                existing.input += delta.partial_json;
+              }
+            }
+          } else if (event.type === "message_delta") {
+            // 更新使用量
+            if (event.usage) {
+              usage.completionTokens = event.usage.output_tokens || 0;
+            }
+          } else if (event.type === "message_start") {
+            // 初始使用量
+            if (event.message.usage) {
+              usage.promptTokens = event.message.usage.input_tokens || 0;
+              usage.cacheWrite =
+                (event.message.usage as any).cache_creation_input_tokens || 0;
+              usage.cacheRead =
+                (event.message.usage as any).cache_read_input_tokens || 0;
+            }
           }
         }
-      } else if (event.type === "message_delta") {
-        // 更新使用量
-        if (event.usage) {
-          usage.completionTokens = event.usage.output_tokens || 0;
+
+        // 解析累积的工具调用
+        for (const [, tc] of accumulatedToolCalls) {
+          try {
+            toolCalls.push({
+              id: tc.id,
+              name: tc.name,
+              args: JSON.parse(tc.input || "{}") as Record<string, unknown>,
+            });
+          } catch (parseError) {
+            console.error(
+              `[Claude] Failed to parse tool call arguments:`,
+              tc.input,
+            );
+            throw new MalformedToolCallError("claude", tc.name, tc.input);
+          }
         }
-      } else if (event.type === "message_start") {
-        // 初始使用量
-        if (event.message.usage) {
-          usage.promptTokens = event.message.usage.input_tokens || 0;
-          usage.cacheWrite =
-            (event.message.usage as any).cache_creation_input_tokens || 0;
-          usage.cacheRead =
-            (event.message.usage as any).cache_read_input_tokens || 0;
+
+        usage.totalTokens = usage.promptTokens + usage.completionTokens;
+      } else {
+        // 非流式生成
+        const response = await client.messages.create({
+          ...requestParams,
+          stream: false,
+        });
+
+        rawResponse = response;
+
+        // 处理响应内容
+        for (const block of response.content) {
+          if (block.type === "text") {
+            content += (block as TextBlock).text;
+          } else if (block.type === "tool_use") {
+            const toolBlock = block as ToolUseBlock;
+            toolCalls.push({
+              id: toolBlock.id,
+              name: toolBlock.name,
+              args: toolBlock.input as Record<string, unknown>,
+            });
+          }
+        }
+
+        // 检查停止原因
+        handleStopReason(response.stop_reason, response.stop_sequence);
+
+        usage = {
+          promptTokens: response.usage.input_tokens || 0,
+          completionTokens: response.usage.output_tokens || 0,
+          totalTokens:
+            (response.usage.input_tokens || 0) +
+            (response.usage.output_tokens || 0),
+          cacheWrite: (response.usage as any).cache_creation_input_tokens || 0,
+          cacheRead: (response.usage as any).cache_read_input_tokens || 0,
+        };
+      }
+
+      console.log(`[Claude] Generation complete. Usage:`, usage);
+
+      // 如果有工具调用，返回工具调用结果
+      if (toolCalls.length > 0) {
+        return {
+          result: { functionCalls: toolCalls },
+          usage,
+          raw: rawResponse,
+        };
+      }
+
+      // 没有内容也没有工具调用
+      if (!content) {
+        throw new AIProviderError("No content returned from Claude", "claude");
+      }
+
+      // 如果有 schema，解析 JSON
+      if (schema) {
+        try {
+          const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+          const result = JSON.parse(jsonrepair(cleanedContent));
+          // Schema Validation
+          validateSchema(result, schema, "claude");
+          return { result, usage, raw: rawResponse };
+        } catch (error) {
+          console.error(`[Claude] Failed to parse JSON content:`, content);
+          // If it's already a SchemaValidationError, rethrow it
+          if (error instanceof AIProviderError) {
+            throw error;
+          }
+          throw new JSONParseError("claude", content.substring(0, 500), error);
         }
       }
-    }
 
-    // 解析累积的工具调用
-    for (const [, tc] of accumulatedToolCalls) {
-      try {
-        toolCalls.push({
-          id: tc.id,
-          name: tc.name,
-          args: JSON.parse(tc.input || "{}") as Record<string, unknown>,
-        });
-      } catch (parseError) {
-        console.error(
-          `[Claude] Failed to parse tool call arguments:`,
-          tc.input,
-        );
-        throw new MalformedToolCallError("claude", tc.name, tc.input);
-      }
-    }
-
-    usage.totalTokens = usage.promptTokens + usage.completionTokens;
-  } else {
-    // 非流式生成
-    const response = await client.messages.create({
-      ...requestParams,
-      stream: false,
-    });
-
-    rawResponse = response;
-
-    // 处理响应内容
-    for (const block of response.content) {
-      if (block.type === "text") {
-        content += (block as TextBlock).text;
-      } else if (block.type === "tool_use") {
-        const toolBlock = block as ToolUseBlock;
-        toolCalls.push({
-          id: toolBlock.id,
-          name: toolBlock.name,
-          args: toolBlock.input as Record<string, unknown>,
-        });
-      }
-    }
-
-    // 检查停止原因
-    handleStopReason(response.stop_reason, response.stop_sequence);
-
-    usage = {
-      promptTokens: response.usage.input_tokens || 0,
-      completionTokens: response.usage.output_tokens || 0,
-      totalTokens:
-        (response.usage.input_tokens || 0) +
-        (response.usage.output_tokens || 0),
-      cacheWrite: (response.usage as any).cache_creation_input_tokens || 0,
-      cacheRead: (response.usage as any).cache_read_input_tokens || 0,
-    };
-  }
-
-  console.log(`[Claude] Generation complete. Usage:`, usage);
-
-  // 如果有工具调用，返回工具调用结果
-  if (toolCalls.length > 0) {
-    return {
-      result: { functionCalls: toolCalls },
-      usage,
-      raw: rawResponse,
-    };
-  }
-
-  // 没有内容也没有工具调用
-  if (!content) {
-    throw new AIProviderError("No content returned from Claude", "claude");
-  }
-
-  // 如果有 schema，解析 JSON
-  if (schema) {
-    try {
-      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-      const result = JSON.parse(cleanedContent);
-      return { result, usage, raw: rawResponse };
-    } catch (error) {
-      console.error(`[Claude] Failed to parse JSON content:`, content);
-      throw new JSONParseError("claude", content.substring(0, 500), error);
-    }
-  }
-
-  // 返回纯文本
-  return { result: { narrative: content }, usage, raw: rawResponse };
+      // 返回纯文本
+      return { result: { narrative: content }, usage, raw: rawResponse };
+    },
+    3,
+    1000,
+    "claude",
+  );
 }
 
 /**

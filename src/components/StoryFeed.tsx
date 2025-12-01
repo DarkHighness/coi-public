@@ -5,6 +5,7 @@ import { StoryCard } from "./StoryCard";
 import { FeedHeader } from "./feed/FeedHeader";
 import { StackControls } from "./feed/StackControls";
 import { GenerationTimer } from "./common/GenerationTimer";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface StoryFeedProps {
   gameState: GameState;
@@ -234,16 +235,22 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
               <h3 className="text-theme-primary font-fantasy text-xl mb-2">
                 {gameState.outline.title}
               </h3>
-              <p className="text-theme-muted text-sm italic">
-                {gameState.outline.premise}
-              </p>
+              <div className="text-theme-muted text-sm italic">
+                <MarkdownText
+                  content={gameState.outline.premise}
+                  disableIndent
+                />
+              </div>
               {gameState.outline.mainGoal?.visible?.description && (
-                <p className="text-theme-text text-sm mt-4 border-t border-theme-border/30 pt-2">
-                  <strong className="text-theme-primary">
+                <div className="text-theme-text text-sm mt-4 border-t border-theme-border/30 pt-2">
+                  <strong className="text-theme-primary block mb-1">
                     {t("outline.currentGoal")}:
-                  </strong>{" "}
-                  {gameState.outline.mainGoal.visible.description}
-                </p>
+                  </strong>
+                  <MarkdownText
+                    content={gameState.outline.mainGoal.visible.description}
+                    disableIndent
+                  />
+                </div>
               )}
             </div>
           )}

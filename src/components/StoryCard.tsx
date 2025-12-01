@@ -111,7 +111,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       const imageId = await saveImage(file, {
         saveId: saveId || "unsaved",
         forkId: gameState.forkId,
-        turnIdx: segment.segmentIdx || gameState.turnNumber,
+        turnIdx: segment.segmentIdx ?? gameState.turnNumber,
         imagePrompt: "", // Requirement: imagePrompt should be empty
       });
 

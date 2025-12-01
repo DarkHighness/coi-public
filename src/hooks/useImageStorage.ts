@@ -31,9 +31,15 @@ export const useImageURL = (imageId: string | undefined) => {
         if (isMounted) {
           if (blob) {
             const objectUrl = URL.createObjectURL(blob);
+            console.log("[useImageURL] Resolved blob:", {
+              imageId,
+              size: blob.size,
+              objectUrl,
+            });
             objectUrls.push(objectUrl);
             setUrl(objectUrl);
           } else {
+            console.warn("[useImageURL] Blob not found for ID:", imageId);
             setError("Image not found");
             setUrl(null);
           }

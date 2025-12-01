@@ -14,7 +14,7 @@
  * - Embedding generation
  */
 
-// import openRouterModels from "@/resources/openrouter.json"; // Removed static import
+import { jsonrepair } from "jsonrepair";
 import type { EmbeddingTaskType, TokenUsage } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
@@ -52,6 +52,7 @@ import {
   isGeminiModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
+import { withRetry, validateSchema } from "./utils";
 
 // ============================================================================
 // Response Types (Compatible with OpenAI API)
@@ -253,6 +254,9 @@ function inferModelCapabilities(modelData: {
 /**
  * Generate content (chat/tool calls)
  */
+/**
+ * Generate content (chat/tool calls)
+ */
 export async function generateContent(
   config: OpenRouterConfig,
   model: string,
@@ -261,85 +265,94 @@ export async function generateContent(
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): Promise<OpenRouterContentGenerationResponse> {
-  // 检测是否为 Gemini 模型
-  const isGemini = isGeminiModel(model);
+  return withRetry(
+    async () => {
+      // 检测是否为 Gemini 模型
+      const isGemini = isGeminiModel(model);
 
-  // Convert messages
-  const messages = convertToOpenAIMessages(systemInstruction, contents);
+      // Convert messages
+      const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-  // Convert tools - 如果是 Gemini 模型，使用 Gemini 格式
-  const tools = options?.tools
-    ? isGemini
-      ? options.tools.map((t) =>
-          createGeminiTool(t.name, t.description, t.parameters),
-        )
-      : convertToOpenAITools(options.tools)
-    : undefined;
+      // Convert tools - 如果是 Gemini 模型，使用 Gemini 格式
+      const tools = options?.tools
+        ? isGemini
+          ? options.tools.map((t) =>
+              createGeminiTool(t.name, t.description, t.parameters),
+            )
+          : convertToOpenAITools(options.tools)
+        : undefined;
 
-  // Build request body
-  const requestBody: Record<string, unknown> = {
-    model,
-    messages,
-    temperature: options?.temperature,
-    top_p: options?.topP,
-    top_k: options?.topK,
-    min_p: options?.minP,
-    stream: !!options?.onChunk,
-    tools,
-    tool_choice: tools ? "auto" : undefined,
-  };
+      // Build request body
+      const requestBody: Record<string, unknown> = {
+        model,
+        messages,
+        temperature: options?.temperature,
+        top_p: options?.topP,
+        top_k: options?.topK,
+        min_p: options?.minP,
+        stream: !!options?.onChunk,
+        tools,
+        tool_choice: tools ? "auto" : undefined,
+      };
 
-  // Add schema - 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
-  if (schema) {
-    requestBody.response_format = isGemini
-      ? { type: "json_schema", schema: zodToGemini(schema) }
-      : zodToOpenAIResponseFormat(schema);
-  }
+      // Add schema - 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
+      if (schema) {
+        requestBody.response_format = isGemini
+          ? { type: "json_schema", schema: zodToGemini(schema) }
+          : zodToOpenAIResponseFormat(schema);
+      }
 
-  console.log(
-    `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
-  );
-
-  if (isGemini && schema) {
-    console.log(
-      "[OpenRouter] Detected Gemini model, using Gemini schema format:",
-      JSON.stringify(requestBody.response_format, null, 2),
-    );
-  }
-
-  try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: createHeaders(config),
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new AIProviderError(
-        errorData.error?.message || `OpenRouter API Error: ${response.status}`,
-        "openrouter",
+      console.log(
+        `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
       );
-    }
 
-    if (options?.onChunk) {
-      return handleStreamingResponse(response, options.onChunk, schema);
-    } else {
-      return handleNonStreamingResponse(response, schema);
-    }
-  } catch (error) {
-    if (error instanceof AIProviderError) throw error;
-    const message = error instanceof Error ? error.message : "Unknown error";
-    throw new AIProviderError(
-      `OpenRouter generation failed: ${message}`,
-      "openrouter",
-      undefined,
-      error,
-    );
-  }
+      if (isGemini && schema) {
+        console.log(
+          "[OpenRouter] Detected Gemini model, using Gemini schema format:",
+          JSON.stringify(requestBody.response_format, null, 2),
+        );
+      }
+
+      try {
+        const response = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: createHeaders(config),
+            body: JSON.stringify(requestBody),
+          },
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new AIProviderError(
+            errorData.error?.message ||
+              `OpenRouter API Error: ${response.status}`,
+            "openrouter",
+          );
+        }
+
+        if (options?.onChunk) {
+          return handleStreamingResponse(response, options.onChunk, schema);
+        } else {
+          return handleNonStreamingResponse(response, schema);
+        }
+      } catch (error) {
+        if (error instanceof AIProviderError) throw error;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        throw new AIProviderError(
+          `OpenRouter generation failed: ${message}`,
+          "openrouter",
+          undefined,
+          error,
+        );
+      }
+    },
+    3,
+    1000,
+    "openrouter",
+  );
 }
 
 /**
@@ -391,9 +404,16 @@ async function handleNonStreamingResponse(
   if (schema && content) {
     try {
       const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-      return { result: JSON.parse(cleanedContent), usage, raw: data };
+      const result = JSON.parse(jsonrepair(cleanedContent));
+      // Schema Validation
+      validateSchema(result, schema, "openrouter");
+      return { result, usage, raw: data };
     } catch (error) {
       console.error(`[OpenRouter] Failed to parse JSON content:`, content);
+      // If it's already a SchemaValidationError, rethrow it
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }
@@ -528,9 +548,16 @@ async function handleStreamingResponse(
   if (schema && content) {
     try {
       const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
-      return { result: JSON.parse(cleanedContent), usage, raw: null };
+      const result = JSON.parse(jsonrepair(cleanedContent));
+      // Schema Validation
+      validateSchema(result, schema, "openrouter");
+      return { result, usage, raw: null };
     } catch (error) {
       console.error(`[OpenRouter] Failed to parse JSON content:`, content);
+      // If it's already a SchemaValidationError, rethrow it
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }

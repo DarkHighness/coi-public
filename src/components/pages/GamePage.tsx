@@ -300,12 +300,9 @@ export const GamePage: React.FC<GamePageProps> = ({
         currentHistory[0].role === "user" &&
         currentHistory[1].role === "model")
     ) {
-      setGameState((prev) => ({
-        ...prev,
-        currentHistory: [],
-      }));
       // First turn retry - no parent yet, so preventFork is irrelevant but good practice
-      handleAction(defaultInitialPrompt, false, undefined, undefined, true);
+      // We use isInit=true to force a new root node creation
+      handleAction(defaultInitialPrompt, true, undefined, undefined, true);
       return;
     }
 
