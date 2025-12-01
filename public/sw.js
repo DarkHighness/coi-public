@@ -1,7 +1,7 @@
-const CACHE_NAME = "chronicles-v4";
+const CACHE_NAME = "chronicles-v5";
 const ASSETS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
 
-// Install Event: Cache Core Assets
+// === 1. Install Event: Cache Core Assets ===
 self.addEventListener("install", (event) => {
   // Skip waiting to ensure the new service worker takes over immediately
   self.skipWaiting();
@@ -15,14 +15,14 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Listen for skipWaiting message (e.g., from a "New Version Available" prompt)
+// === 2. Message Event: Handle "Skip Waiting" ===
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
 
-// Activate Event: Clean up old caches
+// === 3. Activate Event: Clean up old caches ===
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -41,7 +41,10 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Helper: Network Only
+// === Helper Strategies ===
+
+// Helper: Network Only (Pass through SW)
+// 注意：这仍然经过 SW，对于流式 API 尽量不要用这个，而是直接在 fetch 监听中 return
 const networkOnly = (event) => {
   event.respondWith(fetch(event.request));
 };
@@ -54,7 +57,7 @@ const cacheFirst = (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        // Cache valid responses
+        // Only cache valid 200 responses
         if (
           !networkResponse ||
           networkResponse.status !== 200 ||
@@ -95,7 +98,7 @@ const staleWhileRevalidate = (event) => {
   );
 };
 
-// Fetch Event Router
+// === 4. Fetch Event Router (核心逻辑) ===
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -104,39 +107,36 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 1. API Requests: Network Only
+  // 遇到以下情况直接 return，不使用 event.respondWith。
+  // 这让浏览器直接处理请求，解决了流式传输(Streaming)卡顿和 CORS 预检被拦截的问题。
   if (
-    url.pathname.includes("/api/") ||
+    url.pathname.startsWith("/v1/") ||         // 常见的 LLM API 路径
+    url.pathname.includes("/api/") ||          // 通用 API 路径
     url.hostname.includes("googleapis.com") ||
     url.hostname.includes("openai.com") ||
-    url.hostname.includes("openrouter.ai")
+    url.hostname.includes("openrouter.ai") ||
+    url.hostname.includes("pollinations.ai")   // 图片生成 API
   ) {
-    return networkOnly(event);
-  }
-
-  // 2. External Image Providers: Ignore (let browser handle directly)
-  // This fixes CORS/opaque response issues with background-image
-  if (url.hostname.includes("pollinations.ai")) {
     return;
   }
 
-  // 2. Navigation (HTML): Stale-While-Revalidate
+  // --- 页面导航 (HTML) ---
   if (event.request.mode === "navigate") {
     return staleWhileRevalidate(event);
   }
 
-  // 3. Static Assets (JS, CSS, Images, Fonts): Cache First
+  // --- 静态资源 (JS, CSS, Images, Fonts) ---
   if (
     url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)
   ) {
     return cacheFirst(event);
   }
 
-  // 4. Audio: Cache First
+  // --- 音频资源 ---
   if (url.pathname.includes("/audio/")) {
     return cacheFirst(event);
   }
 
-  // Default: Network Only for everything else
+  // --- 兜底策略 ---
   return networkOnly(event);
 });
