@@ -286,7 +286,8 @@
     "selectModel": "请选择嵌入模型",
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
     "noModels": "未选择嵌入模型。",
-    "providerDisabled": "提供商已被禁用。"
+    "providerDisabled": "提供商已被禁用。",
+    "notSet": "未设置嵌入模型"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",

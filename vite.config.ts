@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { ViteToml } from "vite-plugin-toml";
+import viteCompression from "vite-plugin-compression";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
@@ -20,14 +21,34 @@ export default defineConfig(({ mode }) => {
     worker: {
       format: "es",
     },
-    plugins: [react(), tailwindcss(), ViteToml()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      ViteToml(),
+      // Gzip compression
+      viteCompression({
+        verbose: true,
+        disable: false,
+        threshold: 10240,
+        algorithm: "gzip",
+        ext: ".gz",
+      }),
+      // Brotli compression
+      viteCompression({
+        verbose: true,
+        disable: false,
+        threshold: 10240,
+        algorithm: "brotliCompress",
+        ext: ".br",
+      }),
+    ],
     define: {
       "process.env.API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "."),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
     optimizeDeps: {
@@ -55,24 +76,23 @@ export default defineConfig(({ mode }) => {
               }
 
               // AI SDKs - SPLIT BY PROVIDER for better caching and lazy loading
-              // Users typically only use 1-2 providers, so splitting helps
               if (
                 id.includes("@google/genai") ||
                 id.includes("@google/generative-ai")
               ) {
-                return "vendor-gemini";
+                return "provider-gemini-sdk";
               }
 
               if (id.includes("openai") && !id.includes("@openrouter")) {
-                return "vendor-openai";
+                return "provider-openai-sdk";
               }
 
               if (id.includes("@anthropic-ai/sdk")) {
-                return "vendor-claude";
+                return "provider-claude-sdk";
               }
 
               if (id.includes("@openrouter")) {
-                return "vendor-openrouter";
+                return "provider-openrouter-sdk";
               }
 
               // PGlite - separate because it's large database library
@@ -95,12 +115,15 @@ export default defineConfig(({ mode }) => {
             }
 
             // App code chunking
-            // Translation data - separate chunk for better caching
-            if (
-              id.includes("utils/translations/") ||
-              id.includes("src/locales/")
-            ) {
-              return "translations";
+            // Translation data - separate chunk per language
+            if (id.includes("src/locales/en/")) {
+              return "locales-en";
+            }
+            if (id.includes("src/locales/zh/")) {
+              return "locales-zh";
+            }
+            if (id.includes("utils/translations/")) {
+              return "translations-legacy";
             }
 
             // Theme data - separate chunk
@@ -110,14 +133,18 @@ export default defineConfig(({ mode }) => {
 
             // Services - group by functionality
             if (id.includes("services/") && !id.includes("node_modules")) {
-              // AI Provider implementations - grouped together
-              if (
-                id.includes("geminiProvider") ||
-                id.includes("openaiProvider") ||
-                id.includes("openRouterProvider") ||
-                id.includes("claudeProvider")
-              ) {
-                return "ai-providers";
+              // AI Provider implementations - SPLIT INDIVIDUALLY
+              if (id.includes("geminiProvider")) {
+                return "provider-gemini";
+              }
+              if (id.includes("openaiProvider")) {
+                return "provider-openai";
+              }
+              if (id.includes("openRouterProvider")) {
+                return "provider-openrouter";
+              }
+              if (id.includes("claudeProvider")) {
+                return "provider-claude";
               }
 
               // Core AI service and schemas

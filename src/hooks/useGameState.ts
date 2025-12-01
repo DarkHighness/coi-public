@@ -139,7 +139,10 @@ export const useGameState = () => {
     setGameState((prev) => {
       const newState = { ...prev, character: char };
       // Sync global location if character location changed
-      if (char.currentLocation && char.currentLocation !== prev.currentLocation) {
+      if (
+        char.currentLocation &&
+        char.currentLocation !== prev.currentLocation
+      ) {
         newState.currentLocation = char.currentLocation;
       }
       return newState;

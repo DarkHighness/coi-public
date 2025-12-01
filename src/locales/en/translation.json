@@ -298,7 +298,8 @@
     "selectModel": "Please select an embedding model",
     "noModelsAvailable": "No embedding models available, please check provider settings.",
     "noModels": "No embedding model selected.",
-    "providerDisabled": "Provider has been disabled."
+    "providerDisabled": "Provider has been disabled.",
+    "notSet": "No embedding model has been set."
   },
   "themeMode": "Theme Mode",
   "settings": {

@@ -252,7 +252,7 @@ function getDefaultModels(): ModelInfo[] {
         tools: true,
         parallelTools: true,
       },
-    }
+    },
   ];
 }
 

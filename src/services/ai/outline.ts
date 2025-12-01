@@ -37,7 +37,7 @@ import { GenerateContentResult, generateContentUnified } from "./core";
 import { getProviderConfig, createLogEntry } from "./utils";
 
 // @ts-ignore
-import promptInjectionData from "@/src/prompt/prompt.toml";
+import promptInjectionData from "@/prompt/prompt.toml";
 
 // ============================================================================
 // Phased Story Outline Generation

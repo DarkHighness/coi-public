@@ -1,6 +1,6 @@
-import themeStyles from "../src/resources/theme_styles.json";
+import themeStylesData from "@/resources/theme_styles.json";
 
-const THEME_STYLES: Record<string, string> = themeStyles as Record<
+const THEME_STYLES: Record<string, string> = themeStylesData as Record<
   string,
   string
 >;

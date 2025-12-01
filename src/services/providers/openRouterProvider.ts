@@ -14,7 +14,7 @@
  * - Embedding generation
  */
 
-import openRouterModels from "../../src/resources/openrouter.json";
+// import openRouterModels from "@/resources/openrouter.json"; // Removed static import
 import type { EmbeddingTaskType, TokenUsage } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
@@ -165,11 +165,20 @@ export async function validateConnection(
 /**
  * Get available OpenRouter models using local JSON
  */
+/**
+ * Get available OpenRouter models using fetched JSON
+ */
 export async function getModels(
   _config: OpenRouterConfig,
 ): Promise<ModelInfo[]> {
   try {
-    return openRouterModels.data.map((m) => {
+    const response = await fetch("/resources/openrouter.json");
+    if (!response.ok) {
+      throw new Error(`Failed to load openrouter.json: ${response.status}`);
+    }
+    const openRouterModels = await response.json();
+
+    return openRouterModels.data.map((m: any) => {
       const capabilities = inferModelCapabilities({
         id: m.slug,
         name: m.name || m.slug,
@@ -183,7 +192,7 @@ export async function getModels(
       };
     });
   } catch (error) {
-    console.warn("Failed to list OpenRouter models via local JSON:", error);
+    console.warn("Failed to list OpenRouter models via fetched JSON:", error);
     return [];
   }
 }
@@ -782,6 +791,12 @@ export async function getEmbeddingModels(
   _config: OpenRouterConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
+    const response = await fetch("/resources/openrouter.json");
+    if (!response.ok) {
+      throw new Error(`Failed to load openrouter.json: ${response.status}`);
+    }
+    const openRouterModels = await response.json();
+
     const embeddingModels: EmbeddingModelInfo[] = [];
 
     for (const model of openRouterModels.data) {

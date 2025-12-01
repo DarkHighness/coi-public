@@ -95,7 +95,7 @@ const CATEGORY_OPTIONS = [
 ] as const;
 
 // File paths
-const THEMES_FILE = path.resolve(__dirname, "../utils/constants/themes.ts");
+const THEMES_FILE = path.resolve(__dirname, "../src/utils/constants/themes.ts");
 const EN_THEMES_FILE = path.resolve(__dirname, "../src/locales/en/themes.json");
 const ZH_THEMES_FILE = path.resolve(__dirname, "../src/locales/zh/themes.json");
 

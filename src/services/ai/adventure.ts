@@ -41,7 +41,7 @@ import {
 
 // Import prompt injection data
 // @ts-ignore
-import promptInjectionData from "@/src/prompt/prompt.toml";
+import promptInjectionData from "@/prompt/prompt.toml";
 
 // ============================================================================
 // Turn Context and Agentic Loop

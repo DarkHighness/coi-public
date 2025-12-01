@@ -70,7 +70,7 @@ export const BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 `;
 
   // Write to constants directory
-  const outputPath = join(__dirname, "../utils/constants/buildInfo.ts");
+  const outputPath = join(__dirname, "../src/utils/constants/buildInfo.ts");
   writeFileSync(outputPath, content, "utf-8");
 
   console.log(`✓ Build info generated: ${gitHash} (${buildTime})`);
