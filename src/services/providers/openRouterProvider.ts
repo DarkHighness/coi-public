@@ -695,40 +695,87 @@ export async function getEmbeddingModels(
   config: OpenRouterConfig,
 ): Promise<EmbeddingModelInfo[]> {
   try {
+    // First, try using SDK
     const client = createClient(config);
     const response = await client.embeddings.listModels();
     const data = response as any;
+
     if (!data.data || !Array.isArray(data.data)) {
       console.warn("Invalid response format from embeddings.listModels()");
-      return getDefaultEmbeddingModels();
+      throw new Error("Invalid SDK response format");
     }
-    const embeddingModels: EmbeddingModelInfo[] = [];
-    for (const model of data.data) {
-      const id = (model.id || model.slug || "").toLowerCase();
-      // Check if this is an embedding model
-      if (model.output_modalities?.includes("embeddings") ||
-          model.modality?.includes("embeddings")) {
-        embeddingModels.push({
-          id: model.id || model.slug,
-          name: model.name || model.id || model.slug,
-          dimensions: guessEmbeddingDimensions(id),
-          contextLength: model.context_length || model.contextLength || 8192,
-        });
-      }
-    }
+
+    const embeddingModels = processEmbeddingModels(data.data);
+
     if (embeddingModels.length === 0) {
-      console.warn("No embedding models found, using defaults");
+      console.warn("No embedding models found in SDK response");
+      throw new Error("No embedding models found");
+    }
+
+    console.log(`[OpenRouter] Loaded ${embeddingModels.length} embedding models via SDK`);
+    return embeddingModels;
+  } catch (sdkError) {
+    console.warn(
+      "Failed to list OpenRouter embedding models via SDK (may be CORS issue):",
+      sdkError,
+    );
+
+    // Fallback to local JSON file
+    try {
+      console.log("[OpenRouter] Attempting fallback to local JSON file...");
+      const response = await fetch("/resources/openrouter_embedding.json");
+      if (!response.ok) {
+        throw new Error(`Failed to load local JSON: ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (!data.data || !Array.isArray(data.data)) {
+        throw new Error("Invalid local JSON format");
+      }
+
+      const embeddingModels = processEmbeddingModels(data.data);
+
+      if (embeddingModels.length > 0) {
+        console.log(`[OpenRouter] Loaded ${embeddingModels.length} embedding models from local JSON`);
+        return embeddingModels;
+      }
+
+      throw new Error("No embedding models found in local JSON");
+    } catch (jsonError) {
+      console.warn(
+        "Failed to load from local JSON file:",
+        jsonError,
+      );
+      console.log("[OpenRouter] Using default embedding models");
       return getDefaultEmbeddingModels();
     }
-    return embeddingModels;
-  } catch (error) {
-    console.warn(
-      "Failed to list OpenRouter embedding models via SDK:",
-      error,
-    );
-    return getDefaultEmbeddingModels();
   }
 }
+
+/**
+ * Process raw model data into EmbeddingModelInfo
+ */
+function processEmbeddingModels(models: any[]): EmbeddingModelInfo[] {
+  const embeddingModels: EmbeddingModelInfo[] = [];
+
+  for (const model of models) {
+    const id = (model.id || model.slug || "").toLowerCase();
+
+    // Check if this is an embedding model
+    if (model.output_modalities?.includes("embeddings") ||
+        model.modality?.includes("embeddings")) {
+      embeddingModels.push({
+        id: model.id || model.slug,
+        name: model.name || model.id || model.slug,
+        dimensions: guessEmbeddingDimensions(id),
+        contextLength: model.context_length || model.contextLength || 8192,
+      });
+    }
+  }
+
+  return embeddingModels;
+}
+
 function guessEmbeddingDimensions(id: string): number {
   if (id.includes("text-embedding-3-small")) return 1536;
   if (id.includes("text-embedding-3-large")) return 3072;
