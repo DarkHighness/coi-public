@@ -24,25 +24,53 @@ const PHASE_DESCRIPTIONS: Record<number, string[]> = {
     "Setting the stage for legendary deeds...",
   ],
   3: [
-    "Populating realms with wonders and dangers...",
-    "Establishing factions vying for power...",
-    "Creating sanctuaries and forbidden zones...",
-    "Mapping the paths between worlds...",
-    "Hiding treasures in forgotten corners...",
+    "Mapping the known world...",
+    "Charting dangerous territories...",
+    "Revealing hidden sanctuaries...",
+    "Describing the lay of the land...",
+    "Uncovering ancient ruins...",
   ],
   4: [
-    "Weaving the web of alliances and enmities...",
-    "Distributing artifacts of power...",
-    "Establishing the hierarchy of realms...",
-    "Creating bonds that transcend time...",
-    "Planting seeds of future conflicts...",
+    "Identifying major powers...",
+    "Tracing lines of influence...",
+    "Uncovering secret societies...",
+    "Defining political landscapes...",
+    "Establishing power dynamics...",
   ],
   5: [
-    "Inscribing quests in the book of fate...",
-    "Revealing fragments of ancient prophecy...",
-    "Setting the cosmic clock in motion...",
-    "Preparing trials for the worthy...",
-    "The chronicles await your arrival...",
+    "Weaving social webs...",
+    "Introducing key figures...",
+    "Defining friends and foes...",
+    "Establishing personal connections...",
+    "Revealing hidden agendas...",
+  ],
+  6: [
+    "Gathering starting equipment...",
+    "Forging unique items...",
+    "Discovering ancient artifacts...",
+    "Packing essential supplies...",
+    "Unlocking hidden potential...",
+  ],
+  7: [
+    "Outlining the hero's journey...",
+    "Setting initial challenges...",
+    "Defining the path ahead...",
+    "Creating opportunities for adventure...",
+    "Establishing the call to action...",
+  ],
+  8: [
+    "Compiling world lore...",
+    "Recording ancient history...",
+    "Gathering rumors and legends...",
+    "Defining common knowledge...",
+    "Uncovering forgotten truths...",
+  ],
+  9: [
+    "Setting the mood and tone...",
+    "Establishing the timeline...",
+    "Creating the atmosphere...",
+    "Finalizing the world state...",
+    "Preparing for the adventure...",
   ],
 };
 
@@ -162,22 +190,6 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
       {/* Cinematic Background */}
       <div className="absolute inset-0 bg-[url('/img/stardust.png')] opacity-20 animate-pulse z-0"></div>
 
-      {/* Animated Phase Text Background */}
-      {animatedText && (
-        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
-          <div className="w-full h-full px-4 md:px-16 py-8 md:py-16 flex items-center justify-center">
-            <div
-              className={`text-center opacity-30 select-none ${themeFont} text-2xl md:text-4xl lg:text-5xl leading-relaxed text-theme-primary/60 max-w-4xl transition-opacity duration-300`}
-            >
-              {animatedText}
-              <span className="animate-pulse">|</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="absolute inset-0 bg-linear-to-b from-black/40 via-transparent to-black/40 z-0"></div>
-
       {/* Central Loader */}
       <div className="relative z-10 flex flex-col items-center gap-8 md:gap-12 animate-fade-in px-4">
         <div className="relative group">
@@ -197,9 +209,10 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
         {/* Text Content */}
         <div className="text-center space-y-4">
           <h2
-            className={`text-3xl md:text-4xl lg:text-6xl ${themeFont} tracking-[0.15em] md:tracking-[0.2em] uppercase text-transparent bg-clip-text bg-linear-to-r from-theme-muted via-theme-primary to-theme-muted animate-shimmer bg-size-[200%_auto] font-bold`}
+            className={`text-xl md:text-2xl lg:text-3xl ${themeFont} tracking-widest uppercase text-theme-primary font-bold min-h-[3rem]`}
           >
-            {t("loading")}
+            {animatedText}
+            <span className="animate-pulse">|</span>
           </h2>
 
           {/* Progress Indicators */}

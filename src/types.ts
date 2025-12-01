@@ -412,6 +412,10 @@ export interface PartialStoryOutline {
   phase3?: object;
   phase4?: object;
   phase5?: object;
+  phase6?: object;
+  phase7?: object;
+  phase8?: object;
+  phase9?: object;
 }
 
 // --- World System Interfaces ---

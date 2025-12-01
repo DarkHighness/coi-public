@@ -12,11 +12,19 @@ import {
   OutlinePhase3,
   OutlinePhase4,
   OutlinePhase5,
+  OutlinePhase6,
+  OutlinePhase7,
+  OutlinePhase8,
+  OutlinePhase9,
   outlinePhase1Schema,
   outlinePhase2Schema,
   outlinePhase3Schema,
   outlinePhase4Schema,
   outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
   storySummarySchema,
 } from "../schemas";
 
@@ -27,6 +35,10 @@ import {
   getOutlinePhase3Prompt,
   getOutlinePhase4Prompt,
   getOutlinePhase5Prompt,
+  getOutlinePhase6Prompt,
+  getOutlinePhase7Prompt,
+  getOutlinePhase8Prompt,
+  getOutlinePhase9Prompt,
   getSummaryPrompt,
 } from "../prompts/index";
 
@@ -202,7 +214,7 @@ export const generateStoryOutlinePhased = async (
     if (options?.onPhaseProgress) {
       options.onPhaseProgress({
         phase,
-        totalPhases: 5,
+        totalPhases: 9,
         phaseName: `initializing.outline.phase.${phase}.name`,
         status,
         partialOutline: partial,
@@ -215,8 +227,16 @@ export const generateStoryOutlinePhased = async (
   let startPhase = 1;
   if (options?.resumeFromConversation) {
     startPhase = options.resumeFromConversation.currentPhase;
+  } else if (partial.phase9) {
+    startPhase = 10; // All done
+  } else if (partial.phase8) {
+    startPhase = 9;
+  } else if (partial.phase7) {
+    startPhase = 8;
+  } else if (partial.phase6) {
+    startPhase = 7;
   } else if (partial.phase5) {
-    startPhase = 6; // All done
+    startPhase = 6;
   } else if (partial.phase4) {
     startPhase = 5;
   } else if (partial.phase3) {
@@ -227,170 +247,121 @@ export const generateStoryOutlinePhased = async (
     startPhase = 2;
   }
 
-  // Phase 1: World Foundation
-  if (startPhase <= 1) {
-    reportProgress(1, "starting");
+  // Helper to execute a single phase
+  const executePhase = async <T>(
+    phaseNum: number,
+    prompt: string,
+    schema: any, // Using any for Zod schema to avoid complex type issues
+    field: keyof PartialStoryOutline,
+  ) => {
+    if (startPhase > phaseNum) return;
 
-    const phase1Prompt = getOutlinePhase1Prompt(theme, language, customContext);
-    conversationHistory.push({ role: "user", parts: [{ text: phase1Prompt }] });
+    reportProgress(phaseNum, "starting");
+    conversationHistory.push({ role: "user", parts: [{ text: prompt }] });
 
     try {
-      reportProgress(1, "generating");
-      // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
+      reportProgress(phaseNum, "generating");
       const { result, log } = await generateContentUnified(
         instance.protocol,
         modelId,
         systemInstruction,
         conversationHistory,
-        outlinePhase1Schema,
+        schema,
         { settings },
       );
-      partial.phase1 = result as OutlinePhase1;
-      // Use compact JSON (no spaces) for conversation history
+
+      // Update partial outline
+      (partial as any)[field] = result;
+
+      // Add to conversation history
       conversationHistory.push({
         role: "model",
         parts: [{ text: JSON.stringify(result) }],
       });
+
       if (log) logs.push(log);
-      reportProgress(1, "completed");
-      // Save conversation state for fault recovery (next phase = 2)
-      saveConversationState(2);
+      reportProgress(phaseNum, "completed");
+
+      // Save state for next phase (phaseNum + 1)
+      saveConversationState(phaseNum + 1);
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
-      reportProgress(1, "error", error);
+      reportProgress(phaseNum, "error", error);
       throw e;
     }
-  }
+  };
+
+  // Phase 1: World Foundation
+  await executePhase(
+    1,
+    getOutlinePhase1Prompt(theme, language, customContext),
+    outlinePhase1Schema,
+    "phase1"
+  );
 
   // Phase 2: Protagonist Character
-  if (startPhase <= 2) {
-    reportProgress(2, "starting");
+  await executePhase(
+    2,
+    getOutlinePhase2Prompt(),
+    outlinePhase2Schema,
+    "phase2"
+  );
 
-    const phase2Prompt = getOutlinePhase2Prompt();
-    conversationHistory.push({ role: "user", parts: [{ text: phase2Prompt }] });
+  // Phase 3: Locations
+  await executePhase(
+    3,
+    getOutlinePhase3Prompt(),
+    outlinePhase3Schema,
+    "phase3"
+  );
 
-    try {
-      reportProgress(2, "generating");
-      // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
-      const { result, log } = await generateContentUnified(
-        instance.protocol,
-        modelId,
-        systemInstruction,
-        conversationHistory,
-        outlinePhase2Schema,
-        { settings },
-      );
-      partial.phase2 = result as OutlinePhase2;
-      conversationHistory.push({
-        role: "model",
-        parts: [{ text: JSON.stringify(result) }],
-      });
-      if (log) logs.push(log);
-      reportProgress(2, "completed");
-      // Save conversation state for fault recovery (next phase = 3)
-      saveConversationState(3);
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      reportProgress(2, "error", error);
-      throw e;
-    }
-  }
+  // Phase 4: Factions
+  await executePhase(
+    4,
+    getOutlinePhase4Prompt(),
+    outlinePhase4Schema,
+    "phase4"
+  );
 
-  // Phase 3: World Entities
-  if (startPhase <= 3) {
-    reportProgress(3, "starting");
+  // Phase 5: Relationships (NPCs)
+  await executePhase(
+    5,
+    getOutlinePhase5Prompt(),
+    outlinePhase5Schema,
+    "phase5"
+  );
 
-    const phase3Prompt = getOutlinePhase3Prompt();
-    conversationHistory.push({ role: "user", parts: [{ text: phase3Prompt }] });
+  // Phase 6: Inventory
+  await executePhase(
+    6,
+    getOutlinePhase6Prompt(),
+    outlinePhase6Schema,
+    "phase6"
+  );
 
-    try {
-      reportProgress(3, "generating");
-      // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
-      const { result, log } = await generateContentUnified(
-        instance.protocol,
-        modelId,
-        systemInstruction,
-        conversationHistory,
-        outlinePhase3Schema,
-        { settings },
-      );
-      partial.phase3 = result as OutlinePhase3;
-      conversationHistory.push({
-        role: "model",
-        parts: [{ text: JSON.stringify(result) }],
-      });
-      if (log) logs.push(log);
-      reportProgress(3, "completed");
-      // Save conversation state for fault recovery (next phase = 4)
-      saveConversationState(4);
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      reportProgress(3, "error", error);
-      throw e;
-    }
-  }
+  // Phase 7: Quests
+  await executePhase(
+    7,
+    getOutlinePhase7Prompt(),
+    outlinePhase7Schema,
+    "phase7"
+  );
 
-  // Phase 4: Relationships & Inventory
-  if (startPhase <= 4) {
-    reportProgress(4, "starting");
+  // Phase 8: Knowledge
+  await executePhase(
+    8,
+    getOutlinePhase8Prompt(),
+    outlinePhase8Schema,
+    "phase8"
+  );
 
-    const phase4Prompt = getOutlinePhase4Prompt();
-    conversationHistory.push({ role: "user", parts: [{ text: phase4Prompt }] });
-
-    try {
-      reportProgress(4, "generating");
-      // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
-      const { result, log } = await generateContentUnified(
-        instance.protocol,
-        modelId,
-        systemInstruction,
-        conversationHistory,
-        outlinePhase4Schema,
-        { settings },
-      );
-      partial.phase4 = result as OutlinePhase4;
-      conversationHistory.push({
-        role: "model",
-        parts: [{ text: JSON.stringify(result) }],
-      });
-      if (log) logs.push(log);
-      reportProgress(4, "completed");
-      // Save conversation state for fault recovery (next phase = 5)
-      saveConversationState(5);
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      reportProgress(4, "error", error);
-      throw e;
-    }
-  }
-
-  // Phase 5: Quests, Knowledge & Atmosphere
-  if (startPhase <= 5) {
-    reportProgress(5, "starting");
-
-    const phase5Prompt = getOutlinePhase5Prompt();
-    conversationHistory.push({ role: "user", parts: [{ text: phase5Prompt }] });
-
-    try {
-      reportProgress(5, "generating");
-      // NOTE: No onChunk to force non-streaming mode for reliable JSON schema enforcement
-      const { result, log } = await generateContentUnified(
-        instance.protocol,
-        modelId,
-        systemInstruction,
-        conversationHistory,
-        outlinePhase5Schema,
-        { settings },
-      );
-      partial.phase5 = result as OutlinePhase5;
-      if (log) logs.push(log);
-      reportProgress(5, "completed");
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      reportProgress(5, "error", error);
-      throw e;
-    }
-  }
+  // Phase 9: Timeline & Atmosphere
+  await executePhase(
+    9,
+    getOutlinePhase9Prompt(),
+    outlinePhase9Schema,
+    "phase9"
+  );
 
   // Merge all phases into complete StoryOutline
   const outline = mergeOutlinePhases(partial);
@@ -408,7 +379,11 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     !partial.phase2 ||
     !partial.phase3 ||
     !partial.phase4 ||
-    !partial.phase5
+    !partial.phase5 ||
+    !partial.phase6 ||
+    !partial.phase7 ||
+    !partial.phase8 ||
+    !partial.phase9
   ) {
     throw new Error("Cannot merge incomplete outline phases");
   }
@@ -419,6 +394,10 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p3 = partial.phase3 as OutlinePhase3;
   const p4 = partial.phase4 as OutlinePhase4;
   const p5 = partial.phase5 as OutlinePhase5;
+  const p6 = partial.phase6 as OutlinePhase6;
+  const p7 = partial.phase7 as OutlinePhase7;
+  const p8 = partial.phase8 as OutlinePhase8;
+  const p9 = partial.phase9 as OutlinePhase9;
 
   return {
     // Phase 1: World Foundation
@@ -431,20 +410,28 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     // Phase 2: Character
     character: p2.character as StoryOutline["character"],
 
-    // Phase 3: World Entities
+    // Phase 3: Locations
     locations: p3.locations as StoryOutline["locations"],
-    factions: p3.factions as StoryOutline["factions"],
 
-    // Phase 4: Relationships & Inventory
-    relationships: p4.relationships as StoryOutline["relationships"],
-    inventory: p4.inventory as StoryOutline["inventory"],
+    // Phase 4: Factions
+    factions: p4.factions as StoryOutline["factions"],
 
-    // Phase 5: Quests, Knowledge & Atmosphere
-    quests: p5.quests as StoryOutline["quests"],
-    knowledge: p5.knowledge as StoryOutline["knowledge"],
-    timeline: p5.timeline as StoryOutline["timeline"],
+    // Phase 5: Relationships
+    relationships: p5.relationships as StoryOutline["relationships"],
+
+    // Phase 6: Inventory
+    inventory: p6.inventory as StoryOutline["inventory"],
+
+    // Phase 7: Quests
+    quests: p7.quests as StoryOutline["quests"],
+
+    // Phase 8: Knowledge
+    knowledge: p8.knowledge as StoryOutline["knowledge"],
+
+    // Phase 9: Timeline & Atmosphere
+    timeline: p9.timeline as StoryOutline["timeline"],
     initialAtmosphere:
-      p5.initialAtmosphere as StoryOutline["initialAtmosphere"],
+      p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
   };
 }
 

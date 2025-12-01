@@ -992,7 +992,7 @@ export const outlinePhase1Schema = z.object({
 
 /**
  * Phase 2: 主角角色
- * 完整的角色信息，包括属性、技能、状态、外貌等
+ * 完整的角色信息
  */
 export const outlinePhase2Schema = z.object({
   character: characterStatusSchema.describe(
@@ -1001,46 +1001,74 @@ export const outlinePhase2Schema = z.object({
 });
 
 /**
- * Phase 3: 世界实体 - 地点与阵营
- * 初始地点和主要势力
+ * Phase 3: 地点
+ * 初始地点
  */
 export const outlinePhase3Schema = z.object({
   locations: z
     .array(locationSchema.omit({ id: true, isVisited: true, createdAt: true }))
     .describe("1-2 initial locations with detailed visible and hidden layers."),
+});
+
+/**
+ * Phase 4: 阵营
+ * 主要势力
+ */
+export const outlinePhase4Schema = z.object({
   factions: z
     .array(factionSchema.omit({ id: true }))
     .describe("2-3 major power groups with visible and hidden agendas."),
 });
 
 /**
- * Phase 4: 关系与物品
- * NPC关系和初始物品
+ * Phase 5: 关系 (NPC)
+ * NPC关系
  */
-export const outlinePhase4Schema = z.object({
+export const outlinePhase5Schema = z.object({
   relationships: z
     .array(relationshipSchema.omit({ id: true }))
     .describe(
       "1-2 initial NPCs with full visible and hidden relationship details.",
     ),
+});
+
+/**
+ * Phase 6: 物品
+ * 初始物品
+ */
+export const outlinePhase6Schema = z.object({
   inventory: z
     .array(inventoryItemSchema.omit({ id: true }))
     .describe("1-3 starting items with detailed lore and hidden properties."),
 });
 
 /**
- * Phase 5: 任务、知识与氛围
- * 任务、世界知识、时间线事件和初始氛围
+ * Phase 7: 任务
+ * 初始任务
  */
-export const outlinePhase5Schema = z.object({
+export const outlinePhase7Schema = z.object({
   quests: z
     .array(questSchema)
     .describe(
       "1-2 initial quests (at least one main quest). Include visible and hidden objectives.",
     ),
+});
+
+/**
+ * Phase 8: 知识
+ * 世界知识
+ */
+export const outlinePhase8Schema = z.object({
   knowledge: z
     .array(knowledgeEntrySchema.omit({ id: true }))
     .describe("2-3 initial knowledge entries about the world."),
+});
+
+/**
+ * Phase 9: 时间线与氛围
+ * 时间线事件和初始氛围
+ */
+export const outlinePhase9Schema = z.object({
   timeline: z
     .array(timelineEventSchema)
     .describe("3-5 backstory timeline events with visible and hidden layers."),
@@ -1055,6 +1083,10 @@ export type OutlinePhase2 = z.infer<typeof outlinePhase2Schema>;
 export type OutlinePhase3 = z.infer<typeof outlinePhase3Schema>;
 export type OutlinePhase4 = z.infer<typeof outlinePhase4Schema>;
 export type OutlinePhase5 = z.infer<typeof outlinePhase5Schema>;
+export type OutlinePhase6 = z.infer<typeof outlinePhase6Schema>;
+export type OutlinePhase7 = z.infer<typeof outlinePhase7Schema>;
+export type OutlinePhase8 = z.infer<typeof outlinePhase8Schema>;
+export type OutlinePhase9 = z.infer<typeof outlinePhase9Schema>;
 
 // Note: PartialStoryOutline is now defined in types.ts to support GameState integration
 // The phase types above are re-exported for type-safe phase result handling

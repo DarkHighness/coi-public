@@ -94,15 +94,31 @@
         },
         "3": {
           "name": "Building Locations",
-          "desc": "Creating locations and factions"
+          "desc": "Creating locations"
         },
         "4": {
-          "name": "Setting Up Items",
-          "desc": "Preparing relationships and inventory"
+          "name": "Establishing Factions",
+          "desc": "Setting up major power groups"
         },
         "5": {
-          "name": "Weaving Story",
-          "desc": "Generating quests and story threads"
+          "name": "Weaving Relationships",
+          "desc": "Creating initial NPCs"
+        },
+        "6": {
+          "name": "Gathering Inventory",
+          "desc": "Preparing starting items"
+        },
+        "7": {
+          "name": "Designing Quests",
+          "desc": "Generating initial objectives"
+        },
+        "8": {
+          "name": "Compiling Knowledge",
+          "desc": "Gathering world lore"
+        },
+        "9": {
+          "name": "Finalizing Atmosphere",
+          "desc": "Setting timeline and mood"
         }
       }
     },
