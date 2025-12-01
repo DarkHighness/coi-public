@@ -158,9 +158,6 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     setDisplayedText("");
   }, [phaseProgress?.phase]);
 
-  // This file is just the view. The logic for `startNewGame` is likely in StartScreen.tsx or similar.
-  // I need to find where `startNewGame` is called.
-  // Let me check StartScreen.tsx first.
   useEffect(() => {
     preloadAudio(setAudioProgress);
 
@@ -185,102 +182,209 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   // Combine streamed text with phase description animation
   const animatedText = streamedText || displayedText;
 
+  // Calculate progress percentage
+  const progressPercent = phaseProgress
+    ? ((phaseProgress.status === "completed"
+        ? phaseProgress.phase
+        : phaseProgress.phase - 1) /
+        phaseProgress.totalPhases) *
+      100
+    : 0;
+
   return (
     <div className="h-dvh w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
-      {/* Cinematic Background */}
-      <div className="absolute inset-0 bg-[url('/img/stardust.png')] opacity-20 animate-pulse z-0"></div>
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-theme-bg via-theme-surface to-theme-bg opacity-80 z-0" />
+
+      {/* Animated Mesh Gradient Overlay */}
+      <div className="absolute inset-0 opacity-30 z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-theme-primary/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-theme-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-theme-primary/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
+      </div>
+
+      {/* Particle Effect */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {[...Array(30)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-theme-primary/40 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Central Loader */}
-      <div className="relative z-10 flex flex-col items-center gap-8 md:gap-12 animate-fade-in px-4">
+      <div className="relative z-10 flex flex-col items-center gap-10 md:gap-14 px-4 max-w-4xl">
+        {/* Pulsating Orb with Multiple Rings */}
         <div className="relative group">
-          {/* Outer Ring */}
-          <div className="w-24 h-24 md:w-32 md:h-32 border border-theme-primary/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
-          {/* Middle Ring */}
-          <div className="absolute inset-2 border-2 border-t-theme-primary border-r-transparent border-b-theme-primary/50 border-l-transparent rounded-full animate-[spin_3s_linear_infinite]"></div>
-          {/* Inner Ring */}
-          <div className="absolute inset-6 border border-theme-primary/80 rounded-full animate-pulse shadow-[0_0_30px_rgba(var(--theme-primary),0.5)]"></div>
+          {/* Outermost Glow Ring */}
+          <div className="absolute -inset-24 bg-theme-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
 
-          {/* Center Core */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-2 h-2 bg-theme-primary rounded-full animate-ping"></div>
+          {/* Rotating Outer Ring */}
+          <div className="w-32 h-32 md:w-40 md:h-40 relative">
+            <div className="absolute inset-0 border-2 border-theme-primary/30 rounded-full animate-[spin_12s_linear_infinite]" />
+            <div className="absolute inset-2 border-2 border-theme-primary/20 rounded-full animate-[spin_8s_linear_infinite_reverse]" />
           </div>
+
+          {/* Middle Animated Ring */}
+          <div className="absolute inset-4 border-[3px] border-t-theme-primary border-r-theme-primary/60 border-b-theme-primary/30 border-l-transparent rounded-full animate-[spin_2.5s_linear_infinite]" />
+
+          {/* Inner Glow Ring */}
+          <div className="absolute inset-8 border-2 border-theme-primary/80 rounded-full animate-pulse shadow-[0_0_40px_rgba(var(--theme-primary-rgb,251,146,60),0.6)]" style={{ animationDuration: '2s' }} />
+
+          {/* Core Orb */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              {/* Pulsing Core */}
+              <div className="w-4 h-4 bg-theme-primary rounded-full animate-ping" />
+              {/* Static Core */}
+              <div className="absolute inset-0 w-4 h-4 bg-theme-primary rounded-full shadow-[0_0_20px_rgba(var(--theme-primary-rgb,251,146,60),0.8)]" />
+            </div>
+          </div>
+
+          {/* Orbiting Particles */}
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute inset-0"
+              style={{
+                animation: `spin ${3 + i}s linear infinite`,
+                animationDelay: `${i * 0.5}s`,
+              }}
+            >
+              <div className="absolute top-0 left-1/2 w-2 h-2 -ml-1 bg-theme-primary/60 rounded-full shadow-[0_0_10px_rgba(var(--theme-primary-rgb,251,146,60),0.6)]" />
+            </div>
+          ))}
         </div>
 
         {/* Text Content */}
-        <div className="text-center space-y-4">
-          <h2
-            className={`text-xl md:text-2xl lg:text-3xl ${themeFont} tracking-widest uppercase text-theme-primary font-bold min-h-[3rem]`}
-          >
-            {animatedText}
-            <span className="animate-pulse">|</span>
-          </h2>
+        <div className="text-center space-y-6 w-full">
+          {/* Main Text with Gradient */}
+          <div className="relative">
+            <h2
+              className={`text-2xl md:text-3xl lg:text-4xl ${themeFont} tracking-wider text-theme-primary font-bold min-h-[4rem] leading-relaxed px-4`}
+              style={{
+                background: `linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-hover) 100%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                textShadow: '0 0 30px rgba(var(--theme-primary-rgb,251,146,60),0.3)',
+              }}
+            >
+              {animatedText}
+              <span className="animate-pulse ml-1">|</span>
+            </h2>
+          </div>
 
           {/* Progress Indicators */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Phase Progress Display */}
             {phaseProgress && (
-              <div className="flex flex-col items-center gap-2 mb-4">
-                {/* Phase Progress Bar */}
-                <div className="w-48 md:w-64 h-1.5 bg-theme-primary/20 rounded-full overflow-hidden">
+              <div className="flex flex-col items-center gap-3">
+                {/* Enhanced Progress Bar */}
+                <div className="w-64 md:w-80 lg:w-96 h-2 bg-theme-surface-highlight rounded-full overflow-hidden relative shadow-inner">
+                  {/* Background Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-theme-primary/10 to-transparent animate-pulse" />
+                  {/* Progress Fill with Gradient */}
                   <div
-                    className="h-full bg-theme-primary rounded-full transition-all duration-500 ease-out"
+                    className="h-full rounded-full relative overflow-hidden"
                     style={{
-                      // Show completed phases: if generating phase N, show (N-1) completed
-                      // If phase N is completed, show N completed
-                      width: `${
-                        ((phaseProgress.status === "completed"
-                          ? phaseProgress.phase
-                          : phaseProgress.phase - 1) /
-                          phaseProgress.totalPhases) *
-                        100
-                      }%`,
+                      width: `${progressPercent}%`,
+                      background: `linear-gradient(90deg, var(--theme-primary-hover) 0%, var(--theme-primary) 100%)`,
+                      boxShadow: '0 0 15px rgba(var(--theme-primary-rgb,251,146,60),0.6)',
+                      transition: 'width 0.7s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease',
                     }}
-                  />
+                  >
+                    {/* Animated Shine Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" />
+                  </div>
                 </div>
+
                 {/* Phase Info */}
-                <div className="text-xs text-theme-muted/80 font-mono flex flex-wrap items-center justify-center gap-1">
-                  {/* Show completed count / total, not "current phase / total" */}
-                  <span className="text-theme-primary">
+                <div className="text-sm text-theme-text/80 font-mono flex flex-wrap items-center justify-center gap-2 backdrop-blur-sm bg-theme-surface/30 px-4 py-2 rounded-full">
+                  <span className="text-theme-primary font-bold">
                     {phaseProgress.status === "completed"
                       ? phaseProgress.phase
                       : phaseProgress.phase - 1}
                   </span>
-                  <span>/</span>
-                  <span>{phaseProgress.totalPhases}</span>
-                  <span className="mx-1">·</span>
+                  <span className="text-theme-muted/60">/</span>
+                  <span className="text-theme-muted">{phaseProgress.totalPhases}</span>
+                  <span className="mx-2 text-theme-primary/50">•</span>
                   <span
-                    className={`${phaseProgress.status === "generating" ? "animate-pulse" : ""} max-w-[200px] truncate`}
+                    className={`${phaseProgress.status === "generating" ? "animate-pulse" : ""} max-w-[250px] truncate`}
                   >
-                    {/* Use the i18n key from phaseName directly */}
                     {t(phaseProgress.phaseName, {
                       defaultValue: phaseProgress.phaseName,
                     })}
                   </span>
                   {phaseProgress.status === "generating" && (
-                    <span className="animate-pulse">...</span>
+                    <span className="animate-pulse text-theme-primary">...</span>
                   )}
                 </div>
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-2 text-theme-muted/80 text-xs md:text-sm uppercase tracking-[0.2em] md:tracking-[0.3em]">
-              <span className="w-6 md:w-8 h-px bg-theme-primary/50"></span>
-              <span>{t("loading")}</span>
-              <span className="w-6 md:w-8 h-px bg-theme-primary/50"></span>
+            {/* Loading Divider */}
+            <div className="flex items-center justify-center gap-3 text-theme-text/60 text-sm md:text-base uppercase tracking-[0.3em] md:tracking-[0.4em]">
+              <span className="w-8 md:w-12 h-px bg-gradient-to-r from-transparent via-theme-primary/60 to-transparent" />
+              <span className="font-light">{t("loading")}</span>
+              <span className="w-8 md:w-12 h-px bg-gradient-to-r from-transparent via-theme-primary/60 to-transparent" />
             </div>
 
-            <div className="flex flex-col items-center gap-1 text-[10px] text-theme-muted font-mono">
-              <div>
-                {t("initializing.audioPreload")}: {audioProgress}%
+            {/* Stats Card */}
+            <div className="flex flex-col items-center gap-2 text-xs text-theme-muted/70 font-mono backdrop-blur-md bg-theme-surface/20 px-6 py-3 rounded-2xl border border-theme-border/20 shadow-lg transition-all duration-300 ease-in-out">
+              <div className="flex items-center gap-2">
+                <span className="text-theme-primary/80">◆</span>
+                <span>
+                  {t("initializing.audioPreload")}: {audioProgress}%
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <span>{t("initializing.timeElapsed")}:</span>
-                <GenerationTimer isActive={true} />
+                <span className="text-theme-primary/80">◆</span>
+                <span className="flex items-center gap-2">
+                  {t("initializing.timeElapsed")}:
+                  <GenerationTimer isActive={true} />
+                </span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.4;
+          }
+          50% {
+            transform: translateY(-100vh) translateX(${Math.random() * 100 - 50}px);
+            opacity: 0.6;
+          }
+          90% {
+            opacity: 0.2;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(200%);
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -320,7 +320,14 @@
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
     "noModels": "未选择嵌入模型。",
     "providerDisabled": "提供商已被禁用。",
-    "notSet": "未设置嵌入模型"
+    "notSet": "未设置嵌入模型",
+    "noModelSelected": "未选择嵌入模型",
+    "newlyEnabled": "嵌入功能已启用！是否为现有游戏内容建立索引以支持语义搜索？这可能需要一些时间。",
+    "indexComplete": "已索引 {{count}} 个文档",
+    "indexFailed": "索引现有内容失败",
+    "modelMismatchRebuild": "检测到嵌入模型不匹配！\n\n已存储：{{storedModel}}\n当前：{{currentModel}}\n\n是否重建索引？这将清除现有的嵌入数据。",
+    "disableForSession": "是否在本次会话中禁用 RAG？",
+    "storageOverflow": "存储空间已达上限！\n\n当前：{{current}} 个文档\n上限：{{limit}} 个文档\n\n将删除最旧的存档以释放空间。"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",

@@ -264,12 +264,15 @@ export default function App() {
   // Handle RAG model mismatch
   useEffect(() => {
     if (ragState.modelMismatch) {
-      const message = `Embedding model mismatch detected!\n\nStored: ${ragState.modelMismatch.storedModel}\nCurrent: ${ragState.modelMismatch.currentModel}\n\nWould you like to rebuild the index? This will clear existing embeddings.`;
+      const message = t("rag.modelMismatchRebuild", {
+        storedModel: ragState.modelMismatch.storedModel,
+        currentModel: ragState.modelMismatch.currentModel,
+      });
 
       if (window.confirm(message)) {
         ragActions.handleModelMismatch("rebuild");
       } else {
-        const disableRAG = window.confirm("Disable RAG for this session?");
+        const disableRAG = window.confirm(t("rag.disableForSession"));
         if (disableRAG) {
           ragActions.handleModelMismatch("disable");
           handleSaveSettings({
@@ -286,7 +289,10 @@ export default function App() {
   // Handle RAG storage overflow
   useEffect(() => {
     if (ragState.storageOverflow) {
-      const message = `Storage limit reached!\n\nCurrent: ${ragState.storageOverflow.currentTotal} documents\nLimit: ${ragState.storageOverflow.maxTotal} documents\n\nOldest saves will be removed to free up space.`;
+      const message = t("rag.storageOverflow", {
+        current: ragState.storageOverflow.currentTotal,
+        limit: ragState.storageOverflow.maxTotal,
+      });
 
       if (window.confirm(message)) {
         ragActions.handleStorageOverflow(

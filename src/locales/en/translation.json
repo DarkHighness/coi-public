@@ -344,7 +344,14 @@
     "noModelsAvailable": "No embedding models available, please check provider settings.",
     "noModels": "No embedding model selected.",
     "providerDisabled": "Provider has been disabled.",
-    "notSet": "No embedding model has been set."
+    "notSet": "No embedding model has been set.",
+    "noModelSelected": "No embedding model selected.",
+    "newlyEnabled": "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
+    "indexComplete": "Indexed {{count}} documents",
+    "indexFailed": "Failed to index existing content",
+    "modelMismatchRebuild": "Embedding model mismatch detected!\n\nStored: {{storedModel}}\nCurrent: {{currentModel}}\n\nWould you like to rebuild the index? This will clear existing embeddings.",
+    "disableForSession": "Disable RAG for this session?",
+    "storageOverflow": "Storage limit reached!\n\nCurrent: {{current}} documents\nLimit: {{limit}} documents\n\nOldest saves will be removed to free up space."
   },
   "themeMode": "Theme Mode",
   "settings": {
