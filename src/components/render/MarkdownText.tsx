@@ -1,6 +1,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import { markdownComponents } from "../../utils/markdownComponents";
 
 interface MarkdownTextProps {
@@ -64,7 +65,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({
   if (inline) {
     return (
       <span className={`markdown-content-inline ${className}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={components}>
           {content}
         </ReactMarkdown>
       </span>
@@ -73,7 +74,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({
 
   return (
     <div className={`markdown-content ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={components}>
         {content}
       </ReactMarkdown>
     </div>

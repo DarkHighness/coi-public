@@ -271,23 +271,48 @@ export const TimelineExport = forwardRef<
                           {...props}
                         />
                       ),
-                      code: ({ node, inline, ...props }: any) =>
-                        inline ? (
-                          <code
-                            className="px-1 py-0.5 rounded text-sm font-mono"
-                            style={{
-                              backgroundColor: "rgba(51, 65, 85, 0.6)",
-                              color: "#fde68a",
-                            }}
-                            {...props}
-                          />
-                        ) : (
-                          <code
-                            className="block p-3 rounded font-mono text-sm my-2"
-                            style={{ backgroundColor: "rgba(51, 65, 85, 0.4)" }}
-                            {...props}
-                          />
-                        ),
+                      code: ({ node, inline, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || "");
+                        const isInline = inline || !match;
+
+                        if (isInline) {
+                          return (
+                            <code
+                              className="px-1 py-0.5 rounded text-sm font-mono"
+                              style={{
+                                backgroundColor: "rgba(51, 65, 85, 0.6)",
+                                color: "#fde68a",
+                              }}
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        }
+
+                        return (
+                          <div style={{ margin: "16px 0", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(148, 163, 184, 0.5)", backgroundColor: "rgba(51, 65, 85, 0.4)" }}>
+                            <div style={{ padding: "4px 12px", fontSize: "12px", color: "#94a3b8", backgroundColor: "rgba(51, 65, 85, 0.6)", borderBottom: "1px solid rgba(148, 163, 184, 0.3)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {match ? match[1] : "code"}
+                            </div>
+                            <div style={{ padding: "12px", overflowX: "auto" }}>
+                              <code style={{ fontSize: "14px", fontFamily: "monospace", color: "rgba(226, 232, 240, 0.9)" }} {...props}>
+                                {children}
+                              </code>
+                            </div>
+                          </div>
+                        );
+                      },
+                      math: ({ node, ...props }: any) => (
+                        <div style={{ margin: "16px 0", textAlign: "center", fontFamily: "serif", fontSize: "18px", color: "#fbbf24", overflowX: "auto", padding: "8px 0" }}>
+                          {props.children}
+                        </div>
+                      ),
+                      inlineMath: ({ node, ...props }: any) => (
+                        <span style={{ fontFamily: "serif", color: "#fbbf24", padding: "0 4px" }}>
+                          {props.children}
+                        </span>
+                      ),
                       blockquote: ({ node, ...props }: any) => (
                         <blockquote
                           className="border-l-4 pl-4 my-4 italic"

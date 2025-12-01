@@ -14,11 +14,43 @@ export const markdownComponents = {
   em: ({ node, ...props }: any) => (
     <em className="italic text-theme-text/90" {...props} />
   ),
-  code: ({ node, inline, ...props }: any) => (
-    <code
-      className="px-1 py-0.5 bg-theme-surface/60 rounded text-sm font-mono text-theme-accent"
-      {...props}
-    />
+  code: ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || "");
+    const isInline = inline || !match;
+
+    if (isInline) {
+      return (
+        <code
+          className="px-1 py-0.5 bg-theme-surface/60 rounded text-sm font-mono text-theme-accent break-words"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
+
+    return (
+      <div className="my-4 rounded-md overflow-hidden border border-theme-border/50 bg-theme-surface/40">
+        <div className="px-3 py-1 text-xs text-theme-muted bg-theme-surface/60 border-b border-theme-border/30 font-mono uppercase tracking-wider">
+          {match ? match[1] : "code"}
+        </div>
+        <div className="p-3 overflow-x-auto">
+          <code className="text-sm font-mono text-theme-text/90" {...props}>
+            {children}
+          </code>
+        </div>
+      </div>
+    );
+  },
+  math: ({ node, ...props }: any) => (
+    <div className="my-4 text-center font-serif text-lg text-theme-primary overflow-x-auto py-2">
+      {props.children}
+    </div>
+  ),
+  inlineMath: ({ node, ...props }: any) => (
+    <span className="font-serif text-theme-primary px-1">
+      {props.children}
+    </span>
   ),
   pre: ({ node, ...props }: any) => <span {...props} />,
   blockquote: ({ node, ...props }: any) => (

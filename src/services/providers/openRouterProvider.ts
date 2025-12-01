@@ -545,6 +545,9 @@ export async function generateImage(
   prompt: string,
   resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
+  return generateImageLegacy(config, model, prompt, resolution);
+
+  // Openrouter SDK does not working!!!
   const aspectRatio = getAspectRatio(resolution);
   const client = createClient(config);
   try {
@@ -556,6 +559,7 @@ export async function generateImage(
         messages: [{ role: "user", content: prompt }],
         modalities: ["image", "text"],
         imageConfig: { aspectRatio },
+        stream: false,
       } as any,
       createRequestOptions(),
     );
@@ -624,7 +628,7 @@ async function generateImageLegacy(
     else size = "1792x1024";
   }
   const response = await fetch(
-    "https://openrouter.ai/api/v1/images/generations",
+    "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
       headers: {
@@ -635,9 +639,9 @@ async function generateImageLegacy(
       },
       body: JSON.stringify({
         model,
-        prompt,
-        n: 1,
-        size,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+        imageConfig: { aspectRatio },
       }),
     },
   );
@@ -650,7 +654,7 @@ async function generateImageLegacy(
   }
   const result = await response.json();
   return {
-    url: result.data?.[0]?.url || null,
+    url: result.choices[0].message.images[0].image_url?.url || null,
     raw: result,
   };
 }

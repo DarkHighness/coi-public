@@ -167,7 +167,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
       hasPrompt &&
       hasFailed === undefined); // Fallback only if undefined
 
-  const shouldShowGenerating = isGenerating && !manualImageGen;
+  const shouldShowGenerating = isGenerating;
 
   // Render content
   return (
