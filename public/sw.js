@@ -110,12 +110,12 @@ self.addEventListener("fetch", (event) => {
   // 遇到以下情况直接 return，不使用 event.respondWith。
   // 这让浏览器直接处理请求，解决了流式传输(Streaming)卡顿和 CORS 预检被拦截的问题。
   if (
-    url.pathname.startsWith("/v1/") ||         // 常见的 LLM API 路径
-    url.pathname.includes("/api/") ||          // 通用 API 路径
+    url.pathname.startsWith("/v1/") || // 常见的 LLM API 路径
+    url.pathname.includes("/api/") || // 通用 API 路径
     url.hostname.includes("googleapis.com") ||
     url.hostname.includes("openai.com") ||
     url.hostname.includes("openrouter.ai") ||
-    url.hostname.includes("pollinations.ai")   // 图片生成 API
+    url.hostname.includes("pollinations.ai") // 图片生成 API
   ) {
     return;
   }

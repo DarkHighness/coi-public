@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Auto-generated build info
-utils/constants/buildInfo.ts
+src/utils/constants/buildInfo.ts

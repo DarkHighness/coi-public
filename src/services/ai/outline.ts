@@ -296,7 +296,7 @@ export const generateStoryOutlinePhased = async (
     1,
     getOutlinePhase1Prompt(theme, language, customContext),
     outlinePhase1Schema,
-    "phase1"
+    "phase1",
   );
 
   // Phase 2: Protagonist Character
@@ -304,7 +304,7 @@ export const generateStoryOutlinePhased = async (
     2,
     getOutlinePhase2Prompt(),
     outlinePhase2Schema,
-    "phase2"
+    "phase2",
   );
 
   // Phase 3: Locations
@@ -312,7 +312,7 @@ export const generateStoryOutlinePhased = async (
     3,
     getOutlinePhase3Prompt(),
     outlinePhase3Schema,
-    "phase3"
+    "phase3",
   );
 
   // Phase 4: Factions
@@ -320,7 +320,7 @@ export const generateStoryOutlinePhased = async (
     4,
     getOutlinePhase4Prompt(),
     outlinePhase4Schema,
-    "phase4"
+    "phase4",
   );
 
   // Phase 5: Relationships (NPCs)
@@ -328,7 +328,7 @@ export const generateStoryOutlinePhased = async (
     5,
     getOutlinePhase5Prompt(),
     outlinePhase5Schema,
-    "phase5"
+    "phase5",
   );
 
   // Phase 6: Inventory
@@ -336,7 +336,7 @@ export const generateStoryOutlinePhased = async (
     6,
     getOutlinePhase6Prompt(),
     outlinePhase6Schema,
-    "phase6"
+    "phase6",
   );
 
   // Phase 7: Quests
@@ -344,7 +344,7 @@ export const generateStoryOutlinePhased = async (
     7,
     getOutlinePhase7Prompt(),
     outlinePhase7Schema,
-    "phase7"
+    "phase7",
   );
 
   // Phase 8: Knowledge
@@ -352,7 +352,7 @@ export const generateStoryOutlinePhased = async (
     8,
     getOutlinePhase8Prompt(),
     outlinePhase8Schema,
-    "phase8"
+    "phase8",
   );
 
   // Phase 9: Timeline & Atmosphere
@@ -360,7 +360,7 @@ export const generateStoryOutlinePhased = async (
     9,
     getOutlinePhase9Prompt(),
     outlinePhase9Schema,
-    "phase9"
+    "phase9",
   );
 
   // Merge all phases into complete StoryOutline
