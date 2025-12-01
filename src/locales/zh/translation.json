@@ -281,6 +281,7 @@
     "title": "日志",
     "noLogsInSession": "本次会话暂无日志记录。"
   },
+  "worldSetting": "世界观",
   "dragToReorder": "拖拽排序",
   "import": "导入",
   "tabs": {

@@ -45,15 +45,19 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   );
 
   // Fetch models from API for a provider
+  // 支持强制刷新 force 参数
   const fetchModelsForProvider = useCallback(
-    async (providerId: string) => {
-      // If we already have models and they are not empty, don't auto-refetch immediately
-      // unless explicitly requested (which we don't have a UI for yet)
-      if (models[providerId]?.length > 0 && !loadingModels[providerId]) return;
+    async (providerId: string, force = false) => {
+      // 如果不是强制刷新，且已有缓存，则直接返回
+      if (!force && models[providerId]?.length > 0 && !loadingModels[providerId]) return;
       if (loadingModels[providerId]) return;
 
       setLoadingModels((prev) => ({ ...prev, [providerId]: true }));
       try {
+        // 如果 force，则不使用缓存
+        if (force) {
+          localStorage.removeItem("chronicles_embedding_models_cache");
+        }
         const fetchedModels = await getEmbeddingModels(
           currentSettings,
           providerId,
@@ -198,6 +202,47 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       <div
         className={`space-y-4 ${!isEnabled ? "opacity-40 pointer-events-none" : ""}`}
       >
+        {/* 刷新按钮 */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => fetchModelsForProvider(config.providerId, true)}
+            disabled={loadingModels[config.providerId] || !config.providerId || hasNoAvailableProviders}
+            className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingModels[config.providerId] ? (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                ></path>
+              </svg>
+            )}
+            {t("refresh") || "刷新"}
+          </button>
+        </div>
         {/* Provider Selection */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">

@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
 import { ENV_THEMES } from "../../utils/constants";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface ThemePreviewModalProps {
   themeKey: string;
@@ -67,29 +68,38 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex-1 p-5 overflow-y-auto custom-scrollbar space-y-5">
+        <div className={`relative z-10 flex-1 p-5 overflow-y-auto custom-scrollbar space-y-5 ${envTheme?.fontClass || "font-sans"}`}>
           <div>
-            <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70">
+            <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
               {t("narrativeStyle")}
             </h3>
-            <p className="text-theme-muted text-sm leading-relaxed line-clamp-4 md:line-clamp-6 lg:line-clamp-none">
-              {t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
-            </p>
+            <div className="text-theme-muted text-sm leading-relaxed">
+              <MarkdownText content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })} />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
+              {t("worldSetting")}
+            </h3>
+            <div className="text-theme-muted text-sm leading-relaxed">
+              <MarkdownText content={t(`${themeKey}.worldSetting`, { ns: "themes" })} />
+            </div>
           </div>
 
           <div className="bg-theme-bg/50 p-5 rounded-xl border border-theme-border/50 relative group">
             <div className="absolute -top-2 -left-2 text-3xl text-theme-primary/20 font-serif group-hover:text-theme-primary/30 transition-colors">
               "
             </div>
-            <p
-              className={`text-theme-text/90 leading-loose line-clamp-4 md:line-clamp-6 lg:line-clamp-none ${
+            <div
+              className={`text-theme-text/90 leading-loose ${
                 (envTheme?.fontClass || "font-sans") === "font-serif"
                   ? "font-serif text-base"
                   : "font-sans text-sm"
               }`}
             >
-              {t(`${themeKey}.example`, { ns: "themes" })}
-            </p>
+              <MarkdownText content={t(`${themeKey}.example`, { ns: "themes" })} />
+            </div>
             <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
               "
             </div>

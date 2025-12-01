@@ -1,14 +1,16 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
-import { ENV_THEMES } from "../../utils/constants";
+import { ENV_THEMES } from "../../utils/constants/envThemes";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
 
 interface ThemeCardProps {
   themeKey: string;
   themeConfig: StoryThemeConfig;
   onPreview: (key: string) => void;
   onHover: (key: string) => void;
+  isDesktop: boolean;
 }
 
 export const ThemeCard: React.FC<ThemeCardProps> = ({
@@ -16,10 +18,13 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   themeConfig,
   onPreview,
   onHover,
+  isDesktop,
 }) => {
   const { t } = useTranslation();
   const envTheme = ENV_THEMES[themeConfig.envTheme];
   const primaryColor = envTheme?.vars["--theme-primary"] || "#f59e0b";
+
+  let lineClampClass = isDesktop ? "line-clamp-8" : "line-clamp-2";
 
   return (
     <button
@@ -37,7 +42,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
       ></div>
 
       <div
-        className="relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden"
+        className={`relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden ${isDesktop ? "min-h-[200px]" : "min-h-[50px]"}`}
         style={
           {
             "--theme-primary": primaryColor,
@@ -62,13 +67,14 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
                 {t(`${themeKey}.name`, { ns: "themes" })}
               </h3>
             </div>
-            <p className="text-xs md:text-sm text-theme-muted line-clamp-2 group-hover:text-theme-text/80 transition-colors">
-              {t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
-            </p>
+            <MarkdownText
+              content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
+              className={`text-xs md:text-sm text-theme-muted group-hover:text-theme-text/80 transition-colors ${lineClampClass}`}
+            />
           </div>
 
           {/* Arrow Icon */}
-          <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-theme-primary">
+          {/* <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-theme-primary">
             <svg
               className="w-6 h-6"
               fill="none"
@@ -82,7 +88,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
                 d="M9 5l7 7-7 7"
               ></path>
             </svg>
-          </div>
+          </div> */}
         </div>
       </div>
     </button>

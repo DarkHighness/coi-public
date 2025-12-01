@@ -1,4 +1,4 @@
-import React, { useState, useRef, lazy, Suspense } from "react";
+import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
@@ -93,6 +93,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)"); // lg breakpoint
+    setIsDesktop(media.matches);
+    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -343,11 +352,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </div>
 
               <div className="flex-1 relative min-h-0">
-                <ThemeSelector
-                  themes={THEMES}
-                  onSelect={(theme) => handleStart(theme, customContext)}
-                  onHover={setHoveredTheme}
-                />
+                {!isDesktop && (
+                  <ThemeSelector
+                    themes={THEMES}
+                    onSelect={(theme) => handleStart(theme, customContext)}
+                    onHover={setHoveredTheme}
+                    onBack={() => setMode("main")}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -358,6 +370,18 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           {t("version")} : {BUILD_INFO.buildTime} {BUILD_INFO.gitHash}
         </div>
       </div>
+
+      {/* Desktop Full Screen Theme Selector Overlay */}
+      {isDesktop && mode === "theme_select" && (
+        <div className="absolute inset-0 z-50 animate-fade-in">
+          <ThemeSelector
+            themes={THEMES}
+            onSelect={(theme) => handleStart(theme, customContext)}
+            onHover={setHoveredTheme}
+            onBack={() => setMode("main")}
+          />
+        </div>
+      )}
 
       <input
         type="file"

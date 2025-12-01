@@ -1001,7 +1001,7 @@ export interface EmbeddingModelInfo {
   id: string;
   name: string;
   dimensions?: number;
-  maxBatchSize?: number;
+  contextLength?: number;
 }
 
 export type EmbeddingTaskType =

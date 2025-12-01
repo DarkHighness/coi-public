@@ -733,14 +733,23 @@ export async function getEmbeddingModels(
         throw new Error("Invalid local JSON format");
       }
 
-      const embeddingModels = processEmbeddingModels(data.data);
-
-      if (embeddingModels.length > 0) {
-        console.log(`[OpenRouter] Loaded ${embeddingModels.length} embedding models from local JSON`);
-        return embeddingModels;
+      if (data.data.length === 0) {
+        throw new Error("No embedding models found in local JSON");
       }
 
-      throw new Error("No embedding models found in local JSON");
+      // They are all embedding models in this file
+      // Thus, we can directly map them
+      const models =  data.data.map((m: any) => {
+        return {
+          id: m.id || m.slug,
+          name: m.name || m.id || m.slug,
+          dimensions: guessEmbeddingDimensions((m.id || m.slug).toLowerCase()),
+          contextLength: m.context_length || m.contextLength || 8192,
+        }
+      });
+
+      console.log(`[OpenRouter] Loaded ${models.length} embedding models from local JSON file`);
+      return models;
     } catch (jsonError) {
       console.warn(
         "Failed to load from local JSON file:",

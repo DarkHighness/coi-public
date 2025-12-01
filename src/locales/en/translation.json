@@ -35,6 +35,7 @@
       "other": "Other"
     }
   },
+  "worldSetting": "World Setting",
   "copyImagePrompt": "Copy Image Prompt",
   "copied": "Copied!",
   "inventory": "Inventory",
