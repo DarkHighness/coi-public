@@ -58,7 +58,25 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            // Core React libraries
+            // 1. AI Bundle - High priority, includes both vendor and app code
+            // Combine ALL AI-related code into one chunk to avoid circular deps
+            if (
+              id.includes("@google/genai") ||
+              id.includes("@google/generative-ai") ||
+              (id.includes("openai") && !id.includes("@openrouter")) ||
+              id.includes("@anthropic-ai/sdk") ||
+              id.includes("@openrouter") ||
+              id.includes("services/ai/") ||
+              id.includes("services/providers/") ||
+              id.includes("services/zodCompiler") ||
+              id.includes("services/zodSchemas") ||
+              id.includes("services/prompts") ||
+              id.includes("services/messageTypes")
+            ) {
+              return "ai-bundle";
+            }
+
+            // 2. Vendor chunks
             if (id.includes("node_modules")) {
               // React ecosystem - keep together for better caching
               if (id.includes("react") || id.includes("react-dom")) {
@@ -73,26 +91,6 @@ export default defineConfig(({ mode }) => {
               // i18n - separate for locale loading
               if (id.includes("i18next") || id.includes("react-i18next")) {
                 return "vendor-i18n";
-              }
-
-              // AI SDKs - SPLIT BY PROVIDER for better caching and lazy loading
-              if (
-                id.includes("@google/genai") ||
-                id.includes("@google/generative-ai")
-              ) {
-                return "provider-gemini-sdk";
-              }
-
-              if (id.includes("openai") && !id.includes("@openrouter")) {
-                return "provider-openai-sdk";
-              }
-
-              if (id.includes("@anthropic-ai/sdk")) {
-                return "provider-claude-sdk";
-              }
-
-              if (id.includes("@openrouter")) {
-                return "provider-openrouter-sdk";
               }
 
               // PGlite - separate because it's large database library
@@ -114,53 +112,11 @@ export default defineConfig(({ mode }) => {
               return "vendor-misc";
             }
 
-            // App code chunking
-            // Translation data - separate chunk per language
-            if (id.includes("src/locales/en/")) {
-              return "locales-en";
-            }
-            if (id.includes("src/locales/zh/")) {
-              return "locales-zh";
-            }
-            if (id.includes("utils/translations/")) {
-              return "translations-legacy";
-            }
+            // 3. App chunks (Non-AI)
 
-            // Theme data - separate chunk
-            if (id.includes("utils/constants/themes")) {
-              return "theme-data";
-            }
-
-            // Services - group by functionality
-            if (id.includes("services/") && !id.includes("node_modules")) {
-              // AI Provider implementations - SPLIT INDIVIDUALLY
-              if (id.includes("geminiProvider")) {
-                return "provider-gemini";
-              }
-              if (id.includes("openaiProvider")) {
-                return "provider-openai";
-              }
-              if (id.includes("openRouterProvider")) {
-                return "provider-openrouter";
-              }
-              if (id.includes("claudeProvider")) {
-                return "provider-claude";
-              }
-
-              // Core AI service and schemas
-              if (
-                id.includes("aiService") ||
-                id.includes("schemas") ||
-                id.includes("prompts") ||
-                id.includes("messageTypes")
-              ) {
-                return "ai-core";
-              }
-
-              // RAG service - separate chunk (only loaded when used)
-              if (id.includes("services/rag/")) {
-                return "rag-service";
-              }
+            // RAG service - separate chunk (only loaded when used)
+            if (id.includes("services/rag/")) {
+              return "rag-service";
             }
 
             // Hooks - separate chunk
