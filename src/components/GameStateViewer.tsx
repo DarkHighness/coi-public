@@ -1917,16 +1917,16 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden ring-1 ring-theme-border/50">
+    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 animate-fade-in">
+      <div className="bg-theme-surface border border-theme-border rounded-none sm:rounded-xl shadow-2xl w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden ring-1 ring-theme-border/50">
         {/* Header */}
-        <div className="flex-none p-5 border-b border-theme-border flex items-center justify-between bg-theme-surface-highlight/10">
-          <div className="flex items-center gap-4">
-            <span className="text-3xl" aria-hidden="true">
+        <div className="flex-none p-3 sm:p-5 border-b border-theme-border flex items-center justify-between bg-theme-surface-highlight/10">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="text-2xl sm:text-3xl" aria-hidden="true">
               📖
             </span>
             <div>
-              <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-widest">
+              <h2 className="text-lg sm:text-2xl font-bold text-theme-primary uppercase tracking-widest">
                 {t("gameViewer.title") || "Chronicle"}
               </h2>
               <p className="text-xs text-theme-muted uppercase tracking-wider font-bold">
@@ -1956,7 +1956,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
 
         {/* Tab Bar */}
         <div className="flex-none border-b border-theme-border bg-theme-bg/30 overflow-x-auto scrollbar-hide">
-          <div className="flex px-2">
+          <div className="flex px-2 min-w-full">
             {(Object.keys(TAB_CONFIGS) as ViewTab[]).map((tab) => {
               const config = TAB_CONFIGS[tab];
               const isActive = tab === activeTab;
@@ -1964,16 +1964,16 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-none px-6 py-4 flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+                  className={`flex-none px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
                     isActive
                       ? "border-theme-primary text-theme-primary bg-theme-primary/5"
                       : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
                   }`}
                 >
-                  <span className="text-lg">
+                  <span className="text-base sm:text-lg">
                     {getValidIcon(config.icon, "📖")}
                   </span>
-                  <span className="text-sm font-bold uppercase tracking-wider">
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">
                     {t(config.labelKey) || tab}
                   </span>
                 </button>
@@ -1983,12 +1983,12 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-theme-bg/20">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-theme-bg/20">
           {renderTabContent()}
         </div>
 
         {/* Footer */}
-        <div className="flex-none p-4 border-t border-theme-border bg-theme-surface-highlight/10 flex items-center justify-between">
+        <div className="flex-none p-3 sm:p-4 border-t border-theme-border bg-theme-surface-highlight/10 flex items-center justify-between">
           <div className="text-xs text-theme-muted font-mono">
             {t("gameViewer.turnInfo", { turn: gameState.turnNumber }) ||
               `Turn ${gameState.turnNumber}`}
