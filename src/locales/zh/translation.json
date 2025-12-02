@@ -636,7 +636,8 @@
   "description": "描述",
   "currentMood": "心情",
   "role": "职业",
-  "currentImpression": "印象",
+  "protagonistImpression": "你对TA的印象",
+  "perceivedStatus": "近况（你的认知）",
   "pinToTop": "置顶",
   "mainQuest": "主线",
   "sideQuest": "支线",
@@ -698,7 +699,9 @@
     "motives": "真实动机",
     "affinity": "真实好感度",
     "routine": "日常行动",
-    "dangers": "潜在危险"
+    "dangers": "潜在危险",
+    "npcImpression": "TA对你的印象",
+    "actualStatus": "实际在做"
   },
   "commands": {
     "godMode": {

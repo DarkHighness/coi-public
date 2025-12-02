@@ -130,10 +130,16 @@ export const relationshipVisibleSchema = z.object({
     .describe(
       "Relationship status from player's perspective (e.g. Friend, Rival, Enemy, Mentor, Lover).",
     ),
-  currentImpression: z
+  impression: z
     .string()
     .nullish()
-    .describe("The NPC's current state from the protagonist's perspective."),
+    .describe("The protagonist's current impression/feeling about this NPC."),
+  status: z
+    .string()
+    .nullish()
+    .describe(
+      "What the protagonist BELIEVES this NPC is currently doing (e.g., 'shopping in market', 'guarding the gate', 'traveling to the capital'). This is the protagonist's PERCEPTION, not necessarily the truth.",
+    ),
   personality: z
     .string()
     .nullish()
@@ -174,10 +180,13 @@ export const relationshipHiddenSchema = z.object({
     .describe(
       "Relationship status from NPC's perspective (e.g. Tool, Prey, Master, Secret Lover).",
     ),
+  impression: z
+    .string()
+    .describe("The NPC's current impression/feeling about the protagonist."),
   status: z
     .string()
     .describe(
-      "Current state/condition of the NPC (e.g. 'plotting', 'injured', 'waiting', 'traveling').",
+      "Current state/condition of the NPC (e.g. 'plotting', 'injured', 'waiting', 'traveling', 'dead').",
     ),
 });
 
@@ -190,7 +199,6 @@ export const relationshipSchema = z.object({
     .describe("Whether the player knows this character."),
   currentLocation: z
     .string()
-    .nullish()
     .describe("The NPC's current location ID (e.g., 'loc:1')."),
   visible: relationshipVisibleSchema,
   hidden: relationshipHiddenSchema,

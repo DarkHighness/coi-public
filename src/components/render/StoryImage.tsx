@@ -32,11 +32,16 @@
  * │ Condition: imagePrompt exists BUT !imageUrl                             │
  * │ Scenarios:                                                               │
  * │   • isGenerating = true     → Show loading placeholder                  │
- * │   • manualImageGen = true   → Show "Click to Generate" placeholder      │
+ * │   • manualImageGen = true AND !userRequestedLoad → Show "Click to Gen"  │
+ * │   • manualImageGen = true AND userRequestedLoad  → Show loading         │
  * │   • actuallyFailed = true   → Show "Failed - Retry" placeholder         │
  * │                                                                          │
  * │ Display:   Placeholder with copy prompt button (top-right)              │
  * │            Regenerate enabled if canRegenerate = true                   │
+ * │                                                                          │
+ * │ NOTE: userRequestedLoad tracks when user clicks "Generate" in manual    │
+ * │       mode. Once clicked, we show loading state until generation        │
+ * │       completes or fails.                                                │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * Priority 4: No Image Intended (Case 1.1)
@@ -48,20 +53,21 @@
  *
  * STATE COMBINATION TABLE:
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * | Prompt | URL | Provider | Generating | Manual | Result      |
- * |--------|-----|----------|------------|--------|-------------|
- * |   ❌   | ❌  |    -     |     -      |   -    | Unavailable |
- * |   ✅   | ❌  |    ❌    |     -      |   -    | null (1.2)  |
- * |   ✅   | ❌  |    ✅    |    ✅      |  ❌    | Loading     |
- * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    | Manual      |
- * |   ✅   | ❌  |    ✅    |    ✅      |  ✅    | Manual*     |
- * |   ✅   | ❌  |    ✅    |    ❌      |  ❌    | Failed      |
- * |   ✅   | ✅  |    -     |     -      |   -    | Show Image  |
+ * | Prompt | URL | Provider | Generating | Manual | UserReq | Result      |
+ * |--------|-----|----------|------------|--------|---------|-------------|
+ * |   ❌   | ❌  |    -     |     -      |   -    |    -    | Unavailable |
+ * |   ✅   | ❌  |    ❌    |     -      |   -    |    -    | null (1.2)  |
+ * |   ✅   | ❌  |    ✅    |    ✅      |  ❌    |    -    | Loading     |
+ * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    |  ❌     | Manual      |
+ * |   ✅   | ❌  |    ✅    |    ✅      |  ✅    |  ✅     | Loading     |
+ * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    |  ✅     | Failed*     |
+ * |   ✅   | ❌  |    ✅    |    ❌      |  ❌    |    -    | Failed      |
+ * |   ✅   | ✅  |    -     |     -      |   -    |    -    | Show Image  |
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * * Manual mode overrides generating state (new segments show "Click to Generate")
+ * * User requested load but generation stopped without image = likely failed
  */
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MagicMirrorButton } from "./MagicMirrorButton";
 import { ImagePlaceholder } from "./ImagePlaceholder";
 import { ImageLightbox } from "./ImageLightbox";
@@ -107,12 +113,15 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   hasFailed,
 }) => {
   const { t } = useTranslation();
-  const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
-  const [copied, setCopied] = React.useState(false);
-  const [displayImage, setDisplayImage] = React.useState<{
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [displayImage, setDisplayImage] = useState<{
     url: string | null;
     isLoading: boolean;
   }>({ url: null, isLoading: false });
+  // Track when user has requested image load in manual mode
+  // Once user clicks "Generate", we show loading state until generation completes/fails
+  const [userRequestedLoad, setUserRequestedLoad] = useState(false);
 
   // Resolve image URL from ID if provided
   const { url: resolvedUrl, isLoading: isResolving } = useImageURL(imageId);
@@ -165,9 +174,37 @@ export const StoryImage: React.FC<StoryImageProps> = ({
       canRegenerate &&
       !manualImageGen &&
       hasPrompt &&
-      hasFailed === undefined); // Fallback only if undefined
+      hasFailed === undefined) ||
+    // In manual mode, if user requested load but generation stopped without image, it likely failed
+    (manualImageGen && userRequestedLoad && !isGenerating && !hasImage);
 
-  const shouldShowGenerating = isGenerating;
+  // Determine if we should show generating state:
+  // - Normal mode: show when isGenerating is true
+  // - Manual mode: show when user has requested load AND generation is in progress
+  const shouldShowGenerating =
+    isGenerating || (manualImageGen && userRequestedLoad && isGenerating);
+
+  // Reset userRequestedLoad when image is successfully loaded
+  React.useEffect(() => {
+    if (hasImage && userRequestedLoad) {
+      setUserRequestedLoad(false);
+    }
+  }, [hasImage, userRequestedLoad]);
+
+  // Reset userRequestedLoad on failure so user can retry
+  React.useEffect(() => {
+    if (actuallyFailed && userRequestedLoad && !isGenerating) {
+      setUserRequestedLoad(false);
+    }
+  }, [actuallyFailed, userRequestedLoad, isGenerating]);
+
+  // Handler for regenerate that also sets userRequestedLoad in manual mode
+  const handleRegenerate = () => {
+    if (manualImageGen) {
+      setUserRequestedLoad(true);
+    }
+    onRegenerate?.();
+  };
 
   // Render content
   return (
@@ -192,12 +229,14 @@ export const StoryImage: React.FC<StoryImageProps> = ({
         ) : (
           // Placeholder Display
           <ImagePlaceholder
-            isGenerating={shouldShowGenerating}
+            isGenerating={
+              shouldShowGenerating || (manualImageGen && userRequestedLoad)
+            }
             hasFailed={actuallyFailed}
             labelVision={labelVision}
             labelUnavailable={labelUnavailable}
             themeFont={themeFont}
-            onRegenerate={canRegenerate ? onRegenerate : undefined}
+            onRegenerate={canRegenerate ? handleRegenerate : undefined}
           />
         )}
 

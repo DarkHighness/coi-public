@@ -309,6 +309,11 @@ export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
   name: "update_relationship",
   description: `Modify an NPC's state. Use this when the player's actions change an NPC's opinion, location, or physical condition.
 CRITICAL: Update 'notes' to record how the NPC perceives the player's behavior (e.g., "Suspicious of player's magic").
+STATUS TRACKING:
+- visible.status: What the protagonist BELIEVES this NPC is doing (e.g., "shopping in market", "guarding the gate"). This is the player's PERCEPTION.
+- hidden.status: What the NPC is ACTUALLY doing (e.g., "plotting", "injured", "traveling", "dead"). This is the GM's truth.
+- visible.impression: The protagonist's current feeling about this NPC.
+- hidden.impression: The NPC's current feeling about the protagonist.
 IMPORTANT: To REMOVE an optional property, set it to null.`,
   parameters: z.discriminatedUnion("action", [
     // Add action - id is optional

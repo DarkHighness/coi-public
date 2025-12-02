@@ -211,17 +211,27 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                     </div>
                   </div>
                 )}
-                {rel.visible?.currentImpression && (
+                {rel.visible?.impression && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("currentImpression") || "Current Impression"}
+                      {t("protagonistImpression") || "Your Impression"}
                     </span>
                     <div className="text-theme-muted/80 text-theme-accent">
                       <MarkdownText
-                        content={rel.visible.currentImpression}
+                        content={rel.visible.impression}
                         indentSize={2}
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Perceived Status - What protagonist thinks NPC is doing */}
+                {rel.visible?.status && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("perceivedStatus") || "Currently (Your Perception)"}
+                    </span>
+                    <p className="text-theme-muted/80">{rel.visible.status}</p>
                   </div>
                 )}
 
@@ -332,6 +342,36 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         >
                           {rel.hidden.trueAffinity}%
                         </span>
+                      </div>
+                    )}
+
+                    {rel.hidden?.impression && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.npcImpression") ||
+                            "NPC's Impression of You"}
+                          :
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText
+                            content={rel.hidden.impression}
+                            indentSize={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.status && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("hidden.actualStatus") || "Actually Doing"}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText
+                            content={rel.hidden.status}
+                            indentSize={2}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

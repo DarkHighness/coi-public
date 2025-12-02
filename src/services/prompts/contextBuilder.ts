@@ -122,7 +122,8 @@ interface DynamicEntityFields {
   affinity?: number;
   trueAffinity?: number;
   currentLocation?: string;
-  currentImpression?: string;
+  impression?: string; // Protagonist's impression of NPC
+  npcImpression?: string; // NPC's impression of protagonist
   level?: string;
   duration?: number;
   isVisited?: boolean;
@@ -215,9 +216,11 @@ interface NpcDynamic {
   affinityKnown?: boolean;
   trueAffinity?: number;
   currentLocation?: string;
-  currentImpression?: string;
+  impression?: string; // Protagonist's impression of NPC
+  npcImpression?: string; // NPC's impression of protagonist
+  perceivedStatus?: string; // What protagonist thinks NPC is doing (visible.status)
   hiddenRelationshipType?: string;
-  hiddenStatus?: string;
+  hiddenStatus?: string; // What NPC is actually doing (hidden.status)
   known?: boolean;
   notes?: string;
 }
@@ -253,9 +256,11 @@ function splitRelationship(npc: Relationship): {
       // hidden 动态字段也始终对 AI 可见
       trueAffinity: npc.hidden?.trueAffinity,
       currentLocation: npc.currentLocation,
-      currentImpression: npc.visible.currentImpression,
+      impression: npc.visible.impression, // Protagonist's impression of NPC
+      npcImpression: npc.hidden?.impression, // NPC's impression of protagonist
+      perceivedStatus: npc.visible?.status, // What protagonist thinks NPC is doing
       hiddenRelationshipType: npc.hidden?.relationshipType,
-      hiddenStatus: npc.hidden?.status,
+      hiddenStatus: npc.hidden?.status, // What NPC is actually doing
       known: npc.known,
       notes: npc.notes,
     },
@@ -1057,8 +1062,8 @@ function buildEntitiesDynamicContext(
 function buildCurrentStateContext(gameState: GameState): string {
   const currentLoc = gameState.locations.find(
     (l) =>
-      l.id === gameState.currentLocation ||
-      l.name === gameState.currentLocation,
+      l.id?.toLowerCase() === gameState.currentLocation?.toLowerCase() ||
+      l.name?.toLowerCase() === gameState.currentLocation?.toLowerCase(),
   );
 
   return `

@@ -295,41 +295,51 @@ export const createImageGenerationContext = (
   }
 
   // Reconstruct active NPCs list
+  // CRITICAL: Use currentLocation to determine if NPC is in the same scene as the player
+  const playerLocName = stateSnapshot.currentLocation?.toLowerCase() || "";
+  const playerLoc = stateSnapshot.locations?.find(
+    (l: GameLocation) =>
+      l.name?.toLowerCase() === playerLocName ||
+      l.id?.toLowerCase() === playerLocName,
+  );
+  const playerLocId = playerLoc?.id?.toLowerCase() || "";
+  const playerLocDisplayName = playerLoc?.name?.toLowerCase() || "";
+
   const activeNPCs = (stateSnapshot.relationships || [])
     .filter((r: Relationship) => {
-      // Resolve player location ID
-      const playerLoc = stateSnapshot.locations?.find(
-        (l: GameLocation) =>
-          l.name === stateSnapshot.currentLocation ||
-          l.id === stateSnapshot.currentLocation,
-      );
-      const playerLocId = playerLoc?.id;
-      const playerLocName = playerLoc?.name;
+      // Skip absent or dead NPCs (case-insensitive check)
+      const hiddenStatus = r.hidden?.status?.toLowerCase() || "";
+      if (hiddenStatus === "absent" || hiddenStatus === "dead") {
+        return false;
+      }
 
-      // Check if NPC is in the same location
+      // CRITICAL: Always use currentLocation to determine presence
+      const npcLocation = r.currentLocation?.toLowerCase() || "";
+
+      // NPC must have a valid location that matches player's location
+      if (!npcLocation || npcLocation === "unknown") {
+        return false; // No location set = not in scene
+      }
+
+      // Check if NPC is at the same location as player (case-insensitive)
       const isAtLocation =
-        r.currentLocation &&
-        r.currentLocation !== "unknown" &&
-        (r.currentLocation === playerLocId ||
-          r.currentLocation === playerLocName ||
-          r.currentLocation === stateSnapshot.currentLocation);
+        npcLocation === playerLocId ||
+        npcLocation === playerLocName ||
+        npcLocation === playerLocDisplayName;
 
-      return (
-        r.visible?.relationshipType !== "Absent" &&
-        r.visible?.relationshipType !== "Dead" &&
-        isAtLocation
-      );
+      return isAtLocation;
     })
     .map((r: any) => ({
       name: r.name,
       description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
       appearance: r.visible?.appearance || "No appearance available",
-      status: `${r.visible?.relationshipType || "Unknown"} (${r.hidden?.status || "Normal"})`,
+      status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,
     }));
 
-  // Resolve location details
+  // Resolve location details (case-insensitive)
   const currentLoc = stateSnapshot.locations?.find(
-    (l: any) => l.name === stateSnapshot.currentLocation,
+    (l: any) =>
+      l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
   );
   const locationStr = currentLoc
     ? `${currentLoc.name} (${currentLoc.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`

@@ -685,13 +685,15 @@ export interface RelationshipAction {
   action: "add" | "update" | "remove";
   id?: string;
   known?: boolean; // Update known status
+  currentLocation?: string; // Update NPC's current location
 
   visible?: {
     name?: string; // Update visible name
     description?: string;
     appearance?: string;
     relationshipType?: string;
-    currentImpression?: string;
+    impression?: string; // Protagonist's impression of this NPC
+    status?: string; // What protagonist BELIEVES NPC is doing
     personality?: string;
     dialogueStyle?: string;
     affinity?: number;
@@ -704,7 +706,8 @@ export interface RelationshipAction {
     secrets?: string[];
     trueAffinity?: number;
     relationshipType?: string;
-    status?: string;
+    impression?: string; // NPC's impression of the protagonist
+    status?: string; // What NPC is ACTUALLY doing
   };
 
   notes?: string;

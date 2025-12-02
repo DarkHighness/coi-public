@@ -157,7 +157,11 @@ export const getCoreRules = (): string => `
       * Low affinity NPC might help if their hidden goals align with the player's actions
       * NPCs have irrational biases, flaws, and moods stored in their \`hidden\` layer
     - **NO "QUEST GIVERS"**: NPCs are living their own stories. The player must earn their attention.
-    - **HIDDEN STATUS**: Use \`hidden.status\` to track what NPCs are doing off-screen.
+    - **DUAL STATUS TRACKING**:
+      * \`visible.status\`: What the protagonist BELIEVES the NPC is doing (perception)
+      * \`hidden.status\`: What the NPC is ACTUALLY doing (truth)
+      * These may differ! NPCs can deceive the player about their activities.
+    - **LOCATION TRACKING**: Always update \`currentLocation\` when NPCs move. Use location IDs.
   </rule>
 
   <rule name="COMBAT & ACTION">
@@ -169,8 +173,11 @@ export const getCoreRules = (): string => `
   <rule name="STATE MANAGEMENT">
     - Output ONLY changes (DELTAS).
     - **Inventory**: Add/Remove/Update. Always include \`hidden.truth\` for items with secrets.
-    - **Relationships**: Track affinity and impression.
-      * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.affinity, description, personality.
+    - **Relationships**: Track affinity, impression, location, and status.
+      * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.status, visible.affinity, description, personality, currentLocation.
+      * **visible.status**: What the protagonist BELIEVES the NPC is doing (their perception).
+      * **hidden.status**: What the NPC is ACTUALLY doing (the truth).
+      * **currentLocation**: The location ID where this NPC is currently located. ALWAYS UPDATE THIS when NPC moves.
       * **Distinction**: visible.personality (reputation) vs hidden.realPersonality (true nature).
     - **Time**: Always update time if it passes.
     - **World Events**: Record significant off-screen events.
@@ -263,7 +270,11 @@ export const getCharacterLogicInstruction = (): string => `
       * Low affinity NPC might help if their hidden goals align with the player's actions
       * NPCs have irrational biases, flaws, and moods stored in their \`hidden\` layer
     - **NO "QUEST GIVERS"**: NPCs are living their own stories. The player must earn their attention.
-    - **HIDDEN STATUS**: Use \`hidden.status\` to track what NPCs are doing off-screen.
+    - **DUAL STATUS TRACKING**:
+      * \`visible.status\`: What the protagonist BELIEVES the NPC is doing (perception)
+      * \`hidden.status\`: What the NPC is ACTUALLY doing (truth)
+      * These may differ! NPCs can deceive the player about their activities.
+    - **LOCATION TRACKING**: Always update \`currentLocation\` when NPCs move. Use location IDs.
   </rule>
 </character_logic>
 `;
@@ -367,6 +378,30 @@ export const getImmersiveWriting = (): string => `
     - **AVOID CYCLICAL CONVERSATIONS**: If a topic is resolved, move on. Do not circle back unless new information changes the context.
     - **PURPOSEFUL REPETITION**: Only repeat dialogue if it serves a clear narrative purpose (e.g., emphasis, madness, ritual).
   </dialogue_progression>
+
+  <world_immersion>
+    **LIVING ENVIRONMENT**:
+    - The world exists BEFORE the player arrives and continues AFTER they leave.
+    - Background NPCs go about their business: merchants hawk wares, guards patrol, children play.
+    - Weather and time affect the world: rain drives people indoors, night brings different activities.
+    - Sounds fill spaces: distant conversations, creaking floorboards, wind through trees.
+
+    **ENVIRONMENTAL STORYTELLING**:
+    - Every location tells a story through its details.
+    - Worn paths suggest frequent travel. Dust indicates abandonment. Fresh flowers mean recent visitors.
+    - Graffiti, posters, and signs reveal the culture and current events.
+    - Architecture reflects history: old stone walls beneath new paint, repaired damage from past conflicts.
+
+    **SENSORY ANCHORING**:
+    - Ground every scene with at least 3 senses: sight, sound, smell, touch, or taste.
+    - The smell of incense in a temple, the cold stone beneath bare feet, the distant chanting of monks.
+    - The acrid smoke of a forge, the clang of hammer on metal, the heat prickling skin.
+
+    **TIME AWARENESS**:
+    - Reference the time of day naturally: morning mist, afternoon heat, evening shadows.
+    - NPCs have schedules: the baker wakes early, the tavern fills at night.
+    - Seasons affect the world: spring mud, summer heat, autumn harvest, winter cold.
+  </world_immersion>
 </immersive_writing>
 `;
 

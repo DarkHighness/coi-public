@@ -771,13 +771,21 @@ function extractNPCContent(npc: Relationship): string {
       parts.push(
         `    <dialogue_style>${npc.visible.dialogueStyle}</dialogue_style>`,
       );
-    if (npc.visible.currentImpression)
+    if (npc.visible.impression)
       parts.push(
-        `    <impression>${npc.visible.currentImpression}</impression>`,
+        `    <protagonist_impression>${npc.visible.impression}</protagonist_impression>`,
+      );
+    if (npc.visible.status)
+      parts.push(
+        `    <perceived_status>${npc.visible.status}</perceived_status>`,
       );
     if (npc.notes) parts.push(`    <player_notes>${npc.notes}</player_notes>`);
     parts.push("  </visible>");
   }
+
+  // Location info
+  if (npc.currentLocation)
+    parts.push(`  <current_location>${npc.currentLocation}</current_location>`);
 
   // Hidden info (Always visible to AI/GM)
   if (npc.hidden) {
@@ -792,6 +800,12 @@ function extractNPCContent(npc: Relationship): string {
       parts.push(`    <routine>${npc.hidden.routine}</routine>`);
     if (npc.hidden.secrets?.length)
       parts.push(`    <secrets>${npc.hidden.secrets.join("; ")}</secrets>`);
+    if (npc.hidden.impression)
+      parts.push(
+        `    <npc_impression_of_protagonist>${npc.hidden.impression}</npc_impression_of_protagonist>`,
+      );
+    if (npc.hidden.status)
+      parts.push(`    <actual_status>${npc.hidden.status}</actual_status>`);
     parts.push("  </hidden>");
   }
 

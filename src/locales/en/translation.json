@@ -649,7 +649,8 @@
   "saveApply": "Save & Apply",
   "description": "Description",
   "currentMood": "Mood",
-  "currentImpression": "Impression",
+  "protagonistImpression": "Your Impression",
+  "perceivedStatus": "Currently (Your Perception)",
   "role": "Role",
   "pinToTop": "Pin",
   "mainQuest": "Main",
@@ -689,7 +690,9 @@
     "motives": "Real Motives",
     "affinity": "True Affinity",
     "routine": "Routine",
-    "dangers": "Dangers"
+    "dangers": "Dangers",
+    "npcImpression": "NPC's Impression of You",
+    "actualStatus": "Actually Doing"
   },
   "commands": {
     "godMode": {
