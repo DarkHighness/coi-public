@@ -23,7 +23,7 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
       if (service) {
         const status = await service.getStatus();
         setStats({
-          totalDocs: status.storageDocuments + status.memoryDocuments,
+          totalDocs: status.storageDocuments,
           pendingRequests: status.pending || 0,
           isIndexing: !!progress,
         });

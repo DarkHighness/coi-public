@@ -7,7 +7,6 @@
  *
  * Key Features:
  * - PGlite + pgvector for vector storage and similarity search
- * - LRU cache for fast in-memory access
  * - Save-isolated data with version control
  * - Automatic cleanup and storage limit enforcement
  */
@@ -15,7 +14,6 @@
 /// <reference lib="webworker" />
 
 import { RAGDatabase } from "./database";
-import { LRUCacheManager } from "./lruCache";
 import {
   DEFAULT_RAG_CONFIG,
   type RAGConfig,
@@ -54,7 +52,6 @@ interface SharedWorkerGlobalScope {
 // ============================================================================
 
 let database: RAGDatabase | null = null;
-let cache: LRUCacheManager | null = null;
 let config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
 let credentials: InitPayload["credentials"] | null = null;
 let currentSaveId: string | null = null;
@@ -202,7 +199,6 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
     console.log("[RAGWorker] Re-initializing with new config");
     config = { ...config, ...payload.config };
     credentials = payload.credentials;
-    cache?.updateConfig(config);
     return { success: true };
   }
 
@@ -214,9 +210,6 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   database = new RAGDatabase(config);
   await database.initialize();
   console.log("[RAGWorker] Database initialized");
-
-  // Initialize cache
-  cache = new LRUCacheManager(config);
 
   isInitialized = true;
 
@@ -294,14 +287,6 @@ async function handleAddDocuments(
       });
     }
 
-    // Add to cache if from current save
-    if (currentSaveId) {
-      const docsForCurrentSave = documents.filter(
-        (d) => d.saveId === currentSaveId,
-      );
-      cache!.setMany(docsForCurrentSave);
-    }
-
     // Broadcast update event
     broadcastEvent({
       type: "indexUpdated",
@@ -347,11 +332,6 @@ async function handleUpdateDocument(
 
   await database!.addDocument(ragDoc);
 
-  // Update cache if from current save
-  if (payload.saveId === currentSaveId) {
-    cache!.set(ragDoc);
-  }
-
   return { success: true };
 }
 
@@ -365,9 +345,8 @@ async function handleDeleteDocuments(
   if (payload.saveId) {
     deleted = await database!.deleteDocumentsBySave(payload.saveId);
 
-    // Clear cache if deleting current save
+    // Reset currentSaveId if deleting current save
     if (payload.saveId === currentSaveId) {
-      cache!.clear();
       currentSaveId = null;
     }
   } else if (payload.entityIds) {
@@ -378,7 +357,6 @@ async function handleDeleteDocuments(
       );
       for (const doc of docs) {
         await database!.deleteDocument(doc.id);
-        cache!.delete(doc.id);
         deleted++;
       }
     }
@@ -456,14 +434,6 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
     // Limit to topK
     const finalResults = adjustedResults.slice(0, payload.options.topK || 10);
 
-    // Update cache with accessed documents
-    for (const result of finalResults) {
-      const fullDoc = await database!.getDocument(result.document.id);
-      if (fullDoc) {
-        cache!.set(fullDoc);
-      }
-    }
-
     return finalResults;
   } finally {
     isSearching = false;
@@ -535,28 +505,8 @@ async function handleSwitchSave(
   currentForkId = payload.forkId;
   forkTree = payload.forkTree;
 
-  // Switch cache context
-  cache!.switchSave(payload.saveId, payload.forkId, payload.forkTree);
-
-  // Preload documents from this save into cache
-  const docs = await database!.getDocumentsForSave(
-    payload.saveId,
-    config.maxMemoryDocuments,
-  );
-
-  // Load full documents with embeddings
-  const fullDocs: RAGDocument[] = [];
-  for (const meta of docs) {
-    const fullDoc = await database!.getDocument(meta.id);
-    if (fullDoc) {
-      fullDocs.push(fullDoc);
-    }
-  }
-
-  cache!.setMany(fullDocs);
-
   console.log(
-    `[RAGWorker] Switched to save ${payload.saveId}, fork ${payload.forkId}, loaded ${fullDocs.length} documents`,
+    `[RAGWorker] Switched to save ${payload.saveId}, fork ${payload.forkId}`,
   );
 
   return { success: true };
@@ -569,14 +519,6 @@ async function handleGetSaveStats(saveId?: string): Promise<SaveStats | null> {
   if (!targetSaveId) return null;
 
   const stats = await database!.getSaveStats(targetSaveId);
-  if (!stats) return null;
-
-  // Add memory usage from cache if current save
-  if (targetSaveId === currentSaveId) {
-    const cacheStats = cache!.getStats();
-    stats.memoryUsage = cacheStats.estimatedMemoryBytes;
-  }
-
   return stats;
 }
 
@@ -622,7 +564,6 @@ async function handleUpdateConfig(
   newConfig: Partial<RAGConfig>,
 ): Promise<{ success: boolean }> {
   config = { ...config, ...newConfig };
-  cache?.updateConfig(config);
   return { success: true };
 }
 
@@ -632,7 +573,6 @@ async function handleGetStatus(): Promise<RAGStatus> {
     currentSaveId,
     currentModel: config.modelId,
     currentProvider: config.provider,
-    memoryDocuments: cache?.getStats().totalDocuments || 0,
     storageDocuments: currentSaveId
       ? (await database?.getSaveStats(currentSaveId))?.totalDocuments || 0
       : 0,
@@ -651,7 +591,6 @@ async function handleClearSave(saveId?: string): Promise<{ deleted: number }> {
   const deleted = await database!.deleteDocumentsBySave(targetSaveId);
 
   if (targetSaveId === currentSaveId) {
-    cache!.clear();
     currentSaveId = null;
   }
 
@@ -693,11 +632,6 @@ async function handleRebuildForModel(
   // Clear all documents for the save
   const deleted = await database!.clearSaveForRebuild(targetSaveId);
 
-  // Also clear cache if it's the current save
-  if (targetSaveId === currentSaveId) {
-    cache!.clear();
-  }
-
   broadcastEvent({
     type: "progress",
     data: {
@@ -735,9 +669,8 @@ async function handleDeleteOldestSaves(
 
   const deleted = await database!.deleteOldestFromSaves(saveIds);
 
-  // Clear cache if current save was deleted
+  // Reset currentSaveId if it was deleted
   if (currentSaveId && saveIds.includes(currentSaveId)) {
-    cache!.clear();
     currentSaveId = null;
   }
 
@@ -854,14 +787,17 @@ async function generateOpenRouterEmbedding(
 
   const response = await fetch("https://openrouter.ai/api/v1/embeddings", {
     method: "POST",
+    mode: "cors",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://chronicles-of-infinity.app",
+      "HTTP-Referer": "https://coi.twiliness.qzz.io",
+      "X-Title": "CoI Game",
     },
     body: JSON.stringify({
       model: config.modelId,
       input: text,
+      ...(config.dimensions && { dimensions: config.dimensions }),
     }),
   });
 
@@ -879,7 +815,7 @@ async function generateOpenRouterEmbedding(
 // ============================================================================
 
 function ensureInitialized(): void {
-  if (!isInitialized || !database || !cache) {
+  if (!isInitialized || !database) {
     throw new Error("RAG Worker not initialized. Call init first.");
   }
 }

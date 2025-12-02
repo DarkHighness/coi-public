@@ -1,28 +1,18 @@
 import React, { Suspense } from "react";
-import {
-  GameState,
-  LanguageCode,
-  FeedLayout,
-  UIState,
-  ListState,
-  StorySegment,
-} from "../../types";
+import { FeedLayout, UIState, StorySegment } from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { StoryTimeline } from "../StoryTimeline";
+import { useGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface DesktopGameLayoutProps {
-  gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  currentHistory: StorySegment[];
-  language: LanguageCode;
-  setLanguage: (lang: LanguageCode) => void;
-  isTranslating: boolean;
+  // Local UI state (managed by GamePage)
   feedLayout: FeedLayout;
   setFeedLayout: (layout: FeedLayout) => void;
+  currentAmbience?: string;
+  // Callbacks
   onAnimate: (url: string) => void;
-  onGenerateImage: (nodeId: string) => void;
   onRetry: () => void;
   onFork: (nodeId: string) => void;
   onAction: (action: string) => Promise<void>;
@@ -32,9 +22,7 @@ interface DesktopGameLayoutProps {
   onOpenSaves: () => void;
   onOpenMap: () => void;
   onOpenLogs: () => void;
-  aiSettings: any;
   onTypingComplete?: () => void;
-  currentAmbience?: string;
   onUpdateUIState: <K extends keyof UIState>(
     section: K,
     newState: UIState[K],
@@ -47,25 +35,16 @@ interface DesktopGameLayoutProps {
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
-  onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
-  saveId?: string;
-  failedImageNodes?: Set<string>;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
-  gameState,
-  setGameState,
-  currentHistory,
-  language,
-  setLanguage,
-  isTranslating,
   feedLayout,
   setFeedLayout,
+  currentAmbience,
   onAnimate,
-  onGenerateImage,
   onRetry,
   onFork,
   onAction,
@@ -75,9 +54,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenSaves,
   onOpenMap,
   onOpenLogs,
-  aiSettings,
   onTypingComplete,
-  currentAmbience,
   onUpdateUIState,
   onToggleMute,
   onViewedSegmentChange,
@@ -87,15 +64,21 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenStateEditor,
   onOpenRAG,
   onOpenViewer,
-  onTriggerSave,
   onForceUpdate,
   onImageUpload,
   onImageDelete,
-  saveId,
-  failedImageNodes,
 }) => {
+  // Get state and actions from context
+  const { state, actions } = useGameEngineContext();
+  const { gameState, aiSettings } = state;
+  const { generateImageForNode, triggerSave } = actions;
+
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
+
+  const handleGenerateImage = (nodeId: string) => {
+    generateImageForNode(nodeId, undefined, true);
+  };
 
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
@@ -108,8 +91,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
         {/* Sidebar Content - hidden when collapsed */}
         <div className={`h-full ${sidebarCollapsed ? "hidden" : "block"}`}>
           <Sidebar
-            gameState={gameState}
-            isTranslating={isTranslating}
             onCloseMobile={() => {}}
             onMagicMirror={onMagicMirror}
             onNewGame={onNewGame}
@@ -121,7 +102,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             currentAmbience={currentAmbience}
             onUpdateUIState={onUpdateUIState}
             onVeoScript={onVeoScript}
-            setLanguage={setLanguage}
           />
         </div>
 
@@ -153,16 +133,13 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       <div className="flex-1 flex flex-col relative h-full min-w-0">
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <StoryFeed
-            gameState={gameState}
-            currentHistory={currentHistory}
             layout={feedLayout}
             setLayout={setFeedLayout}
             onAnimate={onAnimate}
-            onGenerateImage={onGenerateImage}
+            onGenerateImage={handleGenerateImage}
             onRetry={onRetry}
             disableImages={aiSettings.image.enabled === false}
             onFork={onFork}
-            aiSettings={aiSettings}
             onTypingComplete={onTypingComplete}
             currentAmbience={currentAmbience}
             onToggleMute={onToggleMute}
@@ -172,23 +149,17 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onImageDelete={onImageDelete}
             sidebarCollapsed={sidebarCollapsed}
             timelineCollapsed={timelineCollapsed}
-            saveId={saveId}
-            failedImageNodes={failedImageNodes}
           />
 
           {/* Action Panel */}
           <div className="flex-none z-30">
             <ActionPanel
-              gameState={gameState}
-              currentHistory={currentHistory}
-              isTranslating={isTranslating}
               onAction={onAction}
-              setGameState={setGameState}
               onShowToast={onShowToast}
               onOpenStateEditor={onOpenStateEditor}
               onOpenRAG={onOpenRAG}
               onOpenViewer={onOpenViewer}
-              onTriggerSave={onTriggerSave}
+              onTriggerSave={triggerSave}
               onRetry={onRetry}
               onForceUpdate={onForceUpdate}
             />
@@ -212,8 +183,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             }
           >
             <StoryTimeline
-              segments={currentHistory}
-              theme={gameState.theme}
               title={gameState.outline?.title}
               subtitle={gameState.outline?.premise}
             />

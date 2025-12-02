@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   getEmbeddingModels,
   EmbeddingModelInfo,
 } from "../../services/aiService";
 import { useSettings } from "../../hooks/useSettings";
+import { useOptionalRAGContext } from "../../contexts/RAGContext";
 
 interface SettingsEmbeddingProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -14,10 +15,20 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
+  const ragContext = useOptionalRAGContext();
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
   const config = currentSettings.embedding;
   const isEnabled = config?.enabled ?? false;
+
+  // Track previous model ID for model change detection
+  const previousModelIdRef = useRef<string | null>(config?.modelId || null);
+
+  // State for model change confirmation dialog
+  const [modelChangeConfirm, setModelChangeConfirm] = useState<{
+    show: boolean;
+    pendingSettings: typeof currentSettings | null;
+  }>({ show: false, pendingSettings: null });
 
   // State for dynamically fetched models (keyed by providerId)
   const [models, setModels] = useState<Record<string, EmbeddingModelInfo[]>>(
@@ -118,6 +129,22 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       if (model?.dimensions) {
         newSettings.embedding.dimensions = model.dimensions;
       }
+
+      // Check if model has changed and RAG has existing index
+      const prevModel = previousModelIdRef.current;
+      const hasExistingIndex =
+        ragContext?.isInitialized &&
+        ragContext?.status?.storageDocuments &&
+        ragContext.status.storageDocuments > 0;
+
+      if (prevModel && prevModel !== value && hasExistingIndex) {
+        // Show confirmation dialog
+        setModelChangeConfirm({ show: true, pendingSettings: newSettings });
+        return; // Don't apply settings yet
+      }
+
+      // Update reference
+      previousModelIdRef.current = value;
     }
 
     // Reset model when provider changes
@@ -125,9 +152,77 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       newSettings.embedding.modelId = "";
       // Trigger fetch for new provider
       fetchModelsForProvider(value);
+
+      // Also check for existing index when provider changes
+      const hasExistingIndex =
+        ragContext?.isInitialized &&
+        ragContext?.status?.storageDocuments &&
+        ragContext.status.storageDocuments > 0;
+      if (previousModelIdRef.current && hasExistingIndex) {
+        setModelChangeConfirm({ show: true, pendingSettings: newSettings });
+        return;
+      }
+
+      previousModelIdRef.current = null;
     }
 
     onUpdateSettings(newSettings);
+  };
+
+  // Handle model change confirmation
+  const handleModelChangeConfirm = async (action: "rebuild" | "disable") => {
+    const pendingSettings = modelChangeConfirm.pendingSettings;
+    if (!pendingSettings) {
+      setModelChangeConfirm({ show: false, pendingSettings: null });
+      return;
+    }
+
+    if (action === "rebuild") {
+      // Apply settings and trigger rebuild
+      onUpdateSettings(pendingSettings);
+      previousModelIdRef.current = pendingSettings.embedding.modelId;
+
+      // Trigger rebuild through RAG context
+      if (ragContext?.actions?.handleModelMismatch) {
+        try {
+          await ragContext.actions.handleModelMismatch("rebuild");
+          showToast(
+            t("embedding.rebuildStarted") || "Rebuilding RAG index...",
+            "info",
+          );
+        } catch (error) {
+          console.error("Failed to rebuild RAG index:", error);
+          showToast(
+            t("embedding.rebuildFailed") || "Failed to rebuild index",
+            "error",
+          );
+        }
+      }
+    } else {
+      // Disable RAG
+      const disabledSettings = {
+        ...pendingSettings,
+        embedding: {
+          ...pendingSettings.embedding,
+          enabled: false,
+        },
+      };
+      onUpdateSettings(disabledSettings);
+      previousModelIdRef.current = pendingSettings.embedding.modelId;
+
+      // Terminate RAG service
+      if (ragContext?.actions?.handleModelMismatch) {
+        await ragContext.actions.handleModelMismatch("disable");
+      }
+      showToast(t("embedding.ragDisabled") || "RAG has been disabled", "info");
+    }
+
+    setModelChangeConfirm({ show: false, pendingSettings: null });
+  };
+
+  // Cancel model change
+  const handleModelChangeCancel = () => {
+    setModelChangeConfirm({ show: false, pendingSettings: null });
   };
 
   const getModelsForProvider = () => {
@@ -415,36 +510,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               </p>
             </div>
 
-            {/* LRU Resource Limits */}
+            {/* Storage Resource Limits */}
             <div className="pt-4 border-t border-theme-border/30 space-y-4">
               <div className="text-xs font-bold text-theme-muted uppercase tracking-widest">
-                {t("embedding.lruLimits") || "Resource Limits (LRU)"}
-              </div>
-
-              {/* Max Memory Documents */}
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
-                    {t("embedding.maxMemory") || "Max In-Memory Documents"}
-                  </label>
-                  <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxMemoryDocuments || 1000}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="200"
-                  max="5000"
-                  step="100"
-                  value={config.lru?.maxMemoryDocuments || 1000}
-                  onChange={(e) =>
-                    updateEmbedding("lru", {
-                      ...config.lru,
-                      maxMemoryDocuments: parseInt(e.target.value),
-                    })
-                  }
-                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
-                />
+                {t("embedding.storageLimits") || "Storage Limits"}
               </div>
 
               {/* Max Storage Documents */}
@@ -454,7 +523,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                     {t("embedding.maxStorage") || "Max Storage Documents"}
                   </label>
                   <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxStorageDocuments || 10000}
+                    {(config.storage ?? config.lru)?.maxStorageDocuments ||
+                      10000}
                   </span>
                 </div>
                 <input
@@ -462,10 +532,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   min="1000"
                   max="50000"
                   step="1000"
-                  value={config.lru?.maxStorageDocuments || 10000}
+                  value={
+                    (config.storage ?? config.lru)?.maxStorageDocuments || 10000
+                  }
                   onChange={(e) =>
-                    updateEmbedding("lru", {
-                      ...config.lru,
+                    updateEmbedding("storage", {
+                      ...(config.storage ?? config.lru),
                       maxStorageDocuments: parseInt(e.target.value),
                     })
                   }
@@ -480,7 +552,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                     {t("embedding.maxPerType") || "Max Per Type"}
                   </label>
                   <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxDocumentsPerType || 2000}
+                    {(config.storage ?? config.lru)?.maxDocumentsPerType ||
+                      2000}
                   </span>
                 </div>
                 <input
@@ -488,10 +561,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   min="100"
                   max="10000"
                   step="100"
-                  value={config.lru?.maxDocumentsPerType || 2000}
+                  value={
+                    (config.storage ?? config.lru)?.maxDocumentsPerType || 2000
+                  }
                   onChange={(e) =>
-                    updateEmbedding("lru", {
-                      ...config.lru,
+                    updateEmbedding("storage", {
+                      ...(config.storage ?? config.lru),
                       maxDocumentsPerType: parseInt(e.target.value),
                     })
                   }
@@ -506,7 +581,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                     {t("embedding.maxVersions") || "Versions Per Entity"}
                   </label>
                   <span className="text-[10px] font-mono text-theme-text">
-                    {config.lru?.maxVersionsPerEntity || 5}
+                    {(config.storage ?? config.lru)?.maxVersionsPerEntity || 5}
                   </span>
                 </div>
                 <input
@@ -514,10 +589,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   min="1"
                   max="20"
                   step="1"
-                  value={config.lru?.maxVersionsPerEntity || 5}
+                  value={
+                    (config.storage ?? config.lru)?.maxVersionsPerEntity || 5
+                  }
                   onChange={(e) =>
-                    updateEmbedding("lru", {
-                      ...config.lru,
+                    updateEmbedding("storage", {
+                      ...(config.storage ?? config.lru),
                       maxVersionsPerEntity: parseInt(e.target.value),
                     })
                   }
@@ -551,6 +628,49 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Model Change Confirmation Dialog */}
+      {modelChangeConfirm.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-theme-surface border border-theme-border rounded-lg shadow-xl max-w-md mx-4 overflow-hidden">
+            <div className="p-4 border-b border-theme-border bg-theme-surface-highlight/50">
+              <h3 className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+                {t("embedding.modelChangeTitle") || "Model Change Detected"}
+              </h3>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-theme-text">
+                {t("embedding.modelChangeDesc") ||
+                  "You are changing the embedding model. The existing RAG index was built with a different model and will not work correctly."}
+              </p>
+              <p className="text-xs text-theme-muted italic">
+                {t("embedding.modelChangeOptions") ||
+                  "Choose to rebuild the index (recommended) or disable RAG for now."}
+              </p>
+            </div>
+            <div className="p-4 border-t border-theme-border bg-theme-surface/50 flex justify-end gap-3">
+              <button
+                onClick={handleModelChangeCancel}
+                className="px-4 py-2 text-xs text-theme-muted hover:text-theme-text transition-colors"
+              >
+                {t("cancel") || "Cancel"}
+              </button>
+              <button
+                onClick={() => handleModelChangeConfirm("disable")}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 rounded text-xs font-medium transition-colors"
+              >
+                {t("embedding.disableRag") || "Disable RAG"}
+              </button>
+              <button
+                onClick={() => handleModelChangeConfirm("rebuild")}
+                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary/80 text-theme-bg rounded text-xs font-bold transition-colors"
+              >
+                {t("embedding.rebuildIndex") || "Rebuild Index"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

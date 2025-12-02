@@ -68,6 +68,6 @@ export {
 // Embedding Model Information
 export { EMBEDDING_MODELS, type EmbeddingModelInfo } from "./embeddingProvider";
 
-// Note: Database and LRUCache are internal implementation details
+// Note: Database is an internal implementation detail
 // and should not be imported directly by other modules.
-// They are used by the SharedWorker.
+// It is used by the SharedWorker.

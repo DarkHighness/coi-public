@@ -343,7 +343,7 @@ export const getCoreRules = (): string => `
       * Does this contradict recent events? (Can't find an item you just lost)
     - **Inventory**: Add/Remove/Update. Use \`sensory\` (texture, weight, smell) and \`condition\` for physical depth. Always include \`hidden.truth\` for items with secrets.
     - **Relationships**: Track affinity, impression, location, and status.
-      * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.status, visible.affinity, description, personality, currentLocation.
+      * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.status, visible.affinity, visible.age, hidden.realAge, description, personality, currentLocation.
       * **Immersive Fields**: Use \`visible.voice\`, \`visible.mannerism\`, \`visible.mood\` to bring NPCs to life.
       * **Inner Life**: Use \`hidden.currentThought\` to track their internal monologue.
       * **visible.status**: What the protagonist BELIEVES the NPC is doing (their perception).

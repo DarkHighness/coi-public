@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getRAGService } from "../../services/rag";
+import { useOptionalRAGContext } from "../../contexts/RAGContext";
+import { extractDocumentsFromState } from "../../hooks/useRAG";
 import type { StatisticsTabProps, IndexStats } from "./types";
 
 export const StatisticsTab: React.FC<StatisticsTabProps> = ({
@@ -8,6 +9,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
+  const ragContext = useOptionalRAGContext();
   const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
   const [isRebuildingIndex, setIsRebuildingIndex] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,43 +17,41 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   const embeddingEnabled = aiSettings?.embedding?.enabled ?? false;
 
   const loadIndexStats = useCallback(async () => {
-    const ragService = getRAGService();
-    if (!ragService) {
+    if (!ragContext) {
       setIndexStats(null);
       return;
     }
 
-    try {
-      const status = await ragService.getStatus();
-      setIndexStats({
-        documentCount: status.storageDocuments + status.memoryDocuments,
-        modelId: status.currentModel,
-        provider: status.currentProvider,
-        isInitialized: status.initialized,
-        currentSaveId: status.currentSaveId,
-        storageDocuments: status.storageDocuments,
-        memoryDocuments: status.memoryDocuments,
-      });
-    } catch (err) {
-      console.error("[RAGDebugger] Failed to load stats:", err);
+    // Refresh status from RAG context
+    await ragContext.actions.refreshStatus();
+
+    const status = ragContext.status;
+    if (!status) {
       setIndexStats(null);
+      return;
     }
-  }, []);
+
+    setIndexStats({
+      documentCount: status.storageDocuments,
+      modelId: status.currentModel,
+      provider: status.currentProvider,
+      isInitialized: status.initialized,
+      currentSaveId: status.currentSaveId,
+      storageDocuments: status.storageDocuments,
+    });
+  }, [ragContext]);
 
   const handleRebuildIndex = useCallback(async () => {
-    if (!gameState || !aiSettings) return;
+    if (!gameState || !aiSettings || !ragContext) return;
 
     setIsRebuildingIndex(true);
     setError(null);
 
     try {
-      const ragService = getRAGService();
-      if (ragService) {
-        await ragService.rebuildForModel();
+      const service = ragContext.actions.getService();
+      if (service) {
+        await service.rebuildForModel();
 
-        const { extractDocumentsFromState } = await import(
-          "../../hooks/useRAG"
-        );
         const entityIds: string[] = [];
 
         if (gameState.outline) {
@@ -79,10 +79,10 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
         const documents = extractDocumentsFromState(gameState, entityIds);
 
         if (documents.length > 0) {
-          await ragService.addDocuments(
+          await service.addDocuments(
             documents.map((doc) => ({
               ...doc,
-              saveId: indexStats?.currentSaveId || "unknown",
+              saveId: ragContext.currentSaveId || "unknown",
               forkId: gameState.forkId || 0,
               turnNumber: gameState.turnNumber || 0,
             })),
@@ -102,7 +102,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     } finally {
       setIsRebuildingIndex(false);
     }
-  }, [gameState, aiSettings, indexStats, loadIndexStats, t]);
+  }, [gameState, aiSettings, ragContext, loadIndexStats, t]);
 
   useEffect(() => {
     loadIndexStats();
@@ -153,7 +153,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
 
       <div className="space-y-6">
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-theme-primary">
               {indexStats.documentCount}
@@ -168,14 +168,6 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
             </div>
             <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
               {t("ragDebugger.storageDocs", "Storage")}
-            </div>
-          </div>
-          <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-theme-primary">
-              {indexStats.memoryDocuments}
-            </div>
-            <div className="text-xs text-theme-muted uppercase tracking-wider mt-1">
-              {t("ragDebugger.memoryDocs", "Memory")}
             </div>
           </div>
           <div className="bg-theme-surface-highlight/50 border border-theme-border rounded-lg p-4 text-center">

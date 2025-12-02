@@ -1,4 +1,5 @@
 import { openDB, IMAGES_STORE } from "./indexedDB";
+import { generateUUID } from "./uuid";
 
 export interface ImageMetadata {
   saveId: string;
@@ -45,7 +46,7 @@ export const saveImage = async (
 
         deleteRequest.onsuccess = () => {
           // Create new image with new ID
-          const id = crypto.randomUUID();
+          const id = generateUUID();
           const newImage: StoredImage = {
             id,
             blob,
@@ -59,7 +60,7 @@ export const saveImage = async (
         deleteRequest.onerror = () => reject(deleteRequest.error);
       } else {
         // Create new image
-        const id = crypto.randomUUID();
+        const id = generateUUID();
         const newImage: StoredImage = {
           id,
           blob,

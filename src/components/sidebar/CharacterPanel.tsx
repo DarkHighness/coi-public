@@ -747,6 +747,14 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   <span>{character.profession}</span>
                 </div>
               )}
+              {character.age && (
+                <div className="flex items-center gap-2 text-theme-text">
+                  <span className="text-theme-muted w-16">
+                    {t("age") || "Age"}:
+                  </span>
+                  <span>{character.age}</span>
+                </div>
+              )}
               {character.status && (
                 <div className="flex items-center gap-2 text-theme-text">
                   <span className="text-theme-muted w-16">

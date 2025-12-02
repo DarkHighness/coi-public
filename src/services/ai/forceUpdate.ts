@@ -1,8 +1,6 @@
 import {
   AISettings,
-  LogEntry,
   TokenUsage,
-  ToolCallRecord,
   ProviderProtocol,
   ProviderInstance,
   GameState,
@@ -12,10 +10,16 @@ import {
   GameResponse,
 } from "../../types";
 
-import { ToolCallResult, MalformedToolCallError } from "../providers/types";
+import { ToolCallResult } from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
-import { TOOLS } from "../tools";
+import {
+  QUERY_TOOLS,
+  ADD_TOOLS,
+  REMOVE_TOOLS,
+  UPDATE_TOOLS,
+  COMPLETE_FORCE_UPDATE_TOOL,
+} from "../tools";
 import { forceUpdateSchema, ForceUpdateResponse } from "../schemas";
 import { getForceUpdateSystemInstruction } from "../prompts/index";
 import {
@@ -107,8 +111,16 @@ export const generateForceUpdate = async (
 };
 
 /**
- * Force Update Loop Implementation
- * Similar to Agentic Loop but specifically for force updates using complete_force_update tool
+ * Force Update Loop Implementation with Staged Approach
+ *
+ * Stages for Force Update:
+ * 1. QUERY - Query current state
+ * 2. ADD - Add new entities
+ * 3. REMOVE - Remove entities
+ * 4. UPDATE - Update existing entities
+ * 5. Complete - complete_force_update to finalize
+ *
+ * Note: Force update doesn't have narrative stage, uses complete_force_update instead
  */
 const runForceUpdateLoop = async (
   protocol: ProviderProtocol,
@@ -120,8 +132,11 @@ const runForceUpdateLoop = async (
   settings: AISettings,
 ): Promise<GameResponse> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
-  let turnCount = 0;
-  const maxTurns = 5; // Shorter limit for force updates
+
+  // Stage-based limits
+  let stageTransitions = 0;
+  const maxStageTransitions = 10;
+  const maxIterationsPerStage = 3;
 
   // Use the GameState directly as the database initial state
   const db = new GameDatabase({
@@ -157,52 +172,108 @@ const runForceUpdateLoop = async (
 
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
+  const isGeminiProvider = protocol === "gemini";
 
-  // Prepare tools for the provider
-  const toolConfig = TOOLS.filter((t) => {
-    // Hide RAG tools if embedding is disabled
-    if (!isRAGEnabled && t.name === "rag_search") {
-      return false;
-    }
-    // Hide finish_turn tool in force update loop
-    if (t.name === "finish_turn") {
-      return false;
-    }
-    return true;
-  }).map((t) => ({
-    name: t.name,
-    description: t.description,
-    parameters: t.parameters,
-  }));
+  // Stage tracking for force update (query -> add -> remove -> update -> complete)
+  type ForceUpdateStage = "query" | "add" | "remove" | "update" | "complete";
+  let currentStage: ForceUpdateStage = "query";
+  let stageIterations = 0;
 
-  while (turnCount < maxTurns) {
-    console.log(`[Force Update Loop] Turn ${turnCount + 1}/${maxTurns}`);
+  // Get tools for current force update stage
+  const getForceUpdateTools = (stage: ForceUpdateStage) => {
+    const baseTools = (() => {
+      switch (stage) {
+        case "query":
+          return isRAGEnabled
+            ? QUERY_TOOLS
+            : QUERY_TOOLS.filter((t) => t.name !== "rag_search");
+        case "add":
+          return ADD_TOOLS;
+        case "remove":
+          return REMOVE_TOOLS;
+        case "update":
+          return UPDATE_TOOLS;
+        case "complete":
+          return [COMPLETE_FORCE_UPDATE_TOOL];
+      }
+    })();
+
+    // Add complete_force_update to all stages except complete (where it's the only tool)
+    if (stage !== "complete") {
+      return [...baseTools, COMPLETE_FORCE_UPDATE_TOOL];
+    }
+    return baseTools;
+  };
+
+  const getNextForceUpdateStage = (
+    current: ForceUpdateStage,
+  ): ForceUpdateStage | null => {
+    const order: ForceUpdateStage[] = [
+      "query",
+      "add",
+      "remove",
+      "update",
+      "complete",
+    ];
+    const idx = order.indexOf(current);
+    if (idx === -1 || idx === order.length - 1) return null;
+    return order[idx + 1];
+  };
+
+  // Stage instruction helper
+  const addStageInstruction = (stage: ForceUpdateStage) => {
+    const instructions: Record<ForceUpdateStage, string> = {
+      query: `[FORCE UPDATE - STAGE: QUERY]
+Query the current state to understand what needs to be changed.
+Available tools: query_*, rag_search (if enabled), complete_force_update
+- Call complete_force_update when ready to finalize changes`,
+      add: `[FORCE UPDATE - STAGE: ADD]
+Add any new entities required by the command.
+Available tools: add_*, complete_force_update
+- Call complete_force_update when ready to finalize changes`,
+      remove: `[FORCE UPDATE - STAGE: REMOVE]
+Remove any entities that should be deleted.
+Available tools: remove_*, complete_force_update
+- Call complete_force_update when ready to finalize changes`,
+      update: `[FORCE UPDATE - STAGE: UPDATE]
+Update existing entities as needed.
+Available tools: update_*, complete_force_update
+- Call complete_force_update when ready to finalize changes`,
+      complete: `[FORCE UPDATE - STAGE: COMPLETE]
+Finalize the force update.
+You MUST call complete_force_update with a narrative describing the changes.`,
+    };
+    conversationHistory.push(createUserMessage(instructions[stage]));
+  };
+
+  addStageInstruction(currentStage);
+
+  while (stageTransitions < maxStageTransitions) {
+    console.log(
+      `[Force Update Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}`,
+    );
+
+    const stageTools = getForceUpdateTools(currentStage);
+    const toolConfig = stageTools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
 
     let result: GenerateContentResult["result"];
     let usage: TokenUsage;
-    let raw: unknown;
 
     // Retry logic
     const maxRetries = 2;
     let retryCount = 0;
     let lastError: Error | null = null;
 
-    // Provider-specific schema handling
-    // IMPORTANT: Gemini 2.5 (non-Pro) CANNOT use schema+tools simultaneously
-    // - When tools are provided: Gemini ignores the schema (see geminiProvider.ts line 466)
-    // - Other providers (OpenAI, Claude, OpenRouter) CAN use both together
-    // Solution: For Gemini, never use schema (rely on complete_force_update tool instead)
-    //           For others, always use schema (for structured output guarantee)
-
-    const isGeminiProvider = protocol === "gemini";
-
-    // Keep tools available (including complete_force_update) in ALL rounds
-    const effectiveToolConfig = toolConfig;
-
-    // Schema behavior:
-    // - Gemini: NEVER use schema (conflicts with tools), rely on complete_force_update tool
-    // - Others: ALWAYS use schema for structured output guarantee
-    const effectiveSchema = isGeminiProvider ? undefined : forceUpdateSchema;
+    let effectiveToolConfig: typeof toolConfig | undefined = toolConfig;
+    const effectiveSchema = isGeminiProvider
+      ? undefined
+      : currentStage === "complete"
+        ? forceUpdateSchema
+        : undefined;
 
     while (retryCount <= maxRetries) {
       try {
@@ -219,7 +290,6 @@ const runForceUpdateLoop = async (
 
         result = resultData.result;
         usage = resultData.usage;
-        raw = resultData.raw;
         break;
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
@@ -284,12 +354,28 @@ const runForceUpdateLoop = async (
         content: unknown;
       }> = [];
 
+      let shouldAdvanceStage = false;
+
       for (const call of toolCalls) {
         const { id: callId, name, args } = call;
         console.log(`[Force Update Loop] Tool Call [${callId}]: ${name}`, args);
 
         let output: unknown = { success: false, error: "Unknown tool" };
 
+        if (name === "complete_force_update") {
+          // Process complete_force_update response
+          const updateData = args as ForceUpdateResponse;
+          accumulatedResponse.narrative = updateData.narrative;
+
+          // Attach final state
+          (
+            accumulatedResponse as GameResponse & { finalState: unknown }
+          ).finalState = db.getState();
+
+          return accumulatedResponse;
+        }
+
+        // Execute other tools
         output = executeToolCall(
           name,
           args,
@@ -298,19 +384,10 @@ const runForceUpdateLoop = async (
           changedEntities,
         );
 
-        if (name === "complete_force_update") {
-          // Process complete_force_update response
-          const updateData = args as ForceUpdateResponse;
-          accumulatedResponse.narrative = updateData.narrative;
-          // stateUpdates are for logging, we don't need to put them in accumulatedResponse directly
-          // unless we want to show them. For now, narrative is enough.
-
-          // Attach final state
-          (
-            accumulatedResponse as GameResponse & { finalState: unknown }
-          ).finalState = db.getState();
-
-          return accumulatedResponse;
+        // Check if this is a stage-advancing action (query complete, modifications done)
+        if (name.startsWith("query_") || name === "rag_search") {
+          // After queries, advance to add stage
+          if (currentStage === "query") shouldAdvanceStage = true;
         }
 
         toolResponses.push({
@@ -321,41 +398,70 @@ const runForceUpdateLoop = async (
       }
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
-      turnCount++;
+
+      // Auto-advance stage logic
+      stageIterations++;
+      if (stageIterations >= maxIterationsPerStage || shouldAdvanceStage) {
+        const nextStage = getNextForceUpdateStage(currentStage);
+        if (nextStage) {
+          currentStage = nextStage;
+          stageIterations = 0;
+          stageTransitions++;
+          addStageInstruction(currentStage);
+        }
+      }
     } else {
-      // No tool calls - check for direct schema response
-      try {
-        const updateData = forceUpdateSchema.parse(result);
-        accumulatedResponse.narrative = updateData.narrative;
-        (
-          accumulatedResponse as GameResponse & { finalState: unknown }
-        ).finalState = db.getState();
-        return accumulatedResponse;
-      } catch (validationError) {
-        console.error(
-          `[Force Update Loop] Response does not match forceUpdateSchema:`,
-          validationError,
-        );
-        // Fallback
-        if (result && (result as GameResponse).narrative) {
-          accumulatedResponse.narrative = (result as GameResponse).narrative;
+      // No tool calls - check for direct schema response in complete stage
+      if (currentStage === "complete") {
+        try {
+          const updateData = forceUpdateSchema.parse(result);
+          accumulatedResponse.narrative = updateData.narrative;
           (
             accumulatedResponse as GameResponse & { finalState: unknown }
           ).finalState = db.getState();
           return accumulatedResponse;
+        } catch (validationError) {
+          console.error(
+            `[Force Update Loop] Response does not match forceUpdateSchema:`,
+            validationError,
+          );
+          // Fallback
+          if (result && (result as GameResponse).narrative) {
+            accumulatedResponse.narrative = (result as GameResponse).narrative;
+            (
+              accumulatedResponse as GameResponse & { finalState: unknown }
+            ).finalState = db.getState();
+            return accumulatedResponse;
+          }
         }
-        // Last resort
-        accumulatedResponse.narrative =
-          typeof result === "string" ? result : JSON.stringify(result);
-        (
-          accumulatedResponse as GameResponse & { finalState: unknown }
-        ).finalState = db.getState();
-        return accumulatedResponse;
+      }
+
+      // Prompt to use tools
+      conversationHistory.push(
+        createUserMessage(
+          `Please use the available tools. Current stage: ${currentStage}`,
+        ),
+      );
+      stageIterations++;
+
+      if (stageIterations >= maxIterationsPerStage) {
+        const nextStage = getNextForceUpdateStage(currentStage);
+        if (nextStage) {
+          currentStage = nextStage;
+          stageIterations = 0;
+          stageTransitions++;
+          addStageInstruction(currentStage);
+        }
       }
     }
   }
 
-  console.warn(`[Force Update Loop] Max turns reached without completion`);
+  console.warn(
+    `[Force Update Loop] Max stage transitions reached without completion`,
+  );
+  // Last resort fallback
+  accumulatedResponse.narrative =
+    "Force update completed (max transitions reached).";
   (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
     db.getState();
   return accumulatedResponse;

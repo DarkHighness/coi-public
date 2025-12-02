@@ -82,9 +82,6 @@ export interface RAGConfig {
   // Database settings
   dbName: string; // IndexedDB database name
 
-  // LRU Cache settings (in-memory)
-  maxMemoryDocuments: number; // Max documents in memory (default: 1000)
-
   // Storage limits (persistent) - Split into per-save and global
   maxDocumentsPerSave: number; // Max documents per save (default: 5000)
   maxTotalStorageDocuments: number; // Max total documents across all saves (default: 50000)
@@ -107,7 +104,6 @@ export interface RAGConfig {
 
 export const DEFAULT_RAG_CONFIG: RAGConfig = {
   dbName: "coi_rag",
-  maxMemoryDocuments: 1000,
   maxDocumentsPerSave: 5000,
   maxTotalStorageDocuments: 50000,
   maxDocumentsPerType: 1000,
@@ -330,7 +326,6 @@ export interface RAGStatus {
   currentSaveId: string | null;
   currentModel: string;
   currentProvider: string;
-  memoryDocuments: number;
   storageDocuments: number;
   isSearching: boolean;
   pending: number;

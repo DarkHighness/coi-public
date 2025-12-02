@@ -1,5 +1,8 @@
 {
   "title": "Chronicles of Infinity",
+  "age": "Age",
+  "realAge": "Real Age",
+  "apparentAge": "Apparent Age",
   "titlePart1": "Chronicles",
   "titlePart2": "of Infinity",
   "time": {
@@ -332,7 +335,7 @@
     "topKHelp": "Number of similar results to retrieve",
     "threshold": "Similarity Threshold",
     "thresholdHelp": "Minimum similarity score (0-1) for results",
-    "lruLimits": "Resource Limits (LRU)",
+    "storageLimits": "Storage Limits",
     "maxTotal": "Max Total Documents",
     "maxPerType": "Max Per Type",
     "maxVersions": "Versions Per Entity",
@@ -343,7 +346,6 @@
       "cleanup": "Cleaning Up"
     },
     "maxStorage": "Max Storage Documents",
-    "maxMemory": "Max Memory Documents",
     "selectModel": "Please select an embedding model",
     "noModelsAvailable": "No embedding models available, please check provider settings.",
     "noModels": "No embedding model selected.",
@@ -355,7 +357,15 @@
     "indexFailed": "Failed to index existing content",
     "modelMismatchRebuild": "Embedding model mismatch detected!\n\nStored: {{storedModel}}\nCurrent: {{currentModel}}\n\nWould you like to rebuild the index? This will clear existing embeddings.",
     "disableForSession": "Disable RAG for this session?",
-    "storageOverflow": "Storage limit reached!\n\nCurrent: {{current}} documents\nLimit: {{limit}} documents\n\nOldest saves will be removed to free up space."
+    "storageOverflow": "Storage limit reached!\n\nCurrent: {{current}} documents\nLimit: {{limit}} documents\n\nOldest saves will be removed to free up space.",
+    "modelChangeTitle": "Model Change Detected",
+    "modelChangeDesc": "You are changing the embedding model. The existing RAG index was built with a different model and will not work correctly.",
+    "modelChangeOptions": "Choose to rebuild the index (recommended) or disable RAG for now.",
+    "disableRag": "Disable RAG",
+    "rebuildIndex": "Rebuild Index",
+    "rebuildStarted": "Rebuilding RAG index...",
+    "rebuildFailed": "Failed to rebuild index",
+    "ragDisabled": "RAG has been disabled"
   },
   "themeMode": "Theme Mode",
   "settings": {
@@ -966,7 +976,19 @@
   },
   "common": {
     "retry": "Retry",
-    "done": "Done"
+    "done": "Done",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "Error",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "app": {
     "errors": {
@@ -981,6 +1003,7 @@
   },
   "ragDebugger": {
     "title": "RAG Debugger",
+    "tabSearch": "Search",
     "searchPlaceholder": "Enter search query...",
     "search": "Search",
     "searching": "Searching...",

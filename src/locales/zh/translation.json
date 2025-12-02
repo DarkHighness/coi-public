@@ -2,6 +2,9 @@
   "title": "无尽编年史",
   "titlePart1": "无尽",
   "titlePart2": "编年史",
+  "age": "年龄",
+  "realAge": "真实年龄",
+  "apparentAge": "外貌年龄",
   "time": {
     "full": "{{year}}年{{month}}月{{day}}日 {{hour}}:{{minute}}"
   },
@@ -308,7 +311,7 @@
     "topKHelp": "检索的相似结果数量",
     "threshold": "相似度阈值",
     "thresholdHelp": "结果的最低相似度分数 (0-1)",
-    "lruLimits": "资源限制 (LRU)",
+    "storageLimits": "存储限制",
     "maxTotal": "最大文档总数",
     "maxPerType": "每类最大文档数",
     "maxVersions": "每个实体最大版本数",
@@ -319,7 +322,6 @@
       "cleanup": "清理"
     },
     "maxStorage": "最大存储文档数",
-    "maxMemory": "最大内存文档数",
     "selectModel": "请选择嵌入模型",
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
     "noModels": "未选择嵌入模型。",
@@ -331,7 +333,15 @@
     "indexFailed": "索引现有内容失败",
     "modelMismatchRebuild": "检测到嵌入模型不匹配！\n\n已存储：{{storedModel}}\n当前：{{currentModel}}\n\n是否重建索引？这将清除现有的嵌入数据。",
     "disableForSession": "是否在本次会话中禁用 RAG？",
-    "storageOverflow": "存储空间已达上限！\n\n当前：{{current}} 个文档\n上限：{{limit}} 个文档\n\n将删除最旧的存档以释放空间。"
+    "storageOverflow": "存储空间已达上限！\n\n当前：{{current}} 个文档\n上限：{{limit}} 个文档\n\n将删除最旧的存档以释放空间。",
+    "modelChangeTitle": "检测到模型变更",
+    "modelChangeDesc": "您正在更改嵌入模型。现有的 RAG 索引是使用其他模型构建的，将无法正常工作。",
+    "modelChangeOptions": "请选择重建索引（推荐）或暂时禁用 RAG。",
+    "disableRag": "禁用 RAG",
+    "rebuildIndex": "重建索引",
+    "rebuildStarted": "正在重建 RAG 索引...",
+    "rebuildFailed": "重建索引失败",
+    "ragDisabled": "RAG 已禁用"
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
@@ -977,7 +987,19 @@
   },
   "common": {
     "retry": "重试",
-    "done": "完成"
+    "done": "完成",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "确认",
+    "loading": "加载中...",
+    "error": "错误",
+    "yes": "是",
+    "no": "否",
+    "enabled": "已启用",
+    "disabled": "已禁用"
   },
   "app": {
     "errors": {
@@ -992,6 +1014,7 @@
   },
   "ragDebugger": {
     "title": "RAG 调试器",
+    "tabSearch": "搜索",
     "searchPlaceholder": "输入搜索查询...",
     "search": "搜索",
     "searching": "搜索中...",

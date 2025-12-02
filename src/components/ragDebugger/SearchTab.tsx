@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getRAGService } from "../../services/rag";
+import { useOptionalRAGContext } from "../../contexts/RAGContext";
 import type {
   SearchResult as RAGSearchResult,
   DocumentType,
@@ -13,6 +13,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
+  const ragContext = useOptionalRAGContext();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultDisplay[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -29,8 +30,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({
     setError(null);
 
     try {
-      const ragService = getRAGService();
-      if (!ragService) {
+      if (!ragContext || !ragContext.isInitialized) {
         setError(
           t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
         );
@@ -38,21 +38,19 @@ export const SearchTab: React.FC<SearchTabProps> = ({
         return;
       }
 
-      const status = await ragService.getStatus();
-      if (!status.initialized) {
-        setError(t("ragDebugger.noIndex", "No embedding index available"));
-        setIsSearching(false);
-        return;
-      }
-
       // Build search options with fork/turn filtering
+      // For debugger: ignore threshold, return top 100 results sorted by similarity
       const searchOptions: {
         topK?: number;
+        threshold?: number;
         forkId?: number;
         beforeTurn?: number;
         currentForkOnly?: boolean;
         types?: DocumentType[];
-      } = { topK: 10 };
+      } = {
+        topK: 100,
+        threshold: 0, // Ignore threshold for debugger
+      };
 
       if (currentForkOnly && gameState) {
         searchOptions.forkId = gameState.forkId;
@@ -67,7 +65,10 @@ export const SearchTab: React.FC<SearchTabProps> = ({
         searchOptions.types = [selectedType];
       }
 
-      const searchResults = await ragService.search(query, searchOptions);
+      const searchResults = await ragContext.actions.search(
+        query,
+        searchOptions,
+      );
 
       if (searchResults && searchResults.length > 0) {
         setResults(
@@ -95,7 +96,15 @@ export const SearchTab: React.FC<SearchTabProps> = ({
     } finally {
       setIsSearching(false);
     }
-  }, [query, currentForkOnly, beforeCurrentTurn, selectedType, gameState, t]);
+  }, [
+    query,
+    currentForkOnly,
+    beforeCurrentTurn,
+    selectedType,
+    gameState,
+    ragContext,
+    t,
+  ]);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 flex flex-col">

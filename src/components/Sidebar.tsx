@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState, UIState, ListState, LanguageCode } from "../types";
+import { UIState, ListState, LanguageCode } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
-import { ENV_THEMES, THEMES } from "../utils/constants";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
 import { QuestPanel } from "./sidebar/QuestPanel";
 import { InventoryPanel } from "./sidebar/InventoryPanel";
@@ -14,10 +13,10 @@ import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
 import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
 import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
+import { useGameEngineContext } from "../contexts/GameEngineContext";
 
 interface SidebarProps {
-  gameState: GameState;
-  isTranslating: boolean;
+  // Callbacks only - state comes from context
   onCloseMobile: () => void;
   onMagicMirror: () => void;
   onNewGame: () => void;
@@ -32,12 +31,9 @@ interface SidebarProps {
     newState: UIState[K],
   ) => void;
   onVeoScript: () => void;
-  setLanguage?: (lang: LanguageCode) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  gameState,
-  isTranslating,
   onCloseMobile,
   onMagicMirror,
   onNewGame,
@@ -49,13 +45,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentAmbience,
   onUpdateUIState,
   onVeoScript,
-  setLanguage,
 }) => {
   const { t } = useTranslation();
-  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-  const currentEnvThemeKey = currentStoryTheme.envTheme;
-  const currentThemeConfig =
-    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+
+  // Get state from context
+  const { state, actions } = useGameEngineContext();
+  const { gameState, isTranslating, currentThemeConfig } = state;
+  const { setLanguage } = actions;
+
   const { character } = gameState;
   // Default to true if undefined
   const showSystemFooter = gameState.uiState?.showSystemFooter !== false;

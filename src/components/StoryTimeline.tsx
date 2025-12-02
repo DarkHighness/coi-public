@@ -7,20 +7,21 @@ import { MarkdownText } from "./render/MarkdownText";
 import { ImageLightbox } from "./render/ImageLightbox";
 import { TimelineExport, TimelineExportRef } from "./TimelineExport";
 import { StoryTimelineItem } from "./StoryTimelineItem";
+import { useGameEngineContext } from "../contexts/GameEngineContext";
 
 interface StoryTimelineProps {
-  segments: StorySegment[];
-  theme: string;
   title?: string;
   subtitle?: string;
 }
 
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
-  segments,
-  theme,
   title,
   subtitle,
 }) => {
+  const { state } = useGameEngineContext();
+  const { currentHistory: segments, gameState } = state;
+  const theme = gameState.theme;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);

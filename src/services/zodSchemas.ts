@@ -138,6 +138,7 @@ export const relationshipVisibleSchema = z.object({
   description: z
     .string()
     .describe("Public perception - how others view this NPC."),
+  age: z.string().nullish().describe("Apparent age."),
   appearance: z.string().nullish().describe("Physical appearance details."),
   relationshipType: z
     .string()
@@ -185,12 +186,17 @@ export const relationshipHiddenSchema = z.object({
     .string()
     .nullish()
     .describe("The character's real name (if different)."),
+  realAge: z.string().nullish().describe("True age."),
   realPersonality: z
     .string()
     .describe("True personality - what they REALLY are like."),
   realMotives: z.string().describe("True underlying motives and goals."),
   routine: z.string().nullish().describe("Daily schedule/activities."),
   secrets: z.array(z.string()).nullish().describe("Character's secrets."),
+  inventory: z
+    .array(z.string())
+    .nullish()
+    .describe("Character's inventory items."),
   trueAffinity: z.number().int().nullish().describe("True affinity score."),
   relationshipType: z
     .string()
@@ -897,6 +903,9 @@ export const characterStatusSchema = z.object({
     .nullish()
     .describe("Hidden personality traits."),
   appearance: z.string().describe("Detailed physical appearance."),
+  age: z
+    .string()
+    .describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
   profession: z.string().describe("Character's occupation or class."),
   background: z.string().describe("Brief life story and background."),
   race: z
@@ -1301,7 +1310,7 @@ export const gameResponseSchema = z.object({
   questActions: z
     .array(
       z.object({
-        action: z.enum(["add", "update", "complete", "fail"]),
+        action: z.enum(["add", "update", "remove", "complete", "fail"]),
         id: z.string(),
         title: z.string().nullish(),
         type: questTypeSchema.nullish(),
@@ -1331,7 +1340,7 @@ export const gameResponseSchema = z.object({
   factionActions: z
     .array(
       z.object({
-        action: z.enum(["update"]),
+        action: z.enum(["add", "update", "remove"]),
         id: z.string(),
         name: z.string(),
         visible: z.string().nullish(),
@@ -1398,6 +1407,7 @@ export const gameResponseSchema = z.object({
         .object({
           status: z.string().nullish(),
           appearance: z.string().nullish(),
+          age: z.string().nullish(),
           profession: z.string().nullish(),
           background: z.string().nullish(),
           race: z.string().nullish(),
@@ -1686,6 +1696,19 @@ NEVER include internal game IDs in the narrative text. The following are FORBIDD
     .nullish()
     .describe(
       "If true, next turn's RAG queries will only search content from before the current turn.",
+    ),
+  nextInitialStage: z
+    .enum(["query", "add", "remove", "update", "narrative"])
+    .nullish()
+    .describe(
+      `Suggest the initial stage for the NEXT turn after player makes a choice.
+- "query": Start with queries (default, when uncertain about context)
+- "add": Skip to add stage (when you know new entities will be needed)
+- "remove": Skip to remove stage
+- "update": Skip to update stage (when context is well-established)
+- "narrative": Skip directly to narrative (only for very simple responses)
+
+This is a HINT for optimization. The system may still start from query if needed.`,
     ),
 });
 

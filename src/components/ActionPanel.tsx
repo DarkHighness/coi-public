@@ -10,13 +10,10 @@ import {
 } from "../utils/commands";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useGameEngineContext } from "../contexts/GameEngineContext";
 
 interface ActionPanelProps {
-  gameState: GameState;
-  currentHistory: StorySegment[];
-  isTranslating: boolean;
   onAction: (action: string) => void;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
@@ -36,11 +33,7 @@ const SUPPORTED_COMMANDS = [
 ];
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
-  gameState,
-  currentHistory,
-  isTranslating,
   onAction,
-  setGameState,
   onShowToast,
   onOpenStateEditor,
   onOpenRAG,
@@ -49,6 +42,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onRetry,
   onForceUpdate,
 }) => {
+  const { state, actions } = useGameEngineContext();
+  const { gameState, currentHistory, isTranslating } = state;
+  const { setGameState } = actions;
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<{

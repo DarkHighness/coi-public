@@ -1041,11 +1041,8 @@ export interface EmbeddingConfig {
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)
 
-  // LRU Eviction Settings (player-adjustable)
-  lru?: {
-    // Memory limits (in-memory cache)
-    maxMemoryDocuments?: number; // Max documents in memory cache (default: 1000)
-
+  // Storage Settings (player-adjustable)
+  storage?: {
     // Storage limits (persistent in IndexedDB)
     maxStorageDocuments?: number; // Max total documents in storage (default: 10000)
     maxDocumentsPerType?: number; // Max documents per type (default: 2000)
@@ -1060,6 +1057,9 @@ export interface EmbeddingConfig {
     // Type-specific limits
     storyMaxEntries?: number; // Max story documents (default: 50)
   };
+
+  /** @deprecated Use storage instead */
+  lru?: EmbeddingConfig["storage"];
 }
 
 export interface EmbeddingDocument {

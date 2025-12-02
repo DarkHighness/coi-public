@@ -81,13 +81,29 @@ async function updateRAGDocumentsBackground(
 
 /**
  * Index initial entities when game starts (outline + first turn)
+ * IMPORTANT: This function must switch to the correct save context before indexing
  */
 async function indexInitialEntities(state: any, saveId: string): Promise<void> {
   try {
     const ragService = getRAGService();
     if (!ragService) return;
 
-    console.log("[RAG Init] Indexing initial entities");
+    console.log(`[RAG Init] Indexing initial entities for save: ${saveId}`);
+
+    // CRITICAL: Switch to the correct save context BEFORE adding documents
+    // Without this, documents won't be associated with the correct save
+    await ragService.switchSave(saveId, state.forkId || 0, {
+      nodes: Object.fromEntries(
+        Object.entries(
+          state.forkTree?.nodes || { 0: { id: 0, parentId: null } },
+        ).map(([id, node]: [string, any]) => [
+          Number(id),
+          { id: Number(id), parentId: node.parentId },
+        ]),
+      ),
+    });
+    console.log(`[RAG Init] Switched to save context: ${saveId}`);
+
     const initialEntityIds: string[] = [];
 
     // Index outline documents first (highest priority)
@@ -122,7 +138,9 @@ async function indexInitialEntities(state: any, saveId: string): Promise<void> {
         turnNumber: state.turnNumber || 0,
       })),
     );
-    console.log(`[RAG Init] Indexed ${documents.length} initial documents`);
+    console.log(
+      `[RAG Init] Indexed ${documents.length} initial documents for save: ${saveId}`,
+    );
   } catch (error) {
     console.error("[RAG Init] Failed:", error);
   }

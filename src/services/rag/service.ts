@@ -335,7 +335,6 @@ export class RAGService {
         currentSaveId: null,
         currentModel: this.config.modelId,
         currentProvider: this.config.provider,
-        memoryDocuments: 0,
         storageDocuments: 0,
         isSearching: false,
         pending: 0,

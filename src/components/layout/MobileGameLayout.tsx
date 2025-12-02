@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  GameState,
-  LanguageCode,
-  FeedLayout,
-  UIState,
-  ListState,
-  StorySegment,
-} from "../../types";
+import { FeedLayout, UIState, StorySegment } from "../../types";
 import { StoryFeed } from "../StoryFeed";
 import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
@@ -14,20 +7,17 @@ import { Sidebar } from "../Sidebar";
 import { MobileNav, MobileTab } from "../MobileNav";
 import { THEMES, ENV_THEMES, BUILD_INFO } from "../../utils/constants";
 import { useTranslation } from "react-i18next";
+import { useGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface MobileGameLayoutProps {
-  gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  currentHistory: StorySegment[];
-  language: LanguageCode;
-  setLanguage: (lang: LanguageCode) => void;
-  isTranslating: boolean;
+  // Local UI state (managed by GamePage)
   mobileTab: MobileTab;
   setMobileTab: (tab: MobileTab) => void;
   feedLayout: FeedLayout;
   setFeedLayout: (layout: FeedLayout) => void;
+  currentAmbience?: string;
+  // Callbacks
   onAnimate: (url: string) => void;
-  onGenerateImage: (nodeId: string) => void;
   onRetry: () => void;
   onFork: (nodeId: string) => void;
   onAction: (action: string) => Promise<void>;
@@ -37,9 +27,7 @@ interface MobileGameLayoutProps {
   onOpenSaves: () => void;
   onOpenMap: () => void;
   onOpenLogs: () => void;
-  aiSettings: any;
   onTypingComplete?: () => void;
-  currentAmbience?: string;
   onUpdateUIState: <K extends keyof UIState>(
     section: K,
     newState: UIState[K],
@@ -52,27 +40,18 @@ interface MobileGameLayoutProps {
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
-  onTriggerSave?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
-  saveId?: string;
-  failedImageNodes?: Set<string>;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
-  gameState,
-  setGameState,
-  currentHistory,
-  language,
-  setLanguage,
-  isTranslating,
   mobileTab,
   setMobileTab,
   feedLayout,
   setFeedLayout,
+  currentAmbience,
   onAnimate,
-  onGenerateImage,
   onRetry,
   onFork,
   onAction,
@@ -82,9 +61,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenSaves,
   onOpenMap,
   onOpenLogs,
-  aiSettings,
   onTypingComplete,
-  currentAmbience,
   onUpdateUIState,
   onToggleMute,
   onViewedSegmentChange,
@@ -94,18 +71,25 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenStateEditor,
   onOpenRAG,
   onOpenViewer,
-  onTriggerSave,
   onForceUpdate,
   onImageUpload,
   onImageDelete,
-  saveId,
-  failedImageNodes,
 }) => {
   const { t } = useTranslation();
+
+  // Get state and actions from context
+  const { state, actions } = useGameEngineContext();
+  const { gameState, aiSettings } = state;
+  const { generateImageForNode, triggerSave } = actions;
+
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
   const currentEnvThemeKey = currentStoryTheme.envTheme;
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+
+  const handleGenerateImage = (nodeId: string) => {
+    generateImageForNode(nodeId, undefined, true);
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
@@ -114,16 +98,13 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 transition-opacity duration-300 ${mobileTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <StoryFeed
-          gameState={gameState}
-          currentHistory={currentHistory}
           layout={feedLayout}
           setLayout={setFeedLayout}
           onAnimate={onAnimate}
-          onGenerateImage={onGenerateImage}
+          onGenerateImage={handleGenerateImage}
           onRetry={onRetry}
           disableImages={aiSettings.image.enabled === false}
           onFork={onFork}
-          aiSettings={aiSettings}
           onTypingComplete={onTypingComplete}
           currentAmbience={currentAmbience}
           onToggleMute={onToggleMute}
@@ -131,23 +112,17 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onAudioGenerated={onAudioGenerated}
           onImageUpload={onImageUpload}
           onImageDelete={onImageDelete}
-          saveId={saveId}
-          failedImageNodes={failedImageNodes}
         />
 
         {/* Action Panel fixed at bottom of feed */}
         <div className="flex-none z-30 pb-[calc(4rem+env(safe-area-inset-bottom))]">
           <ActionPanel
-            gameState={gameState}
-            currentHistory={currentHistory}
-            isTranslating={isTranslating}
             onAction={onAction}
-            setGameState={setGameState}
             onShowToast={onShowToast}
             onOpenStateEditor={onOpenStateEditor}
             onOpenRAG={onOpenRAG}
             onOpenViewer={onOpenViewer}
-            onTriggerSave={onTriggerSave}
+            onTriggerSave={triggerSave}
             onRetry={onRetry}
             onForceUpdate={onForceUpdate}
           />
@@ -159,8 +134,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
       >
         <StoryTimeline
-          segments={currentHistory}
-          theme={gameState.theme}
           title={gameState.outline?.title}
           subtitle={gameState.outline?.premise}
         />
@@ -173,8 +146,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
       >
         <Sidebar
-          gameState={gameState}
-          isTranslating={isTranslating}
           onCloseMobile={() => setMobileTab("story")}
           onMagicMirror={onMagicMirror}
           onNewGame={onNewGame}
@@ -186,7 +157,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
           onVeoScript={onVeoScript}
-          setLanguage={setLanguage}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

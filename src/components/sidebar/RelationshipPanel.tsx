@@ -198,6 +198,16 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                     </div>
                   </div>
                 )}
+                {rel.visible?.age && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("apparentAge") || "Apparent Age"}
+                    </span>
+                    <div className="text-theme-muted/80 text-xs">
+                      {rel.visible.age}
+                    </div>
+                  </div>
+                )}
                 {rel.visible?.dialogueStyle && (
                   <div className="flex items-center gap-2 text-xs text-theme-muted">
                     <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
@@ -348,6 +358,14 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                             {t("sidebar.relationship.trueName")}:
                           </span>
                           <span>{rel.hidden.trueName}</span>
+                        </div>
+                      )}
+                      {rel.hidden.realAge && (
+                        <div className="flex items-center gap-2 text-xs text-theme-unlocked">
+                          <span className="uppercase tracking-wider text-[10px] opacity-70">
+                            {t("realAge") || "Real Age"}:
+                          </span>
+                          <span>{rel.hidden.realAge}</span>
                         </div>
                       )}
                     </div>

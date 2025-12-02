@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getRAGService } from "../../services/rag";
+import { useOptionalRAGContext } from "../../contexts/RAGContext";
 import type { DocumentType } from "../../services/rag";
 import type {
   DocumentsTabProps,
@@ -14,6 +14,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
+  const ragContext = useOptionalRAGContext();
   const [allDocuments, setAllDocuments] = useState<SearchResultDisplay[]>([]);
   const [recentDocs, setRecentDocs] = useState<SearchResultDisplay[]>([]);
   const [documentsPage, setDocumentsPage] = useState(1);
@@ -24,35 +25,12 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   const [editingDocument, setEditingDocument] =
     useState<SearchResultDisplay | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
-
-  // Load index stats for save ID
-  const loadIndexStats = useCallback(async () => {
-    const ragService = getRAGService();
-    if (!ragService) return;
-
-    try {
-      const status = await ragService.getStatus();
-      setIndexStats({
-        documentCount: status.storageDocuments + status.memoryDocuments,
-        modelId: status.currentModel,
-        provider: status.currentProvider,
-        isInitialized: status.initialized,
-        currentSaveId: status.currentSaveId,
-        storageDocuments: status.storageDocuments,
-        memoryDocuments: status.memoryDocuments,
-      });
-    } catch (err) {
-      console.error("[DocumentsTab] Failed to load stats:", err);
-    }
-  }, []);
 
   const loadDocuments = useCallback(async () => {
-    const ragService = getRAGService();
-    if (!ragService) return;
+    if (!ragContext) return;
 
     try {
-      const docs = await ragService.getRecentDocuments(
+      const docs = await ragContext.actions.getRecentDocuments(
         1000,
         documentsFilterType === "all" ? undefined : [documentsFilterType],
       );
@@ -75,7 +53,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
       console.error("[DocumentsTab] Failed to load documents:", err);
       setError(t("ragDebugger.searchFailed", "Failed to load documents"));
     }
-  }, [documentsFilterType, t]);
+  }, [ragContext, documentsFilterType, t]);
 
   // Apply client-side pagination
   useEffect(() => {
@@ -87,8 +65,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   // Load documents when tab is active
   useEffect(() => {
     loadDocuments();
-    loadIndexStats();
-  }, [loadDocuments, loadIndexStats]);
+  }, [loadDocuments]);
 
   const handleUpdateDocument = useCallback(
     async (
@@ -96,16 +73,18 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
       newContent: string,
       newImportance: number,
     ) => {
-      const ragService = getRAGService();
-      if (!ragService || !gameState) return;
+      if (!ragContext || !gameState) return;
 
       try {
-        await ragService.addDocuments([
+        const service = ragContext.actions.getService();
+        if (!service) return;
+
+        await service.addDocuments([
           {
             entityId: doc.entityId,
             type: doc.type as any,
             content: newContent,
-            saveId: indexStats?.currentSaveId || "unknown",
+            saveId: ragContext.currentSaveId || "unknown",
             forkId: (doc.metadata?.forkId as number) || gameState.forkId,
             turnNumber:
               (doc.metadata?.turnNumber as number) || gameState.turnNumber,
@@ -119,7 +98,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
         setError(t("ragDebugger.updateFailed", "Failed to update document"));
       }
     },
-    [gameState, indexStats, loadDocuments, t],
+    [ragContext, gameState, loadDocuments, t],
   );
 
   const handleDeleteDocument = useCallback(
@@ -134,18 +113,20 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
       )
         return;
 
-      const ragService = getRAGService();
-      if (!ragService) return;
+      if (!ragContext) return;
 
       try {
-        await ragService.deleteDocuments({ entityIds: [entityId] });
+        const service = ragContext.actions.getService();
+        if (!service) return;
+
+        await service.deleteDocuments({ entityIds: [entityId] });
         loadDocuments();
       } catch (err) {
         console.error("[DocumentsTab] Failed to delete document:", err);
         setError(t("ragDebugger.deleteFailed", "Failed to delete document"));
       }
     },
-    [loadDocuments, t],
+    [ragContext, loadDocuments, t],
   );
 
   return (

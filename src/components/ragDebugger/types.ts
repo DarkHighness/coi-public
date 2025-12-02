@@ -24,7 +24,6 @@ export interface IndexStats {
   isInitialized: boolean;
   currentSaveId: string | null;
   storageDocuments: number;
-  memoryDocuments: number;
 }
 
 export interface SearchTabProps {

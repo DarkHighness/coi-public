@@ -7,10 +7,9 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useGameEngine } from "./hooks/useGameEngine";
 import { StartScreen } from "./components/StartScreen";
 // Note: Old embedding manager has been replaced with the new RAG service
-// See hooks/useRAG.ts for the new integration
+// See contexts/RAGContext.tsx for the new integration
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
@@ -25,7 +24,11 @@ import {
   ErrorBoundary,
   SectionErrorBoundary,
 } from "./components/common/ErrorBoundary";
-import { useRAG } from "./hooks/useRAG";
+import { RAGProvider, useRAGContext } from "./contexts/RAGContext";
+import {
+  GameEngineProvider,
+  useGameEngineContext,
+} from "./contexts/GameEngineContext";
 import {
   ConnectedToastContainer,
   ToastProvider,
@@ -49,55 +52,63 @@ const EnvironmentalEffects = React.lazy(() =>
   })),
 );
 
-// Main App wrapper that provides ToastContext
+// Main App wrapper that provides all global contexts
+// Order: ToastProvider > RAGProvider > GameEngineProvider
 export default function App() {
   return (
     <ToastProvider>
-      <AppContent />
+      <RAGProvider>
+        <GameEngineProvider>
+          <AppContent />
+        </GameEngineProvider>
+      </RAGProvider>
     </ToastProvider>
   );
 }
 
-// Inner component that uses ToastContext
+// Inner component that uses all contexts
 function AppContent() {
+  // Use GameEngine Context
+  const { state: engineState, actions: engineActions } = useGameEngineContext();
   const {
     language,
-    setLanguage,
     isTranslating,
     gameState,
+    aiSettings,
+    currentHistory,
+    saveSlots,
+    currentSlotId,
+    themeMode,
+    persistenceError,
+    failedImageNodes,
+    isSettingsOpen,
+  } = engineState;
+  const {
+    setLanguage,
     setGameState,
     handleAction,
     startNewGame,
     resumeOutlineGeneration,
-    isAutoSaving,
-    isSettingsOpen,
-    setIsSettingsOpen,
-    aiSettings,
     handleSaveSettings,
-    currentHistory,
-    saveSlots,
     loadSlot,
     deleteSlot,
-    currentSlotId,
-    themeMode,
     setThemeMode,
     resetSettings,
     clearAllSaves,
-    persistenceError,
     hardReset,
     navigateToNode,
     generateImageForNode,
     triggerSave,
     handleForceUpdate,
-    failedImageNodes,
-  } = useGameEngine();
+    setIsSettingsOpen,
+  } = engineActions;
 
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Initialize RAG service
-  const [ragState, ragActions] = useRAG(aiSettings.embedding?.enabled);
+  // Use RAG Context instead of useRAG hook
+  const ragContext = useRAGContext();
 
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
 
@@ -138,24 +149,24 @@ function AppContent() {
 
       const shouldInit =
         aiSettings.embedding?.enabled &&
-        (!ragState.isInitialized ||
+        (!ragContext.isInitialized ||
           lastInitializedConfigRef.current !== currentConfigKey) &&
-        !ragState.isLoading;
+        !ragContext.isLoading;
 
       if (shouldInit) {
         console.log(
           "[App] Initializing RAG service (Config changed or first init)...",
         );
-        const success = await ragActions.initialize(aiSettings);
+        const success = await ragContext.actions.initialize(aiSettings);
         if (success) {
           console.log("[App] RAG service initialized successfully");
           lastInitializedConfigRef.current = currentConfigKey;
         } else {
           console.warn("[App] RAG service initialization failed");
         }
-      } else if (!aiSettings.embedding?.enabled && ragState.isInitialized) {
+      } else if (!aiSettings.embedding?.enabled && ragContext.isInitialized) {
         console.log("[App] Embedding disabled, terminating RAG service...");
-        ragActions.terminate();
+        ragContext.actions.terminate();
         lastInitializedConfigRef.current = "";
       }
     };
@@ -166,6 +177,8 @@ function AppContent() {
     aiSettings.embedding?.providerId,
     aiSettings.embedding?.modelId,
     aiSettings.embedding?.dimensions,
+    ragContext.isInitialized,
+    ragContext.isLoading,
   ]);
 
   // Track previous embedding enabled state to detect when it becomes enabled
@@ -190,7 +203,7 @@ function AppContent() {
     if (!hasExistingGame && !hasStoryContent) return;
 
     // Wait for RAG service to be initialized
-    if (!ragState.isInitialized) return;
+    if (!ragContext.isInitialized) return;
 
     console.log("[App] Embedding newly enabled with existing game data");
 
@@ -200,62 +213,37 @@ function AppContent() {
         "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
     );
 
-    if (shouldIndex) {
-      // Trigger a full index of current game state
+    if (shouldIndex && currentSlotId) {
+      // First switch to the current save context, then index
       const indexExistingContent = async () => {
         try {
-          const { extractDocumentsFromState } = await import("./hooks/useRAG");
-          const ragService = (await import("./services/rag")).getRAGService();
+          // Switch to current save context first
+          await ragContext.actions.switchSave(
+            currentSlotId,
+            gameState.forkId || 0,
+            gameState.forkTree,
+          );
 
-          if (!ragService) {
-            console.warn("[App] RAG service not available for indexing");
-            return;
-          }
+          // Then index the content
+          await ragContext.actions.indexInitialEntities(
+            gameState,
+            currentSlotId,
+          );
 
-          const entityIds: string[] = [];
-
-          // Add outline documents
-          if (gameState.outline) {
-            entityIds.push(
-              "outline:full",
-              "outline:world",
-              "outline:goal",
-              "outline:premise",
-              "outline:character",
-            );
-          }
-
-          // Add all entities
-          gameState.inventory?.forEach((item) => entityIds.push(item.id));
-          gameState.relationships?.forEach((npc) => entityIds.push(npc.id));
-          gameState.locations?.forEach((loc) => entityIds.push(loc.id));
-          gameState.quests?.forEach((quest) => entityIds.push(quest.id));
-          gameState.knowledge?.forEach((know) => entityIds.push(know.id));
-          gameState.timeline?.forEach((event) => entityIds.push(event.id));
-
-          // Extract story nodes (last 50 to avoid overload)
+          // Also index story nodes (last 50)
           const storyNodeIds = Object.keys(gameState.nodes)
             .slice(-50)
             .map((id) => `story:${id}`);
-          entityIds.push(...storyNodeIds);
 
-          const documents = extractDocumentsFromState(gameState, entityIds);
-
-          if (documents.length > 0) {
-            await ragService.addDocuments(
-              documents.map((doc) => ({
-                ...doc,
-                saveId: currentSlotId || "unknown",
-                forkId: gameState.forkId || 0,
-                turnNumber: gameState.turnNumber || 0,
-              })),
-            );
-            console.log(`[App] Indexed ${documents.length} existing documents`);
-            showToast(
-              t("rag.indexComplete") || `Indexed ${documents.length} documents`,
-              "info",
-            );
+          if (storyNodeIds.length > 0) {
+            await ragContext.actions.updateDocuments(gameState, storyNodeIds);
           }
+
+          console.log("[App] Indexed existing content successfully");
+          showToast(
+            t("rag.indexComplete") || "Indexed existing documents",
+            "info",
+          );
         } catch (error) {
           console.error("[App] Failed to index existing content:", error);
           showToast(
@@ -269,7 +257,7 @@ function AppContent() {
     }
   }, [
     aiSettings.embedding?.enabled,
-    ragState.isInitialized,
+    ragContext.isInitialized,
     gameState,
     currentSlotId,
     t,
@@ -277,44 +265,44 @@ function AppContent() {
 
   // Handle RAG model mismatch
   useEffect(() => {
-    if (ragState.modelMismatch) {
+    if (ragContext.modelMismatch) {
       const message = t("rag.modelMismatchRebuild", {
-        storedModel: ragState.modelMismatch.storedModel,
-        currentModel: ragState.modelMismatch.currentModel,
+        storedModel: ragContext.modelMismatch.storedModel,
+        currentModel: ragContext.modelMismatch.currentModel,
       });
 
       if (window.confirm(message)) {
-        ragActions.handleModelMismatch("rebuild");
+        ragContext.actions.handleModelMismatch("rebuild");
       } else {
         const disableRAG = window.confirm(t("rag.disableForSession"));
         if (disableRAG) {
-          ragActions.handleModelMismatch("disable");
+          ragContext.actions.handleModelMismatch("disable");
           handleSaveSettings({
             ...aiSettings,
             embedding: { ...aiSettings.embedding, enabled: false },
           });
         } else {
-          ragActions.handleModelMismatch("continue");
+          ragContext.actions.handleModelMismatch("continue");
         }
       }
     }
-  }, [ragState.modelMismatch]);
+  }, [ragContext.modelMismatch]);
 
   // Handle RAG storage overflow
   useEffect(() => {
-    if (ragState.storageOverflow) {
+    if (ragContext.storageOverflow) {
       const message = t("rag.storageOverflow", {
-        current: ragState.storageOverflow.currentTotal,
-        limit: ragState.storageOverflow.maxTotal,
+        current: ragContext.storageOverflow.currentTotal,
+        limit: ragContext.storageOverflow.maxTotal,
       });
 
       if (window.confirm(message)) {
-        ragActions.handleStorageOverflow(
-          ragState.storageOverflow.suggestedDeletions,
+        ragContext.actions.handleStorageOverflow(
+          ragContext.storageOverflow.suggestedDeletions,
         );
       }
     }
-  }, [ragState.storageOverflow]);
+  }, [ragContext.storageOverflow]);
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -610,89 +598,99 @@ function AppContent() {
   };
 
   const handleContinueGame = async () => {
-    if (await performValidation()) {
-      console.log("continue game, currentSlotId:", currentSlotId);
+    // Skip connection validation when continuing - only check if providers are available
+    const enabledFeatures = [
+      { providerId: aiSettings.story.providerId, enabled: true },
+      { providerId: aiSettings.lore.providerId, enabled: true },
+    ];
 
-      // Helper to handle continuation based on game state
-      const handleContinuation = async () => {
-        if (gameState.outline) {
-          // Switch RAG context if enabled
-          if (
-            aiSettings.embedding?.enabled &&
-            ragState.isInitialized &&
-            currentSlotId
-          ) {
-            console.log("[ContinueGame] Switching RAG context...");
-            try {
-              await ragActions.switchSave(
-                currentSlotId,
-                gameState.forkId || 0,
-                gameState.forkTree,
-              );
-              console.log("[ContinueGame] RAG context switched successfully");
-            } catch (error) {
-              console.error(
-                "[ContinueGame] Failed to switch RAG context:",
-                error,
-              );
-            }
-          }
-          // Outline complete, go directly to game
-          navigate("/game");
-        } else if (gameState.outlineConversation) {
-          // Has partial outline progress, resume generation
-          console.log(
-            "[ContinueGame] Resuming outline generation from saved state",
-          );
-          setStreamedText("");
-          setPhaseProgress(null);
-          await resumeOutlineGeneration(
-            (text) => setStreamedText((prev) => prev + text),
-            (progress) => setPhaseProgress(progress),
-          );
-        } else {
-          // No valid state to continue from - this shouldn't happen
-          console.warn("[ContinueGame] No valid state to continue from");
-          navigate("/");
-        }
-      };
+    for (const feature of enabledFeatures) {
+      if (feature.enabled && !isProviderAvailable(feature.providerId)) {
+        showToast(t("missingApiKey"), "error");
+        setIsSettingsOpen(true);
+        return;
+      }
+    }
 
-      if (currentSlotId) {
-        await handleContinuation();
-      } else if (saveSlots.length > 0) {
-        const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
-        const mostRecent = sorted[0];
-        const result = await loadSlot(mostRecent.id);
-        if (result.success) {
-          // Switch RAG context to the loaded save if RAG is enabled
-          if (
-            aiSettings.embedding?.enabled &&
-            ragState.isInitialized &&
-            result.hasOutline
-          ) {
-            console.log(
-              "[ContinueGame] Switching RAG context to loaded save...",
+    console.log("continue game, currentSlotId:", currentSlotId);
+
+    // Helper to handle continuation based on game state
+    const handleContinuation = async () => {
+      if (gameState.outline) {
+        // Switch RAG context if enabled
+        if (
+          aiSettings.embedding?.enabled &&
+          ragContext.isInitialized &&
+          currentSlotId
+        ) {
+          console.log("[ContinueGame] Switching RAG context...");
+          try {
+            await ragContext.actions.switchSave(
+              currentSlotId,
+              gameState.forkId || 0,
+              gameState.forkTree,
             );
-            try {
-              await ragActions.switchSave(
-                mostRecent.id,
-                gameState.forkId || 0,
-                gameState.forkTree,
-              );
-              console.log("[ContinueGame] RAG context switched successfully");
-            } catch (error) {
-              console.error(
-                "[ContinueGame] Failed to switch RAG context:",
-                error,
-              );
-            }
+            console.log("[ContinueGame] RAG context switched successfully");
+          } catch (error) {
+            console.error(
+              "[ContinueGame] Failed to switch RAG context:",
+              error,
+            );
           }
-
-          // After loading, check the game state and handle appropriately
-          // Note: gameState may not be updated yet due to React's async state updates
-          // So we navigate to /game and let GamePage handle the routing
-          navigate("/game");
         }
+        // Outline complete, go directly to game
+        navigate("/game");
+      } else if (gameState.outlineConversation) {
+        // Has partial outline progress, resume generation
+        console.log(
+          "[ContinueGame] Resuming outline generation from saved state",
+        );
+        setStreamedText("");
+        setPhaseProgress(null);
+        await resumeOutlineGeneration(
+          (text) => setStreamedText((prev) => prev + text),
+          (progress) => setPhaseProgress(progress),
+        );
+      } else {
+        // No valid state to continue from - this shouldn't happen
+        console.warn("[ContinueGame] No valid state to continue from");
+        navigate("/");
+      }
+    };
+
+    if (currentSlotId) {
+      await handleContinuation();
+    } else if (saveSlots.length > 0) {
+      const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
+      const mostRecent = sorted[0];
+      const result = await loadSlot(mostRecent.id);
+      if (result.success) {
+        // Switch RAG context to the loaded save if RAG is enabled
+        if (
+          aiSettings.embedding?.enabled &&
+          ragContext.isInitialized &&
+          result.hasOutline
+        ) {
+          console.log("[ContinueGame] Switching RAG context to loaded save...");
+          try {
+            await ragContext.actions.switchSave(
+              mostRecent.id,
+              gameState.forkId || 0,
+              gameState.forkTree,
+            );
+            console.log("[ContinueGame] RAG context switched successfully");
+          } catch (error) {
+            console.error(
+              "[ContinueGame] Failed to switch RAG context:",
+              error,
+            );
+          }
+        }
+
+        // After loading, check the game state and handle appropriately
+        // Note: gameState may not be updated yet due to React's async state updates
+        // So we navigate to /game and let GamePage handle the routing
+        navigate("/game");
       }
     }
   };
@@ -715,12 +713,12 @@ function AppContent() {
     // Switch RAG context to the loaded save if RAG is enabled
     if (
       aiSettings.embedding?.enabled &&
-      ragState.isInitialized &&
+      ragContext.isInitialized &&
       result.hasOutline
     ) {
       console.log("[LoadSlot] Switching RAG context to loaded save...");
       try {
-        await ragActions.switchSave(
+        await ragContext.actions.switchSave(
           id,
           gameState.forkId || 0,
           gameState.forkTree,
@@ -842,30 +840,9 @@ function AppContent() {
             element={
               <SectionErrorBoundary name="GamePage">
                 <GamePage
-                  gameState={gameState}
-                  setGameState={setGameState}
-                  currentHistory={currentHistory}
-                  language={language}
-                  setLanguage={setLanguage}
-                  isTranslating={isTranslating}
-                  handleAction={handleAction}
-                  aiSettings={aiSettings}
-                  handleSaveSettings={handleSaveSettings}
-                  navigateToNode={navigateToNode}
-                  generateImageForNode={generateImageForNode}
                   onOpenSettings={() => setIsSettingsOpen(true)}
                   onOpenSaves={() => setIsSaveManagerOpen(true)}
-                  themeFont={currentThemeConfig.fontClass}
-                  saveSlots={saveSlots}
-                  switchSlot={async (id) => {
-                    await loadSlot(id);
-                  }}
-                  deleteSlot={deleteSlot}
-                  currentSlotId={currentSlotId}
                   onViewedSegmentChange={setViewedSegment}
-                  triggerSave={triggerSave}
-                  handleForceUpdate={handleForceUpdate}
-                  failedImageNodes={failedImageNodes}
                 />
               </SectionErrorBoundary>
             }

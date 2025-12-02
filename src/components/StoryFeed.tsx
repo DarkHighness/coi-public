@@ -6,10 +6,9 @@ import { FeedHeader } from "./feed/FeedHeader";
 import { StackControls } from "./feed/StackControls";
 import { GenerationTimer } from "./common/GenerationTimer";
 import { MarkdownText } from "./render/MarkdownText";
+import { useGameEngineContext } from "../contexts/GameEngineContext";
 
 interface StoryFeedProps {
-  gameState: GameState;
-  currentHistory: StorySegment[];
   layout: FeedLayout;
   setLayout: (layout: FeedLayout) => void;
   onAnimate: (imageUrl: string) => void;
@@ -17,7 +16,6 @@ interface StoryFeedProps {
   onRetry: () => void;
   disableImages?: boolean;
   onFork?: (id: string) => void;
-  aiSettings?: AISettings;
   onTypingComplete?: () => void;
   /** Current playing ambience key (from audio system) */
   currentAmbience?: string;
@@ -28,13 +26,9 @@ interface StoryFeedProps {
   onImageDelete?: (id: string) => void;
   sidebarCollapsed?: boolean;
   timelineCollapsed?: boolean;
-  saveId?: string;
-  failedImageNodes?: Set<string>;
 }
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({
-  gameState,
-  currentHistory,
   layout,
   setLayout,
   onAnimate,
@@ -42,7 +36,6 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onRetry,
   disableImages = false,
   onFork,
-  aiSettings,
   onTypingComplete,
   currentAmbience,
   onToggleMute,
@@ -52,9 +45,15 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
   onImageDelete,
   sidebarCollapsed = false,
   timelineCollapsed = false,
-  saveId,
-  failedImageNodes,
 }) => {
+  const { state } = useGameEngineContext();
+  const {
+    gameState,
+    currentHistory,
+    aiSettings,
+    currentSlotId: saveId,
+    failedImageNodes,
+  } = state;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);

@@ -14,6 +14,7 @@ import {
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { useToast } from "../Toast";
+import { useGameEngineContext } from "../../contexts/GameEngineContext";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -63,66 +64,47 @@ const GameStateViewer = React.lazy(() =>
 );
 
 interface GamePageProps {
-  gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  currentHistory: StorySegment[];
-  language: LanguageCode;
-  setLanguage: (lang: LanguageCode) => void;
-  isTranslating: boolean;
-  handleAction: (
-    action: string,
-    isInit?: boolean,
-    forceTheme?: string,
-    fromNodeId?: string,
-    preventFork?: boolean,
-  ) => Promise<ActionResult | null>;
-  aiSettings: AISettings;
-  handleSaveSettings: (settings: AISettings) => void;
-  navigateToNode: (nodeId: string, isFork?: boolean) => void;
-  generateImageForNode: (
-    nodeId: string,
-    nodeOverride?: StorySegment,
-    isManualClick?: boolean,
-  ) => Promise<void>;
-  onOpenSettings: () => void;
-  onOpenSaves: () => void;
-  themeFont: string;
-  saveSlots: SaveSlot[];
-  switchSlot: (id: string) => Promise<void>;
-  deleteSlot: (id: string) => void;
-  currentSlotId: string | null;
+  /** Callback when viewed segment changes (for parent theme/background updates) */
   onViewedSegmentChange: (segment: StorySegment) => void;
-  triggerSave?: () => void;
-  handleForceUpdate: (prompt: string) => void;
-  failedImageNodes?: Set<string>;
+  /** Callback to open settings modal */
+  onOpenSettings: () => void;
+  /** Callback to open saves modal */
+  onOpenSaves: () => void;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
-  gameState,
-  setGameState,
-  currentHistory,
-  language,
-  setLanguage,
-  isTranslating,
-  handleAction,
-  aiSettings,
-  handleSaveSettings,
-  navigateToNode,
-  generateImageForNode,
+  onViewedSegmentChange,
   onOpenSettings,
   onOpenSaves,
-  themeFont,
-  saveSlots,
-  switchSlot,
-  deleteSlot,
-  currentSlotId,
-  onViewedSegmentChange,
-  triggerSave,
-  handleForceUpdate,
-  failedImageNodes,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  // Use GameEngine Context for state and actions
+  const { state: engineState, actions: engineActions } = useGameEngineContext();
+  const {
+    gameState,
+    currentHistory,
+    language,
+    isTranslating,
+    aiSettings,
+    saveSlots,
+    currentSlotId,
+    failedImageNodes,
+    themeFont,
+  } = engineState;
+  const {
+    setGameState,
+    setLanguage,
+    handleAction,
+    handleSaveSettings,
+    navigateToNode,
+    generateImageForNode,
+    loadSlot,
+    deleteSlot,
+    triggerSave,
+    handleForceUpdate,
+  } = engineActions;
 
   // Toast Context for toast notifications
   const { showToast, pushStateChangeToasts } = useToast();
@@ -345,7 +327,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         nodes: newNodes,
       };
     });
-    triggerSave?.();
+    triggerSave();
     showToast(t("imageUploaded", "Image uploaded successfully"), "info");
   };
 
@@ -364,7 +346,7 @@ export const GamePage: React.FC<GamePageProps> = ({
         nodes: newNodes,
       };
     });
-    triggerSave?.();
+    triggerSave();
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 
@@ -381,12 +363,6 @@ export const GamePage: React.FC<GamePageProps> = ({
         }
       >
         <MobileGameLayout
-          gameState={gameState}
-          setGameState={setGameState}
-          currentHistory={currentHistory}
-          language={language}
-          setLanguage={setLanguage}
-          isTranslating={isTranslating}
           mobileTab={mobileTab}
           setMobileTab={setMobileTab}
           feedLayout={feedLayout}
@@ -395,9 +371,6 @@ export const GamePage: React.FC<GamePageProps> = ({
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={(nodeId) =>
-            generateImageForNode(nodeId, undefined, true)
-          }
           onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -407,7 +380,6 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenSaves={onOpenSaves}
           onOpenMap={() => setIsDestinyMapOpen(true)}
           onOpenLogs={() => setIsLogPanelOpen(true)}
-          aiSettings={aiSettings}
           onTypingComplete={() => setIsTyping(false)}
           currentAmbience={currentAmbience}
           onUpdateUIState={handleUpdateUIState}
@@ -418,30 +390,18 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
-          onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
-          saveId={currentSlotId || "unsaved"}
-          failedImageNodes={failedImageNodes}
         />
 
         <DesktopGameLayout
-          gameState={gameState}
-          setGameState={setGameState}
-          currentHistory={currentHistory}
-          language={language}
-          setLanguage={setLanguage}
-          isTranslating={isTranslating}
           feedLayout={feedLayout}
           setFeedLayout={setFeedLayout}
           onAnimate={(url) => {
             setMagicMirrorImage(url);
             setIsMagicMirrorOpen(true);
           }}
-          onGenerateImage={(nodeId) =>
-            generateImageForNode(nodeId, undefined, true)
-          }
           onRetry={handleRetry}
           onFork={handleFork}
           onAction={handlePlayerAction}
@@ -451,7 +411,6 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenSaves={onOpenSaves}
           onOpenMap={() => setIsDestinyMapOpen(true)}
           onOpenLogs={() => setIsLogPanelOpen(true)}
-          aiSettings={aiSettings}
           onTypingComplete={() => setIsTyping(false)}
           currentAmbience={currentAmbience}
           onUpdateUIState={handleUpdateUIState}
@@ -462,12 +421,9 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
-          onTriggerSave={triggerSave}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
-          saveId={currentSlotId || "unsaved"}
-          failedImageNodes={failedImageNodes}
         />
 
         {/* Mobile Bottom Navigation */}

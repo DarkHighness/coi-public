@@ -843,7 +843,8 @@ function getDefaultEmbeddingModels(): EmbeddingModelInfo[] {
   ];
 }
 /**
- * Generate embeddings using SDK
+ * Generate embeddings using direct fetch API
+ * Uses fetch instead of SDK to properly handle CORS headers
  */
 export async function generateEmbedding(
   config: OpenRouterConfig,
@@ -853,21 +854,46 @@ export async function generateEmbedding(
   _taskType?: EmbeddingTaskType,
 ): Promise<EmbeddingResponse> {
   try {
-    const client = createClient(config);
-    const response = await client.embeddings.generate({
+    const url = "https://openrouter.ai/api/v1/embeddings";
+
+    const requestBody: Record<string, unknown> = {
       model: modelId,
       input: texts,
-      dimensions,
-    } as any);
-    const data = response as any;
+    };
+
+    if (dimensions) {
+      requestBody.dimensions = dimensions;
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey}`,
+        "HTTP-Referer":
+          typeof window !== "undefined" ? window.location.origin : "",
+        "X-Title": "CoI Game",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+
     const embeddings = data.data
       .sort((a: any, b: any) => a.index - b.index)
       .map((item: any) => new Float32Array(item.embedding));
+
     return {
       embeddings,
       usage: {
-        promptTokens: data.usage?.promptTokens || 0,
-        totalTokens: data.usage?.totalTokens || 0,
+        promptTokens:
+          data.usage?.prompt_tokens || data.usage?.promptTokens || 0,
+        totalTokens: data.usage?.total_tokens || data.usage?.totalTokens || 0,
       },
     };
   } catch (error) {

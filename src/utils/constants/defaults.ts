@@ -145,9 +145,8 @@ export const DEFAULTS: AISettings = {
     dimensions: undefined, // Will be set when model is selected
     topK: 10,
     similarityThreshold: 0.65,
-    // LRU Eviction Settings
-    lru: {
-      maxMemoryDocuments: 1000, // In-memory cache limit
+    // Storage Settings
+    storage: {
       maxStorageDocuments: 10000, // Persistent storage limit
       maxDocumentsPerType: 2000, // Per-type limit (story, npc, location, etc.)
       maxVersionsPerEntity: 5, // Per-entity limit (e.g., max 5 versions of item:1)

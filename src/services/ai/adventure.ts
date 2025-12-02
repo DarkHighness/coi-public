@@ -16,7 +16,15 @@ import {
 import { ToolCallResult, MalformedToolCallError } from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
-import { TOOLS } from "../tools";
+import {
+  TOOLS,
+  getToolsForStage,
+  getNextStage,
+  AgentStage,
+  STAGE_ORDER,
+  parseStage,
+  isValidStageTransition,
+} from "../tools";
 import { finishTurnSchema } from "../schemas";
 import { getCoreSystemInstruction } from "../prompts/index";
 import {
@@ -103,6 +111,13 @@ export function processFinishTurnResponse(
   // Extract forceEnd flag (handle null from OpenAI strict schema)
   if (finishTurnData.forceEnd === true || finishTurnData.forceEnd === false) {
     accumulatedResponse.forceEnd = finishTurnData.forceEnd;
+  }
+
+  // Extract nextInitialStage for next turn optimization
+  if (finishTurnData.nextInitialStage) {
+    (
+      accumulatedResponse as GameResponse & { nextInitialStage?: string }
+    ).nextInitialStage = finishTurnData.nextInitialStage as string;
   }
 
   // Attach the FINAL STATE from the DB
@@ -310,15 +325,20 @@ export const generateAdventureTurn = async (
 };
 
 /**
- * Agentic Loop 实现
- * @param protocol Provider protocol
- * @param instance Provider instance
- * @param modelId 模型 ID
- * @param systemInstruction 系统指令
- * @param initialContents 初始消息
- * @param inputState 输入游戏状态
- * @param generationDetails 生成详情
- * @param settings 设置对象（必需）
+ * Agentic Loop with Staged Tool Execution
+ *
+ * Stages:
+ * 1. QUERY - Query tools + RAG search + next_stage + finish_turn
+ * 2. ADD - Add tools + next_stage + finish_turn
+ * 3. REMOVE - Remove tools + next_stage + finish_turn
+ * 4. UPDATE - Update tools + next_stage + finish_turn
+ * 5. NARRATIVE - finish_turn only
+ *
+ * Key changes from turn-based to stage-based:
+ * - maxStages instead of maxTurns (stage transitions are the limit)
+ * - AI can jump to any stage via next_stage(target)
+ * - AI can finish early from ANY stage via finish_turn
+ * - nextInitialStage in finish_turn suggests starting stage for next player turn
  */
 export const runAgenticLoop = async (
   protocol: ProviderProtocol,
@@ -329,14 +349,17 @@ export const runAgenticLoop = async (
   inputState: GameState,
   generationDetails: LogEntry["generationDetails"] | undefined,
   settings: AISettings,
+  initialStage?: AgentStage, // Optional: start from a specific stage (from previous turn's nextInitialStage)
 ): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
-  let turnCount = 0;
-  const maxTurns = 10; // Safety limit
+
+  // Stage-based limits instead of turn-based
+  let stageTransitions = 0;
+  const maxStageTransitions = 15; // Maximum stage transitions allowed
+  const maxIterationsPerStage = 5; // Maximum iterations within a single stage
 
   const allLogs: LogEntry[] = [];
 
-  // Use the GameState directly as the database initial state
   const db = new GameDatabase({
     ...inputState,
     knowledge: inputState.knowledge || [],
@@ -346,7 +369,6 @@ export const runAgenticLoop = async (
     time: inputState.time || "Unknown",
   });
 
-  // Accumulated actions for UI feedback (Toasts)
   const accumulatedResponse: GameResponse = {
     narrative: "",
     choices: [],
@@ -360,8 +382,7 @@ export const runAgenticLoop = async (
     timelineEvents: [],
   };
 
-  // Track changed entities with their types for efficient RAG updates
-  const changedEntities: Map<string, string> = new Map(); // Map<entityId, entityType>
+  const changedEntities: Map<string, string> = new Map();
 
   let totalUsage: TokenUsage = {
     promptTokens: 0,
@@ -369,7 +390,6 @@ export const runAgenticLoop = async (
     totalTokens: 0,
   };
 
-  // Initialize lastLog with a placeholder
   let lastLog: LogEntry = createLogEntry(
     protocol,
     modelId,
@@ -379,27 +399,15 @@ export const runAgenticLoop = async (
     totalUsage,
   );
 
-  // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
+  const isGeminiProvider = protocol === "gemini";
 
-  // Prepare tools for the provider
-  const toolConfig = TOOLS.filter((t) => {
-    // Hide RAG tools if embedding is disabled
-    if (!isRAGEnabled && t.name === "rag_search") {
-      return false;
-    }
-    // Hide complete_force_update tool in normal adventure loop
-    if (t.name === "complete_force_update") {
-      return false;
-    }
-    return true;
-  }).map((t) => ({
-    name: t.name,
-    description: t.description,
-    parameters: t.parameters,
-  }));
+  // Current stage tracking - can start from suggested stage
+  let currentStage: AgentStage =
+    initialStage && STAGE_ORDER.includes(initialStage) ? initialStage : "query";
+  let stageIterations = 0;
 
-  // Get pending consequences that are READY for AI to potentially trigger
+  // Inject ready consequences
   const readyConsequences = db.getReadyConsequences();
   if (readyConsequences.length > 0) {
     const readyList = readyConsequences
@@ -409,58 +417,81 @@ export const runAgenticLoop = async (
             rc.consequence.conditions?.length
               ? ` (conditions: ${rc.consequence.conditions.join(", ")})`
               : ""
-          }${rc.consequence.known ? " [player will know]" : " [hidden from player]"}`,
+          }${rc.consequence.known ? " [player will know]" : " [hidden]"}`,
       )
       .join("\n");
 
-    // Inject ready consequences as context for AI to consider
     conversationHistory.push(
       createUserMessage(
-        `[SYSTEM: PENDING CONSEQUENCES READY FOR YOUR DECISION]\n` +
-          `The following consequences from past events are NOW READY to potentially trigger.\n` +
-          `Review each one and decide IF and WHEN to trigger based on:\n` +
-          `1. Does it fit the current story moment?\n` +
-          `2. Are the conditions met?\n` +
-          `3. Would triggering enhance the narrative?\n\n` +
-          `Ready consequences:\n${readyList}\n\n` +
-          `To trigger a consequence: use update_causal_chain with action="trigger" and triggerConsequenceId="<id>".\n` +
-          `Then NARRATE the consequence in your response (if known=true, player sees it; if known=false, it affects the world secretly).`,
+        `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${readyList}\n\nUse trigger_causal_chain in UPDATE stage if appropriate.`,
       ),
     );
   }
 
-  while (turnCount < maxTurns) {
-    console.log(`[Agentic Loop] Turn ${turnCount + 1}/${maxTurns}`);
+  // Stage instruction helper with updated descriptions
+  const addStageInstruction = (stage: AgentStage) => {
+    const instructions: Record<AgentStage, string> = {
+      query: `[STAGE: QUERY]
+Available tools: query_*, rag_search, next_stage, finish_turn
+- Query information you need using query_* or rag_search
+- Call next_stage (optionally with target) to proceed to next stage
+- Call finish_turn to complete the turn early if you have enough context
+- Tip: You can jump directly to any stage using next_stage(target="add"|"remove"|"update"|"narrative")`,
+      add: `[STAGE: ADD]
+Available tools: add_*, next_stage, finish_turn
+- Add new entities (items, NPCs, locations, etc.)
+- Call next_stage to proceed, or next_stage(target=...) to jump
+- Call finish_turn to complete the turn early`,
+      remove: `[STAGE: REMOVE]
+Available tools: remove_*, next_stage, finish_turn
+- Remove entities that no longer exist
+- Call next_stage to proceed, or next_stage(target=...) to jump
+- Call finish_turn to complete the turn early`,
+      update: `[STAGE: UPDATE]
+Available tools: update_*, complete_quest, fail_quest, trigger_causal_chain, next_stage, finish_turn
+- Update existing entities
+- Call next_stage to proceed to narrative
+- Call finish_turn to complete the turn early`,
+      narrative: `[STAGE: NARRATIVE]
+Available tool: finish_turn
+You MUST call finish_turn with your narrative, choices, and atmosphere to complete this turn.
+Consider setting nextInitialStage if you know what stage would be best for the next turn.`,
+    };
+    conversationHistory.push(createUserMessage(instructions[stage]));
+  };
+
+  addStageInstruction(currentStage);
+
+  while (stageTransitions < maxStageTransitions) {
+    console.log(
+      `[Agentic Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}, Total transitions: ${stageTransitions}`,
+    );
+
+    // Get tools for current stage (all stages now include finish_turn)
+    const stageTools = getToolsForStage(currentStage, isRAGEnabled);
+    const toolConfig = stageTools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
 
     let result: GenerateContentResult["result"];
     let usage: TokenUsage;
-    let raw: unknown;
 
-    // Retry logic for transient errors like MALFORMED_FUNCTION_CALL
-    let maxRetries = 2; // Changed to let to allow modification for Gemini fallback
+    let maxRetries = 2;
     let retryCount = 0;
     let lastError: Error | null = null;
 
-    // Provider-specific schema handling
-    // IMPORTANT: Gemini 2.5 (non-Pro) CANNOT use schema+tools simultaneously
-    // - When tools are provided: Gemini ignores the schema (see geminiProvider.ts line 466)
-    // - Other providers (OpenAI, Claude, OpenRouter) CAN use both together
-    // Solution: For Gemini, never use schema (rely on finish_turn tool instead)
-    //           For others, always use schema (for structured output guarantee)
-
-    const isGeminiProvider = protocol === "gemini";
-
-    // Keep tools available (including finish_turn) in ALL rounds
-    let effectiveToolConfig = toolConfig; // Changed to let for fallback modification
-
-    // Schema behavior:
-    // - Gemini: NEVER use schema (conflicts with tools), rely on finish_turn tool
-    // - Others: ALWAYS use schema for structured output guarantee
-    let effectiveSchema = isGeminiProvider ? undefined : finishTurnSchema; // Changed to let
+    let effectiveToolConfig: typeof toolConfig | undefined = toolConfig;
+    // Only use schema in narrative stage for non-Gemini providers
+    let effectiveSchema = isGeminiProvider
+      ? undefined
+      : currentStage === "narrative"
+        ? finishTurnSchema
+        : undefined;
 
     while (retryCount <= maxRetries) {
       try {
-        // Pass UnifiedMessage[] directly - generateContentUnified handles format conversion
         const config = createProviderConfig(instance);
         const resultData = await generateContentUnifiedInternal(
           protocol,
@@ -474,76 +505,49 @@ export const runAgenticLoop = async (
 
         result = resultData.result;
         usage = resultData.usage;
-        raw = resultData.raw;
         console.log(
-          `[Agentic Loop] Turn ${turnCount + 1} response received. Schema: ${!!effectiveSchema}, Tools: ${!!effectiveToolConfig}, Usage:`,
-          usage,
-          `HasFunctionCalls: ${!!(result as { functionCalls?: unknown }).functionCalls}`,
+          `[Agentic Loop] Stage ${currentStage} response. Tools: ${toolConfig.length}`,
         );
-        break; // Success, exit retry loop
+        break;
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
         lastError = error;
         const errorMessage = error.message || "";
 
-        // Check if this is a retryable error (malformed function call)
         if (
           e instanceof MalformedToolCallError ||
-          errorMessage.includes("function call format error") ||
           errorMessage.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
-
-          // Special handling for Gemini: try fallback to schema-only mode after 2 failed attempts
           if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
-            console.warn(
-              `[Agentic Loop] Gemini tools failing repeatedly. Attempting fallback to schema-only mode...`,
-            );
-            // Disable tools and use schema instead for remaining attempts
             effectiveToolConfig = undefined;
             effectiveSchema = finishTurnSchema;
-            maxRetries = 4; // Allow 2 more attempts in schema mode (total 5)
+            maxRetries = 4;
             continue;
           }
-
           if (retryCount <= maxRetries) {
-            // Exponential backoff: 500ms, 1000ms, 2000ms, 4000ms
             const delayMs = Math.min(500 * Math.pow(2, retryCount - 1), 4000);
-            console.warn(
-              `[Agentic Loop] Retrying due to malformed function call (attempt ${retryCount}/${maxRetries}, waiting ${delayMs}ms)...`,
-            );
-            // Exponential backoff before retry
             await new Promise((resolve) => setTimeout(resolve, delayMs));
             continue;
           }
         }
-
-        // Non-retryable error or max retries exceeded
-        console.error("[Agentic Loop] Error:", error);
         throw error;
       }
     }
 
-    // If we exhausted retries, throw the last error
-    if (retryCount > maxRetries && lastError) {
-      throw lastError;
-    }
+    if (retryCount > maxRetries && lastError) throw lastError;
 
-    // Update Usage with validation
     if (usage!) {
       totalUsage.promptTokens += usage!.promptTokens || 0;
       totalUsage.completionTokens += usage!.completionTokens || 0;
       totalUsage.totalTokens += usage!.totalTokens || 0;
-      console.log(`[Agentic Loop] Cumulative usage:`, totalUsage);
-    } else {
-      console.warn(`[Agentic Loop] No usage data for turn ${turnCount + 1}`);
     }
 
     lastLog = createLogEntry(
       protocol,
       modelId,
-      `agentic_turn_${turnCount + 1}`,
-      { turn: turnCount + 1 },
+      `agentic_${currentStage}_${stageIterations + 1}`,
+      { stage: currentStage, iteration: stageIterations + 1 },
       {
         hasToolCalls: !!(result! as { functionCalls?: unknown }).functionCalls,
         toolCount:
@@ -553,33 +557,13 @@ export const runAgenticLoop = async (
       usage!,
     );
 
-    // Handle Tool Calls
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
       .functionCalls;
 
     if (result && functionCalls && functionCalls.length > 0) {
-      let toolCalls: UnifiedToolCallResult[] = functionCalls;
-
-      // **REORDER: Ensure finish_turn is the last tool call**
-      const finishTurnIndex = toolCalls.findIndex(
-        (tc) => tc.name === "finish_turn",
-      );
-      if (finishTurnIndex !== -1 && finishTurnIndex !== toolCalls.length - 1) {
-        console.log(
-          `[Agentic Loop] Reordering finish_turn from position ${finishTurnIndex} to last position`,
-        );
-        const finishTurnCall = toolCalls[finishTurnIndex];
-        toolCalls = [
-          ...toolCalls.slice(0, finishTurnIndex),
-          ...toolCalls.slice(finishTurnIndex + 1),
-          finishTurnCall,
-        ];
-      }
-
-      // Collect detailed tool call records for this turn
+      const toolCalls: UnifiedToolCallResult[] = functionCalls;
       const turnToolCalls: ToolCallRecord[] = [];
 
-      // Add model's tool call to history using unified format
       conversationHistory.push(
         createToolCallMessage(
           toolCalls.map((fc) => ({
@@ -590,72 +574,81 @@ export const runAgenticLoop = async (
         ),
       );
 
-      // Execute Tools and collect responses
       const toolResponses: Array<{
         toolCallId: string;
         name: string;
         content: unknown;
       }> = [];
+      let targetStage: AgentStage | null = null; // For directed stage jumps
 
       for (const call of toolCalls) {
         const { id: callId, name, args } = call;
-        console.log(`[Agentic Loop] Tool Call [${callId}]: ${name}`, args);
+        console.log(`[Agentic Loop] Tool: ${name}`, args);
 
-        let output: unknown = { success: false, error: "Unknown tool" };
+        let output: unknown;
 
-        // Execute tool
-        output = executeToolCall(
-          name,
-          args,
-          db,
-          accumulatedResponse,
-          changedEntities,
-        );
+        if (name === "next_stage") {
+          // Support both automatic and directed stage transitions
+          const requestedTarget = parseStage(args.target as string);
 
-        // Handle finish_turn specially
-        if (name === "finish_turn") {
-          // Process finish_turn response
+          if (requestedTarget) {
+            // Directed jump to specific stage
+            if (isValidStageTransition(currentStage, requestedTarget)) {
+              targetStage = requestedTarget;
+              output = {
+                success: true,
+                message: `Jumping to ${requestedTarget} stage.`,
+              };
+            } else {
+              output = {
+                success: false,
+                error: `Invalid transition: already in ${currentStage}.`,
+              };
+            }
+          } else {
+            // Default: advance to next stage in sequence
+            const nextStage = getNextStage(currentStage);
+            if (nextStage) {
+              targetStage = nextStage;
+              output = {
+                success: true,
+                message: `Advancing to ${nextStage} stage.`,
+              };
+            } else {
+              output = {
+                success: false,
+                error: "Already at final stage. Use finish_turn to complete.",
+              };
+            }
+          }
+        } else if (name === "finish_turn") {
+          // finish_turn can be called from ANY stage
           processFinishTurnResponse(args, accumulatedResponse, db);
 
-          console.log(
-            `[Agentic Loop] finish_turn called. Final usage:`,
-            totalUsage,
-          );
-          console.log(
-            `[Agentic Loop] Narrative length: ${accumulatedResponse.narrative?.length || 0}, Choices: ${accumulatedResponse.choices?.length || 0}`,
-          );
-
-          // Record finish_turn as a tool call
           turnToolCalls.push({
             name: "finish_turn",
             input: {
               narrative: (args.narrative as string)?.substring(0, 100) + "...",
               choices: args.choices,
-              atmosphere: args.atmosphere,
+              nextInitialStage: args.nextInitialStage,
             },
             output: { success: true },
             timestamp: Date.now(),
           });
 
-          // Update lastLog with all tool calls from this turn
           lastLog.toolCalls = turnToolCalls;
           allLogs.push(lastLog);
 
-          // Create final summary log
           const finalLog = createLogEntry(
             protocol,
             modelId,
             "agentic_complete",
-            { turns: turnCount + 1 },
+            { stageTransitions, finalStage: currentStage },
             {
               totalToolCalls: allLogs.reduce(
                 (sum, log) => sum + (log.toolCalls?.length || 0),
                 0,
               ),
-              narrative:
-                accumulatedResponse.narrative?.substring(0, 100) + "...",
-              choices: accumulatedResponse.choices,
-              atmosphere: accumulatedResponse.atmosphere,
             },
             totalUsage,
           );
@@ -669,92 +662,110 @@ export const runAgenticLoop = async (
               ([id, type]) => ({ id, type }),
             ),
           };
+        } else {
+          output = executeToolCall(
+            name,
+            args,
+            db,
+            accumulatedResponse,
+            changedEntities,
+          );
         }
 
-        // Record this tool call with input/output
         turnToolCalls.push({
           name,
           input: args,
           output,
           timestamp: Date.now(),
         });
-
-        // Collect tool response for this call
-        toolResponses.push({
-          toolCallId: callId,
-          name: name,
-          content: output,
-        });
+        toolResponses.push({ toolCallId: callId, name, content: output });
       }
 
-      // Update the log entry with detailed tool calls
       lastLog.toolCalls = turnToolCalls;
       allLogs.push(lastLog);
-
-      // Add all tool responses as a single message with multiple parts
       conversationHistory.push(createToolResponseMessage(toolResponses));
 
-      turnCount++;
+      if (targetStage) {
+        // Transition to target stage (either directed or sequential)
+        currentStage = targetStage;
+        stageIterations = 0;
+        stageTransitions++;
+        addStageInstruction(currentStage);
+      } else {
+        // No stage transition requested, increment iteration counter
+        stageIterations++;
+        if (stageIterations >= maxIterationsPerStage) {
+          console.warn(
+            `[Agentic Loop] Max iterations (${maxIterationsPerStage}) in ${currentStage}, auto-advancing`,
+          );
+          const nextStage = getNextStage(currentStage);
+          if (nextStage) {
+            currentStage = nextStage;
+            stageIterations = 0;
+            stageTransitions++;
+            addStageInstruction(currentStage);
+          } else {
+            // Force narrative stage if stuck at the end
+            conversationHistory.push(
+              createUserMessage(
+                `You've reached the maximum iterations. Please call finish_turn to complete the turn.`,
+              ),
+            );
+          }
+        }
+      }
     } else {
-      // No tool calls - check if this is a direct finish_turn schema response
-      console.log(
-        `[Agentic Loop] No tool calls. Checking for finish_turn schema response...`,
-      );
+      // No tool calls
+      if (currentStage === "narrative") {
+        try {
+          const finishTurnData = finishTurnSchema.parse(result);
+          processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
 
-      // Validate against finishTurnSchema
-      try {
-        const finishTurnData = finishTurnSchema.parse(result);
-        console.log(
-          `[Agentic Loop] Valid finish_turn schema response detected`,
-        );
+          const finalLog = createLogEntry(
+            protocol,
+            modelId,
+            "agentic_complete",
+            { stageTransitions, method: "schema_response" },
+            {
+              totalToolCalls: allLogs.reduce(
+                (sum, log) => sum + (log.toolCalls?.length || 0),
+                0,
+              ),
+            },
+            totalUsage,
+          );
+          allLogs.push(lastLog);
+          allLogs.push(finalLog);
 
-        // Process finish_turn response
-        processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
-
-        console.log(
-          `[Agentic Loop] finish_turn schema response processed. Final usage:`,
-          totalUsage,
-        );
-
-        // Create final summary log
-        const finalLog = createLogEntry(
-          protocol,
-          modelId,
-          "agentic_complete",
-          { turns: turnCount + 1, method: "schema_response" },
-          {
-            totalToolCalls: allLogs.reduce(
-              (sum, log) => sum + (log.toolCalls?.length || 0),
-              0,
+          return {
+            response: accumulatedResponse,
+            logs: allLogs,
+            usage: totalUsage,
+            changedEntities: Array.from(changedEntities.entries()).map(
+              ([id, type]) => ({ id, type }),
             ),
-            narrative: accumulatedResponse.narrative?.substring(0, 100) + "...",
-            choices: accumulatedResponse.choices,
-            atmosphere: accumulatedResponse.atmosphere,
-          },
-          totalUsage,
-        );
-        allLogs.push(lastLog);
-        allLogs.push(finalLog);
+          };
+        } catch (validationError) {
+          if (result && (result as GameResponse).narrative) {
+            allLogs.push(lastLog);
+            return {
+              response: result as GameResponse,
+              logs: allLogs,
+              usage: totalUsage,
+              changedEntities: Array.from(changedEntities.entries()).map(
+                ([id, type]) => ({ id, type }),
+              ),
+            };
+          }
 
-        return {
-          response: accumulatedResponse,
-          logs: allLogs,
-          usage: totalUsage,
-          changedEntities: Array.from(changedEntities.entries()).map(
-            ([id, type]) => ({ id, type }),
-          ),
-        };
-      } catch (validationError) {
-        console.error(
-          `[Agentic Loop] Response does not match finish_turn schema:`,
-          validationError,
-        );
-
-        // Fallback: try to extract narrative if present
-        if (result && (result as GameResponse).narrative) {
           allLogs.push(lastLog);
           return {
-            response: result as GameResponse,
+            response: {
+              ...accumulatedResponse,
+              narrative:
+                typeof result === "string" ? result : JSON.stringify(result),
+              choices: [{ text: "Continue" }],
+            },
             logs: allLogs,
             usage: totalUsage,
             changedEntities: Array.from(changedEntities.entries()).map(
@@ -762,32 +773,31 @@ export const runAgenticLoop = async (
             ),
           };
         }
-
-        // Last resort fallback
-        console.warn("Model returned unexpected response format:", result);
-        allLogs.push(lastLog);
-        return {
-          response: {
-            ...accumulatedResponse,
-            narrative:
-              typeof result === "string" ? result : JSON.stringify(result),
-            choices: [{ text: "Continue" }],
-          },
-          logs: allLogs,
-          usage: totalUsage,
-          changedEntities: Array.from(changedEntities.entries()).map(
-            ([id, type]) => ({ id, type }),
+      } else {
+        // Prompt to use tools or advance stage
+        conversationHistory.push(
+          createUserMessage(
+            `You must use available tools, call next_stage, or call finish_turn. Current stage: ${currentStage}`,
           ),
-        };
+        );
+        stageIterations++;
+
+        if (stageIterations >= maxIterationsPerStage) {
+          const nextStage = getNextStage(currentStage);
+          if (nextStage) {
+            currentStage = nextStage;
+            stageIterations = 0;
+            stageTransitions++;
+            addStageInstruction(currentStage);
+          }
+        }
       }
     }
   }
 
-  // Max turns reached without finish_turn
   console.warn(
-    `[Agentic Loop] Max turns (${maxTurns}) reached without finish_turn`,
+    `[Agentic Loop] Max stage transitions (${maxStageTransitions}) reached`,
   );
-
   return {
     response: accumulatedResponse,
     logs: allLogs,
@@ -803,213 +813,495 @@ export const runAgenticLoop = async (
 // ============================================================================
 
 /**
- * 执行工具调用
+ * Helper to track changed entities
+ */
+function trackChangedEntity(
+  changedEntities: Map<string, string> | undefined,
+  result: { success: boolean; data?: unknown },
+  entityType: string,
+): void {
+  if (
+    changedEntities &&
+    result.success &&
+    result.data &&
+    typeof result.data === "object" &&
+    result.data !== null &&
+    "id" in result.data
+  ) {
+    const entity = result.data as { id: string };
+    changedEntities.set(entity.id, entityType);
+  }
+}
+
+/**
+ * Execute tool calls for the staged agentic loop
+ * Supports both new separated tools (add_*, remove_*, update_*) and legacy combined tools
  */
 export function executeToolCall(
   name: string,
   args: Record<string, unknown>,
   db: GameDatabase,
   accumulatedResponse: GameResponse,
-  changedEntities?: Map<string, string>, // Map<entityId, entityType>
+  changedEntities?: Map<string, string>,
 ): unknown {
-  // Query operations
+  // ============================================================================
+  // QUERY TOOLS
+  // ============================================================================
   if (name === "query_inventory") {
     return db.query("inventory", args.query as string);
-  } else if (name === "query_relationships") {
-    return db.query("relationship", args.query as string);
-  } else if (name === "query_locations") {
-    return db.query("location", args.query as string);
-  } else if (name === "query_quests") {
-    return db.query("quest", args.query as string);
-  } else if (name === "query_knowledge") {
-    return db.query("knowledge", args.query as string);
-  } else if (name === "query_timeline") {
-    return db.query("timeline", args.query as string);
-  } else if (name === "query_causal_chain") {
-    return db.query("causal_chain", args.query as string);
-  } else if (name === "query_factions") {
-    return db.query("faction", args.query as string);
-  } else if (name === "query_global") {
-    return db.query("global");
-  } else if (name === "query_character") {
-    return db.query("character");
   }
-  // RAG search operation
-  else if (name === "rag_search") {
+  if (name === "query_relationships") {
+    return db.query("relationship", args.query as string);
+  }
+  if (name === "query_locations") {
+    return db.query("location", args.query as string);
+  }
+  if (name === "query_quests") {
+    return db.query("quest", args.query as string);
+  }
+  if (name === "query_knowledge") {
+    return db.query("knowledge", args.query as string);
+  }
+  if (name === "query_timeline") {
+    return db.query("timeline", args.query as string);
+  }
+  if (name === "query_causal_chain") {
+    return db.query("causal_chain", args.query as string);
+  }
+  if (name === "query_factions") {
+    return db.query("faction", args.query as string);
+  }
+  if (name === "query_global") {
+    return db.query("global");
+  }
+  // Character query tools
+  if (name === "query_character_profile") {
+    return db.query("character", "profile");
+  }
+  if (name === "query_character_attributes") {
+    return db.query("character", "attributes", args.name as string);
+  }
+  if (name === "query_character_skills") {
+    return db.query("character", "skills", args.query as string);
+  }
+  if (name === "query_character_conditions") {
+    return db.query("character", "conditions", args.query as string);
+  }
+  if (name === "query_character_traits") {
+    return db.query("character", "hiddenTraits", args.query as string);
+  }
+  // RAG search
+  if (name === "rag_search") {
     return executeRagSearch(args, db);
   }
-  // Modify operations
-  else if (name === "update_inventory") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("inventory", actionType as string, data);
-    if (modifyResult.success) {
+
+  // ============================================================================
+  // ADD TOOLS
+  // ============================================================================
+  if (name === "add_inventory") {
+    const result = db.modify("inventory", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.inventoryActions)
         accumulatedResponse.inventoryActions = [];
       accumulatedResponse.inventoryActions.push({
-        action: actionType as "add" | "update" | "remove",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["inventoryActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "item");
-      }
+      trackChangedEntity(changedEntities, result, "item");
     }
-    return modifyResult;
-  } else if (name === "update_relationship") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("relationship", actionType as string, data);
-    if (modifyResult.success) {
+    return result;
+  }
+  if (name === "add_relationship") {
+    const result = db.modify("relationship", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.relationshipActions)
         accumulatedResponse.relationshipActions = [];
       accumulatedResponse.relationshipActions.push({
-        action: actionType as "add" | "update" | "remove",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["relationshipActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "npc");
-      }
+      trackChangedEntity(changedEntities, result, "npc");
     }
-    return modifyResult;
-  } else if (name === "update_location") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("location", actionType as string, data);
-    if (modifyResult.success) {
+    return result;
+  }
+  if (name === "add_location") {
+    const result = db.modify("location", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.locationActions)
         accumulatedResponse.locationActions = [];
       accumulatedResponse.locationActions.push({
         type: "known",
-        action: actionType as "add" | "update",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["locationActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "location");
-      }
+      trackChangedEntity(changedEntities, result, "location");
     }
-    return modifyResult;
-  } else if (name === "update_quest") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("quest", actionType as string, data);
-    if (modifyResult.success) {
+    return result;
+  }
+  if (name === "add_quest") {
+    const result = db.modify("quest", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
-        action: actionType as "add" | "update" | "complete" | "fail",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["questActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "quest");
-      }
+      trackChangedEntity(changedEntities, result, "quest");
     }
-    return modifyResult;
-  } else if (name === "update_knowledge") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("knowledge", actionType as string, data);
-    if (modifyResult.success) {
+    return result;
+  }
+  if (name === "add_knowledge") {
+    const result = db.modify("knowledge", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.knowledgeActions)
         accumulatedResponse.knowledgeActions = [];
       accumulatedResponse.knowledgeActions.push({
-        action: actionType as "add" | "update",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["knowledgeActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "knowledge");
-      }
+      trackChangedEntity(changedEntities, result, "knowledge");
     }
-    return modifyResult;
-  } else if (name === "update_timeline") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("timeline", actionType as string, data);
-    // Track entity with type for RAG update
-    if (
-      modifyResult.success &&
-      changedEntities &&
-      modifyResult.data &&
-      typeof modifyResult.data === "object" &&
-      modifyResult.data !== null &&
-      "id" in modifyResult.data
-    ) {
-      const entity = modifyResult.data as { id: string };
-      changedEntities.set(entity.id, "event");
-    }
-    return modifyResult;
-  } else if (name === "update_causal_chain") {
-    const { action: actionType, ...data } = args;
-    return db.modify("causal_chain", actionType as string, data);
-  } else if (name === "update_faction") {
-    const { action: actionType, ...data } = args;
-    const modifyResult = db.modify("faction", actionType as string, data);
-    if (modifyResult.success) {
+    return result;
+  }
+  if (name === "add_timeline") {
+    const result = db.modify("timeline", "add", args);
+    trackChangedEntity(changedEntities, result, "event");
+    return result;
+  }
+  if (name === "add_faction") {
+    const result = db.modify("faction", "add", args);
+    if (result.success) {
       if (!accumulatedResponse.factionActions)
         accumulatedResponse.factionActions = [];
       accumulatedResponse.factionActions.push({
-        action: actionType as "update",
-        ...data,
+        action: "add",
+        ...args,
       } as GameResponse["factionActions"][number]);
-      // Track entity with type for RAG update
-      if (
-        changedEntities &&
-        modifyResult.data &&
-        typeof modifyResult.data === "object" &&
-        modifyResult.data !== null &&
-        "id" in modifyResult.data
-      ) {
-        const entity = modifyResult.data as { id: string };
-        changedEntities.set(entity.id, "faction");
-      }
+      trackChangedEntity(changedEntities, result, "faction");
     }
-    return modifyResult;
-  } else if (name === "update_world_info") {
-    // Handle world info unlocking
+    return result;
+  }
+  if (name === "add_causal_chain") {
+    return db.modify("causal_chain", "add", args);
+  }
+  // Character add tools
+  if (name === "add_character_attribute") {
+    const result = db.modify("character", "add_attribute", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.attributes)
+        accumulatedResponse.characterUpdates.attributes = [];
+      accumulatedResponse.characterUpdates.attributes.push({
+        action: "add",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "add_character_skill") {
+    const result = db.modify("character", "add_skill", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.skills)
+        accumulatedResponse.characterUpdates.skills = [];
+      accumulatedResponse.characterUpdates.skills.push({
+        action: "add",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "add_character_condition") {
+    const result = db.modify("character", "add_condition", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.conditions)
+        accumulatedResponse.characterUpdates.conditions = [];
+      accumulatedResponse.characterUpdates.conditions.push({
+        action: "add",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "add_character_trait") {
+    const result = db.modify("character", "add_trait", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.hiddenTraits)
+        accumulatedResponse.characterUpdates.hiddenTraits = [];
+      accumulatedResponse.characterUpdates.hiddenTraits.push({
+        action: "add",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+
+  // ============================================================================
+  // REMOVE TOOLS
+  // ============================================================================
+  if (name === "remove_inventory") {
+    const result = db.modify("inventory", "remove", args);
+    if (result.success) {
+      if (!accumulatedResponse.inventoryActions)
+        accumulatedResponse.inventoryActions = [];
+      accumulatedResponse.inventoryActions.push({
+        action: "remove",
+        ...args,
+      } as GameResponse["inventoryActions"][number]);
+    }
+    return result;
+  }
+  if (name === "remove_relationship") {
+    const result = db.modify("relationship", "remove", args);
+    if (result.success) {
+      if (!accumulatedResponse.relationshipActions)
+        accumulatedResponse.relationshipActions = [];
+      accumulatedResponse.relationshipActions.push({
+        action: "remove",
+        ...args,
+      } as GameResponse["relationshipActions"][number]);
+    }
+    return result;
+  }
+  if (name === "remove_location") {
+    const result = db.modify("location", "remove", args);
+    if (result.success) {
+      if (!accumulatedResponse.locationActions)
+        accumulatedResponse.locationActions = [];
+      accumulatedResponse.locationActions.push({
+        type: "known",
+        action: "remove",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "remove_quest") {
+    const result = db.modify("quest", "remove", args);
+    if (result.success) {
+      if (!accumulatedResponse.questActions)
+        accumulatedResponse.questActions = [];
+      accumulatedResponse.questActions.push({
+        action: "remove",
+        ...args,
+      } as GameResponse["questActions"][number]);
+    }
+    return result;
+  }
+  if (name === "remove_faction") {
+    const result = db.modify("faction", "remove", args);
+    if (result.success) {
+      if (!accumulatedResponse.factionActions)
+        accumulatedResponse.factionActions = [];
+      accumulatedResponse.factionActions.push({
+        action: "remove",
+        ...args,
+      } as GameResponse["factionActions"][number]);
+    }
+    return result;
+  }
+  // Character remove tools
+  if (name === "remove_character_attribute") {
+    const result = db.modify("character", "remove_attribute", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.attributes)
+        accumulatedResponse.characterUpdates.attributes = [];
+      accumulatedResponse.characterUpdates.attributes.push({
+        action: "remove",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "remove_character_skill") {
+    const result = db.modify("character", "remove_skill", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.skills)
+        accumulatedResponse.characterUpdates.skills = [];
+      accumulatedResponse.characterUpdates.skills.push({
+        action: "remove",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "remove_character_condition") {
+    const result = db.modify("character", "remove_condition", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.conditions)
+        accumulatedResponse.characterUpdates.conditions = [];
+      accumulatedResponse.characterUpdates.conditions.push({
+        action: "remove",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "remove_character_trait") {
+    const result = db.modify("character", "remove_trait", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.hiddenTraits)
+        accumulatedResponse.characterUpdates.hiddenTraits = [];
+      accumulatedResponse.characterUpdates.hiddenTraits.push({
+        action: "remove",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+
+  // ============================================================================
+  // UPDATE TOOLS
+  // ============================================================================
+  if (name === "update_inventory") {
+    const result = db.modify("inventory", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.inventoryActions)
+        accumulatedResponse.inventoryActions = [];
+      accumulatedResponse.inventoryActions.push({
+        action: "update",
+        ...args,
+      } as GameResponse["inventoryActions"][number]);
+      trackChangedEntity(changedEntities, result, "item");
+    }
+    return result;
+  }
+  if (name === "update_relationship") {
+    const result = db.modify("relationship", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.relationshipActions)
+        accumulatedResponse.relationshipActions = [];
+      accumulatedResponse.relationshipActions.push({
+        action: "update",
+        ...args,
+      } as GameResponse["relationshipActions"][number]);
+      trackChangedEntity(changedEntities, result, "npc");
+    }
+    return result;
+  }
+  if (name === "update_location") {
+    const result = db.modify("location", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.locationActions)
+        accumulatedResponse.locationActions = [];
+      accumulatedResponse.locationActions.push({
+        type: "known",
+        action: "update",
+        ...args,
+      } as GameResponse["locationActions"][number]);
+      trackChangedEntity(changedEntities, result, "location");
+    }
+    return result;
+  }
+  if (name === "update_quest") {
+    const result = db.modify("quest", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.questActions)
+        accumulatedResponse.questActions = [];
+      accumulatedResponse.questActions.push({
+        action: "update",
+        ...args,
+      } as GameResponse["questActions"][number]);
+      trackChangedEntity(changedEntities, result, "quest");
+    }
+    return result;
+  }
+  if (name === "complete_quest") {
+    const result = db.modify("quest", "complete", args);
+    if (result.success) {
+      if (!accumulatedResponse.questActions)
+        accumulatedResponse.questActions = [];
+      accumulatedResponse.questActions.push({
+        action: "complete",
+        ...args,
+      } as GameResponse["questActions"][number]);
+    }
+    return result;
+  }
+  if (name === "fail_quest") {
+    const result = db.modify("quest", "fail", args);
+    if (result.success) {
+      if (!accumulatedResponse.questActions)
+        accumulatedResponse.questActions = [];
+      accumulatedResponse.questActions.push({
+        action: "fail",
+        ...args,
+      } as GameResponse["questActions"][number]);
+    }
+    return result;
+  }
+  if (name === "update_knowledge") {
+    const result = db.modify("knowledge", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.knowledgeActions)
+        accumulatedResponse.knowledgeActions = [];
+      accumulatedResponse.knowledgeActions.push({
+        action: "update",
+        ...args,
+      } as GameResponse["knowledgeActions"][number]);
+      trackChangedEntity(changedEntities, result, "knowledge");
+    }
+    return result;
+  }
+  if (name === "update_timeline") {
+    const result = db.modify("timeline", "update", args);
+    trackChangedEntity(changedEntities, result, "event");
+    return result;
+  }
+  if (name === "update_faction") {
+    const result = db.modify("faction", "update", args);
+    if (result.success) {
+      if (!accumulatedResponse.factionActions)
+        accumulatedResponse.factionActions = [];
+      accumulatedResponse.factionActions.push({
+        action: "update",
+        ...args,
+      } as GameResponse["factionActions"][number]);
+      trackChangedEntity(changedEntities, result, "faction");
+    }
+    return result;
+  }
+  // Causal chain tools
+  if (name === "update_causal_chain") {
+    return db.modify("causal_chain", "update", args);
+  }
+  if (name === "trigger_causal_chain") {
+    return db.modify("causal_chain", "trigger", args);
+  }
+  if (name === "resolve_causal_chain") {
+    return db.modify("causal_chain", "resolve", args);
+  }
+  if (name === "interrupt_causal_chain") {
+    return db.modify("causal_chain", "interrupt", args);
+  }
+  // World info
+  if (name === "update_world_info") {
     const { unlockWorldSetting, unlockMainGoal, reason } = args as {
       unlockWorldSetting?: boolean;
       unlockMainGoal?: boolean;
       reason: string;
     };
-    const modifyResult = db.modify("world_info", "update", {
+    const result = db.modify("world_info", "update", {
       unlockWorldSetting,
       unlockMainGoal,
       reason,
     });
-    if (modifyResult.success) {
+    if (result.success) {
       if (!accumulatedResponse.worldInfoUpdates)
         accumulatedResponse.worldInfoUpdates = [];
       accumulatedResponse.worldInfoUpdates.push({
@@ -1018,23 +1310,93 @@ export function executeToolCall(
         reason,
       });
     }
-    return modifyResult;
-  } else if (name === "update_global") {
-    const { ...data } = args;
-    return db.modify("global", "update", data);
-  } else if (name === "update_character") {
-    const modifyResult = db.modify("character", "update", args);
-    if (modifyResult.success) {
-      accumulatedResponse.characterUpdates =
-        args as GameResponse["characterUpdates"];
+    return result;
+  }
+  // Global state
+  if (name === "update_global") {
+    return db.modify("global", "update", args);
+  }
+  // Character profile update
+  if (name === "update_character_profile") {
+    const result = db.modify("character", "update_profile", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      Object.assign(accumulatedResponse.characterUpdates, args);
     }
-    return modifyResult;
-  } else if (name === "finish_turn") {
+    return result;
+  }
+  // Character attribute/skill/condition/trait updates
+  if (name === "update_character_attribute") {
+    const result = db.modify("character", "update_attribute", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.attributes)
+        accumulatedResponse.characterUpdates.attributes = [];
+      accumulatedResponse.characterUpdates.attributes.push({
+        action: "update",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "update_character_skill") {
+    const result = db.modify("character", "update_skill", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.skills)
+        accumulatedResponse.characterUpdates.skills = [];
+      accumulatedResponse.characterUpdates.skills.push({
+        action: "update",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "update_character_condition") {
+    const result = db.modify("character", "update_condition", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.conditions)
+        accumulatedResponse.characterUpdates.conditions = [];
+      accumulatedResponse.characterUpdates.conditions.push({
+        action: "update",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+  if (name === "update_character_trait") {
+    const result = db.modify("character", "update_trait", args);
+    if (result.success) {
+      if (!accumulatedResponse.characterUpdates)
+        accumulatedResponse.characterUpdates = {};
+      if (!accumulatedResponse.characterUpdates.hiddenTraits)
+        accumulatedResponse.characterUpdates.hiddenTraits = [];
+      accumulatedResponse.characterUpdates.hiddenTraits.push({
+        action: "update",
+        ...args,
+      } as any);
+    }
+    return result;
+  }
+
+  // ============================================================================
+  // CONTROL TOOLS
+  // ============================================================================
+  if (name === "finish_turn") {
     // finish_turn is handled separately in the main loop
     return { success: true };
   }
+  if (name === "next_stage") {
+    // next_stage is handled in the main loop
+    return { success: true };
+  }
 
-  return { success: false, error: "Unknown tool" };
+  return { success: false, error: `Unknown tool: ${name}` };
 }
 
 /**
