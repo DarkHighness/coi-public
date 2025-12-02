@@ -43,6 +43,11 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
             <span className="text-[10px] font-mono text-theme-muted bg-theme-bg/50 px-1.5 py-0.5 rounded border border-theme-border/30">
               {event.gameTime}
             </span>
+            {event.category && (
+              <span className="text-[9px] uppercase tracking-wider text-theme-muted bg-theme-surface/50 px-1.5 py-0.5 rounded border border-theme-border/20">
+                {event.category.replace("_", " ")}
+              </span>
+            )}
             {event.unlocked && (
               <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-theme-primary font-bold">
                 <svg
@@ -97,6 +102,37 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
                 inline
                 className="inline"
               />
+            </span>
+          </div>
+        )}
+
+        {/* Involved Entities */}
+        {event.involvedEntities && event.involvedEntities.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-theme-border/20">
+            <span className="text-[9px] uppercase tracking-wider text-theme-muted block mb-1">
+              {t("timeline.involved") || "Involved"}:
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {event.involvedEntities.map((entityId, idx) => (
+                <span
+                  key={idx}
+                  className="text-[10px] text-theme-text/70 bg-theme-bg/30 px-1.5 py-0.5 rounded border border-theme-border/20"
+                >
+                  {entityId}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chain ID */}
+        {event.chainId && (
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-[9px] uppercase tracking-wider text-theme-muted">
+              {t("timeline.chain") || "Chain"}:
+            </span>
+            <span className="text-[10px] text-theme-primary/70 font-mono">
+              {event.chainId}
             </span>
           </div>
         )}

@@ -267,11 +267,18 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
             </svg>
           )}
         </span>
-        {skill.level && (
-          <span className="text-xs text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap ml-2">
-            {skill.level}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {skill.category && (
+            <span className="text-[10px] text-theme-muted bg-theme-bg/50 px-1.5 py-0.5 rounded border border-theme-border/30 whitespace-nowrap">
+              {skill.category}
+            </span>
+          )}
+          {skill.level && (
+            <span className="text-xs text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
+              {skill.level}
+            </span>
+          )}
+        </div>
       </div>
 
       <div
@@ -446,6 +453,29 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
                   {condition.visible.perceivedSeverity}
                 </p>
               )}
+
+              {/* Visible Effects */}
+              {condition.effects?.visible &&
+                condition.effects.visible.length > 0 && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider opacity-80 block mb-1">
+                      {t("effects") || "Effects"}:
+                    </span>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs opacity-90">
+                      {condition.effects.visible.map((effect, i) => (
+                        <li key={i}>
+                          <MarkdownText
+                            content={effect}
+                            indentSize={2}
+                            inline
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {/* Unlocked Hidden Information - Outer Layer */}
 
               {/* Unlocked Hidden Information - Outer Layer */}
               {condition.unlocked && (

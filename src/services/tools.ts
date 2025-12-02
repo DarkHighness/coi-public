@@ -807,6 +807,10 @@ export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
         .boolean()
         .optional()
         .describe("Whether hidden agenda is revealed."),
+      icon: z
+        .string()
+        .optional()
+        .describe("A single emoji representing this faction."),
     }),
     // Update action - id is required
     z.object({

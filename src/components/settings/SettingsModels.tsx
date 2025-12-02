@@ -207,6 +207,35 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </p>
       </div>
 
+      {/* Fresh Segment Count Slider */}
+      <div className="space-y-2 pb-4 border-b border-theme-border">
+        <div className="flex justify-between">
+          <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+            {t("models.freshSegmentCount")}
+          </label>
+          <span className="text-theme-text font-mono">
+            {currentSettings.freshSegmentCount ?? 4} {t("turn")}
+          </span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          value={currentSettings.freshSegmentCount ?? 4}
+          onChange={(e) =>
+            onUpdateSettings({
+              ...currentSettings,
+              freshSegmentCount: parseInt(e.target.value),
+            })
+          }
+          className="w-full accent-theme-primary"
+        />
+        <p className="text-xs text-theme-muted italic">
+          {t("models.freshSegmentCountHelp")}
+        </p>
+      </div>
+
       {(
         [
           {

@@ -402,6 +402,26 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {rel.hidden?.inventory &&
+                      rel.hidden.inventory.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                            {t("hidden.inventory") || "Possessions"}:
+                          </span>
+                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                            {rel.hidden.inventory.map((item, i) => (
+                              <li key={i}>
+                                <MarkdownText
+                                  content={item}
+                                  indentSize={2}
+                                  inline
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

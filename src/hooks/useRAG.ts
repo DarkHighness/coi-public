@@ -23,6 +23,11 @@ import type {
   TimelineEvent,
   Relationship,
   StoryOutline,
+  Skill,
+  Condition,
+  HiddenTrait,
+  CharacterAttribute,
+  Faction,
 } from "../types";
 import {
   initializeRAGService,
@@ -708,6 +713,83 @@ export function extractDocumentsFromState(
         }
         break;
       }
+
+      case "skill": {
+        const skill = state.character?.skills?.find(
+          (s) => s.id === entityId || s.name === id,
+        );
+        if (skill) {
+          documents.push({
+            entityId,
+            type: "outline", // Using 'outline' type as skills are part of character
+            content: extractSkillContent(skill),
+            importance: 0.7,
+            unlocked: skill.unlocked,
+          });
+        }
+        break;
+      }
+
+      case "condition": {
+        const condition = state.character?.conditions?.find(
+          (c) => c.id === entityId || c.name === id,
+        );
+        if (condition) {
+          documents.push({
+            entityId,
+            type: "outline", // Using 'outline' type as conditions are part of character
+            content: extractConditionContent(condition),
+            importance: 0.8,
+            unlocked: condition.unlocked,
+          });
+        }
+        break;
+      }
+
+      case "trait": {
+        const trait = state.character?.hiddenTraits?.find(
+          (t) => t.id === entityId || t.name === id,
+        );
+        if (trait) {
+          documents.push({
+            entityId,
+            type: "outline", // Using 'outline' type as traits are part of character
+            content: extractHiddenTraitContent(trait),
+            importance: 0.9,
+            unlocked: trait.unlocked,
+          });
+        }
+        break;
+      }
+
+      case "attr":
+      case "attribute": {
+        const attr = state.character?.attributes?.find((a) => a.label === id);
+        if (attr) {
+          documents.push({
+            entityId,
+            type: "outline", // Using 'outline' type as attributes are part of character
+            content: extractAttributeContent(attr),
+            importance: 0.6,
+          });
+        }
+        break;
+      }
+
+      case "fac":
+      case "faction": {
+        const faction = state.factions?.find((f) => f.id === entityId);
+        if (faction) {
+          documents.push({
+            entityId,
+            type: "outline", // Using 'outline' type as factions are world-level entities
+            content: extractFactionContent(faction),
+            importance: 0.8,
+            unlocked: faction.unlocked,
+          });
+        }
+        break;
+      }
     }
   }
 
@@ -752,6 +834,9 @@ function extractStoryContent(node: StorySegment): string {
 function extractNPCContent(npc: Relationship): string {
   const parts: string[] = [];
   parts.push(`<npc id="${npc.id}">`);
+
+  // Icon
+  if (npc.icon) parts.push(`  <icon>${npc.icon}</icon>`);
 
   // Visible info
   if (npc.visible) {
@@ -818,6 +903,7 @@ function extractLocationContent(location: Location): string {
   parts.push(`<location id="${location.id}">`);
 
   if (location.name) parts.push(`  <name>${location.name}</name>`);
+  if (location.icon) parts.push(`  <icon>${location.icon}</icon>`);
 
   if (location.visible) {
     parts.push("  <visible>");
@@ -872,6 +958,7 @@ function extractItemContent(item: InventoryItem): string {
   parts.push(`<item id="${item.id}">`);
 
   if (item.name) parts.push(`  <name>${item.name}</name>`);
+  if (item.icon) parts.push(`  <icon>${item.icon}</icon>`);
 
   if (item.visible) {
     parts.push("  <visible>");
@@ -907,6 +994,7 @@ function extractKnowledgeContent(knowledge: KnowledgeEntry): string {
   if (knowledge.title) parts.push(`  <topic>${knowledge.title}</topic>`);
   if (knowledge.category)
     parts.push(`  <category>${knowledge.category}</category>`);
+  if (knowledge.icon) parts.push(`  <icon>${knowledge.icon}</icon>`);
 
   if (knowledge.visible) {
     parts.push("  <visible>");
@@ -945,6 +1033,7 @@ function extractQuestContent(quest: Quest): string {
 
   if (quest.title) parts.push(`  <title>${quest.title}</title>`);
   if (quest.type) parts.push(`  <type>${quest.type}</type>`);
+  if (quest.icon) parts.push(`  <icon>${quest.icon}</icon>`);
 
   if (quest.visible) {
     parts.push("  <visible>");
@@ -985,6 +1074,12 @@ function extractEventContent(event: TimelineEvent): string {
 
   if (event.gameTime) parts.push(`  <time>${event.gameTime}</time>`);
   if (event.category) parts.push(`  <category>${event.category}</category>`);
+  if (event.icon) parts.push(`  <icon>${event.icon}</icon>`);
+  if (event.involvedEntities?.length)
+    parts.push(
+      `  <involved_entities>${event.involvedEntities.join(", ")}</involved_entities>`,
+    );
+  if (event.chainId) parts.push(`  <chain_id>${event.chainId}</chain_id>`);
 
   if (event.visible) {
     parts.push("  <visible>");
@@ -1109,6 +1204,200 @@ function extractOutlineContent(outline: StoryOutline, aspect: string): string {
     }
   }
 
+  return parts.join("\n");
+}
+
+function extractSkillContent(skill: Skill): string {
+  const parts: string[] = [];
+  const id = skill.id || skill.name;
+  parts.push(`<skill id="${id}">`);
+
+  if (skill.name) parts.push(`  <name>${skill.name}</name>`);
+  if (skill.level) parts.push(`  <level>${skill.level}</level>`);
+  if (skill.category) parts.push(`  <category>${skill.category}</category>`);
+  if (skill.icon) parts.push(`  <icon>${skill.icon}</icon>`);
+
+  if (skill.visible) {
+    parts.push("  <visible>");
+    if (skill.visible.description)
+      parts.push(`    <description>${skill.visible.description}</description>`);
+    parts.push("  </visible>");
+  }
+
+  // Hidden info (Always visible to AI/GM)
+  if (skill.hidden) {
+    parts.push('  <hidden status="unlocked">');
+    if (skill.hidden.trueDescription)
+      parts.push(
+        `    <true_description>${skill.hidden.trueDescription}</true_description>`,
+      );
+    if (skill.hidden.hiddenEffects?.length)
+      parts.push(
+        `    <hidden_effects>${skill.hidden.hiddenEffects.join("; ")}</hidden_effects>`,
+      );
+    if (skill.hidden.drawbacks?.length)
+      parts.push(
+        `    <drawbacks>${skill.hidden.drawbacks.join("; ")}</drawbacks>`,
+      );
+    parts.push("  </hidden>");
+  }
+
+  parts.push("</skill>");
+  return parts.join("\n");
+}
+
+function extractConditionContent(condition: Condition): string {
+  const parts: string[] = [];
+  const id = condition.id || condition.name;
+  parts.push(`<condition id="${id}" type="${condition.type}">`);
+
+  if (condition.name) parts.push(`  <name>${condition.name}</name>`);
+  if (condition.icon) parts.push(`  <icon>${condition.icon}</icon>`);
+  if (condition.severity)
+    parts.push(`  <severity>${condition.severity}</severity>`);
+  if (condition.startTime)
+    parts.push(`  <start_time>${condition.startTime}</start_time>`);
+
+  if (condition.visible) {
+    parts.push("  <visible>");
+    if (condition.visible.description)
+      parts.push(
+        `    <description>${condition.visible.description}</description>`,
+      );
+    if (condition.visible.perceivedSeverity)
+      parts.push(
+        `    <perceived_severity>${condition.visible.perceivedSeverity}</perceived_severity>`,
+      );
+    parts.push("  </visible>");
+  }
+
+  // Visible effects
+  if (condition.effects?.visible?.length) {
+    parts.push(
+      `  <visible_effects>${condition.effects.visible.join("; ")}</visible_effects>`,
+    );
+  }
+
+  // Hidden info (Always visible to AI/GM)
+  if (condition.hidden) {
+    parts.push('  <hidden status="unlocked">');
+    if (condition.hidden.trueCause)
+      parts.push(`    <true_cause>${condition.hidden.trueCause}</true_cause>`);
+    if (condition.hidden.actualSeverity)
+      parts.push(
+        `    <actual_severity>${condition.hidden.actualSeverity}</actual_severity>`,
+      );
+    if (condition.hidden.progression)
+      parts.push(
+        `    <progression>${condition.hidden.progression}</progression>`,
+      );
+    if (condition.hidden.cure)
+      parts.push(`    <cure>${condition.hidden.cure}</cure>`);
+    parts.push("  </hidden>");
+  }
+
+  // Hidden effects
+  if (condition.effects?.hidden?.length) {
+    parts.push(
+      `  <hidden_effects>${condition.effects.hidden.join("; ")}</hidden_effects>`,
+    );
+  }
+
+  parts.push("</condition>");
+  return parts.join("\n");
+}
+
+function extractHiddenTraitContent(trait: HiddenTrait): string {
+  const parts: string[] = [];
+  const id = trait.id || trait.name;
+  parts.push(`<hidden_trait id="${id}" unlocked="${trait.unlocked}">`);
+
+  if (trait.name) parts.push(`  <name>${trait.name}</name>`);
+  if (trait.icon) parts.push(`  <icon>${trait.icon}</icon>`);
+  if (trait.description)
+    parts.push(`  <description>${trait.description}</description>`);
+
+  if (trait.effects?.length)
+    parts.push(`  <effects>${trait.effects.join("; ")}</effects>`);
+
+  if (trait.triggerConditions?.length)
+    parts.push(
+      `  <trigger_conditions>${trait.triggerConditions.join("; ")}</trigger_conditions>`,
+    );
+
+  parts.push("</hidden_trait>");
+  return parts.join("\n");
+}
+
+function extractAttributeContent(attr: CharacterAttribute): string {
+  const parts: string[] = [];
+  parts.push(`<attribute label="${attr.label}">`);
+
+  if (attr.icon) parts.push(`  <icon>${attr.icon}</icon>`);
+  parts.push(`  <value>${attr.value}</value>`);
+  parts.push(`  <max_value>${attr.maxValue}</max_value>`);
+  if (attr.color) parts.push(`  <color>${attr.color}</color>`);
+
+  parts.push("</attribute>");
+  return parts.join("\n");
+}
+
+function extractFactionContent(faction: Faction): string {
+  const parts: string[] = [];
+  parts.push(`<faction id="${faction.id}">`);
+
+  if (faction.name) parts.push(`  <name>${faction.name}</name>`);
+  if (faction.icon) parts.push(`  <icon>${faction.icon}</icon>`);
+
+  // Visible info
+  if (faction.visible) {
+    parts.push("  <visible>");
+    if (faction.visible.agenda)
+      parts.push(`    <agenda>${faction.visible.agenda}</agenda>`);
+    if (faction.visible.influence)
+      parts.push(`    <influence>${faction.visible.influence}</influence>`);
+    if (faction.visible.members?.length) {
+      const memberStrs = faction.visible.members.map(
+        (m) => `${m.name}${m.title ? ` (${m.title})` : ""}`,
+      );
+      parts.push(`    <members>${memberStrs.join("; ")}</members>`);
+    }
+    if (faction.visible.relations?.length) {
+      const relStrs = faction.visible.relations.map(
+        (r) => `${r.target}: ${r.status}`,
+      );
+      parts.push(`    <relations>${relStrs.join("; ")}</relations>`);
+    }
+    parts.push("  </visible>");
+  }
+
+  // Hidden info (Always visible to AI/GM)
+  if (faction.hidden) {
+    parts.push('  <hidden status="unlocked">');
+    if (faction.hidden.agenda)
+      parts.push(`    <secret_agenda>${faction.hidden.agenda}</secret_agenda>`);
+    if (faction.hidden.influence)
+      parts.push(
+        `    <true_influence>${faction.hidden.influence}</true_influence>`,
+      );
+    if (faction.hidden.members?.length) {
+      const memberStrs = faction.hidden.members.map(
+        (m) => `${m.name}${m.title ? ` (${m.title})` : ""}`,
+      );
+      parts.push(`    <secret_members>${memberStrs.join("; ")}</secret_members>`);
+    }
+    if (faction.hidden.relations?.length) {
+      const relStrs = faction.hidden.relations.map(
+        (r) => `${r.target}: ${r.status}`,
+      );
+      parts.push(
+        `    <secret_relations>${relStrs.join("; ")}</secret_relations>`,
+      );
+    }
+    parts.push("  </hidden>");
+  }
+
+  parts.push("</faction>");
   return parts.join("\n");
 }
 

@@ -172,6 +172,13 @@ export const getCoreRules = (): string => `
 
   <rule name="STATE MANAGEMENT">
     - Output ONLY changes (DELTAS).
+    - **PROACTIVE UPDATE PRINCIPLE**: ALWAYS update state IMMEDIATELY when events occur. Do NOT delay updates.
+      * When a character gains/loses an item → update inventory in the SAME turn.
+      * When an NPC moves or changes status → update their currentLocation/status in the SAME turn.
+      * When time passes → update time in the SAME turn.
+      * When relationships change (affinity, impression) → update relationships in the SAME turn.
+      * When world events happen → update worldEvents/factions in the SAME turn.
+      * **NEVER** rely on future turns to "catch up" on state changes. State must reflect reality at ALL times.
     - **Inventory**: Add/Remove/Update. Use \`sensory\` (texture, weight, smell) and \`condition\` for physical depth. Always include \`hidden.truth\` for items with secrets.
     - **Relationships**: Track affinity, impression, location, and status.
       * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.status, visible.affinity, description, personality, currentLocation.

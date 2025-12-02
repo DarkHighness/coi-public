@@ -277,7 +277,9 @@ export const useGameAction = ({
         }
 
         // We send everything from the last summarized point onwards
-        const startIndex = Math.max(0, lastIndex - 1);
+        // But keep extra fresh segments for narrative continuity even after summarization
+        const freshCount = aiSettings.freshSegmentCount ?? 4;
+        const startIndex = Math.max(0, lastIndex - freshCount);
         let segmentsToSend = contextNodes.slice(startIndex);
 
         // Generate Turn - pass GameState directly with TurnContext

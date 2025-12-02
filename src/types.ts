@@ -980,6 +980,7 @@ export interface AISettings {
   providers: ProviderManagement;
 
   contextLen: number; // Max conversation turns before summarization
+  freshSegmentCount: number; // Number of fresh segments to keep alongside summary for narrative continuity
 
   story: FunctionConfig;
   lore: FunctionConfig;

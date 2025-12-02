@@ -88,6 +88,7 @@ export const DEFAULT_PROVIDERS: ProviderManagement = {
 export const DEFAULTS: AISettings = {
   providers: DEFAULT_PROVIDERS,
   contextLen: 10, // Summarize after 10 turns
+  freshSegmentCount: 4, // Keep 4 fresh segments alongside summary for narrative continuity
   story: {
     providerId: "provider-1",
     modelId: "gemini-2.0-flash-exp",
