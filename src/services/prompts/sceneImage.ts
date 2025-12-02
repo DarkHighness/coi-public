@@ -73,8 +73,6 @@ const extractContextFromGameState = (
       status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,
     }));
 
-  debugger;
-
   // Resolve location details (case-insensitive) - now with full details
   const currentLoc = stateSnapshot.locations?.find(
     (l: GameLocation) =>
