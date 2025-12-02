@@ -360,6 +360,85 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                     </div>
                   )}
 
+                  {/* Stage Input Section - for debugging agentic loops */}
+                  {log.stageInput && (
+                    <div className="space-y-4 border-t border-theme-border/30 pt-4">
+                      <label className="text-xs uppercase tracking-widest text-yellow-500 font-bold block mb-2">
+                        {t("logPanel.stageDebug") || "Stage Debug Info"}
+                      </label>
+
+                      {log.stageInput.stageInstruction && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-theme-muted uppercase font-bold">
+                            {t("logPanel.stageInstruction") ||
+                              "Stage Instruction"}
+                          </span>
+                          <div className="bg-yellow-900/10 rounded border border-yellow-500/30 p-2 max-h-[100px] overflow-auto">
+                            <pre className="text-xs text-theme-text whitespace-pre-wrap wrap-break-words">
+                              {log.stageInput.stageInstruction}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {log.stageInput.availableTools &&
+                        log.stageInput.availableTools.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-theme-muted uppercase font-bold">
+                              {t("logPanel.availableTools") ||
+                                "Available Tools"}
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {log.stageInput.availableTools.map((tool, i) => (
+                                <span
+                                  key={i}
+                                  className="text-xs bg-theme-surface-highlight border border-theme-border/50 px-2 py-0.5 rounded text-theme-muted font-mono"
+                                >
+                                  {tool}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {log.stageInput.conversationHistory && (
+                        <div className="space-y-1">
+                          <details className="group">
+                            <summary className="text-xs cursor-pointer hover:text-yellow-400 transition-colors select-none text-theme-muted uppercase font-bold">
+                              {t("logPanel.conversationHistory") ||
+                                "Conversation History"}{" "}
+                              ({log.stageInput.conversationHistory.length}{" "}
+                              {t("logPanel.chars") || "chars"})
+                            </summary>
+                            <div className="bg-black/10 rounded border border-theme-border/30 p-2 mt-2 max-h-[300px] overflow-auto">
+                              <pre className="text-xs text-theme-muted/60 whitespace-pre-wrap wrap-break-words">
+                                {log.stageInput.conversationHistory}
+                              </pre>
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Raw Response Section - for debugging */}
+                  {log.rawResponse && (
+                    <div className="space-y-1 border-t border-theme-border/30 pt-4">
+                      <details className="group">
+                        <summary className="text-xs cursor-pointer hover:text-cyan-400 transition-colors select-none text-cyan-500 uppercase font-bold">
+                          {t("logPanel.rawResponse") || "Raw AI Response"} (
+                          {log.rawResponse.length}{" "}
+                          {t("logPanel.chars") || "chars"})
+                        </summary>
+                        <div className="bg-cyan-900/10 rounded border border-cyan-500/30 p-2 mt-2 max-h-[300px] overflow-auto">
+                          <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
+                            {log.rawResponse}
+                          </pre>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
                   {/* Legacy Request/Response for non-agentic logs */}
                   {!hasToolCalls && (log.request || log.response) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

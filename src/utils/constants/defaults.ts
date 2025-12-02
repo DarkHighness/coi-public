@@ -135,6 +135,7 @@ export const DEFAULTS: AISettings = {
   manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
   lockEnvTheme: false,
+  typewriterSpeed: 15, // Default: 15ms per character
   // RAG Embedding Settings
   // Note: modelId is empty by default - user must select a model based on their provider
   // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)

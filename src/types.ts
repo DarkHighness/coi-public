@@ -493,6 +493,14 @@ export interface LogEntry {
     userPrompt?: string;
     modelConfig?: any;
   };
+  // Stage debugging: input messages sent to AI
+  stageInput?: {
+    conversationHistory: string; // JSON stringified messages
+    availableTools: string[]; // Tool names for this stage
+    stageInstruction?: string; // Current stage instruction message
+  };
+  // Stage debugging: raw AI response before parsing
+  rawResponse?: string;
 }
 
 // Faction, StoryOutline 从 zodSchemas.ts 导入
@@ -1008,6 +1016,9 @@ export interface AISettings {
 
   // Visual Theme Settings
   lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes
+
+  // Typewriter Effect Settings
+  typewriterSpeed: number; // Characters per interval (1-100, lower = faster)
 
   // RAG Embedding Settings
   embedding: EmbeddingConfig;

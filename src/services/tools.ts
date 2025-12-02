@@ -1211,11 +1211,7 @@ Alternatively, you can call finish_turn at ANY stage to complete the turn immedi
       .optional()
       .describe(
         "Target stage to jump to. If omitted, advances to next stage in sequence.",
-      ),
-    reason: z
-      .string()
-      .optional()
-      .describe("Brief reason for stage transition."),
+      )
   }),
 };
 

@@ -682,6 +682,10 @@
   "enableFallbackBackgroundDesc": "Enable fallback background images",
   "lockEnvTheme": "Lock UI Theme",
   "lockEnvThemeDesc": "Keep the UI theme consistent with the story genre, ignoring atmospheric changes.",
+  "typewriterSpeed": "Text Animation Speed",
+  "typewriterSpeedDesc": "Speed of the typewriter effect for new story text.",
+  "fast": "Fast",
+  "slow": "Slow",
   "layoutPreferences": "Layout Preferences (Desktop)",
   "layoutPreferencesDesc": "Control visibility of sidebar panels in desktop view",
   "showSidebar": "Show Left Sidebar",
@@ -950,7 +954,12 @@
     "cacheRead": "Cache Read:",
     "cacheWrite": "Cache Write:",
     "noLogs": "No logs recorded in this session.",
-    "parsedResult": "Parsed Result"
+    "parsedResult": "Parsed Result",
+    "stageDebug": "Stage Debug Info",
+    "stageInstruction": "Stage Instructions",
+    "availableTools": "Available Tools",
+    "conversationHistory": "Conversation History",
+    "rawResponse": "Raw Response"
   },
   "new-game": "New Game",
   "saveManager": {

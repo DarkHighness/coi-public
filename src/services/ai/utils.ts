@@ -177,6 +177,8 @@ export const createLogEntry = (
   toolCalls?: ToolCallRecord[],
   generationDetails?: LogEntry["generationDetails"],
   parsedResult?: unknown,
+  stageInput?: LogEntry["stageInput"],
+  rawResponse?: string,
 ): LogEntry => {
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
@@ -190,6 +192,8 @@ export const createLogEntry = (
     usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     toolCalls,
     generationDetails,
+    stageInput,
+    rawResponse,
   };
   console.log(`[Log] ${provider}/${model} - ${endpoint}`, {
     usage: entry.usage,

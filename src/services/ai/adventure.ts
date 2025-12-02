@@ -543,6 +543,33 @@ Consider setting nextInitialStage if you know what stage would be best for the n
       totalUsage.totalTokens += usage!.totalTokens || 0;
     }
 
+    // Helper to extract text from message content
+    const getMessageText = (content: UnifiedMessage["content"]): string => {
+      return content
+        .filter((part) => part.type === "text" && part.text)
+        .map((part) => part.text)
+        .join("\n");
+    };
+
+    // Prepare stage input for debugging
+    const lastStageInstruction = conversationHistory
+      .filter((m) => {
+        const text = getMessageText(m.content);
+        return m.role === "user" && text.startsWith("[STAGE:");
+      })
+      .pop();
+
+    const stageInput = {
+      conversationHistory: JSON.stringify(conversationHistory, null, 2),
+      availableTools: toolConfig.map((t) => t.name),
+      stageInstruction: lastStageInstruction
+        ? getMessageText(lastStageInstruction.content)
+        : undefined,
+    };
+
+    // Prepare raw response for debugging
+    const rawResponse = JSON.stringify(result, null, 2);
+
     lastLog = createLogEntry(
       protocol,
       modelId,
@@ -555,6 +582,11 @@ Consider setting nextInitialStage if you know what stage would be best for the n
             ?.length || 0,
       },
       usage!,
+      undefined, // toolCalls - will be set later
+      generationDetails,
+      undefined, // parsedResult
+      stageInput,
+      rawResponse,
     );
 
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })

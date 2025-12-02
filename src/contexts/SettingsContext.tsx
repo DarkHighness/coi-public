@@ -62,6 +62,7 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
       ...DEFAULTS.audioVolume,
       ...(parsed.audioVolume || {}),
     },
+    typewriterSpeed: parsed.typewriterSpeed ?? DEFAULTS.typewriterSpeed,
     translation: {
       ...DEFAULTS.translation,
       ...(parsed.translation || {}),

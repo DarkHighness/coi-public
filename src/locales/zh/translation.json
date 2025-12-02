@@ -669,6 +669,10 @@
   "enableFallbackBackgroundDesc": "启用 Fallback 的背景图片",
   "lockEnvTheme": "锁定界面主题",
   "lockEnvThemeDesc": "保持界面主题与故事类型一致，忽略氛围变化。",
+  "typewriterSpeed": "文本动画速度",
+  "typewriterSpeedDesc": "新故事文本打字机效果的速度。",
+  "fast": "快",
+  "slow": "慢",
   "layoutPreferences": "布局偏好（桌面端）",
   "layoutPreferencesDesc": "控制桌面端侧边栏面板的显示",
   "showSidebar": "显示左侧边栏",
@@ -962,7 +966,12 @@
     "cacheRead": "缓存读取:",
     "cacheWrite": "缓存写入:",
     "noLogs": "本次会话暂无日志记录。",
-    "parsedResult": "解析结果"
+    "parsedResult": "解析结果",
+    "stageDebug": "Stage 调试信息",
+    "stageInstruction": "Stage 指令",
+    "availableTools": "可用工具",
+    "conversationHistory": "对话历史",
+    "rawResponse": "原始响应"
   },
   "new-game": "旅程尚未开始...",
   "saveManager": {

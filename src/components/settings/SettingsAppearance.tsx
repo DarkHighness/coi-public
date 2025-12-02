@@ -115,6 +115,39 @@ export const SettingsAppearance: React.FC = () => {
               />
             </button>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-theme-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="font-bold text-theme-text">
+                  {t("typewriterSpeed")}
+                </div>
+                <div className="text-xs text-theme-muted">
+                  {t("typewriterSpeedDesc")}
+                </div>
+              </div>
+              <span className="text-sm font-mono text-theme-primary bg-theme-primary/10 px-2 py-1 rounded">
+                {currentSettings.typewriterSpeed}ms
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-theme-muted">{t("fast")}</span>
+              <input
+                type="range"
+                min="1"
+                max="100"
+                value={currentSettings.typewriterSpeed}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...currentSettings,
+                    typewriterSpeed: parseInt(e.target.value),
+                  })
+                }
+                className="flex-1 h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+              />
+              <span className="text-xs text-theme-muted">{t("slow")}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1114,13 +1114,21 @@ export const useGameEngine = () => {
         settings: aiSettings,
       };
 
-      const response = await generateForceUpdate(
+      const { response, logs } = await generateForceUpdate(
         prompt,
         gameStateRef.current,
         context,
       );
 
-      const finalState = response.finalState;
+      // Add force update logs to game state
+      if (logs && logs.length > 0) {
+        setGameState((prev) => ({
+          ...prev,
+          logs: [...(prev.logs || []), ...logs],
+        }));
+      }
+
+      const finalState = (response as any).finalState;
       if (!finalState) {
         throw new Error("Force update failed: No final state returned.");
       }

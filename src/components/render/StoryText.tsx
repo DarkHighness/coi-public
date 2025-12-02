@@ -82,7 +82,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
         {isLast ? (
           <TypewriterText
             text={text}
-            speed={15}
+            speed={aiSettings.typewriterSpeed ?? 15}
             instant={!shouldAnimate}
             onComplete={onTypingComplete}
             enableMarkdown={true}

@@ -8,6 +8,8 @@ import {
   UnifiedMessage,
   UnifiedToolCallResult,
   GameResponse,
+  LogEntry,
+  ToolCallRecord,
 } from "../../types";
 
 import { ToolCallResult } from "../providers/types";
@@ -48,13 +50,23 @@ import { executeToolCall } from "./adventure";
 // ============================================================================
 
 /**
+ * Result of force update loop
+ */
+export interface ForceUpdateResult {
+  response: GameResponse;
+  logs: LogEntry[];
+  usage: TokenUsage;
+  changedEntities: Array<{ id: string; type: string }>;
+}
+
+/**
  * 生成强制更新 (Force Update / Sudo)
  */
 export const generateForceUpdate = async (
   prompt: string,
   inputState: GameState,
   context: TurnContext,
-): Promise<GameResponse> => {
+): Promise<ForceUpdateResult> => {
   if (!context.settings) {
     throw new Error("settings is required in context");
   }
@@ -130,13 +142,15 @@ const runForceUpdateLoop = async (
   initialContents: UnifiedMessage[],
   inputState: GameState,
   settings: AISettings,
-): Promise<GameResponse> => {
+): Promise<ForceUpdateResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
   // Stage-based limits
   let stageTransitions = 0;
   const maxStageTransitions = 10;
   const maxIterationsPerStage = 3;
+
+  const allLogs: LogEntry[] = [];
 
   // Use the GameState directly as the database initial state
   const db = new GameDatabase({
@@ -178,6 +192,14 @@ const runForceUpdateLoop = async (
   type ForceUpdateStage = "query" | "add" | "remove" | "update" | "complete";
   let currentStage: ForceUpdateStage = "query";
   let stageIterations = 0;
+
+  // Helper to extract text from message content
+  const getMessageText = (content: UnifiedMessage["content"]): string => {
+    return content
+      .filter((part) => part.type === "text" && part.text)
+      .map((part) => part.text)
+      .join("\n");
+  };
 
   // Get tools for current force update stage
   const getForceUpdateTools = (stage: ForceUpdateStage) => {
@@ -318,12 +340,34 @@ You MUST call complete_force_update with a narrative describing the changes.`,
       totalUsage.totalTokens += usage!.totalTokens || 0;
     }
 
+    // Prepare stage input for debugging
+    const lastStageInstruction = conversationHistory
+      .filter((m) => {
+        const text = getMessageText(m.content);
+        return (
+          m.role === "user" && text.startsWith("[FORCE UPDATE - STAGE:")
+        );
+      })
+      .pop();
+
+    const stageInput = {
+      conversationHistory: JSON.stringify(conversationHistory, null, 2),
+      availableTools: toolConfig.map((t) => t.name),
+      stageInstruction: lastStageInstruction
+        ? getMessageText(lastStageInstruction.content)
+        : undefined,
+    };
+
+    // Prepare raw response for debugging
+    const rawResponse = JSON.stringify(result, null, 2);
+
     // Handle Tool Calls
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
       .functionCalls;
 
     if (result && functionCalls && functionCalls.length > 0) {
       let toolCalls: UnifiedToolCallResult[] = functionCalls;
+      const turnToolCalls: ToolCallRecord[] = [];
 
       // Ensure complete_force_update is last
       const completeIndex = toolCalls.findIndex(
@@ -400,7 +444,56 @@ You MUST call complete_force_update with a narrative describing the changes.`,
             accumulatedResponse as GameResponse & { finalState: unknown }
           ).finalState = db.getState();
 
-          return accumulatedResponse;
+          turnToolCalls.push({
+            name: "complete_force_update",
+            input: {
+              narrative: (args.narrative as string)?.substring(0, 100) + "...",
+              choices: args.choices,
+            },
+            output: { success: true },
+            timestamp: Date.now(),
+          });
+
+          // Create log entry for this iteration
+          const iterationLog = createLogEntry(
+            protocol,
+            modelId,
+            `force_update_${currentStage}_${stageIterations + 1}`,
+            { stage: currentStage, iteration: stageIterations + 1 },
+            { hasToolCalls: true, toolCount: toolCalls.length },
+            usage!,
+            turnToolCalls,
+            undefined,
+            undefined,
+            stageInput,
+            rawResponse,
+          );
+          allLogs.push(iterationLog);
+
+          // Create final completion log
+          const finalLog = createLogEntry(
+            protocol,
+            modelId,
+            "force_update_complete",
+            { stageTransitions, finalStage: currentStage },
+            {
+              totalToolCalls: allLogs.reduce(
+                (sum, log) => sum + (log.toolCalls?.length || 0),
+                0,
+              ),
+            },
+            totalUsage,
+          );
+          allLogs.push(finalLog);
+
+          return {
+            response: accumulatedResponse,
+            logs: allLogs,
+            usage: totalUsage,
+            changedEntities: Array.from(changedEntities.entries()).map(
+              ([id, type]) => ({ id, type }),
+            ),
+          };
         }
 
         // Execute other tools
@@ -411,6 +504,13 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           accumulatedResponse,
           changedEntities,
         );
+
+        turnToolCalls.push({
+          name,
+          input: args,
+          output,
+          timestamp: Date.now(),
+        });
 
         // Check if this is a stage-advancing action (query complete, modifications done)
         if (name.startsWith("query_") || name === "rag_search") {
@@ -424,6 +524,22 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           content: output,
         });
       }
+
+      // Create log entry for this iteration with tool calls
+      const iterationLog = createLogEntry(
+        protocol,
+        modelId,
+        `force_update_${currentStage}_${stageIterations + 1}`,
+        { stage: currentStage, iteration: stageIterations + 1 },
+        { hasToolCalls: true, toolCount: toolCalls.length },
+        usage!,
+        turnToolCalls,
+        undefined,
+        undefined,
+        stageInput,
+        rawResponse,
+      );
+      allLogs.push(iterationLog);
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
 
@@ -439,6 +555,22 @@ You MUST call complete_force_update with a narrative describing the changes.`,
         }
       }
     } else {
+      // No tool calls - create log for this iteration
+      const noToolLog = createLogEntry(
+        protocol,
+        modelId,
+        `force_update_${currentStage}_${stageIterations + 1}_no_tools`,
+        { stage: currentStage, iteration: stageIterations + 1 },
+        { hasToolCalls: false, toolCount: 0 },
+        usage!,
+        undefined,
+        undefined,
+        undefined,
+        stageInput,
+        rawResponse,
+      );
+      allLogs.push(noToolLog);
+
       // No tool calls - check for direct schema response in complete stage
       if (currentStage === "complete") {
         try {
@@ -476,7 +608,31 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           (
             accumulatedResponse as GameResponse & { finalState: unknown }
           ).finalState = db.getState();
-          return accumulatedResponse;
+
+          // Create final completion log
+          const finalLog = createLogEntry(
+            protocol,
+            modelId,
+            "force_update_complete",
+            { stageTransitions, method: "schema_response" },
+            {
+              totalToolCalls: allLogs.reduce(
+                (sum, log) => sum + (log.toolCalls?.length || 0),
+                0,
+              ),
+            },
+            totalUsage,
+          );
+          allLogs.push(finalLog);
+
+          return {
+            response: accumulatedResponse,
+            logs: allLogs,
+            usage: totalUsage,
+            changedEntities: Array.from(changedEntities.entries()).map(
+              ([id, type]) => ({ id, type }),
+            ),
+          };
         } catch (validationError) {
           console.error(
             `[Force Update Loop] Response does not match forceUpdateSchema:`,
@@ -488,7 +644,15 @@ You MUST call complete_force_update with a narrative describing the changes.`,
             (
               accumulatedResponse as GameResponse & { finalState: unknown }
             ).finalState = db.getState();
-            return accumulatedResponse;
+
+            return {
+              response: accumulatedResponse,
+              logs: allLogs,
+              usage: totalUsage,
+              changedEntities: Array.from(changedEntities.entries()).map(
+                ([id, type]) => ({ id, type }),
+              ),
+            };
           }
         }
       }
@@ -521,5 +685,30 @@ You MUST call complete_force_update with a narrative describing the changes.`,
     "Force update completed (max transitions reached).";
   (accumulatedResponse as GameResponse & { finalState: unknown }).finalState =
     db.getState();
-  return accumulatedResponse;
+
+  // Create fallback completion log
+  const fallbackLog = createLogEntry(
+    protocol,
+    modelId,
+    "force_update_complete",
+    { stageTransitions, method: "max_transitions_fallback" },
+    {
+      totalToolCalls: allLogs.reduce(
+        (sum, log) => sum + (log.toolCalls?.length || 0),
+        0,
+      ),
+    },
+    totalUsage,
+  );
+  allLogs.push(fallbackLog);
+
+  return {
+    response: accumulatedResponse,
+    logs: allLogs,
+    usage: totalUsage,
+    changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({
+      id,
+      type,
+    })),
+  };
 };
