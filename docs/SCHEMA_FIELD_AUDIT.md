@@ -31,6 +31,7 @@
 ✅ **大部分 schema 字段都被正确使用**
 
 经过详细审计，发现：
+
 - 所有核心实体的双层结构 (visible/hidden) 在各组件中正确实现
 - `unlocked` 机制在所有面板中正确工作
 - `tools.ts` 和 `gameDatabase.ts` 完整覆盖了所有字段的 CRUD 操作
@@ -42,26 +43,27 @@
 
 ### 🔴 UI 字段缺失 (已修复)
 
-| 组件 | 缺失字段 | 状态 |
-|------|---------|------|
-| `RelationshipPanel.tsx` | `hidden.inventory` | ✅ 已修复 |
-| `CharacterPanel.tsx` - SkillItem | `category` | ✅ 已修复 |
-| `CharacterPanel.tsx` - ConditionItem | `effects.visible` | ✅ 已修复 |
-| `TimelineEventsPanel.tsx` | `category`, `involvedEntities`, `chainId` | ✅ 已修复 |
+| 组件                                 | 缺失字段                                  | 状态      |
+| ------------------------------------ | ----------------------------------------- | --------- |
+| `RelationshipPanel.tsx`              | `hidden.inventory`                        | ✅ 已修复 |
+| `CharacterPanel.tsx` - SkillItem     | `category`                                | ✅ 已修复 |
+| `CharacterPanel.tsx` - ConditionItem | `effects.visible`                         | ✅ 已修复 |
+| `TimelineEventsPanel.tsx`            | `category`, `involvedEntities`, `chainId` | ✅ 已修复 |
 
 ### 🔴 RAG 提取函数缺失 (已修复)
 
-| 实体类型 | 状态 |
-|---------|------|
-| `Skill` | ✅ 已添加 `extractSkillContent()` |
-| `Condition` | ✅ 已添加 `extractConditionContent()` |
-| `HiddenTrait` | ✅ 已添加 `extractHiddenTraitContent()` |
-| `CharacterAttribute` | ✅ 已添加 `extractAttributeContent()` |
-| `Faction` | ✅ 已添加 `extractFactionContent()` |
+| 实体类型             | 状态                                    |
+| -------------------- | --------------------------------------- |
+| `Skill`              | ✅ 已添加 `extractSkillContent()`       |
+| `Condition`          | ✅ 已添加 `extractConditionContent()`   |
+| `HiddenTrait`        | ✅ 已添加 `extractHiddenTraitContent()` |
+| `CharacterAttribute` | ✅ 已添加 `extractAttributeContent()`   |
+| `Faction`            | ✅ 已添加 `extractFactionContent()`     |
 
 ### 🟡 RAG 字段缺失 (已修复)
 
 所有实体的 `icon` 字段已被添加到 RAG 文档提取中：
+
 - `extractNPCContent()` - ✅ 已添加 `<icon>`
 - `extractLocationContent()` - ✅ 已添加 `<icon>`
 - `extractItemContent()` - ✅ 已添加 `<icon>`
@@ -71,17 +73,17 @@
 
 ### 🟡 Tools 字段缺失 (已修复)
 
-| 工具 | 缺失字段 | 状态 |
-|------|---------|------|
-| `UPDATE_FACTION_TOOL` (add action) | `icon` | ✅ 已修复 |
+| 工具                               | 缺失字段 | 状态      |
+| ---------------------------------- | -------- | --------- |
+| `UPDATE_FACTION_TOOL` (add action) | `icon`   | ✅ 已修复 |
 
 ### 🟡 翻译缺失 (已修复)
 
-| 翻译键 | 中文 | 英文 | 状态 |
-|-------|------|------|------|
-| `timeline.involved` | 涉及实体 | Involved | ✅ 已添加 |
-| `timeline.chain` | 因果链 | Chain | ✅ 已添加 |
-| `hidden.inventory` | 已知物品 | Possessions | ✅ 已添加 |
+| 翻译键              | 中文     | 英文        | 状态      |
+| ------------------- | -------- | ----------- | --------- |
+| `timeline.involved` | 涉及实体 | Involved    | ✅ 已添加 |
+| `timeline.chain`    | 因果链   | Chain       | ✅ 已添加 |
+| `hidden.inventory`  | 已知物品 | Possessions | ✅ 已添加 |
 
 ---
 
@@ -94,20 +96,22 @@
 **修复内容**: 在 NPC 隐藏信息区域添加了 `hidden.inventory` 的显示
 
 ```tsx
-{rel.hidden?.inventory && rel.hidden.inventory.length > 0 && (
-  <div className="mt-2">
-    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-      {t("hidden.inventory") || "Possessions"}:
-    </span>
-    <ul className="list-disc list-inside text-theme-text space-y-0.5">
-      {rel.hidden.inventory.map((item, i) => (
-        <li key={i}>
-          <MarkdownText content={item} indentSize={2} inline />
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
+{
+  rel.hidden?.inventory && rel.hidden.inventory.length > 0 && (
+    <div className="mt-2">
+      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+        {t("hidden.inventory") || "Possessions"}:
+      </span>
+      <ul className="list-disc list-inside text-theme-text space-y-0.5">
+        {rel.hidden.inventory.map((item, i) => (
+          <li key={i}>
+            <MarkdownText content={item} indentSize={2} inline />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 ```
 
 ### 2. CharacterPanel - Skill category ✅
@@ -124,9 +128,7 @@
     </span>
   )}
   {skill.level && (
-    <span className="text-xs text-theme-primary ...">
-      {skill.level}
-    </span>
+    <span className="text-xs text-theme-primary ...">{skill.level}</span>
   )}
 </div>
 ```
@@ -141,67 +143,87 @@
 > 但不存在于基础的 `conditionSchema` 类型中，因此 UI 不应显示该字段。
 
 ```tsx
-{/* Visible Effects */}
-{condition.effects?.visible && condition.effects.visible.length > 0 && (
-  <div>
-    <span className="text-[10px] uppercase tracking-wider opacity-80 block mb-1">
-      {t("effects") || "Effects"}:
-    </span>
-    <ul className="list-disc list-inside space-y-0.5 text-xs opacity-90">
-      {condition.effects.visible.map((effect, i) => (
-        <li key={i}>
-          <MarkdownText content={effect} indentSize={2} inline />
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
+{
+  /* Visible Effects */
+}
+{
+  condition.effects?.visible && condition.effects.visible.length > 0 && (
+    <div>
+      <span className="text-[10px] uppercase tracking-wider opacity-80 block mb-1">
+        {t("effects") || "Effects"}:
+      </span>
+      <ul className="list-disc list-inside space-y-0.5 text-xs opacity-90">
+        {condition.effects.visible.map((effect, i) => (
+          <li key={i}>
+            <MarkdownText content={effect} indentSize={2} inline />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 ```
 
 ### 4. TimelineEventsPanel - category, involvedEntities, chainId ✅
 
 **文件**: `src/components/sidebar/TimelineEventsPanel.tsx`
 
-**修复内容**: 
+**修复内容**:
+
 - 添加了 `category` 显示在时间戳旁边
 - 添加了 `involvedEntities` 列表显示
 - 添加了 `chainId` 显示
 
 ```tsx
-{/* Category Badge */}
-{event.category && (
-  <span className="text-[9px] uppercase tracking-wider text-theme-muted bg-theme-surface/50 px-1.5 py-0.5 rounded border border-theme-border/20">
-    {event.category.replace("_", " ")}
-  </span>
-)}
-
-{/* Involved Entities */}
-{event.involvedEntities && event.involvedEntities.length > 0 && (
-  <div className="mt-2 pt-2 border-t border-theme-border/20">
-    <span className="text-[9px] uppercase tracking-wider text-theme-muted block mb-1">
-      {t("timeline.involved") || "Involved"}:
+{
+  /* Category Badge */
+}
+{
+  event.category && (
+    <span className="text-[9px] uppercase tracking-wider text-theme-muted bg-theme-surface/50 px-1.5 py-0.5 rounded border border-theme-border/20">
+      {event.category.replace("_", " ")}
     </span>
-    <div className="flex flex-wrap gap-1">
-      {event.involvedEntities.map((entityId, idx) => (
-        <span key={idx} className="text-[10px] text-theme-text/70 bg-theme-bg/30 px-1.5 py-0.5 rounded border border-theme-border/20">
-          {entityId}
-        </span>
-      ))}
+  );
+}
+
+{
+  /* Involved Entities */
+}
+{
+  event.involvedEntities && event.involvedEntities.length > 0 && (
+    <div className="mt-2 pt-2 border-t border-theme-border/20">
+      <span className="text-[9px] uppercase tracking-wider text-theme-muted block mb-1">
+        {t("timeline.involved") || "Involved"}:
+      </span>
+      <div className="flex flex-wrap gap-1">
+        {event.involvedEntities.map((entityId, idx) => (
+          <span
+            key={idx}
+            className="text-[10px] text-theme-text/70 bg-theme-bg/30 px-1.5 py-0.5 rounded border border-theme-border/20"
+          >
+            {entityId}
+          </span>
+        ))}
+      </div>
     </div>
-  </div>
-)}
+  );
+}
 
-{/* Chain ID */}
-{event.chainId && (
-  <div className="mt-1 flex items-center gap-1.5">
-    <span className="text-[9px] uppercase tracking-wider text-theme-muted">
-      {t("timeline.chain") || "Chain"}:
-    </span>
-    <span className="text-[10px] text-theme-primary/70 font-mono">
-      {event.chainId}
-    </span>
-  </div>
-)}
+{
+  /* Chain ID */
+}
+{
+  event.chainId && (
+    <div className="mt-1 flex items-center gap-1.5">
+      <span className="text-[9px] uppercase tracking-wider text-theme-muted">
+        {t("timeline.chain") || "Chain"}:
+      </span>
+      <span className="text-[10px] text-theme-primary/70 font-mono">
+        {event.chainId}
+      </span>
+    </div>
+  );
+}
 ```
 
 ### 5. RAG 提取函数补全 ✅
@@ -266,198 +288,198 @@ z.object({
 
 ### InventoryItem (物品)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `name` | ✅ | ✅ | ✅ | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.quantity` | ✅ | ✅ | ✅ | ✅ |
-| `visible.equippable` | ✅ | ✅ | ✅ | ✅ |
-| `visible.category` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueDescription` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.properties` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.origin` | ✅ | ✅ | ✅ | ✅ |
-| `lore` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
-| `createdAt` | 系统自动 | N/A | - | - |
-| `modifiedAt` | 系统自动 | N/A | - | - |
-| `lastAccess` | 系统自动 | N/A | - | - |
+| Schema 字段              |  Tools   |     RAG     | Sidebar UI | GameStateViewer |
+| ------------------------ | :------: | :---------: | :--------: | :-------------: |
+| `id`                     |    ✅    |     ✅      |     ✅     |       ✅        |
+| `name`                   |    ✅    |     ✅      |     ✅     |       ✅        |
+| `visible.description`    |    ✅    |     ✅      |     ✅     |       ✅        |
+| `visible.quantity`       |    ✅    |     ✅      |     ✅     |       ✅        |
+| `visible.equippable`     |    ✅    |     ✅      |     ✅     |       ✅        |
+| `visible.category`       |    ✅    |     ✅      |     ✅     |       ✅        |
+| `hidden.trueDescription` |    ✅    |     ✅      |     ✅     |       ✅        |
+| `hidden.properties`      |    ✅    |     ✅      |     ✅     |       ✅        |
+| `hidden.origin`          |    ✅    |     ✅      |     ✅     |       ✅        |
+| `lore`                   |    ✅    |     ✅      |     ✅     |       ✅        |
+| `unlocked`               |    ✅    |     ✅      |     ✅     |       ✅        |
+| `icon`                   |    ✅    | ✅ (已修复) |     ✅     |       ✅        |
+| `highlight`              |   N/A    |     N/A     |     ✅     |       ✅        |
+| `createdAt`              | 系统自动 |     N/A     |     -      |        -        |
+| `modifiedAt`             | 系统自动 |     N/A     |     -      |        -        |
+| `lastAccess`             | 系统自动 |     N/A     |     -      |        -        |
 
 ### Relationship (NPC关系)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `visible.name` | ✅ | ✅ | ✅ | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.relationshipType` | ✅ | ✅ | ✅ | ✅ |
-| `visible.affinity` | ✅ | ✅ | ✅ | ✅ |
-| `visible.currentLocation` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.status` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueDisposition` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.secrets` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.goals` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.background` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.inventory` | ✅ | ✅ | ✅ (已修复) | ✅ |
-| `notes` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `known` | ✅ | ✅ | ✅ (过滤) | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
+| Schema 字段                | Tools |     RAG     | Sidebar UI  | GameStateViewer |
+| -------------------------- | :---: | :---------: | :---------: | :-------------: |
+| `id`                       |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.name`             |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.description`      |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.relationshipType` |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.affinity`         |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.currentLocation`  |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.status`            |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.trueDisposition`   |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.secrets`           |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.goals`             |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.background`        |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.inventory`         |  ✅   |     ✅      | ✅ (已修复) |       ✅        |
+| `notes`                    |  ✅   |     ✅      |     ✅      |       ✅        |
+| `unlocked`                 |  ✅   |     ✅      |     ✅      |       ✅        |
+| `known`                    |  ✅   |     ✅      |  ✅ (过滤)  |       ✅        |
+| `icon`                     |  ✅   | ✅ (已修复) |     ✅      |       ✅        |
+| `highlight`                |  N/A  |     N/A     |     ✅      |       ✅        |
 
 ### Location (地点)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `name` | ✅ | ✅ | ✅ | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.features` | ✅ | ✅ | ✅ | ✅ |
-| `visible.atmosphere` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.secrets` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.dangers` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.hiddenFeatures` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.connections` | ✅ | ✅ | ✅ | ✅ |
-| `lore` | ✅ | ✅ | ✅ | ✅ |
-| `environment` | ✅ | ✅ | ✅ | ✅ |
-| `notes` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `isVisited` | ✅ | ✅ | ✅ (过滤) | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
+| Schema 字段             | Tools |     RAG     | Sidebar UI | GameStateViewer |
+| ----------------------- | :---: | :---------: | :--------: | :-------------: |
+| `id`                    |  ✅   |     ✅      |     ✅     |       ✅        |
+| `name`                  |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.description`   |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.features`      |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.atmosphere`    |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.secrets`        |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.dangers`        |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.hiddenFeatures` |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.connections`    |  ✅   |     ✅      |     ✅     |       ✅        |
+| `lore`                  |  ✅   |     ✅      |     ✅     |       ✅        |
+| `environment`           |  ✅   |     ✅      |     ✅     |       ✅        |
+| `notes`                 |  ✅   |     ✅      |     ✅     |       ✅        |
+| `unlocked`              |  ✅   |     ✅      |     ✅     |       ✅        |
+| `isVisited`             |  ✅   |     ✅      | ✅ (过滤)  |       ✅        |
+| `icon`                  |  ✅   | ✅ (已修复) |     ✅     |       ✅        |
 
 ### Quest (任务)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `title` | ✅ | ✅ | ✅ | ✅ |
-| `type` | ✅ | ✅ | ✅ | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.objectives` | ✅ | ✅ | ✅ | ✅ |
-| `visible.rewards` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueObjective` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.consequences` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.secretRewards` | ✅ | ✅ | ✅ | ✅ |
-| `status` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
+| Schema 字段            | Tools |     RAG     | Sidebar UI | GameStateViewer |
+| ---------------------- | :---: | :---------: | :--------: | :-------------: |
+| `id`                   |  ✅   |     ✅      |     ✅     |       ✅        |
+| `title`                |  ✅   |     ✅      |     ✅     |       ✅        |
+| `type`                 |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.description`  |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.objectives`   |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.rewards`      |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.trueObjective` |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.consequences`  |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.secretRewards` |  ✅   |     ✅      |     ✅     |       ✅        |
+| `status`               |  ✅   |     ✅      |     ✅     |       ✅        |
+| `unlocked`             |  ✅   |     ✅      |     ✅     |       ✅        |
+| `icon`                 |  ✅   | ✅ (已修复) |     ✅     |       ✅        |
 
 ### Skill (技能)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ (已添加) | - | ✅ |
-| `name` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `level` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `visible.description` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `hidden.trueDescription` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `hidden.hiddenEffects` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `hidden.drawbacks` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `category` | ✅ | ✅ (已添加) | ✅ (已修复) | ✅ |
-| `unlocked` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `icon` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
+| Schema 字段              | Tools |     RAG     | Sidebar UI  | GameStateViewer |
+| ------------------------ | :---: | :---------: | :---------: | :-------------: |
+| `id`                     |  ✅   | ✅ (已添加) |      -      |       ✅        |
+| `name`                   |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `level`                  |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `visible.description`    |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `hidden.trueDescription` |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `hidden.hiddenEffects`   |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `hidden.drawbacks`       |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `category`               |  ✅   | ✅ (已添加) | ✅ (已修复) |       ✅        |
+| `unlocked`               |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `icon`                   |  ✅   | ✅ (已添加) |     ✅      |       ✅        |
+| `highlight`              |  N/A  |     N/A     |     ✅      |       ✅        |
 
 ### Condition (状态)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | - | ✅ |
-| `name` | ✅ | ✅ | ✅ | ✅ |
-| `type` | ✅ | ✅ | ✅ (样式) | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.perceivedSeverity` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueCause` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.actualSeverity` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.progression` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.cure` | ✅ | ✅ | ✅ | ✅ |
-| `effects.visible` | ✅ | ✅ | ✅ (已修复) | ✅ |
-| `effects.hidden` | ✅ | ✅ | ✅ | ✅ |
-| `startTime` | ✅ | ✅ | ✅ | ✅ |
-| `severity` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `icon` | ✅ | ✅ | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
+| Schema 字段                 | Tools | RAG | Sidebar UI  | GameStateViewer |
+| --------------------------- | :---: | :-: | :---------: | :-------------: |
+| `id`                        |  ✅   | ✅  |      -      |       ✅        |
+| `name`                      |  ✅   | ✅  |     ✅      |       ✅        |
+| `type`                      |  ✅   | ✅  |  ✅ (样式)  |       ✅        |
+| `visible.description`       |  ✅   | ✅  |     ✅      |       ✅        |
+| `visible.perceivedSeverity` |  ✅   | ✅  |     ✅      |       ✅        |
+| `hidden.trueCause`          |  ✅   | ✅  |     ✅      |       ✅        |
+| `hidden.actualSeverity`     |  ✅   | ✅  |     ✅      |       ✅        |
+| `hidden.progression`        |  ✅   | ✅  |     ✅      |       ✅        |
+| `hidden.cure`               |  ✅   | ✅  |     ✅      |       ✅        |
+| `effects.visible`           |  ✅   | ✅  | ✅ (已修复) |       ✅        |
+| `effects.hidden`            |  ✅   | ✅  |     ✅      |       ✅        |
+| `startTime`                 |  ✅   | ✅  |     ✅      |       ✅        |
+| `severity`                  |  ✅   | ✅  |     ✅      |       ✅        |
+| `unlocked`                  |  ✅   | ✅  |     ✅      |       ✅        |
+| `icon`                      |  ✅   | ✅  |     ✅      |       ✅        |
+| `highlight`                 |  N/A  | N/A |     ✅      |       ✅        |
 
 > **注意**: `duration` 字段仅存在于 `gameResponseSchema.characterUpdates.conditions` 中，用于 AI 更新 condition 时传递持续时间信息，但不存在于基础的 `conditionSchema` 类型中。
 
 ### KnowledgeEntry (知识)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `title` | ✅ | ✅ | ✅ | ✅ |
-| `category` | ✅ | ✅ | ✅ | ✅ |
-| `visible.summary` | ✅ | ✅ | ✅ | ✅ |
-| `visible.details` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.fullTruth` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.misconceptions` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.toBeRevealed` | ✅ | ✅ | ✅ | ✅ |
-| `discoveredAt` | ✅ | ✅ | ✅ | ✅ |
-| `relatedTo` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
+| Schema 字段             | Tools |     RAG     | Sidebar UI | GameStateViewer |
+| ----------------------- | :---: | :---------: | :--------: | :-------------: |
+| `id`                    |  ✅   |     ✅      |     ✅     |       ✅        |
+| `title`                 |  ✅   |     ✅      |     ✅     |       ✅        |
+| `category`              |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.summary`       |  ✅   |     ✅      |     ✅     |       ✅        |
+| `visible.details`       |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.fullTruth`      |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.misconceptions` |  ✅   |     ✅      |     ✅     |       ✅        |
+| `hidden.toBeRevealed`   |  ✅   |     ✅      |     ✅     |       ✅        |
+| `discoveredAt`          |  ✅   |     ✅      |     ✅     |       ✅        |
+| `relatedTo`             |  ✅   |     ✅      |     ✅     |       ✅        |
+| `unlocked`              |  ✅   |     ✅      |     ✅     |       ✅        |
+| `icon`                  |  ✅   | ✅ (已修复) |     ✅     |       ✅        |
 
 ### TimelineEvent (时间线事件)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | ✅ | ✅ |
-| `gameTime` | ✅ | ✅ | ✅ | ✅ |
-| `category` | ✅ | ✅ | ✅ (已修复) | ✅ |
-| `visible.description` | ✅ | ✅ | ✅ | ✅ |
-| `visible.causedBy` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueDescription` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.trueCausedBy` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.consequences` | ✅ | ✅ | ✅ | ✅ |
-| `involvedEntities` | ✅ | ✅ (已修复) | ✅ (已修复) | ✅ |
-| `chainId` | ✅ | ✅ (已修复) | ✅ (已修复) | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `known` | ✅ | ✅ | ✅ (过滤) | ✅ |
-| `icon` | ✅ | ✅ (已修复) | ✅ | ✅ |
+| Schema 字段              | Tools |     RAG     | Sidebar UI  | GameStateViewer |
+| ------------------------ | :---: | :---------: | :---------: | :-------------: |
+| `id`                     |  ✅   |     ✅      |     ✅      |       ✅        |
+| `gameTime`               |  ✅   |     ✅      |     ✅      |       ✅        |
+| `category`               |  ✅   |     ✅      | ✅ (已修复) |       ✅        |
+| `visible.description`    |  ✅   |     ✅      |     ✅      |       ✅        |
+| `visible.causedBy`       |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.trueDescription` |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.trueCausedBy`    |  ✅   |     ✅      |     ✅      |       ✅        |
+| `hidden.consequences`    |  ✅   |     ✅      |     ✅      |       ✅        |
+| `involvedEntities`       |  ✅   | ✅ (已修复) | ✅ (已修复) |       ✅        |
+| `chainId`                |  ✅   | ✅ (已修复) | ✅ (已修复) |       ✅        |
+| `unlocked`               |  ✅   |     ✅      |     ✅      |       ✅        |
+| `known`                  |  ✅   |     ✅      |  ✅ (过滤)  |       ✅        |
+| `icon`                   |  ✅   | ✅ (已修复) |     ✅      |       ✅        |
 
 ### Faction (阵营)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ | - | ✅ |
-| `name` | ✅ | ✅ | ✅ | ✅ |
-| `visible.agenda` | ✅ | ✅ | ✅ | ✅ |
-| `visible.members` | ✅ | ✅ | ✅ | ✅ |
-| `visible.influence` | ✅ | ✅ | ✅ | ✅ |
-| `visible.relations` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.agenda` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.members` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.influence` | ✅ | ✅ | ✅ | ✅ |
-| `hidden.relations` | ✅ | ✅ | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ | ✅ | ✅ |
-| `icon` | ✅ (已修复) | ✅ | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
+| Schema 字段         |    Tools    | RAG | Sidebar UI | GameStateViewer |
+| ------------------- | :---------: | :-: | :--------: | :-------------: |
+| `id`                |     ✅      | ✅  |     -      |       ✅        |
+| `name`              |     ✅      | ✅  |     ✅     |       ✅        |
+| `visible.agenda`    |     ✅      | ✅  |     ✅     |       ✅        |
+| `visible.members`   |     ✅      | ✅  |     ✅     |       ✅        |
+| `visible.influence` |     ✅      | ✅  |     ✅     |       ✅        |
+| `visible.relations` |     ✅      | ✅  |     ✅     |       ✅        |
+| `hidden.agenda`     |     ✅      | ✅  |     ✅     |       ✅        |
+| `hidden.members`    |     ✅      | ✅  |     ✅     |       ✅        |
+| `hidden.influence`  |     ✅      | ✅  |     ✅     |       ✅        |
+| `hidden.relations`  |     ✅      | ✅  |     ✅     |       ✅        |
+| `unlocked`          |     ✅      | ✅  |     ✅     |       ✅        |
+| `icon`              | ✅ (已修复) | ✅  |     ✅     |       ✅        |
+| `highlight`         |     N/A     | N/A |     ✅     |       ✅        |
 
 ### HiddenTrait (隐藏特质)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `id` | ✅ | ✅ (已添加) | - | ✅ |
-| `name` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `description` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `effects` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `triggerConditions` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `unlocked` | ✅ | ✅ (已添加) | ✅ (过滤) | ✅ |
-| `icon` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `highlight` | N/A | N/A | ✅ | ✅ |
+| Schema 字段         | Tools |     RAG     | Sidebar UI | GameStateViewer |
+| ------------------- | :---: | :---------: | :--------: | :-------------: |
+| `id`                |  ✅   | ✅ (已添加) |     -      |       ✅        |
+| `name`              |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `description`       |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `effects`           |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `triggerConditions` |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `unlocked`          |  ✅   | ✅ (已添加) | ✅ (过滤)  |       ✅        |
+| `icon`              |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `highlight`         |  N/A  |     N/A     |     ✅     |       ✅        |
 
 ### CharacterAttribute (角色属性)
 
-| Schema 字段 | Tools | RAG | Sidebar UI | GameStateViewer |
-|------------|:-----:|:---:|:----------:|:---------------:|
-| `label` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `value` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `maxValue` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `color` | ✅ | ✅ (已添加) | ✅ | ✅ |
-| `icon` | ✅ | ✅ (已添加) | ✅ | ✅ |
+| Schema 字段 | Tools |     RAG     | Sidebar UI | GameStateViewer |
+| ----------- | :---: | :---------: | :--------: | :-------------: |
+| `label`     |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `value`     |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `maxValue`  |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `color`     |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
+| `icon`      |  ✅   | ✅ (已添加) |     ✅     |       ✅        |
 
 ---
 
@@ -465,23 +487,23 @@ z.object({
 
 ### ✅ 核心架构
 
-1. **zodSchemas.ts**: 
+1. **zodSchemas.ts**:
    - 完整的 schema 定义 (~1200 行)
    - 双层结构 (visible/hidden) 设计良好
    - 预编译的 Gemini/OpenAI schemas
 
-2. **tools.ts**: 
+2. **tools.ts**:
    - 10 个查询工具
    - 11 个更新工具
    - `finish_turn` 工具
    - `rag_search` 工具
 
-3. **gameDatabase.ts**: 
+3. **gameDatabase.ts**:
    - 完整的 CRUD 操作
    - `mergeWithNullDeletion` 支持增量更新
    - 版本化时间戳追踪
 
-4. **GameStateViewer.tsx**: 
+4. **GameStateViewer.tsx**:
    - 完整的状态查看 (~2000 行)
    - 支持所有实体类型
    - 隐藏/可见层切换
@@ -510,11 +532,11 @@ z.object({
 
 ### 字段类型说明
 
-| 字段类型 | 说明 | 例子 |
-|---------|------|-----|
-| 系统字段 | 自动生成，AI 不设置 | `id`, `createdAt`, `modifiedAt`, `lastAccess` |
-| AI 控制字段 | AI 决定值 | `visible.*`, `hidden.*`, `unlocked`, `highlight` |
-| 混合字段 | AI 设置初始值，系统可能覆盖 | `status`, `affinity` |
+| 字段类型    | 说明                        | 例子                                             |
+| ----------- | --------------------------- | ------------------------------------------------ |
+| 系统字段    | 自动生成，AI 不设置         | `id`, `createdAt`, `modifiedAt`, `lastAccess`    |
+| AI 控制字段 | AI 决定值                   | `visible.*`, `hidden.*`, `unlocked`, `highlight` |
+| 混合字段    | AI 设置初始值，系统可能覆盖 | `status`, `affinity`                             |
 
 ---
 

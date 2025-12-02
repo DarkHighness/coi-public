@@ -1384,7 +1384,9 @@ function extractFactionContent(faction: Faction): string {
       const memberStrs = faction.hidden.members.map(
         (m) => `${m.name}${m.title ? ` (${m.title})` : ""}`,
       );
-      parts.push(`    <secret_members>${memberStrs.join("; ")}</secret_members>`);
+      parts.push(
+        `    <secret_members>${memberStrs.join("; ")}</secret_members>`,
+      );
     }
     if (faction.hidden.relations?.length) {
       const relStrs = faction.hidden.relations.map(
