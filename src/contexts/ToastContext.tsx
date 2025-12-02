@@ -142,6 +142,13 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
           items: changes.conditionsChanged.map((i) => i.name),
         });
       }
+      if (changes.entitiesUnlocked && changes.entitiesUnlocked.length > 0) {
+        allChanges.push({
+          msg: t("toast.secretUnlocked"),
+          type: "success",
+          items: changes.entitiesUnlocked.map((i) => `${i.name}: ${i.reason}`),
+        });
+      }
 
       if (allChanges.length === 0) return;
 

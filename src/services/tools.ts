@@ -323,6 +323,12 @@ export const ADD_INVENTORY_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("Hidden truth revealed? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "When setting unlocked=true, provide a concise justification/evidence string.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -357,6 +363,12 @@ export const ADD_RELATIONSHIP_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("Hidden info revealed? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "When setting unlocked=true, provide a concise justification/evidence string.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -390,6 +402,12 @@ export const ADD_LOCATION_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("Secrets discovered? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "When setting unlocked=true, provide a concise justification/evidence string.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -418,6 +436,12 @@ export const ADD_QUEST_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("True objectives revealed? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "When setting unlocked=true, provide a concise justification/evidence string.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -449,6 +473,12 @@ export const ADD_KNOWLEDGE_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("Full truth revealed? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "When setting unlocked=true, provide a concise justification/evidence string.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -531,6 +561,12 @@ export const ADD_FACTION_TOOL: ZodToolDefinition = {
       .boolean()
       .optional()
       .describe("Hidden agenda revealed? Default: false."),
+    unlockReason: z
+      .string()
+      .optional()
+      .describe(
+        "REQUIRED when unlocked=true. Justify WHY player has complete understanding.",
+      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 };
@@ -778,6 +814,10 @@ export const UPDATE_INVENTORY_TOOL: ZodToolDefinition = {
       .describe("Hidden properties. Null fields are deleted."),
     lore: z.string().nullish().describe("Lore. Null to remove."),
     unlocked: z.boolean().nullish().describe("Reveal status."),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -804,6 +844,10 @@ export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
       .describe("Hidden properties. Null fields are deleted."),
     notes: z.string().nullish().describe("Notes. Null to clear."),
     unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -826,6 +870,10 @@ export const UPDATE_LOCATION_TOOL: ZodToolDefinition = {
     environment: z.string().nullish().describe("Environment. Null to remove."),
     isVisited: z.boolean().nullish().describe("Has been visited?"),
     unlocked: z.boolean().nullish().describe("Secrets discovered?"),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -847,6 +895,10 @@ export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Hidden properties. Null fields are deleted."),
     unlocked: z.boolean().nullish().describe("True objectives revealed?"),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -892,6 +944,10 @@ export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Related IDs. Null to clear."),
     unlocked: z.boolean().nullish().describe("Full truth revealed?"),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -965,6 +1021,10 @@ export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Secret information. Null to clear all."),
     unlocked: z.boolean().nullish().describe("Hidden agenda revealed?"),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 };
@@ -1211,7 +1271,7 @@ Alternatively, you can call finish_turn at ANY stage to complete the turn immedi
       .optional()
       .describe(
         "Target stage to jump to. If omitted, advances to next stage in sequence.",
-      )
+      ),
   }),
 };
 

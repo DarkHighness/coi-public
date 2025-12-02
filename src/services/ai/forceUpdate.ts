@@ -344,9 +344,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
     const lastStageInstruction = conversationHistory
       .filter((m) => {
         const text = getMessageText(m.content);
-        return (
-          m.role === "user" && text.startsWith("[FORCE UPDATE - STAGE:")
-        );
+        return m.role === "user" && text.startsWith("[FORCE UPDATE - STAGE:");
       })
       .pop();
 
@@ -706,9 +704,11 @@ You MUST call complete_force_update with a narrative describing the changes.`,
     response: accumulatedResponse,
     logs: allLogs,
     usage: totalUsage,
-    changedEntities: Array.from(changedEntities.entries()).map(([id, type]) => ({
-      id,
-      type,
-    })),
+    changedEntities: Array.from(changedEntities.entries()).map(
+      ([id, type]) => ({
+        id,
+        type,
+      }),
+    ),
   };
 };

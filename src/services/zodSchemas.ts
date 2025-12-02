@@ -110,6 +110,12 @@ export const inventoryItemSchema = z.object({
     .describe(
       "AI DECISION: Set true when hidden truth discovered (examination, analysis, witnessing power). Default false.",
     ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Justification for why the hidden truth was revealed.",
+    ),
   highlight: z
     .boolean()
     .nullish()
@@ -238,6 +244,12 @@ export const relationshipSchema = z.object({
     .nullish()
     .describe(
       "AI DECISION (STRICT): Set true ONLY when the player discovers the NPC's hidden truth through: (1) Deep investigation, (2) NPC explicitly reveals it, (3) Mind-reading/telepathy/psychic abilities, or (4) A vision/prophecy reveals it. Default false.",
+    ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence/justification for why the NPC's hidden truth was revealed.",
     ),
   icon: z
     .string()
@@ -393,6 +405,12 @@ export const locationSchema = z.object({
     .describe(
       "AI DECISION: Set true when story context reveals location's secrets.",
     ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why location secrets were revealed.",
+    ),
   icon: z
     .string()
     .nullish()
@@ -453,6 +471,12 @@ export const questSchema = z.object({
     .boolean()
     .nullish()
     .describe("AI DECISION: Set true when quest's hidden purpose is revealed."),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why quest's hidden purpose was revealed.",
+    ),
   icon: z
     .string()
     .nullish()
@@ -502,6 +526,12 @@ export const skillSchema = z.object({
     .nullish()
     .describe(
       "AI DECISION: Set true when skill's hidden nature is understood.",
+    ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why skill's hidden nature was understood.",
     ),
   icon: z
     .string()
@@ -575,6 +605,12 @@ export const conditionSchema = z.object({
     .boolean()
     .nullish()
     .describe("AI DECISION: Set true when true cause/cure revealed."),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why true cause/cure was revealed.",
+    ),
   icon: z
     .string()
     .nullish()
@@ -634,6 +670,12 @@ export const knowledgeEntrySchema = z.object({
     .boolean()
     .nullish()
     .describe("AI DECISION: Set true when full truth discovered."),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why full truth was discovered.",
+    ),
   icon: z
     .string()
     .nullish()
@@ -698,6 +740,12 @@ export const timelineEventSchema = z.object({
     .nullish()
     .describe(
       "AI DECISION: Set true when event's true cause/consequences uncovered.",
+    ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why event's true cause/consequences were uncovered.",
     ),
   icon: z
     .string()
@@ -831,6 +879,12 @@ export const factionSchema = z.object({
     .boolean()
     .nullish()
     .describe("True when secret agenda is revealed."),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why faction's secret agenda was revealed.",
+    ),
   icon: z
     .string()
     .nullish()
@@ -880,6 +934,12 @@ export const hiddenTraitSchema = z.object({
     .boolean()
     .describe(
       "Set to true when the triggerConditions are met and the trait is revealed to the player.",
+    ),
+  unlockReason: z
+    .string()
+    .nullish()
+    .describe(
+      "REQUIRED when unlocked=true. Evidence for why the hidden trait was revealed.",
     ),
   icon: z
     .string()
@@ -1272,6 +1332,7 @@ export const gameResponseSchema = z.object({
         hidden: inventoryItemHiddenSchema.nullish(),
         lore: z.string().nullish(),
         unlocked: z.boolean().nullish(),
+        unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
@@ -1286,6 +1347,7 @@ export const gameResponseSchema = z.object({
         hidden: relationshipHiddenSchema.partial().nullish(),
         notes: z.string().nullish(),
         unlocked: z.boolean().nullish(),
+        unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
@@ -1303,6 +1365,7 @@ export const gameResponseSchema = z.object({
         environment: z.string().nullish(),
         notes: z.string().nullish(),
         unlocked: z.boolean().nullish(),
+        unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
@@ -1317,6 +1380,7 @@ export const gameResponseSchema = z.object({
         visible: questVisibleSchema.partial().nullish(),
         hidden: questHiddenSchema.partial().nullish(),
         unlocked: z.boolean().nullish(),
+        unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
@@ -1333,6 +1397,7 @@ export const gameResponseSchema = z.object({
         discoveredAt: z.string().nullish(),
         relatedTo: z.array(z.string()).nullish(),
         unlocked: z.boolean().nullish(),
+        unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
@@ -1372,6 +1437,7 @@ export const gameResponseSchema = z.object({
             hidden: skillHiddenSchema.partial().nullish(),
             category: z.string().nullish(),
             unlocked: z.boolean().nullish(),
+            unlockReason: z.string().nullish(),
           }),
         )
         .nullish(),
@@ -1387,6 +1453,7 @@ export const gameResponseSchema = z.object({
             effects: conditionEffectsSchema.partial().nullish(),
             duration: z.number().int().nullish(),
             unlocked: z.boolean().nullish(),
+            unlockReason: z.string().nullish(),
           }),
         )
         .nullish(),
@@ -1400,6 +1467,7 @@ export const gameResponseSchema = z.object({
             effects: z.array(z.string()).nullish(),
             triggerConditions: z.array(z.string()).nullish(),
             unlocked: z.boolean().nullish(),
+            unlockReason: z.string().nullish(),
           }),
         )
         .nullish(),

@@ -608,6 +608,7 @@
     "locationsDiscovered": "locations discovered",
     "skillGained": "Skill Gained",
     "conditionChanged": "Condition Changed",
+    "secretUnlocked": "Secret Unlocked",
     "autoSavedSettings": "Settings saved automatically",
     "stateUpdated": "State Updated"
   },
@@ -968,6 +969,7 @@
     "export": "Export",
     "delete": "Delete"
   },
+  "rules": "Rules",
   "sidebar": {
     "tokens": "Tokens:",
     "location": {

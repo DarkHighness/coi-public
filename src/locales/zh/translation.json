@@ -583,6 +583,7 @@
     "locationsDiscovered": "个地点已发现",
     "skillGained": "习得新技能",
     "conditionChanged": "状态已变化",
+    "secretUnlocked": "秘密已揭示",
     "autoSavedSettings": "设置已自动保存",
     "stateUpdated": "状态已更新"
   },
@@ -980,6 +981,7 @@
     "export": "导出",
     "delete": "删除"
   },
+  "rules": "规则",
   "sidebar": {
     "tokens": "Token:",
     "location": {

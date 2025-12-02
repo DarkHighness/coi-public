@@ -613,7 +613,11 @@ export class GameDatabase {
 
   private modifyInventory(
     action: string,
-    data: Partial<InventoryItem> & { id?: string; name?: string },
+    data: Partial<InventoryItem> & {
+      id?: string;
+      name?: string;
+      unlockReason?: string;
+    },
   ): ToolCallResult<InventoryItem | { removed: string }> {
     if (action === "add") {
       if (!data.name) {
@@ -636,6 +640,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("inventory");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding an item",
+          "INVALID_DATA",
+        );
+      }
+
       const newItem: InventoryItem = {
         id: newId,
         name: data.name,
@@ -708,7 +724,21 @@ export class GameDatabase {
       if (data.visible) mergeWithNullDeletion(item.visible, data.visible);
       if (data.hidden) mergeWithNullDeletion(item.hidden, data.hidden);
       if (data.lore !== undefined) item.lore = data.lore;
-      if (data.unlocked !== undefined) item.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating an item",
+              "INVALID_DATA",
+            );
+          }
+        }
+        item.unlocked = data.unlocked;
+      }
       item.highlight = true;
       item.modifiedAt = this.createCurrentTimestamp();
       item.lastModified = Date.now(); // Keep for backward compatibility
@@ -726,6 +756,7 @@ export class GameDatabase {
       name?: string;
       visible?: any;
       hidden?: any;
+      unlockReason?: string;
     },
   ): ToolCallResult<Relationship | { removed: string }> {
     const getName = () => data.visible?.name || data.name;
@@ -749,6 +780,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("npc");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding an NPC",
+          "INVALID_DATA",
+        );
+      }
+
       const newNpc: Relationship = {
         id: newId,
         currentLocation: data.currentLocation || "Unknown",
@@ -843,7 +886,21 @@ export class GameDatabase {
           npc.notes = data.notes;
         }
       }
-      if (data.unlocked !== undefined) npc.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating an NPC",
+              "INVALID_DATA",
+            );
+          }
+        }
+        npc.unlocked = data.unlocked;
+      }
       npc.highlight = true;
       npc.modifiedAt = this.createCurrentTimestamp();
       npc.lastModified = Date.now(); // Keep for backward compatibility
@@ -856,7 +913,11 @@ export class GameDatabase {
 
   private modifyLocation(
     action: string,
-    data: Partial<Location> & { id?: string; isCurrent?: boolean },
+    data: Partial<Location> & {
+      id?: string;
+      isCurrent?: boolean;
+      unlockReason?: string;
+    },
   ): ToolCallResult<Location | { removed: string }> {
     if (action === "add") {
       if (!data.name) {
@@ -877,6 +938,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("location");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding a location",
+          "INVALID_DATA",
+        );
+      }
+
       const newLocation: Location = {
         id: newId,
         name: data.name,
@@ -973,7 +1046,21 @@ export class GameDatabase {
         }
       }
       if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
-      if (data.unlocked !== undefined) loc.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating a location",
+              "INVALID_DATA",
+            );
+          }
+        }
+        loc.unlocked = data.unlocked;
+      }
       loc.highlight = true;
 
       return createSuccess(loc, `Updated location: ${loc.name}`);
@@ -984,7 +1071,7 @@ export class GameDatabase {
 
   private modifyQuest(
     action: string,
-    data: Partial<Quest> & { id?: string },
+    data: Partial<Quest> & { id?: string; unlockReason?: string },
   ): ToolCallResult<Quest | { removed: string }> {
     if (action === "add") {
       if (!data.title) {
@@ -1005,6 +1092,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("quest");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding a quest",
+          "INVALID_DATA",
+        );
+      }
+
       const newQuest: Quest = {
         id: newId,
         title: data.title,
@@ -1078,7 +1177,21 @@ export class GameDatabase {
 
       if (data.visible) mergeWithNullDeletion(quest.visible, data.visible);
       if (data.hidden) mergeWithNullDeletion(quest.hidden, data.hidden);
-      if (data.unlocked !== undefined) quest.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating a quest",
+              "INVALID_DATA",
+            );
+          }
+        }
+        quest.unlocked = data.unlocked;
+      }
       quest.highlight = true;
       quest.modifiedAt = this.createCurrentTimestamp();
       quest.lastModified = Date.now(); // Keep for backward compatibility
@@ -1094,7 +1207,7 @@ export class GameDatabase {
 
   private modifyKnowledge(
     action: string,
-    data: Partial<KnowledgeEntry> & { id?: string },
+    data: Partial<KnowledgeEntry> & { id?: string; unlockReason?: string },
   ): ToolCallResult<KnowledgeEntry> {
     if (action === "add") {
       if (!data.title) {
@@ -1115,6 +1228,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("knowledge");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding knowledge",
+          "INVALID_DATA",
+        );
+      }
+
       const newKnowledge: KnowledgeEntry = {
         id: newId,
         title: data.title,
@@ -1170,7 +1295,21 @@ export class GameDatabase {
           k.category = data.category;
         }
       }
-      if (data.unlocked !== undefined) k.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating knowledge",
+              "INVALID_DATA",
+            );
+          }
+        }
+        k.unlocked = data.unlocked;
+      }
       k.highlight = true;
       k.modifiedAt = this.createCurrentTimestamp();
       k.lastModified = Date.now(); // Keep for backward compatibility
@@ -1186,7 +1325,7 @@ export class GameDatabase {
 
   private modifyFaction(
     action: string,
-    data: Partial<Faction> & { id?: string },
+    data: Partial<Faction> & { id?: string; unlockReason?: string },
   ): ToolCallResult<Faction | { removed: string }> {
     if (action === "add") {
       if (!data.name) {
@@ -1207,6 +1346,18 @@ export class GameDatabase {
       }
 
       const newId = data.id || this.generateId("faction");
+      if (
+        data.unlocked === true &&
+        (!data.unlockReason ||
+          typeof data.unlockReason !== "string" ||
+          data.unlockReason.trim() === "")
+      ) {
+        return createError(
+          "unlockReason is required to set unlocked=true when adding a faction",
+          "INVALID_DATA",
+        );
+      }
+
       const newFaction: Faction = {
         id: newId,
         name: data.name,
@@ -1268,7 +1419,21 @@ export class GameDatabase {
       if (data.name && data.name !== identifier) f.name = data.name;
       if (data.visible) mergeWithNullDeletion(f.visible, data.visible);
       if (data.hidden) mergeWithNullDeletion(f.hidden, data.hidden);
-      if (data.unlocked !== undefined) f.unlocked = data.unlocked;
+      if (data.unlocked !== undefined) {
+        if (data.unlocked === true) {
+          if (
+            !data.unlockReason ||
+            typeof data.unlockReason !== "string" ||
+            data.unlockReason.trim() === ""
+          ) {
+            return createError(
+              "unlockReason is required to set unlocked=true when updating a faction",
+              "INVALID_DATA",
+            );
+          }
+        }
+        f.unlocked = data.unlocked;
+      }
       f.highlight = true;
 
       return createSuccess(f, `Updated faction: ${f.name}`);
@@ -1290,6 +1455,16 @@ export class GameDatabase {
 
     if (data.unlockWorldSetting) {
       // Mark worldSetting as unlocked by adding an unlocked flag
+      if (
+        !data.reason ||
+        typeof data.reason !== "string" ||
+        data.reason.trim() === ""
+      ) {
+        return createError(
+          "reason is required to unlock worldSetting",
+          "INVALID_DATA",
+        );
+      }
       if (!this.state.outline.worldSettingUnlocked) {
         (this.state.outline as any).worldSettingUnlocked = true;
         updated.push("worldSetting");
@@ -1298,6 +1473,16 @@ export class GameDatabase {
 
     if (data.unlockMainGoal) {
       // Mark mainGoal as unlocked
+      if (
+        !data.reason ||
+        typeof data.reason !== "string" ||
+        data.reason.trim() === ""
+      ) {
+        return createError(
+          "reason is required to unlock mainGoal",
+          "INVALID_DATA",
+        );
+      }
       if (!this.state.outline.mainGoalUnlocked) {
         (this.state.outline as any).mainGoalUnlocked = true;
         updated.push("mainGoal");

@@ -307,6 +307,59 @@ export const useGameAction = ({
         }
 
         // Collect state changes for toast notifications (with names)
+        // Collect unlock events from all action types
+        const unlockEvents: Array<{ name: string; reason: string }> = [];
+
+        // Check inventory unlocks
+        response.inventoryActions
+          ?.filter((a) => a.unlocked === true && a.unlockReason)
+          .forEach((a) => {
+            unlockEvents.push({
+              name: a.name || "Unknown Item",
+              reason: a.unlockReason || "",
+            });
+          });
+
+        // Check relationship unlocks
+        response.relationshipActions
+          ?.filter((a) => a.unlocked === true && a.unlockReason)
+          .forEach((a) => {
+            unlockEvents.push({
+              name: a.visible?.name || "Unknown NPC",
+              reason: a.unlockReason || "",
+            });
+          });
+
+        // Check location unlocks
+        response.locationActions
+          ?.filter((a) => a.unlocked === true && a.unlockReason)
+          .forEach((a) => {
+            unlockEvents.push({
+              name: a.name || "Unknown Location",
+              reason: a.unlockReason || "",
+            });
+          });
+
+        // Check quest unlocks
+        response.questActions
+          ?.filter((a) => a.unlocked === true && a.unlockReason)
+          .forEach((a) => {
+            unlockEvents.push({
+              name: a.title || "Unknown Quest",
+              reason: a.unlockReason || "",
+            });
+          });
+
+        // Check knowledge unlocks
+        response.knowledgeActions
+          ?.filter((a) => a.unlocked === true && a.unlockReason)
+          .forEach((a) => {
+            unlockEvents.push({
+              name: a.title || "Unknown Knowledge",
+              reason: a.unlockReason || "",
+            });
+          });
+
         const stateChanges = {
           itemsAdded:
             response.inventoryActions
@@ -332,6 +385,7 @@ export const useGameAction = ({
             response.locationActions
               ?.filter((a) => a.action === "add")
               .map((a) => ({ name: a.name || "Unknown Location" })) || [],
+          entitiesUnlocked: unlockEvents.length > 0 ? unlockEvents : undefined,
         };
 
         // Create Model Node using Helper

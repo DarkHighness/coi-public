@@ -288,6 +288,8 @@ export interface StateChanges {
   locationsDiscovered?: Array<{ name: string }>;
   skillsGained?: Array<{ name: string }>;
   conditionsChanged?: Array<{ name: string }>;
+  // Unlock events with name and reason
+  entitiesUnlocked?: Array<{ name: string; reason: string }>;
 }
 
 export type ActionResult =
