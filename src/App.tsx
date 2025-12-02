@@ -26,7 +26,7 @@ import {
   SectionErrorBoundary,
 } from "./components/common/ErrorBoundary";
 import { useRAG } from "./hooks/useRAG";
-import { ToastContainer, useToastManager } from "./components/Toast";
+import { ConnectedToastContainer, ToastProvider, useToast } from "./components/Toast";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>
@@ -45,7 +45,17 @@ const EnvironmentalEffects = React.lazy(() =>
   })),
 );
 
+// Main App wrapper that provides ToastContext
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+}
+
+// Inner component that uses ToastContext
+function AppContent() {
   const {
     language,
     setLanguage,
@@ -87,8 +97,8 @@ export default function App() {
 
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
 
-  // Use Toast Manager
-  const { toasts, pushToast, removeToast } = useToastManager();
+  // Use Toast Context
+  const { showToast } = useToast();
 
   // Track currently viewed segment for dynamic theme/background
   const [viewedSegment, setViewedSegment] = useState<any | null>(null);
@@ -410,13 +420,6 @@ export default function App() {
     // If we reach the start without finding anything, return undefined (Fallback)
     return undefined;
   }, [viewedSegment, currentHistory, isStartScreen]);
-
-  const showToast = (
-    msg: string,
-    type: "info" | "error" | "success" = "info",
-  ) => {
-    pushToast(msg, type);
-  };
 
   // Helper: Get provider instance by ID
   const getProviderInstance = (providerId: string) => {
@@ -763,8 +766,8 @@ export default function App() {
     <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-theme-bg text-theme-text font-sans transition-colors duration-1000 relative">
       <GlobalStyles themeConfig={currentThemeConfig} />
 
-      {/* Toast Container */}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {/* Toast Container - Auto-connected to ToastContext */}
+      <ConnectedToastContainer />
 
       {/* Environmental Overlay */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -846,7 +849,6 @@ export default function App() {
                   handleSaveSettings={handleSaveSettings}
                   navigateToNode={navigateToNode}
                   generateImageForNode={generateImageForNode}
-                  showToast={showToast}
                   onOpenSettings={() => setIsSettingsOpen(true)}
                   onOpenSaves={() => setIsSaveManagerOpen(true)}
                   themeFont={currentThemeConfig.fontClass}
@@ -873,7 +875,6 @@ export default function App() {
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           themeFont={currentThemeConfig.fontClass}
-          showToast={showToast}
           onClearAllSaves={clearAllSaves}
           saveCount={saveSlots.length}
         />

@@ -17,6 +17,7 @@ import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";
 import { TokenStats } from "./render/TokenStats";
+import { useToast } from "./Toast";
 
 interface StoryCardLabels {
   decided: string;
@@ -63,6 +64,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
+  const { showToast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCopyPrompt = () => {
@@ -118,7 +120,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       onImageUpload(segment.id, imageId);
     } catch (error) {
       console.error("Failed to upload image:", error);
-      // TODO: Show error toast
+      showToast(t("imageUploadFailed", "Failed to upload image"), "error");
     } finally {
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = "";

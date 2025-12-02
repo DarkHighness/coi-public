@@ -241,19 +241,18 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   {t("token.completionTokens")}:{" "}
                   {gameState.tokenUsage.completionTokens.toLocaleString()}
                 </div>
-                {gameState.tokenUsage.cacheRead &&
-                  gameState.tokenUsage.cacheWrite && (
-                    <>
-                      <div className="text-theme-success/80">
-                        {t("token.cacheWrite")}:{" "}
-                        {gameState.tokenUsage.cacheWrite?.toLocaleString()}
-                      </div>
-                      <div className="text-theme-success/80">
-                        {t("token.cacheRead")}:{" "}
-                        {gameState.tokenUsage.cacheRead?.toLocaleString()}
-                      </div>
-                    </>
-                  )}
+                {gameState.tokenUsage.cacheWrite !== undefined && (
+                  <div className="text-theme-success/80">
+                    {t("token.cacheWrite")}:{" "}
+                    {gameState.tokenUsage.cacheWrite.toLocaleString()}
+                  </div>
+                )}
+                {gameState.tokenUsage.cacheRead !== undefined && (
+                  <div className="text-theme-success/80">
+                    {t("token.cacheRead")}:{" "}
+                    {gameState.tokenUsage.cacheRead.toLocaleString()}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -486,6 +485,51 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
                     <MarkdownText content={loc.visible.description} />
                   </div>
+                  {/* Visible Details */}
+                  <div className="mt-2 space-y-2 text-sm">
+                    {loc.environment && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80">
+                          {t("gameViewer.environment") || "Environment"}:
+                        </span>{" "}
+                        <span className="text-theme-muted">{loc.environment}</span>
+                      </div>
+                    )}
+                    {loc.visible.knownFeatures && loc.visible.knownFeatures.length > 0 && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.knownFeatures") || "Known Features"}:
+                        </span>
+                        <ul className="list-disc list-inside pl-2 text-theme-muted">
+                          {loc.visible.knownFeatures.map((feature, i) => (
+                            <li key={i}>{feature}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {loc.visible.resources && loc.visible.resources.length > 0 && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.resources") || "Resources"}:
+                        </span>
+                        <ul className="list-disc list-inside pl-2 text-theme-muted">
+                          {loc.visible.resources.map((resource, i) => (
+                            <li key={i}>{resource}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {loc.lore && (
+                      <div className="text-xs border-t border-theme-border/30 pt-2">
+                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.lore") || "Lore"}:
+                        </span>
+                        <div className="text-theme-muted italic pl-1">
+                          <MarkdownText content={loc.lore} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
                     <HiddenContent
                       t={t}
@@ -496,15 +540,29 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                               content={loc.hidden.fullDescription}
                             />
                           )}
+                          {loc.hidden.dangers && loc.hidden.dangers.length > 0 && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                {t("gameViewer.dangers") || "Dangers"}:
+                              </span>
+                              <ul className="list-disc list-inside pl-2">
+                                {loc.hidden.dangers.map((danger, i) => (
+                                  <li key={i}>{danger}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           {loc.hidden.hiddenFeatures &&
                             loc.hidden.hiddenFeatures.length > 0 && (
                               <div>
                                 <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("gameViewer.hiddenFeatures")}:
                                 </span>
-                                <p className="pl-2">
-                                  {loc.hidden.hiddenFeatures.join(", ")}
-                                </p>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.hiddenFeatures.map((feature, i) => (
+                                    <li key={i}>{feature}</li>
+                                  ))}
+                                </ul>
                               </div>
                             )}
                           {loc.hidden.secrets &&
@@ -710,6 +768,26 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
                     <MarkdownText content={skill.visible.description} />
                   </div>
+                  {skill.visible.knownEffects && skill.visible.knownEffects.length > 0 && (
+                    <div className="mt-2 text-xs">
+                      <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        {t("gameViewer.knownEffects") || "Known Effects"}:
+                      </span>
+                      <ul className="list-disc list-inside pl-2 text-theme-muted">
+                        {skill.visible.knownEffects.map((effect, i) => (
+                          <li key={i}>{effect}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {skill.category && (
+                    <div className="mt-2 text-xs text-theme-muted">
+                      <span className="uppercase tracking-wider text-theme-primary/80">
+                        {t("gameViewer.category") || "Category"}:
+                      </span>{" "}
+                      {skill.category}
+                    </div>
+                  )}
                   {(skill.unlocked || gameState.unlockMode) && skill.hidden && (
                     <HiddenContent
                       t={t}
@@ -786,10 +864,47 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <span className="font-bold text-theme-text text-sm flex items-center gap-2 mb-2">
                     <span>{getValidIcon(cond.icon, "💫")}</span>
                     {cond.name}
+                    {cond.type && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                        cond.type === "buff" ? "bg-green-500/20 text-green-400" :
+                        cond.type === "debuff" ? "bg-red-500/20 text-red-400" :
+                        cond.type === "wound" ? "bg-orange-500/20 text-orange-400" :
+                        cond.type === "poison" ? "bg-purple-500/20 text-purple-400" :
+                        cond.type === "curse" ? "bg-violet-500/20 text-violet-400" :
+                        "bg-theme-surface text-theme-muted"
+                      }`}>
+                        {cond.type}
+                      </span>
+                    )}
+                    {cond.severity && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-theme-surface text-theme-muted">
+                        {cond.severity}
+                      </span>
+                    )}
                   </span>
                   <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
                     <MarkdownText content={cond.visible.description} />
                   </div>
+                  {cond.visible?.perceivedSeverity && (
+                    <div className="mt-2 text-xs text-theme-muted">
+                      <span className="uppercase tracking-wider text-theme-primary/80">
+                        {t("gameViewer.perceivedSeverity") || "Perceived Severity"}:
+                      </span>{" "}
+                      {cond.visible.perceivedSeverity}
+                    </div>
+                  )}
+                  {cond.effects?.visible && cond.effects.visible.length > 0 && (
+                    <div className="mt-2 text-xs">
+                      <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        {t("gameViewer.visibleEffects") || "Effects"}:
+                      </span>
+                      <ul className="list-disc list-inside pl-2 text-theme-muted">
+                        {cond.effects.visible.map((effect, i) => (
+                          <li key={i}>{effect}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {(cond.unlocked || gameState.unlockMode) && cond.hidden && (
                     <HiddenContent
                       t={t}
@@ -827,6 +942,18 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                               <MarkdownText
                                 content={cond.hidden.actualSeverity}
                               />
+                            </div>
+                          )}
+                          {cond.effects?.hidden && cond.effects.hidden.length > 0 && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                {t("gameViewer.hiddenEffects")}:
+                              </span>
+                              <ul className="list-disc list-inside pl-2">
+                                {cond.effects.hidden.map((effect, i) => (
+                                  <li key={i}>{effect}</li>
+                                ))}
+                              </ul>
                             </div>
                           )}
                         </div>
@@ -950,6 +1077,59 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                     <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
                       <MarkdownText content={rel.visible.description} />
                     </div>
+                    {/* Visible Fields - Player's Perception */}
+                    <div className="mt-3 space-y-2 text-sm">
+                      {rel.visible.appearance && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.appearance") || "Appearance"}:
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
+                            <MarkdownText content={rel.visible.appearance} />
+                          </div>
+                        </div>
+                      )}
+                      {rel.visible.personality && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.personality") || "Personality"}:
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
+                            <MarkdownText content={rel.visible.personality} />
+                          </div>
+                        </div>
+                      )}
+                      {rel.visible.impression && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.myImpression") || "My Impression"}:
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
+                            <MarkdownText content={rel.visible.impression} />
+                          </div>
+                        </div>
+                      )}
+                      {rel.visible.status && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.perceivedStatus") || "Currently (Perceived)"}:
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
+                            <MarkdownText content={rel.visible.status} />
+                          </div>
+                        </div>
+                      )}
+                      {rel.visible.dialogueStyle && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.dialogueStyle") || "Speech Style"}:
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
+                            <MarkdownText content={rel.visible.dialogueStyle} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     {(rel.unlocked || gameState.unlockMode) && rel.hidden && (
                       <HiddenContent
                         t={t}
@@ -1027,6 +1207,22 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                                   {t("gameViewer.trueStatus") || "True Status"}:
                                 </span>
                                 <MarkdownText content={rel.hidden.status} />
+                              </div>
+                            )}
+                            {rel.hidden.impression && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.npcImpression") || "Their Impression of Me"}:
+                                </span>
+                                <MarkdownText content={rel.hidden.impression} />
+                              </div>
+                            )}
+                            {rel.hidden.routine && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.routine") || "Daily Routine"}:
+                                </span>
+                                <MarkdownText content={rel.hidden.routine} />
                               </div>
                             )}
                           </div>
@@ -1413,6 +1609,26 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <div className="text-theme-muted text-xs pl-1">
                     <MarkdownText content={item.visible.description} />
                   </div>
+                  {item.visible?.usage && (
+                    <div className="text-xs">
+                      <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        {t("gameViewer.usage") || "Usage"}:
+                      </span>
+                      <div className="text-theme-muted pl-1">
+                        <MarkdownText content={item.visible.usage} />
+                      </div>
+                    </div>
+                  )}
+                  {item.lore && (
+                    <div className="text-xs border-t border-theme-border/30 pt-2 mt-1">
+                      <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        {t("gameViewer.lore") || "Lore"}:
+                      </span>
+                      <div className="text-theme-muted pl-1 italic">
+                        <MarkdownText content={item.lore} />
+                      </div>
+                    </div>
+                  )}
                   {(item.unlocked || gameState.unlockMode) && item.hidden && (
                     <HiddenContent
                       t={t}

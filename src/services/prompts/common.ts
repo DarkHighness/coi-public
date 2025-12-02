@@ -238,9 +238,21 @@ export const getCoreRules = (): string => `
   </rule>
 
   <rule name="VISUALS">
-    - **Type 1 (Bird's Eye)**: New location intro.
-    - **Type 2 (Player Perspective)**: What player sees.
-    - **Image Generation**: Provide \`imagePrompt\` (a detailed scene description) if you want to generate an image for this turn. If not, omit the field or leave it empty. The presence of \`imagePrompt\` indicates your intent to generate an image.
+    - **Type 1 (Bird's Eye)**: New location intro - wide establishing shot showing the full environment.
+    - **Type 2 (Player Perspective)**: What player sees - over-the-shoulder or third-person cinematic.
+    - **Image Generation**: Provide \`imagePrompt\` for impactful moments (new locations, dramatic scenes, key encounters).
+
+    **imagePrompt MUST include**:
+    1. **Environment**: Specific location (not just "a forest" but "a misty ancient forest with towering oaks, morning light filtering through dense canopy")
+    2. **Protagonist**: Race, appearance, clothing/armor, current pose/action, facial expression
+    3. **NPCs Present**: ONLY NPCs at currentLocation - their appearance, position, and actions
+    4. **Lighting & Atmosphere**: Time of day, light sources, shadows, mood, color palette
+    5. **Key Details**: Important objects, environmental hazards, magical effects
+    6. **Composition**: Camera angle (wide shot, close-up, low angle, bird's eye, etc.)
+
+    **Example**: "A torch-lit underground chamber with ancient dwarven stonework. You stand in the center, a battle-scarred human warrior in dented plate armor, sword raised defensively. Before you, three goblin raiders emerge from the shadows - green-skinned, yellow-eyed, wielding crude axes. Flickering orange torchlight creates dramatic shadows on carved stone pillars. Tense, ominous atmosphere. Low-angle cinematic shot emphasizing the confrontation."
+
+    **CRITICAL**: NEVER include NPCs whose currentLocation does NOT match player's location!
   </rule>
 
   <rule name="ICONS">

@@ -329,8 +329,8 @@ export const createImageGenerationContext = (
 
       return isAtLocation;
     })
-    .map((r: any) => ({
-      name: r.name,
+    .map((r: Relationship) => ({
+      name: r.visible.name,
       description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
       appearance: r.visible?.appearance || "No appearance available",
       status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,

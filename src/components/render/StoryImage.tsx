@@ -166,7 +166,12 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   // Transient failure state detection (passed via props or inferred)
   const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
 
-  // Use explicit hasFailed prop if provided, otherwise fallback to inference (though inference is less reliable for transient errors)
+  // Use explicit hasFailed prop if provided, otherwise fallback to inference
+  // Note: In manual mode, we should NOT consider it failed just because isGenerating is false
+  // after userRequestedLoad is true - we need to wait for the image generation to actually start
+  // and complete (or fail). We only mark as failed if:
+  // 1. hasFailed prop is explicitly true
+  // 2. Or in non-manual mode: no image, not generating, can regenerate, has prompt
   const actuallyFailed =
     hasFailed ||
     (!hasImage &&
@@ -174,15 +179,15 @@ export const StoryImage: React.FC<StoryImageProps> = ({
       canRegenerate &&
       !manualImageGen &&
       hasPrompt &&
-      hasFailed === undefined) ||
-    // In manual mode, if user requested load but generation stopped without image, it likely failed
-    (manualImageGen && userRequestedLoad && !isGenerating && !hasImage);
+      hasFailed === undefined);
 
   // Determine if we should show generating state:
-  // - Normal mode: show when isGenerating is true
-  // - Manual mode: show when user has requested load AND generation is in progress
-  const shouldShowGenerating =
-    isGenerating || (manualImageGen && userRequestedLoad && isGenerating);
+  // - Manual mode: Show loading when user has requested load (clicked button)
+  //   OR when this segment is actively generating
+  // - Normal mode: show when isGenerating is true for THIS segment
+  const shouldShowGenerating = manualImageGen
+    ? userRequestedLoad || isGenerating
+    : isGenerating;
 
   // Reset userRequestedLoad when image is successfully loaded
   React.useEffect(() => {
@@ -191,12 +196,12 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     }
   }, [hasImage, userRequestedLoad]);
 
-  // Reset userRequestedLoad on failure so user can retry
+  // Reset userRequestedLoad on explicit failure (via hasFailed prop) so user can retry
   React.useEffect(() => {
-    if (actuallyFailed && userRequestedLoad && !isGenerating) {
+    if (hasFailed && userRequestedLoad) {
       setUserRequestedLoad(false);
     }
-  }, [actuallyFailed, userRequestedLoad, isGenerating]);
+  }, [hasFailed, userRequestedLoad]);
 
   // Handler for regenerate that also sets userRequestedLoad in manual mode
   const handleRegenerate = () => {
@@ -229,9 +234,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
         ) : (
           // Placeholder Display
           <ImagePlaceholder
-            isGenerating={
-              shouldShowGenerating || (manualImageGen && userRequestedLoad)
-            }
+            isGenerating={shouldShowGenerating}
             hasFailed={actuallyFailed}
             labelVision={labelVision}
             labelUnavailable={labelUnavailable}

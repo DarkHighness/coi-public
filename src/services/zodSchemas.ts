@@ -186,7 +186,7 @@ export const relationshipHiddenSchema = z.object({
   status: z
     .string()
     .describe(
-      "Current state/condition of the NPC (e.g. 'plotting', 'injured', 'waiting', 'traveling', 'dead').",
+      "What the NPC is ACTUALLY doing right now (e.g. 'plotting revenge', 'secretly meeting with assassins', 'injured and hiding', 'traveling to the capital', 'dead'). This is the GM's truth, not what the player perceives.",
     ),
 });
 
@@ -210,7 +210,7 @@ export const relationshipSchema = z.object({
     .boolean()
     .nullish()
     .describe(
-      "AI DECISION (STRICT): ONLY set true via mind-reading, telepathy, or psychic tech.",
+      "AI DECISION (STRICT): Set true ONLY when the player discovers the NPC's hidden truth through: (1) Deep investigation, (2) NPC explicitly reveals it, (3) Mind-reading/telepathy/psychic abilities, or (4) A vision/prophecy reveals it. Default false.",
     ),
   icon: z
     .string()
@@ -1186,7 +1186,19 @@ export const gameResponseSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "A detailed prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field, leave it empty, or set to null.",
+      `A DETAILED visual prompt for generating an image of the current scene. If you want to generate an image, provide this prompt (RECOMMENDED for impactful moments). If not, omit this field.
+
+**MUST INCLUDE** (when provided):
+1. **Environment**: Specific location details, architecture, lighting conditions, weather, time of day
+2. **Protagonist**: Physical appearance, clothing, posture, expression, what they're doing
+3. **NPCs Present**: Only NPCs whose currentLocation matches - their appearance, position, actions
+4. **Atmosphere**: Mood, color palette, visual tone (e.g., "dim candlelight casts long shadows")
+5. **Key Objects**: Important items, weapons, or environmental details in focus
+6. **Composition**: Camera angle suggestion (e.g., "low angle looking up", "over-the-shoulder view")
+
+**Example**: "A dimly lit medieval tavern interior. You stand at the bar counter, a hooded figure in worn leather armor, hand resting on the hilt of your sword. The barkeep, a burly man with a scarred face, leans forward conspiratorially. Flickering candlelight casts dancing shadows on stone walls. Patrons huddle in shadowy corners. Warm amber tones with deep shadows. Third-person cinematic angle from behind the protagonist."
+
+**DO NOT**: Include NPCs not at the current location. Be vague. Skip visual details.`,
     ),
   atmosphere: atmosphereSchema
     .nullish()
@@ -1462,12 +1474,23 @@ Use *italics* for character thoughts, internal monologue, and emphasis.
 Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
 Use --- horizontal rules to separate distinct scenes or time jumps.
 Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
-Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.`,
+Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.
+
+**⚠️ CRITICAL - NO GAME IDs IN NARRATIVE:**
+NEVER include internal game IDs in the narrative text. The following are FORBIDDEN:
+- Item IDs: "inv:1", "inv:42" → Use item NAMES instead
+- NPC IDs: "npc:1", "npc:15" → Use character NAMES instead
+- Location IDs: "loc:1", "loc:7" → Use location NAMES instead
+- Quest IDs: "quest:1" → Use quest TITLES instead
+- Any format like "prefix:number"
+
+❌ WRONG: "You pick up inv:3 and head to loc:2"
+✅ CORRECT: "You pick up the **Ancient Sword** and head to the **Forgotten Temple**"`,
   ),
   choices: z
     .array(
       z.object({
-        text: z.string().describe("The text of the choice."),
+        text: z.string().describe("The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N."),
         consequence: z
           .string()
           .nullish()
@@ -1484,13 +1507,29 @@ Do NOT use bullet points, numbered lists, or any list formatting as it disrupts 
 2. **Personality/Background**: Choices should reflect the character's personality.
 3. **Current Conditions**: If the character is injured/exhausted, choices should reflect limitations.
 4. **Skills & Abilities**: Offer choices that utilize the character's skills.
-5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types.`,
+5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types.
+
+**⚠️ NO GAME IDs**: Never include IDs like "inv:1", "npc:2", "loc:3" in choice text. Use natural names only.`,
     ),
   imagePrompt: z
     .string()
     .nullish()
     .describe(
-      "Optional prompt for generating an image of the current scene. If you want to generate an image, provide this prompt. If not, omit this field or leave it empty.",
+      `A DETAILED visual prompt for generating an image of the current scene. Provide for impactful narrative moments. Omit if no image is needed.
+
+**REQUIRED ELEMENTS** (when provided):
+1. **Setting**: Location name, architecture style, lighting (natural/artificial), weather, time
+2. **Protagonist**: Race, appearance, clothing/armor, current action, expression, posture
+3. **NPCs in Scene**: ONLY those whose currentLocation matches player's location - describe their appearance, position relative to protagonist, what they're doing
+4. **Mood & Atmosphere**: Color palette, visual tone, emotional weight (e.g., "ominous red glow", "soft morning light")
+5. **Focal Elements**: Key objects, weapons drawn, magical effects, environmental hazards
+6. **Camera**: Angle and framing (e.g., "wide shot", "close-up on faces", "bird's eye view")
+
+**GOOD Example**: "Inside a crumbling stone temple overgrown with vines. Shafts of golden sunlight pierce through holes in the domed ceiling. You kneel before an ancient altar, examining glowing runes. Your elven features are illuminated by the soft blue light emanating from the stone. Behind you, your companion Mira, a red-haired human warrior in chainmail, keeps watch with sword drawn. Dust particles float in the light beams. Mystical atmosphere, warm gold and cool blue contrast. Wide cinematic shot."
+
+**BAD Example**: "The character is in a temple looking at something." ← Too vague!
+
+**CRITICAL**: Only include NPCs whose hidden.status is NOT 'absent' or 'dead' AND whose currentLocation matches the player's current location.`,
     ),
   atmosphere: atmosphereSchema
     .nullish()

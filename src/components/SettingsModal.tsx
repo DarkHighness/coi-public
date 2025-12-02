@@ -10,12 +10,12 @@ import { SettingsAudio } from "./settings/SettingsAudio";
 import { SettingsEmbedding } from "./settings/SettingsEmbedding";
 import { SettingsExtra } from "./settings/SettingsExtra";
 import { SettingsProviders } from "./settings/SettingsProviders";
+import { useToast } from "./Toast";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   themeFont: string;
-  showToast: (msg: string, type?: "info" | "error") => void;
   onClearAllSaves?: () => Promise<boolean>;
   saveCount?: number; // Number of saves
 }
@@ -24,7 +24,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   themeFont,
-  showToast,
   onClearAllSaves,
   saveCount = 0,
 }) => {
@@ -34,6 +33,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Use the centralized settings hook
   const { resetSettings } = useSettings();
+
+  // Use Toast Context
+  const { showToast } = useToast();
 
   if (!isOpen) return null;
 

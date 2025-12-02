@@ -13,7 +13,7 @@ import {
 } from "../../types";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
-import { useToastManager, ToastContainer } from "../Toast";
+import { useToast } from "../Toast";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -84,7 +84,6 @@ interface GamePageProps {
     nodeOverride?: StorySegment,
     isManualClick?: boolean,
   ) => Promise<void>;
-  showToast: (msg: string, type?: "info" | "error") => void;
   onOpenSettings: () => void;
   onOpenSaves: () => void;
   themeFont: string;
@@ -110,7 +109,6 @@ export const GamePage: React.FC<GamePageProps> = ({
   handleSaveSettings,
   navigateToNode,
   generateImageForNode,
-  showToast,
   onOpenSettings,
   onOpenSaves,
   themeFont,
@@ -126,9 +124,8 @@ export const GamePage: React.FC<GamePageProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Toast Manager for multiple toast notifications
-  const { toasts, pushToast, removeToast, pushStateChangeToasts } =
-    useToastManager();
+  // Toast Context for toast notifications
+  const { showToast, pushStateChangeToasts } = useToast();
 
   // Local State
   const [feedLayout, setFeedLayout] = useState<FeedLayout>("scroll");
@@ -271,7 +268,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     if (result) {
       if (result.success === false) {
         // Error case - show error toast
-        pushToast(result.error, "error");
+        showToast(result.error, "error");
       } else if (result.success === true) {
         // Success case - show multiple toasts for state changes
         pushStateChangeToasts(result.stateChanges, t);
@@ -417,7 +414,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
           onViewedSegmentChange={onViewedSegmentChange}
-          onShowToast={(msg, type) => pushToast(msg, type)}
+          onShowToast={(msg, type) => showToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
@@ -461,7 +458,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onToggleMute={handleToggleMute}
           onVeoScript={() => setIsVeoScriptOpen(true)}
           onViewedSegmentChange={onViewedSegmentChange}
-          onShowToast={(msg, type) => pushToast(msg, type)}
+          onShowToast={(msg, type) => showToast(msg, type)}
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
@@ -524,7 +521,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onClose={() => setIsStateEditorOpen(false)}
             gameState={gameState}
             setGameState={setGameState}
-            onShowToast={(msg, type) => pushToast(msg, type)}
+            onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}
 
@@ -546,9 +543,6 @@ export const GamePage: React.FC<GamePageProps> = ({
           />
         )}
       </Suspense>
-
-      {/* Toast Container for multiple notifications */}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

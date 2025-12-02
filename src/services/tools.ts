@@ -311,9 +311,11 @@ export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
 CRITICAL: Update 'notes' to record how the NPC perceives the player's behavior (e.g., "Suspicious of player's magic").
 STATUS TRACKING:
 - visible.status: What the protagonist BELIEVES this NPC is doing (e.g., "shopping in market", "guarding the gate"). This is the player's PERCEPTION.
-- hidden.status: What the NPC is ACTUALLY doing (e.g., "plotting", "injured", "traveling", "dead"). This is the GM's truth.
+- hidden.status: What the NPC is ACTUALLY doing (e.g., "plotting", "secretly meeting", "injured", "traveling", "dead"). This is the GM's truth.
 - visible.impression: The protagonist's current feeling about this NPC.
 - hidden.impression: The NPC's current feeling about the protagonist.
+LOCATION TRACKING:
+- currentLocation: ALWAYS update this when an NPC moves to a different location. Use location IDs (e.g., "loc:1").
 IMPORTANT: To REMOVE an optional property, set it to null.`,
   parameters: z.discriminatedUnion("action", [
     // Add action - id is optional
@@ -329,7 +331,7 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
       currentLocation: z
         .string()
         .optional()
-        .describe("NPC's current location ID (e.g., 'loc:1')."),
+        .describe("NPC's current location ID (e.g., 'loc:1'). ALWAYS set this to track where NPC is."),
       known: z
         .boolean()
         .optional()
@@ -1082,6 +1084,13 @@ export const FINISH_TURN_TOOL: ZodToolDefinition = {
 - Call this tool ONLY after completing ALL necessary state queries and modifications.
 - This tool MUST be the LAST tool call in your response. If you call it alongside other tools, the system will automatically reorder it to execute last.
 - Alternatively, you can return a response matching the finish_turn schema directly without calling this tool, but using this tool is recommended for clarity.
+
+**⚠️ CRITICAL - NO GAME IDs IN OUTPUT**:
+NEVER include internal game IDs in narrative, choices, or imagePrompt fields!
+- ❌ FORBIDDEN: "inv:1", "npc:2", "loc:3", "quest:1", "know:5", etc.
+- ✅ CORRECT: Use actual NAMES like "Iron Sword", "Elder Marcus", "Moonlit Forest"
+
+Game IDs are for internal state management ONLY. Players should NEVER see them.
 
 **IMPORTANT**: Never return narrative or choices outside of this tool call.`,
   parameters: finishTurnSchema,
