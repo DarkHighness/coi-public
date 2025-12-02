@@ -1342,5 +1342,110 @@
     "backgroundTemplate": "【World Background】: Modern university campus.\n【Protagonist's Journey】: He Zhi, a steel straight man, thought his roommate liked him because of a misunderstanding. In order to reject his roommate, he began various 'homophobic' performances, but bent himself in self-conquest. The roommate actually didn't mean that at all, and looked at his performance with a confused face.\n【Current Situation】: Dormitory. You (He Zhi) wrapped your small quilt tightly and looked warily at the roommate who just came out of the shower. 'You... don't come over! I'm a straight man!' The roommate wiped his hair and looked at you inexplicably. 'Are you sick?'\n",
     "example": "He Zhi: 'I treat you as a brother, but you want to sleep with me?' Roommate: '???' Later, He Zhi: 'So fragrant.'",
     "worldSetting": "【Worldview】: Straight man's self-conquest is the most deadly. Homophobia is deep closet. Restlessness of youth.\n【Key Characters】:\n1. **He Zhi**: Brain supplementation emperor, self-conquest, true fragrance monster.\n2. **Roommate**: Cold top student, innocent lying gun, passive being flirted.\n【Core Conflict】: Straight vs Bent. Misunderstanding vs Truth. Brain supplementation vs Reality."
+  },
+  "let_this_grieving_soul_retire": {
+    "name": "Let This Grieving Soul Retire",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "my_assassin_status": {
+    "name": "My Assassin Status",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "wild_last_boss": {
+    "name": "A Wild Last Boss Appeared",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "may_i_ask_one_final_thing": {
+    "name": "May I Ask One Final Thing?",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "shen_hao": {
+    "name": "God of Wealth",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "face_slapping": {
+    "name": "Face Slapping",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "time_travel": {
+    "name": "Time Travel",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "metaphysics": {
+    "name": "Metaphysics",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "rural": {
+    "name": "Rural Life",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "genius_baby": {
+    "name": "Genius Baby",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "true_false_heiress": {
+    "name": "True/False Heiress",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "prison": {
+    "name": "Ex-Convict",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "divorce": {
+    "name": "Divorce",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "era_80s": {
+    "name": "80s Era",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
+  },
+  "treasure_appraisal": {
+    "name": "Treasure Appraisal",
+    "narrativeStyle": "",
+    "backgroundTemplate": "",
+    "example": "",
+    "worldSetting": ""
   }
 }

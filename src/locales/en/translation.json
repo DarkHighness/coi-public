@@ -226,7 +226,8 @@
     "scifi": "Sci-Fi",
     "novel": "Novel",
     "movie": "Movie",
-    "game": "Game"
+    "game": "Game",
+    "chinese_short_drama": "Chinese Short Drama"
   },
   "preview": "Preview",
   "start": "Start",
