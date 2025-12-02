@@ -378,6 +378,8 @@ export const useGameAction = ({
 
             // Context Priority System: update alive entities and increment turn
             aliveEntities: normalizeAliveEntities(response.aliveEntities),
+            ragQueries: response.ragQueries,
+            nextInitialStage: response.nextInitialStage,
             turnNumber: prev.turnNumber + 1,
 
             summaries: effectiveSummaries,

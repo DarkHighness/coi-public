@@ -5,7 +5,8 @@ import {
   StorySegment,
   CharacterStatus,
   Relationship,
-  ImageGenerationContext,
+  GameState,
+  GameStateSnapshot,
 } from "../../types";
 
 import {
@@ -45,8 +46,6 @@ import { GenerateContentResult, generateContentUnified } from "./core";
 
 import { getProviderConfig, createLogEntry } from "./utils";
 
-import { GameState } from "../../types";
-
 // ============================================================================
 // Image/Video/Speech Generation
 // ============================================================================
@@ -55,12 +54,14 @@ import { GameState } from "../../types";
  * 生成场景图片
  * @param prompt 图片提示词
  * @param settings 设置对象
- * @param context 图片生成上下文
+ * @param gameState 游戏状态（包含完整的位置、角色、NPC 等信息）
+ * @param snapshot 可选的状态快照（用于历史回放）
  */
 export const generateSceneImage = async (
   prompt: string,
   settings: AISettings,
-  context: ImageGenerationContext,
+  gameState: GameState,
+  snapshot?: GameStateSnapshot,
 ): Promise<{ url: string | null; log: LogEntry; blob?: Blob }> => {
   const providerInfo = getProviderConfig(settings, "image");
   if (!providerInfo || !providerInfo.enabled) {
@@ -71,7 +72,7 @@ export const generateSceneImage = async (
   }
 
   const { instance, config, modelId, resolution } = providerInfo;
-  const styledPrompt = getSceneImagePrompt(prompt, context);
+  const styledPrompt = getSceneImagePrompt(prompt, gameState, snapshot);
   let url: string | null;
   let usage: TokenUsage | undefined;
   let raw: unknown;

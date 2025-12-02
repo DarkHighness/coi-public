@@ -1,5 +1,6 @@
 import {
   GameState,
+  GameStateSnapshot,
   ImageGenerationContext,
   Relationship,
   Location as GameLocation,
@@ -8,6 +9,105 @@ import {
 // --- Scene Image Prompt ---
 
 import { getThemeStyle, getLoadedThemes } from "../themeRegistry";
+
+/**
+ * 从 GameState/Snapshot 中提取图像生成所需的上下文
+ * 内部辅助函数，用于统一上下文提取逻辑
+ */
+const extractContextFromGameState = (
+  gameState: GameState,
+  snapshot?: GameStateSnapshot,
+) => {
+  const stateSnapshot = snapshot || gameState;
+  const worldSetting = gameState.outline?.worldSetting;
+
+  let worldSettingStr = "";
+  if (worldSetting) {
+    worldSettingStr = `
+      Description: ${worldSetting.visible?.description || ""}
+      Rules: ${worldSetting.visible?.rules || ""}
+      Hidden Rules: ${worldSetting.hidden?.hiddenRules || ""}
+      Hidden Secrets: ${worldSetting.hidden?.secrets || ""}
+    `;
+  }
+
+  // Reconstruct active NPCs list
+  // CRITICAL: Use currentLocation to determine if NPC is in the same scene as the player
+  const playerLocName = stateSnapshot.currentLocation?.toLowerCase() || "";
+  const playerLoc = stateSnapshot.locations?.find(
+    (l: GameLocation) =>
+      l.name?.toLowerCase() === playerLocName ||
+      l.id?.toLowerCase() === playerLocName,
+  );
+  const playerLocId = playerLoc?.id?.toLowerCase() || "";
+  const playerLocDisplayName = playerLoc?.name?.toLowerCase() || "";
+
+  const activeNPCs = (stateSnapshot.relationships || [])
+    .filter((r: Relationship) => {
+      // Skip absent or dead NPCs (case-insensitive check)
+      const hiddenStatus = r.hidden?.status?.toLowerCase() || "";
+      if (hiddenStatus === "absent" || hiddenStatus === "dead") {
+        return false;
+      }
+
+      // CRITICAL: Always use currentLocation to determine presence
+      const npcLocation = r.currentLocation?.toLowerCase() || "";
+
+      // NPC must have a valid location that matches player's location
+      if (!npcLocation || npcLocation === "unknown") {
+        return false; // No location set = not in scene
+      }
+
+      // Check if NPC is at the same location as player (case-insensitive)
+      const isAtLocation =
+        npcLocation === playerLocId ||
+        npcLocation === playerLocName ||
+        npcLocation === playerLocDisplayName;
+
+      return isAtLocation;
+    })
+    .map((r: Relationship) => ({
+      name: r.visible.name,
+      description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
+      appearance: r.visible?.appearance || "No appearance available",
+      status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,
+    }));
+
+  debugger;
+
+  // Resolve location details (case-insensitive) - now with full details
+  const currentLoc = stateSnapshot.locations?.find(
+    (l: GameLocation) =>
+      l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
+  );
+
+  // Resolve atmosphere details
+  const atmosphere = gameState.atmosphere || {
+    envTheme: "fantasy",
+    ambience: "quiet",
+  };
+  const weather = atmosphere.weather || "Clear";
+  const mood = atmosphere.ambience || "Neutral";
+
+  return {
+    theme: gameState.theme,
+    storyTitle: gameState.outline?.title,
+    worldSetting: worldSettingStr,
+    time: stateSnapshot.time,
+    currentLocation: currentLoc,
+    currentLocationName: stateSnapshot.currentLocation,
+    character: {
+      name: stateSnapshot.character?.name || "Unknown",
+      race: stateSnapshot.character?.race || "Unknown",
+      profession: stateSnapshot.character?.profession || "",
+      appearance: stateSnapshot.character?.appearance || "Not described",
+      status: stateSnapshot.character?.status || "Normal",
+    },
+    activeNPCs,
+    weather,
+    mood,
+  };
+};
 
 /**
  * 获取基于故事主题（theme）的视觉风格参考
@@ -54,14 +154,21 @@ const getThemeStyleReference = (
   return null;
 };
 
+/**
+ * 生成场景图片提示词
+ * @param prompt 场景描述
+ * @param gameState 游戏状态（包含完整的位置、角色、NPC 等信息）
+ * @param snapshot 可选的状态快照（用于历史回放）
+ */
 export const getSceneImagePrompt = (
   prompt: string,
-  context?: ImageGenerationContext,
+  gameState?: GameState,
+  snapshot?: GameStateSnapshot,
 ): string => {
   // Enhanced XML-based prompt with maximum detail
   // XML structure helps AI models parse complex, multi-faceted scene descriptions
 
-  if (!context) {
+  if (!gameState) {
     // Fallback: Wrap basic prompt in minimal structure
     return `<scene>
   <description>${prompt}</description>
@@ -69,10 +176,12 @@ export const getSceneImagePrompt = (
 </scene>`;
   }
 
+  const context = extractContextFromGameState(gameState, snapshot);
   const {
     theme,
     time,
-    location,
+    currentLocation,
+    currentLocationName,
     character,
     activeNPCs,
     worldSetting,
@@ -165,10 +274,78 @@ export const getSceneImagePrompt = (
     xmlPrompt += `  </weather_effects>\n`;
   }
 
-  // Location and Environment
-  if (location) {
+  // Location and Environment - now with rich details
+  if (currentLocation || currentLocationName) {
     xmlPrompt += `  <environment>\n`;
-    xmlPrompt += `    <location>${location}</location>\n`;
+
+    if (currentLocation) {
+      // Full location details from Location object
+      xmlPrompt += `    <location>\n`;
+      xmlPrompt += `      <name>${currentLocation.name || currentLocationName}</name>\n`;
+      if (currentLocation.environment) {
+        xmlPrompt += `      <type>${currentLocation.environment}</type>\n`;
+      }
+      if (currentLocation.visible?.description) {
+        xmlPrompt += `      <description>${currentLocation.visible.description}</description>\n`;
+      }
+      if (currentLocation.visible?.atmosphere) {
+        xmlPrompt += `      <atmosphere>${currentLocation.visible.atmosphere}</atmosphere>\n`;
+      }
+      xmlPrompt += `    </location>\n`;
+
+      // Sensory Details for immersion
+      const sensory = currentLocation.visible?.sensory;
+      if (sensory) {
+        xmlPrompt += `    <sensory_details>\n`;
+        if (sensory.smell) {
+          xmlPrompt += `      <smell>${sensory.smell}</smell>\n`;
+        }
+        if (sensory.sound) {
+          xmlPrompt += `      <sound>${sensory.sound}</sound>\n`;
+        }
+        if (sensory.lighting) {
+          xmlPrompt += `      <lighting>${sensory.lighting}</lighting>\n`;
+        }
+        if (sensory.temperature) {
+          xmlPrompt += `      <temperature>${sensory.temperature}</temperature>\n`;
+        }
+        xmlPrompt += `    </sensory_details>\n`;
+      }
+
+      // Known Features - visual landmarks and points of interest
+      const knownFeatures = currentLocation.visible?.knownFeatures;
+      if (knownFeatures && knownFeatures.length > 0) {
+        xmlPrompt += `    <notable_features>\n`;
+        knownFeatures.forEach((feature: string) => {
+          xmlPrompt += `      <feature>${feature}</feature>\n`;
+        });
+        xmlPrompt += `    </notable_features>\n`;
+      }
+
+      // Interactable Objects - props and elements in the scene
+      const interactables = currentLocation.visible?.interactables;
+      if (interactables && interactables.length > 0) {
+        xmlPrompt += `    <interactables>\n`;
+        interactables.forEach((item: string) => {
+          xmlPrompt += `      <object>${item}</object>\n`;
+        });
+        xmlPrompt += `    </interactables>\n`;
+      }
+
+      // Resources - environmental resources visible in the scene
+      const resources = currentLocation.visible?.resources;
+      if (resources && resources.length > 0) {
+        xmlPrompt += `    <visible_resources>\n`;
+        resources.forEach((resource: string) => {
+          xmlPrompt += `      <resource>${resource}</resource>\n`;
+        });
+        xmlPrompt += `    </visible_resources>\n`;
+      }
+    } else {
+      // Fallback to just the location name
+      xmlPrompt += `    <location>${currentLocationName} (Unknown Environment)</location>\n`;
+    }
+
     if (mood) {
       const moodDetails = {
         quiet:
@@ -276,6 +453,7 @@ export const getSceneImagePrompt = (
 
 /**
  * Create a standardized ImageGenerationContext from GameState and Snapshot
+ * @deprecated 推荐直接使用 getSceneImagePrompt(prompt, gameState, snapshot)，它已经内部提取上下文
  */
 export const createImageGenerationContext = (
   gameState: GameState,

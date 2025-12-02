@@ -75,9 +75,13 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
               {t("narrativeStyle")}
             </h3>
-            <div className="text-theme-muted text-sm leading-relaxed">
+            <div className="text-theme-muted text-sm leading-relaxed line-clamp-3 md:line-clamp-none">
               <MarkdownText
                 content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
+                disableIndent
+                components={{
+                  p: ({ node, ...props }: any) => <span {...props} />,
+                }}
               />
             </div>
           </div>
@@ -86,9 +90,13 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
               {t("worldSetting")}
             </h3>
-            <div className="text-theme-muted text-sm leading-relaxed">
+            <div className="text-theme-muted text-sm leading-relaxed line-clamp-3 md:line-clamp-none">
               <MarkdownText
                 content={t(`${themeKey}.worldSetting`, { ns: "themes" })}
+                disableIndent
+                components={{
+                  p: ({ node, ...props }: any) => <span {...props} />,
+                }}
               />
             </div>
           </div>
@@ -98,7 +106,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
               "
             </div>
             <div
-              className={`text-theme-text/90 leading-loose ${
+              className={`text-theme-text/90 leading-loose line-clamp-5 md:line-clamp-none ${
                 (envTheme?.fontClass || "font-sans") === "font-serif"
                   ? "font-serif text-base"
                   : "font-sans text-sm"
@@ -106,6 +114,10 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             >
               <MarkdownText
                 content={t(`${themeKey}.example`, { ns: "themes" })}
+                disableIndent
+                components={{
+                  p: ({ node, ...props }: any) => <span {...props} />,
+                }}
               />
             </div>
             <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
@@ -115,7 +127,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 p-5 border-t border-theme-border bg-theme-surface/50 backdrop-blur-sm">
+        <div className="relative z-10 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface/50 backdrop-blur-sm">
           <button
             onClick={() => {
               onSelect(themeKey);

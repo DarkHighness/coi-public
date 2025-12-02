@@ -3,15 +3,11 @@ import { useTranslation } from "react-i18next";
 import {
   StorySegment,
   AISettings,
-  ImageGenerationContext,
   Relationship,
   Location as GameLocation,
   GameState,
 } from "../types";
-import {
-  getSceneImagePrompt,
-  createImageGenerationContext,
-} from "../services/prompts/index";
+import { getSceneImagePrompt } from "../services/prompts/index";
 import { useImageStorageContext } from "../contexts/ImageStorageContext";
 import { StoryImage } from "./render/StoryImage";
 import { StoryText } from "./render/StoryText";
@@ -42,6 +38,8 @@ export interface StoryCardProps {
   saveId?: string;
   onImageDelete?: (id: string) => void;
   hasFailed?: boolean;
+  /** Dynamic max width class based on sidebar states */
+  maxWidthClass?: string;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -61,21 +59,31 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   saveId,
   onImageDelete,
   hasFailed,
+  maxWidthClass = "max-w-3xl",
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
   const { showToast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Cache the full image prompt to avoid recalculating on every render
+  const fullImagePromptRef = React.useRef<string | null>(null);
+  const fullImagePrompt = React.useMemo(() => {
+    if (!segment.imagePrompt) return undefined;
+
+    // Only recalculate if not cached
+    if (fullImagePromptRef.current === null) {
+      fullImagePromptRef.current = getSceneImagePrompt(
+        segment.imagePrompt,
+        gameState,
+        segment.stateSnapshot,
+      );
+    }
+    return fullImagePromptRef.current;
+  }, [segment.imagePrompt, segment.stateSnapshot, gameState]);
+
   const handleCopyPrompt = () => {
-    if (!segment.imagePrompt) return "";
-
-    const imageContext = createImageGenerationContext(
-      gameState,
-      segment.stateSnapshot,
-    );
-
-    return getSceneImagePrompt(segment.imagePrompt, imageContext);
+    return fullImagePrompt || "";
   };
 
   const handleUploadClick = () => {
@@ -160,7 +168,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
   if (segment.role === "command") {
     return (
-      <div className="flex justify-center my-6 animate-fade-in w-full max-w-3xl mx-auto px-4">
+      <div
+        className={`flex justify-center my-6 animate-fade-in w-full ${maxWidthClass} mx-auto px-4`}
+      >
         <div className="w-full border border-theme-primary/40 rounded-md overflow-hidden shadow-lg backdrop-blur-sm group hover:border-theme-primary/60 transition-colors">
           <div className="bg-theme-primary/10 px-3 py-1 border-b border-theme-primary/20 flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
@@ -193,7 +203,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   }
 
   return (
-    <div className="flex flex-col mb-16 animate-slide-in space-y-6 group/card max-w-3xl mx-auto">
+    <div
+      className={`flex flex-col mb-16 animate-slide-in space-y-6 group/card ${maxWidthClass} mx-auto`}
+    >
       {/* Summary Snapshot Display */}
       {segment.summarySnapshot && (
         <div className="flex justify-center my-6 animate-fade-in">
@@ -225,7 +237,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         imageId={segment.imageId}
         imageUrl={segment.imageUrl}
         imagePrompt={segment.imagePrompt}
-        fullImagePrompt={segment.imagePrompt ? handleCopyPrompt() : undefined}
+        fullImagePrompt={fullImagePrompt}
         isGenerating={isGenerating}
         labelVision={labels.vision}
         labelUnavailable={labels.unavailable}

@@ -1613,7 +1613,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       {entry.title}
                     </span>
                     <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted border border-theme-border/50 uppercase tracking-wider">
-                      {entry.category}
+                      {t(`knowledge.category.${entry.category}`)}
                     </span>
                   </div>
                   <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">

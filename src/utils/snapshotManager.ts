@@ -18,6 +18,7 @@ export interface SnapshotMetadata {
   uiState: GameState["uiState"];
   aliveEntities?: AliveEntities;
   ragQueries?: string[];
+  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
   turnNumber?: number;
   forkId?: number;
   forkTree?: ForkTree;
@@ -114,6 +115,7 @@ export function createStateSnapshot(
     aliveEntities:
       metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
     ragQueries: metadata.ragQueries || gameState.ragQueries,
+    nextInitialStage: metadata.nextInitialStage || gameState.nextInitialStage,
     turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
 
     // Fork System
@@ -154,6 +156,7 @@ export function restoreStateFromSnapshot(
     veoScript: snapshot.veoScript,
     aliveEntities: snapshot.aliveEntities,
     ragQueries: snapshot.ragQueries,
+    nextInitialStage: snapshot.nextInitialStage,
     turnNumber: snapshot.turnNumber,
     // Note: forkId and forkTree are NOT restored here - they're managed by fork logic
     // When navigating to a node (forking), the caller should increment forkId and update forkTree

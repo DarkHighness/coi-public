@@ -365,6 +365,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                         gameState={gameState}
                         saveId={saveId}
                         hasFailed={failedImageNodes?.has(segment.id)}
+                        maxWidthClass={contentMaxWidth}
                       />
                     </div>
                   </React.Fragment>
@@ -433,6 +434,7 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
                     gameState={gameState}
                     saveId={saveId}
                     hasFailed={failedImageNodes?.has(activeSegment.id)}
+                    maxWidthClass={contentMaxWidth}
                   />
                 </div>
               )}

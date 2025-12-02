@@ -22,7 +22,6 @@ import {
   generateForceUpdate,
   type OutlinePhaseProgress,
 } from "../services/aiService";
-import { createImageGenerationContext } from "../services/prompts/index";
 import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
 import {
   createStateSnapshot,
@@ -952,15 +951,12 @@ export const useGameEngine = () => {
 
       try {
         const snapshot = node.stateSnapshot || gameStateRef.current;
-        const imageContext = createImageGenerationContext(
-          gameStateRef.current,
-          snapshot,
-        );
 
         const { url, log, blob } = await generateSceneImage(
           node.imagePrompt || "",
           aiSettings,
-          imageContext,
+          gameStateRef.current,
+          snapshot,
         );
         clearTimeout(imageTimeout);
 
@@ -1170,6 +1166,20 @@ export const useGameEngine = () => {
         }),
       };
 
+      // Sanitize choices to ensure valid structure (same as createModelNode)
+      const sanitizedChoices = Array.isArray(response.choices)
+        ? response.choices.map((c: any) => {
+            if (typeof c === "object" && c !== null) {
+              const obj = c as any;
+              return {
+                text: obj.text || obj.choice || obj.label || "Continue",
+                consequence: obj.consequence,
+              };
+            }
+            return String(c);
+          })
+        : [];
+
       // Create a system node for the RESULT
       const resultNodeId = `system-${newSegmentId}`;
       const resultNode: StorySegment = {
@@ -1177,11 +1187,13 @@ export const useGameEngine = () => {
         id: resultNodeId,
         parentId: commandNodeId,
         text: response.narrative, // Remove FORCE UPDATE markers - cleaner display
-        choices: [t("continue")],
+        choices:
+          sanitizedChoices.length > 0 ? sanitizedChoices : [t("continue")],
         imagePrompt: response.imagePrompt || "",
         role: "system",
         timestamp: Date.now() + 1,
         atmosphere: responseAtmosphere,
+        narrativeTone: response.narrativeTone,
         ending: "continue",
         summaries: baseSummaries,
         summarizedIndex: baseIndex,
@@ -1193,6 +1205,9 @@ export const useGameEngine = () => {
           atmosphere: responseAtmosphere,
           veoScript: gameStateRef.current.veoScript,
           uiState: gameStateRef.current.uiState,
+          aliveEntities: normalizeAliveEntities(response.aliveEntities),
+          ragQueries: response.ragQueries,
+          nextInitialStage: response.nextInitialStage,
         }),
       };
 
@@ -1222,6 +1237,8 @@ export const useGameEngine = () => {
           timeline: finalState.timeline,
           causalChains: finalState.causalChains,
           aliveEntities: normalizeAliveEntities(response.aliveEntities),
+          ragQueries: response.ragQueries,
+          nextInitialStage: response.nextInitialStage,
           atmosphere: responseAtmosphere,
           isProcessing: false,
         };

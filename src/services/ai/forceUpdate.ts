@@ -151,7 +151,7 @@ const runForceUpdateLoop = async (
   // Accumulated actions for UI feedback (Toasts)
   const accumulatedResponse: GameResponse = {
     narrative: "",
-    choices: [], // Force update has no choices
+    choices: [], // Will be populated by complete_force_update
     inventoryActions: [],
     relationshipActions: [],
     locationActions: [],
@@ -367,6 +367,34 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           const updateData = args as ForceUpdateResponse;
           accumulatedResponse.narrative = updateData.narrative;
 
+          // Copy new fields from forceUpdateSchema
+          if (updateData.choices) {
+            accumulatedResponse.choices = updateData.choices;
+          }
+          if (updateData.atmosphere) {
+            accumulatedResponse.atmosphere = updateData.atmosphere;
+          }
+          if (updateData.narrativeTone) {
+            accumulatedResponse.narrativeTone = updateData.narrativeTone;
+          }
+          if (updateData.aliveEntities) {
+            accumulatedResponse.aliveEntities = updateData.aliveEntities;
+          }
+          if (updateData.ragQueries) {
+            accumulatedResponse.ragQueries = updateData.ragQueries;
+          }
+          if (updateData.ragCurrentForkOnly !== undefined) {
+            accumulatedResponse.ragCurrentForkOnly =
+              updateData.ragCurrentForkOnly;
+          }
+          if (updateData.ragBeforeCurrentTurn !== undefined) {
+            accumulatedResponse.ragBeforeCurrentTurn =
+              updateData.ragBeforeCurrentTurn;
+          }
+          if (updateData.nextInitialStage) {
+            accumulatedResponse.nextInitialStage = updateData.nextInitialStage;
+          }
+
           // Attach final state
           (
             accumulatedResponse as GameResponse & { finalState: unknown }
@@ -416,6 +444,35 @@ You MUST call complete_force_update with a narrative describing the changes.`,
         try {
           const updateData = forceUpdateSchema.parse(result);
           accumulatedResponse.narrative = updateData.narrative;
+
+          // Copy new fields from forceUpdateSchema
+          if (updateData.choices) {
+            accumulatedResponse.choices = updateData.choices;
+          }
+          if (updateData.atmosphere) {
+            accumulatedResponse.atmosphere = updateData.atmosphere;
+          }
+          if (updateData.narrativeTone) {
+            accumulatedResponse.narrativeTone = updateData.narrativeTone;
+          }
+          if (updateData.aliveEntities) {
+            accumulatedResponse.aliveEntities = updateData.aliveEntities;
+          }
+          if (updateData.ragQueries) {
+            accumulatedResponse.ragQueries = updateData.ragQueries;
+          }
+          if (updateData.ragCurrentForkOnly !== undefined) {
+            accumulatedResponse.ragCurrentForkOnly =
+              updateData.ragCurrentForkOnly;
+          }
+          if (updateData.ragBeforeCurrentTurn !== undefined) {
+            accumulatedResponse.ragBeforeCurrentTurn =
+              updateData.ragBeforeCurrentTurn;
+          }
+          if (updateData.nextInitialStage) {
+            accumulatedResponse.nextInitialStage = updateData.nextInitialStage;
+          }
+
           (
             accumulatedResponse as GameResponse & { finalState: unknown }
           ).finalState = db.getState();

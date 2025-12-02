@@ -30,8 +30,10 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
 
-  // Filter for model segments to show the narrative flow
-  const narrativeSegments = segments.filter((s) => s.role === "model");
+  // Filter for model and system segments to show the narrative flow
+  const narrativeSegments = segments.filter(
+    (s) => s.role === "model" || s.role === "system",
+  );
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
   // Use envTheme directly from story theme for consistent visual styling
   const currentEnvThemeKey = currentStoryTheme.envTheme;

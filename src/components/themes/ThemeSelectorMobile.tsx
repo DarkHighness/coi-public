@@ -111,7 +111,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         className="flex-1 overflow-y-auto custom-scrollbar relative"
         onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 10)}
       >
-        <div className="px-4 pb-32">
+        <div className="px-4 pb-[calc(8rem+env(safe-area-inset-bottom))]">
           <div className="max-w-5xl mx-auto w-full flex flex-col gap-3">
             {/* Random Option */}
             {selectedCategory === "all" && !searchQuery && (

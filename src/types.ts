@@ -377,6 +377,9 @@ export interface GameState {
   // RAG Queries: semantic search queries for next turn context
   // Populated by AI via finish_turn, used at start of next turn
   ragQueries?: string[];
+  // Next Initial Stage: suggested starting stage for next turn
+  // Populated by AI via finish_turn, used at start of next turn
+  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
   // Current turn number (incremented on each player action)
   turnNumber: number;
 
@@ -634,6 +637,7 @@ export interface GameStateSnapshot {
   // Context Priority System
   aliveEntities: AliveEntities;
   ragQueries?: string[];
+  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
   turnNumber: number;
 
   // Fork System (Critical for RAG filtering across timelines)

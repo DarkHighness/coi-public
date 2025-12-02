@@ -115,9 +115,8 @@ export function processFinishTurnResponse(
 
   // Extract nextInitialStage for next turn optimization
   if (finishTurnData.nextInitialStage) {
-    (
-      accumulatedResponse as GameResponse & { nextInitialStage?: string }
-    ).nextInitialStage = finishTurnData.nextInitialStage as string;
+    accumulatedResponse.nextInitialStage =
+      finishTurnData.nextInitialStage as GameResponse["nextInitialStage"];
   }
 
   // Attach the FINAL STATE from the DB
@@ -321,6 +320,7 @@ export const generateAdventureTurn = async (
     gameState,
     generationDetails,
     context.settings,
+    gameState.nextInitialStage, // Pass suggested initial stage from previous turn
   );
 };
 

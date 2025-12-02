@@ -32,6 +32,130 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
   const { url: resolvedUrl } = useImageURL(segment.imageId);
   const displayUrl = resolvedUrl || segment.imageUrl;
 
+  const isSystemRole = segment.role === "system";
+
+  // System role (ForceUpdate result) - Special card style similar to Summary card
+  if (isSystemRole) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{
+          layout: {
+            type: "spring",
+            stiffness: 350,
+            damping: 35,
+            mass: 0.8,
+          },
+          opacity: { duration: 0.4, ease: "easeOut" },
+          y: { type: "spring", stiffness: 300, damping: 25 },
+          scale: { duration: 0.35, ease: "easeOut" },
+        }}
+        className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
+        onMouseEnter={() => onHover(segment.id)}
+        onMouseLeave={() => onHover(null)}
+      >
+        {/* Line */}
+        <div
+          className={`absolute left-2 w-px transition-colors
+       ${isFirst ? "top-2" : "top-0"}
+       ${isLast ? "h-2" : "bottom-0"}
+       ${isHovered ? "bg-amber-500/50" : "bg-theme-border"}
+    `}
+        ></div>
+
+        {/* System Indicator - Diamond shape */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(segment.id);
+          }}
+          className={`absolute left-0.5 top-1 w-3 h-3 rotate-45 border-2 transition-all z-10 shadow-sm cursor-pointer
+        ${isLast ? "animate-pulse" : ""}
+        ${
+          isExpanded
+            ? "border-amber-500 bg-amber-500"
+            : "border-amber-500/70 bg-theme-surface hover:border-amber-500"
+        }`}
+          title={isExpanded ? "Click to collapse" : "Click to expand"}
+        ></div>
+
+        {/* Latest Item Indicator */}
+        {isLast && (
+          <div className="absolute left-0.5 top-1 w-3 h-3 rotate-45 border-2 border-amber-500/30 animate-ping"></div>
+        )}
+
+        {/* System Content Card */}
+        <div
+          className={`bg-theme-surface/40 border border-amber-500/30 rounded-lg p-3 backdrop-blur-sm shadow-sm transition-all ${isHovered ? "border-amber-500/50" : ""}`}
+        >
+          {/* Header with System Icon */}
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-amber-500/80 mb-2 font-semibold">
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              ></path>
+            </svg>
+            <span>{t("timeline.systemUpdate") || "System Update"}</span>
+            {segment.stateSnapshot?.time && (
+              <>
+                <span className="text-theme-muted/50">•</span>
+                <span className="font-mono text-amber-500/70">
+                  {segment.stateSnapshot.time}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Preview text when collapsed */}
+          {!isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: isHovered ? 1 : 0.8, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(segment.id);
+              }}
+              className="line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer text-theme-text/90 italic"
+            >
+              <MarkdownText content={segment.text} disableIndent />
+            </motion.div>
+          )}
+
+          {/* Full content when expanded */}
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(segment.id);
+              }}
+              className="leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer text-theme-text/90 italic"
+            >
+              <MarkdownText content={segment.text} disableIndent />
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Regular model role - Original timeline item style
   return (
     <motion.div
       layout

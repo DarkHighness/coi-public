@@ -54,7 +54,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const { t } = useTranslation();
 
   const lastSegment = currentHistory
-    .filter((s) => s.role === "model")
+    .filter((s) => s.role === "model" || s.role === "system")
     .slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
   const isDisabled = gameState.isProcessing || isTranslating;

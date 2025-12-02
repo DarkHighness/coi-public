@@ -1490,6 +1490,19 @@ export const gameResponseSchema = z.object({
     .describe(
       "If true, next turn's RAG queries will only search content from before the current turn.",
     ),
+  nextInitialStage: z
+    .enum(["query", "add", "remove", "update", "narrative"])
+    .nullish()
+    .describe(
+      `Suggest the initial stage for the NEXT turn after player makes a choice.
+- "query": Start with queries (default, when uncertain about context)
+- "add": Skip to add stage (when you know new entities will be needed)
+- "remove": Skip to remove stage
+- "update": Skip to update stage (when context is well-established)
+- "narrative": Skip directly to narrative (only for very simple responses)
+
+This is a HINT for optimization. The system may still start from query if needed.`,
+    ),
   ending: z
     .enum([
       "continue",
@@ -1720,6 +1733,118 @@ export const forceUpdateSchema = z.object({
     .string()
     .nullish()
     .describe("A summary of the state updates applied (for logging)."),
+  choices: z
+    .array(
+      z.object({
+        text: z
+          .string()
+          .describe(
+            "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
+          ),
+        consequence: z
+          .string()
+          .nullish()
+          .describe(
+            "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
+          ),
+      }),
+    )
+    .min(2)
+    .max(4)
+    .describe(
+      "2-4 options for the player's next action after the force update.",
+    ),
+  atmosphere: atmosphereSchema
+    .nullish()
+    .describe(
+      "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
+    ),
+  narrativeTone: z
+    .string()
+    .nullish()
+    .describe(
+      "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+    ),
+  aliveEntities: z
+    .object({
+      inventory: z
+        .array(z.string())
+        .nullish()
+        .describe("Item IDs (inv:N) relevant for next turn."),
+      relationships: z
+        .array(z.string())
+        .nullish()
+        .describe("NPC IDs (npc:N) relevant for next turn."),
+      locations: z
+        .array(z.string())
+        .nullish()
+        .describe("Location IDs (loc:N) relevant for next turn."),
+      quests: z
+        .array(z.string())
+        .nullish()
+        .describe("Quest IDs (quest:N) relevant for next turn."),
+      knowledge: z
+        .array(z.string())
+        .nullish()
+        .describe("Knowledge IDs (know:N) relevant for next turn."),
+      timeline: z
+        .array(z.string())
+        .nullish()
+        .describe("Event IDs (evt:N) relevant for next turn."),
+      skills: z
+        .array(z.string())
+        .nullish()
+        .describe("Character skill IDs relevant for next turn."),
+      conditions: z
+        .array(z.string())
+        .nullish()
+        .describe("Character condition IDs relevant for next turn."),
+      hiddenTraits: z
+        .array(z.string())
+        .nullish()
+        .describe("Character hidden trait IDs relevant for next turn."),
+      causalChains: z
+        .array(z.string())
+        .nullish()
+        .describe(
+          "CausalChain chainIds with pending consequences that may trigger soon.",
+        ),
+    })
+    .nullish()
+    .describe(
+      "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
+    ),
+  ragQueries: z
+    .array(z.string())
+    .nullish()
+    .describe(
+      `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
+    ),
+  ragCurrentForkOnly: z
+    .boolean()
+    .nullish()
+    .describe(
+      "If true, next turn's RAG queries will only search within the current timeline branch.",
+    ),
+  ragBeforeCurrentTurn: z
+    .boolean()
+    .nullish()
+    .describe(
+      "If true, next turn's RAG queries will only search content from before the current turn.",
+    ),
+  nextInitialStage: z
+    .enum(["query", "add", "remove", "update", "narrative"])
+    .nullish()
+    .describe(
+      `Suggest the initial stage for the NEXT turn after player makes a choice.
+- "query": Start with queries (default, when uncertain about context)
+- "add": Skip to add stage (when you know new entities will be needed)
+- "remove": Skip to remove stage
+- "update": Skip to update stage (when context is well-established)
+- "narrative": Skip directly to narrative (only for very simple responses)
+
+This is a HINT for optimization. The system may still start from query if needed.`,
+    ),
 });
 
 /** finish_turn 响应类型 */

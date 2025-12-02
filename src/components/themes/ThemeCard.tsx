@@ -67,10 +67,17 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
                 {t(`${themeKey}.name`, { ns: "themes" })}
               </h3>
             </div>
-            <MarkdownText
-              content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
+            <div
               className={`text-xs md:text-sm text-theme-muted group-hover:text-theme-text/80 transition-colors ${lineClampClass}`}
-            />
+            >
+              <MarkdownText
+                content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
+                disableIndent
+                components={{
+                  p: ({ node, ...props }: any) => <span {...props} />,
+                }}
+              />
+            </div>
           </div>
 
           {/* Arrow Icon */}
