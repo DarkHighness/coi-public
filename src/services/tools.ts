@@ -331,7 +331,9 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
       currentLocation: z
         .string()
         .optional()
-        .describe("NPC's current location ID (e.g., 'loc:1'). ALWAYS set this to track where NPC is."),
+        .describe(
+          "NPC's current location ID (e.g., 'loc:1'). ALWAYS set this to track where NPC is.",
+        ),
       known: z
         .boolean()
         .optional()
@@ -413,7 +415,9 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
       environment: z
         .string()
         .optional()
-        .describe("Atmosphere/Environment tag."),
+        .describe(
+          "A descriptive sentence about the location's atmosphere/environment in the target language (e.g., '阴森的古老地牢，空气中弥漫着腐烂的气味'). NOT just a tag.",
+        ),
       isVisited: z
         .boolean()
         .optional()
@@ -439,7 +443,9 @@ IMPORTANT: To REMOVE an optional property, set it to null.`,
       environment: z
         .string()
         .optional()
-        .describe("Atmosphere/Environment tag."),
+        .describe(
+          "A descriptive sentence about the location's atmosphere/environment in the target language (e.g., '阴森的古老地牢，空气中弥漫着腐烂的气味'). NOT just a tag.",
+        ),
       isVisited: z
         .boolean()
         .optional()

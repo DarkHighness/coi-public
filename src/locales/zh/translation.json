@@ -397,6 +397,7 @@
     "temple": "神庙",
     "Unknown": "未知"
   },
+
   "gameStateViewer": {
     "title": "游戏状态查看器",
     "refresh": "刷新",
@@ -827,12 +828,20 @@
     "hiddenFeatures": "隐藏特性",
     "hiddenEffects": "潜在影响",
     "hiddenTraits": "隐藏特质",
-    "hidden": "隐藏",
+    "hidden": {
+      "truth": "隐藏真相",
+      "personality": "真实性格",
+      "motives": "真实动机",
+      "routine": "日常行动",
+      "secrets": "秘密",
+      "affinity": "真实好感度",
+      "npcImpression": "TA对你的印象",
+      "actualStatus": "实际状态"
+    },
     "effects": "效果",
     "noHiddenTraitsRevealed": "暂无已揭示的隐藏特质。",
     "trueName": "真实姓名",
     "trueRelationship": "真实关系",
-    "trueStatus": "真实状态",
     "rules": "规则",
     "hiddenRules": "隐藏规则",
     "knownFeatures": "已知特性",
@@ -849,7 +858,20 @@
     "routine": "日常行动",
     "trueConditions": "真实条件",
     "objectives": "目标",
-    "usage": "用途"
+    "usage": "用途",
+    "voice": "声音",
+    "mannerism": "举止",
+    "mood": "心情",
+    "currentThought": "当前想法",
+    "sensory": "感官细节",
+    "interactables": "可交互物",
+    "smell": "气味",
+    "sound": "声音",
+    "lighting": "光照",
+    "temperature": "温度",
+    "texture": "质地",
+    "weight": "重量",
+    "condition": "状况"
   },
   "gameOver": "游戏结束",
   "victory": "胜利",
@@ -918,7 +940,35 @@
     "delete": "删除"
   },
   "sidebar": {
-    "tokens": "Token:"
+    "tokens": "Token:",
+    "location": {
+      "environment": "环境",
+      "weather": "天气",
+      "ambience": "环境音",
+      "smell": "气味",
+      "sound": "声音",
+      "lighting": "光照",
+      "temperature": "温度",
+      "interactables": "可交互物",
+      "knownFeatures": "已知特征"
+    },
+    "relationship": {
+      "dialogueStyle": "对话风格",
+      "voice": "声音",
+      "mannerism": "举止",
+      "mood": "心情",
+      "trueName": "真实姓名",
+      "currentThought": "当前想法",
+      "mindRead": "读心",
+      "revealed": "已揭示"
+    },
+    "inventory": {
+      "texture": "质地",
+      "weight": "重量",
+      "smell": "气味",
+      "condition": "状况",
+      "usage": "用途"
+    }
   },
   "common": {
     "retry": "重试",

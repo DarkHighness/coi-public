@@ -65,7 +65,10 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({
   if (inline) {
     return (
       <span className={`markdown-content-inline ${className}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={components}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          components={components}
+        >
           {content}
         </ReactMarkdown>
       </span>
@@ -74,7 +77,10 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({
 
   return (
     <div className={`markdown-content ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        components={components}
+      >
         {content}
       </ReactMarkdown>
     </div>

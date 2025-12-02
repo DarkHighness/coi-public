@@ -172,9 +172,11 @@ export const getCoreRules = (): string => `
 
   <rule name="STATE MANAGEMENT">
     - Output ONLY changes (DELTAS).
-    - **Inventory**: Add/Remove/Update. Always include \`hidden.truth\` for items with secrets.
+    - **Inventory**: Add/Remove/Update. Use \`sensory\` (texture, weight, smell) and \`condition\` for physical depth. Always include \`hidden.truth\` for items with secrets.
     - **Relationships**: Track affinity, impression, location, and status.
       * **ALWAYS include**: visible.relationshipType, hidden.relationshipType, hidden.status, visible.status, visible.affinity, description, personality, currentLocation.
+      * **Immersive Fields**: Use \`visible.voice\`, \`visible.mannerism\`, \`visible.mood\` to bring NPCs to life.
+      * **Inner Life**: Use \`hidden.currentThought\` to track their internal monologue.
       * **visible.status**: What the protagonist BELIEVES the NPC is doing (their perception).
       * **hidden.status**: What the NPC is ACTUALLY doing (the truth).
       * **currentLocation**: The location ID where this NPC is currently located. ALWAYS UPDATE THIS when NPC moves.
@@ -183,6 +185,7 @@ export const getCoreRules = (): string => `
     - **World Events**: Record significant off-screen events.
     - **Factions**: Update agendas/reputations.
     - **Knowledge**: Add significant lore (never remove).
+    - **Locations**: Use \`visible.atmosphere\` to override global atmosphere. Use \`visible.sensory\` (smell, sound, lighting, temperature) and \`visible.interactables\` for immersion.
     - **Enums**:
       * **Weather**: Use \`atmosphere.weather\` (none, rain, snow, fog, embers, flicker, sunny).
       * **Conditions**: Use \`condition.type\` (normal, wound, poison, buff, debuff, mental, curse, stun, unconscious, tired, dead).
@@ -322,6 +325,11 @@ export const getImmersiveWriting = (): string => `
     - Don't just describe sight. Mix senses. "The air tasted of copper and ozone." "The silence was heavy, pressing against your eardrums."
     - **Texture & Weight**: Describe the grit of dust, the slickness of blood, the weight of a sword.
     - **Micro-Hooks**: Embed lore in small details (e.g., a coin stamped with a dead king's face).
+
+    **STRUCTURED SENSORY DATA**:
+    - **Locations**: When updating locations, populate \`visible.sensory\` (smell, sound, lighting, temperature). Use these details in your narrative.
+    - **Items**: Populate \`sensory\` (texture, weight, smell) and \`condition\` for items.
+    - **NPCs**: Define \`visible.voice\` and \`visible.mannerism\`. Use them in dialogue tags (e.g., "he rasped," "she tapped her fingers").
   </sensory_immersion>
 
   <character_appearance>

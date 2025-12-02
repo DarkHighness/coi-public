@@ -624,7 +624,9 @@ export class GameDatabase {
       }
 
       const exists = this.state.inventory.some(
-        (i) => (data.id && matchesIdentifier(i.id, data.id)) || matchesIdentifier(i.name, data.name),
+        (i) =>
+          (data.id && matchesIdentifier(i.id, data.id)) ||
+          matchesIdentifier(i.name, data.name),
       );
       if (exists) {
         return createError(
@@ -669,7 +671,9 @@ export class GameDatabase {
       }
 
       const index = this.state.inventory.findIndex(
-        (i) => matchesIdentifier(i.id, identifier) || matchesIdentifier(i.name, identifier),
+        (i) =>
+          matchesIdentifier(i.id, identifier) ||
+          matchesIdentifier(i.name, identifier),
       );
       if (index === -1) {
         return createError(`Item "${identifier}" not found`, "NOT_FOUND");
@@ -692,7 +696,9 @@ export class GameDatabase {
       }
 
       const item = this.state.inventory.find(
-        (i) => matchesIdentifier(i.id, identifier) || matchesIdentifier(i.name, identifier),
+        (i) =>
+          matchesIdentifier(i.id, identifier) ||
+          matchesIdentifier(i.name, identifier),
       );
       if (!item) {
         return createError(`Item "${identifier}" not found`, "NOT_FOUND");
@@ -734,7 +740,9 @@ export class GameDatabase {
       }
 
       const exists = this.state.relationships.some(
-        (r) => (data.id && matchesIdentifier(r.id, data.id)) || matchesIdentifier(r.visible.name, name),
+        (r) =>
+          (data.id && matchesIdentifier(r.id, data.id)) ||
+          matchesIdentifier(r.visible.name, name),
       );
       if (exists) {
         return createError(`NPC "${name}" already exists`, "ALREADY_EXISTS");
@@ -790,7 +798,9 @@ export class GameDatabase {
       }
 
       const index = this.state.relationships.findIndex(
-        (r) => matchesIdentifier(r.id, identifier) || matchesIdentifier(r.visible.name, identifier),
+        (r) =>
+          matchesIdentifier(r.id, identifier) ||
+          matchesIdentifier(r.visible.name, identifier),
       );
       if (index === -1) {
         return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
@@ -813,7 +823,9 @@ export class GameDatabase {
       }
 
       const npc = this.state.relationships.find(
-        (r) => matchesIdentifier(r.id, identifier) || matchesIdentifier(r.visible.name, identifier),
+        (r) =>
+          matchesIdentifier(r.id, identifier) ||
+          matchesIdentifier(r.visible.name, identifier),
       );
       if (!npc) {
         return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
@@ -854,7 +866,9 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.locations.find((l) => matchesIdentifier(l.name, data.name));
+      const exists = this.state.locations.find((l) =>
+        matchesIdentifier(l.name, data.name),
+      );
       if (exists) {
         return createError(
           `Location "${data.name}" already exists`,
@@ -903,7 +917,9 @@ export class GameDatabase {
       }
 
       const index = this.state.locations.findIndex(
-        (l) => matchesIdentifier(l.id, identifier) || matchesIdentifier(l.name, identifier),
+        (l) =>
+          matchesIdentifier(l.id, identifier) ||
+          matchesIdentifier(l.name, identifier),
       );
       if (index === -1) {
         return createError(`Location "${identifier}" not found`, "NOT_FOUND");
@@ -939,7 +955,9 @@ export class GameDatabase {
       }
 
       const loc = this.state.locations.find(
-        (l) => matchesIdentifier(l.name, identifier) || matchesIdentifier(l.id, identifier),
+        (l) =>
+          matchesIdentifier(l.name, identifier) ||
+          matchesIdentifier(l.id, identifier),
       );
       if (!loc) {
         return createError(`Location "${identifier}" not found`, "NOT_FOUND");
@@ -976,7 +994,9 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.quests.find((q) => matchesIdentifier(q.title, data.title));
+      const exists = this.state.quests.find((q) =>
+        matchesIdentifier(q.title, data.title),
+      );
       if (exists) {
         return createError(
           `Quest "${data.title}" already exists`,
@@ -1022,7 +1042,9 @@ export class GameDatabase {
       }
 
       const index = this.state.quests.findIndex(
-        (q) => matchesIdentifier(q.id, identifier) || matchesIdentifier(q.title, identifier),
+        (q) =>
+          matchesIdentifier(q.id, identifier) ||
+          matchesIdentifier(q.title, identifier),
       );
       if (index === -1) {
         return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
@@ -1042,7 +1064,9 @@ export class GameDatabase {
       }
 
       const quest = this.state.quests.find(
-        (q) => matchesIdentifier(q.title, identifier) || matchesIdentifier(q.id, identifier),
+        (q) =>
+          matchesIdentifier(q.title, identifier) ||
+          matchesIdentifier(q.id, identifier),
       );
       if (!quest) {
         return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
@@ -1080,7 +1104,9 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.knowledge.find((k) => matchesIdentifier(k.title, data.title));
+      const exists = this.state.knowledge.find((k) =>
+        matchesIdentifier(k.title, data.title),
+      );
       if (exists) {
         return createError(
           `Knowledge "${data.title}" already exists`,
@@ -1127,7 +1153,9 @@ export class GameDatabase {
       }
 
       const k = this.state.knowledge.find(
-        (k) => matchesIdentifier(k.title, identifier) || matchesIdentifier(k.id, identifier),
+        (k) =>
+          matchesIdentifier(k.title, identifier) ||
+          matchesIdentifier(k.id, identifier),
       );
       if (!k) {
         return createError(`Knowledge "${identifier}" not found`, "NOT_FOUND");
@@ -1168,7 +1196,9 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.factions.find((f) => matchesIdentifier(f.name, data.name));
+      const exists = this.state.factions.find((f) =>
+        matchesIdentifier(f.name, data.name),
+      );
       if (exists) {
         return createError(
           `Faction "${data.name}" already exists`,
@@ -1202,7 +1232,9 @@ export class GameDatabase {
       }
 
       const index = this.state.factions.findIndex(
-        (f) => matchesIdentifier(f.id, identifier) || matchesIdentifier(f.name, identifier),
+        (f) =>
+          matchesIdentifier(f.id, identifier) ||
+          matchesIdentifier(f.name, identifier),
       );
       if (index === -1) {
         return createError(`Faction "${identifier}" not found`, "NOT_FOUND");
@@ -1225,7 +1257,9 @@ export class GameDatabase {
       }
 
       const f = this.state.factions.find(
-        (f) => matchesIdentifier(f.name, identifier) || matchesIdentifier(f.id, identifier),
+        (f) =>
+          matchesIdentifier(f.name, identifier) ||
+          matchesIdentifier(f.id, identifier),
       );
       if (!f) {
         return createError(`Faction "${identifier}" not found`, "NOT_FOUND");
@@ -1326,8 +1360,8 @@ export class GameDatabase {
         this.state.character.currentLocation = data.profile.currentLocation;
         // Sync global location and isVisited
         this.state.currentLocation = data.profile.currentLocation;
-        const loc = this.state.locations.find(
-          (l) => matchesIdentifier(l.name, data.profile.currentLocation),
+        const loc = this.state.locations.find((l) =>
+          matchesIdentifier(l.name, data.profile.currentLocation),
         );
         if (loc) {
           loc.isVisited = true;
@@ -1379,8 +1413,8 @@ export class GameDatabase {
     if (data.skills) {
       for (const skill of data.skills) {
         if (skill.action === "add") {
-          const exists = this.state.character.skills.find(
-            (s) => matchesIdentifier(s.name, skill.name),
+          const exists = this.state.character.skills.find((s) =>
+            matchesIdentifier(s.name, skill.name),
           );
           if (!exists) {
             const newId = skill.id || this.generateId("skill");
@@ -1401,7 +1435,9 @@ export class GameDatabase {
           }
         } else if (skill.action === "update") {
           const existing = this.state.character.skills.find(
-            (s) => matchesIdentifier(s.id, skill.id) || matchesIdentifier(s.name, skill.name),
+            (s) =>
+              matchesIdentifier(s.id, skill.id) ||
+              matchesIdentifier(s.name, skill.name),
           );
           if (existing) {
             if (skill.level !== undefined) {
@@ -1422,7 +1458,9 @@ export class GameDatabase {
           }
         } else if (skill.action === "remove") {
           const index = this.state.character.skills.findIndex(
-            (s) => matchesIdentifier(s.id, skill.id) || matchesIdentifier(s.name, skill.name),
+            (s) =>
+              matchesIdentifier(s.id, skill.id) ||
+              matchesIdentifier(s.name, skill.name),
           );
           if (index !== -1) {
             this.state.character.skills.splice(index, 1);
@@ -1436,8 +1474,8 @@ export class GameDatabase {
     if (data.conditions) {
       for (const cond of data.conditions) {
         if (cond.action === "add") {
-          const exists = this.state.character.conditions.find(
-            (c) => matchesIdentifier(c.name, cond.name),
+          const exists = this.state.character.conditions.find((c) =>
+            matchesIdentifier(c.name, cond.name),
           );
           if (!exists) {
             const newId = cond.id || this.generateId("condition");
@@ -1463,7 +1501,9 @@ export class GameDatabase {
           }
         } else if (cond.action === "update") {
           const existing = this.state.character.conditions.find(
-            (c) => matchesIdentifier(c.id, cond.id) || matchesIdentifier(c.name, cond.name),
+            (c) =>
+              matchesIdentifier(c.id, cond.id) ||
+              matchesIdentifier(c.name, cond.name),
           );
           if (existing) {
             if (cond.type !== undefined) {
@@ -1497,7 +1537,9 @@ export class GameDatabase {
           }
         } else if (cond.action === "remove") {
           const index = this.state.character.conditions.findIndex(
-            (c) => matchesIdentifier(c.id, cond.id) || matchesIdentifier(c.name, cond.name),
+            (c) =>
+              matchesIdentifier(c.id, cond.id) ||
+              matchesIdentifier(c.name, cond.name),
           );
           if (index !== -1) {
             this.state.character.conditions.splice(index, 1);
@@ -1515,8 +1557,8 @@ export class GameDatabase {
 
       for (const trait of data.hiddenTraits) {
         if (trait.action === "add") {
-          const exists = this.state.character.hiddenTraits!.find(
-            (t) => matchesIdentifier(t.name, trait.name),
+          const exists = this.state.character.hiddenTraits!.find((t) =>
+            matchesIdentifier(t.name, trait.name),
           );
           if (!exists) {
             const newId = trait.id || this.generateId("hiddenTrait");
@@ -1533,7 +1575,9 @@ export class GameDatabase {
           }
         } else if (trait.action === "update") {
           const existing = this.state.character.hiddenTraits!.find(
-            (t) => matchesIdentifier(t.id, trait.id) || matchesIdentifier(t.name, trait.name),
+            (t) =>
+              matchesIdentifier(t.id, trait.id) ||
+              matchesIdentifier(t.name, trait.name),
           );
           if (existing) {
             if (trait.description) existing.description = trait.description;
@@ -1547,7 +1591,9 @@ export class GameDatabase {
           }
         } else if (trait.action === "remove") {
           const index = this.state.character.hiddenTraits!.findIndex(
-            (t) => matchesIdentifier(t.id, trait.id) || matchesIdentifier(t.name, trait.name),
+            (t) =>
+              matchesIdentifier(t.id, trait.id) ||
+              matchesIdentifier(t.name, trait.name),
           );
           if (index !== -1) {
             this.state.character.hiddenTraits!.splice(index, 1);

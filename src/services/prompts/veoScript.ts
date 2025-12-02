@@ -19,7 +19,8 @@ export const getVeoScriptPrompt = (
   const currentLocationName = gameState.currentLocation || "Unknown Location";
   const locationObj = gameState.locations?.find(
     (l) =>
-      String(l.id).toLowerCase() === String(gameState.currentLocation).toLowerCase() ||
+      String(l.id).toLowerCase() ===
+        String(gameState.currentLocation).toLowerCase() ||
       l.name?.toLowerCase() === gameState.currentLocation?.toLowerCase(),
   );
 

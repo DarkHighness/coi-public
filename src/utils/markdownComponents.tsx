@@ -48,9 +48,7 @@ export const markdownComponents = {
     </div>
   ),
   inlineMath: ({ node, ...props }: any) => (
-    <span className="font-serif text-theme-primary px-1">
-      {props.children}
-    </span>
+    <span className="font-serif text-theme-primary px-1">{props.children}</span>
   ),
   pre: ({ node, ...props }: any) => <span {...props} />,
   blockquote: ({ node, ...props }: any) => (

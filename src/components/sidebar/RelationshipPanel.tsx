@@ -199,29 +199,35 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                   </div>
                 )}
                 {rel.visible?.dialogueStyle && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("dialogueStyle") || "Dialogue Style"}
+                  <div className="flex items-center gap-2 text-xs text-theme-muted">
+                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
+                      {t("sidebar.relationship.dialogueStyle")}:
                     </span>
-                    <div className="text-theme-muted/80">
-                      <MarkdownText
-                        content={`"${rel.visible.dialogueStyle}"`}
-                        indentSize={2}
-                      />
-                    </div>
+                    <span>{rel.visible.dialogueStyle}</span>
                   </div>
                 )}
-                {rel.visible?.impression && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("protagonistImpression") || "Your Impression"}
+                {rel.visible.voice && (
+                  <div className="flex items-center gap-2 text-xs text-theme-muted">
+                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
+                      {t("sidebar.relationship.voice")}:
                     </span>
-                    <div className="text-theme-muted/80 text-theme-accent">
-                      <MarkdownText
-                        content={rel.visible.impression}
-                        indentSize={2}
-                      />
-                    </div>
+                    <span>{rel.visible.voice}</span>
+                  </div>
+                )}
+                {rel.visible.mannerism && (
+                  <div className="flex items-center gap-2 text-xs text-theme-muted">
+                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
+                      {t("sidebar.relationship.mannerism")}:
+                    </span>
+                    <span>{rel.visible.mannerism}</span>
+                  </div>
+                )}
+                {rel.visible.mood && (
+                  <div className="flex items-center gap-2 text-xs text-theme-muted">
+                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
+                      {t("sidebar.relationship.mood")}:
+                    </span>
+                    <span>{rel.visible.mood}</span>
                   </div>
                 )}
 
@@ -323,6 +329,28 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         </ul>
                       </div>
                     )}
+
+                    <div className="space-y-2">
+                      {rel.hidden.currentThought && (
+                        <div className="mb-2 border-l-2 border-theme-primary/30 pl-2">
+                          <div className="text-[10px] uppercase tracking-wider text-theme-primary/50 mb-0.5 flex items-center gap-1">
+                            <span>💭</span>{" "}
+                            {t("sidebar.relationship.currentThought")}
+                          </div>
+                          <div className="italic text-theme-primary/70 text-xs">
+                            "{rel.hidden.currentThought}"
+                          </div>
+                        </div>
+                      )}
+                      {rel.hidden.trueName && (
+                        <div className="flex items-center gap-2 text-xs text-theme-unlocked">
+                          <span className="uppercase tracking-wider text-[10px] opacity-70">
+                            {t("sidebar.relationship.trueName")}:
+                          </span>
+                          <span>{rel.hidden.trueName}</span>
+                        </div>
+                      )}
+                    </div>
 
                     {rel.hidden?.trueAffinity !== undefined && (
                       <div className="mt-2 text-[10px] flex items-center gap-2">

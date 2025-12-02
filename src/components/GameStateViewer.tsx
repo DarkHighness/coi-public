@@ -492,33 +492,114 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                         <span className="uppercase tracking-wider text-theme-primary/80">
                           {t("gameViewer.environment") || "Environment"}:
                         </span>{" "}
-                        <span className="text-theme-muted">{loc.environment}</span>
-                      </div>
-                    )}
-                    {loc.visible.knownFeatures && loc.visible.knownFeatures.length > 0 && (
-                      <div className="text-xs">
-                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.knownFeatures") || "Known Features"}:
+                        <span className="text-theme-muted">
+                          {loc.environment}
                         </span>
-                        <ul className="list-disc list-inside pl-2 text-theme-muted">
-                          {loc.visible.knownFeatures.map((feature, i) => (
-                            <li key={i}>{feature}</li>
-                          ))}
-                        </ul>
                       </div>
                     )}
-                    {loc.visible.resources && loc.visible.resources.length > 0 && (
-                      <div className="text-xs">
-                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.resources") || "Resources"}:
+                    {/* Atmosphere */}
+                    {loc.visible?.atmosphere && (
+                      <div className="mt-2">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.atmosphere") || "Atmosphere"}
                         </span>
-                        <ul className="list-disc list-inside pl-2 text-theme-muted">
-                          {loc.visible.resources.map((resource, i) => (
-                            <li key={i}>{resource}</li>
-                          ))}
-                        </ul>
+                        <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
+                          {loc.visible.atmosphere.weather && (
+                            <InfoRow
+                              label={t("gameViewer.weather") || "Weather"}
+                              value={loc.visible.atmosphere.weather}
+                            />
+                          )}
+                          {loc.visible.atmosphere.ambience && (
+                            <InfoRow
+                              label={t("gameViewer.ambience") || "Ambience"}
+                              value={loc.visible.atmosphere.ambience}
+                            />
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Sensory Details */}
+                    {loc.visible?.sensory && (
+                      <div className="mt-2">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.sensory") || "Sensory Details"}
+                        </span>
+                        <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
+                          {loc.visible.sensory.smell && (
+                            <InfoRow
+                              label={t("gameViewer.smell") || "Smell"}
+                              value={loc.visible.sensory.smell}
+                            />
+                          )}
+                          {loc.visible.sensory.sound && (
+                            <InfoRow
+                              label={t("gameViewer.sound") || "Sound"}
+                              value={loc.visible.sensory.sound}
+                            />
+                          )}
+                          {loc.visible.sensory.lighting && (
+                            <InfoRow
+                              label={t("gameViewer.lighting") || "Lighting"}
+                              value={loc.visible.sensory.lighting}
+                            />
+                          )}
+                          {loc.visible.sensory.temperature && (
+                            <InfoRow
+                              label={
+                                t("gameViewer.temperature") || "Temperature"
+                              }
+                              value={loc.visible.sensory.temperature}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Interactables */}
+                    {loc.visible?.interactables &&
+                      loc.visible.interactables.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.interactables") || "Interactables"}
+                          </span>
+                          <div className="pl-2 text-theme-muted text-sm">
+                            <ul className="list-disc list-inside">
+                              {loc.visible.interactables.map((item, i) => (
+                                <li key={i}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+
+                    {loc.visible.knownFeatures &&
+                      loc.visible.knownFeatures.length > 0 && (
+                        <div className="text-xs">
+                          <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.knownFeatures") || "Known Features"}:
+                          </span>
+                          <ul className="list-disc list-inside pl-2 text-theme-muted">
+                            {loc.visible.knownFeatures.map((feature, i) => (
+                              <li key={i}>{feature}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    {loc.visible.resources &&
+                      loc.visible.resources.length > 0 && (
+                        <div className="text-xs">
+                          <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.resources") || "Resources"}:
+                          </span>
+                          <ul className="list-disc list-inside pl-2 text-theme-muted">
+                            {loc.visible.resources.map((resource, i) => (
+                              <li key={i}>{resource}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     {loc.lore && (
                       <div className="text-xs border-t border-theme-border/30 pt-2">
                         <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
@@ -540,18 +621,19 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                               content={loc.hidden.fullDescription}
                             />
                           )}
-                          {loc.hidden.dangers && loc.hidden.dangers.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.dangers") || "Dangers"}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {loc.hidden.dangers.map((danger, i) => (
-                                  <li key={i}>{danger}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {loc.hidden.dangers &&
+                            loc.hidden.dangers.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.dangers") || "Dangers"}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.dangers.map((danger, i) => (
+                                    <li key={i}>{danger}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           {loc.hidden.hiddenFeatures &&
                             loc.hidden.hiddenFeatures.length > 0 && (
                               <div>
@@ -559,9 +641,11 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                                   {t("gameViewer.hiddenFeatures")}:
                                 </span>
                                 <ul className="list-disc list-inside pl-2">
-                                  {loc.hidden.hiddenFeatures.map((feature, i) => (
-                                    <li key={i}>{feature}</li>
-                                  ))}
+                                  {loc.hidden.hiddenFeatures.map(
+                                    (feature, i) => (
+                                      <li key={i}>{feature}</li>
+                                    ),
+                                  )}
                                 </ul>
                               </div>
                             )}
@@ -768,18 +852,19 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
                     <MarkdownText content={skill.visible.description} />
                   </div>
-                  {skill.visible.knownEffects && skill.visible.knownEffects.length > 0 && (
-                    <div className="mt-2 text-xs">
-                      <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                        {t("gameViewer.knownEffects") || "Known Effects"}:
-                      </span>
-                      <ul className="list-disc list-inside pl-2 text-theme-muted">
-                        {skill.visible.knownEffects.map((effect, i) => (
-                          <li key={i}>{effect}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {skill.visible.knownEffects &&
+                    skill.visible.knownEffects.length > 0 && (
+                      <div className="mt-2 text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.knownEffects") || "Known Effects"}:
+                        </span>
+                        <ul className="list-disc list-inside pl-2 text-theme-muted">
+                          {skill.visible.knownEffects.map((effect, i) => (
+                            <li key={i}>{effect}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   {skill.category && (
                     <div className="mt-2 text-xs text-theme-muted">
                       <span className="uppercase tracking-wider text-theme-primary/80">
@@ -865,14 +950,21 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                     <span>{getValidIcon(cond.icon, "💫")}</span>
                     {cond.name}
                     {cond.type && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                        cond.type === "buff" ? "bg-green-500/20 text-green-400" :
-                        cond.type === "debuff" ? "bg-red-500/20 text-red-400" :
-                        cond.type === "wound" ? "bg-orange-500/20 text-orange-400" :
-                        cond.type === "poison" ? "bg-purple-500/20 text-purple-400" :
-                        cond.type === "curse" ? "bg-violet-500/20 text-violet-400" :
-                        "bg-theme-surface text-theme-muted"
-                      }`}>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                          cond.type === "buff"
+                            ? "bg-green-500/20 text-green-400"
+                            : cond.type === "debuff"
+                              ? "bg-red-500/20 text-red-400"
+                              : cond.type === "wound"
+                                ? "bg-orange-500/20 text-orange-400"
+                                : cond.type === "poison"
+                                  ? "bg-purple-500/20 text-purple-400"
+                                  : cond.type === "curse"
+                                    ? "bg-violet-500/20 text-violet-400"
+                                    : "bg-theme-surface text-theme-muted"
+                        }`}
+                      >
                         {cond.type}
                       </span>
                     )}
@@ -888,7 +980,9 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   {cond.visible?.perceivedSeverity && (
                     <div className="mt-2 text-xs text-theme-muted">
                       <span className="uppercase tracking-wider text-theme-primary/80">
-                        {t("gameViewer.perceivedSeverity") || "Perceived Severity"}:
+                        {t("gameViewer.perceivedSeverity") ||
+                          "Perceived Severity"}
+                        :
                       </span>{" "}
                       {cond.visible.perceivedSeverity}
                     </div>
@@ -944,18 +1038,19 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                               />
                             </div>
                           )}
-                          {cond.effects?.hidden && cond.effects.hidden.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.hiddenEffects")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {cond.effects.hidden.map((effect, i) => (
-                                  <li key={i}>{effect}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {cond.effects?.hidden &&
+                            cond.effects.hidden.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.hiddenEffects")}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {cond.effects.hidden.map((effect, i) => (
+                                    <li key={i}>{effect}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                         </div>
                       }
                     />
@@ -1112,7 +1207,9 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                       {rel.visible.status && (
                         <div>
                           <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                            {t("gameViewer.perceivedStatus") || "Currently (Perceived)"}:
+                            {t("gameViewer.perceivedStatus") ||
+                              "Currently (Perceived)"}
+                            :
                           </span>
                           <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
                             <MarkdownText content={rel.visible.status} />
@@ -1129,19 +1226,40 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                           </div>
                         </div>
                       )}
+                      {rel.visible.voice && (
+                        <InfoRow
+                          label={t("gameViewer.voice") || "Voice"}
+                          value={rel.visible.voice}
+                        />
+                      )}
+                      {rel.visible.mannerism && (
+                        <InfoRow
+                          label={t("gameViewer.mannerism") || "Mannerism"}
+                          value={rel.visible.mannerism}
+                        />
+                      )}
+                      {rel.visible.mood && (
+                        <InfoRow
+                          label={t("gameViewer.mood") || "Mood"}
+                          value={rel.visible.mood}
+                        />
+                      )}
                     </div>
                     {(rel.unlocked || gameState.unlockMode) && rel.hidden && (
                       <HiddenContent
                         t={t}
                         content={
                           <div className="space-y-2">
-                            {rel.hidden.trueName && (
-                              <div>
-                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                  {t("gameViewer.trueName") || "True Name"}:
-                                </span>
-                                <MarkdownText content={rel.hidden.trueName} />
+                            {rel.hidden.currentThought && (
+                              <div className="mb-2 italic text-theme-primary/70">
+                                "{rel.hidden.currentThought}"
                               </div>
+                            )}
+                            {rel.hidden.trueName && (
+                              <InfoRow
+                                label={t("gameViewer.trueName") || "True Name"}
+                                value={rel.hidden.trueName}
+                              />
                             )}
                             {rel.hidden.realPersonality && (
                               <div>
@@ -1212,7 +1330,9 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                             {rel.hidden.impression && (
                               <div>
                                 <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                  {t("gameViewer.npcImpression") || "Their Impression of Me"}:
+                                  {t("gameViewer.npcImpression") ||
+                                    "Their Impression of Me"}
+                                  :
                                 </span>
                                 <MarkdownText content={rel.hidden.impression} />
                               </div>
@@ -1609,6 +1729,53 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
                   <div className="text-theme-muted text-xs pl-1">
                     <MarkdownText content={item.visible.description} />
                   </div>
+
+                  {/* Sensory Details */}
+                  {item.visible?.sensory && (
+                    <div className="text-xs mt-1 pl-1 border-l-2 border-theme-border/30">
+                      {item.visible.sensory.texture && (
+                        <div className="flex gap-1">
+                          <span className="text-theme-primary/70">
+                            {t("gameViewer.texture")}:
+                          </span>
+                          <span className="text-theme-muted">
+                            {item.visible.sensory.texture}
+                          </span>
+                        </div>
+                      )}
+                      {item.visible.sensory.weight && (
+                        <div className="flex gap-1">
+                          <span className="text-theme-primary/70">
+                            {t("gameViewer.weight")}:
+                          </span>
+                          <span className="text-theme-muted">
+                            {item.visible.sensory.weight}
+                          </span>
+                        </div>
+                      )}
+                      {item.visible.sensory.smell && (
+                        <div className="flex gap-1">
+                          <span className="text-theme-primary/70">
+                            {t("gameViewer.smell")}:
+                          </span>
+                          <span className="text-theme-muted">
+                            {item.visible.sensory.smell}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {item.visible?.condition && (
+                    <div className="text-xs mt-1 pl-1">
+                      <span className="text-theme-primary/70">
+                        {t("gameViewer.condition")}:{" "}
+                      </span>
+                      <span className="text-theme-muted">
+                        {item.visible.condition}
+                      </span>
+                    </div>
+                  )}
                   {item.visible?.usage && (
                     <div className="text-xs">
                       <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">

@@ -68,13 +68,17 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className={`relative z-10 flex-1 p-5 overflow-y-auto custom-scrollbar space-y-5 ${envTheme?.fontClass || "font-sans"}`}>
+        <div
+          className={`relative z-10 flex-1 p-5 overflow-y-auto custom-scrollbar space-y-5 ${envTheme?.fontClass || "font-sans"}`}
+        >
           <div>
             <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
               {t("narrativeStyle")}
             </h3>
             <div className="text-theme-muted text-sm leading-relaxed">
-              <MarkdownText content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })} />
+              <MarkdownText
+                content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
+              />
             </div>
           </div>
 
@@ -83,7 +87,9 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
               {t("worldSetting")}
             </h3>
             <div className="text-theme-muted text-sm leading-relaxed">
-              <MarkdownText content={t(`${themeKey}.worldSetting`, { ns: "themes" })} />
+              <MarkdownText
+                content={t(`${themeKey}.worldSetting`, { ns: "themes" })}
+              />
             </div>
           </div>
 
@@ -98,7 +104,9 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                   : "font-sans text-sm"
               }`}
             >
-              <MarkdownText content={t(`${themeKey}.example`, { ns: "themes" })} />
+              <MarkdownText
+                content={t(`${themeKey}.example`, { ns: "themes" })}
+              />
             </div>
             <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
               "

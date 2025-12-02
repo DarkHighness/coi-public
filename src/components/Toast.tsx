@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ToastProvider, useToast, ToastItemType as ToastItem } from "../contexts/ToastContext";
+import {
+  ToastProvider,
+  useToast,
+  ToastItemType as ToastItem,
+} from "../contexts/ToastContext";
 
 // Re-export context utilities for convenience
 export { ToastProvider, useToast };

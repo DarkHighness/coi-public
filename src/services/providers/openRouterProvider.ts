@@ -68,7 +68,8 @@ function createRequestOptions(): any {
   return {
     fetchOptions: {
       headers: {
-        "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "",
+        "HTTP-Referer":
+          typeof window !== "undefined" ? window.location.origin : "",
         "X-Title": "CoI Game",
       },
     },
@@ -292,7 +293,11 @@ export async function generateContent(
           );
         } else {
           // Non-streaming response
-          return await handleNonStreamingResponse(client, requestParams, schema);
+          return await handleNonStreamingResponse(
+            client,
+            requestParams,
+            schema,
+          );
         }
       } catch (error) {
         if (error instanceof AIProviderError) throw error;
@@ -375,7 +380,10 @@ async function handleStreamingResponse(
   onChunk: (text: string) => void,
   schema?: ZodTypeAny,
 ): Promise<OpenRouterContentGenerationResponse> {
-  const stream = await client.chat.send({ ...params, stream: true }, createRequestOptions());
+  const stream = await client.chat.send(
+    { ...params, stream: true },
+    createRequestOptions(),
+  );
   let content = "";
   let usage: TokenUsage = {
     promptTokens: 0,
@@ -527,7 +535,9 @@ function convertToOpenAIMessages(
 /**
  * Convert tools to OpenRouter format
  */
-function convertToOpenRouterTools(tools: GenerateContentOptions["tools"]): any[] {
+function convertToOpenRouterTools(
+  tools: GenerateContentOptions["tools"],
+): any[] {
   return (tools || []).map((tool) =>
     createOpenRouterTool(tool.name, tool.description, tool.parameters),
   );
@@ -567,14 +577,20 @@ export async function generateImage(
     // Check for images in the response
     if (data.choices?.[0]?.message?.images?.length) {
       return {
-        url: data.choices[0].message.images[0].imageUrl?.url ||
-             data.choices[0].message.images[0].image_url?.url,
+        url:
+          data.choices[0].message.images[0].imageUrl?.url ||
+          data.choices[0].message.images[0].image_url?.url,
         raw: data,
         usage: data.usage
           ? {
-              promptTokens: data.usage.promptTokens || data.usage.prompt_tokens || 0,
-              completionTokens: data.usage.completionTokens || data.usage.completion_tokens || 0,
-              totalTokens: data.usage.totalTokens || data.usage.total_tokens || 0,
+              promptTokens:
+                data.usage.promptTokens || data.usage.prompt_tokens || 0,
+              completionTokens:
+                data.usage.completionTokens ||
+                data.usage.completion_tokens ||
+                0,
+              totalTokens:
+                data.usage.totalTokens || data.usage.total_tokens || 0,
             }
           : undefined,
       };
@@ -591,7 +607,7 @@ export async function generateImage(
     if (
       error instanceof Error &&
       (error.message.includes("modalities") ||
-       error.message.includes("not supported"))
+        error.message.includes("not supported"))
     ) {
       console.warn(
         "[OpenRouter] Model doesn't support modalities, trying legacy images/generations endpoint",
@@ -634,7 +650,8 @@ async function generateImageLegacy(
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "",
+        "HTTP-Referer":
+          typeof window !== "undefined" ? window.location.origin : "",
         "X-Title": "CoI Game",
       },
       body: JSON.stringify({
@@ -716,7 +733,9 @@ export async function getEmbeddingModels(
       throw new Error("No embedding models found");
     }
 
-    console.log(`[OpenRouter] Loaded ${embeddingModels.length} embedding models via SDK`);
+    console.log(
+      `[OpenRouter] Loaded ${embeddingModels.length} embedding models via SDK`,
+    );
     return embeddingModels;
   } catch (sdkError) {
     console.warn(
@@ -743,22 +762,21 @@ export async function getEmbeddingModels(
 
       // They are all embedding models in this file
       // Thus, we can directly map them
-      const models =  data.data.map((m: any) => {
+      const models = data.data.map((m: any) => {
         return {
           id: m.id || m.slug,
           name: m.name || m.id || m.slug,
           dimensions: guessEmbeddingDimensions((m.id || m.slug).toLowerCase()),
           contextLength: m.context_length || m.contextLength || 8192,
-        }
+        };
       });
 
-      console.log(`[OpenRouter] Loaded ${models.length} embedding models from local JSON file`);
+      console.log(
+        `[OpenRouter] Loaded ${models.length} embedding models from local JSON file`,
+      );
       return models;
     } catch (jsonError) {
-      console.warn(
-        "Failed to load from local JSON file:",
-        jsonError,
-      );
+      console.warn("Failed to load from local JSON file:", jsonError);
       console.log("[OpenRouter] Using default embedding models");
       return getDefaultEmbeddingModels();
     }
@@ -775,8 +793,10 @@ function processEmbeddingModels(models: any[]): EmbeddingModelInfo[] {
     const id = (model.id || model.slug || "").toLowerCase();
 
     // Check if this is an embedding model
-    if (model.output_modalities?.includes("embeddings") ||
-        model.modality?.includes("embeddings")) {
+    if (
+      model.output_modalities?.includes("embeddings") ||
+      model.modality?.includes("embeddings")
+    ) {
       embeddingModels.push({
         id: model.id || model.slug,
         name: model.name || model.id || model.slug,

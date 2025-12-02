@@ -65,14 +65,28 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   const content = (
     <div className="w-full h-full relative flex flex-col bg-theme-bg/95 backdrop-blur-xl z-[100]">
       {/* Header Area - Fixed on Desktop */}
-      <div className={`shrink-0 z-10 bg-theme-bg/80 backdrop-blur-md pt-4 px-6 flex items-center gap-4 transition-shadow duration-300 ${isScrolled ? "shadow-md" : ""}`}>
+      <div
+        className={`shrink-0 z-10 bg-theme-bg/80 backdrop-blur-md pt-4 px-6 flex items-center gap-4 transition-shadow duration-300 ${isScrolled ? "shadow-md" : ""}`}
+      >
         {onBack && (
-           <button
-             onClick={onBack}
-             className="flex p-2 rounded-full hover:bg-theme-surface-highlight text-theme-muted hover:text-theme-text transition-colors"
-           >
-             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-           </button>
+          <button
+            onClick={onBack}
+            className="flex p-2 rounded-full hover:bg-theme-surface-highlight text-theme-muted hover:text-theme-text transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+          </button>
         )}
         <div className="flex-1">
           <ThemeFilters
@@ -135,49 +149,73 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
       {previewTheme && previewData && (
         <>
           <div className="fixed inset-y-0 right-0 w-[400px] lg:w-[480px] bg-theme-surface border-l border-theme-border shadow-2xl z-50 animate-slide-in-right flex flex-col">
-             {/* Close Button */}
-             <button
-                onClick={closePreview}
-                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
-             >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-             </button>
+            {/* Close Button */}
+            <button
+              onClick={closePreview}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
 
             {/* Content reused from Modal but styled for panel */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-               {/* Hero Header (Gradient + Icon) */}
-               <div className="relative h-48 w-full shrink-0 overflow-hidden">
-                  <div
-                    className="absolute inset-0 bg-gradient-to-br from-theme-primary/20 to-theme-bg"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-10 text-9xl select-none pointer-events-none">
-                    {previewData.icon || "🎲"}
-                  </div>
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <div className="text-4xl mb-2">{previewData.icon}</div>
-                    <h2 className="text-3xl font-bold text-theme-primary font-display shadow-black/50 drop-shadow-lg">
-                      {t(`${previewTheme}.name`, { ns: "themes" })}
-                    </h2>
-                  </div>
-               </div>
+              {/* Hero Header (Gradient + Icon) */}
+              <div className="relative h-48 w-full shrink-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-theme-primary/20 to-theme-bg" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-10 text-9xl select-none pointer-events-none">
+                  {previewData.icon || "🎲"}
+                </div>
+                <div className="absolute bottom-6 left-6 right-6">
+                  <div className="text-4xl mb-2">{previewData.icon}</div>
+                  <h2 className="text-3xl font-bold text-theme-primary font-display shadow-black/50 drop-shadow-lg">
+                    {t(`${previewTheme}.name`, { ns: "themes" })}
+                  </h2>
+                </div>
+              </div>
 
-               <div className={`p-6 space-y-6 ${ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"}`}>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">{t("narrativeStyle")}</h3>
-                      <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
-                        <MarkdownText content={t(`${previewTheme}.narrativeStyle`, { ns: "themes" })} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                       <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">{t("worldSetting")}</h3>
-                       <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
-                         <MarkdownText content={t(`${previewTheme}.worldSetting`, { ns: "themes" })} />
-                       </div>
+              <div
+                className={`p-6 space-y-6 ${ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"}`}
+              >
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">
+                      {t("narrativeStyle")}
+                    </h3>
+                    <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                      <MarkdownText
+                        content={t(`${previewTheme}.narrativeStyle`, {
+                          ns: "themes",
+                        })}
+                      />
                     </div>
                   </div>
-               </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">
+                      {t("worldSetting")}
+                    </h3>
+                    <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                      <MarkdownText
+                        content={t(`${previewTheme}.worldSetting`, {
+                          ns: "themes",
+                        })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Footer Actions */}

@@ -198,9 +198,18 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
 
       {/* Animated Mesh Gradient Overlay */}
       <div className="absolute inset-0 opacity-30 z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-theme-primary/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-theme-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-theme-primary/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
+        <div
+          className="absolute top-0 left-1/4 w-96 h-96 bg-theme-primary/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDuration: "4s" }}
+        />
+        <div
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-theme-primary/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDuration: "6s", animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-96 h-96 bg-theme-primary/15 rounded-full blur-3xl animate-pulse"
+          style={{ animationDuration: "5s", animationDelay: "2s" }}
+        />
       </div>
 
       {/* Particle Effect */}
@@ -224,7 +233,10 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
         {/* Pulsating Orb with Multiple Rings */}
         <div className="relative group">
           {/* Outermost Glow Ring */}
-          <div className="absolute -inset-24 bg-theme-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
+          <div
+            className="absolute -inset-24 bg-theme-primary/10 rounded-full blur-3xl animate-pulse"
+            style={{ animationDuration: "3s" }}
+          />
 
           {/* Rotating Outer Ring */}
           <div className="w-32 h-32 md:w-40 md:h-40 relative">
@@ -236,7 +248,10 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
           <div className="absolute inset-4 border-[3px] border-t-theme-primary border-r-theme-primary/60 border-b-theme-primary/30 border-l-transparent rounded-full animate-[spin_2.5s_linear_infinite]" />
 
           {/* Inner Glow Ring */}
-          <div className="absolute inset-8 border-2 border-theme-primary/80 rounded-full animate-pulse shadow-[0_0_40px_rgba(var(--theme-primary-rgb,251,146,60),0.6)]" style={{ animationDuration: '2s' }} />
+          <div
+            className="absolute inset-8 border-2 border-theme-primary/80 rounded-full animate-pulse shadow-[0_0_40px_rgba(var(--theme-primary-rgb,251,146,60),0.6)]"
+            style={{ animationDuration: "2s" }}
+          />
 
           {/* Core Orb */}
           <div className="absolute inset-0 flex items-center justify-center">
@@ -271,10 +286,11 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
               className={`text-2xl md:text-3xl lg:text-4xl ${themeFont} tracking-wider text-theme-primary font-bold min-h-[4rem] leading-relaxed px-4`}
               style={{
                 background: `linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-hover) 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                textShadow: '0 0 30px rgba(var(--theme-primary-rgb,251,146,60),0.3)',
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                textShadow:
+                  "0 0 30px rgba(var(--theme-primary-rgb,251,146,60),0.3)",
               }}
             >
               {animatedText}
@@ -297,8 +313,10 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                     style={{
                       width: `${progressPercent}%`,
                       background: `linear-gradient(90deg, var(--theme-primary-hover) 0%, var(--theme-primary) 100%)`,
-                      boxShadow: '0 0 15px rgba(var(--theme-primary-rgb,251,146,60),0.6)',
-                      transition: 'width 0.7s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease',
+                      boxShadow:
+                        "0 0 15px rgba(var(--theme-primary-rgb,251,146,60),0.6)",
+                      transition:
+                        "width 0.7s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease",
                     }}
                   >
                     {/* Animated Shine Effect */}
@@ -314,7 +332,9 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                       : phaseProgress.phase - 1}
                   </span>
                   <span className="text-theme-muted/60">/</span>
-                  <span className="text-theme-muted">{phaseProgress.totalPhases}</span>
+                  <span className="text-theme-muted">
+                    {phaseProgress.totalPhases}
+                  </span>
                   <span className="mx-2 text-theme-primary/50">•</span>
                   <span
                     className={`${phaseProgress.status === "generating" ? "animate-pulse" : ""} max-w-[250px] truncate`}
@@ -324,7 +344,9 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                     })}
                   </span>
                   {phaseProgress.status === "generating" && (
-                    <span className="animate-pulse text-theme-primary">...</span>
+                    <span className="animate-pulse text-theme-primary">
+                      ...
+                    </span>
                   )}
                 </div>
               </div>

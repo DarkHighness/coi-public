@@ -170,7 +170,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   {locationData.environment && (
                     <div className="mt-2">
                       <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                        {t("environment") || "Environment"}:
+                        {t("sidebar.location.environment") || "Environment"}:
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
                         <MarkdownText
@@ -181,11 +181,105 @@ const LocationItem: React.FC<LocationItemProps> = ({
                     </div>
                   )}
 
+                  {/* Atmosphere */}
+                  {locationData.visible?.atmosphere && (
+                    <div className="mt-3 space-y-2">
+                      {locationData.visible.atmosphere.weather && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.weather")}:
+                          </span>
+                          <span className="text-theme-text/90">
+                            {locationData.visible.atmosphere.weather}
+                          </span>
+                        </div>
+                      )}
+                      {locationData.visible.atmosphere.ambience && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.ambience")}:
+                          </span>
+                          <span className="text-theme-text/90">
+                            {locationData.visible.atmosphere.ambience}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sensory Details */}
+                  {locationData.visible?.sensory && (
+                    <div className="mt-3 space-y-1">
+                      {locationData.visible.sensory.smell && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.smell")}:
+                          </span>
+                          <span className="text-theme-text/90 italic">
+                            {locationData.visible.sensory.smell}
+                          </span>
+                        </div>
+                      )}
+                      {locationData.visible.sensory.sound && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.sound")}:
+                          </span>
+                          <span className="text-theme-text/90 italic">
+                            {locationData.visible.sensory.sound}
+                          </span>
+                        </div>
+                      )}
+                      {locationData.visible.sensory.lighting && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.lighting")}:
+                          </span>
+                          <span className="text-theme-text/90">
+                            {locationData.visible.sensory.lighting}
+                          </span>
+                        </div>
+                      )}
+                      {locationData.visible.sensory.temperature && (
+                        <div className="flex items-start gap-2 text-xs">
+                          <span className="text-theme-primary/70 shrink-0 w-16 uppercase tracking-wider text-[10px] pt-0.5">
+                            {t("sidebar.location.temperature")}:
+                          </span>
+                          <span className="text-theme-text/90">
+                            {locationData.visible.sensory.temperature}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Interactables */}
+                  {locationData.visible?.interactables &&
+                    locationData.visible.interactables.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-[10px] uppercase tracking-wider text-theme-primary/70 mb-1">
+                          {t("sidebar.location.interactables")}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {locationData.visible.interactables.map((item, i) => (
+                            <span
+                              key={i}
+                              className="text-xs px-2 py-0.5 bg-theme-bg/50 rounded border border-theme-border/30 text-theme-muted"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   {locationData.visible?.knownFeatures &&
                     locationData.visible.knownFeatures.length > 0 && (
                       <div className="mt-2">
                         <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("knownFeatures") || "Known Features"}:
+                          {t("sidebar.location.knownFeatures") ||
+                            "Known Features"}
+                          :
                         </span>
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
                           {locationData.visible.knownFeatures.map(

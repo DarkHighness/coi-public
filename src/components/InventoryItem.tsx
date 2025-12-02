@@ -135,22 +135,71 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                   {t("description") || "Description"}
                 </span>
                 <div className="pl-1">
-                  <MarkdownText
-                    content={
-                      item.visible?.description ||
-                      t("noDescription") ||
-                      "No description available."
-                    }
-                  />
+                  {item.visible?.description ? (
+                    <div className="text-xs text-theme-muted mt-2 pl-2 border-l-2 border-theme-border/30">
+                      <MarkdownText content={item.visible.description} />
+                    </div>
+                  ) : (
+                    <div className="text-xs text-theme-muted mt-2 pl-2 border-l-2 border-theme-border/30">
+                      {t("noDescription") || "No description available."}
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Sensory Details */}
+              {item.visible?.sensory && (
+                <div className="mt-2 pl-2 border-l-2 border-theme-border/30 space-y-1">
+                  {item.visible.sensory.texture && (
+                    <div className="flex gap-1 text-xs">
+                      <span className="text-theme-primary/70">
+                        {t("sidebar.inventory.texture")}:
+                      </span>
+                      <span className="text-theme-muted">
+                        {item.visible.sensory.texture}
+                      </span>
+                    </div>
+                  )}
+                  {item.visible.sensory.weight && (
+                    <div className="flex gap-1 text-xs">
+                      <span className="text-theme-primary/70">
+                        {t("sidebar.inventory.weight")}:
+                      </span>
+                      <span className="text-theme-muted">
+                        {item.visible.sensory.weight}
+                      </span>
+                    </div>
+                  )}
+                  {item.visible.sensory.smell && (
+                    <div className="flex gap-1 text-xs">
+                      <span className="text-theme-primary/70">
+                        {t("sidebar.inventory.smell")}:
+                      </span>
+                      <span className="text-theme-muted">
+                        {item.visible.sensory.smell}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {item.visible?.condition && (
+                <div className="mt-2 pl-2 border-l-2 border-theme-border/30 text-xs">
+                  <span className="text-theme-primary/70">
+                    {t("sidebar.inventory.condition")}:{" "}
+                  </span>
+                  <span className="text-theme-muted">
+                    {item.visible.condition}
+                  </span>
+                </div>
+              )}
+
               {item.visible?.usage && (
                 <div className="mt-2">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("usage") || "Usage"}
-                  </span>
-                  <div className="pl-1">
+                  <div className="text-[10px] uppercase tracking-wider text-theme-primary/70 mb-1">
+                    {t("sidebar.inventory.usage")}
+                  </div>
+                  <div className="text-xs text-theme-muted pl-2 border-l-2 border-theme-border/30">
                     <MarkdownText content={item.visible.usage} />
                   </div>
                 </div>

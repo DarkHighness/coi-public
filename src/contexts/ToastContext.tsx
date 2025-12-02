@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
 import { StateChanges } from "../types";
 
 // Toast item type
@@ -22,7 +29,10 @@ interface ToastContextType {
   ) => void;
   removeToast: (id: string) => void;
   clearToasts: () => void;
-  pushStateChangeToasts: (changes: StateChanges, t: (key: string) => string) => void;
+  pushStateChangeToasts: (
+    changes: StateChanges,
+    t: (key: string) => string,
+  ) => void;
 }
 
 // Create context with default values
@@ -173,9 +183,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   };
 
   return (
-    <ToastContext.Provider value={value}>
-      {children}
-    </ToastContext.Provider>
+    <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
   );
 };
 

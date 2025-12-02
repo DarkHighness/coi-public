@@ -49,7 +49,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const fetchModelsForProvider = useCallback(
     async (providerId: string, force = false) => {
       // 如果不是强制刷新，且已有缓存，则直接返回
-      if (!force && models[providerId]?.length > 0 && !loadingModels[providerId]) return;
+      if (
+        !force &&
+        models[providerId]?.length > 0 &&
+        !loadingModels[providerId]
+      )
+        return;
       if (loadingModels[providerId]) return;
 
       setLoadingModels((prev) => ({ ...prev, [providerId]: true }));
@@ -206,7 +211,11 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         <div className="flex justify-end">
           <button
             onClick={() => fetchModelsForProvider(config.providerId, true)}
-            disabled={loadingModels[config.providerId] || !config.providerId || hasNoAvailableProviders}
+            disabled={
+              loadingModels[config.providerId] ||
+              !config.providerId ||
+              hasNoAvailableProviders
+            }
             className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loadingModels[config.providerId] ? (

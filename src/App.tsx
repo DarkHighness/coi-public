@@ -26,7 +26,11 @@ import {
   SectionErrorBoundary,
 } from "./components/common/ErrorBoundary";
 import { useRAG } from "./hooks/useRAG";
-import { ConnectedToastContainer, ToastProvider, useToast } from "./components/Toast";
+import {
+  ConnectedToastContainer,
+  ToastProvider,
+  useToast,
+} from "./components/Toast";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>

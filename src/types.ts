@@ -653,6 +653,12 @@ export interface InventoryAction {
     description?: string;
     usage?: string;
     notes?: string;
+    sensory?: {
+      texture?: string;
+      weight?: string;
+      smell?: string;
+    };
+    condition?: string;
   };
   hidden?: {
     truth?: string;
@@ -698,6 +704,9 @@ export interface RelationshipAction {
     dialogueStyle?: string;
     affinity?: number;
     affinityKnown?: boolean;
+    voice?: string;
+    mannerism?: string;
+    mood?: string;
   };
   hidden?: {
     realPersonality?: string;
@@ -708,6 +717,7 @@ export interface RelationshipAction {
     relationshipType?: string;
     impression?: string; // NPC's impression of the protagonist
     status?: string; // What NPC is ACTUALLY doing
+    currentThought?: string;
   };
 
   notes?: string;
@@ -724,6 +734,14 @@ export interface LocationAction {
     description?: string;
     knownFeatures?: string[];
     resources?: string[];
+    atmosphere?: Atmosphere;
+    sensory?: {
+      smell?: string;
+      sound?: string;
+      lighting?: string;
+      temperature?: string;
+    };
+    interactables?: string[];
   };
   hidden?: {
     fullDescription?: string;

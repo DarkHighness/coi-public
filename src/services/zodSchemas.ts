@@ -71,6 +71,20 @@ export const inventoryItemVisibleSchema = z.object({
   description: z.string().describe("Visual description of the item."),
   usage: z.string().nullish().describe("How to use the item."),
   notes: z.string().nullish().describe("Player's notes about the item."),
+  sensory: z
+    .object({
+      texture: z.string().nullish().describe("Tactile feel of the item."),
+      weight: z.string().nullish().describe("Perceived weight."),
+      smell: z.string().nullish().describe("Scent of the item."),
+    })
+    .nullish()
+    .describe("Sensory details."),
+  condition: z
+    .string()
+    .nullish()
+    .describe(
+      "Physical state/wear (e.g. 'rusty', 'pristine'). Must be in target language.",
+    ),
 });
 
 /** 物品隐藏层 */
@@ -128,7 +142,7 @@ export const relationshipVisibleSchema = z.object({
   relationshipType: z
     .string()
     .describe(
-      "Relationship status from player's perspective (e.g. Friend, Rival, Enemy, Mentor, Lover).",
+      "Relationship status from player's perspective (e.g. Friend, Rival, Enemy, Mentor, Lover). Must be in target language.",
     ),
   impression: z
     .string()
@@ -138,7 +152,7 @@ export const relationshipVisibleSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "What the protagonist BELIEVES this NPC is currently doing (e.g., 'shopping in market', 'guarding the gate', 'traveling to the capital'). This is the protagonist's PERCEPTION, not necessarily the truth.",
+      "What the protagonist BELIEVES this NPC is currently doing (e.g., 'shopping in market', 'guarding the gate', 'traveling to the capital'). This is the protagonist's PERCEPTION, not necessarily the truth. Must be in target language.",
     ),
   personality: z
     .string()
@@ -160,6 +174,9 @@ export const relationshipVisibleSchema = z.object({
     .boolean()
     .nullish()
     .describe("Whether the player knows the affinity level."),
+  voice: z.string().nullish().describe("Vocal characteristics."),
+  mannerism: z.string().nullish().describe("Habitual gestures or behaviors."),
+  mood: z.string().nullish().describe("Apparent emotional state."),
 });
 
 /** 关系隐藏层 */
@@ -178,15 +195,19 @@ export const relationshipHiddenSchema = z.object({
   relationshipType: z
     .string()
     .describe(
-      "Relationship status from NPC's perspective (e.g. Tool, Prey, Master, Secret Lover).",
+      "Relationship status from NPC's perspective (e.g. Tool, Prey, Master, Secret Lover). Must be in target language.",
     ),
   impression: z
     .string()
     .describe("The NPC's current impression/feeling about the protagonist."),
+  currentThought: z
+    .string()
+    .nullish()
+    .describe("Current internal thought (GM only)."),
   status: z
     .string()
     .describe(
-      "What the NPC is ACTUALLY doing right now (e.g. 'plotting revenge', 'secretly meeting with assassins', 'injured and hiding', 'traveling to the capital', 'dead'). This is the GM's truth, not what the player perceives.",
+      "What the NPC is ACTUALLY doing right now (e.g. 'plotting revenge', 'secretly meeting with assassins', 'injured and hiding', 'traveling to the capital', 'dead'). This is the GM's truth, not what the player perceives. Must be in target language.",
     ),
 });
 
@@ -230,6 +251,81 @@ export const relationshipSchema = z.object({
 // 地点相关 Schemas
 // ============================================================================
 
+/** 视觉主题枚举 */
+export const envThemeSchema = z.enum([
+  "fantasy",
+  "scifi",
+  "cyberpunk",
+  "horror",
+  "mystery",
+  "romance",
+  "royal",
+  "wuxia",
+  "demonic",
+  "ethereal",
+  "modern",
+  "gold",
+  "villain",
+  "sepia",
+  "rose",
+  "war",
+  "sunset",
+  "cold",
+  "violet",
+  "nature",
+  "artdeco",
+  "intrigue",
+  "wasteland",
+  "patriotic",
+  "cyan",
+  "silver",
+  "obsidian",
+]);
+
+/** 音频氛围枚举 */
+export const ambienceSchema = z.enum([
+  "cave",
+  "city",
+  "combat",
+  "desert",
+  "dungeon",
+  "forest",
+  "horror",
+  "market",
+  "mystical",
+  "ocean",
+  "quiet",
+  "rain",
+  "scifi",
+  "snow",
+  "storm",
+  "tavern",
+]);
+
+/** 天气特效枚举 */
+export const weatherEffectSchema = z.enum([
+  "none",
+  "rain",
+  "snow",
+  "fog",
+  "embers",
+  "flicker",
+  "sunny",
+]);
+
+/** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
+export const atmosphereSchema = z.object({
+  envTheme: envThemeSchema.describe(
+    "The visual theme/color palette for UI rendering.",
+  ),
+  ambience: ambienceSchema.describe(
+    "The audio ambience/environment for sound effects and music.",
+  ),
+  weather: weatherEffectSchema
+    .nullish()
+    .describe("Specific visual weather effect to render."),
+});
+
 /** 地点可见层 */
 export const locationVisibleSchema = z.object({
   description: z.string().describe("Visual description of the location."),
@@ -240,6 +336,22 @@ export const locationVisibleSchema = z.object({
     .array(z.string())
     .nullish()
     .describe("Gatherable resources or items."),
+  atmosphere: atmosphereSchema
+    .nullish()
+    .describe("Location-specific atmosphere override."),
+  sensory: z
+    .object({
+      smell: z.string().nullish(),
+      sound: z.string().nullish(),
+      lighting: z.string().nullish(),
+      temperature: z.string().nullish(),
+    })
+    .nullish()
+    .describe("Sensory details of the location."),
+  interactables: z
+    .array(z.string())
+    .nullish()
+    .describe("Visible interactive elements."),
 });
 
 /** 地点隐藏层 */
@@ -258,7 +370,12 @@ export const locationSchema = z.object({
   name: z.string().describe("Name of the location."),
   visible: locationVisibleSchema,
   hidden: locationHiddenSchema.nullish(),
-  environment: z.string().nullish().describe("Atmosphere/Environment tag."),
+  environment: z
+    .string()
+    .nullish()
+    .describe(
+      "A descriptive sentence about the location's atmosphere/environment in the target language (e.g., '阴森的古老地牢，空气中弥漫着腐烂的气味'). NOT just a tag.",
+    ),
   lore: z.string().nullish().describe("Location history or lore."),
   isVisited: z
     .boolean()
@@ -397,7 +514,7 @@ export const conditionVisibleSchema = z.object({
   perceivedSeverity: z
     .string()
     .nullish()
-    .describe("How severe it appears to be."),
+    .describe("How severe it appears to be. Must be in target language."),
 });
 
 /** 条件隐藏层 */
@@ -849,81 +966,6 @@ export const mainGoalSchema = z.object({
 // ============================================================================
 // 故事大纲 Schema
 // ============================================================================
-
-/** 视觉主题枚举 */
-export const envThemeSchema = z.enum([
-  "fantasy",
-  "scifi",
-  "cyberpunk",
-  "horror",
-  "mystery",
-  "romance",
-  "royal",
-  "wuxia",
-  "demonic",
-  "ethereal",
-  "modern",
-  "gold",
-  "villain",
-  "sepia",
-  "rose",
-  "war",
-  "sunset",
-  "cold",
-  "violet",
-  "nature",
-  "artdeco",
-  "intrigue",
-  "wasteland",
-  "patriotic",
-  "cyan",
-  "silver",
-  "obsidian",
-]);
-
-/** 音频氛围枚举 */
-export const ambienceSchema = z.enum([
-  "cave",
-  "city",
-  "combat",
-  "desert",
-  "dungeon",
-  "forest",
-  "horror",
-  "market",
-  "mystical",
-  "ocean",
-  "quiet",
-  "rain",
-  "scifi",
-  "snow",
-  "storm",
-  "tavern",
-]);
-
-/** 天气特效枚举 */
-export const weatherEffectSchema = z.enum([
-  "none",
-  "rain",
-  "snow",
-  "fog",
-  "embers",
-  "flicker",
-  "sunny",
-]);
-
-/** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
-export const atmosphereSchema = z.object({
-  envTheme: envThemeSchema.describe(
-    "The visual theme/color palette for UI rendering.",
-  ),
-  ambience: ambienceSchema.describe(
-    "The audio ambience/environment for sound effects and music.",
-  ),
-  weather: weatherEffectSchema
-    .nullish()
-    .describe("Specific visual weather effect to render."),
-});
 
 /** 故事大纲 Schema (完整版 - 用于类型定义和最终验证) */
 export const storyOutlineSchema = z.object({
@@ -1490,7 +1532,11 @@ NEVER include internal game IDs in the narrative text. The following are FORBIDD
   choices: z
     .array(
       z.object({
-        text: z.string().describe("The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N."),
+        text: z
+          .string()
+          .describe(
+            "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
+          ),
         consequence: z
           .string()
           .nullish()
