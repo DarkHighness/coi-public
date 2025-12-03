@@ -1239,5 +1239,12 @@
   "deleteImage": "Delete Image",
   "deleteImageConfirm": "Are you sure you want to delete this image?",
   "imageDeleted": "Image deleted successfully",
-  "overwriteImageConfirm": "This segment already has an image. Do you want to overwrite it?"
+  "overwriteImageConfirm": "This segment already has an image. Do you want to overwrite it?",
+  "gallery": {
+    "title": "Gallery",
+    "empty": "No photos yet. Start your adventure to collect memories!",
+    "filterBySave": "Filter by save",
+    "allSaves": "All saves",
+    "untitled": "Untitled story"
+  }
 }

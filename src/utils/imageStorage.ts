@@ -7,6 +7,10 @@ export interface ImageMetadata {
   turnIdx: number;
   imagePrompt?: string;
   timestamp: number;
+  // Extended metadata for photo gallery
+  storyTitle?: string; // The save slot name / story title
+  location?: string; // Current location when image was generated
+  storyTime?: string; // In-game time when image was generated
 }
 
 export interface StoredImage extends ImageMetadata {
@@ -168,6 +172,49 @@ export const clearAllImages = async (): Promise<void> => {
     const request = store.clear();
 
     request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Get all images from the store
+ */
+export const getAllImages = async (): Promise<StoredImage[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IMAGES_STORE], "readonly");
+    const store = transaction.objectStore(IMAGES_STORE);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const images = request.result as StoredImage[];
+      // Sort by timestamp descending (newest first)
+      images.sort((a, b) => b.timestamp - a.timestamp);
+      resolve(images);
+    };
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Get all images for a specific save ID
+ */
+export const getImagesBySaveId = async (
+  saveId: string,
+): Promise<StoredImage[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IMAGES_STORE], "readonly");
+    const store = transaction.objectStore(IMAGES_STORE);
+    const index = store.index("saveId");
+    const request = index.getAll(IDBKeyRange.only(saveId));
+
+    request.onsuccess = () => {
+      const images = request.result as StoredImage[];
+      // Sort by timestamp descending (newest first)
+      images.sort((a, b) => b.timestamp - a.timestamp);
+      resolve(images);
+    };
     request.onerror = () => reject(request.error);
   });
 };

@@ -967,6 +967,9 @@ export const useGameEngine = () => {
             forkId: gameStateRef.current.forkId,
             turnIdx: node.segmentIdx || gameStateRef.current.turnNumber,
             imagePrompt: node.imagePrompt || "",
+            storyTitle: gameStateRef.current.outline?.title || undefined,
+            location: gameStateRef.current.currentLocation || undefined,
+            storyTime: gameStateRef.current.time || undefined,
           });
 
           setGameState((prev) => ({

@@ -123,6 +123,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         forkId: gameState.forkId,
         turnIdx: segment.segmentIdx ?? gameState.turnNumber,
         imagePrompt: "", // Requirement: imagePrompt should be empty
+        storyTitle: gameState.outline?.title || undefined,
+        location: gameState.currentLocation || undefined,
+        storyTime: gameState.time || undefined,
       });
 
       onImageUpload(segment.id, imageId);

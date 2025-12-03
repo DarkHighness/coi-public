@@ -68,6 +68,11 @@ const GameStateViewer = React.lazy(() =>
     default: module.GameStateViewer,
   })),
 );
+const PhotoGalleryModal = React.lazy(() =>
+  import("../PhotoGalleryModal").then((module) => ({
+    default: module.PhotoGalleryModal,
+  })),
+);
 
 interface GamePageProps {
   /** Callback when viewed segment changes (for parent theme/background updates) */
@@ -127,6 +132,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
   const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
   const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
@@ -157,7 +163,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     isVeoScriptOpen ||
     isStateEditorOpen ||
     isRAGDebuggerOpen ||
-    isGameStateViewerOpen;
+    isGameStateViewerOpen ||
+    isGalleryOpen;
 
   // Play ambience when no menus are blocking
   const shouldPlayAmbience = !isAnyMenuOpen;
@@ -410,6 +417,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
+          onOpenGallery={() => setIsGalleryOpen(true)}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
@@ -441,6 +449,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           onOpenStateEditor={() => setIsStateEditorOpen(true)}
           onOpenRAG={() => setIsRAGDebuggerOpen(true)}
           onOpenViewer={() => setIsGameStateViewerOpen(true)}
+          onOpenGallery={() => setIsGalleryOpen(true)}
           onForceUpdate={handleForceUpdate}
           onImageUpload={handleImageUpload}
           onImageDelete={handleImageDelete}
@@ -516,6 +525,15 @@ export const GamePage: React.FC<GamePageProps> = ({
             isOpen={isGameStateViewerOpen}
             onClose={() => setIsGameStateViewerOpen(false)}
             gameState={gameState}
+          />
+        )}
+
+        {isGalleryOpen && (
+          <PhotoGalleryModal
+            isOpen={isGalleryOpen}
+            onClose={() => setIsGalleryOpen(false)}
+            currentSaveId={currentSlotId || undefined}
+            currentSaveTitle={gameState.outline?.title}
           />
         )}
       </Suspense>

@@ -1238,5 +1238,12 @@
   "deleteImage": "删除图片",
   "deleteImageConfirm": "确定要删除这张图片吗？",
   "imageDeleted": "图片删除成功",
-  "overwriteImageConfirm": "该片段已有图片。是否覆盖？"
+  "overwriteImageConfirm": "该片段已有图片。是否覆盖？",
+  "gallery": {
+    "title": "照片墙",
+    "empty": "暂无照片，开始你的冒险来收集回忆吧！",
+    "filterBySave": "按存档筛选",
+    "allSaves": "全部存档",
+    "untitled": "未命名故事"
+  }
 }

@@ -4,7 +4,10 @@ import {
   getImage,
   deleteImage,
   deleteImagesBySaveId,
+  getAllImages,
+  getImagesBySaveId,
   ImageMetadata,
+  StoredImage,
 } from "../utils/imageStorage";
 
 interface ImageStorageContextType {
@@ -15,6 +18,8 @@ interface ImageStorageContextType {
   getImage: (id: string) => Promise<Blob | null>;
   deleteImage: (id: string) => Promise<void>;
   deleteImagesBySaveId: (saveId: string) => Promise<void>;
+  getAllImages: () => Promise<StoredImage[]>;
+  getImagesBySaveId: (saveId: string) => Promise<StoredImage[]>;
 }
 
 const ImageStorageContext = createContext<ImageStorageContextType | null>(null);
@@ -106,6 +111,8 @@ export const ImageStorageProvider: React.FC<{ children: React.ReactNode }> = ({
     getImage: getImageWithCache,
     deleteImage: deleteImageWithCache,
     deleteImagesBySaveId: deleteImagesBySaveIdWithCache,
+    getAllImages,
+    getImagesBySaveId,
   };
 
   return (
