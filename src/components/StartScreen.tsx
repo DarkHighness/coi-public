@@ -10,7 +10,13 @@ import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
-import { PhotoGalleryModal } from "./PhotoGalleryModal";
+
+// Lazy load PhotoGalleryModal for code splitting
+const PhotoGalleryModal = lazy(() =>
+  import("./PhotoGalleryModal").then((module) => ({
+    default: module.PhotoGalleryModal,
+  })),
+);
 
 // Helper component for async image loading
 const PreviewBackground: React.FC<{ imageId: string }> = ({ imageId }) => {
@@ -444,11 +450,21 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       )}
 
       {/* Photo Gallery Modal */}
-      <PhotoGalleryModal
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        saveSlots={saveSlots}
-      />
+      {isGalleryOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+              <div className="w-8 h-8 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+        >
+          <PhotoGalleryModal
+            isOpen={isGalleryOpen}
+            onClose={() => setIsGalleryOpen(false)}
+            saveSlots={saveSlots}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

@@ -539,7 +539,7 @@
     "map": "命运地图",
     "fork": "从此分叉",
     "forkConfirm": "确定要从这个时刻创造新的时间线吗？",
-    "viewMap": "查看树状图",
+    "viewMap": "树状图",
     "subtitle": "命运地图 • {{count}} 个节点 • 拖动来移动 • 滚动来缩放"
   },
   "veoScriptModal": {

@@ -204,36 +204,8 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Empty state component
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <svg
-        className="w-16 h-16 text-theme-muted/30 mb-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-      <p className="text-theme-muted">{t("gallery.empty")}</p>
-    </div>
-  );
-
-  // Filter component
-  const FilterBar = () =>
+  // Filter bar JSX - defined before any conditional returns
+  const filterBarElement =
     showFilters && !saveId && saveSlots.length > 0 ? (
       <div className="mb-4 flex items-center gap-2">
         <label className="text-sm text-theme-muted">
@@ -254,11 +226,39 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
       </div>
     ) : null;
 
+  // Empty state JSX - defined before any conditional returns
+  const emptyStateElement = (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <svg
+        className="w-16 h-16 text-theme-muted/30 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+        />
+      </svg>
+      <p className="text-theme-muted">{t("gallery.empty")}</p>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (images.length === 0) {
     return (
       <div className="w-full">
-        <FilterBar />
-        <EmptyState />
+        {filterBarElement}
+        {emptyStateElement}
       </div>
     );
   }
@@ -266,7 +266,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   return (
     <div className="w-full">
       {/* Filters */}
-      <FilterBar />
+      {filterBarElement}
 
       {/* Image Grid */}
       <div
