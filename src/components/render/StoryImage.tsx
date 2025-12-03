@@ -138,6 +138,26 @@ export const StoryImage: React.FC<StoryImageProps> = ({
 
   const displayUrl = displayImage.url;
 
+  // Determine state - computed before any early returns
+  const hasImage = !!displayUrl;
+  const hasPrompt = !!(imagePrompt && imagePrompt.trim().length > 0);
+
+  // Reset userRequestedLoad when image is successfully loaded
+  // IMPORTANT: Must be before any conditional returns to comply with React hooks rules
+  useEffect(() => {
+    if (hasImage && userRequestedLoad) {
+      setUserRequestedLoad(false);
+    }
+  }, [hasImage, userRequestedLoad]);
+
+  // Reset userRequestedLoad on explicit failure (via hasFailed prop) so user can retry
+  // IMPORTANT: Must be before any conditional returns to comply with React hooks rules
+  useEffect(() => {
+    if (hasFailed && userRequestedLoad) {
+      setUserRequestedLoad(false);
+    }
+  }, [hasFailed, userRequestedLoad]);
+
   // Copy prompt to clipboard
   const handleCopyPrompt = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -157,11 +177,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   if (disableImages && !displayUrl) return null;
 
   // If no image prompt and no image (ID or URL), don't show anything
-  if ((!imagePrompt || imagePrompt.trim() === "") && !displayUrl) return null;
-
-  // Determine state
-  const hasImage = !!displayUrl;
-  const hasPrompt = !!(imagePrompt && imagePrompt.trim().length > 0);
+  if (!hasPrompt && !displayUrl) return null;
 
   // Transient failure state detection (passed via props or inferred)
   const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
@@ -188,20 +204,6 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   const shouldShowGenerating = manualImageGen
     ? userRequestedLoad || isGenerating
     : isGenerating;
-
-  // Reset userRequestedLoad when image is successfully loaded
-  React.useEffect(() => {
-    if (hasImage && userRequestedLoad) {
-      setUserRequestedLoad(false);
-    }
-  }, [hasImage, userRequestedLoad]);
-
-  // Reset userRequestedLoad on explicit failure (via hasFailed prop) so user can retry
-  React.useEffect(() => {
-    if (hasFailed && userRequestedLoad) {
-      setUserRequestedLoad(false);
-    }
-  }, [hasFailed, userRequestedLoad]);
 
   // Handler for regenerate that also sets userRequestedLoad in manual mode
   const handleRegenerate = () => {

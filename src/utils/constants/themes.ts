@@ -991,6 +991,13 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     categories: ["modern", "movie", "suspense"],
     restricted: true,
   },
+  professor_simulator: {
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+    icon: "🎓",
+    categories: ["modern", "game"],
+    restricted: true,
+  },
   spiderman_villain: {
     envTheme: "villain",
     defaultAtmosphere: { envTheme: "villain", ambience: "city" },
