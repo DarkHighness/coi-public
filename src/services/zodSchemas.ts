@@ -1618,7 +1618,39 @@ NEVER include internal game IDs in the narrative text. The following are FORBIDD
 - Any format like "prefix:number"
 
 ❌ WRONG: "You pick up inv:3 and head to loc:2"
-✅ CORRECT: "You pick up the **Ancient Sword** and head to the **Forgotten Temple**"`,
+✅ CORRECT: "You pick up the **Ancient Sword** and head to the **Forgotten Temple**"
+
+**⚠️ CRITICAL - ENTITY REFERENCE RULES:**
+How to refer to entities in narrative depends on their type and unlock status:
+
+**1. Items, Locations, Factions, NPCs (Concrete Entities):**
+- When \`unlocked: false\`: Use \`visible.name\` (what the player perceives)
+- When \`unlocked: true\`: Use \`hidden.trueName\` if it differs from visible name
+- Example: "The merchant **Elias**" → after unlock → "**Elias**, or rather, the infamous spy **Shadowbane**"
+
+**2. Knowledge, Quests, Timeline Events (Abstract/Memory Entities):**
+Do NOT use direct titles. Instead, use explanatory narrative that naturally integrates the information:
+- ❌ WRONG: "You recall the knowledge entry 'Ancient Dragon Lore'..."
+- ✅ CORRECT: "You recall a passage from an old tome you read in your youth, describing the dragons' weakness to cold iron..."
+- ✅ CORRECT: "A promise echoes in your mind—you swore to avenge your fallen mentor..."
+- ✅ CORRECT: "You witnessed the burning of Riverdale with your own eyes, the screams still haunting your dreams..."
+- ✅ CORRECT: "Rumors you heard in the tavern mentioned that the duke was secretly..."
+Use varied phrasings: "You remember reading...", "Your oath compels you to...", "You witnessed...", "You heard that...", "A memory surfaces—...", "You learned from [NPC] that..."
+
+**3. Character Attributes, Conditions, Skills (Player Status):**
+Do NOT directly reference the name of these fields. Use descriptive, in-world sensations instead:
+- ❌ WRONG: "Your 'Curse of Shadows' condition activates..."
+- ✅ CORRECT: "A faint, dark mist coils around your form, barely perceptible yet undeniably there..."
+- ❌ WRONG: "Your 'Strength' attribute is low..."
+- ✅ CORRECT: "Your arms tremble with exhaustion, the weight of your pack suddenly unbearable..."
+- ❌ WRONG: "You use your 'Lockpicking' skill..."
+- ✅ CORRECT: "Your fingers, trained by years of practice, dance across the lock's tumblers..."
+
+**EXCEPTION - Magic/Supernatural Abilities:**
+In settings with magic, superpowers, or similar systems where "incantations", "calling out names", or "activation phrases" are part of the world's mechanics, you MAY directly reference skill/condition names when the character actively invokes them:
+- ✅ ALLOWED: "You raise your hand and cry out: '**Fireball!**'" (if Fireball is a spell name)
+- ✅ ALLOWED: "You channel your inner power and whisper '**Shadow Step**'..." (if it's a named technique)
+- ❌ NOT ALLOWED: Passive effects should still use description, not name`,
   ),
   choices: z
     .array(
@@ -1796,7 +1828,50 @@ This is a HINT for optimization. The system may still start from query if needed
 export const forceUpdateSchema = z.object({
   narrative: z
     .string()
-    .describe("The narrative description of the changes made to the world."),
+    .describe(`The narrative description of the changes made to the world as **Markdown formatted text**. Write in a vivid, engaging style.
+
+**MARKDOWN FORMATTING RULES:**
+Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
+Use *italics* for character thoughts, internal monologue, and emphasis.
+Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
+Use --- horizontal rules to separate distinct scenes or time jumps.
+Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
+Do NOT use bullet points, numbered lists, or any list formatting.
+
+**⚠️ CRITICAL - NO GAME IDs IN NARRATIVE:**
+NEVER include internal game IDs. The following are FORBIDDEN:
+- Item IDs: "inv:1", "inv:42" → Use item NAMES instead
+- NPC IDs: "npc:1", "npc:15" → Use character NAMES instead
+- Location IDs: "loc:1", "loc:7" → Use location NAMES instead
+- Quest IDs: "quest:1" → Use quest TITLES instead
+
+**⚠️ CRITICAL - ENTITY REFERENCE RULES:**
+How to refer to entities in narrative depends on their type and unlock status:
+
+**1. Items, Locations, Factions, NPCs (Concrete Entities):**
+- When \`unlocked: false\`: Use \`visible.name\` (what the player perceives)
+- When \`unlocked: true\`: Use \`hidden.trueName\` if it differs from visible name
+- Example: "The merchant **Elias**" → after unlock → "**Elias**, or rather, the infamous spy **Shadowbane**"
+
+**2. Knowledge, Quests, Timeline Events (Abstract/Memory Entities):**
+Do NOT use direct titles. Instead, use explanatory narrative:
+- ❌ WRONG: "You recall the knowledge entry 'Ancient Dragon Lore'..."
+- ✅ CORRECT: "You recall a passage from an old tome you read in your youth..."
+- ✅ CORRECT: "A promise echoes in your mind—you swore to..."
+- ✅ CORRECT: "You witnessed the event with your own eyes..."
+Use varied phrasings: "You remember reading...", "Your oath compels you to...", "You witnessed...", "You heard that...", "A memory surfaces—..."
+
+**3. Character Attributes, Conditions, Skills (Player Status):**
+Do NOT directly reference field names. Use descriptive sensations:
+- ❌ WRONG: "Your 'Curse of Shadows' condition activates..."
+- ✅ CORRECT: "A faint, dark mist coils around your form..."
+- ❌ WRONG: "Your 'Strength' attribute is low..."
+- ✅ CORRECT: "Your arms tremble with exhaustion..."
+
+**EXCEPTION - Magic/Supernatural Abilities:**
+In settings with magic/superpowers where "incantations" or "calling out names" are part of mechanics, you MAY reference skill/condition names when actively invoked:
+- ✅ ALLOWED: "You cry out: '**Fireball!**'" (if Fireball is a spell name)
+- ❌ NOT ALLOWED: Passive effects should still use description, not name`),
   stateUpdates: z
     .string()
     .nullish()
