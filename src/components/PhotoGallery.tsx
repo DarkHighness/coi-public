@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { StoredImage } from "../utils/imageStorage";
 import { useImageStorageContext } from "../contexts/ImageStorageContext";
@@ -57,6 +57,9 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     return map;
   }, [saveSlots]);
 
+  // Track if component is mounted
+  const isMountedRef = useRef(true);
+
   // Load images
   const loadImages = useCallback(async () => {
     setLoading(true);
@@ -74,6 +77,9 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         rawImages = await getAllImages();
       }
 
+      // Check if still mounted before continuing
+      if (!isMountedRef.current) return;
+
       // Apply max limit
       if (maxImages > 0 && rawImages.length > maxImages) {
         rawImages = rawImages.slice(0, maxImages);
@@ -88,11 +94,22 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         }),
       );
 
+      // Check if still mounted before setting state
+      if (!isMountedRef.current) {
+        // Clean up URLs if unmounted
+        imagesWithUrls.forEach((img) => {
+          if (img.url) URL.revokeObjectURL(img.url);
+        });
+        return;
+      }
+
       setImages(imagesWithUrls);
     } catch (error) {
       console.error("Failed to load gallery images:", error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     saveId,
@@ -103,19 +120,37 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     getImage,
   ]);
 
+  // Track URLs for cleanup
+  const urlsRef = useRef<string[]>([]);
+
   // Initial load and reload on filter change
   useEffect(() => {
     loadImages();
   }, [loadImages]);
 
-  // Cleanup URLs on unmount
+  // Update ref when images change, and cleanup old URLs
   useEffect(() => {
+    // Revoke old URLs that are no longer in the new images
+    const newUrls = new Set(images.map((img) => img.url).filter(Boolean));
+    urlsRef.current.forEach((url) => {
+      if (!newUrls.has(url)) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    // Update ref with current URLs
+    urlsRef.current = Array.from(newUrls);
+  }, [images]);
+
+  // Cleanup all URLs on unmount and mark as unmounted
+  useEffect(() => {
+    isMountedRef.current = true;
     return () => {
-      images.forEach((img) => {
-        if (img.url) URL.revokeObjectURL(img.url);
+      isMountedRef.current = false;
+      urlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
       });
     };
-  }, [images]);
+  }, []);
 
   // Get unique save IDs from loaded images (for filter dropdown)
   const uniqueSaveIds = useMemo(() => {
@@ -177,23 +212,53 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     );
   }
 
+  // Empty state component
+  const EmptyState = () => (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <svg
+        className="w-16 h-16 text-theme-muted/30 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+        />
+      </svg>
+      <p className="text-theme-muted">{t("gallery.empty")}</p>
+    </div>
+  );
+
+  // Filter component
+  const FilterBar = () =>
+    showFilters && !saveId && saveSlots.length > 0 ? (
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-sm text-theme-muted">
+          {t("gallery.filterBySave")}:
+        </label>
+        <select
+          value={selectedSaveId}
+          onChange={(e) => setSelectedSaveId(e.target.value)}
+          className="px-3 py-1.5 bg-theme-surface border border-theme-border rounded-lg text-sm text-theme-text focus:outline-none focus:border-theme-primary"
+        >
+          <option value="all">{t("gallery.allSaves")}</option>
+          {saveSlots.map((slot) => (
+            <option key={slot.id} value={slot.id}>
+              {slot.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : null;
+
   if (images.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <svg
-          className="w-16 h-16 text-theme-muted/30 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.5"
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-        <p className="text-theme-muted">{t("gallery.empty")}</p>
+      <div className="w-full">
+        <FilterBar />
+        <EmptyState />
       </div>
     );
   }
@@ -201,25 +266,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   return (
     <div className="w-full">
       {/* Filters */}
-      {showFilters && !saveId && saveSlots.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <label className="text-sm text-theme-muted">
-            {t("gallery.filterBySave")}:
-          </label>
-          <select
-            value={selectedSaveId}
-            onChange={(e) => setSelectedSaveId(e.target.value)}
-            className="px-3 py-1.5 bg-theme-surface border border-theme-border rounded-lg text-sm text-theme-text focus:outline-none focus:border-theme-primary"
-          >
-            <option value="all">{t("gallery.allSaves")}</option>
-            {saveSlots.map((slot) => (
-              <option key={slot.id} value={slot.id}>
-                {slot.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <FilterBar />
 
       {/* Image Grid */}
       <div
