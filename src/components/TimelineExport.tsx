@@ -365,20 +365,18 @@ export const TimelineExport = forwardRef<
                 return (
                   <div key={seg.id} className="space-y-3">
                     {/* Header Row: Square Indicator + State Change Label */}
-                    <div className="flex items-baseline">
-                      <div className="w-16 flex-shrink-0 flex justify-start items-center pl-[11px]">
-                        <div
-                          className="w-3.5 h-3.5 z-10"
-                          style={{
-                            backgroundColor: "#0f172a", // slate-900
-                            borderColor: "#64748b", // slate-500
-                            borderWidth: "2px",
-                            borderStyle: "solid",
-                            borderRadius: "3px",
-                            boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-                          }}
-                        ></div>
-                      </div>
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-3.5 h-3.5 flex-shrink-0 ml-[11px]"
+                        style={{
+                          backgroundColor: "#0f172a", // slate-900
+                          borderColor: "#64748b", // slate-500
+                          borderWidth: "2px",
+                          borderStyle: "solid",
+                          borderRadius: "3px",
+                          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                        }}
+                      ></div>
 
                       {/* State Change Header */}
                       <div
@@ -417,9 +415,8 @@ export const TimelineExport = forwardRef<
 
                     {/* System Content - Left bordered style */}
                     <div
-                      className="pl-16"
                       style={{
-                        paddingLeft: "64px",
+                        marginLeft: "25px",
                       }}
                     >
                       <div
@@ -465,17 +462,15 @@ export const TimelineExport = forwardRef<
               return (
                 <div key={seg.id} className="space-y-5">
                   {/* Header Row: Indicator + Metadata */}
-                  <div className="flex items-baseline">
-                    <div className="w-16 flex-shrink-0 flex justify-start items-center pl-[11px]">
-                      <div
-                        className="w-4 h-4 rounded-full border-[3px] z-10"
-                        style={{
-                          backgroundColor: "#0f172a", // slate-900
-                          borderColor: "#fbbf24", // amber-400
-                          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-                        }}
-                      ></div>
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-4 h-4 rounded-full border-[3px] flex-shrink-0 ml-[10px]"
+                      style={{
+                        backgroundColor: "#0f172a", // slate-900
+                        borderColor: "#fbbf24", // amber-400
+                        boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                      }}
+                    ></div>
 
                     {/* Metadata Header */}
                     <div
@@ -493,7 +488,7 @@ export const TimelineExport = forwardRef<
                     </div>
                   </div>
 
-                  <div className="pl-16 space-y-5">
+                  <div className="space-y-5" style={{ marginLeft: "26px" }}>
                     {/* Image */}
                     {seg.imageUrl && (
                       <div
