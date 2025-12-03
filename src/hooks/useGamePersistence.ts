@@ -13,6 +13,7 @@ import {
   loadMetadata,
   getStorageEstimate,
   clearDatabase,
+  getAllSaveIds,
 } from "../utils/indexedDB";
 import { deleteImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "../services/rag";
@@ -388,8 +389,24 @@ export const useGamePersistence = (
     const loadInitialData = async () => {
       try {
         // Load save slots metadata
-        const slots = await loadMetadata("slots");
+        let slots = await loadMetadata("slots");
         if (slots && Array.isArray(slots)) {
+          // === CLEANUP: Remove empty saves (ghost slots) ===
+          // If a slot exists in metadata but has no game state in DB, it means
+          // the game was started but never reached the first auto-save (no stage completed).
+          const existingSaveIds = await getAllSaveIds();
+          const validSlots = slots.filter((slot) =>
+            existingSaveIds.includes(slot.id),
+          );
+
+          if (validSlots.length !== slots.length) {
+            console.log(
+              `[Persistence] Cleaned up ${slots.length - validSlots.length} empty save slots`,
+            );
+            await saveMetadata("slots", validSlots);
+            slots = validSlots;
+          }
+
           setSaveSlots(slots);
 
           // Try to restore last active session

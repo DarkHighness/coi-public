@@ -6,6 +6,13 @@ import "./index.css";
 import App from "./App";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { ImageStorageProvider } from "./contexts/ImageStorageContext";
+import { polyfill } from "mobile-drag-drop";
+import "mobile-drag-drop/default.css";
+
+// Initialize mobile-drag-drop polyfill
+polyfill({
+  dragImageCenterOnTouch: true,
+});
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
