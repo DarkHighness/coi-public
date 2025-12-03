@@ -1826,8 +1826,7 @@ This is a HINT for optimization. The system may still start from query if needed
 });
 
 export const forceUpdateSchema = z.object({
-  narrative: z
-    .string()
+  narrative: z.string()
     .describe(`The narrative description of the changes made to the world as **Markdown formatted text**. Write in a vivid, engaging style.
 
 **MARKDOWN FORMATTING RULES:**

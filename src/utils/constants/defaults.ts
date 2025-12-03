@@ -136,6 +136,9 @@ export const DEFAULTS: AISettings = {
   enableFallbackBackground: true,
   lockEnvTheme: false,
   typewriterSpeed: 15, // Default: 15ms per character
+  stackItemsPerPage: 10, // Default: 10 items per page in stack layout (must be even)
+  stackShowOutline: true, // Default: show outline in stack mode
+  exportIncludeUserActions: false, // Default: don't include user/command in export
   // RAG Embedding Settings
   // Note: modelId is empty by default - user must select a model based on their provider
   // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)

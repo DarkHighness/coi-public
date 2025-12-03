@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useRef } from "react";
 import { FeedLayout, UIState, StorySegment } from "../../types";
-import { StoryFeed } from "../StoryFeed";
+import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
@@ -82,6 +82,9 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   const { gameState, aiSettings } = state;
   const { generateImageForNode, triggerSave } = actions;
 
+  // Ref for StoryFeed to enable navigation
+  const storyFeedRef = useRef<StoryFeedRef>(null);
+
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
   const currentEnvThemeKey = currentStoryTheme.envTheme;
   const currentThemeConfig =
@@ -91,6 +94,13 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
     generateImageForNode(nodeId, undefined, true);
   };
 
+  // Handle navigation from timeline to story segment
+  const handleNavigateToSegment = (segmentId: string) => {
+    storyFeedRef.current?.scrollToSegment(segmentId);
+    // Switch to story tab on mobile after navigation
+    setMobileTab("story");
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
       {/* 1. Story Feed View */}
@@ -98,6 +108,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 transition-opacity duration-300 ${mobileTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <StoryFeed
+          ref={storyFeedRef}
           layout={feedLayout}
           setLayout={setFeedLayout}
           onAnimate={onAnimate}
@@ -136,6 +147,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         <StoryTimeline
           title={gameState.outline?.title}
           subtitle={gameState.outline?.premise}
+          onNavigateToSegment={handleNavigateToSegment}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>

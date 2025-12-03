@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { StorySegment } from "../types";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,7 @@ interface StoryTimelineItemProps {
   onToggle: (id: string) => void;
   onHover: (id: string | null) => void;
   onImageClick: (url: string) => void;
+  onNavigateToSegment?: (segmentId: string) => void;
 }
 
 export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
@@ -27,6 +28,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
   onToggle,
   onHover,
   onImageClick,
+  onNavigateToSegment,
 }) => {
   const { t } = useTranslation();
   const { url: resolvedUrl } = useImageURL(segment.imageId);
@@ -34,7 +36,45 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
 
   const isSystemRole = segment.role === "system";
 
-  // System role (ForceUpdate result) - Special card style similar to Summary card
+  // Long press detection for mobile
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+
+  const handleTouchStart = useCallback(() => {
+    setIsLongPressing(false);
+    longPressTimerRef.current = setTimeout(() => {
+      setIsLongPressing(true);
+      if (onNavigateToSegment) {
+        onNavigateToSegment(segment.id);
+      }
+    }, 500); // 500ms for long press
+  }, [segment.id, onNavigateToSegment]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setIsLongPressing(false);
+  }, []);
+
+  const handleTouchMove = useCallback(() => {
+    // Cancel long press if finger moves
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setIsLongPressing(false);
+  }, []);
+
+  // Double click for desktop
+  const handleDoubleClick = useCallback(() => {
+    if (onNavigateToSegment) {
+      onNavigateToSegment(segment.id);
+    }
+  }, [segment.id, onNavigateToSegment]);
+
+  // System role (ForceUpdate result) - Subtle inline style that integrates with timeline flow
   if (isSystemRole) {
     return (
       <motion.div
@@ -53,48 +93,59 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           y: { type: "spring", stiffness: 300, damping: 25 },
           scale: { duration: 0.35, ease: "easeOut" },
         }}
-        className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
+        className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
         onMouseEnter={() => onHover(segment.id)}
         onMouseLeave={() => onHover(null)}
+        onDoubleClick={handleDoubleClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
       >
-        {/* Line */}
+        {/* Line - uses dashed style for system updates */}
         <div
           className={`absolute left-2 w-px transition-colors
        ${isFirst ? "top-2" : "top-0"}
        ${isLast ? "h-2" : "bottom-0"}
-       ${isHovered ? "bg-amber-500/50" : "bg-theme-border"}
+       ${isHovered ? "bg-theme-muted/60" : "bg-theme-border"}
     `}
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, var(--theme-muted) 50%, transparent 50%)",
+            backgroundSize: "2px 6px",
+          }}
         ></div>
 
-        {/* System Indicator - Diamond shape */}
+        {/* System Indicator - Small square dot to distinguish from regular circular dots */}
         <div
           onClick={(e) => {
             e.stopPropagation();
             onToggle(segment.id);
           }}
-          className={`absolute left-0.5 top-1 w-3 h-3 rotate-45 border-2 transition-all z-10 shadow-sm cursor-pointer
+          className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-sm border-2 transition-all z-10 cursor-pointer
         ${isLast ? "animate-pulse" : ""}
         ${
           isExpanded
-            ? "border-amber-500 bg-amber-500"
-            : "border-amber-500/70 bg-theme-surface hover:border-amber-500"
+            ? "border-theme-muted bg-theme-muted"
+            : "border-theme-muted/60 bg-theme-surface hover:border-theme-muted"
         }`}
           title={isExpanded ? "Click to collapse" : "Click to expand"}
         ></div>
 
         {/* Latest Item Indicator */}
         {isLast && (
-          <div className="absolute left-0.5 top-1 w-3 h-3 rotate-45 border-2 border-amber-500/30 animate-ping"></div>
+          <div className="absolute left-0 top-0 w-4 h-4 rounded-sm border-2 border-theme-muted/30 animate-ping"></div>
         )}
 
-        {/* System Content Card */}
+        {/* System Content - Inline compact style */}
         <div
-          className={`bg-theme-surface/40 border border-amber-500/30 rounded-lg p-3 backdrop-blur-sm shadow-sm transition-all ${isHovered ? "border-amber-500/50" : ""}`}
+          className={`text-xs transition-colors relative -top-1 ${isHovered ? "text-theme-text" : "text-theme-muted"}`}
         >
-          {/* Header with System Icon */}
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-amber-500/80 mb-2 font-semibold">
+          {/* Compact Header */}
+          <div
+            className={`flex items-center gap-1.5 mb-1 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-80"}`}
+          >
             <svg
-              className="w-3 h-3"
+              className="w-3 h-3 text-theme-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -103,14 +154,16 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               ></path>
             </svg>
-            <span>{t("timeline.systemUpdate") || "System Update"}</span>
+            <span className="uppercase tracking-widest text-theme-muted font-medium">
+              {t("timeline.stateChange") || "State Change"}
+            </span>
             {segment.stateSnapshot?.time && (
               <>
-                <span className="text-theme-muted/50">•</span>
-                <span className="font-mono text-amber-500/70">
+                <span className="text-theme-muted/40">•</span>
+                <span className="font-mono text-theme-muted/70">
                   {segment.stateSnapshot.time}
                 </span>
               </>
@@ -121,14 +174,14 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           {!isExpanded && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: isHovered ? 1 : 0.8, y: 0 }}
+              animate={{ opacity: isHovered ? 0.9 : 0.7, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggle(segment.id);
               }}
-              className="line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer text-theme-text/90 italic"
+              className="line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer text-theme-muted/80 border-l-2 border-theme-border pl-2"
             >
               <MarkdownText content={segment.text} disableIndent />
             </motion.div>
@@ -138,14 +191,14 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           {isExpanded && (
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: isHovered ? 0.9 : 0.8 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggle(segment.id);
               }}
-              className="leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer text-theme-text/90 italic"
+              className="leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer text-theme-muted/80 border-l-2 border-theme-muted/40 pl-2"
             >
               <MarkdownText content={segment.text} disableIndent />
             </motion.div>
@@ -173,9 +226,13 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         y: { type: "spring", stiffness: 300, damping: 25 },
         scale: { duration: 0.35, ease: "easeOut" },
       }}
-      className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""}`}
+      className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
       onMouseEnter={() => onHover(segment.id)}
       onMouseLeave={() => onHover(null)}
+      onDoubleClick={handleDoubleClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
     >
       {/* Line */}
       <div

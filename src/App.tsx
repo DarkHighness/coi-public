@@ -116,7 +116,24 @@ function AppContent() {
   const { showToast } = useToast();
 
   // Track currently viewed segment for dynamic theme/background
-  const [viewedSegment, setViewedSegment] = useState<any | null>(null);
+  const [viewedSegment, setViewedSegmentLocal] = useState<any | null>(null);
+
+  // Wrapper to also persist viewedSegmentId to UIState
+  const setViewedSegment = React.useCallback(
+    (segment: any | null) => {
+      setViewedSegmentLocal(segment);
+      if (segment?.id) {
+        setGameState((prev) => ({
+          ...prev,
+          uiState: {
+            ...prev.uiState,
+            viewedSegmentId: segment.id,
+          },
+        }));
+      }
+    },
+    [setGameState],
+  );
 
   // Track preview theme from StartScreen
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);

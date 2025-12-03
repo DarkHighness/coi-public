@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  Suspense,
+  useCallback,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAmbience } from "../../hooks/useAmbience";
@@ -109,8 +115,10 @@ export const GamePage: React.FC<GamePageProps> = ({
   // Toast Context for toast notifications
   const { showToast, pushStateChangeToasts } = useToast();
 
-  // Local State
-  const [feedLayout, setFeedLayout] = useState<FeedLayout>("scroll");
+  // Local State - feedLayout now initialized from UIState
+  const [feedLayout, setFeedLayoutLocal] = useState<FeedLayout>(
+    gameState.uiState.feedLayout ?? "scroll",
+  );
   const [isDestinyMapOpen, setIsDestinyMapOpen] = useState(false);
   const [isLogPanelOpen, setIsLogPanelOpen] = useState(false);
   const [isMagicMirrorOpen, setIsMagicMirrorOpen] = useState(false);
@@ -176,16 +184,28 @@ export const GamePage: React.FC<GamePageProps> = ({
     },
   );
 
+  // Persist feedLayout to UIState (replaces localStorage)
+  const setFeedLayout = useCallback(
+    (newLayout: FeedLayout) => {
+      setFeedLayoutLocal(newLayout);
+      setGameState((prev) => ({
+        ...prev,
+        uiState: {
+          ...prev.uiState,
+          feedLayout: newLayout,
+        },
+      }));
+    },
+    [setGameState],
+  );
+
+  // Initialize feedLayout from UIState on mount
   useEffect(() => {
-    const savedLayout = localStorage.getItem("chronicles_feedlayout");
-    if (savedLayout === "scroll" || savedLayout === "stack") {
-      setFeedLayout(savedLayout as FeedLayout);
+    const storedLayout = gameState.uiState.feedLayout;
+    if (storedLayout && storedLayout !== feedLayout) {
+      setFeedLayoutLocal(storedLayout);
     }
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("chronicles_feedlayout", feedLayout);
-  }, [feedLayout]);
 
   // Navigate back to / if there is no outline
   // But if there's a saved conversation state, navigate to / so user can click Continue to resume

@@ -1,6 +1,6 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useRef } from "react";
 import { FeedLayout, UIState, StorySegment } from "../../types";
-import { StoryFeed } from "../StoryFeed";
+import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { StoryTimeline } from "../StoryTimeline";
@@ -73,11 +73,19 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   const { gameState, aiSettings } = state;
   const { generateImageForNode, triggerSave } = actions;
 
+  // Ref for StoryFeed to enable navigation
+  const storyFeedRef = useRef<StoryFeedRef>(null);
+
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
 
   const handleGenerateImage = (nodeId: string) => {
     generateImageForNode(nodeId, undefined, true);
+  };
+
+  // Handle navigation from timeline to story segment
+  const handleNavigateToSegment = (segmentId: string) => {
+    storyFeedRef.current?.scrollToSegment(segmentId);
   };
 
   return (
@@ -133,6 +141,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       <div className="flex-1 flex flex-col relative h-full min-w-0">
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <StoryFeed
+            ref={storyFeedRef}
             layout={feedLayout}
             setLayout={setFeedLayout}
             onAnimate={onAnimate}
@@ -185,6 +194,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             <StoryTimeline
               title={gameState.outline?.title}
               subtitle={gameState.outline?.premise}
+              onNavigateToSegment={handleNavigateToSegment}
             />
           </Suspense>
         </div>

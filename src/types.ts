@@ -538,6 +538,8 @@ export interface UIState {
   sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
   embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
+  feedLayout?: FeedLayout; // Persisted layout preference (scroll/stack)
+  viewedSegmentId?: string; // Last viewed segment ID for continue game
 }
 
 // Relationship 从 zodSchemas.ts 导入
@@ -1021,6 +1023,13 @@ export interface AISettings {
 
   // Typewriter Effect Settings
   typewriterSpeed: number; // Characters per interval (1-100, lower = faster)
+
+  // Stack Layout Settings
+  stackItemsPerPage?: number; // Items per page in stack layout (must be even, default: 10)
+  stackShowOutline?: boolean; // Show outline in stack mode (default: true)
+
+  // Export Settings
+  exportIncludeUserActions?: boolean; // Include user/command messages in timeline export (default: false)
 
   // RAG Embedding Settings
   embedding: EmbeddingConfig;

@@ -148,6 +148,104 @@ export const SettingsAppearance: React.FC = () => {
               <span className="text-xs text-theme-muted">{t("slow")}</span>
             </div>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-theme-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="font-bold text-theme-text">
+                  {t("stackItemsPerPage") || "Stack Layout Items Per Page"}
+                </div>
+                <div className="text-xs text-theme-muted">
+                  {t("stackItemsPerPageDesc") ||
+                    "Number of story segments shown per page in stack layout (must be even)"}
+                </div>
+              </div>
+              <select
+                value={currentSettings.stackItemsPerPage ?? 10}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...currentSettings,
+                    stackItemsPerPage: parseInt(e.target.value),
+                  })
+                }
+                className="bg-theme-bg border border-theme-border rounded px-3 py-1.5 text-sm text-theme-text focus:outline-none focus:border-theme-primary"
+              >
+                {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((num) => (
+                  <option key={num} value={num}>
+                    {num} {t("items") || "items"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
+            <div>
+              <div className="font-bold text-theme-text">
+                {t("stackShowOutline") || "Show Outline in Stack Mode"}
+              </div>
+              <div className="text-xs text-theme-muted">
+                {t("stackShowOutlineDesc") ||
+                  "Display the story outline at the top of each page in stack layout"}
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                onUpdateSettings({
+                  ...currentSettings,
+                  stackShowOutline: !(currentSettings.stackShowOutline ?? true),
+                })
+              }
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                (currentSettings.stackShowOutline ?? true)
+                  ? "bg-theme-primary"
+                  : "bg-theme-border"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  (currentSettings.stackShowOutline ?? true)
+                    ? "left-7"
+                    : "left-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
+            <div>
+              <div className="font-bold text-theme-text">
+                {t("exportIncludeUserActions") || "Include Actions in Export"}
+              </div>
+              <div className="text-xs text-theme-muted">
+                {t("exportIncludeUserActionsDesc") ||
+                  "Include your choices and commands in timeline export, displayed as chat messages"}
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                onUpdateSettings({
+                  ...currentSettings,
+                  exportIncludeUserActions: !(
+                    currentSettings.exportIncludeUserActions ?? false
+                  ),
+                })
+              }
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                (currentSettings.exportIncludeUserActions ?? false)
+                  ? "bg-theme-primary"
+                  : "bg-theme-border"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  (currentSettings.exportIncludeUserActions ?? false)
+                    ? "left-7"
+                    : "left-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       )}
     </div>

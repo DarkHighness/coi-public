@@ -8,19 +8,24 @@ import { ImageLightbox } from "./render/ImageLightbox";
 import { TimelineExport, TimelineExportRef } from "./TimelineExport";
 import { StoryTimelineItem } from "./StoryTimelineItem";
 import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useSettingsContext } from "../contexts/SettingsContext";
 
 interface StoryTimelineProps {
   title?: string;
   subtitle?: string;
+  onNavigateToSegment?: (segmentId: string) => void;
 }
 
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   title,
   subtitle,
+  onNavigateToSegment,
 }) => {
   const { state } = useGameEngineContext();
+  const { settings } = useSettingsContext();
   const { currentHistory: segments, gameState } = state;
   const theme = gameState.theme;
+  const exportIncludeUserActions = settings.exportIncludeUserActions ?? false;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -139,6 +144,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                   onToggle={toggleItem}
                   onHover={setHoveredSegment}
                   onImageClick={setSelectedImage}
+                  onNavigateToSegment={onNavigateToSegment}
                 />
               );
             })}
@@ -154,10 +160,11 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
         <TimelineExport
           ref={timelineExportRef}
-          segments={narrativeSegments}
+          segments={exportIncludeUserActions ? segments : narrativeSegments}
           theme={theme}
           title={title}
           subtitle={subtitle}
+          includeUserActions={exportIncludeUserActions}
           onExportStart={() => setIsExporting(true)}
           onExportEnd={() => setIsExporting(false)}
         />

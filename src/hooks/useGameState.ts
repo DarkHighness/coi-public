@@ -59,6 +59,8 @@ const INITIAL_STATE: GameState = {
     knowledge: { pinnedIds: [], customOrder: [] },
     sidebarCollapsed: false,
     timelineCollapsed: false,
+    feedLayout: "scroll", // Default layout mode
+    viewedSegmentId: undefined, // No segment viewed initially
   },
 
   outline: null,
