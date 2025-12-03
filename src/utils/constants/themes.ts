@@ -1635,4 +1635,89 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🔍",
     categories: ["modern", "chinese_short_drama"],
   },
+  // New Themes Batch 6 - Research Based
+  cannon_fodder_counterattack: {
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+    icon: "💥",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  professional_romance: {
+    envTheme: "romance",
+    defaultAtmosphere: { envTheme: "romance", ambience: "quiet" },
+    icon: "👩‍⚕️",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  misplaced_marriage: {
+    envTheme: "romance",
+    defaultAtmosphere: { envTheme: "romance", ambience: "rain" },
+    icon: "💍",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  stepmother_warmth: {
+    envTheme: "nature",
+    defaultAtmosphere: { envTheme: "nature", ambience: "forest" },
+    icon: "👩‍👧‍👦",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  business_queen_90s: {
+    envTheme: "gold",
+    defaultAtmosphere: { envTheme: "gold", ambience: "city" },
+    icon: "👠",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  artist_compound: {
+    envTheme: "sepia",
+    defaultAtmosphere: { envTheme: "sepia", ambience: "quiet" },
+    icon: "🎨",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  villain_alliance: {
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "storm" },
+    icon: "😈",
+    categories: ["modern", "chinese_short_drama"],
+  },
+  rebirth_redemption: {
+    envTheme: 'violet',
+    defaultAtmosphere: { envTheme: 'violet', ambience: 'mystical' },
+    icon: '🔄',
+    categories: ['modern', 'chinese_short_drama'],
+  },
+  supreme_commander_bl: {
+    envTheme: 'scifi',
+    defaultAtmosphere: { envTheme: 'scifi', ambience: 'city' },
+    icon: '🦅',
+    categories: ['chinese_short_drama', 'bl'],
+  },
+  god_of_war: {
+    envTheme: 'modern',
+    defaultAtmosphere: { envTheme: 'modern', ambience: 'city' },
+    icon: '⚔️',
+    categories: ['chinese_short_drama', 'modern'],
+  },
+  historical_general: {
+    envTheme: 'sepia',
+    defaultAtmosphere: { envTheme: 'sepia', ambience: 'combat' },
+    icon: '🏮',
+    categories: ['chinese_short_drama', 'historical'],
+  },
+  secret_agent_wife: {
+    envTheme: 'cyberpunk',
+    defaultAtmosphere: { envTheme: 'cyberpunk', ambience: 'city' },
+    icon: '🕶️',
+    categories: ['chinese_short_drama', 'modern'],
+  },
+  bestie_brother: {
+    envTheme: 'romance',
+    defaultAtmosphere: { envTheme: 'romance', ambience: 'quiet' },
+    icon: '👫',
+    categories: ['chinese_short_drama', 'romance'],
+  },
+  guardian_bond: {
+    envTheme: 'modern',
+    defaultAtmosphere: { envTheme: 'modern', ambience: 'storm' },
+    icon: '🚨',
+    categories: ['chinese_short_drama', 'bl'],
+  }
 };
