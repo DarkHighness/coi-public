@@ -563,6 +563,8 @@
     "map": "Destiny Map",
     "fork": "Fork from Here",
     "forkConfirm": "Create a new timeline from this moment?",
+    "forkFromModelOnly": "Forking from the previous AI response instead",
+    "cannotForkFromUser": "Cannot fork from this node - please select an AI response",
     "viewMap": "View Destiny Map",
     "subtitle": "Timeline Browser • {{count}} Moments • Drag to Pan • Scroll to Zoom",
     "goToStart": "Go to Start",

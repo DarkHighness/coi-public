@@ -559,8 +559,12 @@
     "map": "命运地图",
     "fork": "从此分叉",
     "forkConfirm": "确定要从这个时刻创造新的时间线吗？",
+    "forkFromModelOnly": "将从前一个 AI 回复节点进行分叉",
+    "cannotForkFromUser": "无法从此节点分叉 - 请选择一个 AI 回复节点",
     "viewMap": "树状图",
-    "subtitle": "命运地图 • {{count}} 个节点 • 拖动来移动 • 滚动来缩放"
+    "subtitle": "命运地图 • {{count}} 个节点 • 拖动来移动 • 滚动来缩放",
+    "goToStart": "回到开始",
+    "goToCurrent": "回到当前"
   },
   "veoScriptModal": {
     "title": "Veo 脚本生成器",

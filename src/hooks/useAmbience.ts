@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { getAudioTrack } from "../utils/audioLoader";
+import { webAudioManager } from "../utils/webAudioManager";
 import {
   type AtmosphereObject,
   type Ambience,
 } from "../utils/constants/atmosphere";
 
 /**
- * useAmbience - Manages background ambient audio with proper lifecycle handling
+ * useAmbience - Manages background ambient audio using WebAudio API
  *
- * FIXES:
- * 1. Prevents multiple audio tracks from playing simultaneously
- * 2. Properly handles mute/unmute without restarting track
+ * Features:
+ * 1. Uses WebAudio API for better mobile browser support
+ * 2. Properly handles mute/unmute without blocking
  * 3. Smooth fade transitions between environments
- * 4. Mobile-friendly with proper cleanup
+ * 4. Mobile-friendly with unlockAudio for user interaction requirements
  *
  * @param atmosphere - The atmosphere object containing envTheme and ambience
  * @param volume - Volume level (0-1)
@@ -25,11 +25,10 @@ export const useAmbience = (
   muted: boolean = false,
   onPlay?: (ambience: Ambience) => void,
 ) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentEnv, setCurrentEnv] = useState<Ambience | undefined>(undefined);
   const onPlayRef = useRef(onPlay);
-  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const lastEnvironmentRef = useRef<Ambience | undefined>(undefined);
 
   // Extract ambience key from atmosphere object
   const environment: Ambience | undefined = atmosphere?.ambience;
@@ -39,150 +38,99 @@ export const useAmbience = (
     onPlayRef.current = onPlay;
   }, [onPlay]);
 
-  // Cleanup fade interval helper
-  const clearFadeInterval = useCallback(() => {
-    if (fadeIntervalRef.current) {
-      clearInterval(fadeIntervalRef.current);
-      fadeIntervalRef.current = null;
-    }
-  }, []);
-
-  // Fade out and stop helper
-  const fadeOutAndStop = useCallback(
-    (audio: HTMLAudioElement, callback?: () => void) => {
-      clearFadeInterval();
-
-      if (audio.volume <= 0.01) {
-        audio.pause();
-        audio.currentTime = 0;
-        callback?.();
-        return;
-      }
-
-      fadeIntervalRef.current = setInterval(() => {
-        if (audio.volume > 0.05) {
-          audio.volume = Math.max(0, audio.volume - 0.05);
-        } else {
-          audio.volume = 0;
-          audio.pause();
-          audio.currentTime = 0;
-          clearFadeInterval();
-          callback?.();
-        }
-      }, 50);
-    },
-    [clearFadeInterval],
-  );
-
-  // Fade in helper
-  const fadeIn = useCallback(
-    (audio: HTMLAudioElement, targetVolume: number) => {
-      clearFadeInterval();
-
-      fadeIntervalRef.current = setInterval(() => {
-        if (!isMountedRef.current) {
-          clearFadeInterval();
-          return;
-        }
-        if (audio.volume < targetVolume - 0.05) {
-          audio.volume = Math.min(targetVolume, audio.volume + 0.05);
-        } else {
-          audio.volume = targetVolume;
-          clearFadeInterval();
-        }
-      }, 50);
-    },
-    [clearFadeInterval],
-  );
-
-  // Handle volume changes (without restarting)
+  // Handle volume changes
   useEffect(() => {
-    if (audioRef.current && !muted && currentEnv) {
-      audioRef.current.volume = volume;
+    if (!muted && currentEnv) {
+      webAudioManager.setVolume(volume);
     }
   }, [volume, currentEnv, muted]);
 
   // Handle mute/unmute
   useEffect(() => {
-    if (!audioRef.current || !currentEnv) return;
+    if (!currentEnv) return;
 
     if (muted) {
-      // Fade out when muted
-      clearFadeInterval();
-      fadeIntervalRef.current = setInterval(() => {
-        if (audioRef.current && audioRef.current.volume > 0.05) {
-          audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.1);
-        } else if (audioRef.current) {
-          audioRef.current.volume = 0;
-          audioRef.current.pause();
-          clearFadeInterval();
-        }
-      }, 50);
+      webAudioManager.pause();
     } else {
-      // Resume and fade in when unmuted
-      if (audioRef.current.paused) {
-        audioRef.current.volume = 0;
-        audioRef.current.play().catch((e) => console.warn("Resume failed:", e));
-      }
-      fadeIn(audioRef.current, volume);
+      webAudioManager.resume(volume);
     }
-  }, [muted, currentEnv, volume, fadeIn, clearFadeInterval]);
+  }, [muted, currentEnv, volume]);
 
   // Handle environment changes
   useEffect(() => {
     // No environment means stop
     if (!environment) {
-      if (audioRef.current) {
-        fadeOutAndStop(audioRef.current, () => {
-          audioRef.current = null;
-        });
+      if (currentEnv) {
+        webAudioManager.stop();
+        setCurrentEnv(undefined);
+        lastEnvironmentRef.current = undefined;
       }
-      setCurrentEnv(undefined);
       return;
     }
 
     // Same environment, do nothing
-    if (environment === currentEnv) return;
+    if (environment === lastEnvironmentRef.current) return;
 
-    const playNewTrack = async () => {
-      // Get the new audio element
-      const newAudio = getAudioTrack(environment);
-      if (!newAudio || !isMountedRef.current) return;
-
-      // Prepare new audio
-      newAudio.volume = 0;
-      newAudio.currentTime = 0;
-
-      // Fade out old track first if exists
-      if (audioRef.current && audioRef.current !== newAudio) {
-        const oldAudio = audioRef.current;
-        fadeOutAndStop(oldAudio);
-      }
-
-      // Set new audio as current
-      audioRef.current = newAudio;
-
-      // Start playing if not muted
-      if (!muted) {
-        try {
-          await newAudio.play();
-          if (isMountedRef.current) {
-            fadeIn(newAudio, volume);
-          }
-        } catch (e) {
-          console.warn("Audio autoplay blocked:", e);
+    // Play the new environment
+    const playEnvironment = async () => {
+      // Don't play if muted, but track the environment
+      if (muted) {
+        if (isMountedRef.current) {
+          setCurrentEnv(environment);
+          lastEnvironmentRef.current = environment;
+          onPlayRef.current?.(environment);
         }
+        return;
       }
 
-      // Update state and notify
-      if (isMountedRef.current) {
+      const success = await webAudioManager.play(environment, volume, true);
+
+      if (success && isMountedRef.current) {
         setCurrentEnv(environment);
+        lastEnvironmentRef.current = environment;
         onPlayRef.current?.(environment);
       }
     };
 
-    playNewTrack();
-  }, [environment, currentEnv, muted, volume, fadeOutAndStop, fadeIn]);
+    playEnvironment();
+  }, [environment, muted, volume]);
+
+  /**
+   * Unlock audio playback - MUST be called from a user interaction event handler.
+   * On mobile browsers, this is required before any audio can play.
+   * Returns true if successfully unlocked.
+   */
+  const unlockAudio = useCallback(async (): Promise<boolean> => {
+    const success = await webAudioManager.unlock();
+
+    // If we have a pending environment to play and we're not muted, play it now
+    if (success && lastEnvironmentRef.current && !muted) {
+      await webAudioManager.play(lastEnvironmentRef.current, volume, true);
+    }
+
+    return success;
+  }, [muted, volume]);
+
+  /**
+   * Resume audio playback - useful when unmuting from a user interaction.
+   * This ensures the AudioContext is unlocked before resuming.
+   */
+  const resumeAudio = useCallback(async (): Promise<void> => {
+    // First ensure the context is unlocked
+    await webAudioManager.unlock();
+
+    // If we have an environment and we're not muted, resume/play
+    if (lastEnvironmentRef.current && !muted) {
+      const currentPlaying = webAudioManager.getCurrentEnvironment();
+      if (currentPlaying === lastEnvironmentRef.current) {
+        // Just resume the volume
+        webAudioManager.resume(volume);
+      } else {
+        // Need to start playing
+        await webAudioManager.play(lastEnvironmentRef.current, volume, true);
+      }
+    }
+  }, [muted, volume]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -190,14 +138,10 @@ export const useAmbience = (
 
     return () => {
       isMountedRef.current = false;
-      clearFadeInterval();
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.volume = 0;
-        audioRef.current = null;
-      }
+      // Don't stop audio on unmount - let it continue if user navigates
+      // The audio will be stopped when explicitly requested or on page unload
     };
-  }, [clearFadeInterval]);
+  }, []);
 
-  return { currentEnv };
+  return { currentEnv, unlockAudio, resumeAudio };
 };

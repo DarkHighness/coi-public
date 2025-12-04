@@ -177,7 +177,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     .reverse()
     .find((seg) => seg.atmosphere)?.atmosphere;
 
-  useAmbience(
+  const { resumeAudio } = useAmbience(
     shouldPlayAmbience ? activeAtmosphere : undefined,
     aiSettings.audioVolume?.bgmVolume ?? 0.5,
     aiSettings.audioVolume?.bgmMuted ?? false,
@@ -234,6 +234,43 @@ export const GamePage: React.FC<GamePageProps> = ({
   }, [gameState.outline, gameState.outlineConversation]);
 
   const handleFork = (nodeId: string) => {
+    // Only allow forking from model nodes (AI responses)
+    const targetNode = gameState.nodes[nodeId];
+    if (!targetNode) {
+      console.warn(`[Fork] Node ${nodeId} not found`);
+      return;
+    }
+
+    if (targetNode.role !== "model") {
+      // Find the parent model node if this is a user node
+      let parentModelNode: string | null = null;
+      if (targetNode.parentId) {
+        const parent = gameState.nodes[targetNode.parentId];
+        if (parent?.role === "model") {
+          parentModelNode = parent.id;
+        }
+      }
+
+      if (parentModelNode) {
+        showToast(
+          t("tree.forkFromModelOnly") ||
+            "Forking from the previous AI response instead",
+          "info",
+        );
+        if (window.confirm(t("tree.forkConfirm"))) {
+          navigateToNode(parentModelNode, true);
+          setMobileTab("story");
+        }
+      } else {
+        showToast(
+          t("tree.cannotForkFromUser") ||
+            "Cannot fork from this node - please select an AI response",
+          "error",
+        );
+      }
+      return;
+    }
+
     if (window.confirm(t("tree.forkConfirm"))) {
       navigateToNode(nodeId, true); // Pass isFork=true to create a new timeline branch
       setMobileTab("story"); // Switch back to story on fork
@@ -263,6 +300,13 @@ export const GamePage: React.FC<GamePageProps> = ({
       },
     };
     handleSaveSettings(newSettings);
+
+    // On mobile, we need to trigger audio play within the user gesture
+    // Resume audio immediately when unmuting (this is called from click handler)
+    if (!newMuted) {
+      // Use resumeAudio which handles WebAudio context unlocking
+      resumeAudio();
+    }
 
     showToast(
       newMuted
@@ -489,6 +533,7 @@ export const GamePage: React.FC<GamePageProps> = ({
               navigateToNode(nodeId);
               setMobileTab("story");
             }}
+            onFork={handleFork}
             onClose={() => setIsDestinyMapOpen(false)}
           />
         )}

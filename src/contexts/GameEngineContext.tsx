@@ -13,6 +13,7 @@
 import React, { createContext, useContext, ReactNode, useMemo } from "react";
 import { useGameEngine } from "../hooks/useGameEngine";
 import { THEMES, ENV_THEMES } from "../utils/constants";
+import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import type {
   AISettings,
   StorySegment,
@@ -174,11 +175,23 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
   const engine = useGameEngine();
 
   // Compute current theme configuration
+  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - Otherwise, derive from atmosphere dynamically
   const currentThemeConfig = useMemo(() => {
     const currentStoryTheme = THEMES[engine.gameState.theme] || THEMES.fantasy;
-    const currentEnvThemeKey = currentStoryTheme.envTheme;
+
+    let currentEnvThemeKey: string;
+    if (engine.aiSettings.lockEnvTheme) {
+      // Locked: use story's fixed envTheme
+      currentEnvThemeKey = currentStoryTheme.envTheme;
+    } else {
+      // Dynamic: derive from current atmosphere
+      const currentAtmosphere = engine.gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
+      currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
+    }
+
     return ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
-  }, [engine.gameState.theme]);
+  }, [engine.gameState.theme, engine.gameState.atmosphere, engine.aiSettings.lockEnvTheme]);
 
   // Organize into state and actions
   const value: GameEngineContextValue = useMemo(

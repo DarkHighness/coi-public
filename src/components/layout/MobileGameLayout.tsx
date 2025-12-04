@@ -6,6 +6,7 @@ import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { MobileNav, MobileTab } from "../MobileNav";
 import { THEMES, ENV_THEMES, BUILD_INFO } from "../../utils/constants";
+import { getThemeKeyForAtmosphere } from "../../utils/constants/atmosphere";
 import { useTranslation } from "react-i18next";
 import { useGameEngineContext } from "../../contexts/GameEngineContext";
 
@@ -87,8 +88,17 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   // Ref for StoryFeed to enable navigation
   const storyFeedRef = useRef<StoryFeedRef>(null);
 
+  // Compute current theme configuration
+  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - Otherwise, derive from atmosphere dynamically
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-  const currentEnvThemeKey = currentStoryTheme.envTheme;
+  let currentEnvThemeKey: string;
+  if (aiSettings.lockEnvTheme) {
+    currentEnvThemeKey = currentStoryTheme.envTheme;
+  } else {
+    const currentAtmosphere = gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
+    currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
+  }
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 

@@ -424,6 +424,7 @@ async function validateLegacyJson(file: File): Promise<ImportValidation> {
         includes: {
           images: false,
           embeddings: false,
+          logs: false,
         },
         stats: {
           nodeCount: Object.keys(data.nodes || {}).length,

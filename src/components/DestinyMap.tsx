@@ -1,11 +1,13 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StorySegment, GameState } from "../types";
-import { MarkdownText } from "./render/MarkdownText";
 
 interface DestinyMapProps {
   gameState: GameState;
+  /** Navigate to a node (view only, no fork) */
   onNavigate: (nodeId: string) => void;
+  /** Fork from a node (create new timeline) - only allowed for model nodes */
+  onFork?: (nodeId: string) => void;
   onClose: () => void;
 }
 
@@ -27,6 +29,7 @@ const BRANCH_SPACING = 100; // Vertical distance between siblings
 export const DestinyMap: React.FC<DestinyMapProps> = ({
   gameState,
   onNavigate,
+  onFork,
   onClose,
 }) => {
   const { t } = useTranslation();
@@ -364,16 +367,20 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
             };
             const endingIcon = getEndingIcon();
 
+            // Can fork from this node (only model nodes that are not the current active node)
+            const canFork = isModel && !isCurrent && onFork;
+
             return (
               <g
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent drag trigger
+                  // Navigate to this node (view only)
                   onNavigate(node.id);
                   onClose();
                 }}
-                className="cursor-pointer hover:opacity-80"
+                className="cursor-pointer group"
                 style={{ transition: "transform 0.3s" }}
               >
                 {/* Ending Glow Effect */}
@@ -416,7 +423,7 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                           : "var(--theme-border)"
                   }
                   strokeWidth={ending ? 2 : isCurrent ? 2 : 1}
-                  className="shadow-sm"
+                  className="shadow-sm group-hover:opacity-80 transition-opacity"
                 />
 
                 {/* Role Badge */}
@@ -429,6 +436,37 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                   fill={isModel ? "var(--theme-primary)" : "var(--theme-muted)"}
                   opacity={0.5}
                 />
+
+                {/* Fork Button - only for model nodes */}
+                {canFork && (
+                  <g
+                    transform={`translate(${NODE_WIDTH - 24}, ${-NODE_HEIGHT / 2 + 4})`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFork(node.id);
+                    }}
+                    className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <rect
+                      x="0"
+                      y="0"
+                      width="20"
+                      height="20"
+                      rx="4"
+                      fill="var(--theme-primary)"
+                      opacity={0.9}
+                    />
+                    <text
+                      x="10"
+                      y="14"
+                      textAnchor="middle"
+                      fontSize="12"
+                      fill="var(--theme-bg)"
+                    >
+                      ⑂
+                    </text>
+                  </g>
+                )}
 
                 {/* Text */}
                 <foreignObject
@@ -467,8 +505,17 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                         <span className="text-xs">{endingIcon}</span>
                       )}
                     </div>
-                    <p className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80">
-                      <MarkdownText content={node.segment.text} disableIndent />
+                    <p
+                      className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* Use plain text instead of MarkdownText for better SVG compatibility */}
+                      {node.segment.text.replace(/[#*_`~\[\]]/g, "").slice(0, 100)}
                     </p>
                   </div>
                 </foreignObject>
