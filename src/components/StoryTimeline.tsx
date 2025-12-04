@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
 import { ImageLightbox } from "./render/ImageLightbox";
 import { TimelineExport, TimelineExportRef } from "./TimelineExport";
+import { TimelineExportModal } from "./TimelineExportModal";
 import { StoryTimelineItem } from "./StoryTimelineItem";
 import { useGameEngineContext } from "../contexts/GameEngineContext";
 import { useSettingsContext } from "../contexts/SettingsContext";
@@ -30,6 +31,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const timelineExportRef = useRef<TimelineExportRef>(null);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -39,6 +41,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   const narrativeSegments = segments.filter(
     (s) => s.role === "model" || s.role === "system",
   );
+  // Get export segments based on settings
+  const exportSegments = exportIncludeUserActions ? segments : narrativeSegments;
+
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
   // Use envTheme directly from story theme for consistent visual styling
   const currentEnvThemeKey = currentStoryTheme.envTheme;
@@ -65,9 +70,14 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     });
   };
 
-  const handleExport = () => {
-    if (isExporting || narrativeSegments.length === 0) return;
-    timelineExportRef.current?.startExport();
+  const handleExportClick = () => {
+    if (isExporting || exportSegments.length === 0) return;
+    setShowExportModal(true);
+  };
+
+  const handleExport = (startIndex: number, endIndex: number, segmentsPerImage: number) => {
+    setShowExportModal(false);
+    timelineExportRef.current?.startExport(startIndex, endIndex, segmentsPerImage);
   };
 
   return (
@@ -82,7 +92,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
           {/* Export Button */}
           <button
-            onClick={handleExport}
+            onClick={handleExportClick}
             disabled={isExporting}
             className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-theme-muted hover:text-theme-primary transition-colors disabled:opacity-50"
             title={t("timeline.export") || "Export Timeline"}
@@ -160,7 +170,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
         <TimelineExport
           ref={timelineExportRef}
-          segments={exportIncludeUserActions ? segments : narrativeSegments}
+          segments={exportSegments}
           theme={theme}
           title={title}
           subtitle={subtitle}
@@ -169,6 +179,15 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           onExportEnd={() => setIsExporting(false)}
         />
       </div>
+
+      {/* Export Options Modal */}
+      <TimelineExportModal
+        segments={exportSegments}
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+        isExporting={isExporting}
+      />
 
       {/* Image Lightbox */}
       <ImageLightbox

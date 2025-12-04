@@ -236,6 +236,27 @@
     "navigateHint": "双击跳转到对应段落（移动端长按）",
     "unknown_time": "未知时间"
   },
+  "timelineExport": {
+    "title": "导出时间轴",
+    "subtitle": "选择范围和导出选项",
+    "sliderView": "滑块",
+    "listView": "列表",
+    "selectRange": "选择导出范围",
+    "totalSegments": "个段落",
+    "start": "起始",
+    "end": "结束",
+    "selectStart": "设置起点",
+    "selectEnd": "设置终点",
+    "segmentsPerImage": "每张图片段落数",
+    "detailed": "详细",
+    "compact": "紧凑",
+    "preview": "导出预览",
+    "selectedSegments": "已选择",
+    "outputImages": "输出图片",
+    "previewNote": "导出第 {{start}} 到第 {{end}} 段将生成 {{images}} 张图片",
+    "exporting": "正在导出...",
+    "exportButton": "导出"
+  },
   "character": {
     "title": "角色状态",
     "severity": "严重程度："

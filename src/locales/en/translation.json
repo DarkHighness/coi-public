@@ -261,6 +261,27 @@
     "navigateHint": "Double-click to navigate (long press on mobile)",
     "unknown_time": "Unknown Time"
   },
+  "timelineExport": {
+    "title": "Export Timeline",
+    "subtitle": "Select range and export options",
+    "sliderView": "Slider",
+    "listView": "List",
+    "selectRange": "Select Export Range",
+    "totalSegments": "total segments",
+    "start": "Start",
+    "end": "End",
+    "selectStart": "Set Start",
+    "selectEnd": "Set End",
+    "segmentsPerImage": "Segments Per Image",
+    "detailed": "Detailed",
+    "compact": "Compact",
+    "preview": "Export Preview",
+    "selectedSegments": "Selected",
+    "outputImages": "Output Images",
+    "previewNote": "Exporting segments #{{start}} to #{{end}} will generate {{images}} image(s)",
+    "exporting": "Exporting...",
+    "exportButton": "Export"
+  },
   "character": {
     "title": "Character Status",
     "severity": "Severity:"
