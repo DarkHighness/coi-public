@@ -92,6 +92,7 @@ function AppContent() {
     handleSaveSettings,
     loadSlot,
     deleteSlot,
+    refreshSlots,
     setThemeMode,
     resetSettings,
     clearAllSaves,
@@ -833,6 +834,7 @@ function AppContent() {
                   saveSlots={saveSlots}
                   onSwitchSlot={loadSlot}
                   onDeleteSlot={deleteSlot}
+                  onRefreshSlots={refreshSlots}
                 />
               </SectionErrorBoundary>
             }
@@ -883,6 +885,11 @@ function AppContent() {
             onSwitch={handleLoadSlot}
             onDelete={deleteSlot}
             onClose={() => setIsSaveManagerOpen(false)}
+            onImportComplete={async (result) => {
+              if (result.success) {
+                await refreshSlots();
+              }
+            }}
           />
         )}
       </Suspense>

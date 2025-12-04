@@ -1209,3 +1209,68 @@ export interface UnifiedToolCallResult {
   name: string;
   args: Record<string, unknown>;
 }
+
+// ============================================================================
+// Save Export/Import Types
+// ============================================================================
+
+/** Current export format version */
+export const CURRENT_EXPORT_VERSION = 2;
+
+/** Options for exporting a save */
+export interface ExportOptions {
+  includeImages: boolean;
+  includeEmbeddings: boolean;
+}
+
+/** Statistics about the export */
+export interface ExportStats {
+  nodeCount: number;
+  imageCount: number;
+  embeddingCount: number;
+  estimatedSize?: number; // in bytes
+}
+
+/** Manifest file included in the export ZIP */
+export interface ExportManifest {
+  /** Export format version */
+  version: number;
+  /** ISO timestamp of export */
+  exportDate: string;
+  /** Application version that created this export */
+  appVersion: string;
+  /** Save data version (for migration) */
+  saveVersion: number;
+  /** SaveSlot metadata */
+  slot: SaveSlot;
+  /** What's included in this export */
+  includes: {
+    images: boolean;
+    embeddings: boolean;
+  };
+  /** Statistics about the exported data */
+  stats: ExportStats;
+  /** Checksum for data integrity (SHA-256 of save.json) */
+  checksum?: string;
+}
+
+/** Result of import operation */
+export interface ImportResult {
+  success: boolean;
+  slotId?: string;
+  error?: string;
+  warnings?: string[];
+  /** Was migration needed? */
+  migrated?: boolean;
+  /** Original version before migration */
+  originalVersion?: number;
+}
+
+/** Validation result for import */
+export interface ImportValidation {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  manifest?: ExportManifest;
+  requiresMigration?: boolean;
+}

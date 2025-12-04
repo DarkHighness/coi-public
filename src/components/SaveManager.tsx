@@ -1,8 +1,10 @@
-import React from "react";
-import { SaveSlot, LanguageCode } from "../types";
+import React, { useState } from "react";
+import { SaveSlot, ImportResult } from "../types";
 import { THEMES, ENV_THEMES } from "../utils/constants";
 import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
+import { ExportOptionsModal } from "./ExportOptionsModal";
+import { ImportSaveModal } from "./ImportSaveModal";
 
 interface SaveManagerProps {
   slots: SaveSlot[];
@@ -10,6 +12,7 @@ interface SaveManagerProps {
   onSwitch: (id: string) => void | Promise<void> | Promise<any>;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onImportComplete?: (result: ImportResult) => void;
 }
 
 export const SaveManager: React.FC<SaveManagerProps> = ({
@@ -18,23 +21,25 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   onSwitch,
   onDelete,
   onClose,
+  onImportComplete,
 }) => {
   const { t } = useTranslation();
+  const [exportingSlot, setExportingSlot] = useState<SaveSlot | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  const handleExport = (slot: SaveSlot) => {
-    const dataStr = JSON.stringify(slot, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `save-${slot.name}-${new Date(slot.timestamp).toISOString().split("T")[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleExportClick = (slot: SaveSlot) => {
+    setExportingSlot(slot);
+  };
+
+  const handleImportComplete = (result: ImportResult) => {
+    setIsImportModalOpen(false);
+    if (onImportComplete) {
+      onImportComplete(result);
+    }
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in">
       <div className="bg-theme-surface border border-theme-border rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
         {/* Header */}
@@ -179,7 +184,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleExport(slot);
+                            handleExportClick(slot);
                           }}
                           className="p-1.5 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
                           title={t("saveManager.export") || "Export"}
@@ -234,7 +239,47 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
             );
           })}
         </div>
+
+        {/* Footer with Import Button */}
+        <div className="p-4 border-t border-theme-border flex justify-between items-center">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            {t("saveManager.import") || "Import Save"}
+          </button>
+          <div className="text-xs text-theme-muted">
+            {t("saveManager.importHint") || "Import saves from .zip files"}
+          </div>
+        </div>
       </div>
     </div>
+
+    {/* Export Options Modal */}
+    {exportingSlot && (
+      <ExportOptionsModal
+        slot={exportingSlot}
+        slotId={exportingSlot.id}
+        onClose={() => setExportingSlot(null)}
+      />
+    )}
+
+    {/* Import Modal */}
+    {isImportModalOpen && (
+      <ImportSaveModal
+        existingSlots={slots}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={handleImportComplete}
+      />
+    )}
+    </>
   );
 };

@@ -193,34 +193,215 @@ export class MigrationManager {
 
   /**
    * Validate a save state structure
+   * Returns errors for critical issues and suggestions for repairable issues
    */
-  validateState(state: any): { valid: boolean; errors: string[] } {
+  validateState(state: any): { valid: boolean; errors: string[]; warnings: string[] } {
     const errors: string[] = [];
+    const warnings: string[] = [];
 
-    // Required fields
+    // Critical required fields
     if (!state.nodes || typeof state.nodes !== "object") {
       errors.push("Missing or invalid 'nodes' field");
     }
     if (!Array.isArray(state.inventory)) {
-      errors.push("Missing or invalid 'inventory' array");
+      warnings.push("Missing 'inventory' array - will be initialized as empty");
     }
     if (!Array.isArray(state.relationships)) {
-      errors.push("Missing or invalid 'relationships' array");
+      warnings.push("Missing 'relationships' array - will be initialized as empty");
     }
     if (!Array.isArray(state.quests)) {
-      errors.push("Missing or invalid 'quests' array");
+      warnings.push("Missing 'quests' array - will be initialized as empty");
     }
     if (!Array.isArray(state.locations)) {
-      errors.push("Missing or invalid 'locations' array");
+      warnings.push("Missing 'locations' array - will be initialized as empty");
     }
     if (!state.character || typeof state.character !== "object") {
-      errors.push("Missing or invalid 'character' object");
+      warnings.push("Missing 'character' object - will be initialized with defaults");
+    }
+
+    // Optional but expected fields
+    if (!state.theme || typeof state.theme !== "string") {
+      warnings.push("Missing 'theme' field");
+    }
+    if (!Array.isArray(state.knowledge)) {
+      warnings.push("Missing 'knowledge' array - will be initialized as empty");
+    }
+    if (!Array.isArray(state.factions)) {
+      warnings.push("Missing 'factions' array - will be initialized as empty");
+    }
+    if (!state.forkTree || typeof state.forkTree !== "object") {
+      warnings.push("Missing 'forkTree' - will be initialized with defaults");
+    }
+    if (typeof state.forkId !== "number") {
+      warnings.push("Missing 'forkId' - will be initialized to 0");
+    }
+    if (typeof state.turnNumber !== "number") {
+      warnings.push("Missing 'turnNumber' - will be computed from nodes");
     }
 
     return {
       valid: errors.length === 0,
       errors,
+      warnings,
     };
+  }
+
+  /**
+   * Repair a save state by filling in missing required fields
+   * This is called during import to ensure the save is usable
+   */
+  repairState(state: any): any {
+    const repairedState = { ...state };
+
+    // Initialize missing arrays
+    if (!Array.isArray(repairedState.inventory)) {
+      repairedState.inventory = [];
+    }
+    if (!Array.isArray(repairedState.relationships)) {
+      repairedState.relationships = [];
+    }
+    if (!Array.isArray(repairedState.quests)) {
+      repairedState.quests = [];
+    }
+    if (!Array.isArray(repairedState.locations)) {
+      repairedState.locations = [];
+    }
+    if (!Array.isArray(repairedState.knowledge)) {
+      repairedState.knowledge = [];
+    }
+    if (!Array.isArray(repairedState.factions)) {
+      repairedState.factions = [];
+    }
+    if (!Array.isArray(repairedState.timeline)) {
+      repairedState.timeline = [];
+    }
+    if (!Array.isArray(repairedState.causalChains)) {
+      repairedState.causalChains = [];
+    }
+    if (!Array.isArray(repairedState.summaries)) {
+      repairedState.summaries = [];
+    }
+    if (!Array.isArray(repairedState.logs)) {
+      repairedState.logs = [];
+    }
+    if (!Array.isArray(repairedState.currentFork)) {
+      repairedState.currentFork = [];
+    }
+
+    // Initialize missing objects
+    if (!repairedState.character || typeof repairedState.character !== "object") {
+      repairedState.character = {
+        name: "Unknown",
+        health: 100,
+        maxHealth: 100,
+        skills: [],
+        conditions: [],
+        hiddenTraits: [],
+      };
+    }
+
+    if (!repairedState.nodes || typeof repairedState.nodes !== "object") {
+      repairedState.nodes = {};
+    }
+
+    if (!repairedState.forkTree || typeof repairedState.forkTree !== "object") {
+      repairedState.forkTree = {
+        nodes: {
+          0: {
+            id: 0,
+            parentId: null,
+            createdAt: Date.now(),
+            createdAtTurn: 0,
+            sourceNodeId: "",
+          },
+        },
+        nextForkId: 1,
+      };
+    }
+
+    if (!repairedState.uiState || typeof repairedState.uiState !== "object") {
+      repairedState.uiState = {
+        inventory: { pinnedIds: [], customOrder: [] },
+        locations: { pinnedIds: [], customOrder: [] },
+        relationships: { pinnedIds: [], customOrder: [] },
+        knowledge: { pinnedIds: [], customOrder: [] },
+      };
+    }
+
+    if (!repairedState.nextIds || typeof repairedState.nextIds !== "object") {
+      repairedState.nextIds = {
+        item: 1,
+        npc: 1,
+        location: 1,
+        knowledge: 1,
+        quest: 1,
+        faction: 1,
+        timeline: 1,
+        causalChain: 1,
+        skill: 1,
+        condition: 1,
+        hiddenTrait: 1,
+      };
+    }
+
+    if (!repairedState.tokenUsage || typeof repairedState.tokenUsage !== "object") {
+      repairedState.tokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+      };
+    }
+
+    if (!repairedState.aliveEntities || typeof repairedState.aliveEntities !== "object") {
+      repairedState.aliveEntities = {
+        inventory: [],
+        relationships: [],
+        locations: [],
+        quests: [],
+        knowledge: [],
+        timeline: [],
+        skills: [],
+        conditions: [],
+        hiddenTraits: [],
+        causalChains: [],
+      };
+    }
+
+    if (!repairedState.atmosphere || typeof repairedState.atmosphere !== "object") {
+      repairedState.atmosphere = {
+        envTheme: "mystical",
+        ambience: "quiet",
+      };
+    }
+
+    // Initialize missing primitive fields
+    if (typeof repairedState.forkId !== "number") {
+      repairedState.forkId = 0;
+    }
+    if (typeof repairedState.turnNumber !== "number") {
+      // Compute from nodes
+      const nodeCount = Object.keys(repairedState.nodes).length;
+      repairedState.turnNumber = Math.floor(nodeCount / 2);
+    }
+    if (typeof repairedState.lastSummarizedIndex !== "number") {
+      repairedState.lastSummarizedIndex = -1;
+    }
+    if (!repairedState.time) {
+      repairedState.time = "Day 1, Morning";
+    }
+    if (!repairedState.currentLocation) {
+      repairedState.currentLocation = "Unknown";
+    }
+
+    // Reset transient state
+    repairedState.isProcessing = false;
+    repairedState.isImageGenerating = false;
+    repairedState.generatingNodeId = null;
+    repairedState.error = null;
+
+    return repairedState;
   }
 }
 

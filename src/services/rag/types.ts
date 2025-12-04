@@ -172,7 +172,9 @@ export type RAGWorkerMessageType =
   | "checkModelMismatch"
   | "rebuildForModel"
   | "checkStorageOverflow"
-  | "deleteOldestSaves";
+  | "deleteOldestSaves"
+  | "exportSaveData"
+  | "importSaveData";
 
 export interface RAGWorkerRequest {
   id: string; // Request ID for response matching
@@ -370,4 +372,53 @@ export interface ModelMismatchEvent extends RAGEvent {
 export interface StorageOverflowEvent extends RAGEvent {
   type: "storageOverflow";
   data: StorageOverflowInfo;
+}
+
+// ============================================================================
+// Export/Import Types
+// ============================================================================
+
+/**
+ * Exportable document (with embedding as array for JSON serialization)
+ */
+export interface ExportableRAGDocument {
+  id: string;
+  entityId: string;
+  type: DocumentType;
+  content: string;
+  embedding: number[]; // Converted from Float32Array for JSON
+  saveId: string;
+  forkId: number;
+  turnNumber: number;
+  version: number;
+  embeddingModel: string;
+  embeddingProvider: string;
+  importance: number;
+  unlocked: boolean;
+  createdAt: number;
+  lastAccess: number;
+}
+
+/**
+ * Export data payload for a save
+ */
+export interface RAGExportData {
+  saveId: string;
+  documents: ExportableRAGDocument[];
+  metadata: {
+    totalDocuments: number;
+    embeddingModel: string;
+    embeddingProvider: string;
+    dimensions: number;
+    exportedAt: number;
+  };
+}
+
+export interface ExportSaveDataPayload {
+  saveId: string;
+}
+
+export interface ImportSaveDataPayload {
+  data: RAGExportData;
+  newSaveId: string; // New save ID for imported data
 }

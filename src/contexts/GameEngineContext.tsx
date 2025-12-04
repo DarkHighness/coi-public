@@ -112,6 +112,8 @@ export interface GameEngineActions {
   }>;
   /** Delete a save slot */
   deleteSlot: (id: string) => void;
+  /** Refresh save slots list (after import) */
+  refreshSlots: () => Promise<SaveSlot[]>;
   /** Toggle theme mode */
   toggleThemeMode: () => void;
   /** Set theme mode */
@@ -209,6 +211,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         handleSaveSettings: engine.handleSaveSettings,
         loadSlot: engine.loadSlot,
         deleteSlot: engine.deleteSlot,
+        refreshSlots: engine.refreshSlots,
         toggleThemeMode: engine.toggleThemeMode,
         setThemeMode: engine.setThemeMode,
         resetSettings: engine.resetSettings,

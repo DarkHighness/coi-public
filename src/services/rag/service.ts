@@ -30,6 +30,7 @@ import {
   type GlobalStorageStats,
   type ModelMismatchEvent,
   type StorageOverflowEvent,
+  type RAGExportData,
 } from "./types";
 
 // ============================================================================
@@ -388,6 +389,29 @@ export class RAGService {
   async getAllSaveStats(): Promise<GlobalStorageStats> {
     this.ensureInitialized();
     return this.sendRequest("getAllSaveStats", {});
+  }
+
+  // ==========================================================================
+  // Export/Import
+  // ==========================================================================
+
+  /**
+   * Export all RAG data for a save (including embeddings)
+   */
+  async exportSaveData(saveId: string): Promise<RAGExportData | null> {
+    this.ensureInitialized();
+    return this.sendRequest("exportSaveData", { saveId });
+  }
+
+  /**
+   * Import RAG data for a new save
+   */
+  async importSaveData(
+    data: RAGExportData,
+    newSaveId: string,
+  ): Promise<{ success: boolean; imported: number }> {
+    this.ensureInitialized();
+    return this.sendRequest("importSaveData", { data, newSaveId });
   }
 
   // ==========================================================================

@@ -5,7 +5,7 @@ import { THEMES, ENV_THEMES } from "../utils/constants";
 import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomContextModal } from "./CustomContextModal";
-import { SaveSlot } from "../types";
+import { SaveSlot, ImportResult } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
@@ -78,6 +78,7 @@ interface StartScreenProps {
   saveSlots?: SaveSlot[];
   onSwitchSlot?: (id: string) => void;
   onDeleteSlot?: (id: string) => void;
+  onRefreshSlots?: () => Promise<SaveSlot[]>;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -92,6 +93,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   saveSlots = [],
   onSwitchSlot,
   onDeleteSlot,
+  onRefreshSlots,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [hoveredTheme, setHoveredTheme] = useState<string>("fantasy");
@@ -323,7 +325,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                     ></path>
                   </svg>
-                  {t("import")}
+                  {t("import.shortTitle")}
                 </button>
               </div>
             </div>
@@ -445,6 +447,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             }}
             onDelete={onDeleteSlot || (() => {})}
             onClose={() => setIsSaveManagerOpen(false)}
+            onImportComplete={async (result: ImportResult) => {
+              if (result.success && onRefreshSlots) {
+                await onRefreshSlots();
+              }
+            }}
           />
         </Suspense>
       )}

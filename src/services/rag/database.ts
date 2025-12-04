@@ -523,6 +523,114 @@ export class RAGDatabase {
   }
 
   /**
+   * Get all documents with embeddings for export
+   */
+  async getDocumentsWithEmbeddingsForSave(
+    saveId: string,
+  ): Promise<RAGDocument[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = await this.db.query<any>(
+      `SELECT d.*, e.embedding
+       FROM documents d
+       LEFT JOIN embeddings e ON d.id = e.doc_id
+       WHERE d.save_id = $1
+       ORDER BY d.created_at ASC`,
+      [saveId],
+    );
+
+    return result.rows.map((row) => this.rowToDocument(row));
+  }
+
+  /**
+   * Import documents with embeddings for a new save
+   */
+  async importDocuments(
+    documents: Array<{
+      id: string;
+      entityId: string;
+      type: DocumentType;
+      content: string;
+      embedding: Float32Array;
+      saveId: string;
+      forkId: number;
+      turnNumber: number;
+      version: number;
+      embeddingModel: string;
+      embeddingProvider: string;
+      importance: number;
+      unlocked: boolean;
+      createdAt: number;
+      lastAccess: number;
+    }>,
+  ): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+    if (documents.length === 0) return 0;
+
+    let imported = 0;
+
+    for (const doc of documents) {
+      try {
+        // Insert document
+        await this.db.query(
+          `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version, embedding_model, embedding_provider, importance, unlocked, created_at, last_access)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            doc.id,
+            doc.entityId,
+            doc.type,
+            doc.content,
+            doc.saveId,
+            doc.forkId,
+            doc.turnNumber,
+            doc.version,
+            doc.embeddingModel,
+            doc.embeddingProvider,
+            doc.importance,
+            doc.unlocked,
+            doc.createdAt,
+            doc.lastAccess,
+          ],
+        );
+
+        // Insert embedding if present
+        if (doc.embedding && doc.embedding.length > 0) {
+          const vectorStr = `[${Array.from(doc.embedding).join(",")}]`;
+          await this.db.query(
+            `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
+             ON CONFLICT (doc_id) DO NOTHING`,
+            [doc.id, vectorStr],
+          );
+        }
+
+        imported++;
+      } catch (error) {
+        console.warn(`[RAGDatabase] Failed to import document ${doc.id}:`, error);
+      }
+    }
+
+    // Update save metadata
+    if (documents.length > 0) {
+      const saveId = documents[0].saveId;
+      const model = documents[0].embeddingModel;
+      const provider = documents[0].embeddingProvider;
+
+      await this.db.query(
+        `INSERT INTO save_metadata (save_id, current_fork_id, last_updated, document_count, embedding_model, embedding_provider)
+         VALUES ($1, 0, $2, $3, $4, $5)
+         ON CONFLICT (save_id) DO UPDATE SET
+           document_count = save_metadata.document_count + $3,
+           last_updated = $2`,
+        [saveId, Date.now(), imported, model, provider],
+      );
+    }
+
+    console.log(`[RAGDatabase] Imported ${imported}/${documents.length} documents`);
+    return imported;
+  }
+
+  /**
    * Get recently added documents for the current save
    */
   async getRecentDocuments(

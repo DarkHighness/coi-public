@@ -37,6 +37,10 @@ import {
   type StorageOverflowInfo,
   type GlobalStorageStats,
   type RAGDocumentMeta,
+  type ExportSaveDataPayload,
+  type ImportSaveDataPayload,
+  type RAGExportData,
+  type ExportableRAGDocument,
 } from "./types";
 
 // ============================================================================
@@ -179,6 +183,12 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
 
     case "getAllSaveStats":
       return handleGetAllSaveStats();
+
+    case "exportSaveData":
+      return handleExportSaveData(request.payload as ExportSaveDataPayload);
+
+    case "importSaveData":
+      return handleImportSaveData(request.payload as ImportSaveDataPayload);
 
     default:
       throw new Error(`Unknown request type: ${request.type}`);
@@ -843,6 +853,87 @@ function broadcastEvent(event: RAGEvent): void {
   for (const port of ports) {
     port.postMessage(event);
   }
+}
+
+// ============================================================================
+// Export/Import Handlers
+// ============================================================================
+
+async function handleExportSaveData(
+  payload: ExportSaveDataPayload,
+): Promise<RAGExportData | null> {
+  ensureInitialized();
+
+  const { saveId } = payload;
+  console.log(`[RAGWorker] Exporting data for save: ${saveId}`);
+
+  // Get all documents with embeddings
+  const documents = await database!.getDocumentsWithEmbeddingsForSave(saveId);
+
+  if (documents.length === 0) {
+    console.log(`[RAGWorker] No documents found for save: ${saveId}`);
+    return null;
+  }
+
+  // Convert to exportable format (Float32Array -> number[])
+  const exportableDocuments: ExportableRAGDocument[] = documents.map((doc) => ({
+    id: doc.id,
+    entityId: doc.entityId,
+    type: doc.type,
+    content: doc.content,
+    embedding: doc.embedding ? Array.from(doc.embedding) : [],
+    saveId: doc.saveId,
+    forkId: doc.forkId,
+    turnNumber: doc.turnNumber,
+    version: doc.version,
+    embeddingModel: doc.embeddingModel,
+    embeddingProvider: doc.embeddingProvider,
+    importance: doc.importance,
+    unlocked: doc.unlocked,
+    createdAt: doc.createdAt,
+    lastAccess: doc.lastAccess,
+  }));
+
+  // Determine model info from first document
+  const firstDoc = documents[0];
+
+  const exportData: RAGExportData = {
+    saveId,
+    documents: exportableDocuments,
+    metadata: {
+      totalDocuments: documents.length,
+      embeddingModel: firstDoc.embeddingModel,
+      embeddingProvider: firstDoc.embeddingProvider,
+      dimensions: firstDoc.embedding?.length || config.dimensions,
+      exportedAt: Date.now(),
+    },
+  };
+
+  console.log(`[RAGWorker] Exported ${documents.length} documents for save: ${saveId}`);
+  return exportData;
+}
+
+async function handleImportSaveData(
+  payload: ImportSaveDataPayload,
+): Promise<{ success: boolean; imported: number }> {
+  ensureInitialized();
+
+  const { data, newSaveId } = payload;
+  console.log(`[RAGWorker] Importing ${data.documents.length} documents to save: ${newSaveId}`);
+
+  // Convert from exportable format and update saveId
+  const documents = data.documents.map((doc) => ({
+    ...doc,
+    id: crypto.randomUUID(), // Generate new unique ID
+    saveId: newSaveId, // Use new save ID
+    embedding: new Float32Array(doc.embedding),
+  }));
+
+  // Import documents
+  const imported = await database!.importDocuments(documents);
+
+  console.log(`[RAGWorker] Imported ${imported} documents to save: ${newSaveId}`);
+  return { success: true, imported };
 }
 
 // Export for testing

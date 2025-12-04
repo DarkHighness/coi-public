@@ -819,6 +819,24 @@ export const useGamePersistence = (
     }
   };
 
+  /**
+   * Refresh the save slots list from IndexedDB
+   * Called after import to update the list without reloading
+   */
+  const refreshSlots = async (): Promise<SaveSlot[]> => {
+    try {
+      const slots = await loadMetadata("slots");
+      if (slots && Array.isArray(slots)) {
+        setSaveSlots(slots);
+        return slots;
+      }
+      return saveSlots;
+    } catch (error) {
+      console.error("Failed to refresh slots:", error);
+      return saveSlots;
+    }
+  };
+
   return {
     saveSlots,
     currentSlotId,
@@ -833,5 +851,6 @@ export const useGamePersistence = (
     saveToSlot, // Manual save for explicit save points
     setSkipNextSave, // Skip next auto-save (for error recovery)
     triggerSave, // Force save
+    refreshSlots, // Refresh slots list after import
   };
 };

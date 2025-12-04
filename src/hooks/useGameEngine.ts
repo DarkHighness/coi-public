@@ -172,6 +172,7 @@ export const useGameEngine = () => {
     saveToSlot,
     setSkipNextSave,
     triggerSave,
+    refreshSlots,
   } = useGamePersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -1310,5 +1311,6 @@ export const useGameEngine = () => {
     updateNodeAudio,
     triggerSave,
     failedImageNodes,
+    refreshSlots,
   };
 };
