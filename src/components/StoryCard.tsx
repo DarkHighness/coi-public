@@ -42,7 +42,7 @@ export interface StoryCardProps {
   maxWidthClass?: string;
 }
 
-export const StoryCard: React.FC<StoryCardProps> = ({
+export const StoryCardComponent: React.FC<StoryCardProps> = ({
   segment,
   isLast,
   isGenerating,
@@ -272,20 +272,6 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         onChange={handleFileChange}
       />
 
-      {/* Manual Image Generation Button */}
-      {/* {!segment.imageUrl && segment.imagePrompt && onGenerateImage && !disableImages && (
-          <div className="flex justify-center -mt-4 mb-4 relative z-10">
-             <button
-               onClick={() => onGenerateImage(segment.id)}
-               className="flex items-center gap-2 px-3 py-1 bg-theme-surface/80 hover:bg-theme-primary/20 border border-theme-border hover:border-theme-primary rounded-full text-xs text-theme-muted hover:text-theme-primary transition-all backdrop-blur"
-               title="Visualize this moment"
-             >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Paint Scene
-             </button>
-          </div>
-      )} */}
-
       <div className="flex flex-col">
         <StoryText
           text={segment.text}
@@ -348,3 +334,46 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     </div>
   );
 };
+
+export const StoryCard = React.memo(StoryCardComponent, (prev, next) => {
+  // 1. Check if segment ID changed (different card)
+  if (prev.segment.id !== next.segment.id) return false;
+
+  // 2. Check if segment content changed (text, image, audio, etc.)
+  // We can check specific fields or assume immutable updates to the segment object
+  if (prev.segment !== next.segment) return false;
+
+  // 3. Check critical props that affect rendering
+  if (prev.isLast !== next.isLast) return false;
+  if (prev.isGenerating !== next.isGenerating) return false;
+  if (prev.hasFailed !== next.hasFailed) return false;
+  if (prev.disableImages !== next.disableImages) return false;
+  if (prev.shouldAnimate !== next.shouldAnimate) return false;
+  if (prev.maxWidthClass !== next.maxWidthClass) return false;
+
+  // 4. Check labels (shallow comparison)
+  if (
+    prev.labels.decided !== next.labels.decided ||
+    prev.labels.vision !== next.labels.vision ||
+    prev.labels.unavailable !== next.labels.unavailable
+  ) {
+    return false;
+  }
+
+  // 5. Check AI settings (deep comparison or reference check if immutable)
+  // Assuming immutable updates for settings
+  if (prev.aiSettings !== next.aiSettings) return false;
+
+  // 6. IGNORE gameState changes for PAST segments
+  // If it's the last segment, we might need to re-render if gameState affects it
+  // But for past segments, gameState changes (like time passing) shouldn't trigger re-render
+  // unless the segment itself changed (checked in step 2)
+  if (next.isLast) {
+    if (prev.gameState !== next.gameState) return false;
+  }
+
+  // If all checks pass, the component is the same
+  return true;
+});
+
+StoryCard.displayName = "StoryCard";

@@ -13,7 +13,7 @@ interface MarkdownTextProps {
   components?: Record<string, React.ComponentType<any>>;
 }
 
-export const MarkdownText: React.FC<MarkdownTextProps> = ({
+export const MarkdownText = React.memo<MarkdownTextProps>(({
   content,
   className = "",
   disableIndent = false,
@@ -138,4 +138,6 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({
       </ReactMarkdown>
     </div>
   );
-};
+});
+
+MarkdownText.displayName = "MarkdownText";

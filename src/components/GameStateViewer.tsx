@@ -168,7 +168,7 @@ const InfoRow = ({
   );
 };
 
-export const GameStateViewer: React.FC<GameStateViewerProps> = ({
+export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
   isOpen,
   onClose,
   gameState,
@@ -192,8 +192,8 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
     });
   };
 
-  // Render Overview Tab
-  const renderOverview = () => {
+  // Memoize render functions to avoid re-creating them on every render
+  const renderOverview = React.useCallback(() => {
     const outline = gameState.outline;
     const char = gameState.character;
     const currentLoc = gameState.locations.find(
@@ -353,10 +353,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
       </div>
     );
-  };
+  }, [gameState, expandedSections, t]);
 
   // Render World Tab
-  const renderWorld = () => {
+  const renderWorld = React.useCallback(() => {
     const outline = gameState.outline;
     return (
       <div className="space-y-4">
@@ -743,10 +743,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
       </div>
     );
-  };
+  }, [gameState, expandedSections, t]);
 
   // Render Character Tab
-  const renderCharacter = () => {
+  const renderCharacter = React.useCallback(() => {
     const char = gameState.character;
     return (
       <div className="space-y-4">
@@ -1122,10 +1122,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         )}
       </div>
     );
-  };
+  }, [gameState, expandedSections, t]);
 
   // Render Relationships Tab
-  const renderRelationships = () => {
+  const renderRelationships = React.useCallback(() => {
     return (
       <div className="space-y-4">
         <Section
@@ -1367,10 +1367,10 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         </Section>
       </div>
     );
-  };
+  }, [gameState, expandedSections, t]);
 
   // Render Quests Tab
-  const renderQuests = () => {
+  const renderQuests = React.useCallback(() => {
     const activeQuests = gameState.quests.filter((q) => q.status === "active");
     const completedQuests = gameState.quests.filter(
       (q) => q.status === "completed",
@@ -1582,7 +1582,7 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
         )}
       </div>
     );
-  };
+  }, [gameState, expandedSections, t]);
 
   // Render Lore Tab
   const renderLore = () => {
@@ -2004,3 +2004,5 @@ export const GameStateViewer: React.FC<GameStateViewerProps> = ({
     </div>
   );
 };
+
+export const GameStateViewer = React.memo(GameStateViewerComponent);
