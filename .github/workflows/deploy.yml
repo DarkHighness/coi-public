@@ -38,7 +38,7 @@ jobs:
       - name: Build
         run: pnpm run build
         env:
-          VITE_BASE_PATH: /coi-public
+          VITE_BASE_PATH: /coi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
