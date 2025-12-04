@@ -195,7 +195,11 @@ export class MigrationManager {
    * Validate a save state structure
    * Returns errors for critical issues and suggestions for repairable issues
    */
-  validateState(state: any): { valid: boolean; errors: string[]; warnings: string[] } {
+  validateState(state: any): {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -207,7 +211,9 @@ export class MigrationManager {
       warnings.push("Missing 'inventory' array - will be initialized as empty");
     }
     if (!Array.isArray(state.relationships)) {
-      warnings.push("Missing 'relationships' array - will be initialized as empty");
+      warnings.push(
+        "Missing 'relationships' array - will be initialized as empty",
+      );
     }
     if (!Array.isArray(state.quests)) {
       warnings.push("Missing 'quests' array - will be initialized as empty");
@@ -216,7 +222,9 @@ export class MigrationManager {
       warnings.push("Missing 'locations' array - will be initialized as empty");
     }
     if (!state.character || typeof state.character !== "object") {
-      warnings.push("Missing 'character' object - will be initialized with defaults");
+      warnings.push(
+        "Missing 'character' object - will be initialized with defaults",
+      );
     }
 
     // Optional but expected fields
@@ -289,7 +297,10 @@ export class MigrationManager {
     }
 
     // Initialize missing objects
-    if (!repairedState.character || typeof repairedState.character !== "object") {
+    if (
+      !repairedState.character ||
+      typeof repairedState.character !== "object"
+    ) {
       repairedState.character = {
         name: "Unknown",
         health: 100,
@@ -344,7 +355,10 @@ export class MigrationManager {
       };
     }
 
-    if (!repairedState.tokenUsage || typeof repairedState.tokenUsage !== "object") {
+    if (
+      !repairedState.tokenUsage ||
+      typeof repairedState.tokenUsage !== "object"
+    ) {
       repairedState.tokenUsage = {
         promptTokens: 0,
         completionTokens: 0,
@@ -354,7 +368,10 @@ export class MigrationManager {
       };
     }
 
-    if (!repairedState.aliveEntities || typeof repairedState.aliveEntities !== "object") {
+    if (
+      !repairedState.aliveEntities ||
+      typeof repairedState.aliveEntities !== "object"
+    ) {
       repairedState.aliveEntities = {
         inventory: [],
         relationships: [],
@@ -369,7 +386,10 @@ export class MigrationManager {
       };
     }
 
-    if (!repairedState.atmosphere || typeof repairedState.atmosphere !== "object") {
+    if (
+      !repairedState.atmosphere ||
+      typeof repairedState.atmosphere !== "object"
+    ) {
       repairedState.atmosphere = {
         envTheme: "mystical",
         ambience: "quiet",

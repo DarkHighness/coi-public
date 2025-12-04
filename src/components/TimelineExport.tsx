@@ -13,7 +13,11 @@ import { useTranslation } from "react-i18next";
 import { getImage } from "../utils/imageStorage";
 
 export interface TimelineExportRef {
-  startExport: (startIndex?: number, endIndex?: number, segmentsPerImage?: number) => Promise<void>;
+  startExport: (
+    startIndex?: number,
+    endIndex?: number,
+    segmentsPerImage?: number,
+  ) => Promise<void>;
 }
 
 interface TimelineExportProps {
@@ -53,7 +57,11 @@ export const TimelineExport = forwardRef<
       ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
     useImperativeHandle(ref, () => ({
-      startExport: async (startIndex?: number, endIndex?: number, segmentsPerImage?: number) => {
+      startExport: async (
+        startIndex?: number,
+        endIndex?: number,
+        segmentsPerImage?: number,
+      ) => {
         if (segments.length === 0) return;
 
         onExportStart?.();
@@ -69,7 +77,10 @@ export const TimelineExport = forwardRef<
 
         try {
           for (let i = 0; i < totalChunks; i++) {
-            const chunk = selectedSegments.slice(i * chunkSize, (i + 1) * chunkSize);
+            const chunk = selectedSegments.slice(
+              i * chunkSize,
+              (i + 1) * chunkSize,
+            );
 
             // Resolve image IDs to URLs
             const chunkWithImages = await Promise.all(

@@ -36,7 +36,7 @@ import {
 } from "../utils/constants/atmosphere";
 import { getRAGService } from "../services/rag";
 import { extractDocumentsFromState } from "./useRAG";
-import { deriveHistory } from "../utils/storyUtils";
+import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import { useGameAction } from "./useGameAction";
 import { saveImage } from "../utils/imageStorage";
 
@@ -428,12 +428,19 @@ export const useGameEngine = () => {
       const accumulatedTokens = logs.reduce(
         (acc, log) => ({
           promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
-          completionTokens: acc.completionTokens + (log.usage?.completionTokens || 0),
+          completionTokens:
+            acc.completionTokens + (log.usage?.completionTokens || 0),
           totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
           cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
           cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
         }),
-        { promptTokens: 0, completionTokens: 0, totalTokens: 0, cacheRead: 0, cacheWrite: 0 },
+        {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
       );
 
       setGameState((prev) => ({
@@ -511,11 +518,18 @@ export const useGameEngine = () => {
         isProcessing: true, // Keep processing true while generating first turn
         logs: [...logs, ...prev.logs],
         tokenUsage: {
-          promptTokens: (prev.tokenUsage?.promptTokens || 0) + accumulatedTokens.promptTokens,
-          completionTokens: (prev.tokenUsage?.completionTokens || 0) + accumulatedTokens.completionTokens,
-          totalTokens: (prev.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
-          cacheRead: (prev.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
-          cacheWrite: (prev.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
+          promptTokens:
+            (prev.tokenUsage?.promptTokens || 0) +
+            accumulatedTokens.promptTokens,
+          completionTokens:
+            (prev.tokenUsage?.completionTokens || 0) +
+            accumulatedTokens.completionTokens,
+          totalTokens:
+            (prev.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
+          cacheRead:
+            (prev.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
+          cacheWrite:
+            (prev.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
         },
         generateImage: false,
         summaries: [],
@@ -683,12 +697,19 @@ export const useGameEngine = () => {
       const accumulatedTokens = logs.reduce(
         (acc, log) => ({
           promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
-          completionTokens: acc.completionTokens + (log.usage?.completionTokens || 0),
+          completionTokens:
+            acc.completionTokens + (log.usage?.completionTokens || 0),
           totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
           cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
           cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
         }),
-        { promptTokens: 0, completionTokens: 0, totalTokens: 0, cacheRead: 0, cacheWrite: 0 },
+        {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
       );
 
       setGameState((prev) => ({
@@ -759,11 +780,21 @@ export const useGameEngine = () => {
         isProcessing: true,
         logs: [...logs, ...gameStateRef.current.logs],
         tokenUsage: {
-          promptTokens: (gameStateRef.current.tokenUsage?.promptTokens || 0) + accumulatedTokens.promptTokens,
-          completionTokens: (gameStateRef.current.tokenUsage?.completionTokens || 0) + accumulatedTokens.completionTokens,
-          totalTokens: (gameStateRef.current.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
-          cacheRead: (gameStateRef.current.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
-          cacheWrite: (gameStateRef.current.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
+          promptTokens:
+            (gameStateRef.current.tokenUsage?.promptTokens || 0) +
+            accumulatedTokens.promptTokens,
+          completionTokens:
+            (gameStateRef.current.tokenUsage?.completionTokens || 0) +
+            accumulatedTokens.completionTokens,
+          totalTokens:
+            (gameStateRef.current.tokenUsage?.totalTokens || 0) +
+            accumulatedTokens.totalTokens,
+          cacheRead:
+            (gameStateRef.current.tokenUsage?.cacheRead || 0) +
+            accumulatedTokens.cacheRead,
+          cacheWrite:
+            (gameStateRef.current.tokenUsage?.cacheWrite || 0) +
+            accumulatedTokens.cacheWrite,
         },
         generateImage: false,
         summaries: [],
@@ -1123,10 +1154,20 @@ export const useGameEngine = () => {
 
     try {
       // Construct TurnContext
-      const recentHistory = deriveHistory(
+      // First get full history from summary point
+      const fullHistory = deriveHistory(
         gameStateRef.current.nodes,
         gameStateRef.current.activeNodeId,
         true, // Truncate to last summary
+      );
+
+      // Apply freshSegmentCount overlap for narrative continuity
+      const freshCount = aiSettings.freshSegmentCount ?? 4;
+      const lastSummarizedIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
+      const recentHistory = getSegmentsForAI(
+        fullHistory,
+        lastSummarizedIndex,
+        freshCount,
       );
 
       const context: TurnContext = {

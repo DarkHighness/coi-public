@@ -82,10 +82,10 @@ export const generateForceUpdate = async (
 
   // 2. 构建完整上下文
   const contextOptions: ContextBuilderOptions = {
-    outline: null, // Force update might not need outline, or we can pass it if available in TurnContext? TurnContext doesn't have outline.
+    outline: inputState.outline, // Include story outline for full context
     gameState: inputState,
     recentHistory: context.recentHistory,
-    summaries: [], // We don't have summaries in TurnContext? We might need to fetch them or just ignore for now.
+    summaries: inputState.summaries || [], // Include all summaries for story memory
     godMode: true, // Force update is effectively God Mode
     aliveEntities: inputState.aliveEntities,
   };
@@ -248,6 +248,14 @@ const runForceUpdateLoop = async (
       query: `[FORCE UPDATE - STAGE: QUERY]
 Query the current state to understand what needs to be changed.
 Available tools: query_*, rag_search (if enabled), complete_force_update
+
+**MEMORY TOOLS AVAILABLE**:
+- \`query_story\`: Search story history by keyword, location, or turn range
+- \`query_summary\`: Get the current story summary
+- \`query_recent_context\`: Get recent player-AI exchanges
+- \`query_turn\`: Get current fork ID and turn number
+
+Use these tools to verify the current state before making changes.
 - Call complete_force_update when ready to finalize changes`,
       add: `[FORCE UPDATE - STAGE: ADD]
 Add any new entities required by the command.
@@ -307,7 +315,10 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           systemInstruction,
           conversationHistory,
           effectiveSchema,
-          { tools: effectiveToolConfig },
+          {
+            tools: effectiveToolConfig,
+            logEndpoint: `forceUpdate-${currentStage}`,
+          },
         );
 
         result = resultData.result;
@@ -501,6 +512,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           db,
           accumulatedResponse,
           changedEntities,
+          inputState,
         );
 
         turnToolCalls.push({

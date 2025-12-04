@@ -7,7 +7,13 @@
  * - Preview the export range
  */
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -18,7 +24,11 @@ interface TimelineExportModalProps {
   segments: StorySegment[];
   isOpen: boolean;
   onClose: () => void;
-  onExport: (startIndex: number, endIndex: number, segmentsPerImage: number) => void;
+  onExport: (
+    startIndex: number,
+    endIndex: number,
+    segmentsPerImage: number,
+  ) => void;
   isExporting?: boolean;
 }
 
@@ -32,7 +42,16 @@ const TimelineSelectItem: React.FC<{
   isEnd: boolean;
   onSelect: (index: number, type: "start" | "end") => void;
   selectionMode: "start" | "end" | null;
-}> = ({ segment, index, isSelected, isInRange, isStart, isEnd, onSelect, selectionMode }) => {
+}> = ({
+  segment,
+  index,
+  isSelected,
+  isInRange,
+  isStart,
+  isEnd,
+  onSelect,
+  selectionMode,
+}) => {
   const { url: imageUrl } = useImageURL(segment.imageId);
   const displayUrl = imageUrl || segment.imageUrl;
   const { t } = useTranslation();
@@ -55,10 +74,12 @@ const TimelineSelectItem: React.FC<{
       `}
     >
       {/* Index Badge */}
-      <div className={`
+      <div
+        className={`
         w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0
         ${isInRange ? "bg-theme-primary text-theme-bg" : "bg-theme-muted/30 text-theme-muted"}
-      `}>
+      `}
+      >
         {index + 1}
       </div>
 
@@ -69,8 +90,18 @@ const TimelineSelectItem: React.FC<{
         </div>
       ) : (
         <div className="w-12 h-8 rounded bg-theme-bg/50 flex items-center justify-center shrink-0">
-          <svg className="w-4 h-4 text-theme-muted/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <svg
+            className="w-4 h-4 text-theme-muted/50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
         </div>
       )}
@@ -78,24 +109,32 @@ const TimelineSelectItem: React.FC<{
       {/* Content Preview */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-[10px] text-theme-muted mb-0.5">
-          <span className="font-mono">{segment.stateSnapshot?.time || "—"}</span>
+          <span className="font-mono">
+            {segment.stateSnapshot?.time || "—"}
+          </span>
           {segment.stateSnapshot?.currentLocation && (
             <>
               <span>•</span>
-              <span className="truncate">{segment.stateSnapshot.currentLocation}</span>
+              <span className="truncate">
+                {segment.stateSnapshot.currentLocation}
+              </span>
             </>
           )}
         </div>
-        <p className="text-xs text-theme-text line-clamp-1">{segment.text.slice(0, 60)}...</p>
+        <p className="text-xs text-theme-text line-clamp-1">
+          {segment.text.slice(0, 60)}...
+        </p>
       </div>
 
       {/* Selection Indicator */}
       {(isStart || isEnd) && (
-        <div className={`
+        <div
+          className={`
           px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0
           ${isStart ? "bg-green-500/20 text-green-400" : ""}
           ${isEnd ? "bg-red-500/20 text-red-400" : ""}
-        `}>
+        `}
+        >
           {isStart ? t("timelineExport.start") : t("timelineExport.end")}
         </div>
       )}
@@ -112,7 +151,15 @@ const RangeSlider: React.FC<{
   onStartChange: (value: number) => void;
   onEndChange: (value: number) => void;
   segments: StorySegment[];
-}> = ({ min, max, startValue, endValue, onStartChange, onEndChange, segments }) => {
+}> = ({
+  min,
+  max,
+  startValue,
+  endValue,
+  onStartChange,
+  onEndChange,
+  segments,
+}) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<"start" | "end" | null>(null);
   const { t } = useTranslation();
@@ -125,7 +172,10 @@ const RangeSlider: React.FC<{
   const getValueFromPosition = (clientX: number) => {
     if (!trackRef.current) return min;
     const rect = trackRef.current.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const percent = Math.max(
+      0,
+      Math.min(1, (clientX - rect.left) / rect.width),
+    );
     return Math.round(min + percent * (max - min));
   };
 
@@ -134,15 +184,18 @@ const RangeSlider: React.FC<{
     setDragging(type);
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
-    const value = getValueFromPosition(e.clientX);
-    if (dragging === "start") {
-      onStartChange(Math.min(value, endValue));
-    } else {
-      onEndChange(Math.max(value, startValue));
-    }
-  }, [dragging, startValue, endValue, onStartChange, onEndChange]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!dragging) return;
+      const value = getValueFromPosition(e.clientX);
+      if (dragging === "start") {
+        onStartChange(Math.min(value, endValue));
+      } else {
+        onEndChange(Math.max(value, startValue));
+      }
+    },
+    [dragging, startValue, endValue, onStartChange, onEndChange],
+  );
 
   const handleMouseUp = useCallback(() => {
     setDragging(null);
@@ -165,15 +218,18 @@ const RangeSlider: React.FC<{
     setDragging(type);
   };
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!dragging || e.touches.length === 0) return;
-    const value = getValueFromPosition(e.touches[0].clientX);
-    if (dragging === "start") {
-      onStartChange(Math.min(value, endValue));
-    } else {
-      onEndChange(Math.max(value, startValue));
-    }
-  }, [dragging, startValue, endValue, onStartChange, onEndChange]);
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!dragging || e.touches.length === 0) return;
+      const value = getValueFromPosition(e.touches[0].clientX);
+      if (dragging === "start") {
+        onStartChange(Math.min(value, endValue));
+      } else {
+        onEndChange(Math.max(value, startValue));
+      }
+    },
+    [dragging, startValue, endValue, onStartChange, onEndChange],
+  );
 
   const handleTouchEnd = useCallback(() => {
     setDragging(null);
@@ -227,7 +283,10 @@ const RangeSlider: React.FC<{
             ${dragging === "start" ? "scale-125 cursor-grabbing" : "hover:scale-110"}
             transition-transform
           `}
-          style={{ left: `${startPos}%`, transform: `translateX(-50%) translateY(-50%)` }}
+          style={{
+            left: `${startPos}%`,
+            transform: `translateX(-50%) translateY(-50%)`,
+          }}
           onMouseDown={handleMouseDown("start")}
           onTouchStart={handleTouchStart("start")}
         />
@@ -239,7 +298,10 @@ const RangeSlider: React.FC<{
             ${dragging === "end" ? "scale-125 cursor-grabbing" : "hover:scale-110"}
             transition-transform
           `}
-          style={{ left: `${endPos}%`, transform: `translateX(-50%) translateY(-50%)` }}
+          style={{
+            left: `${endPos}%`,
+            transform: `translateX(-50%) translateY(-50%)`,
+          }}
           onMouseDown={handleMouseDown("end")}
           onTouchStart={handleTouchStart("end")}
         />
@@ -275,7 +337,9 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
   const [startIndex, setStartIndex] = useState(0);
   const [endIndex, setEndIndex] = useState(Math.max(0, segments.length - 1));
   const [segmentsPerImage, setSegmentsPerImage] = useState(10);
-  const [selectionMode, setSelectionMode] = useState<"start" | "end" | null>(null);
+  const [selectionMode, setSelectionMode] = useState<"start" | "end" | null>(
+    null,
+  );
   const [viewMode, setViewMode] = useState<"slider" | "list">("slider");
 
   // Reset on open
@@ -295,14 +359,17 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
   }, [startIndex, endIndex, segmentsPerImage]);
 
   // Handle list item selection
-  const handleListSelect = useCallback((index: number, type: "start" | "end") => {
-    if (type === "start") {
-      setStartIndex(Math.min(index, endIndex));
-    } else {
-      setEndIndex(Math.max(index, startIndex));
-    }
-    setSelectionMode(null);
-  }, [startIndex, endIndex]);
+  const handleListSelect = useCallback(
+    (index: number, type: "start" | "end") => {
+      if (type === "start") {
+        setStartIndex(Math.min(index, endIndex));
+      } else {
+        setEndIndex(Math.max(index, startIndex));
+      }
+      setSelectionMode(null);
+    },
+    [startIndex, endIndex],
+  );
 
   // Handle export
   const handleExport = () => {
@@ -335,8 +402,18 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
           <div className="p-4 border-b border-theme-border flex justify-between items-center bg-gradient-to-r from-theme-surface-highlight/50 to-transparent shrink-0">
             <div>
               <h2 className="text-lg font-bold text-theme-primary flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
                 {t("timelineExport.title")}
               </h2>
@@ -349,8 +426,18 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
               disabled={isExporting}
               className="p-2 hover:bg-theme-surface-highlight rounded-full transition-colors disabled:opacity-50"
             >
-              <svg className="w-5 h-5 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5 text-theme-muted"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -364,14 +451,26 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
                   onClick={() => setViewMode("slider")}
                   className={`
                     px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                    ${viewMode === "slider"
-                      ? "bg-theme-primary text-theme-bg"
-                      : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"}
+                    ${
+                      viewMode === "slider"
+                        ? "bg-theme-primary text-theme-bg"
+                        : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"
+                    }
                   `}
                 >
                   <span className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                      />
                     </svg>
                     {t("timelineExport.sliderView")}
                   </span>
@@ -380,14 +479,26 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
                   onClick={() => setViewMode("list")}
                   className={`
                     px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                    ${viewMode === "list"
-                      ? "bg-theme-primary text-theme-bg"
-                      : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"}
+                    ${
+                      viewMode === "list"
+                        ? "bg-theme-primary text-theme-bg"
+                        : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"
+                    }
                   `}
                 >
                   <span className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                      />
                     </svg>
                     {t("timelineExport.listView")}
                   </span>
@@ -407,7 +518,7 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
               </div>
 
               {/* Slider View (Desktop) */}
-              {(viewMode === "slider" && !isMobile) && (
+              {viewMode === "slider" && !isMobile && (
                 <RangeSlider
                   min={0}
                   max={segments.length - 1}
@@ -425,12 +536,18 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
                   {/* Selection Mode Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setSelectionMode(selectionMode === "start" ? null : "start")}
+                      onClick={() =>
+                        setSelectionMode(
+                          selectionMode === "start" ? null : "start",
+                        )
+                      }
                       className={`
                         flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2
-                        ${selectionMode === "start"
-                          ? "bg-green-500/20 text-green-400 ring-2 ring-green-500/50"
-                          : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"}
+                        ${
+                          selectionMode === "start"
+                            ? "bg-green-500/20 text-green-400 ring-2 ring-green-500/50"
+                            : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"
+                        }
                       `}
                     >
                       <span className="w-2 h-2 rounded-full bg-green-500" />
@@ -438,12 +555,16 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
                       <span className="font-mono">#{startIndex + 1}</span>
                     </button>
                     <button
-                      onClick={() => setSelectionMode(selectionMode === "end" ? null : "end")}
+                      onClick={() =>
+                        setSelectionMode(selectionMode === "end" ? null : "end")
+                      }
                       className={`
                         flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2
-                        ${selectionMode === "end"
-                          ? "bg-red-500/20 text-red-400 ring-2 ring-red-500/50"
-                          : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"}
+                        ${
+                          selectionMode === "end"
+                            ? "bg-red-500/20 text-red-400 ring-2 ring-red-500/50"
+                            : "bg-theme-surface-highlight text-theme-muted hover:text-theme-text"
+                        }
                       `}
                     >
                       <span className="w-2 h-2 rounded-full bg-red-500" />
@@ -503,18 +624,46 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
               </h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-4 h-4 text-theme-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
-                  <span className="text-theme-muted">{t("timelineExport.selectedSegments")}:</span>
-                  <span className="font-mono text-theme-text font-bold">{previewStats.selectedCount}</span>
+                  <span className="text-theme-muted">
+                    {t("timelineExport.selectedSegments")}:
+                  </span>
+                  <span className="font-mono text-theme-text font-bold">
+                    {previewStats.selectedCount}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <svg
+                    className="w-4 h-4 text-theme-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
                   </svg>
-                  <span className="text-theme-muted">{t("timelineExport.outputImages")}:</span>
-                  <span className="font-mono text-theme-text font-bold">{previewStats.imageCount}</span>
+                  <span className="text-theme-muted">
+                    {t("timelineExport.outputImages")}:
+                  </span>
+                  <span className="font-mono text-theme-text font-bold">
+                    {previewStats.imageCount}
+                  </span>
                 </div>
               </div>
               <p className="text-xs text-theme-muted mt-3">
@@ -544,15 +693,37 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
               {isExporting ? (
                 <>
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   {t("timelineExport.exporting")}
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
                   </svg>
                   {t("timelineExport.exportButton")}
                 </>
@@ -562,7 +733,7 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
         </motion.div>
       </motion.div>
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 };
 

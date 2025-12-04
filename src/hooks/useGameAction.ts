@@ -11,7 +11,7 @@ import {
 import { generateAdventureTurn } from "../services/aiService";
 import { LANG_MAP } from "../utils/constants";
 import { normalizeAliveEntities } from "../utils/snapshotManager";
-import { deriveHistory } from "../utils/storyUtils";
+import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import {
   updateProviderStats,
   handleForking,
@@ -206,7 +206,7 @@ export const useGameAction = ({
           lastIndex,
           summarySnapshot,
           contextNodes,
-          log: summaryLog,
+          logs: summaryLogs,
         } = await handleSummarization(
           gameStateRef.current,
           effectiveParentId,
@@ -220,26 +220,43 @@ export const useGameAction = ({
         );
 
         // Update logs if summarization occurred
-        if (summaryLog) {
+        if (summaryLogs && summaryLogs.length > 0) {
+          // Aggregate usage from all summary logs
+          const aggregatedUsage = summaryLogs.reduce(
+            (acc, log) => ({
+              promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
+              completionTokens:
+                acc.completionTokens + (log.usage?.completionTokens || 0),
+              totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
+              cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
+              cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
+            }),
+            {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+            },
+          );
+
           setGameState((prev) => ({
             ...prev,
-            logs: [summaryLog, ...prev.logs].slice(0, 100),
+            logs: [...summaryLogs, ...prev.logs].slice(0, 100),
             tokenUsage: {
               promptTokens:
                 (prev.tokenUsage?.promptTokens || 0) +
-                (summaryLog.usage?.promptTokens || 0),
+                aggregatedUsage.promptTokens,
               completionTokens:
                 (prev.tokenUsage?.completionTokens || 0) +
-                (summaryLog.usage?.completionTokens || 0),
+                aggregatedUsage.completionTokens,
               totalTokens:
                 (prev.tokenUsage?.totalTokens || 0) +
-                (summaryLog.usage?.totalTokens || 0),
+                aggregatedUsage.totalTokens,
               cacheRead:
-                (prev.tokenUsage?.cacheRead || 0) +
-                (summaryLog.usage?.cacheRead || 0),
+                (prev.tokenUsage?.cacheRead || 0) + aggregatedUsage.cacheRead,
               cacheWrite:
-                (prev.tokenUsage?.cacheWrite || 0) +
-                (summaryLog.usage?.cacheWrite || 0),
+                (prev.tokenUsage?.cacheWrite || 0) + aggregatedUsage.cacheWrite,
             },
           }));
 
@@ -247,7 +264,7 @@ export const useGameAction = ({
             aiSettings,
             handleSaveSettings,
             aiSettings.story.providerId,
-            summaryLog.usage,
+            aggregatedUsage,
           );
         }
 
@@ -276,11 +293,14 @@ export const useGameAction = ({
           });
         }
 
-        // We send everything from the last summarized point onwards
-        // But keep extra fresh segments for narrative continuity even after summarization
+        // Apply freshSegmentCount overlap for narrative continuity
+        // This ensures AI sees some segments BEFORE the summary point
         const freshCount = aiSettings.freshSegmentCount ?? 4;
-        const startIndex = Math.max(0, lastIndex - freshCount);
-        let segmentsToSend = contextNodes.slice(startIndex);
+        const segmentsToSend = getSegmentsForAI(
+          contextNodes,
+          lastIndex,
+          freshCount,
+        );
 
         // Generate Turn - pass GameState directly with TurnContext
         const {

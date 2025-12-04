@@ -200,7 +200,7 @@ export const translateGameContent = async (
       sys,
       contents,
       translationSchema,
-      { settings }, // ✅ 添加缺失的 settings
+      { settings, logEndpoint: "translation" },
     );
 
     // 合并翻译结果和原始 segments
@@ -436,7 +436,7 @@ export const generateVeoScript = async (
       sys,
       contents,
       undefined, // no schema for script generation
-      { settings }, // ✅ 添加缺失的 settings
+      { settings, logEndpoint: "veoScript" },
     );
     // result should be the text string since no schema was provided
     return typeof result === "string" ? result : JSON.stringify(result);

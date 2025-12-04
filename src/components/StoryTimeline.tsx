@@ -42,7 +42,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     (s) => s.role === "model" || s.role === "system",
   );
   // Get export segments based on settings
-  const exportSegments = exportIncludeUserActions ? segments : narrativeSegments;
+  const exportSegments = exportIncludeUserActions
+    ? segments
+    : narrativeSegments;
 
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
   // Use envTheme directly from story theme for consistent visual styling
@@ -75,9 +77,17 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     setShowExportModal(true);
   };
 
-  const handleExport = (startIndex: number, endIndex: number, segmentsPerImage: number) => {
+  const handleExport = (
+    startIndex: number,
+    endIndex: number,
+    segmentsPerImage: number,
+  ) => {
     setShowExportModal(false);
-    timelineExportRef.current?.startExport(startIndex, endIndex, segmentsPerImage);
+    timelineExportRef.current?.startExport(
+      startIndex,
+      endIndex,
+      segmentsPerImage,
+    );
   };
 
   return (

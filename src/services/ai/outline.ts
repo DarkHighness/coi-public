@@ -4,6 +4,8 @@ import {
   StoryOutline,
   PartialStoryOutline,
   StorySummary,
+  StorySegment,
+  GameState,
 } from "../../types";
 
 import {
@@ -25,7 +27,6 @@ import {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
-  storySummarySchema,
 } from "../schemas";
 
 import {
@@ -39,7 +40,6 @@ import {
   getOutlinePhase7Prompt,
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
-  getSummaryPrompt,
 } from "../prompts/index";
 
 import { THEMES, OUTLINE_PHASES } from "../../utils/constants";
@@ -267,7 +267,7 @@ export const generateStoryOutlinePhased = async (
         systemInstruction,
         conversationHistory,
         schema,
-        { settings },
+        { settings, logEndpoint: `outline-phase${phaseNum}` },
       );
 
       // Update partial outline
@@ -436,50 +436,60 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
 }
 
 /**
- * 总结上下文
+ * 总结上下文 (Agentic Loop 版本)
+ *
+ * 采用 agentic loop 模式：
+ * - 初始只传递上一轮摘要和本轮对话概要
+ * - AI 自主决定需要查询什么信息
+ * - 两个阶段：query（查询）和 finish（完成）
+ *
  * @param previousSummary 之前的摘要
- * @param newTurns 新的回合内容
+ * @param segmentsToSummarize 需要总结的片段
+ * @param nodeRange 节点范围
  * @param language 语言
  * @param settings 设置对象（必需）
+ * @param gameState 完整游戏状态（用于查询）
  */
 export const summarizeContext = async (
-  previousSummary: StorySummary,
-  newTurns: string,
+  previousSummary: StorySummary | null,
+  segmentsToSummarize: StorySegment[],
+  nodeRange: { fromIndex: number; toIndex: number },
   language: string,
   settings: AISettings,
-): Promise<{ summary: StorySummary | null; log: LogEntry }> => {
-  const providerInfo = getProviderConfig(settings, "story");
-  if (!providerInfo) {
-    throw new Error("Story provider not configured");
-  }
-  const { instance, modelId } = providerInfo;
-  const prompt = getSummaryPrompt(previousSummary, newTurns, language);
-  const sys =
-    "You are a diligent chronicler summarizing events. Focus on facts and cause-and-effect, tracking changes in quests, relationships, inventory, character status, and locations. Output strictly valid JSON.";
-  const contents = [{ role: "user", parts: [{ text: prompt }] }];
+  gameState: GameState,
+): Promise<{ summary: StorySummary | null; logs: LogEntry[] }> => {
+  const { runSummaryAgenticLoop } = await import("./summary");
 
   try {
-    const { result, log } = await generateContentUnified(
-      instance.protocol,
-      modelId,
-      sys,
-      contents,
-      storySummarySchema,
-      { settings },
-    );
-    return { summary: result as StorySummary, log: log! };
+    const result = await runSummaryAgenticLoop({
+      previousSummary,
+      segmentsToSummarize,
+      gameState,
+      nodeRange,
+      language,
+      settings,
+    });
+
+    return {
+      summary: result.summary,
+      logs: result.logs,
+    };
   } catch (e) {
     const error = e instanceof Error ? e : new Error(String(e));
-    console.error("Summary failed", error);
+    console.error("Summary agentic loop failed", error);
+
+    const providerInfo = getProviderConfig(settings, "story");
     return {
       summary: null,
-      log: createLogEntry(
-        instance.protocol,
-        modelId,
-        "summary",
-        { error: error.message },
-        null,
-      ),
+      logs: [
+        createLogEntry(
+          providerInfo?.instance.protocol || "openai",
+          providerInfo?.modelId || "unknown",
+          "summary-error",
+          { error: error.message },
+          null,
+        ),
+      ],
     };
   }
 };

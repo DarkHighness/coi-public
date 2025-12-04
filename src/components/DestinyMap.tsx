@@ -515,7 +515,9 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                       }}
                     >
                       {/* Use plain text instead of MarkdownText for better SVG compatibility */}
-                      {node.segment.text.replace(/[#*_`~\[\]]/g, "").slice(0, 100)}
+                      {node.segment.text
+                        .replace(/[#*_`~\[\]]/g, "")
+                        .slice(0, 100)}
                     </p>
                   </div>
                 </foreignObject>

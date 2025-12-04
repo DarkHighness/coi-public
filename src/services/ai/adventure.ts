@@ -488,11 +488,25 @@ export const runAgenticLoop = async (
   const addStageInstruction = (stage: AgentStage) => {
     const instructions: Record<AgentStage, string> = {
       query: `[STAGE: QUERY]
+**MEMORY CHECK - DO THIS FIRST**:
+Before proceeding, consider if you need to recall story history:
+- Use \`query_story\` to search for past events, dialogues, or details by keyword/location
+- Use \`query_summary\` to get the overall story summary (visible + hidden layers)
+- Use \`query_recent_context\` to see the last few turns of player-AI exchanges
+- Use \`query_turn\` to check current fork ID and turn number
+
+**WHEN TO QUERY**:
+- Unsure what happened earlier? Query first.
+- Referencing an NPC you haven't seen recently? Query their last appearance.
+- Continuing a plot thread? Query to verify its current state.
+- Player mentions something from the past? Query to confirm details.
+
 Available tools: query_*, rag_search, next_stage, finish_turn
-- Query information you need using query_* or rag_search
-- Call next_stage (optionally with target) to proceed to next stage
-- Call finish_turn to complete the turn early if you have enough context
-- Tip: You can jump directly to any stage using next_stage(target="add"|"remove"|"update"|"narrative")`,
+
+After querying (or if you have sufficient context):
+- Call next_stage (optionally with target) to proceed
+- Call finish_turn to complete the turn early if ready
+`,
       add: `[STAGE: ADD]
 Available tools: add_*, next_stage, finish_turn
 - Add new entities (items, NPCs, locations, etc.)
@@ -556,7 +570,11 @@ Consider setting nextInitialStage if you know what stage would be best for the n
           systemInstruction,
           conversationHistory,
           effectiveSchema,
-          { tools: effectiveToolConfig, generationDetails },
+          {
+            tools: effectiveToolConfig,
+            generationDetails,
+            logEndpoint: `adventure-${currentStage}`,
+          },
         );
 
         result = resultData.result;
@@ -757,6 +775,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
             db,
             accumulatedResponse,
             changedEntities,
+            inputState,
           );
         }
 
@@ -922,6 +941,29 @@ function trackChangedEntity(
 }
 
 /**
+ * Wraps query results with visibility hints for AI.
+ * This makes it explicit which fields are visible to the protagonist vs. GM-only.
+ */
+function wrapWithVisibilityHints<T>(
+  result: { success: boolean; data?: T; message?: string; error?: string },
+  entityType: string,
+): unknown {
+  if (!result.success) return result;
+
+  return {
+    ...result,
+    _visibilityGuide: {
+      explanation: `Each ${entityType} has 'visible' (protagonist's knowledge) and 'hidden' (GM-only truth) layers.`,
+      visibleFields: "Information the protagonist knows or perceives",
+      hiddenFields:
+        "True information only the GM (you) knows - use for consistency but don't reveal to player unless unlocked",
+      unlockedFlag:
+        "When 'unlocked: true', the protagonist has discovered the hidden truth",
+    },
+  };
+}
+
+/**
  * Execute tool calls for the staged agentic loop
  * Supports both new separated tools (add_*, remove_*, update_*) and legacy combined tools
  */
@@ -931,56 +973,112 @@ export function executeToolCall(
   db: GameDatabase,
   accumulatedResponse: GameResponse,
   changedEntities?: Map<string, string>,
+  gameState?: GameState,
 ): unknown {
   // ============================================================================
-  // QUERY TOOLS
+  // STORY MEMORY QUERY TOOLS
+  // ============================================================================
+  if (name === "query_story") {
+    return executeQueryStory(args, gameState);
+  }
+  if (name === "query_turn") {
+    return executeQueryTurn(gameState);
+  }
+  if (name === "query_summary") {
+    return executeQuerySummary(args, gameState);
+  }
+  if (name === "query_recent_context") {
+    return executeQueryRecentContext(args, gameState);
+  }
+
+  // ============================================================================
+  // QUERY TOOLS (with visibility hints)
   // ============================================================================
   if (name === "query_inventory") {
-    return db.query("inventory", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("inventory", args.query as string),
+      "item",
+    );
   }
   if (name === "query_relationships") {
-    return db.query("relationship", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("relationship", args.query as string),
+      "NPC/relationship",
+    );
   }
   if (name === "query_locations") {
-    return db.query("location", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("location", args.query as string),
+      "location",
+    );
   }
   if (name === "query_quests") {
-    return db.query("quest", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("quest", args.query as string),
+      "quest",
+    );
   }
   if (name === "query_knowledge") {
-    return db.query("knowledge", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("knowledge", args.query as string),
+      "knowledge entry",
+    );
   }
   if (name === "query_timeline") {
-    return db.query("timeline", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("timeline", args.query as string),
+      "timeline event",
+    );
   }
   if (name === "query_causal_chain") {
-    return db.query("causal_chain", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("causal_chain", args.query as string),
+      "causal chain",
+    );
   }
   if (name === "query_factions") {
-    return db.query("faction", args.query as string);
+    return wrapWithVisibilityHints(
+      db.query("faction", args.query as string),
+      "faction",
+    );
   }
   if (name === "query_global") {
-    return db.query("global");
+    return wrapWithVisibilityHints(db.query("global"), "global state");
   }
   // Character query tools
   if (name === "query_character_profile") {
-    return db.query("character", "profile");
+    return wrapWithVisibilityHints(
+      db.query("character", "profile"),
+      "character profile",
+    );
   }
   if (name === "query_character_attributes") {
     const typedArgs = getTypedArgs("query_character_attributes", args);
-    return db.query("character", "attributes", typedArgs.name ?? undefined);
+    return wrapWithVisibilityHints(
+      db.query("character", "attributes", typedArgs.name ?? undefined),
+      "character attribute",
+    );
   }
   if (name === "query_character_skills") {
     const typedArgs = getTypedArgs("query_character_skills", args);
-    return db.query("character", "skills", typedArgs.query ?? undefined);
+    return wrapWithVisibilityHints(
+      db.query("character", "skills", typedArgs.query ?? undefined),
+      "character skill",
+    );
   }
   if (name === "query_character_conditions") {
     const typedArgs = getTypedArgs("query_character_conditions", args);
-    return db.query("character", "conditions", typedArgs.query ?? undefined);
+    return wrapWithVisibilityHints(
+      db.query("character", "conditions", typedArgs.query ?? undefined),
+      "character condition",
+    );
   }
   if (name === "query_character_traits") {
     const typedArgs = getTypedArgs("query_character_traits", args);
-    return db.query("character", "hiddenTraits", typedArgs.query ?? undefined);
+    return wrapWithVisibilityHints(
+      db.query("character", "hiddenTraits", typedArgs.query ?? undefined),
+      "character trait",
+    );
   }
   // RAG search
   if (name === "rag_search") {
@@ -1641,4 +1739,449 @@ export async function executeRagSearch(
       error: `RAG search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
+}
+
+// ============================================================================
+// STORY MEMORY QUERY TOOL IMPLEMENTATIONS
+// ============================================================================
+
+interface QueryStoryParams {
+  keyword?: string;
+  location?: string;
+  inGameTime?: string;
+  turnRange?: {
+    start?: number;
+    end?: number;
+  };
+  order?: "asc" | "desc";
+  limit?: number;
+  page?: number;
+  includeContext?: boolean;
+}
+
+/**
+ * Story segment result with clear visibility markers.
+ * All fields here are visible to AI (GM perspective).
+ */
+interface StorySegmentResult {
+  turnNumber: number;
+  /** In-game time when this segment occurred (visible to protagonist) */
+  inGameTime?: string;
+  /** Location where this segment occurred (visible to protagonist) */
+  location?: string;
+  /** The narrative text (visible to protagonist) */
+  text: string;
+  playerAction?: string;
+  segmentId: string;
+}
+
+/**
+ * Execute query_story tool - search through story history
+ */
+function executeQueryStory(
+  args: Record<string, unknown>,
+  gameState?: GameState,
+): unknown {
+  if (!gameState) {
+    return {
+      success: false,
+      error: "Game state not available",
+    };
+  }
+
+  const params = args as QueryStoryParams;
+  const {
+    keyword,
+    location,
+    inGameTime,
+    turnRange,
+    order = "desc",
+    limit = 10,
+    page = 1,
+    includeContext = true,
+  } = params;
+
+  const currentFork = gameState.currentFork || [];
+
+  // Filter segments: only model and command roles (narrative content)
+  const narrativeSegments = currentFork.filter(
+    (seg) => seg.role === "model" || seg.role === "command",
+  );
+
+  // Helper for regex matching
+  const matchesPattern = (
+    text: string | undefined,
+    pattern: string,
+  ): boolean => {
+    if (!text) return false;
+    try {
+      const regex = new RegExp(pattern, "i");
+      return regex.test(text);
+    } catch {
+      return text.toLowerCase().includes(pattern.toLowerCase());
+    }
+  };
+
+  // Build filter function
+  const matchesFilter = (segment: StorySegment, index: number): boolean => {
+    // Keyword filter (supports regex)
+    if (keyword && !matchesPattern(segment.text, keyword)) {
+      return false;
+    }
+
+    // Location filter (supports regex)
+    if (
+      location &&
+      !matchesPattern(segment.stateSnapshot?.currentLocation, location)
+    ) {
+      return false;
+    }
+
+    // In-game time filter (supports regex/keyword matching)
+    if (
+      inGameTime &&
+      !matchesPattern(segment.stateSnapshot?.time, inGameTime)
+    ) {
+      return false;
+    }
+
+    // Turn range filter
+    const turnNum = segment.segmentIdx ?? index;
+    if (turnRange) {
+      if (turnRange.start !== undefined && turnNum < turnRange.start) {
+        return false;
+      }
+      if (turnRange.end !== undefined && turnNum > turnRange.end) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Filter and collect results
+  const filteredSegments: Array<{
+    segment: StorySegment;
+    index: number;
+  }> = [];
+
+  narrativeSegments.forEach((segment) => {
+    const originalIndex = currentFork.findIndex((s) => s.id === segment.id);
+    if (matchesFilter(segment, originalIndex)) {
+      filteredSegments.push({ segment, index: originalIndex });
+    }
+  });
+
+  // Sort by turn number
+  filteredSegments.sort((a, b) => {
+    const turnA = a.segment.segmentIdx ?? a.index;
+    const turnB = b.segment.segmentIdx ?? b.index;
+    return order === "asc" ? turnA - turnB : turnB - turnA;
+  });
+
+  // Pagination
+  const totalResults = filteredSegments.length;
+  const totalPages = Math.ceil(totalResults / limit);
+  const startIndex = (page - 1) * limit;
+  const paginatedResults = filteredSegments.slice(
+    startIndex,
+    startIndex + limit,
+  );
+
+  // Build result objects
+  const results: StorySegmentResult[] = paginatedResults.map(
+    ({ segment, index }) => {
+      const result: StorySegmentResult = {
+        turnNumber: segment.segmentIdx ?? index,
+        inGameTime: segment.stateSnapshot?.time,
+        location: segment.stateSnapshot?.currentLocation,
+        text: segment.text,
+        segmentId: segment.id,
+      };
+
+      // Include following player action for context
+      if (includeContext && index + 1 < currentFork.length) {
+        const nextSegment = currentFork[index + 1];
+        if (nextSegment && nextSegment.role === "user") {
+          result.playerAction = nextSegment.text;
+        }
+      }
+
+      return result;
+    },
+  );
+
+  return {
+    success: true,
+    query: {
+      keyword,
+      location,
+      inGameTime,
+      turnRange,
+      order,
+    },
+    pagination: {
+      page,
+      limit,
+      totalResults,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+    results,
+    hint:
+      results.length === 0
+        ? "No matching segments found. Try broadening your search criteria."
+        : `Found ${totalResults} matching segments. Showing page ${page} of ${totalPages}.`,
+  };
+}
+
+/**
+ * Execute query_turn tool - get current fork ID and turn number
+ */
+function executeQueryTurn(gameState?: GameState): unknown {
+  if (!gameState) {
+    return {
+      success: false,
+      error: "Game state not available",
+    };
+  }
+
+  // Get current summary info
+  const latestSummary = gameState.summaries?.length
+    ? gameState.summaries[gameState.summaries.length - 1]
+    : null;
+
+  return {
+    success: true,
+    /** Current fork ID (for branching story tracking) */
+    forkId: gameState.forkId ?? 0,
+    /** Current turn number in this playthrough */
+    turnNumber: gameState.turnNumber ?? 0,
+    /** Total segments in current fork */
+    totalSegments: gameState.currentFork?.length ?? 0,
+    /** ID of the most recent node */
+    currentNodeId: gameState.currentFork?.length
+      ? gameState.currentFork[gameState.currentFork.length - 1].id
+      : undefined,
+    /** Number of summaries created so far */
+    totalSummaries: gameState.summaries?.length ?? 0,
+    /** Brief info about latest summary (use query_summary for full details) */
+    latestSummaryBrief: latestSummary
+      ? {
+          nodeRange: latestSummary.nodeRange,
+          timeRange: latestSummary.timeRange,
+          displayText:
+            latestSummary.displayText?.substring(0, 100) +
+            (latestSummary.displayText?.length > 100 ? "..." : ""),
+        }
+      : null,
+    hint: `Turn ${gameState.turnNumber ?? 0}, Fork ${gameState.forkId ?? 0}. ${gameState.summaries?.length ?? 0} summaries available. Use query_summary for detailed story context.`,
+  };
+}
+
+/**
+ * Execute query_summary tool - search through story summaries
+ */
+function executeQuerySummary(
+  args: Record<string, unknown>,
+  gameState?: GameState,
+): unknown {
+  if (!gameState) {
+    return {
+      success: false,
+      error: "Game state not available",
+    };
+  }
+
+  const summaries = gameState.summaries || [];
+
+  if (summaries.length === 0) {
+    return {
+      success: true,
+      hasSummary: false,
+      totalSummaries: 0,
+      results: [],
+      message:
+        "No summaries available yet. The story is still in early stages.",
+    };
+  }
+
+  const {
+    keyword,
+    nodeRange,
+    limit = 5,
+    order = "desc",
+  } = args as {
+    keyword?: string;
+    nodeRange?: { start?: number; end?: number };
+    limit?: number;
+    order?: "asc" | "desc";
+  };
+
+  // Helper for regex matching
+  const matchesPattern = (
+    text: string | undefined,
+    pattern: string,
+  ): boolean => {
+    if (!text) return false;
+    try {
+      const regex = new RegExp(pattern, "i");
+      return regex.test(text);
+    } catch {
+      return text.toLowerCase().includes(pattern.toLowerCase());
+    }
+  };
+
+  // Filter summaries
+  let filteredSummaries = summaries.map((summary, index) => ({
+    summary,
+    index,
+  }));
+
+  // Keyword filter - search in all text fields
+  if (keyword) {
+    filteredSummaries = filteredSummaries.filter(({ summary }) => {
+      const displayText = summary.displayText || "";
+      const visibleText =
+        typeof summary.visible === "string"
+          ? summary.visible
+          : JSON.stringify(summary.visible || "");
+      const hiddenText =
+        typeof summary.hidden === "string"
+          ? summary.hidden
+          : JSON.stringify(summary.hidden || "");
+      const allText = `${displayText} ${visibleText} ${hiddenText}`;
+      return matchesPattern(allText, keyword);
+    });
+  }
+
+  // Node range filter
+  if (nodeRange) {
+    filteredSummaries = filteredSummaries.filter(({ summary }) => {
+      const summaryRange = summary.nodeRange;
+      if (!summaryRange) return true; // Include if no range info
+      if (
+        nodeRange.start !== undefined &&
+        summaryRange.toIndex < nodeRange.start
+      ) {
+        return false;
+      }
+      if (
+        nodeRange.end !== undefined &&
+        summaryRange.fromIndex > nodeRange.end
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Sort
+  if (order === "asc") {
+    filteredSummaries.sort((a, b) => a.index - b.index);
+  } else {
+    filteredSummaries.sort((a, b) => b.index - a.index);
+  }
+
+  // Limit results
+  const limitedResults = filteredSummaries.slice(0, limit);
+
+  // Format results with clear visible/hidden markers
+  const results = limitedResults.map(({ summary, index }) => ({
+    summaryIndex: index,
+    /** Short display text for UI (visible to protagonist) */
+    displayText: summary.displayText || "",
+    /**
+     * VISIBLE LAYER - Information the protagonist knows/experienced
+     * Contains: narrative, majorEvents, characterDevelopment, worldState
+     */
+    visible: summary.visible,
+    /**
+     * HIDDEN LAYER - GM-only information the protagonist does NOT know
+     * Contains: truthNarrative, hiddenPlots, npcActions, worldTruth, unrevealed
+     * Use this to maintain narrative consistency and plan future reveals
+     */
+    hidden: summary.hidden,
+    /** Node range this summary covers */
+    nodeRange: summary.nodeRange,
+    /** In-game time range this summary covers */
+    timeRange: summary.timeRange,
+  }));
+
+  return {
+    success: true,
+    hasSummary: true,
+    totalSummaries: summaries.length,
+    matchedCount: filteredSummaries.length,
+    query: { keyword, nodeRange, limit, order },
+    results,
+    /**
+     * IMPORTANT: The 'visible' layer contains what the protagonist experienced.
+     * The 'hidden' layer contains GM-only truths - use for consistency but don't reveal to player.
+     */
+    visibilityHint:
+      "Each summary has 'visible' (protagonist's knowledge) and 'hidden' (GM-only truth) layers.",
+    hint:
+      results.length === 0
+        ? "No summaries matched your query. Try different keywords or remove filters."
+        : `Found ${filteredSummaries.length} matching summaries. Showing ${results.length}.`,
+  };
+}
+
+/**
+ * Execute query_recent_context tool - get recent story segments
+ */
+function executeQueryRecentContext(
+  args: Record<string, unknown>,
+  gameState?: GameState,
+): unknown {
+  if (!gameState) {
+    return {
+      success: false,
+      error: "Game state not available",
+    };
+  }
+
+  // Each segment is one node (user action OR model response), not a pair
+  const count = Math.min(Math.max((args.count as number) || 10, 1), 40);
+  const currentFork = gameState.currentFork || [];
+
+  if (currentFork.length === 0) {
+    return {
+      success: true,
+      segments: [],
+      message: "No story history available yet.",
+    };
+  }
+
+  // Get recent segments directly
+  const startIndex = Math.max(0, currentFork.length - count);
+  const recentSegments = currentFork.slice(startIndex);
+
+  // Format segments with clear markers
+  const segments = recentSegments.map((segment) => ({
+    segmentIdx: segment.segmentIdx,
+    /** Role: 'user' = player action, 'model' = AI narrative, 'command' = system/force update */
+    role: segment.role,
+    /** The actual text content (visible to protagonist) */
+    text: segment.text,
+    /** Location at this point (visible to protagonist) */
+    location: segment.stateSnapshot?.currentLocation,
+    /** In-game time at this point (visible to protagonist) */
+    inGameTime: segment.stateSnapshot?.time,
+  }));
+
+  return {
+    success: true,
+    requestedCount: count,
+    returnedCount: segments.length,
+    currentTurn: gameState.turnNumber ?? 0,
+    totalSegments: currentFork.length,
+    segments,
+    /**
+     * Note: These are raw story segments containing dialogue/narrative.
+     * For summarized context with visible/hidden layers, use query_summary.
+     */
+    hint: `Showing the last ${segments.length} segments. Total segments in fork: ${currentFork.length}. For summarized story context, use query_summary.`,
+  };
 }

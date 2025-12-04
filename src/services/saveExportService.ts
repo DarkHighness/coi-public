@@ -19,8 +19,18 @@ import type {
   CURRENT_EXPORT_VERSION,
 } from "../types";
 import { CURRENT_SAVE_VERSION } from "../types";
-import { loadGameState, saveGameState, saveMetadata, loadMetadata } from "../utils/indexedDB";
-import { getImagesBySaveId, saveImage, StoredImage, deleteImagesBySaveId } from "../utils/imageStorage";
+import {
+  loadGameState,
+  saveGameState,
+  saveMetadata,
+  loadMetadata,
+} from "../utils/indexedDB";
+import {
+  getImagesBySaveId,
+  saveImage,
+  StoredImage,
+  deleteImagesBySaveId,
+} from "../utils/imageStorage";
 import { getMigrationManager } from "./migrationManager";
 import { getRAGService } from "./rag";
 import type { RAGExportData } from "./rag/types";
@@ -38,7 +48,9 @@ const EXPORT_FORMAT_VERSION = 2;
 /**
  * Get statistics about what would be exported
  */
-export async function getExportStats(slotId: string): Promise<ExportStats | null> {
+export async function getExportStats(
+  slotId: string,
+): Promise<ExportStats | null> {
   try {
     const gameState = await loadGameState<VersionedGameState>(slotId);
     if (!gameState) return null;
@@ -90,7 +102,7 @@ export async function getExportStats(slotId: string): Promise<ExportStats | null
  */
 function cleanupStateForExport(
   state: VersionedGameState,
-  options: ExportOptions
+  options: ExportOptions,
 ): VersionedGameState {
   // Deep clone the state to avoid mutating the original
   const cleanState = JSON.parse(JSON.stringify(state)) as VersionedGameState;
@@ -132,7 +144,7 @@ function cleanupStateForExport(
 export async function exportSave(
   slotId: string,
   slot: SaveSlot,
-  options: ExportOptions
+  options: ExportOptions,
 ): Promise<Blob | null> {
   try {
     console.log(`[SaveExport] Starting export for slot ${slotId}`);
@@ -170,8 +182,12 @@ export async function exportSave(
         if (imagesFolder) {
           for (const image of images) {
             // Determine file extension from blob type
-            const ext = image.blob.type === "image/png" ? "png" :
-                       image.blob.type === "image/jpeg" ? "jpg" : "webp";
+            const ext =
+              image.blob.type === "image/png"
+                ? "png"
+                : image.blob.type === "image/jpeg"
+                  ? "jpg"
+                  : "webp";
             imagesFolder.file(`${image.id}.${ext}`, image.blob);
 
             // Also store metadata
@@ -186,7 +202,10 @@ export async function exportSave(
               location: image.location,
               storyTime: image.storyTime,
             };
-            imagesFolder.file(`${image.id}.meta.json`, JSON.stringify(metadata, null, 2));
+            imagesFolder.file(
+              `${image.id}.meta.json`,
+              JSON.stringify(metadata, null, 2),
+            );
           }
           imageCount = images.length;
         }
@@ -204,7 +223,10 @@ export async function exportSave(
           console.log(`[SaveExport] Exported ${embeddingCount} RAG documents`);
         }
       } catch (error) {
-        console.warn("[SaveExport] Failed to export embeddings (RAG may not be initialized):", error);
+        console.warn(
+          "[SaveExport] Failed to export embeddings (RAG may not be initialized):",
+          error,
+        );
       }
     }
 
@@ -215,7 +237,7 @@ export async function exportSave(
     }
 
     // Get log count for manifest
-    const logCount = options.includeLogs ? (cleanedState.logs?.length || 0) : 0;
+    const logCount = options.includeLogs ? cleanedState.logs?.length || 0 : 0;
 
     // Create manifest
     const manifest: ExportManifest = {
@@ -247,9 +269,10 @@ export async function exportSave(
       compressionOptions: { level: 6 },
     });
 
-    console.log(`[SaveExport] Export complete: ${(blob.size / 1024).toFixed(2)} KB`);
+    console.log(
+      `[SaveExport] Export complete: ${(blob.size / 1024).toFixed(2)} KB`,
+    );
     return blob;
-
   } catch (error) {
     console.error("[SaveExport] Export failed:", error);
     return null;
@@ -319,7 +342,9 @@ export async function validateImport(file: File): Promise<ImportValidation> {
 
     // Validate manifest version
     if (!manifest.version || manifest.version > EXPORT_FORMAT_VERSION) {
-      warnings.push(`Export version ${manifest.version} is newer than supported ${EXPORT_FORMAT_VERSION}. Some features may not work.`);
+      warnings.push(
+        `Export version ${manifest.version} is newer than supported ${EXPORT_FORMAT_VERSION}. Some features may not work.`,
+      );
     }
 
     // Check for save.json
@@ -351,7 +376,9 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     const migrationManager = getMigrationManager();
     const requiresMigration = migrationManager.needsMigration(saveData);
     if (requiresMigration) {
-      warnings.push(`Save requires migration from version ${migrationManager.getSaveVersion(saveData)} to ${CURRENT_SAVE_VERSION}.`);
+      warnings.push(
+        `Save requires migration from version ${migrationManager.getSaveVersion(saveData)} to ${CURRENT_SAVE_VERSION}.`,
+      );
     }
 
     // Validate required fields
@@ -366,7 +393,9 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     if (manifest.includes.images) {
       const imagesFolder = zip.folder("images");
       if (!imagesFolder) {
-        warnings.push("Images were marked as included but images folder is missing.");
+        warnings.push(
+          "Images were marked as included but images folder is missing.",
+        );
       }
     }
 
@@ -377,9 +406,10 @@ export async function validateImport(file: File): Promise<ImportValidation> {
       manifest,
       requiresMigration,
     };
-
   } catch (error) {
-    errors.push(`Failed to parse import file: ${error instanceof Error ? error.message : "Unknown error"}`);
+    errors.push(
+      `Failed to parse import file: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
     return { valid: false, errors, warnings };
   }
 }
@@ -397,13 +427,17 @@ async function validateLegacyJson(file: File): Promise<ImportValidation> {
 
     // Check if it's a SaveSlot (old broken format)
     if (data.id && data.name && data.timestamp && data.theme && !data.nodes) {
-      errors.push("This appears to be an old metadata-only export. It does not contain actual game data and cannot be imported.");
+      errors.push(
+        "This appears to be an old metadata-only export. It does not contain actual game data and cannot be imported.",
+      );
       return { valid: false, errors, warnings };
     }
 
     // Check if it's a full game state
     if (data.nodes && data.inventory) {
-      warnings.push("This is a legacy JSON export. Some features may be missing.");
+      warnings.push(
+        "This is a legacy JSON export. Some features may be missing.",
+      );
 
       const migrationManager = getMigrationManager();
       const requiresMigration = migrationManager.needsMigration(data);
@@ -444,7 +478,6 @@ async function validateLegacyJson(file: File): Promise<ImportValidation> {
 
     errors.push("Unrecognized file format.");
     return { valid: false, errors, warnings };
-
   } catch {
     errors.push("Failed to parse JSON file.");
     return { valid: false, errors, warnings };
@@ -455,7 +488,7 @@ async function validateLegacyJson(file: File): Promise<ImportValidation> {
  * Generate a unique slot ID that doesn't conflict with existing slots
  */
 function generateUniqueSlotId(existingSlots: SaveSlot[]): string {
-  const existingIds = new Set(existingSlots.map(s => s.id));
+  const existingIds = new Set(existingSlots.map((s) => s.id));
   let newId = Date.now().toString();
 
   // Ensure uniqueness by appending random suffix if needed
@@ -471,7 +504,7 @@ function generateUniqueSlotId(existingSlots: SaveSlot[]): string {
  */
 export async function importSave(
   file: File,
-  existingSlots: SaveSlot[]
+  existingSlots: SaveSlot[],
 ): Promise<ImportResult> {
   try {
     // First validate
@@ -534,8 +567,9 @@ export async function importSave(
         slotId: newSlotId,
         warnings,
         migrated: validation.requiresMigration,
-        originalVersion: validation.requiresMigration ?
-          getMigrationManager().getSaveVersion(JSON.parse(text)) : undefined,
+        originalVersion: validation.requiresMigration
+          ? getMigrationManager().getSaveVersion(JSON.parse(text))
+          : undefined,
       };
     }
 
@@ -548,7 +582,9 @@ export async function importSave(
       return { success: false, error: "Missing save.json" };
     }
 
-    let saveData = JSON.parse(await saveFile.async("text")) as VersionedGameState;
+    let saveData = JSON.parse(
+      await saveFile.async("text"),
+    ) as VersionedGameState;
 
     // Apply migrations if needed
     if (validation.requiresMigration) {
@@ -582,11 +618,18 @@ export async function importSave(
           const embeddingsData: RAGExportData = JSON.parse(embeddingsJson);
 
           // Import to RAG service with new save ID
-          const importResult = await getRAGService().importSaveData(embeddingsData, newSlotId);
-          console.log(`[SaveImport] Imported ${importResult.imported} RAG documents`);
+          const importResult = await getRAGService().importSaveData(
+            embeddingsData,
+            newSlotId,
+          );
+          console.log(
+            `[SaveImport] Imported ${importResult.imported} RAG documents`,
+          );
         } catch (error) {
           console.warn("[SaveImport] Failed to import embeddings:", error);
-          warnings.push("Failed to import embeddings. They will be regenerated.");
+          warnings.push(
+            "Failed to import embeddings. They will be regenerated.",
+          );
         }
       }
     }
@@ -600,8 +643,9 @@ export async function importSave(
     }
 
     // Add import metadata
-    saveData._saveVersion.migratedFrom = validation.requiresMigration ?
-      getMigrationManager().getSaveVersion(saveData) : undefined;
+    saveData._saveVersion.migratedFrom = validation.requiresMigration
+      ? getMigrationManager().getSaveVersion(saveData)
+      : undefined;
 
     // Save to IndexedDB
     await saveGameState(newSlotId, saveData);
@@ -627,10 +671,10 @@ export async function importSave(
       slotId: newSlotId,
       warnings,
       migrated: validation.requiresMigration,
-      originalVersion: validation.requiresMigration ?
-        validation.manifest?.saveVersion : undefined,
+      originalVersion: validation.requiresMigration
+        ? validation.manifest?.saveVersion
+        : undefined,
     };
-
   } catch (error) {
     console.error("[SaveImport] Import failed:", error);
     return {
@@ -669,13 +713,13 @@ function cleanupImportedState(state: VersionedGameState): VersionedGameState {
  */
 async function importImages(
   imagesFolder: JSZip,
-  newSaveId: string
+  newSaveId: string,
 ): Promise<Map<string, string>> {
   const mapping = new Map<string, string>();
 
   const files = Object.keys(imagesFolder.files);
   const imageFiles = files.filter(
-    (f) => !f.endsWith(".meta.json") && !f.endsWith("/")
+    (f) => !f.endsWith(".meta.json") && !f.endsWith("/"),
   );
 
   for (const filename of imageFiles) {
@@ -684,7 +728,10 @@ async function importImages(
       if (!file) continue;
 
       // Extract old ID from filename
-      const oldId = filename.replace(/\.(png|jpg|jpeg|webp)$/i, "").split("/").pop()!;
+      const oldId = filename
+        .replace(/\.(png|jpg|jpeg|webp)$/i, "")
+        .split("/")
+        .pop()!;
 
       // Load metadata if present
       const metaFile = imagesFolder.file(`${oldId}.meta.json`);
@@ -712,7 +759,6 @@ async function importImages(
       });
 
       mapping.set(oldId, newId);
-
     } catch (error) {
       console.warn(`[SaveImport] Failed to import image ${filename}:`, error);
     }
@@ -727,7 +773,7 @@ async function importImages(
  */
 function updateImageReferences(
   state: VersionedGameState,
-  mapping: Map<string, string>
+  mapping: Map<string, string>,
 ): void {
   const nodes = state.nodes || {};
 
@@ -757,7 +803,10 @@ function clearImageReferences(state: VersionedGameState): void {
 /**
  * Generate a unique name for imported save
  */
-function generateUniqueName(baseName: string, existingSlots: SaveSlot[]): string {
+function generateUniqueName(
+  baseName: string,
+  existingSlots: SaveSlot[],
+): string {
   const existingNames = new Set(existingSlots.map((s) => s.name));
 
   if (!existingNames.has(baseName)) {
@@ -782,5 +831,8 @@ async function computeChecksum(data: string): Promise<string> {
   const dataBuffer = encoder.encode(data);
   const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  return hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
 }

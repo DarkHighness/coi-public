@@ -40,6 +40,10 @@ class WebAudioManager {
   private loadingPromise: Promise<void> | null = null;
   private currentEnvironment: string | null = null;
   private fadeInterval: NodeJS.Timeout | null = null;
+  /** Target volume - preserved when paused/muted */
+  private targetVolume: number = 0.5;
+  /** Whether audio is currently paused (muted) */
+  private isPaused: boolean = false;
 
   /**
    * Initialize or get the AudioContext.
@@ -230,9 +234,10 @@ class WebAudioManager {
       }
     }
 
-    // Stop current track with fade out
+    // Stop current track immediately (no fade) to prevent overlapping audio
+    // The new track will fade in, providing a smooth transition
     if (this.currentEnvironment) {
-      this.stop(this.currentEnvironment, true);
+      this.stop(this.currentEnvironment, false);
     }
 
     // Get or load the track
@@ -251,10 +256,7 @@ class WebAudioManager {
         };
         this.audioTracks.set(normalizedEnv, track);
       } catch (e) {
-        console.error(
-          `[WebAudioManager] Failed to load ${normalizedEnv}:`,
-          e,
-        );
+        console.error(`[WebAudioManager] Failed to load ${normalizedEnv}:`, e);
         return false;
       }
     }
@@ -301,7 +303,9 @@ class WebAudioManager {
       this.fadeGain(gainNode, volume, 500);
     }
 
-    console.log(`[WebAudioManager] Playing ${normalizedEnv} at volume ${volume}`);
+    console.log(
+      `[WebAudioManager] Playing ${normalizedEnv} at volume ${volume}`,
+    );
     return true;
   }
 
@@ -350,8 +354,20 @@ class WebAudioManager {
 
   /**
    * Set volume for the currently playing track.
+   * If paused/muted, stores the volume for when audio resumes.
    */
   setVolume(volume: number): void {
+    // Always save the target volume
+    this.targetVolume = volume;
+
+    // If paused, don't apply the volume now - it will be applied on resume
+    if (this.isPaused) {
+      console.log(
+        `[WebAudioManager] Volume set to ${volume} (will apply on resume)`,
+      );
+      return;
+    }
+
     if (!this.currentEnvironment) return;
 
     const track = this.audioTracks.get(this.currentEnvironment);
@@ -364,6 +380,7 @@ class WebAudioManager {
    * Pause all audio (for muting).
    */
   pause(): void {
+    this.isPaused = true;
     if (this.currentEnvironment) {
       const track = this.audioTracks.get(this.currentEnvironment);
       if (track?.gainNode) {
@@ -373,18 +390,25 @@ class WebAudioManager {
         });
       }
     }
+    console.log(`[WebAudioManager] Paused (muted)`);
   }
 
   /**
    * Resume audio (for unmuting).
+   * Uses the stored targetVolume if no volume is explicitly provided.
    */
-  resume(volume: number = 0.5): void {
+  resume(volume?: number): void {
+    this.isPaused = false;
+    // Use provided volume or fall back to stored targetVolume
+    const effectiveVolume = volume ?? this.targetVolume;
+
     if (this.currentEnvironment) {
       const track = this.audioTracks.get(this.currentEnvironment);
       if (track?.gainNode && track.isPlaying) {
-        this.fadeGain(track.gainNode, volume, 300);
+        this.fadeGain(track.gainNode, effectiveVolume, 300);
       }
     }
+    console.log(`[WebAudioManager] Resumed at volume ${effectiveVolume}`);
   }
 
   /**
@@ -392,6 +416,20 @@ class WebAudioManager {
    */
   getCurrentEnvironment(): string | null {
     return this.currentEnvironment;
+  }
+
+  /**
+   * Get the current target volume.
+   */
+  getVolume(): number {
+    return this.targetVolume;
+  }
+
+  /**
+   * Check if audio is currently paused (muted).
+   */
+  getIsPaused(): boolean {
+    return this.isPaused;
   }
 
   /**

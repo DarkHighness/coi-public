@@ -38,12 +38,11 @@ export const useAmbience = (
     onPlayRef.current = onPlay;
   }, [onPlay]);
 
-  // Handle volume changes
+  // Handle volume changes - always update the manager's target volume
   useEffect(() => {
-    if (!muted && currentEnv) {
-      webAudioManager.setVolume(volume);
-    }
-  }, [volume, currentEnv, muted]);
+    // Always set the volume in the manager (it will handle muted state internally)
+    webAudioManager.setVolume(volume);
+  }, [volume]);
 
   // Handle mute/unmute
   useEffect(() => {
@@ -52,9 +51,10 @@ export const useAmbience = (
     if (muted) {
       webAudioManager.pause();
     } else {
-      webAudioManager.resume(volume);
+      // Resume will use the stored targetVolume from setVolume
+      webAudioManager.resume();
     }
-  }, [muted, currentEnv, volume]);
+  }, [muted, currentEnv]);
 
   // Handle environment changes
   useEffect(() => {
@@ -123,8 +123,8 @@ export const useAmbience = (
     if (lastEnvironmentRef.current && !muted) {
       const currentPlaying = webAudioManager.getCurrentEnvironment();
       if (currentPlaying === lastEnvironmentRef.current) {
-        // Just resume the volume
-        webAudioManager.resume(volume);
+        // Just resume the volume (will use stored targetVolume)
+        webAudioManager.resume();
       } else {
         // Need to start playing
         await webAudioManager.play(lastEnvironmentRef.current, volume, true);

@@ -431,6 +431,37 @@ export const getCoreRules = (): string => `
     - **Lists**: Use bullet points for lists of features or secrets.
     - **NO COMPLEX BLOCKS**: Avoid code blocks or complex HTML in descriptions.
   </rule>
+
+  <rule name="MEMORY & CONTEXT QUERY - CRITICAL">
+    **WHEN IN DOUBT, QUERY FIRST**
+    
+    Your memory is limited. The story may span many turns, and details from early turns may have been summarized.
+    
+    **MANDATORY QUERY SITUATIONS**:
+    1. **Referencing past events**: If unsure what happened earlier, use \`query_story\` to search for relevant segments.
+    2. **Character consistency**: If unsure about an NPC's previous behavior or dialogue, query before writing them.
+    3. **Plot threads**: If unsure if a plot thread was resolved, query before continuing or contradicting it.
+    4. **Player promises/deals**: If the player or NPCs made promises, query to verify before referencing them.
+    5. **Location details**: If returning to a location, query to ensure consistency with previous descriptions.
+    
+    **AVAILABLE MEMORY TOOLS** (use in QUERY stage):
+    - \`query_story\`: Search story history by keyword, location, turn range. Supports regex.
+    - \`query_turn\`: Get current fork ID and turn number.
+    - \`query_summary\`: Get the current story summary (both visible and hidden layers).
+    - \`query_recent_context\`: Get the last N turns of player-AI exchanges.
+    
+    **ANTI-HALLUCINATION PROTOCOL**:
+    - If you cannot remember something clearly, DO NOT MAKE IT UP.
+    - Query the story history FIRST, then write based on actual events.
+    - If query returns no results, acknowledge the gap: "The details of that conversation have faded..."
+    - NEVER contradict established facts from previous turns.
+    
+    **CONSISTENCY CHAIN**:
+    1. Query relevant history before writing
+    2. Cross-reference with summary for broader context
+    3. Only then generate narrative
+    4. If conflict detected, the OLDER information takes precedence
+  </rule>
 </core_rules>
 `;
 

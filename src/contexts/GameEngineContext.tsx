@@ -186,12 +186,17 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
       currentEnvThemeKey = currentStoryTheme.envTheme;
     } else {
       // Dynamic: derive from current atmosphere
-      const currentAtmosphere = engine.gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
+      const currentAtmosphere =
+        engine.gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
       currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
     }
 
     return ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
-  }, [engine.gameState.theme, engine.gameState.atmosphere, engine.aiSettings.lockEnvTheme]);
+  }, [
+    engine.gameState.theme,
+    engine.gameState.atmosphere,
+    engine.aiSettings.lockEnvTheme,
+  ]);
 
   // Organize into state and actions
   const value: GameEngineContextValue = useMemo(

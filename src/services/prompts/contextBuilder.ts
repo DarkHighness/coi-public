@@ -647,7 +647,22 @@ export function buildLayeredContext(
     const latestSummary = summaries[summaries.length - 1];
     semiStaticParts.push(`
 <story_summary>
-${latestSummary.displayText}
+  <display_text>
+  ${latestSummary.displayText}
+  </display_text>
+  <visible HINT="Information the protagonist is aware of">
+  ${latestSummary.visible?.characterDevelopment ? `<character_development>${latestSummary.visible.characterDevelopment}</character_development>` : ""}
+  ${latestSummary.visible?.majorEvents ? `<major_events>${latestSummary.visible.majorEvents}</major_events>` : ""}
+  ${latestSummary.visible?.narrative ? `<narrative>${latestSummary.visible.narrative}</narrative>` : ""}
+  ${latestSummary.visible?.worldState ? `<world_state>${latestSummary.visible.worldState}</world_state>` : ""}
+  </visible>
+  <hidden HINT="Information the protagonist is NOT aware of">
+  ${latestSummary.hidden?.truthNarrative ? `<truth_narrative>${latestSummary.hidden.truthNarrative}</truth_narrative>` : ""}
+  ${latestSummary.hidden?.unrevealed ? `<unrevealed>${latestSummary.hidden.unrevealed}</unrevealed>` : ""}
+  ${latestSummary.hidden?.hiddenPlots ? `<hidden_plots>${latestSummary.hidden.hiddenPlots}</hidden_plots>` : ""}
+  ${latestSummary.hidden?.npcActions ? `<npc_actions>${latestSummary.hidden.npcActions}</npc_actions>` : ""}
+  ${latestSummary.hidden?.worldTruth ? `<world_changes>${latestSummary.hidden.worldTruth}</world_changes>` : ""}
+  </hidden>
 </story_summary>`);
   }
 

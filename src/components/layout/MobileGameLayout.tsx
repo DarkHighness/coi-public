@@ -96,7 +96,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   if (aiSettings.lockEnvTheme) {
     currentEnvThemeKey = currentStoryTheme.envTheme;
   } else {
-    const currentAtmosphere = gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
+    const currentAtmosphere =
+      gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
     currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
   }
   const currentThemeConfig =

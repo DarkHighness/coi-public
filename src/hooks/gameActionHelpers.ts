@@ -133,7 +133,7 @@ export const handleSummarization = async (
   lastIndex: number;
   summarySnapshot: StorySummary | undefined;
   contextNodes: StorySegment[];
-  log?: any;
+  logs?: any[];
 }> => {
   let contextNodes = deriveHistory(gameState.nodes, effectiveParentId);
 
@@ -161,55 +161,44 @@ export const handleSummarization = async (
   let effectiveSummaries = [...baseSummaries];
   let lastIndex = baseIndex;
   let summarySnapshot: StorySummary | undefined;
-  let log: any;
+  let logs: any[] = [];
 
   const totalLength = contextNodes.length;
   const nodesToSummarizeCount = totalLength - lastIndex;
 
   if (nodesToSummarizeCount >= summaryStep) {
     const toSummarize = contextNodes.slice(lastIndex, totalLength);
-    const textBlock = toSummarize.map((s) => `${s.role}: ${s.text}`).join("\n");
 
-    // Get previous summary text for context
+    // Get previous summary (null if none exists)
     const lastSummary =
       effectiveSummaries.length > 0
         ? effectiveSummaries[effectiveSummaries.length - 1]
-        : undefined;
-    const previousSummary = lastSummary || {
-      id: 0,
-      displayText: "",
-      visible: {
-        narrative: "",
-        majorEvents: [],
-        characterDevelopment: "",
-        worldState: "",
-      },
-      hidden: {
-        truthNarrative: "",
-        hiddenPlots: [],
-        npcActions: [],
-        worldTruth: "",
-        unrevealed: [],
-      },
-      timeRange: { from: "", to: "" },
-      nodeRange: { fromIndex: 0, toIndex: 0 },
+        : null;
+
+    // Node range being summarized
+    const nodeRange = {
+      fromIndex: lastIndex,
+      toIndex: totalLength - 1,
     };
 
-    // Call Summary Service
+    // Call Summary Service with agentic loop
     const sumResult = await summarizeContext(
-      previousSummary,
-      textBlock,
+      lastSummary,
+      toSummarize,
+      nodeRange,
       LANG_MAP[language],
       aiSettings,
+      gameState,
     );
 
-    // Push the new summary object
-    effectiveSummaries.push(sumResult.summary);
+    // Push the new summary object if successful
+    if (sumResult.summary) {
+      effectiveSummaries.push(sumResult.summary);
+      summarySnapshot = sumResult.summary;
+    }
 
-    // Extract displayText for UI
-    summarySnapshot = sumResult.summary;
     lastIndex = totalLength;
-    log = sumResult.log;
+    logs = sumResult.logs;
   } else {
     // Ensure lastIndex is at least baseIndex to prevent regression
     lastIndex = Math.max(lastIndex, baseIndex);
@@ -220,7 +209,7 @@ export const handleSummarization = async (
     lastIndex,
     summarySnapshot,
     contextNodes,
-    log,
+    logs,
   };
 };
 

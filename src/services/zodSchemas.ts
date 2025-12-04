@@ -1678,7 +1678,9 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
   narrativeTone: z
     .string()
     .nullish()
-    .describe("Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy')."),
+    .describe(
+      "Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+    ),
   aliveEntities: z
     .object({
       inventory: z

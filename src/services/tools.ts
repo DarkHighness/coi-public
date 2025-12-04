@@ -189,6 +189,145 @@ export type AgentStage = "query" | "add" | "remove" | "update" | "narrative";
 // QUERY TOOLS (Stage 1)
 // ============================================================================
 
+// -----------------------------------------------------------------------------
+// Story Memory Query Tools - for AI self-inspection of story history
+// -----------------------------------------------------------------------------
+
+/**
+ * Query story segments from the current fork history.
+ * Use this when you need to recall specific past events, dialogues, or context.
+ */
+export const QUERY_STORY_TOOL = defineTool({
+  name: "query_story",
+  description: `Search through story history in the current fork. Use this tool when:
+- You need to recall what happened earlier in the story
+- You're unsure about past events, character interactions, or decisions
+- You need to verify consistency with previous narrative
+- You want to find specific scenes, dialogues, or descriptions
+
+Returns story segments (narrative text from model or command results) with context.
+Supports regex patterns for flexible matching.`,
+  parameters: z.object({
+    keyword: z
+      .string()
+      .optional()
+      .describe(
+        "Search keyword or regex pattern to match in story text. Case-insensitive. Example: 'sword|weapon' or 'dragon.*cave'",
+      ),
+    location: z
+      .string()
+      .optional()
+      .describe(
+        "Filter by location name/regex. Matches against currentLocation field.",
+      ),
+    inGameTime: z
+      .string()
+      .optional()
+      .describe(
+        "Filter by in-game time keyword/regex (e.g., 'Day 3', 'night', 'morning'). Matches against time field.",
+      ),
+    turnRange: z
+      .object({
+        start: z.number().optional().describe("Start turn number (inclusive)"),
+        end: z.number().optional().describe("End turn number (inclusive)"),
+      })
+      .optional()
+      .describe("Filter by turn number range"),
+    order: z
+      .enum(["asc", "desc"])
+      .optional()
+      .describe("Sort order by turn number. Default: 'desc' (newest first)"),
+    limit: z
+      .number()
+      .optional()
+      .describe("Maximum number of results to return. Default: 10"),
+    page: z
+      .number()
+      .optional()
+      .describe("Page number for pagination (1-indexed). Default: 1"),
+    includeContext: z
+      .boolean()
+      .optional()
+      .describe(
+        "Include the player action that followed each story segment. Default: true",
+      ),
+  }),
+});
+
+/**
+ * Query current turn information.
+ * Use this to understand where you are in the story timeline.
+ */
+export const QUERY_TURN_TOOL = defineTool({
+  name: "query_turn",
+  description: `Get current fork ID and turn number. Use this to:
+- Understand your position in the story timeline
+- Know which branch of the story you're in
+- Track narrative progress`,
+  parameters: z.object({}),
+});
+
+/**
+ * Query the current story summary.
+ * Use this to get an overview of what has happened so far.
+ */
+export const QUERY_SUMMARY_TOOL = defineTool({
+  name: "query_summary",
+  description: `Search through story summaries. The current/latest summary is always visible in your context, so use this to search OLDER summaries when:
+- You need to recall events from much earlier in the story
+- You want to find when a specific event was first recorded
+- You need to trace the evolution of a plot thread across summaries
+
+Returns matching summaries with both visible and hidden layers.`,
+  parameters: z.object({
+    keyword: z
+      .string()
+      .optional()
+      .describe(
+        "Search keyword or regex to match in summary text. Searches both visible and hidden layers.",
+      ),
+    nodeRange: z
+      .object({
+        start: z.number().optional().describe("Start node index (inclusive)"),
+        end: z.number().optional().describe("End node index (inclusive)"),
+      })
+      .optional()
+      .describe("Filter by the node range the summary covers"),
+    limit: z
+      .number()
+      .optional()
+      .describe("Maximum number of summaries to return. Default: 5"),
+    order: z
+      .enum(["asc", "desc"])
+      .optional()
+      .describe("Sort order. Default: 'desc' (newest first)"),
+  }),
+});
+
+/**
+ * Query recent story context window.
+ * Use this to get the most recent exchanges for immediate context.
+ */
+export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
+  name: "query_recent_context",
+  description: `Get the most recent story segments for immediate context. Use this when:
+- You need to understand what just happened
+- You want to maintain narrative continuity
+- You need recent dialogue or action context
+
+Returns the last N segments (each segment = one node in story tree, either player action or narrative response).`,
+  parameters: z.object({
+    count: z
+      .number()
+      .optional()
+      .describe("Number of recent segments to retrieve. Default: 10, Max: 40"),
+  }),
+});
+
+// -----------------------------------------------------------------------------
+// Game State Query Tools
+// -----------------------------------------------------------------------------
+
 export const QUERY_INVENTORY_TOOL = defineTool({
   name: "query_inventory",
   description:
@@ -1371,10 +1510,189 @@ export const COMPLETE_FORCE_UPDATE_TOOL = defineTool({
 });
 
 // ============================================================================
+// SUMMARY AGENTIC LOOP TOOLS
+// ============================================================================
+
+/**
+ * Summary Stage Type
+ */
+export type SummaryStage = "query" | "finish";
+
+/**
+ * Query segments from the conversation being summarized.
+ * Use this to examine specific parts of the story in detail.
+ */
+export const SUMMARY_QUERY_SEGMENTS_TOOL = defineTool({
+  name: "summary_query_segments",
+  description: `Query specific segments from the story being summarized.
+
+Use this when you need MORE DETAIL about:
+- A specific turn or range of turns
+- What exactly happened in a scene
+- Exact dialogue or descriptions
+- Specific NPC interactions
+
+You already have the previous summary and current turn info. Use this to fill in gaps.`,
+  parameters: z.object({
+    turnRange: z
+      .object({
+        start: z.number().describe("Start turn number (inclusive)"),
+        end: z.number().describe("End turn number (inclusive)"),
+      })
+      .optional()
+      .describe(
+        "Get segments in this turn range. If omitted, returns all segments being summarized.",
+      ),
+    keyword: z
+      .string()
+      .optional()
+      .describe("Filter by keyword/regex in segment text"),
+  }),
+});
+
+/**
+ * Query the current game state (inventory, relationships, etc.)
+ * Use this when the summary needs to reference entity states.
+ */
+export const SUMMARY_QUERY_STATE_TOOL = defineTool({
+  name: "summary_query_state",
+  description: `Query current game state entities.
+
+Use this when you need to know:
+- Current inventory items and their descriptions
+- NPC relationship statuses
+- Known locations
+- Active/completed quests
+- Character attributes/skills
+
+This helps you accurately describe state changes in the summary.`,
+  parameters: z.object({
+    entities: z
+      .array(
+        z.enum([
+          "inventory",
+          "relationships",
+          "locations",
+          "quests",
+          "knowledge",
+          "character",
+        ]),
+      )
+      .describe("Which entity types to query"),
+  }),
+});
+
+/**
+ * Finish the summary with the final result.
+ */
+export const FINISH_SUMMARY_TOOL = defineTool({
+  name: "finish_summary",
+  description: `Complete the summarization with the final summary object.
+
+You MUST provide:
+- displayText: 2-3 sentence summary for UI (visible layer only, story language)
+- visible: What the PROTAGONIST knows/experienced
+- hidden: GM-only truth the protagonist does NOT know
+
+Preserve the visible/hidden separation carefully:
+- Player events, discoveries, actions → visible
+- Behind-the-scenes NPC actions, hidden plots, unrevealed secrets → hidden`,
+  parameters: z.object({
+    displayText: z
+      .string()
+      .describe(
+        "Concise 2-3 sentence summary for UI display. MUST be in story language.",
+      ),
+    visible: z.object({
+      narrative: z
+        .string()
+        .describe("What happened from the protagonist's perspective"),
+      majorEvents: z
+        .array(z.string())
+        .describe("Key events the protagonist witnessed/participated in"),
+      characterDevelopment: z
+        .string()
+        .describe("How the protagonist changed/grew"),
+      worldState: z
+        .string()
+        .describe("How the world changed from protagonist's view"),
+    }),
+    hidden: z.object({
+      truthNarrative: z.string().describe("What ACTUALLY happened (GM truth)"),
+      hiddenPlots: z
+        .array(z.string())
+        .describe("Plot threads player doesn't know about"),
+      npcActions: z.array(z.string()).describe("What NPCs did off-screen"),
+      worldTruth: z.string().describe("Real state of the world"),
+      unrevealed: z
+        .array(z.string())
+        .describe("Secrets not yet revealed to player"),
+    }),
+    timeRange: z
+      .object({
+        from: z.string().describe("Start time in story"),
+        to: z.string().describe("End time in story"),
+      })
+      .optional(),
+  }),
+});
+
+/**
+ * Summary tools grouped by stage
+ */
+export const SUMMARY_QUERY_TOOLS: ZodToolDefinition[] = [
+  SUMMARY_QUERY_SEGMENTS_TOOL,
+  SUMMARY_QUERY_STATE_TOOL,
+];
+
+export const SUMMARY_FINISH_TOOLS: ZodToolDefinition[] = [FINISH_SUMMARY_TOOL];
+
+/**
+ * Get tools for summary stage
+ */
+export function getSummaryToolsForStage(
+  stage: SummaryStage,
+): ZodToolDefinition[] {
+  switch (stage) {
+    case "query":
+      // Query stage can also finish early
+      return [...SUMMARY_QUERY_TOOLS, FINISH_SUMMARY_TOOL];
+    case "finish":
+      return SUMMARY_FINISH_TOOLS;
+    default:
+      return [];
+  }
+}
+
+/**
+ * Summary stage order
+ */
+export const SUMMARY_STAGE_ORDER: SummaryStage[] = ["query", "finish"];
+
+/**
+ * Get next summary stage
+ */
+export function getNextSummaryStage(
+  currentStage: SummaryStage,
+): SummaryStage | null {
+  const currentIndex = SUMMARY_STAGE_ORDER.indexOf(currentStage);
+  if (currentIndex === -1 || currentIndex === SUMMARY_STAGE_ORDER.length - 1) {
+    return null;
+  }
+  return SUMMARY_STAGE_ORDER[currentIndex + 1];
+}
+
+// ============================================================================
 // TOOL GROUPS BY STAGE
 // ============================================================================
 
 export const QUERY_TOOLS: ZodToolDefinition[] = [
+  // Story Memory Tools (use these first when uncertain about history)
+  QUERY_STORY_TOOL,
+  QUERY_TURN_TOOL,
+  QUERY_SUMMARY_TOOL,
+  QUERY_RECENT_CONTEXT_TOOL,
+  // Game State Tools
   QUERY_INVENTORY_TOOL,
   QUERY_RELATIONSHIPS_TOOL,
   QUERY_LOCATIONS_TOOL,
@@ -1610,10 +1928,16 @@ export type QueryCharacterTraitsParams = InferToolParams<
 
 // Entity Types (Inventory, NPC, Location, Quest, etc.)
 export type AddInventoryParams = InferToolParams<typeof ADD_INVENTORY_TOOL>;
-export type UpdateInventoryParams = InferToolParams<typeof UPDATE_INVENTORY_TOOL>;
-export type RemoveInventoryParams = InferToolParams<typeof REMOVE_INVENTORY_TOOL>;
+export type UpdateInventoryParams = InferToolParams<
+  typeof UPDATE_INVENTORY_TOOL
+>;
+export type RemoveInventoryParams = InferToolParams<
+  typeof REMOVE_INVENTORY_TOOL
+>;
 
-export type AddRelationshipParams = InferToolParams<typeof ADD_RELATIONSHIP_TOOL>;
+export type AddRelationshipParams = InferToolParams<
+  typeof ADD_RELATIONSHIP_TOOL
+>;
 export type UpdateRelationshipParams = InferToolParams<
   typeof UPDATE_RELATIONSHIP_TOOL
 >;
@@ -1632,7 +1956,9 @@ export type CompleteQuestParams = InferToolParams<typeof COMPLETE_QUEST_TOOL>;
 export type FailQuestParams = InferToolParams<typeof FAIL_QUEST_TOOL>;
 
 export type AddKnowledgeParams = InferToolParams<typeof ADD_KNOWLEDGE_TOOL>;
-export type UpdateKnowledgeParams = InferToolParams<typeof UPDATE_KNOWLEDGE_TOOL>;
+export type UpdateKnowledgeParams = InferToolParams<
+  typeof UPDATE_KNOWLEDGE_TOOL
+>;
 
 export type AddTimelineParams = InferToolParams<typeof ADD_TIMELINE_TOOL>;
 export type UpdateTimelineParams = InferToolParams<typeof UPDATE_TIMELINE_TOOL>;
@@ -1641,7 +1967,9 @@ export type AddFactionParams = InferToolParams<typeof ADD_FACTION_TOOL>;
 export type UpdateFactionParams = InferToolParams<typeof UPDATE_FACTION_TOOL>;
 export type RemoveFactionParams = InferToolParams<typeof REMOVE_FACTION_TOOL>;
 
-export type AddCausalChainParams = InferToolParams<typeof ADD_CAUSAL_CHAIN_TOOL>;
+export type AddCausalChainParams = InferToolParams<
+  typeof ADD_CAUSAL_CHAIN_TOOL
+>;
 export type UpdateCausalChainParams = InferToolParams<
   typeof UPDATE_CAUSAL_CHAIN_TOOL
 >;
@@ -1657,7 +1985,9 @@ export type InterruptCausalChainParams = InferToolParams<
 
 // Global and World Info Types
 export type UpdateGlobalParams = InferToolParams<typeof UPDATE_GLOBAL_TOOL>;
-export type UpdateWorldInfoParams = InferToolParams<typeof UPDATE_WORLD_INFO_TOOL>;
+export type UpdateWorldInfoParams = InferToolParams<
+  typeof UPDATE_WORLD_INFO_TOOL
+>;
 
 // Query Types
 export type QueryInventoryParams = InferToolParams<typeof QUERY_INVENTORY_TOOL>;
@@ -1675,6 +2005,14 @@ export type QueryFactionsParams = InferToolParams<typeof QUERY_FACTIONS_TOOL>;
 export type QueryGlobalParams = InferToolParams<typeof QUERY_GLOBAL_TOOL>;
 export type RagSearchParams = InferToolParams<typeof RAG_SEARCH_TOOL>;
 
+// Story Memory Query Types
+export type QueryStoryParams = InferToolParams<typeof QUERY_STORY_TOOL>;
+export type QueryTurnParams = InferToolParams<typeof QUERY_TURN_TOOL>;
+export type QuerySummaryParams = InferToolParams<typeof QUERY_SUMMARY_TOOL>;
+export type QueryRecentContextParams = InferToolParams<
+  typeof QUERY_RECENT_CONTEXT_TOOL
+>;
+
 // Control Types
 export type NextStageParams = InferToolParams<typeof NEXT_STAGE_TOOL>;
 
@@ -1688,6 +2026,12 @@ export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
 // ============================================================================
 
 export interface ToolParamsMap {
+  // Story Memory Query tools
+  query_story: QueryStoryParams;
+  query_turn: QueryTurnParams;
+  query_summary: QuerySummaryParams;
+  query_recent_context: QueryRecentContextParams;
+
   // Query tools
   query_inventory: QueryInventoryParams;
   query_relationships: QueryRelationshipsParams;

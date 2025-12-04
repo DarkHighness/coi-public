@@ -107,9 +107,7 @@ export interface TypedToolDefinition<
  * 从 TypedToolDefinition 推断参数类型
  */
 export type InferToolParams<T> =
-  T extends TypedToolDefinition<infer TParams>
-    ? z.infer<TParams>
-    : never;
+  T extends TypedToolDefinition<infer TParams> ? z.infer<TParams> : never;
 
 /**
  * 工具/函数定义 (运行时兼容类型，用于传递给 API)

@@ -909,7 +909,9 @@ async function handleExportSaveData(
     },
   };
 
-  console.log(`[RAGWorker] Exported ${documents.length} documents for save: ${saveId}`);
+  console.log(
+    `[RAGWorker] Exported ${documents.length} documents for save: ${saveId}`,
+  );
   return exportData;
 }
 
@@ -919,7 +921,9 @@ async function handleImportSaveData(
   ensureInitialized();
 
   const { data, newSaveId } = payload;
-  console.log(`[RAGWorker] Importing ${data.documents.length} documents to save: ${newSaveId}`);
+  console.log(
+    `[RAGWorker] Importing ${data.documents.length} documents to save: ${newSaveId}`,
+  );
 
   // Convert from exportable format and update saveId
   const documents = data.documents.map((doc) => ({
@@ -932,7 +936,9 @@ async function handleImportSaveData(
   // Import documents
   const imported = await database!.importDocuments(documents);
 
-  console.log(`[RAGWorker] Imported ${imported} documents to save: ${newSaveId}`);
+  console.log(
+    `[RAGWorker] Imported ${imported} documents to save: ${newSaveId}`,
+  );
   return { success: true, imported };
 }
 

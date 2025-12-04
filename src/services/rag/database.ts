@@ -606,7 +606,10 @@ export class RAGDatabase {
 
         imported++;
       } catch (error) {
-        console.warn(`[RAGDatabase] Failed to import document ${doc.id}:`, error);
+        console.warn(
+          `[RAGDatabase] Failed to import document ${doc.id}:`,
+          error,
+        );
       }
     }
 
@@ -626,7 +629,9 @@ export class RAGDatabase {
       );
     }
 
-    console.log(`[RAGDatabase] Imported ${imported}/${documents.length} documents`);
+    console.log(
+      `[RAGDatabase] Imported ${imported}/${documents.length} documents`,
+    );
     return imported;
   }
 

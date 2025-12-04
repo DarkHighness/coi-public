@@ -68,6 +68,8 @@ export interface GenerateContentUnifiedOptions {
   generationDetails?: LogEntry["generationDetails"];
   /** 设置对象 */
   settings?: AISettings;
+  /** 自定义 log endpoint 名称 (默认: "generateContent") */
+  logEndpoint?: string;
 }
 
 /**
@@ -214,7 +216,7 @@ export const generateContentUnifiedInternal = async (
   const log = createLogEntry(
     protocol,
     modelId,
-    "generateContent",
+    options?.logEndpoint || "generateContent",
     { systemInstruction, contents: contents as Record<string, unknown>[] },
     raw,
     usage,

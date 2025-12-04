@@ -197,10 +197,12 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                   />
                 </svg>
                 <div className="text-sm text-theme-muted">
-                  {t("import.dropzone") || "Drop a save file here or click to browse"}
+                  {t("import.dropzone") ||
+                    "Drop a save file here or click to browse"}
                 </div>
                 <div className="text-xs text-theme-muted/70">
-                  {t("import.supportedFormats") || "Supports .zip and .json files"}
+                  {t("import.supportedFormats") ||
+                    "Supports .zip and .json files"}
                 </div>
               </div>
             )}
@@ -227,31 +229,49 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                   </h3>
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">{t("import.saveName") || "Save Name"}</span>
+                      <span className="text-theme-muted">
+                        {t("import.saveName") || "Save Name"}
+                      </span>
                       <span className="text-theme-text font-medium">
                         {validation.manifest.slot.name}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">{t("import.theme") || "Theme"}</span>
+                      <span className="text-theme-muted">
+                        {t("import.theme") || "Theme"}
+                      </span>
                       <span className="text-theme-text">
-                        {t(`${validation.manifest.slot.theme}.name`, { ns: "themes" }) || validation.manifest.slot.theme}
+                        {t(`${validation.manifest.slot.theme}.name`, {
+                          ns: "themes",
+                        }) || validation.manifest.slot.theme}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">{t("import.nodes") || "Story Nodes"}</span>
-                      <span className="text-theme-text">{validation.manifest.stats.nodeCount}</span>
+                      <span className="text-theme-muted">
+                        {t("import.nodes") || "Story Nodes"}
+                      </span>
+                      <span className="text-theme-text">
+                        {validation.manifest.stats.nodeCount}
+                      </span>
                     </div>
                     {validation.manifest.includes.images && (
                       <div className="flex justify-between">
-                        <span className="text-theme-muted">{t("import.images") || "Images"}</span>
-                        <span className="text-theme-text">{validation.manifest.stats.imageCount}</span>
+                        <span className="text-theme-muted">
+                          {t("import.images") || "Images"}
+                        </span>
+                        <span className="text-theme-text">
+                          {validation.manifest.stats.imageCount}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">{t("import.exportDate") || "Export Date"}</span>
+                      <span className="text-theme-muted">
+                        {t("import.exportDate") || "Export Date"}
+                      </span>
                       <span className="text-theme-text">
-                        {new Date(validation.manifest.exportDate).toLocaleDateString()}
+                        {new Date(
+                          validation.manifest.exportDate,
+                        ).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -302,7 +322,8 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                     />
                   </svg>
                   <span className="text-xs text-green-500">
-                    {t("import.validFile") || "File is valid and ready to import"}
+                    {t("import.validFile") ||
+                      "File is valid and ready to import"}
                   </span>
                 </div>
               )}
@@ -346,7 +367,8 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                 />
               </svg>
               <p className="text-xs text-theme-muted">
-                {t("import.embeddingsNote") || "RAG embeddings will be regenerated automatically when you continue playing."}
+                {t("import.embeddingsNote") ||
+                  "RAG embeddings will be regenerated automatically when you continue playing."}
               </p>
             </div>
           )}
@@ -373,7 +395,12 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
