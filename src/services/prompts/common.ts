@@ -407,17 +407,15 @@ export const getCoreRules = (): string => `
     - **Type 2 (Player Perspective)**: What player sees - over-the-shoulder or third-person cinematic.
     - **Image Generation**: Provide \`imagePrompt\` for impactful moments (new locations, dramatic scenes, key encounters).
 
-    **imagePrompt MUST include**:
-    1. **Environment**: Specific location (not just "a forest" but "a misty ancient forest with towering oaks, morning light filtering through dense canopy")
-    2. **Protagonist**: Race, appearance, clothing/armor, current pose/action, facial expression
-    3. **NPCs Present**: ONLY NPCs at currentLocation - their appearance, position, and actions
+    **imagePrompt MUST be in TARGET LANGUAGE (same as narrative) and include**:
+    1. **Environment**: Specific location details from current location data
+    2. **Protagonist**: Use character's actual name, race, appearance, current pose/action, expression
+    3. **NPCs (YOU DECIDE)**: Include ONLY NPCs narratively present in this moment - you control who appears
     4. **Lighting & Atmosphere**: Time of day, light sources, shadows, mood, color palette
     5. **Key Details**: Important objects, environmental hazards, magical effects
     6. **Composition**: Camera angle (wide shot, close-up, low angle, bird's eye, etc.)
 
-    **Example**: "A torch-lit underground chamber with ancient dwarven stonework. You stand in the center, a battle-scarred human warrior in dented plate armor, sword raised defensively. Before you, three goblin raiders emerge from the shadows - green-skinned, yellow-eyed, wielding crude axes. Flickering orange torchlight creates dramatic shadows on carved stone pillars. Tense, ominous atmosphere. Low-angle cinematic shot emphasizing the confrontation."
-
-    **CRITICAL**: NEVER include NPCs whose currentLocation does NOT match player's location!
+    **Example**: "黄昏时分的废弃神殿，夕阳穿过破碎的彩色玻璃窗洒落。马库斯，一位身穿银甲的老战士，单膝跪在破损的祭坛前，手扶长剑。身后站着失明的老祭司米蕾拉，手举祝福。蓝紫色调为主，金橙色点缀。庄严肃穆的氛围，祭坛后方广角镜头。"
   </rule>
 
   <rule name="ICONS">

@@ -24,6 +24,62 @@ import {
   STAGE_ORDER,
   parseStage,
   isValidStageTransition,
+  // Runtime validation
+  safeValidateToolArgs,
+  // Tool parameter types
+  ToolParamsMap,
+  ToolName,
+  getTypedArgs,
+  // Character tool parameter types
+  AddCharacterAttributeParams,
+  UpdateCharacterAttributeParams,
+  RemoveCharacterAttributeParams,
+  AddCharacterSkillParams,
+  UpdateCharacterSkillParams,
+  RemoveCharacterSkillParams,
+  AddCharacterConditionParams,
+  UpdateCharacterConditionParams,
+  RemoveCharacterConditionParams,
+  AddCharacterTraitParams,
+  UpdateCharacterTraitParams,
+  RemoveCharacterTraitParams,
+  UpdateCharacterProfileParams,
+  // Entity tool parameter types
+  AddInventoryParams,
+  UpdateInventoryParams,
+  RemoveInventoryParams,
+  AddRelationshipParams,
+  UpdateRelationshipParams,
+  RemoveRelationshipParams,
+  AddLocationParams,
+  UpdateLocationParams,
+  RemoveLocationParams,
+  AddQuestParams,
+  UpdateQuestParams,
+  RemoveQuestParams,
+  CompleteQuestParams,
+  FailQuestParams,
+  AddKnowledgeParams,
+  UpdateKnowledgeParams,
+  AddTimelineParams,
+  UpdateTimelineParams,
+  AddFactionParams,
+  UpdateFactionParams,
+  RemoveFactionParams,
+  AddCausalChainParams,
+  UpdateCausalChainParams,
+  TriggerCausalChainParams,
+  ResolveCausalChainParams,
+  InterruptCausalChainParams,
+  UpdateWorldInfoParams,
+  UpdateGlobalParams,
+  RagSearchParams,
+  // Payload types for GameDatabase
+  CharacterAttributePayload,
+  CharacterSkillPayload,
+  CharacterConditionPayload,
+  CharacterTraitPayload,
+  CharacterProfilePayload,
 } from "../tools";
 import { finishTurnSchema } from "../schemas";
 import { getCoreSystemInstruction } from "../prompts/index";
@@ -911,115 +967,132 @@ export function executeToolCall(
     return db.query("character", "profile");
   }
   if (name === "query_character_attributes") {
-    return db.query("character", "attributes", args.name as string);
+    const typedArgs = getTypedArgs("query_character_attributes", args);
+    return db.query("character", "attributes", typedArgs.name ?? undefined);
   }
   if (name === "query_character_skills") {
-    return db.query("character", "skills", args.query as string);
+    const typedArgs = getTypedArgs("query_character_skills", args);
+    return db.query("character", "skills", typedArgs.query ?? undefined);
   }
   if (name === "query_character_conditions") {
-    return db.query("character", "conditions", args.query as string);
+    const typedArgs = getTypedArgs("query_character_conditions", args);
+    return db.query("character", "conditions", typedArgs.query ?? undefined);
   }
   if (name === "query_character_traits") {
-    return db.query("character", "hiddenTraits", args.query as string);
+    const typedArgs = getTypedArgs("query_character_traits", args);
+    return db.query("character", "hiddenTraits", typedArgs.query ?? undefined);
   }
   // RAG search
   if (name === "rag_search") {
-    return executeRagSearch(args, db);
+    const typedArgs = getTypedArgs("rag_search", args);
+    return executeRagSearch(typedArgs, db);
   }
 
   // ============================================================================
   // ADD TOOLS
   // ============================================================================
   if (name === "add_inventory") {
-    const result = db.modify("inventory", "add", args);
+    const typedArgs = getTypedArgs("add_inventory", args);
+    const result = db.modify("inventory", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.inventoryActions)
         accumulatedResponse.inventoryActions = [];
       accumulatedResponse.inventoryActions.push({
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["inventoryActions"][number]);
       trackChangedEntity(changedEntities, result, "item");
     }
     return result;
   }
   if (name === "add_relationship") {
-    const result = db.modify("relationship", "add", args);
+    const typedArgs = getTypedArgs("add_relationship", args);
+    const result = db.modify("relationship", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.relationshipActions)
         accumulatedResponse.relationshipActions = [];
       accumulatedResponse.relationshipActions.push({
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["relationshipActions"][number]);
       trackChangedEntity(changedEntities, result, "npc");
     }
     return result;
   }
   if (name === "add_location") {
-    const result = db.modify("location", "add", args);
+    const typedArgs = getTypedArgs("add_location", args);
+    const result = db.modify("location", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.locationActions)
         accumulatedResponse.locationActions = [];
       accumulatedResponse.locationActions.push({
         type: "known",
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["locationActions"][number]);
       trackChangedEntity(changedEntities, result, "location");
     }
     return result;
   }
   if (name === "add_quest") {
-    const result = db.modify("quest", "add", args);
+    const typedArgs = getTypedArgs("add_quest", args);
+    const result = db.modify("quest", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["questActions"][number]);
       trackChangedEntity(changedEntities, result, "quest");
     }
     return result;
   }
   if (name === "add_knowledge") {
-    const result = db.modify("knowledge", "add", args);
+    const typedArgs = getTypedArgs("add_knowledge", args);
+    const result = db.modify("knowledge", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.knowledgeActions)
         accumulatedResponse.knowledgeActions = [];
       accumulatedResponse.knowledgeActions.push({
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["knowledgeActions"][number]);
       trackChangedEntity(changedEntities, result, "knowledge");
     }
     return result;
   }
   if (name === "add_timeline") {
-    const result = db.modify("timeline", "add", args);
+    const typedArgs = getTypedArgs("add_timeline", args);
+    const result = db.modify("timeline", "add", typedArgs);
     trackChangedEntity(changedEntities, result, "event");
     return result;
   }
   if (name === "add_faction") {
-    const result = db.modify("faction", "add", args);
+    const typedArgs = getTypedArgs("add_faction", args);
+    const result = db.modify("faction", "add", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.factionActions)
         accumulatedResponse.factionActions = [];
       accumulatedResponse.factionActions.push({
         action: "add",
-        ...args,
+        ...typedArgs,
       } as GameResponse["factionActions"][number]);
       trackChangedEntity(changedEntities, result, "faction");
     }
     return result;
   }
   if (name === "add_causal_chain") {
-    return db.modify("causal_chain", "add", args);
+    const typedArgs = getTypedArgs("add_causal_chain", args);
+    return db.modify("causal_chain", "add", typedArgs);
   }
-  // Character add tools
+  // Character add tools - using strongly typed payloads
   if (name === "add_character_attribute") {
-    const result = db.modify("character", "add_attribute", args);
+    const typedArgs = getTypedArgs("add_character_attribute", args);
+    const payload: CharacterAttributePayload = {
+      attributes: [{ action: "add", ...typedArgs }],
+    };
+    const result = db.modify("character", "add_attribute", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1027,13 +1100,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.attributes = [];
       accumulatedResponse.characterUpdates.attributes.push({
         action: "add",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "add_character_skill") {
-    const result = db.modify("character", "add_skill", args);
+    const typedArgs = getTypedArgs("add_character_skill", args);
+    const payload: CharacterSkillPayload = {
+      skills: [{ action: "add", ...typedArgs }],
+    };
+    const result = db.modify("character", "add_skill", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1041,13 +1118,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.skills = [];
       accumulatedResponse.characterUpdates.skills.push({
         action: "add",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "add_character_condition") {
-    const result = db.modify("character", "add_condition", args);
+    const typedArgs = getTypedArgs("add_character_condition", args);
+    const payload: CharacterConditionPayload = {
+      conditions: [{ action: "add", ...typedArgs }],
+    };
+    const result = db.modify("character", "add_condition", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1055,13 +1136,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.conditions = [];
       accumulatedResponse.characterUpdates.conditions.push({
         action: "add",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "add_character_trait") {
-    const result = db.modify("character", "add_trait", args);
+    const typedArgs = getTypedArgs("add_character_trait", args);
+    const payload: CharacterTraitPayload = {
+      hiddenTraits: [{ action: "add", ...typedArgs }],
+    };
+    const result = db.modify("character", "add_trait", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1069,8 +1154,8 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.hiddenTraits = [];
       accumulatedResponse.characterUpdates.hiddenTraits.push({
         action: "add",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
@@ -1079,69 +1164,78 @@ export function executeToolCall(
   // REMOVE TOOLS
   // ============================================================================
   if (name === "remove_inventory") {
-    const result = db.modify("inventory", "remove", args);
+    const typedArgs = getTypedArgs("remove_inventory", args);
+    const result = db.modify("inventory", "remove", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.inventoryActions)
         accumulatedResponse.inventoryActions = [];
       accumulatedResponse.inventoryActions.push({
         action: "remove",
-        ...args,
+        ...typedArgs,
       } as GameResponse["inventoryActions"][number]);
     }
     return result;
   }
   if (name === "remove_relationship") {
-    const result = db.modify("relationship", "remove", args);
+    const typedArgs = getTypedArgs("remove_relationship", args);
+    const result = db.modify("relationship", "remove", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.relationshipActions)
         accumulatedResponse.relationshipActions = [];
       accumulatedResponse.relationshipActions.push({
         action: "remove",
-        ...args,
+        ...typedArgs,
       } as GameResponse["relationshipActions"][number]);
     }
     return result;
   }
   if (name === "remove_location") {
-    const result = db.modify("location", "remove", args);
+    const typedArgs = getTypedArgs("remove_location", args);
+    const result = db.modify("location", "remove", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.locationActions)
         accumulatedResponse.locationActions = [];
       accumulatedResponse.locationActions.push({
         type: "known",
         action: "remove",
-        ...args,
-      } as any);
+        ...typedArgs,
+      } as GameResponse["locationActions"][number]);
     }
     return result;
   }
   if (name === "remove_quest") {
-    const result = db.modify("quest", "remove", args);
+    const typedArgs = getTypedArgs("remove_quest", args);
+    const result = db.modify("quest", "remove", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: "remove",
-        ...args,
+        ...typedArgs,
       } as GameResponse["questActions"][number]);
     }
     return result;
   }
   if (name === "remove_faction") {
-    const result = db.modify("faction", "remove", args);
+    const typedArgs = getTypedArgs("remove_faction", args);
+    const result = db.modify("faction", "remove", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.factionActions)
         accumulatedResponse.factionActions = [];
       accumulatedResponse.factionActions.push({
         action: "remove",
-        ...args,
+        ...typedArgs,
       } as GameResponse["factionActions"][number]);
     }
     return result;
   }
-  // Character remove tools
+  // Character remove tools - using strongly typed payloads
   if (name === "remove_character_attribute") {
-    const result = db.modify("character", "remove_attribute", args);
+    const typedArgs = getTypedArgs("remove_character_attribute", args);
+    const payload: CharacterAttributePayload = {
+      attributes: [{ action: "remove", ...typedArgs }],
+    };
+    const result = db.modify("character", "remove_attribute", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1149,13 +1243,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.attributes = [];
       accumulatedResponse.characterUpdates.attributes.push({
         action: "remove",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "remove_character_skill") {
-    const result = db.modify("character", "remove_skill", args);
+    const typedArgs = getTypedArgs("remove_character_skill", args);
+    const payload: CharacterSkillPayload = {
+      skills: [{ action: "remove", ...typedArgs }],
+    };
+    const result = db.modify("character", "remove_skill", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1163,13 +1261,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.skills = [];
       accumulatedResponse.characterUpdates.skills.push({
         action: "remove",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "remove_character_condition") {
-    const result = db.modify("character", "remove_condition", args);
+    const typedArgs = getTypedArgs("remove_character_condition", args);
+    const payload: CharacterConditionPayload = {
+      conditions: [{ action: "remove", ...typedArgs }],
+    };
+    const result = db.modify("character", "remove_condition", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1177,13 +1279,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.conditions = [];
       accumulatedResponse.characterUpdates.conditions.push({
         action: "remove",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "remove_character_trait") {
-    const result = db.modify("character", "remove_trait", args);
+    const typedArgs = getTypedArgs("remove_character_trait", args);
+    const payload: CharacterTraitPayload = {
+      hiddenTraits: [{ action: "remove", ...typedArgs }],
+    };
+    const result = db.modify("character", "remove_trait", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1191,8 +1297,8 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.hiddenTraits = [];
       accumulatedResponse.characterUpdates.hiddenTraits.push({
         action: "remove",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
@@ -1201,108 +1307,117 @@ export function executeToolCall(
   // UPDATE TOOLS
   // ============================================================================
   if (name === "update_inventory") {
-    const result = db.modify("inventory", "update", args);
+    const typedArgs = getTypedArgs("update_inventory", args);
+    const result = db.modify("inventory", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.inventoryActions)
         accumulatedResponse.inventoryActions = [];
       accumulatedResponse.inventoryActions.push({
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["inventoryActions"][number]);
       trackChangedEntity(changedEntities, result, "item");
     }
     return result;
   }
   if (name === "update_relationship") {
-    const result = db.modify("relationship", "update", args);
+    const typedArgs = getTypedArgs("update_relationship", args);
+    const result = db.modify("relationship", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.relationshipActions)
         accumulatedResponse.relationshipActions = [];
       accumulatedResponse.relationshipActions.push({
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["relationshipActions"][number]);
       trackChangedEntity(changedEntities, result, "npc");
     }
     return result;
   }
   if (name === "update_location") {
-    const result = db.modify("location", "update", args);
+    const typedArgs = getTypedArgs("update_location", args);
+    const result = db.modify("location", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.locationActions)
         accumulatedResponse.locationActions = [];
       accumulatedResponse.locationActions.push({
         type: "known",
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["locationActions"][number]);
       trackChangedEntity(changedEntities, result, "location");
     }
     return result;
   }
   if (name === "update_quest") {
-    const result = db.modify("quest", "update", args);
+    const typedArgs = getTypedArgs("update_quest", args);
+    const result = db.modify("quest", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["questActions"][number]);
       trackChangedEntity(changedEntities, result, "quest");
     }
     return result;
   }
   if (name === "complete_quest") {
-    const result = db.modify("quest", "complete", args);
+    const typedArgs = getTypedArgs("complete_quest", args);
+    const result = db.modify("quest", "complete", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: "complete",
-        ...args,
+        ...typedArgs,
       } as GameResponse["questActions"][number]);
     }
     return result;
   }
   if (name === "fail_quest") {
-    const result = db.modify("quest", "fail", args);
+    const typedArgs = getTypedArgs("fail_quest", args);
+    const result = db.modify("quest", "fail", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.questActions)
         accumulatedResponse.questActions = [];
       accumulatedResponse.questActions.push({
         action: "fail",
-        ...args,
+        ...typedArgs,
       } as GameResponse["questActions"][number]);
     }
     return result;
   }
   if (name === "update_knowledge") {
-    const result = db.modify("knowledge", "update", args);
+    const typedArgs = getTypedArgs("update_knowledge", args);
+    const result = db.modify("knowledge", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.knowledgeActions)
         accumulatedResponse.knowledgeActions = [];
       accumulatedResponse.knowledgeActions.push({
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["knowledgeActions"][number]);
       trackChangedEntity(changedEntities, result, "knowledge");
     }
     return result;
   }
   if (name === "update_timeline") {
-    const result = db.modify("timeline", "update", args);
+    const typedArgs = getTypedArgs("update_timeline", args);
+    const result = db.modify("timeline", "update", typedArgs);
     trackChangedEntity(changedEntities, result, "event");
     return result;
   }
   if (name === "update_faction") {
-    const result = db.modify("faction", "update", args);
+    const typedArgs = getTypedArgs("update_faction", args);
+    const result = db.modify("faction", "update", typedArgs);
     if (result.success) {
       if (!accumulatedResponse.factionActions)
         accumulatedResponse.factionActions = [];
       accumulatedResponse.factionActions.push({
         action: "update",
-        ...args,
+        ...typedArgs,
       } as GameResponse["factionActions"][number]);
       trackChangedEntity(changedEntities, result, "faction");
     }
@@ -1310,57 +1425,64 @@ export function executeToolCall(
   }
   // Causal chain tools
   if (name === "update_causal_chain") {
-    return db.modify("causal_chain", "update", args);
+    const typedArgs = getTypedArgs("update_causal_chain", args);
+    return db.modify("causal_chain", "update", typedArgs);
   }
   if (name === "trigger_causal_chain") {
-    return db.modify("causal_chain", "trigger", args);
+    const typedArgs = getTypedArgs("trigger_causal_chain", args);
+    return db.modify("causal_chain", "trigger", typedArgs);
   }
   if (name === "resolve_causal_chain") {
-    return db.modify("causal_chain", "resolve", args);
+    const typedArgs = getTypedArgs("resolve_causal_chain", args);
+    return db.modify("causal_chain", "resolve", typedArgs);
   }
   if (name === "interrupt_causal_chain") {
-    return db.modify("causal_chain", "interrupt", args);
+    const typedArgs = getTypedArgs("interrupt_causal_chain", args);
+    return db.modify("causal_chain", "interrupt", typedArgs);
   }
   // World info
   if (name === "update_world_info") {
-    const { unlockWorldSetting, unlockMainGoal, reason } = args as {
-      unlockWorldSetting?: boolean;
-      unlockMainGoal?: boolean;
-      reason: string;
-    };
+    const typedArgs = getTypedArgs("update_world_info", args);
     const result = db.modify("world_info", "update", {
-      unlockWorldSetting,
-      unlockMainGoal,
-      reason,
+      unlockWorldSetting: typedArgs.unlockWorldSetting,
+      unlockMainGoal: typedArgs.unlockMainGoal,
+      reason: typedArgs.reason,
     });
     if (result.success) {
       if (!accumulatedResponse.worldInfoUpdates)
         accumulatedResponse.worldInfoUpdates = [];
       accumulatedResponse.worldInfoUpdates.push({
-        unlockWorldSetting,
-        unlockMainGoal,
-        reason,
+        unlockWorldSetting: typedArgs.unlockWorldSetting,
+        unlockMainGoal: typedArgs.unlockMainGoal,
+        reason: typedArgs.reason,
       });
     }
     return result;
   }
   // Global state
   if (name === "update_global") {
-    return db.modify("global", "update", args);
+    const typedArgs = getTypedArgs("update_global", args);
+    return db.modify("global", "update", typedArgs);
   }
   // Character profile update
   if (name === "update_character_profile") {
-    const result = db.modify("character", "update_profile", args);
+    const typedArgs = getTypedArgs("update_character_profile", args);
+    const payload: CharacterProfilePayload = { profile: typedArgs };
+    const result = db.modify("character", "update_profile", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
-      Object.assign(accumulatedResponse.characterUpdates, args);
+      Object.assign(accumulatedResponse.characterUpdates, typedArgs);
     }
     return result;
   }
-  // Character attribute/skill/condition/trait updates
+  // Character attribute/skill/condition/trait updates - using strongly typed payloads
   if (name === "update_character_attribute") {
-    const result = db.modify("character", "update_attribute", args);
+    const typedArgs = getTypedArgs("update_character_attribute", args);
+    const payload: CharacterAttributePayload = {
+      attributes: [{ action: "update", ...typedArgs }],
+    };
+    const result = db.modify("character", "update_attribute", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1368,13 +1490,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.attributes = [];
       accumulatedResponse.characterUpdates.attributes.push({
         action: "update",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "update_character_skill") {
-    const result = db.modify("character", "update_skill", args);
+    const typedArgs = getTypedArgs("update_character_skill", args);
+    const payload: CharacterSkillPayload = {
+      skills: [{ action: "update", ...typedArgs }],
+    };
+    const result = db.modify("character", "update_skill", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1382,13 +1508,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.skills = [];
       accumulatedResponse.characterUpdates.skills.push({
         action: "update",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "update_character_condition") {
-    const result = db.modify("character", "update_condition", args);
+    const typedArgs = getTypedArgs("update_character_condition", args);
+    const payload: CharacterConditionPayload = {
+      conditions: [{ action: "update", ...typedArgs }],
+    };
+    const result = db.modify("character", "update_condition", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1396,13 +1526,17 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.conditions = [];
       accumulatedResponse.characterUpdates.conditions.push({
         action: "update",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
   if (name === "update_character_trait") {
-    const result = db.modify("character", "update_trait", args);
+    const typedArgs = getTypedArgs("update_character_trait", args);
+    const payload: CharacterTraitPayload = {
+      hiddenTraits: [{ action: "update", ...typedArgs }],
+    };
+    const result = db.modify("character", "update_trait", payload);
     if (result.success) {
       if (!accumulatedResponse.characterUpdates)
         accumulatedResponse.characterUpdates = {};
@@ -1410,8 +1544,8 @@ export function executeToolCall(
         accumulatedResponse.characterUpdates.hiddenTraits = [];
       accumulatedResponse.characterUpdates.hiddenTraits.push({
         action: "update",
-        ...args,
-      } as any);
+        ...typedArgs,
+      });
     }
     return result;
   }
@@ -1436,7 +1570,7 @@ export function executeToolCall(
  * Uses the new RAG service (SharedWorker-based) for semantic search
  */
 export async function executeRagSearch(
-  args: Record<string, unknown>,
+  args: RagSearchParams,
   db: GameDatabase,
 ): Promise<unknown> {
   // Dynamic import to avoid circular dependencies if any, and because it's a separate service
@@ -1453,21 +1587,7 @@ export async function executeRagSearch(
   }
 
   try {
-    const query = args.query as string;
-    const types = args.types as
-      | (
-          | "story"
-          | "location"
-          | "quest"
-          | "knowledge"
-          | "npc"
-          | "item"
-          | "event"
-        )[]
-      | undefined;
-    const topK = (args.topK as number) || 5;
-    const currentForkOnly = args.currentForkOnly as boolean | undefined;
-    const beforeCurrentTurn = args.beforeCurrentTurn as boolean | undefined;
+    const { query, types, topK = 5, currentForkOnly, beforeCurrentTurn } = args;
 
     const state = db.getState();
 

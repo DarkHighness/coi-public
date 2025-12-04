@@ -11,13 +11,46 @@ import {
 import { getThemeStyle, getLoadedThemes } from "../themeRegistry";
 
 /**
+ * NPC info extracted from AI prompt or game state
+ */
+interface NPCInfo {
+  name: string;
+  description?: string;
+  appearance?: string;
+  status?: string;
+}
+
+/**
+ * Extracted context from game state for image generation
+ */
+interface ExtractedContext {
+  theme?: string;
+  storyTitle?: string;
+  worldSetting: string;
+  time?: string;
+  currentLocation?: GameLocation;
+  currentLocationName?: string;
+  character: {
+    name: string;
+    race: string;
+    profession: string;
+    appearance: string;
+    status: string;
+  };
+  weather: string;
+  mood: string;
+  /** All known NPCs from game state (for reference lookup) */
+  knownNPCs: Map<string, NPCInfo>;
+}
+
+/**
  * 从 GameState/Snapshot 中提取图像生成所需的上下文
- * 内部辅助函数，用于统一上下文提取逻辑
+ * 不再自动检测场景中的 NPC，而是提供所有已知 NPC 的查找表
  */
 const extractContextFromGameState = (
   gameState: GameState,
   snapshot?: GameStateSnapshot,
-) => {
+): ExtractedContext => {
   const stateSnapshot = snapshot || gameState;
   const worldSetting = gameState.outline?.worldSetting;
 
@@ -31,47 +64,20 @@ const extractContextFromGameState = (
     `;
   }
 
-  // Reconstruct active NPCs list
-  // CRITICAL: Use currentLocation to determine if NPC is in the same scene as the player
-  const playerLocName = stateSnapshot.currentLocation?.toLowerCase() || "";
-  const playerLoc = stateSnapshot.locations?.find(
-    (l: GameLocation) =>
-      l.name?.toLowerCase() === playerLocName ||
-      l.id?.toLowerCase() === playerLocName,
-  );
-  const playerLocId = playerLoc?.id?.toLowerCase() || "";
-  const playerLocDisplayName = playerLoc?.name?.toLowerCase() || "";
-
-  const activeNPCs = (stateSnapshot.relationships || [])
-    .filter((r: Relationship) => {
-      // Skip absent or dead NPCs (case-insensitive check)
-      const hiddenStatus = r.hidden?.status?.toLowerCase() || "";
-      if (hiddenStatus === "absent" || hiddenStatus === "dead") {
-        return false;
-      }
-
-      // CRITICAL: Always use currentLocation to determine presence
-      const npcLocation = r.currentLocation?.toLowerCase() || "";
-
-      // NPC must have a valid location that matches player's location
-      if (!npcLocation || npcLocation === "unknown") {
-        return false; // No location set = not in scene
-      }
-
-      // Check if NPC is at the same location as player (case-insensitive)
-      const isAtLocation =
-        npcLocation === playerLocId ||
-        npcLocation === playerLocName ||
-        npcLocation === playerLocDisplayName;
-
-      return isAtLocation;
-    })
-    .map((r: Relationship) => ({
-      name: r.visible.name,
-      description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
-      appearance: r.visible?.appearance || "No appearance available",
-      status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,
-    }));
+  // Build a map of all known NPCs for reference lookup
+  // The AI's imagePrompt will specify which NPCs appear in the scene
+  const knownNPCs = new Map<string, NPCInfo>();
+  (stateSnapshot.relationships || []).forEach((r: Relationship) => {
+    const name = r.visible?.name || "";
+    if (name) {
+      knownNPCs.set(name.toLowerCase(), {
+        name: r.visible.name,
+        description: `${r.visible?.description || ""} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
+        appearance: r.visible?.appearance || "",
+        status: `${r.visible?.status || ""} (Actual: ${r.hidden?.status || "Normal"})`,
+      });
+    }
+  });
 
   // Resolve location details (case-insensitive) - now with full details
   const currentLoc = stateSnapshot.locations?.find(
@@ -101,10 +107,31 @@ const extractContextFromGameState = (
       appearance: stateSnapshot.character?.appearance || "Not described",
       status: stateSnapshot.character?.status || "Normal",
     },
-    activeNPCs,
     weather,
     mood,
+    knownNPCs,
   };
+};
+
+/**
+ * 从 AI 生成的 prompt 中提取提到的 NPC 名字
+ * 通过与已知 NPC 列表匹配来识别
+ */
+const extractMentionedNPCs = (
+  prompt: string,
+  knownNPCs: Map<string, NPCInfo>,
+): NPCInfo[] => {
+  const mentioned: NPCInfo[] = [];
+  const promptLower = prompt.toLowerCase();
+
+  for (const [nameLower, npcInfo] of knownNPCs) {
+    // Check if the NPC name appears in the prompt
+    if (promptLower.includes(nameLower)) {
+      mentioned.push(npcInfo);
+    }
+  }
+
+  return mentioned;
 };
 
 /**
@@ -154,8 +181,13 @@ const getThemeStyleReference = (
 
 /**
  * 生成场景图片提示词
- * @param prompt 场景描述
- * @param gameState 游戏状态（包含完整的位置、角色、NPC 等信息）
+ *
+ * 重要变更：不再自动检测场景中的 NPC
+ * AI 在生成 imagePrompt 时已经根据叙事上下文决定了哪些角色应该出现在画面中
+ * 我们只需要提供游戏状态上下文来增强 AI 生成的 prompt
+ *
+ * @param prompt AI 生成的场景描述（已包含角色信息）
+ * @param gameState 游戏状态（提供世界、位置、主角等上下文）
  * @param snapshot 可选的状态快照（用于历史回放）
  */
 export const getSceneImagePrompt = (
@@ -181,12 +213,15 @@ export const getSceneImagePrompt = (
     currentLocation,
     currentLocationName,
     character,
-    activeNPCs,
+    knownNPCs,
     worldSetting,
     storyTitle,
     weather,
     mood,
   } = context;
+
+  // Extract NPCs mentioned in the AI's prompt and enrich with game state data
+  const mentionedNPCs = extractMentionedNPCs(prompt, knownNPCs);
 
   // === QUALITY TAGS (Front for emphasis in some models) ===
   const qualityPrefix = `(Masterpiece, Best Quality, 8K Resolution, Ultra-Detailed, Cinematic Lighting, Ray Tracing, Global Illumination, Unreal Engine 5 Render, Photorealistic, Professional Photography, High Fidelity, Hyperrealistic Textures)`;
@@ -257,7 +292,7 @@ export const getSceneImagePrompt = (
   // Weather and Atmospheric Effects
   if (weather && weather !== "none") {
     xmlPrompt += `  <weather_effects>\n`;
-    const weatherDetails = {
+    const weatherDetails: Record<string, string> = {
       rain: "Rain falling, wet surfaces with high reflectivity, water droplets on skin/clothing, puddles reflecting environment, misty atmosphere, cool color palette, dramatic contrast, screen space reflections",
       snow: "Snow falling, accumulation on surfaces, cold breath visible, frost and ice details with subsurface scattering, muted white and blue tones, soft diffused light, peaceful yet cold atmosphere",
       fog: "Dense volumetric fog obscuring background, limited visibility, mysterious atmosphere, soft focus on distant objects, diffused light, muted colors, ethereal quality, light shafts piercing through fog",
@@ -268,7 +303,7 @@ export const getSceneImagePrompt = (
       sunny:
         "Bright sunlight, clear sky, strong shadows, vibrant colors, warm atmosphere, lens flare, high visibility, cheerful or harsh depending on intensity, caustic reflections",
     };
-    xmlPrompt += `    ${weatherDetails[weather as keyof typeof weatherDetails] || weather}\n`;
+    xmlPrompt += `    ${weatherDetails[weather] || weather}\n`;
     xmlPrompt += `  </weather_effects>\n`;
   }
 
@@ -345,7 +380,7 @@ export const getSceneImagePrompt = (
     }
 
     if (mood) {
-      const moodDetails = {
+      const moodDetails: Record<string, string> = {
         quiet:
           "Serene and still environment, minimal movement, peaceful atmosphere, soft ambient sounds implied",
         mystical:
@@ -358,7 +393,7 @@ export const getSceneImagePrompt = (
           "Warm interior lighting, wooden textures, smoke or steam, crowded or cozy atmosphere, social setting details",
         city: "Urban environment, architectural details, crowds or emptiness, ambient city lighting, modern or fantasy elements",
       };
-      xmlPrompt += `    <atmosphere>${moodDetails[mood as keyof typeof moodDetails] || mood}</atmosphere>\n`;
+      xmlPrompt += `    <atmosphere>${moodDetails[mood] || mood}</atmosphere>\n`;
     }
     xmlPrompt += `    <environmental_details>\n`;
     xmlPrompt += `      Detailed background elements, textural variety (stone, wood, metal, fabric), environmental storytelling through props and setting, atmospheric perspective with depth, foreground/midground/background separation\n`;
@@ -387,19 +422,27 @@ export const getSceneImagePrompt = (
     xmlPrompt += `  </protagonist>\n`;
   }
 
-  // Active NPCs (Enhanced with more detail)
-  if (activeNPCs && activeNPCs.length > 0) {
-    xmlPrompt += `  <npcs>\n`;
-    activeNPCs.slice(0, 4).forEach((npc, index) => {
+  // NPCs mentioned in the AI's prompt - enriched with game state appearance data
+  // This replaces the old automatic NPC detection based on location
+  if (mentionedNPCs.length > 0) {
+    xmlPrompt += `  <npcs_in_scene>\n`;
+    xmlPrompt += `    <note>These NPCs were mentioned in the scene description. Use their appearance data to render them accurately.</note>\n`;
+    mentionedNPCs.slice(0, 4).forEach((npc, index) => {
       xmlPrompt += `    <npc priority="${index === 0 ? "high" : "medium"}">\n`;
       xmlPrompt += `      <name>${npc.name}</name>\n`;
-      xmlPrompt += `      <description>${npc.description}</description>\n`;
-      xmlPrompt += `      <appearance>${npc.appearance || "Distinctive features and clothing"}</appearance>\n`;
-      xmlPrompt += `      <status>${npc.status || "Present in scene"}</status>\n`;
-      xmlPrompt += `      <interaction>Position relative to protagonist, body language suggesting relationship dynamic, facial expression and eye contact, physical proximity and spatial relationship</interaction>\n`;
+      if (npc.description) {
+        xmlPrompt += `      <description>${npc.description}</description>\n`;
+      }
+      if (npc.appearance) {
+        xmlPrompt += `      <appearance>${npc.appearance}</appearance>\n`;
+      }
+      if (npc.status) {
+        xmlPrompt += `      <status>${npc.status}</status>\n`;
+      }
+      xmlPrompt += `      <rendering>Position relative to protagonist as described in scene, body language and expression matching narrative context, physical details consistent with appearance data</rendering>\n`;
       xmlPrompt += `    </npc>\n`;
     });
-    xmlPrompt += `  </npcs>\n`;
+    xmlPrompt += `  </npcs_in_scene>\n`;
   }
 
   xmlPrompt += `</visual_context>\n`;
@@ -436,7 +479,7 @@ export const getSceneImagePrompt = (
   xmlPrompt += `  </artistic_direction>\n`;
   xmlPrompt += `</rendering_instructions>\n`;
 
-  // === CORE SCENE DESCRIPTION ===
+  // === CORE SCENE DESCRIPTION (from AI) ===
   xmlPrompt += `\n<scene_description>\n`;
   xmlPrompt += `  ${prompt}\n`;
   xmlPrompt += `</scene_description>\n`;
@@ -452,10 +495,13 @@ export const getSceneImagePrompt = (
 /**
  * Create a standardized ImageGenerationContext from GameState and Snapshot
  * @deprecated 推荐直接使用 getSceneImagePrompt(prompt, gameState, snapshot)，它已经内部提取上下文
+ *
+ * 注意：此函数不再自动检测活跃 NPC。AI 在生成 imagePrompt 时已经决定了哪些角色应该出现在画面中。
+ * activeNPCs 字段始终返回空数组。
  */
 export const createImageGenerationContext = (
   gameState: GameState,
-  snapshot?: any, // Using any for snapshot to avoid circular dependency issues if types aren't perfect, but ideally GameStateSnapshot
+  snapshot?: GameStateSnapshot,
 ): ImageGenerationContext => {
   const stateSnapshot = snapshot || gameState;
   const worldSetting = gameState.outline?.worldSetting;
@@ -470,51 +516,9 @@ export const createImageGenerationContext = (
     `;
   }
 
-  // Reconstruct active NPCs list
-  // CRITICAL: Use currentLocation to determine if NPC is in the same scene as the player
-  const playerLocName = stateSnapshot.currentLocation?.toLowerCase() || "";
-  const playerLoc = stateSnapshot.locations?.find(
-    (l: GameLocation) =>
-      l.name?.toLowerCase() === playerLocName ||
-      l.id?.toLowerCase() === playerLocName,
-  );
-  const playerLocId = playerLoc?.id?.toLowerCase() || "";
-  const playerLocDisplayName = playerLoc?.name?.toLowerCase() || "";
-
-  const activeNPCs = (stateSnapshot.relationships || [])
-    .filter((r: Relationship) => {
-      // Skip absent or dead NPCs (case-insensitive check)
-      const hiddenStatus = r.hidden?.status?.toLowerCase() || "";
-      if (hiddenStatus === "absent" || hiddenStatus === "dead") {
-        return false;
-      }
-
-      // CRITICAL: Always use currentLocation to determine presence
-      const npcLocation = r.currentLocation?.toLowerCase() || "";
-
-      // NPC must have a valid location that matches player's location
-      if (!npcLocation || npcLocation === "unknown") {
-        return false; // No location set = not in scene
-      }
-
-      // Check if NPC is at the same location as player (case-insensitive)
-      const isAtLocation =
-        npcLocation === playerLocId ||
-        npcLocation === playerLocName ||
-        npcLocation === playerLocDisplayName;
-
-      return isAtLocation;
-    })
-    .map((r: Relationship) => ({
-      name: r.visible.name,
-      description: `${r.visible?.description || "No description"} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
-      appearance: r.visible?.appearance || "No appearance available",
-      status: `${r.visible?.status || "Unknown activity"} (Actual: ${r.hidden?.status || "Normal"})`,
-    }));
-
   // Resolve location details (case-insensitive)
   const currentLoc = stateSnapshot.locations?.find(
-    (l: any) =>
+    (l: GameLocation) =>
       l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
   );
   const locationStr = currentLoc
@@ -542,7 +546,8 @@ export const createImageGenerationContext = (
       appearance: stateSnapshot.character?.appearance || "Not described",
       status: stateSnapshot.character?.status || "Normal",
     },
-    activeNPCs: activeNPCs,
+    // AI 在 imagePrompt 中已决定哪些角色出现在场景中，不再自动检测 NPC
+    activeNPCs: [],
     weather,
     season: "Unknown",
     mood,

@@ -88,9 +88,33 @@ export interface GenerateContentOptions {
   tools?: ZodToolDefinition[];
 }
 
-import type { ZodTypeAny } from "zod";
+import type { ZodTypeAny, ZodObject, ZodRawShape, z } from "zod";
 
-/** 工具/函数定义 (使用 Zod Schema) */
+/**
+ * 类型安全的工具定义 - 使用泛型保留完整的 Schema 类型信息
+ *
+ * @template TParams - Zod object schema 的类型
+ */
+export interface TypedToolDefinition<
+  TParams extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>,
+> {
+  name: string;
+  description: string;
+  parameters: TParams;
+}
+
+/**
+ * 从 TypedToolDefinition 推断参数类型
+ */
+export type InferToolParams<T> =
+  T extends TypedToolDefinition<infer TParams>
+    ? z.infer<TParams>
+    : never;
+
+/**
+ * 工具/函数定义 (运行时兼容类型，用于传递给 API)
+ * @deprecated 内部使用 TypedToolDefinition 以保持类型安全
+ */
 export interface ZodToolDefinition {
   name: string;
   description: string;

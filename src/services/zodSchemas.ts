@@ -1297,25 +1297,11 @@ export const gameResponseSchema = z.object({
     .string()
     .nullish()
     .describe(
-      `A DETAILED visual prompt for generating an image of the current scene. If you want to generate an image, provide this prompt (RECOMMENDED for impactful moments). If not, omit this field.
-
-**MUST INCLUDE** (when provided):
-1. **Environment**: Specific location details, architecture, lighting conditions, weather, time of day
-2. **Protagonist**: Physical appearance, clothing, posture, expression, what they're doing
-3. **NPCs Present**: Only NPCs whose currentLocation matches - their appearance, position, actions
-4. **Atmosphere**: Mood, color palette, visual tone (e.g., "dim candlelight casts long shadows")
-5. **Key Objects**: Important items, weapons, or environmental details in focus
-6. **Composition**: Camera angle suggestion (e.g., "low angle looking up", "over-the-shoulder view")
-
-**Example**: "A dimly lit medieval tavern interior. You stand at the bar counter, a hooded figure in worn leather armor, hand resting on the hilt of your sword. The barkeep, a burly man with a scarred face, leans forward conspiratorially. Flickering candlelight casts dancing shadows on stone walls. Patrons huddle in shadowy corners. Warm amber tones with deep shadows. Third-person cinematic angle from behind the protagonist."
-
-**DO NOT**: Include NPCs not at the current location. Be vague. Skip visual details.`,
+      `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
     ),
   atmosphere: atmosphereSchema
     .nullish()
-    .describe(
-      "The current atmosphere settings (visual theme and audio ambience).",
-    ),
+    .describe("Atmosphere settings (envTheme and ambience)."),
   narrativeTone: z
     .string()
     .nullish()
@@ -1356,9 +1342,9 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         type: z.enum(["current", "known"]),
-        action: z.enum(["update", "add"]),
+        action: z.enum(["update", "add", "remove"]),
         id: z.string().nullish(),
-        name: z.string(),
+        name: z.string().nullish(),
         visible: locationVisibleSchema.partial().nullish(),
         hidden: locationHiddenSchema.partial().nullish(),
         lore: z.string().nullish(),
@@ -1684,33 +1670,15 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
     .string()
     .nullish()
     .describe(
-      `A DETAILED visual prompt for generating an image of the current scene. Provide for impactful narrative moments. Omit if no image is needed.
-
-**REQUIRED ELEMENTS** (when provided):
-1. **Setting**: Location name, architecture style, lighting (natural/artificial), weather, time
-2. **Protagonist**: Race, appearance, clothing/armor, current action, expression, posture
-3. **NPCs in Scene**: ONLY those whose currentLocation matches player's location - describe their appearance, position relative to protagonist, what they're doing
-4. **Mood & Atmosphere**: Color palette, visual tone, emotional weight (e.g., "ominous red glow", "soft morning light")
-5. **Focal Elements**: Key objects, weapons drawn, magical effects, environmental hazards
-6. **Camera**: Angle and framing (e.g., "wide shot", "close-up on faces", "bird's eye view")
-
-**GOOD Example**: "Inside a crumbling stone temple overgrown with vines. Shafts of golden sunlight pierce through holes in the domed ceiling. You kneel before an ancient altar, examining glowing runes. Your elven features are illuminated by the soft blue light emanating from the stone. Behind you, your companion Mira, a red-haired human warrior in chainmail, keeps watch with sword drawn. Dust particles float in the light beams. Mystical atmosphere, warm gold and cool blue contrast. Wide cinematic shot."
-
-**BAD Example**: "The character is in a temple looking at something." ← Too vague!
-
-**CRITICAL**: Only include NPCs whose hidden.status is NOT 'absent' or 'dead' AND whose currentLocation matches the player's current location.`,
+      `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
     ),
   atmosphere: atmosphereSchema
     .nullish()
-    .describe(
-      "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
-    ),
+    .describe("Atmosphere settings (envTheme and ambience)."),
   narrativeTone: z
     .string()
     .nullish()
-    .describe(
-      "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
-    ),
+    .describe("Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy')."),
   aliveEntities: z
     .object({
       inventory: z

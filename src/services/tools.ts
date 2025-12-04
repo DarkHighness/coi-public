@@ -32,8 +32,12 @@
  * ## UPDATE: undefined = no change, null = delete field
  */
 
-import { z } from "zod";
-import type { ZodToolDefinition } from "./providers/types";
+import { z, ZodObject, ZodRawShape } from "zod";
+import type {
+  ZodToolDefinition,
+  TypedToolDefinition,
+  InferToolParams,
+} from "./providers/types";
 import {
   atmosphereSchema,
   inventoryItemVisibleSchema,
@@ -63,6 +67,85 @@ import {
   finishTurnSchema,
   forceUpdateSchema,
 } from "./zodSchemas";
+
+// ============================================================================
+// Type-Safe Tool Definition Helper
+// ============================================================================
+
+/**
+ * Creates a type-safe tool definition that preserves full TypeScript type information.
+ *
+ * This helper function ensures that:
+ * 1. The parameters schema type is fully preserved (not erased to ZodTypeAny)
+ * 2. InferToolParams<T> can correctly infer the parameter type
+ * 3. Tool handlers can be type-checked at compile time
+ *
+ * @example
+ * const MY_TOOL = defineTool({
+ *   name: "my_tool",
+ *   description: "Does something",
+ *   parameters: z.object({ name: z.string() }),
+ * });
+ *
+ * type MyToolParams = InferToolParams<typeof MY_TOOL>; // { name: string }
+ */
+export function defineTool<TParams extends ZodObject<ZodRawShape>>(
+  definition: TypedToolDefinition<TParams>,
+): TypedToolDefinition<TParams> {
+  return definition;
+}
+
+/**
+ * Convert TypedToolDefinition to runtime-compatible ZodToolDefinition
+ * Used when passing tools to provider APIs that expect ZodTypeAny
+ */
+export function toRuntimeTool(
+  tool: TypedToolDefinition<ZodObject<ZodRawShape>>,
+): ZodToolDefinition {
+  return tool as ZodToolDefinition;
+}
+
+/**
+ * Convert array of TypedToolDefinitions to runtime-compatible array
+ */
+export function toRuntimeTools(
+  tools: TypedToolDefinition<ZodObject<ZodRawShape>>[],
+): ZodToolDefinition[] {
+  return tools as ZodToolDefinition[];
+}
+
+/**
+ * Runtime type validation for tool parameters.
+ * Uses Zod's safeParse to validate arguments at runtime.
+ *
+ * @param tool The tool definition containing the schema
+ * @param args The arguments to validate
+ * @returns Validated and typed arguments, or throws an error
+ */
+export function validateToolArgs<TParams extends ZodObject<ZodRawShape>>(
+  tool: TypedToolDefinition<TParams>,
+  args: Record<string, unknown>,
+): z.infer<TParams> {
+  const result = tool.parameters.safeParse(args);
+  if (!result.success) {
+    const errors = result.error.errors
+      .map((e) => `${e.path.join(".")}: ${e.message}`)
+      .join("; ");
+    throw new Error(`Invalid arguments for tool "${tool.name}": ${errors}`);
+  }
+  return result.data;
+}
+
+/**
+ * Runtime type validation with safe return (no throw).
+ * Returns { success: true, data } or { success: false, error }.
+ */
+export function safeValidateToolArgs<TParams extends ZodObject<ZodRawShape>>(
+  tool: TypedToolDefinition<TParams>,
+  args: Record<string, unknown>,
+): z.SafeParseReturnType<z.input<TParams>, z.infer<TParams>> {
+  return tool.parameters.safeParse(args);
+}
 
 // ============================================================================
 // ID Prefixes and Helpers
@@ -106,7 +189,7 @@ export type AgentStage = "query" | "add" | "remove" | "update" | "narrative";
 // QUERY TOOLS (Stage 1)
 // ============================================================================
 
-export const QUERY_INVENTORY_TOOL: ZodToolDefinition = {
+export const QUERY_INVENTORY_TOOL = defineTool({
   name: "query_inventory",
   description:
     "Check what the player is carrying. Use this to verify items for an action.",
@@ -116,9 +199,9 @@ export const QUERY_INVENTORY_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Name, ID (inv:N), or keyword. Omit to list all."),
   }),
-};
+});
 
-export const QUERY_RELATIONSHIPS_TOOL: ZodToolDefinition = {
+export const QUERY_RELATIONSHIPS_TOOL = defineTool({
   name: "query_relationships",
   description: "Recall details about NPCs the player has met.",
   parameters: z.object({
@@ -127,9 +210,9 @@ export const QUERY_RELATIONSHIPS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Name, ID (npc:N), or keyword. Omit to list all."),
   }),
-};
+});
 
-export const QUERY_LOCATIONS_TOOL: ZodToolDefinition = {
+export const QUERY_LOCATIONS_TOOL = defineTool({
   name: "query_locations",
   description: "Recall details about known locations.",
   parameters: z.object({
@@ -138,9 +221,9 @@ export const QUERY_LOCATIONS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Name, ID (loc:N), or keyword. Omit to list all."),
   }),
-};
+});
 
-export const QUERY_QUESTS_TOOL: ZodToolDefinition = {
+export const QUERY_QUESTS_TOOL = defineTool({
   name: "query_quests",
   description: "Query active and completed quests.",
   parameters: z.object({
@@ -153,9 +236,9 @@ export const QUERY_QUESTS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Filter by status. Default: 'active'."),
   }),
-};
+});
 
-export const QUERY_KNOWLEDGE_TOOL: ZodToolDefinition = {
+export const QUERY_KNOWLEDGE_TOOL = defineTool({
   name: "query_knowledge",
   description: "Query accumulated knowledge/lore.",
   parameters: z.object({
@@ -165,9 +248,9 @@ export const QUERY_KNOWLEDGE_TOOL: ZodToolDefinition = {
       .describe("Title, ID (know:N), or keyword. Omit to list all."),
     category: knowledgeCategorySchema.nullish().describe("Filter by category."),
   }),
-};
+});
 
-export const QUERY_TIMELINE_TOOL: ZodToolDefinition = {
+export const QUERY_TIMELINE_TOOL = defineTool({
   name: "query_timeline",
   description: "Query world timeline and history.",
   parameters: z.object({
@@ -176,9 +259,9 @@ export const QUERY_TIMELINE_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Keyword, ID (evt:N), or category. Omit for recent events."),
   }),
-};
+});
 
-export const QUERY_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const QUERY_CAUSAL_CHAIN_TOOL = defineTool({
   name: "query_causal_chain",
   description: "Query active causal chains.",
   parameters: z.object({
@@ -187,9 +270,9 @@ export const QUERY_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Keyword or ID (chain:N). Omit to list all."),
   }),
-};
+});
 
-export const QUERY_FACTIONS_TOOL: ZodToolDefinition = {
+export const QUERY_FACTIONS_TOOL = defineTool({
   name: "query_factions",
   description: "Query major factions and power groups.",
   parameters: z.object({
@@ -198,9 +281,9 @@ export const QUERY_FACTIONS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Name, ID (fac:N), or keyword. Omit to list all."),
   }),
-};
+});
 
-export const QUERY_GLOBAL_TOOL: ZodToolDefinition = {
+export const QUERY_GLOBAL_TOOL = defineTool({
   name: "query_global",
   description: "Query global game state (time, theme, environment).",
   parameters: z.object({
@@ -209,24 +292,24 @@ export const QUERY_GLOBAL_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Category. Default: 'all'."),
   }),
-};
+});
 
 // Character Query Tools
-export const QUERY_CHARACTER_PROFILE_TOOL: ZodToolDefinition = {
+export const QUERY_CHARACTER_PROFILE_TOOL = defineTool({
   name: "query_character_profile",
   description: "Query the player character's basic profile information.",
   parameters: z.object({}),
-};
+});
 
-export const QUERY_CHARACTER_ATTRIBUTES_TOOL: ZodToolDefinition = {
+export const QUERY_CHARACTER_ATTRIBUTES_TOOL = defineTool({
   name: "query_character_attributes",
   description: "Query character's numeric attributes (Health, Mana, etc.).",
   parameters: z.object({
     name: z.string().nullish().describe("Attribute name. Omit to list all."),
   }),
-};
+});
 
-export const QUERY_CHARACTER_SKILLS_TOOL: ZodToolDefinition = {
+export const QUERY_CHARACTER_SKILLS_TOOL = defineTool({
   name: "query_character_skills",
   description: "Query character's skills.",
   parameters: z.object({
@@ -235,9 +318,9 @@ export const QUERY_CHARACTER_SKILLS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Skill name or ID (skill:N). Omit to list all."),
   }),
-};
+});
 
-export const QUERY_CHARACTER_CONDITIONS_TOOL: ZodToolDefinition = {
+export const QUERY_CHARACTER_CONDITIONS_TOOL = defineTool({
   name: "query_character_conditions",
   description: "Query character's conditions (buffs/debuffs).",
   parameters: z.object({
@@ -246,9 +329,9 @@ export const QUERY_CHARACTER_CONDITIONS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Condition name or ID (cond:N). Omit to list all."),
   }),
-};
+});
 
-export const QUERY_CHARACTER_TRAITS_TOOL: ZodToolDefinition = {
+export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
   name: "query_character_traits",
   description: "Query character's hidden personality traits.",
   parameters: z.object({
@@ -257,11 +340,11 @@ export const QUERY_CHARACTER_TRAITS_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Trait name or ID (trait:N). Omit to list all."),
   }),
-};
+});
 
 // RAG Search Tool
 // DocumentType from rag/types.ts: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event" | "outline"
-export const RAG_SEARCH_TOOL: ZodToolDefinition = {
+export const RAG_SEARCH_TOOL = defineTool({
   name: "rag_search",
   description: `Semantic search across the game world. Searches story history, NPCs, locations, items, knowledge, quests, and timeline.
 
@@ -295,13 +378,13 @@ IMPORTANT: Results may include content from different timeline forks or "future"
       .optional()
       .describe("Only search content before current turn."),
   }),
-};
+});
 
 // ============================================================================
 // ADD TOOLS (Stage 2)
 // ============================================================================
 
-export const ADD_INVENTORY_TOOL: ZodToolDefinition = {
+export const ADD_INVENTORY_TOOL = defineTool({
   name: "add_inventory",
   description: "Add a new item to the player's inventory.",
   parameters: z.object({
@@ -331,9 +414,9 @@ export const ADD_INVENTORY_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_RELATIONSHIP_TOOL: ZodToolDefinition = {
+export const ADD_RELATIONSHIP_TOOL = defineTool({
   name: "add_relationship",
   description: "Add a new NPC to the game world.",
   parameters: z.object({
@@ -371,9 +454,9 @@ export const ADD_RELATIONSHIP_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_LOCATION_TOOL: ZodToolDefinition = {
+export const ADD_LOCATION_TOOL = defineTool({
   name: "add_location",
   description: "Add a new location to the world map.",
   parameters: z.object({
@@ -410,9 +493,9 @@ export const ADD_LOCATION_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_QUEST_TOOL: ZodToolDefinition = {
+export const ADD_QUEST_TOOL = defineTool({
   name: "add_quest",
   description: "Add a new quest.",
   parameters: z.object({
@@ -444,9 +527,9 @@ export const ADD_QUEST_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_KNOWLEDGE_TOOL: ZodToolDefinition = {
+export const ADD_KNOWLEDGE_TOOL = defineTool({
   name: "add_knowledge",
   description: "Add a new knowledge/lore entry.",
   parameters: z.object({
@@ -481,9 +564,9 @@ export const ADD_KNOWLEDGE_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_TIMELINE_TOOL: ZodToolDefinition = {
+export const ADD_TIMELINE_TOOL = defineTool({
   name: "add_timeline",
   description: "Add a new timeline event.",
   parameters: z.object({
@@ -516,9 +599,9 @@ export const ADD_TIMELINE_TOOL: ZodToolDefinition = {
       .describe("True cause revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_FACTION_TOOL: ZodToolDefinition = {
+export const ADD_FACTION_TOOL = defineTool({
   name: "add_faction",
   description: "Add a new faction/power group.",
   parameters: z.object({
@@ -569,9 +652,9 @@ export const ADD_FACTION_TOOL: ZodToolDefinition = {
       ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
   name: "add_causal_chain",
   description: "Create a new causal chain with potential future consequences.",
   parameters: z.object({
@@ -605,10 +688,10 @@ export const ADD_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
       .optional()
       .describe("Future consequences."),
   }),
-};
+});
 
 // Character Add Tools
-export const ADD_CHARACTER_ATTRIBUTE_TOOL: ZodToolDefinition = {
+export const ADD_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "add_character_attribute",
   description: "Add a new numeric attribute to the character.",
   parameters: z.object({
@@ -617,9 +700,9 @@ export const ADD_CHARACTER_ATTRIBUTE_TOOL: ZodToolDefinition = {
     maxValue: z.number().int().optional().describe("Maximum value."),
     color: attributeColorSchema.optional().describe("Display color."),
   }),
-};
+});
 
-export const ADD_CHARACTER_SKILL_TOOL: ZodToolDefinition = {
+export const ADD_CHARACTER_SKILL_TOOL = defineTool({
   name: "add_character_skill",
   description: "Add a new skill to the character.",
   parameters: z.object({
@@ -647,9 +730,9 @@ export const ADD_CHARACTER_SKILL_TOOL: ZodToolDefinition = {
       .describe("Hidden info revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_CHARACTER_CONDITION_TOOL: ZodToolDefinition = {
+export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
   name: "add_character_condition",
   description: "Add a new condition (buff/debuff) to the character.",
   parameters: z.object({
@@ -681,9 +764,9 @@ export const ADD_CHARACTER_CONDITION_TOOL: ZodToolDefinition = {
       .describe("Hidden info revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
-};
+});
 
-export const ADD_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
+export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
   name: "add_character_trait",
   description: "Add a new hidden personality trait to the character.",
   parameters: z.object({
@@ -703,87 +786,81 @@ export const ADD_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
       .optional()
       .describe("Trait revealed? Default: false."),
   }),
-};
+});
 
 // ============================================================================
 // REMOVE TOOLS (Stage 3)
 // ============================================================================
 
-export const REMOVE_INVENTORY_TOOL: ZodToolDefinition = {
+export const REMOVE_INVENTORY_TOOL = defineTool({
   name: "remove_inventory",
   description: "Remove an item from the player's inventory.",
   parameters: z.object({
     id: z.string().describe("Item ID (inv:N). REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_RELATIONSHIP_TOOL: ZodToolDefinition = {
+export const REMOVE_RELATIONSHIP_TOOL = defineTool({
   name: "remove_relationship",
   description: "Remove an NPC from the game world.",
   parameters: z.object({
     id: z.string().describe("NPC ID (npc:N). REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_LOCATION_TOOL: ZodToolDefinition = {
+export const REMOVE_LOCATION_TOOL = defineTool({
   name: "remove_location",
   description: "Remove a location from the world map.",
   parameters: z.object({
     id: z.string().describe("Location ID (loc:N). REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_QUEST_TOOL: ZodToolDefinition = {
+export const REMOVE_QUEST_TOOL = defineTool({
   name: "remove_quest",
   description: "Remove a quest.",
   parameters: z.object({
     id: z.string().describe("Quest ID (quest:N). REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_FACTION_TOOL: ZodToolDefinition = {
+export const REMOVE_FACTION_TOOL = defineTool({
   name: "remove_faction",
   description: "Remove a faction.",
   parameters: z.object({
     id: z.string().describe("Faction ID (fac:N). REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_CHARACTER_ATTRIBUTE_TOOL: ZodToolDefinition = {
+export const REMOVE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "remove_character_attribute",
   description: "Remove an attribute from the character.",
   parameters: z.object({
     name: z.string().describe("Attribute name. REQUIRED."),
   }),
-};
+});
 
-export const REMOVE_CHARACTER_SKILL_TOOL: ZodToolDefinition = {
+export const REMOVE_CHARACTER_SKILL_TOOL = defineTool({
   name: "remove_character_skill",
-  description: "Remove a skill from the character.",
+  description: "Remove a skill. REQUIRED: id OR name (at least one).",
   parameters: z.object({
     id: z.string().optional().describe("Skill ID (skill:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Skill name. Either id or name required."),
+    name: z.string().optional().describe("Skill name."),
   }),
-};
+});
 
-export const REMOVE_CHARACTER_CONDITION_TOOL: ZodToolDefinition = {
+export const REMOVE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "remove_character_condition",
-  description: "Remove a condition from the character.",
+  description: "Remove a condition. REQUIRED: id OR name (at least one).",
   parameters: z.object({
     id: z.string().optional().describe("Condition ID (cond:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Condition name. Either id or name required."),
+    name: z.string().optional().describe("Condition name."),
   }),
-};
+});
 
-export const REMOVE_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
+export const REMOVE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "remove_character_trait",
-  description: "Remove a hidden trait from the character.",
+  description: "Remove a hidden trait. REQUIRED: id OR name (at least one).",
   parameters: z.object({
     id: z.string().optional().describe("Trait ID (trait:N)."),
     name: z
@@ -791,13 +868,13 @@ export const REMOVE_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
       .optional()
       .describe("Trait name. Either id or name required."),
   }),
-};
+});
 
 // ============================================================================
 // UPDATE TOOLS (Stage 4)
 // ============================================================================
 
-export const UPDATE_INVENTORY_TOOL: ZodToolDefinition = {
+export const UPDATE_INVENTORY_TOOL = defineTool({
   name: "update_inventory",
   description:
     "Update an existing inventory item. Omit fields to keep unchanged, set to null to delete.",
@@ -820,9 +897,9 @@ export const UPDATE_INVENTORY_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
+export const UPDATE_RELATIONSHIP_TOOL = defineTool({
   name: "update_relationship",
   description:
     "Update an existing NPC. Omit fields to keep unchanged, set to null to delete.",
@@ -850,9 +927,9 @@ export const UPDATE_RELATIONSHIP_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_LOCATION_TOOL: ZodToolDefinition = {
+export const UPDATE_LOCATION_TOOL = defineTool({
   name: "update_location",
   description:
     "Update an existing location. Omit fields to keep unchanged, set to null to delete.",
@@ -876,9 +953,9 @@ export const UPDATE_LOCATION_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
+export const UPDATE_QUEST_TOOL = defineTool({
   name: "update_quest",
   description:
     "Update an existing quest. Omit fields to keep unchanged, set to null to delete.",
@@ -901,25 +978,25 @@ export const UPDATE_QUEST_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const COMPLETE_QUEST_TOOL: ZodToolDefinition = {
+export const COMPLETE_QUEST_TOOL = defineTool({
   name: "complete_quest",
   description: "Mark a quest as completed.",
   parameters: z.object({
     id: z.string().describe("Quest ID (quest:N). REQUIRED."),
   }),
-};
+});
 
-export const FAIL_QUEST_TOOL: ZodToolDefinition = {
+export const FAIL_QUEST_TOOL = defineTool({
   name: "fail_quest",
   description: "Mark a quest as failed.",
   parameters: z.object({
     id: z.string().describe("Quest ID (quest:N). REQUIRED."),
   }),
-};
+});
 
-export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
+export const UPDATE_KNOWLEDGE_TOOL = defineTool({
   name: "update_knowledge",
   description:
     "Update an existing knowledge entry. Omit fields to keep unchanged, set to null to delete.",
@@ -950,9 +1027,9 @@ export const UPDATE_KNOWLEDGE_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_TIMELINE_TOOL: ZodToolDefinition = {
+export const UPDATE_TIMELINE_TOOL = defineTool({
   name: "update_timeline",
   description:
     "Update an existing timeline event. Omit fields to keep unchanged, set to null to delete.",
@@ -975,9 +1052,9 @@ export const UPDATE_TIMELINE_TOOL: ZodToolDefinition = {
     unlocked: z.boolean().nullish().describe("True cause revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
+export const UPDATE_FACTION_TOOL = defineTool({
   name: "update_faction",
   description:
     "Update an existing faction. Omit fields to keep unchanged, set to null to delete.",
@@ -1027,9 +1104,9 @@ export const UPDATE_FACTION_TOOL: ZodToolDefinition = {
       .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "update_causal_chain",
   description:
     "Update a causal chain. Omit fields to keep unchanged, set to null to delete.",
@@ -1055,9 +1132,9 @@ export const UPDATE_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Pending consequences. Null to clear all."),
   }),
-};
+});
 
-export const TRIGGER_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const TRIGGER_CAUSAL_CHAIN_TOOL = defineTool({
   name: "trigger_causal_chain",
   description:
     "Trigger a pending consequence NOW. You MUST narrate this in your response.",
@@ -1065,25 +1142,25 @@ export const TRIGGER_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
     chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
     consequenceId: z.string().describe("Consequence ID to trigger. REQUIRED."),
   }),
-};
+});
 
-export const RESOLVE_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const RESOLVE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "resolve_causal_chain",
   description: "Mark a causal chain as resolved (story arc complete).",
   parameters: z.object({
     chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
   }),
-};
+});
 
-export const INTERRUPT_CAUSAL_CHAIN_TOOL: ZodToolDefinition = {
+export const INTERRUPT_CAUSAL_CHAIN_TOOL = defineTool({
   name: "interrupt_causal_chain",
   description: "Interrupt a causal chain (circumstances prevent continuation).",
   parameters: z.object({
     chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
   }),
-};
+});
 
-export const UPDATE_WORLD_INFO_TOOL: ZodToolDefinition = {
+export const UPDATE_WORLD_INFO_TOOL = defineTool({
   name: "update_world_info",
   description:
     "Reveal hidden world secrets to the player. Only use at significant story milestones.",
@@ -1098,9 +1175,9 @@ export const UPDATE_WORLD_INFO_TOOL: ZodToolDefinition = {
       .describe("Reveal the true nature of the main objective."),
     reason: z.string().describe("WHY this is being revealed. REQUIRED."),
   }),
-};
+});
 
-export const UPDATE_GLOBAL_TOOL: ZodToolDefinition = {
+export const UPDATE_GLOBAL_TOOL = defineTool({
   name: "update_global",
   description: "Update global game state (time, atmosphere).",
   parameters: z.object({
@@ -1109,10 +1186,10 @@ export const UPDATE_GLOBAL_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Atmosphere settings. Null to reset to default."),
   }),
-};
+});
 
 // Character Update Tools
-export const UPDATE_CHARACTER_PROFILE_TOOL: ZodToolDefinition = {
+export const UPDATE_CHARACTER_PROFILE_TOOL = defineTool({
   name: "update_character_profile",
   description:
     "Update character's basic profile. Omit fields to keep unchanged, set to null to clear.",
@@ -1142,9 +1219,9 @@ export const UPDATE_CHARACTER_PROFILE_TOOL: ZodToolDefinition = {
       .describe("Background story. Null to clear."),
     race: z.string().nullish().describe("Race (Human, Elf). Null to clear."),
   }),
-};
+});
 
-export const UPDATE_CHARACTER_ATTRIBUTE_TOOL: ZodToolDefinition = {
+export const UPDATE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "update_character_attribute",
   description:
     "Update a character attribute. Omit fields to keep unchanged, set to null to remove.",
@@ -1156,9 +1233,9 @@ export const UPDATE_CHARACTER_ATTRIBUTE_TOOL: ZodToolDefinition = {
       .nullish()
       .describe("Display color. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_CHARACTER_SKILL_TOOL: ZodToolDefinition = {
+export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
   name: "update_character_skill",
   description:
     "Update a character skill. Omit fields to keep unchanged, set to null to remove.",
@@ -1181,9 +1258,9 @@ export const UPDATE_CHARACTER_SKILL_TOOL: ZodToolDefinition = {
     unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_CHARACTER_CONDITION_TOOL: ZodToolDefinition = {
+export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "update_character_condition",
   description:
     "Update a character condition. Omit fields to keep unchanged, set to null to remove.",
@@ -1219,9 +1296,9 @@ export const UPDATE_CHARACTER_CONDITION_TOOL: ZodToolDefinition = {
     unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
-};
+});
 
-export const UPDATE_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
+export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "update_character_trait",
   description:
     "Update a character hidden trait. Omit fields to keep unchanged, set to null to remove.",
@@ -1239,7 +1316,7 @@ export const UPDATE_CHARACTER_TRAIT_TOOL: ZodToolDefinition = {
       .describe("Trigger conditions. Null to clear."),
     unlocked: z.boolean().nullish().describe("Trait revealed?"),
   }),
-};
+});
 
 // ============================================================================
 // CONTROL TOOLS
@@ -1254,7 +1331,7 @@ export const agentStageSchema = z.enum([
   "narrative",
 ]);
 
-export const NEXT_STAGE_TOOL: ZodToolDefinition = {
+export const NEXT_STAGE_TOOL = defineTool({
   name: "next_stage",
   description: `Proceed to the next stage or jump to a specific stage.
 
@@ -1273,9 +1350,9 @@ Alternatively, you can call finish_turn at ANY stage to complete the turn immedi
         "Target stage to jump to. If omitted, advances to next stage in sequence.",
       ),
   }),
-};
+});
 
-export const FINISH_TURN_TOOL: ZodToolDefinition = {
+export const FINISH_TURN_TOOL = defineTool({
   name: "finish_turn",
   description: `End the turn and generate the final narrative response. Only available in NARRATIVE stage.
 
@@ -1284,14 +1361,14 @@ NEVER include internal game IDs in narrative, choices, or imagePrompt!
 - ❌ FORBIDDEN: "inv:1", "npc:2", "loc:3", etc.
 - ✅ CORRECT: Use actual NAMES like "Iron Sword", "Elder Marcus"`,
   parameters: finishTurnSchema,
-};
+});
 
-export const COMPLETE_FORCE_UPDATE_TOOL: ZodToolDefinition = {
+export const COMPLETE_FORCE_UPDATE_TOOL = defineTool({
   name: "complete_force_update",
   description:
     "Complete a force update (sudo command). For direct interventions only.",
   parameters: forceUpdateSchema,
-};
+});
 
 // ============================================================================
 // TOOL GROUPS BY STAGE
@@ -1456,3 +1533,294 @@ export const TOOLS: ZodToolDefinition[] = [
   ...CONTROL_TOOLS,
   COMPLETE_FORCE_UPDATE_TOOL,
 ];
+
+// ============================================================================
+// TYPE INFERENCE FROM ZOD SCHEMAS
+// ============================================================================
+
+// Using InferToolParams for cleaner type extraction
+// These types are now correctly inferred from the tool definitions
+// thanks to the generic TypedToolDefinition
+
+// Character Attribute Types
+export type AddCharacterAttributeParams = InferToolParams<
+  typeof ADD_CHARACTER_ATTRIBUTE_TOOL
+>;
+export type UpdateCharacterAttributeParams = InferToolParams<
+  typeof UPDATE_CHARACTER_ATTRIBUTE_TOOL
+>;
+export type RemoveCharacterAttributeParams = InferToolParams<
+  typeof REMOVE_CHARACTER_ATTRIBUTE_TOOL
+>;
+
+// Character Skill Types
+export type AddCharacterSkillParams = InferToolParams<
+  typeof ADD_CHARACTER_SKILL_TOOL
+>;
+export type UpdateCharacterSkillParams = InferToolParams<
+  typeof UPDATE_CHARACTER_SKILL_TOOL
+>;
+export type RemoveCharacterSkillParams = InferToolParams<
+  typeof REMOVE_CHARACTER_SKILL_TOOL
+>;
+
+// Character Condition Types
+export type AddCharacterConditionParams = InferToolParams<
+  typeof ADD_CHARACTER_CONDITION_TOOL
+>;
+export type UpdateCharacterConditionParams = InferToolParams<
+  typeof UPDATE_CHARACTER_CONDITION_TOOL
+>;
+export type RemoveCharacterConditionParams = InferToolParams<
+  typeof REMOVE_CHARACTER_CONDITION_TOOL
+>;
+
+// Character Trait Types
+export type AddCharacterTraitParams = InferToolParams<
+  typeof ADD_CHARACTER_TRAIT_TOOL
+>;
+export type UpdateCharacterTraitParams = InferToolParams<
+  typeof UPDATE_CHARACTER_TRAIT_TOOL
+>;
+export type RemoveCharacterTraitParams = InferToolParams<
+  typeof REMOVE_CHARACTER_TRAIT_TOOL
+>;
+
+// Character Profile Type
+export type UpdateCharacterProfileParams = InferToolParams<
+  typeof UPDATE_CHARACTER_PROFILE_TOOL
+>;
+
+// Query Character Types
+export type QueryCharacterProfileParams = InferToolParams<
+  typeof QUERY_CHARACTER_PROFILE_TOOL
+>;
+export type QueryCharacterAttributesParams = InferToolParams<
+  typeof QUERY_CHARACTER_ATTRIBUTES_TOOL
+>;
+export type QueryCharacterSkillsParams = InferToolParams<
+  typeof QUERY_CHARACTER_SKILLS_TOOL
+>;
+export type QueryCharacterConditionsParams = InferToolParams<
+  typeof QUERY_CHARACTER_CONDITIONS_TOOL
+>;
+export type QueryCharacterTraitsParams = InferToolParams<
+  typeof QUERY_CHARACTER_TRAITS_TOOL
+>;
+
+// Entity Types (Inventory, NPC, Location, Quest, etc.)
+export type AddInventoryParams = InferToolParams<typeof ADD_INVENTORY_TOOL>;
+export type UpdateInventoryParams = InferToolParams<typeof UPDATE_INVENTORY_TOOL>;
+export type RemoveInventoryParams = InferToolParams<typeof REMOVE_INVENTORY_TOOL>;
+
+export type AddRelationshipParams = InferToolParams<typeof ADD_RELATIONSHIP_TOOL>;
+export type UpdateRelationshipParams = InferToolParams<
+  typeof UPDATE_RELATIONSHIP_TOOL
+>;
+export type RemoveRelationshipParams = InferToolParams<
+  typeof REMOVE_RELATIONSHIP_TOOL
+>;
+
+export type AddLocationParams = InferToolParams<typeof ADD_LOCATION_TOOL>;
+export type UpdateLocationParams = InferToolParams<typeof UPDATE_LOCATION_TOOL>;
+export type RemoveLocationParams = InferToolParams<typeof REMOVE_LOCATION_TOOL>;
+
+export type AddQuestParams = InferToolParams<typeof ADD_QUEST_TOOL>;
+export type UpdateQuestParams = InferToolParams<typeof UPDATE_QUEST_TOOL>;
+export type RemoveQuestParams = InferToolParams<typeof REMOVE_QUEST_TOOL>;
+export type CompleteQuestParams = InferToolParams<typeof COMPLETE_QUEST_TOOL>;
+export type FailQuestParams = InferToolParams<typeof FAIL_QUEST_TOOL>;
+
+export type AddKnowledgeParams = InferToolParams<typeof ADD_KNOWLEDGE_TOOL>;
+export type UpdateKnowledgeParams = InferToolParams<typeof UPDATE_KNOWLEDGE_TOOL>;
+
+export type AddTimelineParams = InferToolParams<typeof ADD_TIMELINE_TOOL>;
+export type UpdateTimelineParams = InferToolParams<typeof UPDATE_TIMELINE_TOOL>;
+
+export type AddFactionParams = InferToolParams<typeof ADD_FACTION_TOOL>;
+export type UpdateFactionParams = InferToolParams<typeof UPDATE_FACTION_TOOL>;
+export type RemoveFactionParams = InferToolParams<typeof REMOVE_FACTION_TOOL>;
+
+export type AddCausalChainParams = InferToolParams<typeof ADD_CAUSAL_CHAIN_TOOL>;
+export type UpdateCausalChainParams = InferToolParams<
+  typeof UPDATE_CAUSAL_CHAIN_TOOL
+>;
+export type TriggerCausalChainParams = InferToolParams<
+  typeof TRIGGER_CAUSAL_CHAIN_TOOL
+>;
+export type ResolveCausalChainParams = InferToolParams<
+  typeof RESOLVE_CAUSAL_CHAIN_TOOL
+>;
+export type InterruptCausalChainParams = InferToolParams<
+  typeof INTERRUPT_CAUSAL_CHAIN_TOOL
+>;
+
+// Global and World Info Types
+export type UpdateGlobalParams = InferToolParams<typeof UPDATE_GLOBAL_TOOL>;
+export type UpdateWorldInfoParams = InferToolParams<typeof UPDATE_WORLD_INFO_TOOL>;
+
+// Query Types
+export type QueryInventoryParams = InferToolParams<typeof QUERY_INVENTORY_TOOL>;
+export type QueryRelationshipsParams = InferToolParams<
+  typeof QUERY_RELATIONSHIPS_TOOL
+>;
+export type QueryLocationsParams = InferToolParams<typeof QUERY_LOCATIONS_TOOL>;
+export type QueryQuestsParams = InferToolParams<typeof QUERY_QUESTS_TOOL>;
+export type QueryKnowledgeParams = InferToolParams<typeof QUERY_KNOWLEDGE_TOOL>;
+export type QueryTimelineParams = InferToolParams<typeof QUERY_TIMELINE_TOOL>;
+export type QueryCausalChainParams = InferToolParams<
+  typeof QUERY_CAUSAL_CHAIN_TOOL
+>;
+export type QueryFactionsParams = InferToolParams<typeof QUERY_FACTIONS_TOOL>;
+export type QueryGlobalParams = InferToolParams<typeof QUERY_GLOBAL_TOOL>;
+export type RagSearchParams = InferToolParams<typeof RAG_SEARCH_TOOL>;
+
+// Control Types
+export type NextStageParams = InferToolParams<typeof NEXT_STAGE_TOOL>;
+
+// Finish Turn and Force Update Types
+export type FinishTurnParams = z.infer<typeof finishTurnSchema>;
+export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
+
+// ============================================================================
+// TOOL PARAMETER TYPE MAP
+// Maps tool names to their parameter types for type-safe tool handling
+// ============================================================================
+
+export interface ToolParamsMap {
+  // Query tools
+  query_inventory: QueryInventoryParams;
+  query_relationships: QueryRelationshipsParams;
+  query_locations: QueryLocationsParams;
+  query_quests: QueryQuestsParams;
+  query_knowledge: QueryKnowledgeParams;
+  query_timeline: QueryTimelineParams;
+  query_causal_chain: QueryCausalChainParams;
+  query_factions: QueryFactionsParams;
+  query_global: QueryGlobalParams;
+  query_character_profile: QueryCharacterProfileParams;
+  query_character_attributes: QueryCharacterAttributesParams;
+  query_character_skills: QueryCharacterSkillsParams;
+  query_character_conditions: QueryCharacterConditionsParams;
+  query_character_traits: QueryCharacterTraitsParams;
+  rag_search: RagSearchParams;
+
+  // Add tools
+  add_inventory: AddInventoryParams;
+  add_relationship: AddRelationshipParams;
+  add_location: AddLocationParams;
+  add_quest: AddQuestParams;
+  add_knowledge: AddKnowledgeParams;
+  add_timeline: AddTimelineParams;
+  add_faction: AddFactionParams;
+  add_causal_chain: AddCausalChainParams;
+  add_character_attribute: AddCharacterAttributeParams;
+  add_character_skill: AddCharacterSkillParams;
+  add_character_condition: AddCharacterConditionParams;
+  add_character_trait: AddCharacterTraitParams;
+
+  // Remove tools
+  remove_inventory: RemoveInventoryParams;
+  remove_relationship: RemoveRelationshipParams;
+  remove_location: RemoveLocationParams;
+  remove_quest: RemoveQuestParams;
+  remove_faction: RemoveFactionParams;
+  remove_character_attribute: RemoveCharacterAttributeParams;
+  remove_character_skill: RemoveCharacterSkillParams;
+  remove_character_condition: RemoveCharacterConditionParams;
+  remove_character_trait: RemoveCharacterTraitParams;
+
+  // Update tools
+  update_inventory: UpdateInventoryParams;
+  update_relationship: UpdateRelationshipParams;
+  update_location: UpdateLocationParams;
+  update_quest: UpdateQuestParams;
+  complete_quest: CompleteQuestParams;
+  fail_quest: FailQuestParams;
+  update_knowledge: UpdateKnowledgeParams;
+  update_timeline: UpdateTimelineParams;
+  update_faction: UpdateFactionParams;
+  update_causal_chain: UpdateCausalChainParams;
+  trigger_causal_chain: TriggerCausalChainParams;
+  resolve_causal_chain: ResolveCausalChainParams;
+  interrupt_causal_chain: InterruptCausalChainParams;
+  update_world_info: UpdateWorldInfoParams;
+  update_global: UpdateGlobalParams;
+  update_character_profile: UpdateCharacterProfileParams;
+  update_character_attribute: UpdateCharacterAttributeParams;
+  update_character_skill: UpdateCharacterSkillParams;
+  update_character_condition: UpdateCharacterConditionParams;
+  update_character_trait: UpdateCharacterTraitParams;
+
+  // Control tools
+  next_stage: NextStageParams;
+  finish_turn: FinishTurnParams;
+}
+
+export type ToolName = keyof ToolParamsMap;
+
+/**
+ * Type-safe helper to get tool parameters
+ */
+export function getTypedArgs<T extends ToolName>(
+  _name: T,
+  args: Record<string, unknown>,
+): ToolParamsMap[T] {
+  return args as ToolParamsMap[T];
+}
+
+// ============================================================================
+// CHARACTER TOOL PAYLOAD TYPES (for GameDatabase.modify)
+// ============================================================================
+
+/**
+ * Payload type for character attribute operations
+ * Used by GameDatabase.modify("character", action, payload)
+ */
+export interface CharacterAttributePayload {
+  attributes: Array<
+    | ({ action: "add" } & AddCharacterAttributeParams)
+    | ({ action: "update" } & UpdateCharacterAttributeParams)
+    | ({ action: "remove" } & RemoveCharacterAttributeParams)
+  >;
+}
+
+/**
+ * Payload type for character skill operations
+ */
+export interface CharacterSkillPayload {
+  skills: Array<
+    | ({ action: "add" } & AddCharacterSkillParams)
+    | ({ action: "update" } & UpdateCharacterSkillParams)
+    | ({ action: "remove" } & RemoveCharacterSkillParams)
+  >;
+}
+
+/**
+ * Payload type for character condition operations
+ */
+export interface CharacterConditionPayload {
+  conditions: Array<
+    | ({ action: "add" } & AddCharacterConditionParams)
+    | ({ action: "update" } & UpdateCharacterConditionParams)
+    | ({ action: "remove" } & RemoveCharacterConditionParams)
+  >;
+}
+
+/**
+ * Payload type for character trait operations
+ */
+export interface CharacterTraitPayload {
+  hiddenTraits: Array<
+    | ({ action: "add" } & AddCharacterTraitParams)
+    | ({ action: "update" } & UpdateCharacterTraitParams)
+    | ({ action: "remove" } & RemoveCharacterTraitParams)
+  >;
+}
+
+/**
+ * Payload type for character profile operations
+ */
+export interface CharacterProfilePayload {
+  profile: UpdateCharacterProfileParams;
+}

@@ -761,10 +761,20 @@ export function isGeminiModel(modelId: string): boolean {
 // ============================================================================
 
 /**
+ * Tool definition input type for compiler functions.
+ * Accepts both TypedToolDefinition and ZodToolDefinition.
+ */
+type ToolDefinitionInput = {
+  name: string;
+  description: string;
+  parameters: ZodTypeAny;
+};
+
+/**
  * 批量编译工具定义到 Gemini 格式
  */
 export function compileToolsForGemini(
-  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
+  tools: ToolDefinitionInput[],
 ): GeminiToolDefinition[] {
   return tools.map((t) =>
     createGeminiTool(t.name, t.description, t.parameters),
@@ -775,7 +785,7 @@ export function compileToolsForGemini(
  * 批量编译工具定义到 OpenAI 格式
  */
 export function compileToolsForOpenAI(
-  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
+  tools: ToolDefinitionInput[],
 ): OpenAIToolDefinition[] {
   return tools.map((t) =>
     createOpenAITool(t.name, t.description, t.parameters),
@@ -786,7 +796,7 @@ export function compileToolsForOpenAI(
  * 批量编译工具定义到 OpenRouter 格式
  */
 export function compileToolsForOpenRouter(
-  tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
+  tools: ToolDefinitionInput[],
 ): OpenRouterToolDefinition[] {
   return tools.map((t) =>
     createOpenRouterTool(t.name, t.description, t.parameters),
