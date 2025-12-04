@@ -271,6 +271,14 @@ export const TimelineExport = forwardRef<
                   }}
                 />
               </div>
+              <div
+                className="text-xs tracking-widest mt-4 opacity-50 font-mono"
+                style={{ color: "#64748b" }} // slate-500
+              >
+                {typeof window !== "undefined"
+                  ? window.location.origin.replace(/^https?:\/\//, "")
+                  : null}
+              </div>
             </div>
 
             {exportChunk.map((seg, index) => {
