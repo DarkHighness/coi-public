@@ -223,7 +223,7 @@ export const useGameAction = ({
         if (summaryLog) {
           setGameState((prev) => ({
             ...prev,
-            logs: [summaryLog, ...prev.logs].slice(0, 50),
+            logs: [summaryLog, ...prev.logs].slice(0, 100),
             tokenUsage: {
               promptTokens:
                 (prev.tokenUsage?.promptTokens || 0) +

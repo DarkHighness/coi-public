@@ -425,9 +425,15 @@ export const useGameEngine = () => {
     // Step 2: Process outline and generate first turn (original try-catch continues)
     try {
       // Calculate total tokens from all phase logs
-      const totalPhaseTokens = logs.reduce(
-        (sum, log) => sum + (log.usage?.totalTokens || 0),
-        0,
+      const accumulatedTokens = logs.reduce(
+        (acc, log) => ({
+          promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
+          completionTokens: acc.completionTokens + (log.usage?.completionTokens || 0),
+          totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
+          cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
+          cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
+        }),
+        { promptTokens: 0, completionTokens: 0, totalTokens: 0, cacheRead: 0, cacheWrite: 0 },
       );
 
       setGameState((prev) => ({
@@ -505,12 +511,17 @@ export const useGameEngine = () => {
         isProcessing: true, // Keep processing true while generating first turn
         logs: [...logs, ...prev.logs],
         tokenUsage: {
-          ...prev.tokenUsage,
-          totalTokens: (prev.tokenUsage?.totalTokens || 0) + totalPhaseTokens,
+          promptTokens: (prev.tokenUsage?.promptTokens || 0) + accumulatedTokens.promptTokens,
+          completionTokens: (prev.tokenUsage?.completionTokens || 0) + accumulatedTokens.completionTokens,
+          totalTokens: (prev.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
+          cacheRead: (prev.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
+          cacheWrite: (prev.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
         },
         generateImage: false,
         summaries: [],
         theme: selectedTheme, // Static Theme
+        language: language, // Save language to game state
+        customContext: customContext, // Save custom context to game state
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere), // Initial atmosphere
         time: outline.initialTime || "Day 1",
       }));
@@ -669,9 +680,15 @@ export const useGameEngine = () => {
 
       console.log("[ResumeOutline] Outline generation completed", outline);
 
-      const totalPhaseTokens = logs.reduce(
-        (sum, log) => sum + (log.usage?.totalTokens || 0),
-        0,
+      const accumulatedTokens = logs.reduce(
+        (acc, log) => ({
+          promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
+          completionTokens: acc.completionTokens + (log.usage?.completionTokens || 0),
+          totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
+          cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
+          cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
+        }),
+        { promptTokens: 0, completionTokens: 0, totalTokens: 0, cacheRead: 0, cacheWrite: 0 },
       );
 
       setGameState((prev) => ({
@@ -742,13 +759,16 @@ export const useGameEngine = () => {
         isProcessing: true,
         logs: [...logs, ...gameStateRef.current.logs],
         tokenUsage: {
-          ...gameStateRef.current.tokenUsage,
-          totalTokens:
-            (gameStateRef.current.tokenUsage?.totalTokens || 0) +
-            totalPhaseTokens,
+          promptTokens: (gameStateRef.current.tokenUsage?.promptTokens || 0) + accumulatedTokens.promptTokens,
+          completionTokens: (gameStateRef.current.tokenUsage?.completionTokens || 0) + accumulatedTokens.completionTokens,
+          totalTokens: (gameStateRef.current.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
+          cacheRead: (gameStateRef.current.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
+          cacheWrite: (gameStateRef.current.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
         },
         generateImage: false,
         summaries: [],
+        language: savedConversation.language, // Restore language from conversation state
+        customContext: customContext, // Restore custom context from conversation state
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
         time: outline.initialTime || "Day 1",
       }));
@@ -977,7 +997,7 @@ export const useGameEngine = () => {
             ...prev,
             isImageGenerating: false,
             generatingNodeId: null,
-            logs: [log, ...prev.logs].slice(0, 50),
+            logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
               ...prev.tokenUsage,
               totalTokens:
@@ -999,7 +1019,7 @@ export const useGameEngine = () => {
             ...prev,
             isImageGenerating: false,
             generatingNodeId: null,
-            logs: [log, ...prev.logs].slice(0, 50),
+            logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
               ...prev.tokenUsage,
               totalTokens:
@@ -1018,7 +1038,7 @@ export const useGameEngine = () => {
             ...prev,
             isImageGenerating: false,
             generatingNodeId: null,
-            logs: [log, ...prev.logs].slice(0, 50),
+            logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
               ...prev.tokenUsage,
               totalTokens:

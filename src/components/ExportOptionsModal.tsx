@@ -28,7 +28,8 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
   const { t } = useTranslation();
   const [options, setOptions] = useState<ExportOptions>({
     includeImages: true,
-    includeEmbeddings: true, // Include embeddings by default
+    includeEmbeddings: true,
+    includeLogs: true, // Include logs by default for debugging purposes
   });
   const [stats, setStats] = useState<ExportStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +96,12 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
     if (!options.includeEmbeddings && stats.embeddingCount > 0) {
       // Rough estimate: 1KB per embedding document
       size -= stats.embeddingCount * 1024;
+    }
+
+    // Subtract log size if not including logs
+    if (!options.includeLogs && stats.logCount && stats.logCount > 0) {
+      // Rough estimate: 5KB per log entry (logs can be large with AI request/response)
+      size -= stats.logCount * 5 * 1024;
     }
 
     return Math.max(0, size);
@@ -164,11 +171,19 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
                       <span>{stats.imageCount} {t("export.images") || "images"}</span>
                     </div>
                     {stats.embeddingCount > 0 && (
-                      <div className="flex items-center gap-2 col-span-2">
+                      <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                         </svg>
                         <span>{stats.embeddingCount} {t("export.embeddingDocs") || "embedding documents"}</span>
+                      </div>
+                    )}
+                    {(stats.logCount ?? 0) > 0 && (
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span>{stats.logCount} {t("export.logEntries") || "log entries"}</span>
                       </div>
                     )}
                   </div>
@@ -239,6 +254,41 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
                     {stats && stats.embeddingCount > 0 && (
                       <div className="text-xs text-theme-primary mt-1">
                         {stats.embeddingCount} {t("export.documentsAvailable") || "documents available"}
+                      </div>
+                    )}
+                  </div>
+                </label>
+
+                {/* Include Logs */}
+                <label className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                  stats && (stats.logCount ?? 0) > 0
+                    ? "border-theme-border hover:border-theme-primary/50 cursor-pointer"
+                    : "border-theme-border bg-theme-bg/30 opacity-60 cursor-not-allowed"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={options.includeLogs && (stats?.logCount ?? 0) > 0}
+                    onChange={(e) =>
+                      setOptions((prev) => ({
+                        ...prev,
+                        includeLogs: e.target.checked,
+                      }))
+                    }
+                    disabled={!stats || (stats.logCount ?? 0) === 0}
+                    className="mt-0.5 w-4 h-4 text-theme-primary bg-theme-bg border-theme-border rounded focus:ring-theme-primary focus:ring-offset-0 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-theme-text">
+                      {t("export.includeLogs") || "Include Debug Logs"}
+                    </div>
+                    <div className="text-xs text-theme-muted mt-0.5">
+                      {stats && (stats.logCount ?? 0) > 0
+                        ? (t("export.includeLogsDesc") || "Include AI request/response logs for debugging and analysis")
+                        : (t("export.noLogs") || "No log data available for this save")}
+                    </div>
+                    {stats && (stats.logCount ?? 0) > 0 && (
+                      <div className="text-xs text-theme-primary mt-1">
+                        {stats.logCount} {t("export.logsAvailable") || "log entries available"}
                       </div>
                     )}
                   </div>

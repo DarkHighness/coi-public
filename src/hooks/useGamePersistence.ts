@@ -342,6 +342,11 @@ export const useGamePersistence = (
         parsed.initialPrompt = prompt;
       }
 
+      // Fix language if missing (for old saves)
+      if (!parsed.language) {
+        parsed.language = "zh"; // Default to Chinese for legacy saves
+      }
+
       // Fix tokenUsage
       if (!parsed.tokenUsage) {
         parsed.tokenUsage = {

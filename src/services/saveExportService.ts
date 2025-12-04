@@ -49,6 +49,9 @@ export async function getExportStats(slotId: string): Promise<ExportStats | null
     const images = await getImagesBySaveId(slotId);
     const imageCount = images.length;
 
+    // Get log count
+    const logCount = gameState.logs?.length || 0;
+
     // Get RAG document count for this save
     let embeddingCount = 0;
     try {
@@ -73,6 +76,7 @@ export async function getExportStats(slotId: string): Promise<ExportStats | null
       nodeCount,
       imageCount,
       embeddingCount,
+      logCount,
       estimatedSize,
     };
   } catch (error) {
@@ -113,7 +117,11 @@ function cleanupStateForExport(
 
   // Remove RAG queries and other ephemeral data
   delete cleanState.ragQueries;
-  cleanState.logs = []; // Clear API logs to reduce size
+
+  // Clear logs if not included
+  if (!options.includeLogs) {
+    cleanState.logs = [];
+  }
 
   return cleanState;
 }
@@ -206,6 +214,9 @@ export async function exportSave(
       delete exportSlot.previewImage;
     }
 
+    // Get log count for manifest
+    const logCount = options.includeLogs ? (cleanedState.logs?.length || 0) : 0;
+
     // Create manifest
     const manifest: ExportManifest = {
       version: EXPORT_FORMAT_VERSION,
@@ -216,11 +227,13 @@ export async function exportSave(
       includes: {
         images: options.includeImages,
         embeddings: options.includeEmbeddings && embeddingCount > 0,
+        logs: options.includeLogs && logCount > 0,
       },
       stats: {
         nodeCount,
         imageCount,
         embeddingCount,
+        logCount,
       },
       checksum,
     };

@@ -72,6 +72,11 @@ const INITIAL_STATE: GameState = {
   theme: "fantasy",
   atmosphere: { envTheme: "fantasy", ambience: "quiet" }, // Unified atmosphere
   generatingNodeId: null,
+
+  // Game Context
+  language: "zh", // Default language
+  customContext: undefined, // No custom context by default
+
   tokenUsage: {
     promptTokens: 0,
     completionTokens: 0,

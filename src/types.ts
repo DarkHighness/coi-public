@@ -346,6 +346,10 @@ export interface GameState {
   theme: string; // Static game genre (e.g. "Cyberpunk", "Wuxia")
   time: string; // In-game time tracking
 
+  // Game Context (for save/load and continuity)
+  language: string; // Language code used for this game (e.g. "en", "zh")
+  customContext?: string; // User-provided custom context for story generation
+
   // Stats & Logs
   tokenUsage: TokenUsage;
   logs: LogEntry[];
@@ -1221,6 +1225,7 @@ export const CURRENT_EXPORT_VERSION = 2;
 export interface ExportOptions {
   includeImages: boolean;
   includeEmbeddings: boolean;
+  includeLogs: boolean;
 }
 
 /** Statistics about the export */
@@ -1228,6 +1233,7 @@ export interface ExportStats {
   nodeCount: number;
   imageCount: number;
   embeddingCount: number;
+  logCount?: number;
   estimatedSize?: number; // in bytes
 }
 
@@ -1247,6 +1253,7 @@ export interface ExportManifest {
   includes: {
     images: boolean;
     embeddings: boolean;
+    logs: boolean;
   };
   /** Statistics about the exported data */
   stats: ExportStats;
