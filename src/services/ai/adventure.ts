@@ -1911,7 +1911,7 @@ function executeQueryStory(
       // Include following player action for context
       if (includeContext && index + 1 < currentFork.length) {
         const nextSegment = currentFork[index + 1];
-        if (nextSegment && nextSegment.role === "user") {
+        if (nextSegment && (nextSegment.role === "user" || nextSegment.role === "command")) {
           result.playerAction = nextSegment.text;
         }
       }
