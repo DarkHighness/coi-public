@@ -154,7 +154,7 @@ const InfoRow = ({
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 py-2 border-b border-theme-border/30 last:border-0">
-      <span className="text-theme-primary text-xs uppercase tracking-wider font-bold min-w-[120px] flex-shrink-0 pt-0.5">
+      <span className="text-theme-primary text-xs uppercase tracking-wider font-bold min-w-[120px] shrink-0 pt-0.5">
         {label}:
       </span>
       <div
@@ -167,6 +167,90 @@ const InfoRow = ({
     </div>
   );
 };
+
+// Helper: Subsection Label - for consistent styling of subsection headers
+const SubsectionLabel = ({
+  children,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  variant?: "primary" | "unlocked" | "danger";
+}) => {
+  const colorMap = {
+    primary: "text-theme-primary/80",
+    unlocked: "text-theme-unlocked/80",
+    danger: "text-theme-danger/80",
+  };
+  return (
+    <span
+      className={`text-xs uppercase tracking-wider font-bold block mb-1 ${colorMap[variant]}`}
+    >
+      {children}
+    </span>
+  );
+};
+
+// Helper: Content Block - for consistent content styling with left border
+const ContentBlock = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={`text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 ${className}`}
+  >
+    {children}
+  </div>
+);
+
+// Helper: Empty State - for consistent empty/no data message styling
+const EmptyState = ({ message }: { message: string }) => (
+  <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
+    {message}
+  </p>
+);
+
+// Helper: Card Container - for consistent card styling
+const CardContainer = ({
+  children,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "success" | "danger" | "unlocked";
+}) => {
+  const variantStyles = {
+    default: "bg-theme-surface-highlight/30 border-theme-border/50",
+    success: "bg-green-500/10 border-green-500/30",
+    danger: "bg-red-500/10 border-red-500/30",
+    unlocked: "bg-theme-unlocked/5 border-theme-unlocked/20",
+  };
+  return (
+    <div className={`p-4 rounded border ${variantStyles[variant]}`}>
+      {children}
+    </div>
+  );
+};
+
+// Helper: Card Title - for consistent card header styling
+const CardTitle = ({
+  icon,
+  title,
+  badge,
+}: {
+  icon: string;
+  title: string;
+  badge?: React.ReactNode;
+}) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span className="font-bold text-theme-primary text-base flex items-center gap-2">
+      <span>{icon}</span>
+      {title}
+    </span>
+    {badge}
+  </div>
+);
 
 export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
   isOpen,
@@ -225,9 +309,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           )}
           {gameState.tokenUsage && (
             <div className="mt-3 pt-3 border-t border-theme-border/30">
-              <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
-                {t("token.tokens")}
-              </span>
+              <SubsectionLabel>{t("token.tokens")}</SubsectionLabel>
               <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg/30 p-2 rounded border border-theme-border/30">
                 <div>
                   {t("token.totalTokens")}:{" "}
@@ -277,9 +359,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           )}
           {char.attributes.length > 0 && (
             <div className="mt-3 pt-2 border-t border-theme-border/30">
-              <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
-                {t("gameViewer.attributes")}:
-              </span>
+              <SubsectionLabel>{t("gameViewer.attributes")}:</SubsectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {char.attributes.map((attr, idx) => (
                   <div
@@ -307,9 +387,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         >
           {gameState.quests.filter((q) => q.status === "active").length ===
           0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noActiveQuests")}
-            </p>
+            <EmptyState message={t("gameViewer.noActiveQuests")} />
           ) : (
             <div className="space-y-3">
               {gameState.quests
@@ -427,19 +505,17 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                 gameState.unlockMode) &&
                 outline.worldSetting.history && (
                   <div className="mt-4 pt-3 border-t border-theme-border/30">
-                    <span className="text-theme-primary text-xs uppercase tracking-wider font-bold block mb-2">
+                    <SubsectionLabel>
                       {t("gameViewer.worldHistory")}:
-                    </span>
-                    <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    </SubsectionLabel>
+                    <ContentBlock>
                       <MarkdownText content={outline.worldSetting.history} />
-                    </div>
+                    </ContentBlock>
                   </div>
                 )}
             </>
           ) : (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noWorldInfo")}
-            </p>
+            <EmptyState message={t("gameViewer.noWorldInfo")} />
           )}
         </Section>
 
@@ -452,9 +528,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.locations.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noLocations")}
-            </p>
+            <EmptyState message={t("gameViewer.noLocations")} />
           ) : (
             <div className="space-y-3">
               {gameState.locations.map((loc, idx) => (
@@ -683,9 +757,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.factions.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noFactions")}
-            </p>
+            <EmptyState message={t("gameViewer.noFactions")} />
           ) : (
             <div className="space-y-3">
               {gameState.factions.map((faction, idx) => (
@@ -1112,10 +1184,12 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
               {char.hiddenTraits.every(
                 (t) => !(t.unlocked || gameState.unlockMode),
               ) && (
-                <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-                  {t("gameViewer.noHiddenTraitsRevealed") ||
-                    "No hidden traits revealed."}
-                </p>
+                <EmptyState
+                  message={
+                    t("gameViewer.noHiddenTraitsRevealed") ||
+                    "No hidden traits revealed."
+                  }
+                />
               )}
             </div>
           </Section>
@@ -1138,9 +1212,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           {gameState.relationships.filter(
             (r) => gameState.unlockMode || r.known !== false,
           ).length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noRelationships")}
-            </p>
+            <EmptyState message={t("gameViewer.noRelationships")} />
           ) : (
             <div className="space-y-3">
               {gameState.relationships
@@ -1448,9 +1520,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {activeQuests.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noActiveQuests")}
-            </p>
+            <EmptyState message={t("gameViewer.noActiveQuests")} />
           ) : (
             <div className="space-y-3">
               {activeQuests.map((quest, idx) => (
@@ -1597,9 +1667,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.knowledge.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noKnowledge")}
-            </p>
+            <EmptyState message={t("gameViewer.noKnowledge")} />
           ) : (
             <div className="space-y-3">
               {gameState.knowledge.map((entry, idx) => (
@@ -1663,9 +1731,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.timeline.filter((e) => e.known).length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noEvents")}
-            </p>
+            <EmptyState message={t("gameViewer.noEvents")} />
           ) : (
             <div className="space-y-3">
               {gameState.timeline
@@ -1708,9 +1774,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           onToggle={toggleSection}
         >
           {gameState.inventory.length === 0 ? (
-            <p className="text-theme-muted text-sm italic p-2 border border-dashed border-theme-border/50 rounded text-center">
-              {t("gameViewer.noItems")}
-            </p>
+            <EmptyState message={t("gameViewer.noItems")} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {gameState.inventory.map((item, idx) => (

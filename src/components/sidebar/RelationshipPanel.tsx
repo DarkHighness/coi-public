@@ -209,35 +209,43 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                   </div>
                 )}
                 {rel.visible?.dialogueStyle && (
-                  <div className="flex items-center gap-2 text-xs text-theme-muted">
-                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
-                      {t("sidebar.relationship.dialogueStyle")}:
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("sidebar.relationship.dialogueStyle")}
                     </span>
-                    <span>{rel.visible.dialogueStyle}</span>
+                    <span className="text-theme-muted/80 text-xs">
+                      {rel.visible.dialogueStyle}
+                    </span>
                   </div>
                 )}
                 {rel.visible.voice && (
-                  <div className="flex items-center gap-2 text-xs text-theme-muted">
-                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
-                      {t("sidebar.relationship.voice")}:
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("sidebar.relationship.voice")}
                     </span>
-                    <span>{rel.visible.voice}</span>
+                    <span className="text-theme-muted/80 text-xs">
+                      {rel.visible.voice}
+                    </span>
                   </div>
                 )}
                 {rel.visible.mannerism && (
-                  <div className="flex items-center gap-2 text-xs text-theme-muted">
-                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
-                      {t("sidebar.relationship.mannerism")}:
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("sidebar.relationship.mannerism")}
                     </span>
-                    <span>{rel.visible.mannerism}</span>
+                    <span className="text-theme-muted/80 text-xs">
+                      {rel.visible.mannerism}
+                    </span>
                   </div>
                 )}
                 {rel.visible.mood && (
-                  <div className="flex items-center gap-2 text-xs text-theme-muted">
-                    <span className="text-theme-primary/70 uppercase tracking-wider text-[10px]">
-                      {t("sidebar.relationship.mood")}:
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("sidebar.relationship.mood")}
                     </span>
-                    <span>{rel.visible.mood}</span>
+                    <span className="text-theme-muted/80 text-xs">
+                      {rel.visible.mood}
+                    </span>
                   </div>
                 )}
 

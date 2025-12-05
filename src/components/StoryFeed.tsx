@@ -403,6 +403,10 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           theme={gameState.theme}
           isMuted={aiSettings?.audioVolume?.bgmMuted}
           onToggleMute={onToggleMute}
+          isEnvThemeLocked={aiSettings?.lockEnvTheme}
+          onToggleLockEnvTheme={() => {
+            updateSettings({ lockEnvTheme: !aiSettings?.lockEnvTheme });
+          }}
         />
 
         <div

@@ -62,6 +62,33 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Disable Image Prompt Toggle */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.disableImagePrompt") || "Disable Image Prompt"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.disableImagePromptHelp") ||
+                "Completely disable imagePrompt generation. AI will not generate image prompts."}
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              updateExtra("disableImagePrompt", !extra.disableImagePrompt)
+            }
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.disableImagePrompt ? "bg-green-500" : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.disableImagePrompt ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Prompt Injection Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
@@ -90,6 +117,37 @@ export const SettingsExtra: React.FC = () => {
               }`}
             />
           </button>
+        </div>
+
+        {/* Custom Prompt Injection */}
+        <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-2">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.customPromptInjection") ||
+                "Custom Prompt Injection"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.customPromptInjectionHelp") ||
+                "Custom prompt to inject. When set, overrides model-based prompt injection."}
+            </div>
+          </div>
+          <textarea
+            value={extra.customPromptInjection || ""}
+            onChange={(e) =>
+              updateExtra("customPromptInjection", e.target.value)
+            }
+            placeholder={
+              t("settings.extra.customPromptInjectionPlaceholder") ||
+              "Enter custom prompt to inject before system instructions..."
+            }
+            className="w-full h-24 p-2 text-xs bg-theme-surface border border-theme-border rounded resize-none focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text placeholder:text-theme-muted/50"
+          />
+          {extra.customPromptInjection && (
+            <div className="text-[10px] text-theme-warning">
+              {t("settings.extra.customPromptInjectionWarning") ||
+                "⚠ Custom injection is active. Model-based injection is disabled."}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -44,6 +44,10 @@ class WebAudioManager {
   private targetVolume: number = 0.5;
   /** Whether audio is currently paused (muted) */
   private isPaused: boolean = false;
+  /** Lock to prevent concurrent play operations */
+  private playLock: Promise<boolean> | null = null;
+  /** The environment that is currently being switched to (to prevent duplicate switches) */
+  private pendingEnvironment: string | null = null;
 
   /**
    * Initialize or get the AudioContext.
@@ -195,6 +199,7 @@ class WebAudioManager {
 
   /**
    * Play an environment track with optional crossfade from current.
+   * Uses a lock to prevent concurrent play operations from causing dual audio.
    */
   async play(
     env: string,
@@ -218,6 +223,49 @@ class WebAudioManager {
       return true;
     }
 
+    // If this environment is already pending, skip duplicate requests
+    if (this.pendingEnvironment === normalizedEnv) {
+      console.log(
+        `[WebAudioManager] Already switching to ${normalizedEnv}, skipping duplicate request`,
+      );
+      return true;
+    }
+
+    // If there's an ongoing play operation, wait for it to complete first
+    if (this.playLock) {
+      console.log(
+        `[WebAudioManager] Waiting for previous play operation to complete...`,
+      );
+      await this.playLock;
+    }
+
+    // Mark this environment as pending
+    this.pendingEnvironment = normalizedEnv;
+
+    // Create a new lock for this play operation
+    let resolveLock: (value: boolean) => void;
+    this.playLock = new Promise((resolve) => {
+      resolveLock = resolve;
+    });
+
+    try {
+      return await this.playInternal(normalizedEnv, volume, fadeIn);
+    } finally {
+      // Clear the pending environment and release the lock
+      this.pendingEnvironment = null;
+      this.playLock = null;
+      resolveLock!(true);
+    }
+  }
+
+  /**
+   * Internal play implementation (called with lock held).
+   */
+  private async playInternal(
+    normalizedEnv: string,
+    volume: number,
+    fadeIn: boolean,
+  ): Promise<boolean> {
     const ctx = this.getContext();
 
     // Check if context is ready

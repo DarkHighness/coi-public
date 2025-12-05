@@ -207,7 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Status Bar */}
-      <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-6 flex justify-between items-center border-t border-theme-border/50 font-mono">
+      <div className="bg-gray/5 text-[10px] text-theme-muted py-1 px-2 flex justify-between items-center border-t border-theme-border/50 font-mono">
         <span>
           {t("sidebar.tokens")}{" "}
           {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}

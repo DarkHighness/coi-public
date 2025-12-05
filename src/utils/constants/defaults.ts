@@ -91,11 +91,11 @@ export const DEFAULTS: AISettings = {
   freshSegmentCount: 4, // Keep 4 fresh segments alongside summary for narrative continuity
   story: {
     providerId: "provider-1",
-    modelId: "gemini-2.0-flash-exp",
+    modelId: "gemini-2.5-flash",
   },
   script: {
     providerId: "provider-1",
-    modelId: "gemini-2.0-flash-exp",
+    modelId: "gemini-2.5-flash",
     enabled: true,
   },
   image: {
@@ -130,7 +130,7 @@ export const DEFAULTS: AISettings = {
     modelId: "gemini-2.5-flash",
     enabled: true,
   },
-  language: "en",
+  language: "zh",
   imageTimeout: 60, // 60 seconds
   manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
@@ -160,12 +160,4 @@ export const DEFAULTS: AISettings = {
       turnDecayFactor: 0.01, // Priority loss per turn difference
     },
   },
-};
-
-export const OUTLINE_PHASES = {
-  PHASE_1_PREMISE: 1,
-  PHASE_2_WORLD: 2,
-  PHASE_3_CHARACTERS: 3,
-  PHASE_4_PLOT: 4,
-  PHASE_5_START: 5,
 };

@@ -161,6 +161,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           title={gameState.outline?.title}
           subtitle={gameState.outline?.premise}
           onNavigateToSegment={handleNavigateToSegment}
+          onFork={onFork}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
@@ -377,13 +378,11 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
               </button>
             )}
             <button
-              onClick={() => {
-                if (window.confirm(t("confirmNewGame"))) onNewGame();
-              }}
-              className="col-span-2 p-4 bg-theme-error/80 border border-theme-error rounded flex flex-row items-center gap-2 justify-center hover:bg-theme-error/60 transition-colors mt-4"
+              onClick={onNewGame}
+              className="col-span-2 p-4 bg-theme-surface border border-theme-border rounded flex flex-row items-center gap-2 justify-center hover:bg-theme-surface-highlight transition-colors mt-4"
             >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5 text-theme-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -392,11 +391,11 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                 ></path>
               </svg>
-              <span className="text-sm font-bold uppercase text-red-100">
-                {t("newGame")}
+              <span className="text-sm font-bold uppercase text-theme-text">
+                {t("mainMenu")}
               </span>
             </button>
           </div>

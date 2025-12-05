@@ -381,7 +381,13 @@
       "detailedDescription": "详细描述",
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
       "promptInjection": "提示词注入",
-      "promptInjectionHelp": "基于模型关键词注入越狱提示词"
+      "promptInjectionHelp": "基于模型关键词注入越狱提示词",
+      "disableImagePrompt": "禁用图片提示",
+      "disableImagePromptHelp": "完全禁用 imagePrompt 生成。AI 将不会生成图片提示词。",
+      "customPromptInjection": "自定义提示词注入",
+      "customPromptInjectionHelp": "自定义注入的提示词。设置后将覆盖基于模型的提示词注入。",
+      "customPromptInjectionPlaceholder": "在此输入要在系统指令前注入的自定义提示词...",
+      "customPromptInjectionWarning": "⚠ 自定义注入已启用。基于模型的注入已禁用。"
     }
   },
   "themeMode": "主题模式",

@@ -314,11 +314,20 @@ export const generateAdventureTurn = async (
     backgroundTemplate,
     example,
     worldSetting,
+    settings.extra?.disableImagePrompt,
   );
 
   // Handle prompt injection if enabled
   const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
-  if (promptInjectionEnabled && promptInjectionData) {
+  const customPromptInjection = settings.extra?.customPromptInjection?.trim();
+
+  // Custom prompt injection takes priority over model-based injection
+  if (customPromptInjection) {
+    systemInstruction = `${customPromptInjection}\n\n${systemInstruction}`;
+    console.warn(
+      `[PromptInjection] Injecting custom prompt (${customPromptInjection.length} chars)`,
+    );
+  } else if (promptInjectionEnabled && promptInjectionData) {
     const loweredModelId = modelId.toLowerCase();
     console.log(
       `[PromptInjection] Checking for prompts to inject for model ${modelId}`,

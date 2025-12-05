@@ -403,7 +403,13 @@
       "detailedDescription": "Detailed Descriptions",
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
       "promptInjection": "Prompt Injection",
-      "promptInjectionHelp": "Inject jailbreak prompts based on model keywords."
+      "promptInjectionHelp": "Inject jailbreak prompts based on model keywords.",
+      "disableImagePrompt": "Disable Image Prompt",
+      "disableImagePromptHelp": "Completely disable imagePrompt generation. AI will not generate image prompts.",
+      "customPromptInjection": "Custom Prompt Injection",
+      "customPromptInjectionHelp": "Custom prompt to inject. When set, overrides model-based prompt injection.",
+      "customPromptInjectionPlaceholder": "Enter custom prompt to inject before system instructions...",
+      "customPromptInjectionWarning": "⚠ Custom injection is active. Model-based injection is disabled."
     }
   },
   "narrator": "Narrator",

@@ -18,6 +18,10 @@ interface FeedHeaderProps {
   theme?: string;
   isMuted?: boolean;
   onToggleMute?: () => void;
+  /** Whether envTheme is locked (follows story theme instead of atmosphere) */
+  isEnvThemeLocked?: boolean;
+  /** Toggle the lockEnvTheme setting */
+  onToggleLockEnvTheme?: () => void;
 }
 
 export const FeedHeader: React.FC<FeedHeaderProps> = ({
@@ -30,6 +34,8 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   theme,
   isMuted,
   onToggleMute,
+  isEnvThemeLocked,
+  onToggleLockEnvTheme,
 }) => {
   const { t } = useTranslation();
 
@@ -93,21 +99,28 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
         {(envTheme || displayAmbience) && (
           <div className="flex items-center space-x-2 md:space-x-3 border-l border-theme-border pl-2 md:pl-4 opacity-70 overflow-hidden flex-1 min-w-0">
             {envTheme && (
-              <div
-                className="flex items-center space-x-1 min-w-0"
-                title={t("environment")}
+              <button
+                onClick={onToggleLockEnvTheme}
+                className={`flex items-center space-x-1 min-w-0 hover:text-theme-primary transition-colors ${isEnvThemeLocked ? "opacity-50" : ""}`}
+                title={
+                  isEnvThemeLocked
+                    ? t("feedHeader.envThemeLocked") ||
+                      "环境主题已锁定 (点击解锁)"
+                    : t("feedHeader.envThemeUnlocked") ||
+                      "环境主题跟随氛围 (点击锁定)"
+                }
               >
                 <span
                   className="text-base md:text-lg leading-none shrink-0"
                   role="img"
                   aria-label={t("feedHeader.location")}
                 >
-                  📍
+                  {isEnvThemeLocked ? "🔒" : "📍"}
                 </span>
                 <span className="text-theme-text truncate text-xs md:text-sm">
                   {envThemeName}
                 </span>
-              </div>
+              </button>
             )}
             {displayAmbience && (
               <button

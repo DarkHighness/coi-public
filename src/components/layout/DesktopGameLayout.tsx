@@ -198,6 +198,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               title={gameState.outline?.title}
               subtitle={gameState.outline?.premise}
               onNavigateToSegment={handleNavigateToSegment}
+              onFork={onFork}
             />
           </Suspense>
         </div>

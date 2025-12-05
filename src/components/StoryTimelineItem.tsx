@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { StorySegment } from "../types";
 import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
@@ -16,6 +16,10 @@ interface StoryTimelineItemProps {
   onHover: (id: string | null) => void;
   onImageClick: (url: string) => void;
   onNavigateToSegment?: (segmentId: string) => void;
+  /** Fork callback - only called for model role segments */
+  onFork?: (segmentId: string) => void;
+  /** Whether this is the currently active segment (cannot fork from current) */
+  isActive?: boolean;
 }
 
 export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
@@ -29,12 +33,20 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
   onHover,
   onImageClick,
   onNavigateToSegment,
+  onFork,
+  isActive = false,
 }) => {
   const { t } = useTranslation();
   const { url: resolvedUrl } = useImageURL(segment.imageId);
   const displayUrl = resolvedUrl || segment.imageUrl;
 
   const isSystemRole = segment.role === "system";
+  const isModelRole = segment.role === "model";
+  // Can fork from model role segments that are not the current active segment
+  const canFork = isModelRole && !isActive && !!onFork;
+
+  // Fork confirmation modal state
+  const [showForkModal, setShowForkModal] = useState(false);
 
   // Long press detection for mobile
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,11 +56,14 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
     setIsLongPressing(false);
     longPressTimerRef.current = setTimeout(() => {
       setIsLongPressing(true);
-      if (onNavigateToSegment) {
+      // For model role segments that can fork, show fork modal instead of navigating
+      if (canFork) {
+        setShowForkModal(true);
+      } else if (onNavigateToSegment) {
         onNavigateToSegment(segment.id);
       }
     }, 500); // 500ms for long press
-  }, [segment.id, onNavigateToSegment]);
+  }, [segment.id, onNavigateToSegment, canFork]);
 
   const handleTouchEnd = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -341,6 +356,52 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           </motion.div>
         )}
       </div>
+
+      {/* Fork Confirmation Modal */}
+      <AnimatePresence>
+        {showForkModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowForkModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-theme-surface border border-theme-border rounded-lg p-4 mx-4 max-w-sm shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-theme-primary font-bold mb-2 text-sm">
+                {t("timeline.forkConfirm") || "从此处分叉?"}
+              </h3>
+              <p className="text-theme-muted text-xs mb-4 line-clamp-3">
+                {segment.text.slice(0, 150)}
+                {segment.text.length > 150 ? "..." : ""}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowForkModal(false)}
+                  className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text transition-colors"
+                >
+                  {t("cancel") || "取消"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForkModal(false);
+                    onFork?.(segment.id);
+                  }}
+                  className="px-3 py-1.5 text-xs bg-theme-primary text-theme-bg rounded hover:opacity-90 transition-opacity font-medium"
+                >
+                  {t("timeline.fork") || "分叉"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

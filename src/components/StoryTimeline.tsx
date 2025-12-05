@@ -15,12 +15,15 @@ interface StoryTimelineProps {
   title?: string;
   subtitle?: string;
   onNavigateToSegment?: (segmentId: string) => void;
+  /** Fork callback - creates a new timeline branch from the given segment */
+  onFork?: (segmentId: string) => void;
 }
 
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   title,
   subtitle,
   onNavigateToSegment,
+  onFork,
 }) => {
   const { state } = useGameEngineContext();
   const { settings } = useSettingsContext();
@@ -165,6 +168,8 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                   onHover={setHoveredSegment}
                   onImageClick={setSelectedImage}
                   onNavigateToSegment={onNavigateToSegment}
+                  onFork={onFork}
+                  isActive={seg.id === gameState.activeNodeId}
                 />
               );
             })}

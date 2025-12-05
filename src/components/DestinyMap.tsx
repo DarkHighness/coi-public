@@ -468,59 +468,130 @@ export const DestinyMap: React.FC<DestinyMapProps> = ({
                   </g>
                 )}
 
-                {/* Text */}
-                <foreignObject
+                {/* Text - Using SVG text elements for better mobile compatibility */}
+                {/* Role/Ending Label */}
+                <text
                   x="12"
-                  y={-NODE_HEIGHT / 2 + 8}
-                  width={NODE_WIDTH - 20}
-                  height={NODE_HEIGHT - 16}
+                  y={-NODE_HEIGHT / 2 + 18}
+                  fontSize="9"
+                  fontWeight="bold"
+                  letterSpacing="0.05em"
+                  fill={
+                    endingColor
+                      ? endingColor
+                      : isCurrent
+                        ? "var(--theme-primary)"
+                        : "var(--theme-muted)"
+                  }
+                  className="pointer-events-none select-none"
+                  style={{ textTransform: "uppercase" }}
                 >
-                  <div className="flex flex-col h-full justify-center pointer-events-none">
-                    <div className="flex items-center gap-1 mb-1">
-                      <span
-                        className={`text-[9px] font-bold uppercase tracking-wider ${
-                          endingColor
-                            ? ""
-                            : isCurrent
-                              ? "text-theme-primary"
-                              : "text-theme-muted"
-                        }`}
-                        style={endingColor ? { color: endingColor } : undefined}
+                  {ending
+                    ? ending === "death"
+                      ? t("gameOver") || "GAME OVER"
+                      : ending === "victory"
+                        ? t("victory") || "VICTORY"
+                        : ending === "true_ending"
+                          ? t("trueEnding") || "TRUE ENDING"
+                          : ending === "bad_ending"
+                            ? t("badEnding") || "BAD END"
+                            : t("ending") || "ENDING"
+                    : isModel
+                      ? t("narrator")
+                      : t("you")}
+                  {endingIcon && ` ${endingIcon}`}
+                </text>
+
+                {/* Content Preview - Split into two lines for better display */}
+                {(() => {
+                  const plainText = node.segment.text
+                    .replace(/[#*_`~\[\]]/g, "")
+                    .trim();
+                  // Calculate max chars based on character width
+                  // Chinese/CJK characters are ~2x width of Latin characters
+                  const getDisplayLength = (str: string) => {
+                    let len = 0;
+                    for (const char of str) {
+                      // CJK characters (Chinese, Japanese, Korean)
+                      if (
+                        /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(
+                          char,
+                        )
+                      ) {
+                        len += 2;
+                      } else {
+                        len += 1;
+                      }
+                    }
+                    return len;
+                  };
+
+                  const truncateToDisplayLength = (
+                    str: string,
+                    maxDisplayLen: number,
+                  ) => {
+                    let displayLen = 0;
+                    let charIndex = 0;
+                    for (const char of str) {
+                      const charWidth =
+                        /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(
+                          char,
+                        )
+                          ? 2
+                          : 1;
+                      if (displayLen + charWidth > maxDisplayLen) break;
+                      displayLen += charWidth;
+                      charIndex++;
+                    }
+                    return str.slice(0, charIndex);
+                  };
+
+                  // Max display width ~28 (roughly 14 CJK chars or 28 Latin chars)
+                  const maxDisplayLen = 28;
+                  const line1 = truncateToDisplayLength(
+                    plainText,
+                    maxDisplayLen,
+                  );
+                  const remaining = plainText.slice(line1.length);
+                  const line2 = truncateToDisplayLength(
+                    remaining,
+                    maxDisplayLen,
+                  );
+                  const hasMore = remaining.length > line2.length;
+
+                  return (
+                    <>
+                      <text
+                        x="12"
+                        y={-NODE_HEIGHT / 2 + 32}
+                        fontSize="10"
+                        fill="var(--theme-text)"
+                        opacity={0.8}
+                        className="pointer-events-none select-none"
+                        textLength={NODE_WIDTH - 24}
+                        lengthAdjust="spacing"
                       >
-                        {ending
-                          ? ending === "death"
-                            ? t("gameOver") || "GAME OVER"
-                            : ending === "victory"
-                              ? t("victory") || "VICTORY"
-                              : ending === "true_ending"
-                                ? t("trueEnding") || "TRUE ENDING"
-                                : ending === "bad_ending"
-                                  ? t("badEnding") || "BAD END"
-                                  : t("ending") || "ENDING"
-                          : isModel
-                            ? t("narrator")
-                            : t("you")}
-                      </span>
-                      {endingIcon && (
-                        <span className="text-xs">{endingIcon}</span>
+                        {line1}
+                        {!line2 && hasMore ? "…" : ""}
+                      </text>
+                      {line2 && (
+                        <text
+                          x="12"
+                          y={-NODE_HEIGHT / 2 + 44}
+                          fontSize="10"
+                          fill="var(--theme-text)"
+                          opacity={0.8}
+                          className="pointer-events-none select-none"
+                          textLength={NODE_WIDTH - 24}
+                          lengthAdjust="spacing"
+                        >
+                          {line2}
+                          {hasMore ? "…" : ""}
+                        </text>
                       )}
-                    </div>
-                    <p
-                      className="text-[10px] leading-tight text-theme-text line-clamp-2 opacity-80"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {/* Use plain text instead of MarkdownText for better SVG compatibility */}
-                      {node.segment.text
-                        .replace(/[#*_`~\[\]]/g, "")
-                        .slice(0, 100)}
-                    </p>
-                  </div>
-                </foreignObject>
+                    </>
+                  );
+                })()}
 
                 {/* Current Indicator Dot */}
                 {isCurrent && (
