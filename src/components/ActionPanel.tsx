@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, StorySegment } from "../types";
 import {
@@ -50,6 +50,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const [isJumpOpen, setIsJumpOpen] = useState(false);
   const [jumpInputValue, setJumpInputValue] = useState("");
   const [customInput, setCustomInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<{
     message: string;
@@ -115,6 +116,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     }
   }, [gameState.isProcessing]);
 
+  // Helper to clear input and reset textarea height
+  const clearInput = useCallback(() => {
+    setCustomInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }, []);
+
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customInput.trim()) return;
@@ -122,7 +131,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     // Check for commands first
     const commandResult = parseCommand(customInput, commandContext);
     if (commandResult.handled) {
-      setCustomInput("");
+      clearInput();
 
       // If command needs confirmation, show confirmation dialog
       if (commandResult.action && commandResult.message) {
@@ -164,7 +173,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
     // Normal action
     onAction(customInput);
-    setCustomInput("");
+    clearInput();
   };
 
   const handleConfirmCommand = () => {
@@ -567,6 +576,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
               {/* Main Input */}
               <textarea
+                ref={textareaRef}
                 value={customInput}
                 onChange={(e) => {
                   setCustomInput(e.target.value);
