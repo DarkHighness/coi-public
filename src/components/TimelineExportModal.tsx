@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { StorySegment } from "../types";
 import { useImageURL } from "../hooks/useImageStorage";
+import { useIsMobile } from "../hooks/useMediaQuery";
 
 interface TimelineExportModalProps {
   segments: StorySegment[];
@@ -332,6 +333,7 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
   isExporting = false,
 }) => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   // State
   const [startIndex, setStartIndex] = useState(0);
@@ -375,9 +377,6 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
   const handleExport = () => {
     onExport(startIndex, endIndex, segmentsPerImage);
   };
-
-  // Detect mobile
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   if (!isOpen) return null;
 

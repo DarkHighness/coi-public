@@ -7,6 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 import { StateChanges } from "../types";
+import { useIsMobile } from "../hooks/useMediaQuery";
 
 // Toast item type
 export interface ToastItem {
@@ -38,9 +39,6 @@ interface ToastContextType {
 // Create context with default values
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-// Check if we're on mobile
-const isMobile = () => typeof window !== "undefined" && window.innerWidth < 768;
-
 // Provider component
 interface ToastProviderProps {
   children: ReactNode;
@@ -49,6 +47,7 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastIdRef = useRef(0);
+  const isMobile = useIsMobile();
 
   const showToast = useCallback(
     (
@@ -74,7 +73,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   // Helper to push state change toasts with detailed items
   const pushStateChangeToasts = useCallback(
     (changes: StateChanges, t: (key: string) => string) => {
-      const mobile = isMobile();
+      const mobile = isMobile;
 
       // Collect all changes for potential grouping on mobile
       const allChanges: Array<{

@@ -63,6 +63,46 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     }
   }, [narrativeSegments.length]);
 
+  // Virtual list: track which segments are visible
+  const VISIBLE_BUFFER_TIMELINE = 15;
+  const ESTIMATED_ITEM_HEIGHT = 60;
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 30 });
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const updateVisibleRange = () => {
+      const scrollTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+
+      const firstVisible = Math.floor(scrollTop / ESTIMATED_ITEM_HEIGHT);
+      const visibleCount = Math.ceil(containerHeight / ESTIMATED_ITEM_HEIGHT);
+      const lastVisible = firstVisible + visibleCount;
+
+      const newStart = Math.max(0, firstVisible - VISIBLE_BUFFER_TIMELINE);
+      const newEnd = Math.min(
+        narrativeSegments.length,
+        lastVisible + VISIBLE_BUFFER_TIMELINE,
+      );
+
+      setVisibleRange((prev) => {
+        // Only update if there's a significant change to avoid excessive re-renders
+        if (
+          Math.abs(prev.start - newStart) > 3 ||
+          Math.abs(prev.end - newEnd) > 3
+        ) {
+          return { start: newStart, end: newEnd };
+        }
+        return prev;
+      });
+    };
+
+    updateVisibleRange();
+    container.addEventListener("scroll", updateVisibleRange, { passive: true });
+    return () => container.removeEventListener("scroll", updateVisibleRange);
+  }, [narrativeSegments.length]);
+
   const toggleItem = (id: string) => {
     setExpandedItems((prev) => {
       const next = new Set(prev);
@@ -148,32 +188,55 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           ref={scrollRef}
           className="flex-1 overflow-y-auto space-y-0 px-1 scroll-smooth pt-1 pb-24 md:pb-0"
         >
-          <AnimatePresence initial={false}>
-            {narrativeSegments.map((seg, index) => {
-              const isFirst = index === 0;
-              const isLast = index === narrativeSegments.length - 1;
-              const isExpanded = expandedItems.has(seg.id);
-              const isHovered = hoveredSegment === seg.id;
+          {/* Placeholder for items above visible range - OUTSIDE AnimatePresence */}
+          {visibleRange.start > 0 && (
+            <div
+              style={{ height: visibleRange.start * ESTIMATED_ITEM_HEIGHT }}
+              aria-hidden="true"
+            />
+          )}
 
-              return (
-                <StoryTimelineItem
-                  key={seg.id}
-                  segment={seg}
-                  index={index}
-                  isFirst={isFirst}
-                  isLast={isLast}
-                  isExpanded={isExpanded}
-                  isHovered={isHovered}
-                  onToggle={toggleItem}
-                  onHover={setHoveredSegment}
-                  onImageClick={setSelectedImage}
-                  onNavigateToSegment={onNavigateToSegment}
-                  onFork={onFork}
-                  isActive={seg.id === gameState.activeNodeId}
-                />
-              );
-            })}
+          <AnimatePresence initial={false}>
+            {narrativeSegments
+              .slice(visibleRange.start, visibleRange.end)
+              .map((seg, sliceIndex) => {
+                const index = visibleRange.start + sliceIndex;
+                const isFirst = index === 0;
+                const isLast = index === narrativeSegments.length - 1;
+                const isExpanded = expandedItems.has(seg.id);
+                const isHovered = hoveredSegment === seg.id;
+
+                return (
+                  <StoryTimelineItem
+                    key={seg.id}
+                    segment={seg}
+                    index={index}
+                    isFirst={isFirst}
+                    isLast={isLast}
+                    isExpanded={isExpanded}
+                    isHovered={isHovered}
+                    onToggle={toggleItem}
+                    onHover={setHoveredSegment}
+                    onImageClick={setSelectedImage}
+                    onNavigateToSegment={onNavigateToSegment}
+                    onFork={onFork}
+                    isActive={seg.id === gameState.activeNodeId}
+                  />
+                );
+              })}
           </AnimatePresence>
+
+          {/* Placeholder for items below visible range - OUTSIDE AnimatePresence */}
+          {visibleRange.end < narrativeSegments.length && (
+            <div
+              style={{
+                height:
+                  (narrativeSegments.length - visibleRange.end) *
+                  ESTIMATED_ITEM_HEIGHT,
+              }}
+              aria-hidden="true"
+            />
+          )}
 
           {narrativeSegments.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">

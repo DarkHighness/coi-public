@@ -21,6 +21,7 @@ interface StoryTextProps {
   onAudioGenerated?: (key: string) => void;
   onCopyPrompt?: () => string | Promise<string>;
   onUpload?: () => void;
+  onFork?: () => void;
 }
 
 export const StoryText: React.FC<StoryTextProps> = ({
@@ -35,6 +36,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
   onAudioGenerated,
   onCopyPrompt,
   onUpload,
+  onFork,
 }) => {
   const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
@@ -76,6 +78,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
         label={t("readAloud")}
         onCopyPrompt={onCopyPrompt}
         onUpload={onUpload}
+        onFork={onFork}
       />
 
       <div className="prose prose-invert prose-lg max-w-none text-theme-text leading-8 font-serif">

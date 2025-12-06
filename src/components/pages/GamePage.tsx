@@ -8,6 +8,7 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAmbience } from "../../hooks/useAmbience";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 import { FeedLayout, ListState, UIState, ActionResult } from "../../types";
 import { MobileNav, MobileTab } from "../MobileNav";
 import {
@@ -138,6 +139,9 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
     undefined,
   );
+
+  // Conditional layout rendering
+  const isMobile = useIsMobile();
 
   // Ref to track last played environment for notifications
   const lastPlayedEnvRef = useRef<string | undefined>(undefined);
@@ -433,74 +437,76 @@ export const GamePage: React.FC<GamePageProps> = ({
           </div>
         }
       >
-        <MobileGameLayout
-          mobileTab={mobileTab}
-          setMobileTab={setMobileTab}
-          feedLayout={feedLayout}
-          setFeedLayout={setFeedLayout}
-          onAnimate={(url) => {
-            setMagicMirrorImage(url);
-            setIsMagicMirrorOpen(true);
-          }}
-          onRetry={handleRetry}
-          onFork={handleFork}
-          onAction={handlePlayerAction}
-          onNewGame={handleNewGameClick}
-          onMagicMirror={() => setIsMagicMirrorOpen(true)}
-          onSettings={onOpenSettings}
-          onOpenSaves={onOpenSaves}
-          onOpenMap={() => setIsDestinyMapOpen(true)}
-          onOpenLogs={() => setIsLogPanelOpen(true)}
-          onTypingComplete={() => setIsTyping(false)}
-          currentAmbience={currentAmbience}
-          onUpdateUIState={handleUpdateUIState}
-          onToggleMute={handleToggleMute}
-          onVeoScript={() => setIsVeoScriptOpen(true)}
-          onViewedSegmentChange={onViewedSegmentChange}
-          onShowToast={(msg, type) => showToast(msg, type)}
-          onOpenStateEditor={() => setIsStateEditorOpen(true)}
-          onOpenRAG={() => setIsRAGDebuggerOpen(true)}
-          onOpenViewer={() => setIsGameStateViewerOpen(true)}
-          onOpenGallery={() => setIsGalleryOpen(true)}
-          onForceUpdate={handleForceUpdate}
-          onImageUpload={handleImageUpload}
-          onImageDelete={handleImageDelete}
-        />
-
-        <DesktopGameLayout
-          feedLayout={feedLayout}
-          setFeedLayout={setFeedLayout}
-          onAnimate={(url) => {
-            setMagicMirrorImage(url);
-            setIsMagicMirrorOpen(true);
-          }}
-          onRetry={handleRetry}
-          onFork={handleFork}
-          onAction={handlePlayerAction}
-          onNewGame={handleNewGameClick}
-          onMagicMirror={() => setIsMagicMirrorOpen(true)}
-          onSettings={onOpenSettings}
-          onOpenSaves={onOpenSaves}
-          onOpenMap={() => setIsDestinyMapOpen(true)}
-          onOpenLogs={() => setIsLogPanelOpen(true)}
-          onTypingComplete={() => setIsTyping(false)}
-          currentAmbience={currentAmbience}
-          onUpdateUIState={handleUpdateUIState}
-          onToggleMute={handleToggleMute}
-          onVeoScript={() => setIsVeoScriptOpen(true)}
-          onViewedSegmentChange={onViewedSegmentChange}
-          onShowToast={(msg, type) => showToast(msg, type)}
-          onOpenStateEditor={() => setIsStateEditorOpen(true)}
-          onOpenRAG={() => setIsRAGDebuggerOpen(true)}
-          onOpenViewer={() => setIsGameStateViewerOpen(true)}
-          onOpenGallery={() => setIsGalleryOpen(true)}
-          onForceUpdate={handleForceUpdate}
-          onImageUpload={handleImageUpload}
-          onImageDelete={handleImageDelete}
-        />
+        {isMobile ? (
+          <MobileGameLayout
+            mobileTab={mobileTab}
+            setMobileTab={setMobileTab}
+            feedLayout={feedLayout}
+            setFeedLayout={setFeedLayout}
+            onAnimate={(url) => {
+              setMagicMirrorImage(url);
+              setIsMagicMirrorOpen(true);
+            }}
+            onRetry={handleRetry}
+            onFork={handleFork}
+            onAction={handlePlayerAction}
+            onNewGame={handleNewGameClick}
+            onMagicMirror={() => setIsMagicMirrorOpen(true)}
+            onSettings={onOpenSettings}
+            onOpenSaves={onOpenSaves}
+            onOpenMap={() => setIsDestinyMapOpen(true)}
+            onOpenLogs={() => setIsLogPanelOpen(true)}
+            onTypingComplete={() => setIsTyping(false)}
+            currentAmbience={currentAmbience}
+            onUpdateUIState={handleUpdateUIState}
+            onToggleMute={handleToggleMute}
+            onVeoScript={() => setIsVeoScriptOpen(true)}
+            onViewedSegmentChange={onViewedSegmentChange}
+            onShowToast={(msg, type) => showToast(msg, type)}
+            onOpenStateEditor={() => setIsStateEditorOpen(true)}
+            onOpenRAG={() => setIsRAGDebuggerOpen(true)}
+            onOpenViewer={() => setIsGameStateViewerOpen(true)}
+            onOpenGallery={() => setIsGalleryOpen(true)}
+            onForceUpdate={handleForceUpdate}
+            onImageUpload={handleImageUpload}
+            onImageDelete={handleImageDelete}
+          />
+        ) : (
+          <DesktopGameLayout
+            feedLayout={feedLayout}
+            setFeedLayout={setFeedLayout}
+            onAnimate={(url) => {
+              setMagicMirrorImage(url);
+              setIsMagicMirrorOpen(true);
+            }}
+            onRetry={handleRetry}
+            onFork={handleFork}
+            onAction={handlePlayerAction}
+            onNewGame={handleNewGameClick}
+            onMagicMirror={() => setIsMagicMirrorOpen(true)}
+            onSettings={onOpenSettings}
+            onOpenSaves={onOpenSaves}
+            onOpenMap={() => setIsDestinyMapOpen(true)}
+            onOpenLogs={() => setIsLogPanelOpen(true)}
+            onTypingComplete={() => setIsTyping(false)}
+            currentAmbience={currentAmbience}
+            onUpdateUIState={handleUpdateUIState}
+            onToggleMute={handleToggleMute}
+            onVeoScript={() => setIsVeoScriptOpen(true)}
+            onViewedSegmentChange={onViewedSegmentChange}
+            onShowToast={(msg, type) => showToast(msg, type)}
+            onOpenStateEditor={() => setIsStateEditorOpen(true)}
+            onOpenRAG={() => setIsRAGDebuggerOpen(true)}
+            onOpenViewer={() => setIsGameStateViewerOpen(true)}
+            onOpenGallery={() => setIsGalleryOpen(true)}
+            onForceUpdate={handleForceUpdate}
+            onImageUpload={handleImageUpload}
+            onImageDelete={handleImageDelete}
+          />
+        )}
 
         {/* Mobile Bottom Navigation */}
-        <MobileNav currentTab={mobileTab} setTab={setMobileTab} />
+        {isMobile && <MobileNav currentTab={mobileTab} setTab={setMobileTab} />}
 
         {/* Modals */}
         <MagicMirror

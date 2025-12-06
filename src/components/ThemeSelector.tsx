@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { StoryThemeConfig } from "../types";
 import { ThemeSelectorDesktop } from "./themes/ThemeSelectorDesktop";
 import { ThemeSelectorMobile } from "./themes/ThemeSelectorMobile";
+import { useIsMobile } from "../hooks/useMediaQuery";
 
 interface ThemeSelectorProps {
   themes: Record<string, StoryThemeConfig>;
@@ -16,17 +17,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onHover,
   onBack,
 }) => {
-  const [isDesktop, setIsDesktop] = useState(false);
+  const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
-    setIsDesktop(media.matches);
-    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
-  if (isDesktop) {
+  if (!isMobile) {
     return (
       <ThemeSelectorDesktop
         themes={themes}

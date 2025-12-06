@@ -88,17 +88,55 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const playedAnimations = useRef<Set<string>>(new Set());
     const isInitialMount = useRef(true);
 
+    // Virtual list: track which segments are "visible" plus buffer
+    const VISIBLE_BUFFER = 10; // Render 10 segments above and below visible area
+    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 });
+
     const { t } = useTranslation();
 
     // Scroll to specific segment (for timeline navigation)
     const scrollToSegment = useCallback(
       (segmentId: string) => {
         if (layout === "scroll" && scrollContainerRef.current) {
-          const element = document.querySelector(
-            `[data-segment-id="${segmentId}"]`,
+          // Find the index of the target segment
+          const targetIndex = currentHistory.findIndex(
+            (s) => s.id === segmentId,
           );
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          if (targetIndex !== -1) {
+            // Update visible range to include the target segment (force it to render)
+            setVisibleRange({
+              start: Math.max(0, targetIndex - VISIBLE_BUFFER),
+              end: Math.min(
+                currentHistory.length,
+                targetIndex + VISIBLE_BUFFER + 1,
+              ),
+            });
+
+            // Use setTimeout to wait for the DOM to update after range change
+            setTimeout(() => {
+              const element = document.querySelector(
+                `[data-segment-id="${segmentId}"]`,
+              );
+              if (element) {
+                element.scrollIntoView({ behavior: "smooth", block: "center" });
+              } else {
+                // Fallback: estimate scroll position
+                const estimatedPosition = targetIndex * 300;
+                scrollContainerRef.current?.scrollTo({
+                  top: estimatedPosition,
+                  behavior: "smooth",
+                });
+              }
+            }, 50);
+          } else {
+            // Segment not found by ID, try document query as fallback
+            const element = document.querySelector(
+              `[data-segment-id="${segmentId}"]`,
+            );
+            if (element) {
+              element.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
           }
         } else if (layout === "stack") {
           // Find the segment index and navigate to it
@@ -111,7 +149,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           }
         }
       },
-      [layout, currentHistory, stackItemsPerPage],
+      [layout, currentHistory, stackItemsPerPage, VISIBLE_BUFFER],
     );
 
     // Scroll to bottom (for continue game) - scroll to END of last segment
@@ -251,6 +289,52 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         return () => observer.disconnect();
       }
     }, [layout]);
+
+    // Virtual List: Update visible range on scroll
+    useEffect(() => {
+      if (layout !== "scroll" || !scrollContainerRef.current) return;
+
+      const container = scrollContainerRef.current;
+      const ESTIMATED_SEGMENT_HEIGHT = 300; // Approximate height per segment
+
+      const updateVisibleRange = () => {
+        const scrollTop = container.scrollTop;
+        const containerHeight = container.clientHeight;
+
+        // Estimate which segments are visible
+        const firstVisible = Math.floor(scrollTop / ESTIMATED_SEGMENT_HEIGHT);
+        const visibleCount = Math.ceil(
+          containerHeight / ESTIMATED_SEGMENT_HEIGHT,
+        );
+        const lastVisible = firstVisible + visibleCount;
+
+        // Add buffer
+        const start = Math.max(0, firstVisible - VISIBLE_BUFFER);
+        const end = Math.min(
+          currentHistory.length,
+          lastVisible + VISIBLE_BUFFER,
+        );
+
+        setVisibleRange((prev) => {
+          // Only update if range changed significantly (avoid excessive re-renders)
+          if (
+            Math.abs(prev.start - start) > 2 ||
+            Math.abs(prev.end - end) > 2
+          ) {
+            return { start, end };
+          }
+          return prev;
+        });
+      };
+
+      // Initial calculation
+      updateVisibleRange();
+
+      container.addEventListener("scroll", updateVisibleRange, {
+        passive: true,
+      });
+      return () => container.removeEventListener("scroll", updateVisibleRange);
+    }, [layout, currentHistory.length, VISIBLE_BUFFER]);
 
     // Intersection Observer for Scroll Layout to track viewed segment
     useEffect(() => {
@@ -467,98 +551,127 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
             {layout === "scroll" ? (
               <>
-                {currentHistory.map((segment, index) => {
-                  // Check if we should animate this card
-                  const isAlreadyPlayed = playedAnimations.current.has(
-                    segment.id,
-                  );
-                  const shouldAnimate = !isAlreadyPlayed;
+                {/* Placeholder for segments above visible range */}
+                {visibleRange.start > 0 && (
+                  <div
+                    style={{ height: visibleRange.start * 300 }}
+                    aria-hidden="true"
+                  />
+                )}
 
-                  return (
-                    <React.Fragment key={segment.id}>
-                      {segment.summarySnapshot && (
+                {currentHistory
+                  .slice(visibleRange.start, visibleRange.end)
+                  .map((segment, sliceIndex) => {
+                    const index = visibleRange.start + sliceIndex;
+
+                    // Check if we should animate this card
+                    const isAlreadyPlayed = playedAnimations.current.has(
+                      segment.id,
+                    );
+                    const shouldAnimate = !isAlreadyPlayed;
+
+                    return (
+                      <React.Fragment key={segment.id}>
+                        {segment.summarySnapshot && (
+                          <div
+                            className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group"
+                            title={t("summary.divider")}
+                          >
+                            <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
+                            <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">
+                              {t("summary.divider")}
+                            </span>
+                            <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
+                          </div>
+                        )}
                         <div
-                          className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group"
-                          title={t("summary.divider")}
+                          className="relative group/wrapper story-card-wrapper"
+                          data-segment-id={segment.id}
                         >
-                          <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                          <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">
-                            {t("summary.divider")}
-                          </span>
-                          <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                        </div>
-                      )}
-                      <div
-                        className="relative group/wrapper story-card-wrapper"
-                        data-segment-id={segment.id}
-                      >
-                        {/* Fork Button visible on hover for past segments - Fixed Accessibility */}
-                        {index < currentHistory.length - 1 &&
-                          onFork &&
-                          segment.role === "model" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onFork(segment.id);
-                              }}
-                              className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
-                              title={t("tree.fork")}
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                          {/* Fork Button visible on hover for past segments - Fixed Accessibility */}
+                          {index < currentHistory.length - 1 &&
+                            onFork &&
+                            segment.role === "model" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onFork(segment.id);
+                                }}
+                                className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
+                                title={t("tree.fork")}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                ></path>
-                              </svg>
-                            </button>
-                          )}
-                        <StoryCard
-                          segment={segment}
-                          isLast={index === currentHistory.length - 1}
-                          isGenerating={
-                            gameState.isImageGenerating &&
-                            gameState.generatingNodeId === segment.id
-                          }
-                          labels={{
-                            decided: t("decided"),
-                            vision: t("vision"),
-                            unavailable: t("unavailable"),
-                          }}
-                          onAnimate={segment.imageUrl ? onAnimate : undefined}
-                          onGenerateImage={onGenerateImage}
-                          disableImages={disableImages}
-                          shouldAnimate={shouldAnimate}
-                          aiSettings={aiSettings}
-                          onTypingComplete={() => {
-                            if (shouldAnimate) {
-                              playedAnimations.current.add(segment.id);
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                  ></path>
+                                </svg>
+                              </button>
+                            )}
+                          <StoryCard
+                            segment={segment}
+                            isLast={index === currentHistory.length - 1}
+                            isGenerating={
+                              gameState.isImageGenerating &&
+                              gameState.generatingNodeId === segment.id
                             }
-                            if (
-                              index === currentHistory.length - 1 &&
-                              onTypingComplete
-                            ) {
-                              onTypingComplete();
+                            labels={{
+                              decided: t("decided"),
+                              vision: t("vision"),
+                              unavailable: t("unavailable"),
+                            }}
+                            onAnimate={segment.imageUrl ? onAnimate : undefined}
+                            onGenerateImage={onGenerateImage}
+                            disableImages={disableImages}
+                            shouldAnimate={shouldAnimate}
+                            aiSettings={aiSettings}
+                            onTypingComplete={() => {
+                              if (shouldAnimate) {
+                                playedAnimations.current.add(segment.id);
+                              }
+                              if (
+                                index === currentHistory.length - 1 &&
+                                onTypingComplete
+                              ) {
+                                onTypingComplete();
+                              }
+                            }}
+                            onAudioGenerated={onAudioGenerated}
+                            onImageUpload={onImageUpload}
+                            onImageDelete={onImageDelete}
+                            gameState={gameState}
+                            saveId={saveId}
+                            hasFailed={failedImageNodes?.has(segment.id)}
+                            maxWidthClass={contentMaxWidth}
+                            onFork={
+                              onFork &&
+                              segment.role === "model" &&
+                              index < currentHistory.length - 1
+                                ? () => onFork(segment.id)
+                                : undefined
                             }
-                          }}
-                          onAudioGenerated={onAudioGenerated}
-                          onImageUpload={onImageUpload}
-                          onImageDelete={onImageDelete}
-                          gameState={gameState}
-                          saveId={saveId}
-                          hasFailed={failedImageNodes?.has(segment.id)}
-                          maxWidthClass={contentMaxWidth}
-                        />
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
+                          />
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+
+                {/* Placeholder for segments below visible range */}
+                {visibleRange.end < currentHistory.length && (
+                  <div
+                    style={{
+                      height: (currentHistory.length - visibleRange.end) * 300,
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
               </>
             ) : (
               // Stack Layout - Paginated View
@@ -727,6 +840,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                               saveId={saveId}
                               hasFailed={failedImageNodes?.has(segment.id)}
                               maxWidthClass={contentMaxWidth}
+                              onFork={
+                                onFork &&
+                                segment.role === "model" &&
+                                !isLastSegment
+                                  ? () => onFork(segment.id)
+                                  : undefined
+                              }
                             />
                           </div>
                         </React.Fragment>

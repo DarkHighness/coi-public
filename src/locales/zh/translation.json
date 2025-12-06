@@ -59,6 +59,12 @@
   "dialogueStyle": "对话风格",
   "resources": "资源",
   "usage": "用途",
+  "jumpToSegmentPrompt": "输入段落 ID 或序号以跳转：",
+  "jumpToStart": "顶部",
+  "jumpToEnd": "底部",
+  "jumpGo": "跳转",
+  "jumpPlaceholder": "序号",
+  "jumpToSegment": "跳转段落",
   "placeholder": "或者书写你自己的道路...",
   "act": "行动",
   "loading": "故事正在展开...",
@@ -692,6 +698,7 @@
   "protagonistImpression": "你对TA的印象",
   "perceivedStatus": "近况（你的认知）",
   "pinToTop": "置顶",
+  "unpin": "取消置顶",
   "mainQuest": "主线",
   "sideQuest": "支线",
   "conditions": "状态",
@@ -997,7 +1004,8 @@
   "feedHeader": {
     "theme": "主题",
     "location": "地点",
-    "music": "音乐"
+    "music": "音乐",
+    "envThemeUnlocked": "环境主题已解锁"
   },
   "logPanel": {
     "input": "输入",

@@ -527,6 +527,9 @@ export const useGamePersistence = (
 
   // Track the last saved node to prevent duplicate saves
   const lastSavedActiveNodeRef = useRef<string | null>(null);
+  const isSavingRef = useRef<boolean>(false);
+  // Skip save on initial load/continue game
+  const skipSaveOnLoadRef = useRef<boolean>(false);
 
   // Auto-Save Logic using IndexedDB
   // SAVE ONLY IN THESE SCENARIOS:
@@ -552,7 +555,17 @@ export const useGamePersistence = (
 
     // Skip if currently processing (AI is generating)
     if (gameState.isProcessing) {
-      console.log("Skipping save: isProcessing");
+      return;
+    }
+
+    // Skip if already saving
+    if (isSavingRef.current) {
+      return;
+    }
+
+    // Skip save immediately after loading a slot (continue game)
+    if (skipSaveOnLoadRef.current) {
+      skipSaveOnLoadRef.current = false;
       return;
     }
 
@@ -582,12 +595,17 @@ export const useGamePersistence = (
     }
 
     if (!shouldSave) {
-      console.log("Skipping save: shouldSave");
       return;
     }
 
     // Execute save immediately (no debounce needed - we only trigger on specific events)
     const executeSave = async () => {
+      // Double-check to prevent race conditions
+      if (isSavingRef.current) {
+        return;
+      }
+      isSavingRef.current = true;
+
       try {
         console.log(`[AutoSave] Saving game state (reason: ${saveReason})`);
 
@@ -665,6 +683,8 @@ export const useGamePersistence = (
         if (error instanceof Error && error.name === "QuotaExceededError") {
           alert("QuotaExceededError");
         }
+      } finally {
+        isSavingRef.current = false;
       }
     };
 
@@ -677,8 +697,6 @@ export const useGamePersistence = (
     view,
     skipNextSave,
     triggerSaveCount,
-    gameState,
-    saveSlots,
   ]);
 
   // Persist Current Slot ID to IndexedDB
@@ -749,12 +767,14 @@ export const useGamePersistence = (
         const embeddingIndex = data._embeddingIndex;
 
         const sanitized = sanitizeState(data);
-        setGameState(sanitized);
-        setCurrentSlotId(id);
 
-        // Update refs to prevent auto-save from triggering immediately due to "active node change"
+        // Set skip flag BEFORE updating state to prevent race condition
+        skipSaveOnLoadRef.current = true;
         lastSavedActiveNodeRef.current = sanitized.activeNodeId;
         lastSavedNodeIdRef.current = sanitized.activeNodeId;
+
+        setGameState(sanitized);
+        setCurrentSlotId(id);
 
         return {
           success: true,

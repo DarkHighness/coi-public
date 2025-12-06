@@ -22,6 +22,9 @@ export const MarkdownText = React.memo<MarkdownTextProps>(
     inline = false,
     components: customComponents,
   }) => {
+    // Hoist plugins to prevent re-creation on every render
+    const plugins = React.useMemo(() => [remarkGfm, remarkMath], []);
+
     const components = React.useMemo(() => {
       // If custom components are provided, merge with markdownComponents and inject className
       if (customComponents) {
@@ -107,10 +110,7 @@ export const MarkdownText = React.memo<MarkdownTextProps>(
     // When customComponents provided, render without wrapper
     if (customComponents) {
       return (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          components={components}
-        >
+        <ReactMarkdown remarkPlugins={plugins} components={components}>
           {content}
         </ReactMarkdown>
       );
@@ -119,10 +119,7 @@ export const MarkdownText = React.memo<MarkdownTextProps>(
     if (inline) {
       return (
         <span className={`markdown-content-inline ${className}`}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            components={components}
-          >
+          <ReactMarkdown remarkPlugins={plugins} components={components}>
             {content}
           </ReactMarkdown>
         </span>
@@ -131,10 +128,7 @@ export const MarkdownText = React.memo<MarkdownTextProps>(
 
     return (
       <div className={`markdown-content ${className}`}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          components={components}
-        >
+        <ReactMarkdown remarkPlugins={plugins} components={components}>
           {content}
         </ReactMarkdown>
       </div>

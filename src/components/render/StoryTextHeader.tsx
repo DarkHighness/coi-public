@@ -8,6 +8,7 @@ interface StoryTextHeaderProps {
   label: string;
   onCopyPrompt?: () => string | Promise<string>;
   onUpload?: () => void;
+  onFork?: () => void;
 }
 
 export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
@@ -17,6 +18,7 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   label,
   onCopyPrompt,
   onUpload,
+  onFork,
 }) => {
   const { t } = useTranslation();
   const [showCopied, setShowCopied] = React.useState(false);
@@ -34,9 +36,33 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
 
   return (
     <div className="flex justify-between items-start mb-2">
-      <span className="text-xs text-theme-primary font-bold uppercase tracking-widest opacity-50">
-        {t("narrator")}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-theme-primary font-bold uppercase tracking-widest opacity-50">
+          {t("narrator")}
+        </span>
+        {onFork && (
+          <button
+            onClick={onFork}
+            className="md:hidden flex items-center gap-1 px-1.5 py-0.5 rounded border border-theme-primary/30 text-[10px] text-theme-primary hover:bg-theme-primary/10 transition-colors"
+            title={t("tree.fork") || "Create Fork"}
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+              ></path>
+            </svg>
+            <span className="uppercase tracking-widest text-[9px]">Branch</span>
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center gap-2">
         {onUpload && (

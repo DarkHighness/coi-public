@@ -58,6 +58,12 @@
   "resources": "Resources",
   "usage": "Usage",
   "placeholder": "Or write your own path...",
+  "jumpToSegmentPrompt": "Enter segment ID or number to jump to:",
+  "jumpToStart": "Top",
+  "jumpToEnd": "Bot",
+  "jumpGo": "Go",
+  "jumpPlaceholder": "Seg #",
+  "jumpToSegment": "Jump to Segment",
   "act": "Act",
   "loading": "Story is unfolding...",
   "vision": "Envisioning imagery...",
@@ -703,6 +709,7 @@
   "perceivedStatus": "Currently (Your Perception)",
   "role": "Role",
   "pinToTop": "Pin",
+  "unpin": "Unpin",
   "mainQuest": "Main",
   "sideQuest": "Side",
   "conditions": "Conditions",
@@ -982,7 +989,8 @@
   "feedHeader": {
     "theme": "Theme",
     "location": "Location",
-    "music": "Music"
+    "music": "Music",
+    "envThemeUnlocked": "Environment Theme Unlocked"
   },
 
   "logPanel": {

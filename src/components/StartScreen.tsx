@@ -1,4 +1,4 @@
-import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
+import React, { useState, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
@@ -10,6 +10,7 @@ import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 // Lazy load PhotoGalleryModal for code splitting
 const PhotoGalleryModal = lazy(() =>
@@ -103,15 +104,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)"); // lg breakpoint
-    setIsDesktop(media.matches);
-    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -417,7 +410,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         type="file"
         ref={fileInputRef}
         className="hidden"
-        accept=".json,.gz"
+        accept=".json,.gz,.zip"
         onChange={handleFileChange}
       />
 

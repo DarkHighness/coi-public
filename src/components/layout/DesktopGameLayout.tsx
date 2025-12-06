@@ -90,6 +90,32 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
     storyFeedRef.current?.scrollToSegment(segmentId);
   };
 
+  const handleJumpToSegment = (input: string) => {
+    // Determine if input is index or ID
+    // If input is purely numeric, treat as 1-based index (minus 1)
+    // Otherwise treat as ID
+    let segmentId = input;
+
+    if (input === "start") {
+      if (state.currentHistory.length > 0) {
+        segmentId = state.currentHistory[0].id;
+      }
+    } else if (input === "end") {
+      if (state.currentHistory.length > 0) {
+        segmentId = state.currentHistory[state.currentHistory.length - 1].id;
+      }
+    } else if (/^\d+$/.test(input)) {
+      const index = parseInt(input);
+      // Find segment by index (adjusting for 1-based user input)
+      const targetIndex = index - 1;
+      if (targetIndex >= 0 && targetIndex < state.currentHistory.length) {
+        segmentId = state.currentHistory[targetIndex].id;
+      }
+    }
+
+    storyFeedRef.current?.scrollToSegment(segmentId);
+  };
+
   return (
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
       {/* Desktop Sidebar */}
@@ -174,6 +200,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onTriggerSave={triggerSave}
               onRetry={onRetry}
               onForceUpdate={onForceUpdate}
+              onJumpToSegment={handleJumpToSegment}
             />
           </div>
         </div>

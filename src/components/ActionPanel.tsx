@@ -21,6 +21,7 @@ interface ActionPanelProps {
   onTriggerSave?: () => void;
   onRetry?: () => void;
   onForceUpdate?: (prompt: string) => void;
+  onJumpToSegment?: (segmentId: string) => void;
 }
 
 const SUPPORTED_COMMANDS = [
@@ -41,10 +42,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onTriggerSave,
   onRetry,
   onForceUpdate,
+  onJumpToSegment,
 }) => {
   const { state, actions } = useGameEngineContext();
   const { gameState, currentHistory, isTranslating } = state;
   const { setGameState } = actions;
+  const [isJumpOpen, setIsJumpOpen] = useState(false);
+  const [jumpInputValue, setJumpInputValue] = useState("");
   const [customInput, setCustomInput] = useState("");
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<{
@@ -305,6 +309,102 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         {t("retryGeneration")}
                       </span>
                     </button>
+                  )}
+
+                  {/* Jump Button & Inline UI */}
+                  {onJumpToSegment && (
+                    <>
+                      {!isJumpOpen ? (
+                        <button
+                          onClick={() => setIsJumpOpen(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-border rounded-full text-xs font-bold text-theme-muted uppercase tracking-widest hover:text-theme-primary hover:border-theme-primary transition-colors shadow-sm"
+                          title={t("jumpToSegment") || "Jump to Segment"}
+                        >
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                            ></path>
+                          </svg>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface border border-theme-primary/30 rounded-full pl-3 pr-1 py-1">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={jumpInputValue}
+                            placeholder={t("jumpPlaceholder") || "Seg #"}
+                            onChange={(e) => setJumpInputValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                onJumpToSegment(jumpInputValue);
+                                setIsJumpOpen(false);
+                                setJumpInputValue("");
+                              } else if (e.key === "Escape") {
+                                setIsJumpOpen(false);
+                              }
+                            }}
+                            className="w-16 bg-transparent text-xs font-mono text-theme-primary placeholder-theme-muted/50 focus:outline-none"
+                          />
+                          <button
+                            onClick={() => {
+                              if (jumpInputValue) {
+                                onJumpToSegment(jumpInputValue);
+                                setIsJumpOpen(false);
+                                setJumpInputValue("");
+                              }
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors"
+                          >
+                            {t("jumpGo") || "Go"}
+                          </button>
+                          <div className="w-px h-3 bg-theme-border mx-1" />
+                          <button
+                            onClick={() => {
+                              onJumpToSegment("start");
+                              setIsJumpOpen(false);
+                            }}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                          >
+                            {t("jumpToStart") || "Top"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              onJumpToSegment("end");
+                              setIsJumpOpen(false);
+                            }}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                          >
+                            {t("jumpToEnd") || "Bot"}
+                          </button>
+                          <button
+                            onClick={() => setIsJumpOpen(false)}
+                            className="ml-1 p-1 rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
+                          >
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M6 18L18 6M6 6l12 12"
+                              ></path>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Mobile Toggle */}

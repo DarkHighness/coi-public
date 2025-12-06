@@ -14,6 +14,7 @@ import { StoryText } from "./render/StoryText";
 import { UserActionCard } from "./render/UserActionCard";
 import { TokenStats } from "./render/TokenStats";
 import { useToast } from "./Toast";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface StoryCardLabels {
   decided: string;
@@ -40,6 +41,7 @@ export interface StoryCardProps {
   hasFailed?: boolean;
   /** Dynamic max width class based on sidebar states */
   maxWidthClass?: string;
+  onFork?: () => void;
 }
 
 export const StoryCardComponent: React.FC<StoryCardProps> = ({
@@ -60,6 +62,7 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
   onImageDelete,
   hasFailed,
   maxWidthClass = "max-w-3xl",
+  onFork,
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
@@ -199,7 +202,7 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
     return (
       <div className="flex justify-center my-8 animate-fade-in">
         <div className="text-center max-w-lg text-theme-muted text-sm italic border-y border-theme-border/30 py-4 px-8 bg-theme-surface/10">
-          {segment.text}
+          <MarkdownText content={segment.text} />
         </div>
       </div>
     );
@@ -285,6 +288,7 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
           onAudioGenerated={(key) => onAudioGenerated?.(segment.id, key)}
           onCopyPrompt={segment.imagePrompt ? handleCopyPrompt : undefined}
           onUpload={onImageUpload ? handleUploadClick : undefined}
+          onFork={onFork}
         />
 
         {/* Ending Banner */}

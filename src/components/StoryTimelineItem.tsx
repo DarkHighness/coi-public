@@ -82,13 +82,6 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
     setIsLongPressing(false);
   }, []);
 
-  // Double click for desktop
-  const handleDoubleClick = useCallback(() => {
-    if (onNavigateToSegment) {
-      onNavigateToSegment(segment.id);
-    }
-  }, [segment.id, onNavigateToSegment]);
-
   // System role (ForceUpdate result) - Subtle inline style that integrates with timeline flow
   if (isSystemRole) {
     return (
@@ -111,7 +104,6 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
         onMouseEnter={() => onHover(segment.id)}
         onMouseLeave={() => onHover(null)}
-        onDoubleClick={handleDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchMove={handleTouchMove}
@@ -244,7 +236,6 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
       className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
       onMouseEnter={() => onHover(segment.id)}
       onMouseLeave={() => onHover(null)}
-      onDoubleClick={handleDoubleClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}

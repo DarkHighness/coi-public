@@ -114,6 +114,34 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
     setMobileTab("story");
   };
 
+  const handleJumpToSegment = (input: string) => {
+    // Determine if input is index or ID
+    // If input is purely numeric, treat as 1-based index (minus 1)
+    // Otherwise treat as ID
+    let segmentId = input;
+
+    if (input === "start") {
+      if (state.currentHistory.length > 0) {
+        segmentId = state.currentHistory[0].id;
+      }
+    } else if (input === "end") {
+      if (state.currentHistory.length > 0) {
+        segmentId = state.currentHistory[state.currentHistory.length - 1].id;
+      }
+    } else if (/^\d+$/.test(input)) {
+      const index = parseInt(input);
+      // Find segment by index (adjusting for 1-based user input)
+      const targetIndex = index - 1;
+      if (targetIndex >= 0 && targetIndex < state.currentHistory.length) {
+        segmentId = state.currentHistory[targetIndex].id;
+      }
+    }
+
+    if (storyFeedRef.current) {
+      storyFeedRef.current.scrollToSegment(segmentId);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
       {/* 1. Story Feed View */}
@@ -149,6 +177,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onTriggerSave={triggerSave}
             onRetry={onRetry}
             onForceUpdate={onForceUpdate}
+            onJumpToSegment={handleJumpToSegment}
           />
         </div>
       </div>
