@@ -87,11 +87,13 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
       );
 
       setVisibleRange((prev) => {
-        // Only update if there's a significant change to avoid excessive re-renders
-        if (
-          Math.abs(prev.start - newStart) > 3 ||
-          Math.abs(prev.end - newEnd) > 3
-        ) {
+        // Always update if end needs to grow (new content added)
+        // Apply threshold only for start changes during normal scrolling
+        const startChanged = Math.abs(prev.start - newStart) > 3;
+        const endNeedsGrowth = newEnd > prev.end;
+        const endChangedSignificantly = Math.abs(prev.end - newEnd) > 3;
+
+        if (startChanged || endNeedsGrowth || endChangedSignificantly) {
           return { start: newStart, end: newEnd };
         }
         return prev;

@@ -316,11 +316,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         );
 
         setVisibleRange((prev) => {
-          // Only update if range changed significantly (avoid excessive re-renders)
-          if (
-            Math.abs(prev.start - start) > 2 ||
-            Math.abs(prev.end - end) > 2
-          ) {
+          // Always update if end needs to grow (new content added)
+          // Apply threshold only for start changes during normal scrolling
+          const startChanged = Math.abs(prev.start - start) > 2;
+          const endNeedsGrowth = end > prev.end;
+          const endChangedSignificantly = Math.abs(prev.end - end) > 2;
+
+          if (startChanged || endNeedsGrowth || endChangedSignificantly) {
             return { start, end };
           }
           return prev;
