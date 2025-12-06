@@ -199,58 +199,22 @@ export type AgentStage = "query" | "add" | "remove" | "update" | "narrative";
  */
 export const QUERY_STORY_TOOL = defineTool({
   name: "query_story",
-  description: `Search through story history in the current fork. Use this tool when:
-- You need to recall what happened earlier in the story
-- You're unsure about past events, character interactions, or decisions
-- You need to verify consistency with previous narrative
-- You want to find specific scenes, dialogues, or descriptions
-
-Returns story segments (narrative text from model or command results) with context.
-Supports regex patterns for flexible matching.`,
+  description: "Search story history. Supports regex, location/time filters, pagination.",
   parameters: z.object({
-    keyword: z
-      .string()
-      .optional()
-      .describe(
-        "Search keyword or regex pattern to match in story text. Case-insensitive. Example: 'sword|weapon' or 'dragon.*cave'",
-      ),
-    location: z
-      .string()
-      .optional()
-      .describe(
-        "Filter by location name/regex. Matches against currentLocation field.",
-      ),
-    inGameTime: z
-      .string()
-      .optional()
-      .describe(
-        "Filter by in-game time keyword/regex (e.g., 'Day 3', 'night', 'morning'). Matches against time field.",
-      ),
+    keyword: z.string().optional().describe("Regex pattern. Case-insensitive."),
+    location: z.string().optional().describe("Filter by location."),
+    inGameTime: z.string().optional().describe("Filter by time (e.g., 'Day 3', 'night')."),
     turnRange: z
       .object({
-        start: z.number().optional().describe("Start turn number (inclusive)"),
-        end: z.number().optional().describe("End turn number (inclusive)"),
+        start: z.number().optional(),
+        end: z.number().optional(),
       })
       .optional()
-      .describe("Filter by turn number range"),
-    order: z
-      .enum(["asc", "desc"])
-      .optional()
-      .describe("Sort order by turn number. Default: 'desc' (newest first)"),
-    limit: z
-      .number()
-      .optional()
-      .describe("Maximum number of results to return. Default: 10"),
-    page: z
-      .number()
-      .optional()
-      .describe("Page number for pagination (1-indexed). Default: 1"),
-    includeContext: z
-      .boolean()
-      .optional()
-      .describe(
-        "Include the player action that followed each story segment. Default: true",
-      ),
+      .describe("Turn number range."),
+    order: z.enum(["asc", "desc"]).optional().describe("Default: 'desc'."),
+    limit: z.number().optional().describe("Max results. Default: 10."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
+    includeContext: z.boolean().optional().describe("Include following player action."),
   }),
 });
 
@@ -260,10 +224,7 @@ Supports regex patterns for flexible matching.`,
  */
 export const QUERY_TURN_TOOL = defineTool({
   name: "query_turn",
-  description: `Get current fork ID and turn number. Use this to:
-- Understand your position in the story timeline
-- Know which branch of the story you're in
-- Track narrative progress`,
+  description: "Get current fork ID and turn number.",
   parameters: z.object({}),
 });
 
@@ -273,38 +234,18 @@ export const QUERY_TURN_TOOL = defineTool({
  */
 export const QUERY_SUMMARY_TOOL = defineTool({
   name: "query_summary",
-  description: `Search through OLDER story summaries.
-
-**IMPORTANT**: The LATEST summary is ALREADY in your context (see <story_summary> section). Do NOT query recent summaries - you already have them!
-
-Use this ONLY when:
-- You need to recall events from MUCH EARLIER in the story (not recent events)
-- You want to trace the evolution of a plot thread across OLD summaries
-- You are specifically searching for historical context by keyword
-
-Returns matching summaries with both visible and hidden layers.`,
+  description: "Search OLDER summaries (latest already in context). Use for events from much earlier.",
   parameters: z.object({
-    keyword: z
-      .string()
-      .optional()
-      .describe(
-        "Search keyword or regex to match in summary text. Searches both visible and hidden layers.",
-      ),
+    keyword: z.string().optional().describe("Regex to match in summary text."),
     nodeRange: z
       .object({
-        start: z.number().optional().describe("Start node index (inclusive)"),
-        end: z.number().optional().describe("End node index (inclusive)"),
+        start: z.number().optional(),
+        end: z.number().optional(),
       })
       .optional()
-      .describe("Filter by the node range the summary covers"),
-    limit: z
-      .number()
-      .optional()
-      .describe("Maximum number of summaries to return. Default: 5"),
-    order: z
-      .enum(["asc", "desc"])
-      .optional()
-      .describe("Sort order. Default: 'desc' (newest first)"),
+      .describe("Filter by node range."),
+    limit: z.number().optional().describe("Max results. Default: 5."),
+    order: z.enum(["asc", "desc"]).optional().describe("Default: 'desc'."),
   }),
 });
 
@@ -314,21 +255,9 @@ Returns matching summaries with both visible and hidden layers.`,
  */
 export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
   name: "query_recent_context",
-  description: `Get story segments BEYOND what's in your current context window.
-
-**IMPORTANT**: Recent segments are ALREADY in your context (see <recent_narrative> section). Do NOT query the last ~10 segments - you already have them!
-
-Use this ONLY when:
-- You need segments from EARLIER in the story that aren't in <recent_narrative>
-- You want to review specific dialogue from 20+ turns ago
-- You need to find a specific earlier event by scanning more history
-
-Returns segments (each segment = one node, either player action or narrative response).`,
+  description: "Get segments BEYOND current context window. Recent ~10 already in context.",
   parameters: z.object({
-    count: z
-      .number()
-      .optional()
-      .describe("Number of recent segments to retrieve. Default: 10, Max: 40"),
+    count: z.number().optional().describe("Number of segments. Default: 10, Max: 40."),
   }),
 });
 
@@ -493,13 +422,9 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
 // DocumentType from rag/types.ts: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event" | "outline"
 export const RAG_SEARCH_TOOL = defineTool({
   name: "rag_search",
-  description: `Semantic search across the game world. Searches story history, NPCs, locations, items, knowledge, quests, and timeline.
-
-Returns both visible player knowledge and [AI_ONLY] hidden information.
-
-IMPORTANT: Results may include content from different timeline forks or "future" events. Use filters to control scope.`,
+  description: "Semantic search across all game entities (story/npcs/locations/etc). Returns visible + hidden info.",
   parameters: z.object({
-    query: z.string().describe("Natural language search query. Be specific."),
+    query: z.string().describe("Natural language query."),
     types: z
       .array(
         z.enum([
@@ -514,16 +439,10 @@ IMPORTANT: Results may include content from different timeline forks or "future"
         ]),
       )
       .optional()
-      .describe("Filter by entity types. Matches DocumentType enum."),
+      .describe("Filter by type."),
     topK: z.number().optional().describe("Max results. Default: 5."),
-    currentForkOnly: z
-      .boolean()
-      .optional()
-      .describe("Only search current timeline branch."),
-    beforeCurrentTurn: z
-      .boolean()
-      .optional()
-      .describe("Only search content before current turn."),
+    currentForkOnly: z.boolean().optional().describe("Current fork only."),
+    beforeCurrentTurn: z.boolean().optional().describe("Before current turn."),
   }),
 });
 
@@ -533,339 +452,203 @@ IMPORTANT: Results may include content from different timeline forks or "future"
 
 export const ADD_INVENTORY_TOOL = defineTool({
   name: "add_inventory",
-  description: "Add a new item to the player's inventory.",
+  description: "Add inventory item.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Item ID (inv:N). Auto-generated if omitted."),
-    name: z.string().describe("Item name. REQUIRED."),
-    visible: inventoryItemVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties (description, notes)."),
-    hidden: inventoryItemHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties (truth, secrets). AI/GM only."),
-    lore: z.string().optional().describe("Brief lore/history."),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (inv:N)."),
+    name: z.string().describe("Item name."),
+    visible: inventoryItemVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: inventoryItemHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    lore: z.string().optional().describe("Lore."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_RELATIONSHIP_TOOL = defineTool({
   name: "add_relationship",
-  description: "Add a new NPC to the game world.",
+  description: "Add NPC.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("NPC ID (npc:N). Auto-generated if omitted."),
-    name: z.string().describe("NPC name. REQUIRED."),
-    currentLocation: z
-      .string()
-      .optional()
-      .describe("NPC's location ID (loc:N)."),
-    known: z
-      .boolean()
-      .optional()
-      .describe("Player knows this NPC? Default: true."),
-    visible: relationshipVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties (role, status, impression)."),
-    hidden: relationshipHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties. AI/GM only."),
-    notes: z.string().optional().describe("NPC's observations of player."),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (npc:N)."),
+    name: z.string().describe("NPC name."),
+    currentLocation: z.string().optional().describe("Location ID (loc:N)."),
+    known: z.boolean().optional().describe("Player knows NPC? Default: true."),
+    visible: relationshipVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: relationshipHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    notes: z.string().optional().describe("Notes."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_LOCATION_TOOL = defineTool({
   name: "add_location",
-  description: "Add a new location to the world map.",
+  description: "Add location.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Location ID (loc:N). Auto-generated if omitted."),
-    name: z.string().describe("Location name. REQUIRED."),
-    visible: locationVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties (description, connections)."),
-    hidden: locationHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties (secrets). AI/GM only."),
-    environment: z
-      .string()
-      .optional()
-      .describe("Atmosphere description in target language."),
-    isVisited: z
-      .boolean()
-      .optional()
-      .describe("Has been visited? Default: false."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Secrets discovered? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "When setting unlocked=true, provide a concise justification/evidence string.",
-      ),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (loc:N)."),
+    name: z.string().describe("Location name."),
+    visible: locationVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: locationHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    environment: z.string().optional().describe("Atmosphere."),
+    isVisited: z.boolean().optional().describe("Visited? Default: false."),
+    unlocked: z.boolean().optional().describe("Secrets unlocked? Default: false."),
+    unlockReason: z.string().optional().describe("Unlock reason."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_QUEST_TOOL = defineTool({
   name: "add_quest",
-  description: "Add a new quest.",
+  description: "Add quest.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Quest ID (quest:N). Auto-generated if omitted."),
-    title: z.string().describe("Quest title. REQUIRED."),
-    type: questTypeSchema
-      .optional()
-      .describe("Quest type (main, side, hidden)."),
-    visible: questVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties (description, objectives, rewards)."),
-    hidden: questHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties. AI/GM only."),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (quest:N)."),
+    title: z.string().describe("Quest title."),
+    type: questTypeSchema.optional().describe("Quest type."),
+    visible: questVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: questHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_KNOWLEDGE_TOOL = defineTool({
   name: "add_knowledge",
-  description: "Add a new knowledge/lore entry.",
+  description: "Add knowledge/lore.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Knowledge ID (know:N). Auto-generated if omitted."),
-    title: z.string().describe("Title. REQUIRED."),
+    id: z.string().optional().describe("Optional ID (know:N)."),
+    title: z.string().describe("Title."),
     category: knowledgeCategorySchema.optional().describe("Category."),
-    visible: knowledgeVisibleSchema
-      .partial()
-      .optional()
-      .describe("What the player knows."),
-    hidden: knowledgeHiddenSchema
-      .partial()
-      .optional()
-      .describe("The full truth. AI/GM only."),
-    discoveredAt: z
-      .string()
-      .optional()
-      .describe("When discovered (game time)."),
-    relatedTo: z.array(z.string()).optional().describe("Related entity IDs."),
-    icon: z.string().optional().describe("Emoji icon."),
+    visible: knowledgeVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: knowledgeHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    discoveredAt: z.string().optional().describe("Discovered time."),
+    relatedTo: z.array(z.string()).optional().describe("Related IDs."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_TIMELINE_TOOL = defineTool({
   name: "add_timeline",
-  description: "Add a new timeline event.",
+  description: "Add timeline event.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Event ID (evt:N). Auto-generated if omitted."),
-    gameTime: z.string().optional().describe("When the event happened."),
-    category: timelineEventCategorySchema
-      .optional()
-      .describe("Event category."),
-    visible: timelineEventVisibleSchema
-      .optional()
-      .describe("What the player knows."),
-    hidden: timelineEventHiddenSchema
-      .optional()
-      .describe("True cause/secrets. AI/GM only."),
-    involvedEntities: z
-      .array(z.string())
-      .optional()
-      .describe("Involved entity IDs."),
-    chainId: z.string().optional().describe("Link to CausalChain (chain:N)."),
-    known: z
-      .boolean()
-      .optional()
-      .describe("Player knows about this? Default: true."),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (evt:N)."),
+    gameTime: z.string().optional().describe("Time."),
+    category: timelineEventCategorySchema.optional().describe("Category."),
+    visible: timelineEventVisibleSchema.optional().describe("Visible info."),
+    hidden: timelineEventHiddenSchema.optional().describe("Hidden info (AI/GM)."),
+    involvedEntities: z.array(z.string()).optional().describe("Involved IDs."),
+    chainId: z.string().optional().describe("CausalChain link (chain:N)."),
+    known: z.boolean().optional().describe("Player knows? Default: true."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_FACTION_TOOL = defineTool({
   name: "add_faction",
-  description: "Add a new faction/power group.",
+  description: "Add faction.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Faction ID (fac:N). Auto-generated if omitted."),
-    name: z.string().describe("Faction name. REQUIRED."),
+    id: z.string().optional().describe("Optional ID (fac:N)."),
+    name: z.string().describe("Name."),
     visible: z
       .object({
-        agenda: z.string().optional().describe("Public agenda."),
-        members: z
-          .array(factionMemberSchema)
-          .optional()
-          .describe("Public members."),
-        influence: z.string().optional().describe("Perceived influence."),
-        relations: z
-          .array(factionRelationSchema)
-          .optional()
-          .describe("Public alliances."),
+        agenda: z.string().optional().describe("Agenda."),
+        members: z.array(factionMemberSchema).optional().describe("Members."),
+        influence: z.string().optional().describe("Influence."),
+        relations: z.array(factionRelationSchema).optional().describe("Alliances."),
       })
       .optional()
-      .describe("Public information."),
+      .describe("Public info."),
     hidden: z
       .object({
         agenda: z.string().optional().describe("Secret agenda."),
-        members: z
-          .array(factionMemberSchema)
-          .optional()
-          .describe("Secret members."),
+        members: z.array(factionMemberSchema).optional().describe("Secret members."),
         influence: z.string().optional().describe("True influence."),
-        relations: z
-          .array(factionRelationSchema)
-          .optional()
-          .describe("Secret alliances."),
+        relations: z.array(factionRelationSchema).optional().describe("Secret alliances."),
       })
       .optional()
-      .describe("Secret information. AI/GM only."),
-    icon: z.string().optional().describe("Emoji icon."),
+      .describe("Hidden info (AI/GM)."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
   name: "add_causal_chain",
-  description: "Create a new causal chain with potential future consequences.",
+  description: "Create causal chain.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
+    chainId: z.string().describe("Chain ID (chain:N)."),
     rootCause: z
       .object({
-        eventId: z.string().describe("ID of root cause event."),
-        description: z.string().describe("Description of root cause."),
+        eventId: z.string().describe("Event ID."),
+        description: z.string().describe("Description."),
       })
-      .describe("The initiating event. REQUIRED."),
-    status: causalChainStatusSchema.optional().describe("Chain status."),
+      .describe("Root cause."),
+    status: causalChainStatusSchema.optional().describe("Status."),
     pendingConsequences: z
       .array(
         z.object({
-          id: z.string().describe("Consequence ID (conseq:N)."),
+          id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          readyAfterTurn: z
-            .number()
-            .int()
-            .describe("Can trigger after this turn."),
-          conditions: z
-            .array(z.string())
-            .optional()
-            .describe("Trigger conditions."),
-          known: z
-            .boolean()
-            .optional()
-            .describe("Player will know? Default: false."),
+          readyAfterTurn: z.number().int().describe("Trigger turn."),
+          conditions: z.array(z.string()).optional().describe("Conditions."),
+          known: z.boolean().optional().describe("Known?"),
         }),
       )
       .optional()
-      .describe("Future consequences."),
+      .describe("Consequences."),
   }),
 });
 
 // Character Add Tools
 export const ADD_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "add_character_attribute",
-  description: "Add a new numeric attribute to the character.",
+  description: "Add numeric attribute.",
   parameters: z.object({
-    name: z.string().describe("Attribute name (e.g., Health, Mana). REQUIRED."),
-    value: z.number().int().describe("Current value. REQUIRED."),
-    maxValue: z.number().int().optional().describe("Maximum value."),
-    color: attributeColorSchema.optional().describe("Display color."),
+    name: z.string().describe("Attribute name."),
+    value: z.number().int().describe("Value."),
+    maxValue: z.number().int().optional().describe("Max value."),
+    color: attributeColorSchema.optional().describe("Color."),
   }),
 });
 
 export const ADD_CHARACTER_SKILL_TOOL = defineTool({
   name: "add_character_skill",
-  description: "Add a new skill to the character.",
+  description: "Add skill.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Skill ID (skill:N). Auto-generated if omitted."),
-    name: z.string().describe("Skill name. REQUIRED."),
-    level: z
-      .string()
-      .optional()
-      .describe("Skill level (e.g., Novice, Master)."),
-    visible: skillVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties."),
-    hidden: skillHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties."),
-    category: z.string().optional().describe("Skill category."),
-    icon: z.string().optional().describe("Emoji icon."),
+    id: z.string().optional().describe("Optional ID (skill:N)."),
+    name: z.string().describe("Skill name."),
+    level: z.string().optional().describe("Level."),
+    visible: skillVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: skillHiddenSchema.partial().optional().describe("Hidden props."),
+    category: z.string().optional().describe("Category."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
   name: "add_character_condition",
-  description: "Add a new condition (buff/debuff) to the character.",
+  description: "Add condition (buff/debuff).",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Condition ID (cond:N). Auto-generated if omitted."),
-    name: z.string().describe("Condition name. REQUIRED."),
-    type: conditionTypeSchema.optional().describe("Condition type."),
-    visible: conditionVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible properties."),
-    hidden: conditionHiddenSchema
-      .partial()
-      .optional()
-      .describe("Hidden properties."),
+    id: z.string().optional().describe("Optional ID (cond:N)."),
+    name: z.string().describe("Condition name."),
+    type: conditionTypeSchema.optional().describe("Type."),
+    visible: conditionVisibleSchema.partial().optional().describe("Visible props."),
+    hidden: conditionHiddenSchema.partial().optional().describe("Hidden props."),
     effects: z
       .object({
         visible: z.array(z.string()).optional(),
         hidden: z.array(z.string()).optional(),
       })
       .optional()
-      .describe("Condition effects."),
-    duration: z.number().int().optional().describe("Duration in turns."),
-    icon: z.string().optional().describe("Emoji icon."),
+      .describe("Effects."),
+    duration: z.number().int().optional().describe("Duration (turns)."),
+    icon: z.string().optional().describe("Emoji."),
   }),
 });
 
 export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
   name: "add_character_trait",
-  description: "Add a new hidden personality trait to the character.",
+  description: "Add hidden trait.",
   parameters: z.object({
-    id: z
-      .string()
-      .optional()
-      .describe("Trait ID (trait:N). Auto-generated if omitted."),
-    name: z.string().describe("Trait name. REQUIRED."),
-    description: z.string().optional().describe("Trait description."),
-    effects: z.array(z.string()).optional().describe("Trait effects."),
-    triggerConditions: z
-      .array(z.string())
-      .optional()
-      .describe("Trigger conditions."),
+    id: z.string().optional().describe("Optional ID (trait:N)."),
+    name: z.string().describe("Trait name."),
+    description: z.string().optional().describe("Description."),
+    effects: z.array(z.string()).optional().describe("Effects."),
+    triggerConditions: z.array(z.string()).optional().describe("Trigger conditions."),
   }),
 });
 
@@ -875,79 +658,76 @@ export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
 
 export const REMOVE_INVENTORY_TOOL = defineTool({
   name: "remove_inventory",
-  description: "Remove an item from the player's inventory.",
+  description: "Remove inventory item.",
   parameters: z.object({
-    id: z.string().describe("Item ID (inv:N). REQUIRED."),
+    id: z.string().describe("ID (inv:N)."),
   }),
 });
 
 export const REMOVE_RELATIONSHIP_TOOL = defineTool({
   name: "remove_relationship",
-  description: "Remove an NPC from the game world.",
+  description: "Remove NPC.",
   parameters: z.object({
-    id: z.string().describe("NPC ID (npc:N). REQUIRED."),
+    id: z.string().describe("ID (npc:N)."),
   }),
 });
 
 export const REMOVE_LOCATION_TOOL = defineTool({
   name: "remove_location",
-  description: "Remove a location from the world map.",
+  description: "Remove location.",
   parameters: z.object({
-    id: z.string().describe("Location ID (loc:N). REQUIRED."),
+    id: z.string().describe("ID (loc:N)."),
   }),
 });
 
 export const REMOVE_QUEST_TOOL = defineTool({
   name: "remove_quest",
-  description: "Remove a quest.",
+  description: "Remove quest.",
   parameters: z.object({
-    id: z.string().describe("Quest ID (quest:N). REQUIRED."),
+    id: z.string().describe("ID (quest:N)."),
   }),
 });
 
 export const REMOVE_FACTION_TOOL = defineTool({
   name: "remove_faction",
-  description: "Remove a faction.",
+  description: "Remove faction.",
   parameters: z.object({
-    id: z.string().describe("Faction ID (fac:N). REQUIRED."),
+    id: z.string().describe("ID (fac:N)."),
   }),
 });
 
 export const REMOVE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "remove_character_attribute",
-  description: "Remove an attribute from the character.",
+  description: "Remove attribute.",
   parameters: z.object({
-    name: z.string().describe("Attribute name. REQUIRED."),
+    name: z.string().describe("Name."),
   }),
 });
 
 export const REMOVE_CHARACTER_SKILL_TOOL = defineTool({
   name: "remove_character_skill",
-  description: "Remove a skill. REQUIRED: id OR name (at least one).",
+  description: "Remove skill.",
   parameters: z.object({
-    id: z.string().optional().describe("Skill ID (skill:N)."),
-    name: z.string().optional().describe("Skill name."),
+    id: z.string().optional().describe("ID (skill:N)."),
+    name: z.string().optional().describe("Name."),
   }),
 });
 
 export const REMOVE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "remove_character_condition",
-  description: "Remove a condition. REQUIRED: id OR name (at least one).",
+  description: "Remove condition.",
   parameters: z.object({
-    id: z.string().optional().describe("Condition ID (cond:N)."),
-    name: z.string().optional().describe("Condition name."),
+    id: z.string().optional().describe("ID (cond:N)."),
+    name: z.string().optional().describe("Name."),
   }),
 });
 
 export const REMOVE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "remove_character_trait",
-  description: "Remove a hidden trait. REQUIRED: id OR name (at least one).",
+  description: "Remove hidden trait.",
   parameters: z.object({
-    id: z.string().optional().describe("Trait ID (trait:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Trait name. Either id or name required."),
+    id: z.string().optional().describe("ID (trait:N)."),
+    name: z.string().optional().describe("Name."),
   }),
 });
 
@@ -957,411 +737,271 @@ export const REMOVE_CHARACTER_TRAIT_TOOL = defineTool({
 
 export const UPDATE_INVENTORY_TOOL = defineTool({
   name: "update_inventory",
-  description:
-    "Update an existing inventory item. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update inventory. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Item ID (inv:N). REQUIRED."),
-    name: z.string().nullish().describe("Updated name."),
-    visible: inventoryItemVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null fields are deleted."),
-    hidden: inventoryItemHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null fields are deleted."),
-    lore: z.string().nullish().describe("Lore. Null to remove."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    id: z.string().describe("ID (inv:N)."),
+    name: z.string().nullish().describe("New name."),
+    visible: inventoryItemVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: inventoryItemHiddenSchema.partial().nullish().describe("Hidden props."),
+    lore: z.string().nullish().describe("Lore."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_RELATIONSHIP_TOOL = defineTool({
   name: "update_relationship",
-  description:
-    "Update an existing NPC. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update NPC. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("NPC ID (npc:N). REQUIRED."),
-    name: z.string().nullish().describe("Updated name."),
-    currentLocation: z
-      .string()
-      .nullish()
-      .describe("Location ID. Null to clear."),
-    known: z.boolean().nullish().describe("Player knows this NPC?"),
-    visible: relationshipVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null fields are deleted."),
-    hidden: relationshipHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null fields are deleted."),
-    notes: z.string().nullish().describe("Notes. Null to clear."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    id: z.string().describe("ID (npc:N)."),
+    name: z.string().nullish().describe("New name."),
+    currentLocation: z.string().nullish().describe("Location ID."),
+    known: z.boolean().nullish().describe("Known?"),
+    visible: relationshipVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: relationshipHiddenSchema.partial().nullish().describe("Hidden props."),
+    notes: z.string().nullish().describe("Notes."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_LOCATION_TOOL = defineTool({
   name: "update_location",
-  description:
-    "Update an existing location. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update location. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Location ID (loc:N). REQUIRED."),
-    name: z.string().nullish().describe("Updated name."),
-    visible: locationVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null fields are deleted."),
-    hidden: locationHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null fields are deleted."),
-    environment: z.string().nullish().describe("Environment. Null to remove."),
-    isVisited: z.boolean().nullish().describe("Has been visited?"),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    id: z.string().describe("ID (loc:N)."),
+    name: z.string().nullish().describe("New name."),
+    visible: locationVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: locationHiddenSchema.partial().nullish().describe("Hidden props."),
+    environment: z.string().nullish().describe("Atmosphere."),
+    isVisited: z.boolean().nullish().describe("Visited?"),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_QUEST_TOOL = defineTool({
   name: "update_quest",
-  description:
-    "Update an existing quest. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update quest. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Quest ID (quest:N). REQUIRED."),
-    title: z.string().nullish().describe("Updated title."),
-    type: questTypeSchema.nullish().describe("Quest type."),
-    visible: questVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null fields are deleted."),
-    hidden: questHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null fields are deleted."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    id: z.string().describe("ID (quest:N)."),
+    title: z.string().nullish().describe("New title."),
+    type: questTypeSchema.nullish().describe("Type."),
+    visible: questVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: questHiddenSchema.partial().nullish().describe("Hidden props."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const COMPLETE_QUEST_TOOL = defineTool({
   name: "complete_quest",
-  description: "Mark a quest as completed.",
+  description: "Complete quest.",
   parameters: z.object({
-    id: z.string().describe("Quest ID (quest:N). REQUIRED."),
+    id: z.string().describe("ID (quest:N)."),
   }),
 });
 
 export const FAIL_QUEST_TOOL = defineTool({
   name: "fail_quest",
-  description: "Mark a quest as failed.",
+  description: "Fail quest.",
   parameters: z.object({
-    id: z.string().describe("Quest ID (quest:N). REQUIRED."),
+    id: z.string().describe("ID (quest:N)."),
   }),
 });
 
 export const UPDATE_KNOWLEDGE_TOOL = defineTool({
   name: "update_knowledge",
-  description:
-    "Update an existing knowledge entry. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update knowledge. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Knowledge ID (know:N). REQUIRED."),
-    title: z.string().nullish().describe("Updated title."),
+    id: z.string().describe("ID (know:N)."),
+    title: z.string().nullish().describe("New title."),
     category: knowledgeCategorySchema.nullish().describe("Category."),
-    visible: knowledgeVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null fields are deleted."),
-    hidden: knowledgeHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null fields are deleted."),
-    discoveredAt: z
-      .string()
-      .nullish()
-      .describe("When discovered. Null to clear."),
-    relatedTo: z
-      .array(z.string())
-      .nullish()
-      .describe("Related IDs. Null to clear."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    visible: knowledgeVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: knowledgeHiddenSchema.partial().nullish().describe("Hidden props."),
+    discoveredAt: z.string().nullish().describe("Time."),
+    relatedTo: z.array(z.string()).nullish().describe("Related IDs."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_TIMELINE_TOOL = defineTool({
   name: "update_timeline",
-  description:
-    "Update an existing timeline event. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update timeline event. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Event ID (evt:N). REQUIRED."),
-    gameTime: z.string().nullish().describe("When it happened. Null to clear."),
+    id: z.string().describe("ID (evt:N)."),
+    gameTime: z.string().nullish().describe("Time."),
     category: timelineEventCategorySchema.nullish().describe("Category."),
-    visible: timelineEventVisibleSchema
-      .nullish()
-      .describe("Visible info. Null to clear."),
-    hidden: timelineEventHiddenSchema
-      .nullish()
-      .describe("Hidden info. Null to clear."),
-    involvedEntities: z
-      .array(z.string())
-      .nullish()
-      .describe("Involved IDs. Null to clear."),
-    chainId: z.string().nullish().describe("CausalChain link. Null to unlink."),
-    known: z.boolean().nullish().describe("Player knows?"),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    visible: timelineEventVisibleSchema.nullish().describe("Visible info."),
+    hidden: timelineEventHiddenSchema.nullish().describe("Hidden info."),
+    involvedEntities: z.array(z.string()).nullish().describe("Involved IDs."),
+    chainId: z.string().nullish().describe("CausalChain link."),
+    known: z.boolean().nullish().describe("Known?"),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_FACTION_TOOL = defineTool({
   name: "update_faction",
-  description:
-    "Update an existing faction. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update faction. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("Faction ID (fac:N). REQUIRED."),
-    name: z.string().nullish().describe("Updated name."),
+    id: z.string().describe("ID (fac:N)."),
+    name: z.string().nullish().describe("New name."),
     visible: z
       .object({
-        agenda: z.string().nullish().describe("Public agenda. Null to clear."),
-        members: z
-          .array(factionMemberSchema)
-          .nullish()
-          .describe("Public members. Null to clear."),
-        influence: z
-          .string()
-          .nullish()
-          .describe("Perceived influence. Null to clear."),
-        relations: z
-          .array(factionRelationSchema)
-          .nullish()
-          .describe("Public relations. Null to clear."),
+        agenda: z.string().nullish().describe("Agenda."),
+        members: z.array(factionMemberSchema).nullish().describe("Members."),
+        influence: z.string().nullish().describe("Influence."),
+        relations: z.array(factionRelationSchema).nullish().describe("Relations."),
       })
       .nullish()
-      .describe("Public information. Null to clear all."),
+      .describe("Public info."),
     hidden: z
       .object({
-        agenda: z.string().nullish().describe("Secret agenda. Null to clear."),
-        members: z
-          .array(factionMemberSchema)
-          .nullish()
-          .describe("Secret members. Null to clear."),
-        influence: z
-          .string()
-          .nullish()
-          .describe("True influence. Null to clear."),
-        relations: z
-          .array(factionRelationSchema)
-          .nullish()
-          .describe("Secret relations. Null to clear."),
+        agenda: z.string().nullish().describe("Secret agenda."),
+        members: z.array(factionMemberSchema).nullish().describe("Secret members."),
+        influence: z.string().nullish().describe("True influence."),
+        relations: z.array(factionRelationSchema).nullish().describe("Secret relations."),
       })
       .nullish()
-      .describe("Secret information. Null to clear all."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+      .describe("Hidden info."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "update_causal_chain",
-  description:
-    "Update a causal chain. Omit fields to keep unchanged, set to null to delete.",
+  description: "Update causal chain. Omit to keep, null to delete.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
-    status: causalChainStatusSchema.nullish().describe("Chain status."),
+    chainId: z.string().describe("ID (chain:N)."),
+    status: causalChainStatusSchema.nullish().describe("Status."),
     pendingConsequences: z
       .array(
         z.object({
           id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          readyAfterTurn: z
-            .number()
-            .int()
-            .describe("Can trigger after this turn."),
-          conditions: z
-            .array(z.string())
-            .optional()
-            .describe("Trigger conditions."),
-          known: z.boolean().optional().describe("Player will know?"),
+          readyAfterTurn: z.number().int().describe("Trigger turn."),
+          conditions: z.array(z.string()).optional().describe("Conditions."),
+          known: z.boolean().optional().describe("Known?"),
         }),
       )
       .nullish()
-      .describe("Pending consequences. Null to clear all."),
+      .describe("Consequences."),
   }),
 });
 
 export const TRIGGER_CAUSAL_CHAIN_TOOL = defineTool({
   name: "trigger_causal_chain",
-  description:
-    "Trigger a pending consequence NOW. You MUST narrate this in your response.",
+  description: "Trigger consequence NOW. Narrate result.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
-    consequenceId: z.string().describe("Consequence ID to trigger. REQUIRED."),
+    chainId: z.string().describe("Chain ID (chain:N)."),
+    consequenceId: z.string().describe("Consequence ID."),
   }),
 });
 
 export const RESOLVE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "resolve_causal_chain",
-  description: "Mark a causal chain as resolved (story arc complete).",
+  description: "Resolve causal chain (arc complete).",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
+    chainId: z.string().describe("ID (chain:N)."),
   }),
 });
 
 export const INTERRUPT_CAUSAL_CHAIN_TOOL = defineTool({
   name: "interrupt_causal_chain",
-  description: "Interrupt a causal chain (circumstances prevent continuation).",
+  description: "Interrupt causal chain.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N). REQUIRED."),
+    chainId: z.string().describe("ID (chain:N)."),
   }),
 });
 
 export const UPDATE_WORLD_INFO_TOOL = defineTool({
   name: "update_world_info",
-  description:
-    "Reveal hidden world secrets to the player. Only use at significant story milestones.",
+  description: "Reveal world secrets (major milestones only).",
   parameters: z.object({
-    unlockWorldSetting: z
-      .boolean()
-      .optional()
-      .describe("Reveal hidden world setting information."),
-    unlockMainGoal: z
-      .boolean()
-      .optional()
-      .describe("Reveal the true nature of the main objective."),
-    reason: z.string().describe("WHY this is being revealed. REQUIRED."),
+    unlockWorldSetting: z.boolean().optional().describe("Reveal setting info."),
+    unlockMainGoal: z.boolean().optional().describe("Reveal main goal."),
+    reason: z.string().describe("Why?"),
   }),
 });
 
 export const UPDATE_GLOBAL_TOOL = defineTool({
   name: "update_global",
-  description: "Update global game state (time, atmosphere).",
+  description: "Update global state.",
   parameters: z.object({
-    time: z.string().nullish().describe("In-game time. Null to clear."),
-    atmosphere: atmosphereSchema
-      .nullish()
-      .describe("Atmosphere settings. Null to reset to default."),
+    time: z.string().nullish().describe("Time."),
+    atmosphere: atmosphereSchema.nullish().describe("Atmosphere."),
   }),
 });
 
 // Character Update Tools
 export const UPDATE_CHARACTER_PROFILE_TOOL = defineTool({
   name: "update_character_profile",
-  description:
-    "Update character's basic profile. Omit fields to keep unchanged, set to null to clear.",
+  description: "Update character profile. Omit to keep, null to clear.",
   parameters: z.object({
-    name: z.string().nullish().describe("Character name. Null to clear."),
-    title: z.string().nullish().describe("Title/role/class. Null to clear."),
-    currentLocation: z
-      .string()
-      .nullish()
-      .describe("Current location. Null to clear."),
-    status: z
-      .string()
-      .nullish()
-      .describe("Condition (Healthy, Injured). Null to clear."),
-    appearance: z
-      .string()
-      .nullish()
-      .describe("Physical appearance. Null to clear."),
-    age: z.string().nullish().describe("Age. Null to clear."),
-    profession: z
-      .string()
-      .nullish()
-      .describe("Profession/occupation. Null to clear."),
-    background: z
-      .string()
-      .nullish()
-      .describe("Background story. Null to clear."),
-    race: z.string().nullish().describe("Race (Human, Elf). Null to clear."),
+    name: z.string().nullish().describe("Name."),
+    title: z.string().nullish().describe("Title/Class."),
+    currentLocation: z.string().nullish().describe("Location."),
+    status: z.string().nullish().describe("Status."),
+    appearance: z.string().nullish().describe("Appearance."),
+    age: z.string().nullish().describe("Age."),
+    profession: z.string().nullish().describe("Profession."),
+    background: z.string().nullish().describe("Background."),
+    race: z.string().nullish().describe("Race."),
   }),
 });
 
 export const UPDATE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "update_character_attribute",
-  description:
-    "Update a character attribute. Omit fields to keep unchanged, set to null to remove.",
+  description: "Update attribute. Omit to keep, null to remove.",
   parameters: z.object({
-    name: z.string().describe("Attribute name. REQUIRED."),
-    value: z.number().int().nullish().describe("New value. Null to remove."),
-    maxValue: z.number().int().nullish().describe("Max value. Null to remove."),
-    color: attributeColorSchema
-      .nullish()
-      .describe("Display color. Null to remove."),
+    name: z.string().describe("Name."),
+    value: z.number().int().nullish().describe("New value."),
+    maxValue: z.number().int().nullish().describe("Max value."),
+    color: attributeColorSchema.nullish().describe("Color."),
   }),
 });
 
 export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
   name: "update_character_skill",
-  description:
-    "Update a character skill. Omit fields to keep unchanged, set to null to remove.",
+  description: "Update skill. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("Skill ID (skill:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Skill name. Either id or name required."),
-    level: z.string().nullish().describe("Skill level. Null to remove."),
-    visible: skillVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null to clear."),
-    hidden: skillHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null to clear."),
-    category: z.string().nullish().describe("Category. Null to remove."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+    id: z.string().optional().describe("ID (skill:N)."),
+    name: z.string().optional().describe("Name."),
+    level: z.string().nullish().describe("Level."),
+    visible: skillVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: skillHiddenSchema.partial().nullish().describe("Hidden props."),
+    category: z.string().nullish().describe("Category."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "update_character_condition",
-  description:
-    "Update a character condition. Omit fields to keep unchanged, set to null to remove.",
+  description: "Update condition. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("Condition ID (cond:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Condition name. Either id or name required."),
-    type: conditionTypeSchema
-      .nullish()
-      .describe("Condition type. Null to remove."),
-    visible: conditionVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible properties. Null to clear."),
-    hidden: conditionHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden properties. Null to clear."),
+    id: z.string().optional().describe("ID (cond:N)."),
+    name: z.string().optional().describe("Name."),
+    type: conditionTypeSchema.nullish().describe("Type."),
+    visible: conditionVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: conditionHiddenSchema.partial().nullish().describe("Hidden props."),
     effects: z
       .object({
         visible: z.array(z.string()).nullish(),
         hidden: z.array(z.string()).nullish(),
       })
       .nullish()
-      .describe("Effects. Null to clear."),
-    duration: z
-      .number()
-      .int()
-      .nullish()
-      .describe("Duration in turns. Null to remove."),
-    icon: z.string().nullish().describe("Icon. Null to remove."),
+      .describe("Effects."),
+    duration: z.number().int().nullish().describe("Duration."),
+    icon: z.string().nullish().describe("Emoji."),
   }),
 });
 
 export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "update_character_trait",
-  description:
-    "Update a character hidden trait. Omit fields to keep unchanged, set to null to remove.",
+  description: "Update hidden trait. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("Trait ID (trait:N)."),
-    name: z
-      .string()
-      .optional()
-      .describe("Trait name. Either id or name required."),
-    description: z.string().nullish().describe("Description. Null to remove."),
-    effects: z.array(z.string()).nullish().describe("Effects. Null to clear."),
-    triggerConditions: z
-      .array(z.string())
-      .nullish()
-      .describe("Trigger conditions. Null to clear."),
+    id: z.string().optional().describe("ID (trait:N)."),
+    name: z.string().optional().describe("Name."),
+    description: z.string().nullish().describe("Description."),
+    effects: z.array(z.string()).nullish().describe("Effects."),
+    triggerConditions: z.array(z.string()).nullish().describe("Trigger conditions."),
   }),
 });
 
@@ -1387,43 +1027,12 @@ export const unlockEntityCategorySchema = z.enum([
 
 export const UNLOCK_ENTITY_TOOL = defineTool({
   name: "unlock_entity",
-  description: `Unlock hidden information for an entity. Use this tool when the player has DEFINITIVELY discovered a hidden truth through concrete actions or revelations.
-
-STRICT REQUIREMENTS:
-1. Player must have obtained DEFINITIVE PROOF (not just suspicion or hints)
-2. The revelation must be COMPLETE (not partial)
-3. The player character must LOGICALLY know this now
-4. Provide a clear justification in the 'reason' field
-
-Examples of valid unlock scenarios:
-- Found a signed confession letter → unlock NPC's hidden motives
-- NPC explicitly confessed during interrogation → unlock NPC's secrets
-- Triggered and observed a trap mechanism → unlock location's hidden dangers
-- Completed investigation quest → unlock quest's true objectives
-
-DO NOT unlock just because:
-- Player suspects something (suspicion ≠ proof)
-- It would be dramatic (drama ≠ discovery)
-- The AI knows the truth (GM knowledge ≠ player discovery)`,
+  description: "Unlock entity hidden info. Requires PROOF and COMPLETE revelation.",
   parameters: z.object({
-    category: unlockEntityCategorySchema.describe(
-      "Entity category to unlock. REQUIRED.",
-    ),
-    id: z
-      .string()
-      .optional()
-      .describe(
-        "Entity ID (e.g., inv:1, npc:2, loc:3). Either id or name required.",
-      ),
-    name: z
-      .string()
-      .optional()
-      .describe("Entity name. Either id or name required."),
-    reason: z
-      .string()
-      .describe(
-        "REQUIRED. Concise justification describing the exact evidence the player obtained.",
-      ),
+    category: unlockEntityCategorySchema.describe("Category."),
+    id: z.string().optional().describe("ID (inv:N)."),
+    name: z.string().optional().describe("Name."),
+    reason: z.string().describe("Justification describing evidence."),
   }),
 });
 
@@ -1442,40 +1051,21 @@ export const agentStageSchema = z.enum([
 
 export const NEXT_STAGE_TOOL = defineTool({
   name: "next_stage",
-  description: `Proceed to the next stage or jump to a specific stage.
-
-Stages: QUERY -> ADD -> REMOVE -> UPDATE -> NARRATIVE
-
-You can:
-1. Call without target to advance to the next stage
-2. Specify a target stage to jump directly (forward jumps recommended)
-3. Skip stages you don't need
-
-Alternatively, you can call finish_turn at ANY stage to complete the turn immediately.`,
+  description: "Proceed to next or specific stage.",
   parameters: z.object({
-    target: agentStageSchema
-      .optional()
-      .describe(
-        "Target stage to jump to. If omitted, advances to next stage in sequence.",
-      ),
+    target: agentStageSchema.optional().describe("Target stage."),
   }),
 });
 
 export const FINISH_TURN_TOOL = defineTool({
   name: "finish_turn",
-  description: `End the turn and generate the final narrative response. Only available in NARRATIVE stage.
-
-**⚠️ CRITICAL - NO GAME IDs IN OUTPUT**:
-NEVER include internal game IDs in narrative, choices, or imagePrompt!
-- ❌ FORBIDDEN: "inv:1", "npc:2", "loc:3", etc.
-- ✅ CORRECT: Use actual NAMES like "Iron Sword", "Elder Marcus"`,
+  description: "End turn and narrate. NO INTERNAL IDs.",
   parameters: finishTurnSchema,
 });
 
 export const COMPLETE_FORCE_UPDATE_TOOL = defineTool({
   name: "complete_force_update",
-  description:
-    "Complete a force update (sudo command). For direct interventions only.",
+  description: "Complete sudo force update.",
   parameters: forceUpdateSchema,
 });
 
