@@ -307,8 +307,10 @@ export async function generateContent(
           tools,
           tool_choice: tools ? "auto" : undefined,
 
-          // 如果是 Gemini 模型且有 schema，使用 Gemini 兼容 schema 格式 (Standard JSON Schema cleanup)
-          response_format: schema
+          // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
+          // This applies to both standard OpenAI models and Gemini compatibility mode.
+          // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
+          response_format: (schema && (!tools || tools.length === 0))
             ? isGemini
               ? {
                   type: "json_schema",

@@ -1227,3 +1227,107 @@ ${layers.semiStaticLayer}
 ${layers.dynamicLayer}
 <!-- DYNAMIC CONTEXT END -->`;
 }
+
+// ============================================================================
+// Context Compression Helpers
+// ============================================================================
+
+export const CompressionLevel = {
+  NONE: 0,
+  /** Level 1: Moderate reduction (limits reduced by ~40%) */
+  MODERATE: 1,
+  /** Level 2: Heavy reduction (limits reduced by ~70%, history trimmed) */
+  HEAVY: 2,
+  /** Level 3: Extreme reduction (minimal entities, minimal history, no summaries) */
+  EXTREME: 3,
+} as const;
+
+export type CompressionLevel = typeof CompressionLevel[keyof typeof CompressionLevel];
+
+/**
+ * Returns compressed options based on the level.
+ * This effectively rebuilds the context with tighter budgets.
+ */
+export function getCompressedContextOptions(
+  options: ContextBuilderOptions,
+  level: CompressionLevel
+): ContextBuilderOptions {
+  if (level === CompressionLevel.NONE) return options;
+
+  console.log(`[ContextBuilder] Compressing context options to Level ${level}`);
+
+  const newOptions = { ...options };
+  const baseLimits = options.limits || DEFAULT_LIMITS;
+
+  // Calculators for reduction
+  const reduce = (val: number | undefined, factor: number, min: number = 1) =>
+    Math.max(min, Math.floor((val ?? 10) * factor));
+
+  // Level 1: Moderate (Focus on reducing Context Length / History)
+  if (level === CompressionLevel.MODERATE) {
+    // Priority: Shrink context length (history) first, keep strict entity limits largely intact
+    if (newOptions.recentHistory) {
+        // Keep last 6 turns (approx 50-60% reduction in narrative history)
+        newOptions.recentHistory = newOptions.recentHistory.slice(-6);
+    }
+    // Slight reduction in limits
+    newOptions.limits = {
+      inventory: reduce(baseLimits.inventory, 0.8),
+      relationships: reduce(baseLimits.relationships, 0.8),
+      locations: reduce(baseLimits.locations, 0.8),
+      quests: reduce(baseLimits.quests, 0.8),
+      knowledge: reduce(baseLimits.knowledge, 0.8),
+      skills: reduce(baseLimits.skills, 0.8),
+      conditions: reduce(baseLimits.conditions, 0.8),
+    };
+    // Summaries: Keep last 2 (Context Length Focus)
+    if (newOptions.summaries && newOptions.summaries.length > 2) {
+      newOptions.summaries = newOptions.summaries.slice(-2);
+    }
+  }
+
+  // Level 2: Heavy (Reduce Content / Entity Limits)
+  else if (level === CompressionLevel.HEAVY) {
+    // Now aggressively reduce entity counts
+    newOptions.limits = {
+      inventory: reduce(baseLimits.inventory, 0.4),
+      relationships: reduce(baseLimits.relationships, 0.4),
+      locations: reduce(baseLimits.locations, 0.4),
+      quests: reduce(baseLimits.quests, 0.4),
+      knowledge: reduce(baseLimits.knowledge, 0.4),
+      skills: reduce(baseLimits.skills, 0.4),
+      conditions: reduce(baseLimits.conditions, 0.4),
+    };
+    // Trim history further
+    if (newOptions.recentHistory) {
+      newOptions.recentHistory = newOptions.recentHistory.slice(-4);
+    }
+    // Summaries: Keep only the very last one
+    if (newOptions.summaries && newOptions.summaries.length > 0) {
+      newOptions.summaries = [newOptions.summaries[newOptions.summaries.length - 1]];
+    }
+  }
+
+  // Level 3: Extreme (Bare Bone)
+  else if (level >= CompressionLevel.EXTREME) {
+    newOptions.limits = {
+      inventory: 2,
+      relationships: 2,
+      locations: 1,
+      quests: 1,
+      knowledge: 1,
+      skills: 1,
+      conditions: 1,
+    };
+    // Trim history to absolute minimum
+    if (newOptions.recentHistory) {
+      newOptions.recentHistory = newOptions.recentHistory.slice(-2);
+    }
+    // Keep last summary
+    if (newOptions.summaries && newOptions.summaries.length > 0) {
+      newOptions.summaries = [newOptions.summaries[newOptions.summaries.length - 1]];
+    }
+  }
+
+  return newOptions;
+}

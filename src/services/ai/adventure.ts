@@ -13,6 +13,11 @@ import {
   GameResponse,
 } from "../../types";
 
+import {
+  isContextLengthError,
+  truncateToolOutputs,
+} from "./contextCompressor";
+
 import { ToolCallResult, MalformedToolCallError } from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
@@ -86,6 +91,8 @@ import { getCoreSystemInstruction } from "../prompts/index";
 import {
   buildLayeredContext,
   ContextBuilderOptions,
+  CompressionLevel,
+  getCompressedContextOptions,
 } from "../prompts/contextBuilder";
 
 import {
@@ -101,6 +108,7 @@ import {
   createProviderConfig,
   createLogEntry,
   resolveThemeConfig,
+  getProviderInstance,
 } from "./utils";
 
 // Import prompt injection data
@@ -355,38 +363,81 @@ export const generateAdventureTurn = async (
     godMode: gameState.godMode,
     aliveEntities: gameState.aliveEntities,
   };
-  const layers = buildLayeredContext(contextOptions);
 
-  // Get RAG context from parameter
-  const ragContext: string | undefined = context.ragContext;
+  // Outer Retry Loop: Handle Base Context Compression (Semantic Reduction)
+  let compressionLevel: CompressionLevel = CompressionLevel.NONE;
+  const maxCompressionLevel = CompressionLevel.EXTREME;
 
-  // ===== NEW: Build messages using layered context =====
-  const { messages, dynamicContext } = buildTurnMessages(
-    layers,
-    context.recentHistory,
-    context.userAction,
-    ragContext,
-  );
+  while (true) {
+      try {
+          // 1. Apply Semantic Compression (if needed)
+          const effectiveOptions = getCompressedContextOptions(contextOptions, compressionLevel);
+          const layers = buildLayeredContext(effectiveOptions);
 
-  const generationDetails: LogEntry["generationDetails"] = {
-    dynamicContext,
-    ragContext,
-    ragQueries: gameState.ragQueries,
-    systemPrompt: systemInstruction,
-    userPrompt: context.userAction,
-  };
+          // Get RAG context from parameter
+          const ragContext: string | undefined = context.ragContext;
 
-  return runAgenticLoop(
-    instance.protocol,
-    instance,
-    modelId,
-    systemInstruction,
-    messages,
-    gameState,
-    generationDetails,
-    context.settings,
-    gameState.nextInitialStage, // Pass suggested initial stage from previous turn
-  );
+          // 2. Build messages using layered context
+          const { messages, dynamicContext } = buildTurnMessages(
+            layers,
+            effectiveOptions.recentHistory, // Use compressed history
+            context.userAction,
+            ragContext,
+          );
+
+          const generationDetails: LogEntry["generationDetails"] = {
+            dynamicContext,
+            ragContext,
+            ragQueries: gameState.ragQueries,
+            systemPrompt: systemInstruction,
+            userPrompt: context.userAction,
+          };
+
+          // 5. Run inner loop
+      const result = await runAgenticLoop(
+          instance.protocol,
+          instance,
+          modelId,
+          systemInstruction,
+          messages,
+          gameState,
+          generationDetails,
+          context.settings,
+          gameState.nextInitialStage,
+      );
+
+      // 6. Return response
+      if (compressionLevel > CompressionLevel.NONE) {
+          result.response.systemToasts = [
+              ...(result.response.systemToasts || []),
+              {
+                  message: `Context compressed (Level ${compressionLevel}) due to size limits.`,
+                  type: "warning"
+              }
+          ];
+
+          // Inject Log Entry
+          result.logs.push(createLogEntry(
+              "system",
+              "context-manager",
+              "compression",
+              { compressionLevel, reason: "context_length_exceeded" },
+              { message: `Context rebuilt with compression level ${compressionLevel}` },
+          ));
+      }
+      return result;
+    } catch (e: any) {
+      if (isContextLengthError(e)) {
+          console.warn(`[Adventure] Context length exceeded with Content Compression Level ${compressionLevel}.`);
+          if (compressionLevel < maxCompressionLevel) {
+              compressionLevel = (compressionLevel + 1) as CompressionLevel;
+              console.log(`[Adventure] Retrying with Content Compression Level ${compressionLevel}...`);
+              continue;
+          }
+      }
+      throw e;
+    }
+  }
 };
 
 /**
@@ -557,8 +608,13 @@ Consider setting nextInitialStage if you know what stage would be best for the n
     let result: GenerateContentResult["result"];
     let usage: TokenUsage;
 
-    let maxRetries = 2;
+    let maxRetries = 2; // For malformed tool calls
     let retryCount = 0;
+
+    // Compression state
+    // Note: Semantic compression is handled by the outer loop in generateAdventureTurn.
+    // Here we only handle tool output truncation.
+
     let lastError: Error | null = null;
 
     let effectiveToolConfig: typeof toolConfig | undefined = toolConfig;
@@ -569,6 +625,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
         ? finishTurnSchema
         : undefined;
 
+    // Inner Retry Loop: Handle Dynamic Tool Output Truncation
     while (retryCount <= maxRetries) {
       try {
         const config = createProviderConfig(instance);
@@ -597,28 +654,54 @@ Consider setting nextInitialStage if you know what stage would be best for the n
         lastError = error;
         const errorMessage = error.message || "";
 
+        // 1. Handle Context Length Error -> Truncate Tools
+        if (isContextLengthError(error)) {
+             console.warn(`[Agentic Loop] Context length exceeded at stage ${currentStage}. Attempting Tool Output Truncation.`);
+
+             // Check if we can truncate tools further
+             // We can check if any tool output > 500 chars exists
+             // But truncateToolOutputs logic is idempotent (msg > 500 -> 500).
+             // Let's create a hash or check to see if it actually changes anything.
+             const beforeJson = JSON.stringify(conversationHistory);
+             conversationHistory = truncateToolOutputs(conversationHistory);
+             const afterJson = JSON.stringify(conversationHistory);
+
+             if (beforeJson !== afterJson) {
+                 console.log(`[Agentic Loop] Tool outputs truncated. Retrying...`);
+                 // Don't increment retryCount for context fix
+                 continue;
+             } else {
+                 console.warn(`[Agentic Loop] Tool truncation didn't reduce size (or already truncated). Bubble up error.`);
+                 throw error; // Let generateAdventureTurn handle it with semantic compression
+             }
+        }
+
+        // 2. Handle Malformed Tool Calls -> Retry
         if (
           e instanceof MalformedToolCallError ||
           errorMessage.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
+          console.warn(`[Agentic Loop] Malformed tool call. Retry ${retryCount}/${maxRetries}`);
+
           if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
+             // Gemini fallback strategy
             effectiveToolConfig = undefined;
             effectiveSchema = finishTurnSchema;
             maxRetries = 4;
             continue;
           }
+
           if (retryCount <= maxRetries) {
             const delayMs = Math.min(500 * Math.pow(2, retryCount - 1), 4000);
             await new Promise((resolve) => setTimeout(resolve, delayMs));
             continue;
           }
         }
+
         throw error;
       }
     }
-
-    if (retryCount > maxRetries && lastError) throw lastError;
 
     if (usage!) {
       totalUsage.promptTokens += usage!.promptTokens || 0;

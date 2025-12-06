@@ -290,6 +290,10 @@ export interface StateChanges {
   conditionsChanged?: Array<{ name: string }>;
   // Unlock events with name and reason
   entitiesUnlocked?: Array<{ name: string; reason: string }>;
+  systemToasts?: Array<{
+    message: string;
+    type: "info" | "warning" | "error" | "success";
+  }>;
 }
 
 export type ActionResult =

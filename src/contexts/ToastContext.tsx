@@ -13,7 +13,7 @@ import { useIsMobile } from "../hooks/useMediaQuery";
 export interface ToastItem {
   id: string;
   message: string;
-  type: "info" | "error" | "success";
+  type: "info" | "error" | "success" | "warning";
   duration?: number;
   // For grouped toasts on mobile
   items?: string[];
@@ -146,6 +146,16 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
           msg: t("toast.secretUnlocked"),
           type: "success",
           items: changes.entitiesUnlocked.map((i) => `${i.name}: ${i.reason}`),
+        });
+      }
+
+      if (changes.systemToasts && changes.systemToasts.length > 0) {
+        changes.systemToasts.forEach((st) => {
+            allChanges.push({
+                msg: st.message,
+                type: st.type,
+                items: [],
+            });
         });
       }
 

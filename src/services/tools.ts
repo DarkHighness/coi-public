@@ -257,7 +257,7 @@ export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
   name: "query_recent_context",
   description: "Get segments BEYOND current context window. Recent ~10 already in context.",
   parameters: z.object({
-    count: z.number().optional().describe("Number of segments. Default: 10, Max: 40."),
+    count: z.number().optional().describe("Number of segments. Default: 10, Max: 20."),
   }),
 });
 
