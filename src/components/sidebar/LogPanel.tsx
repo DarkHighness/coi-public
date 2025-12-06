@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { LogEntry, ToolCallRecord } from "../../types";
 import { useTranslation } from "react-i18next";
 
@@ -93,6 +93,7 @@ const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
 export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
   const { t } = useTranslation();
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleLog = (logId: string) => {
     setExpandedLogs((prev) => {
@@ -115,6 +116,39 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
     (sum, log) => sum + (log.usage?.totalTokens || 0),
     0,
   );
+
+  // Virtual list settings
+  const VISIBLE_BUFFER = 10;
+  const ESTIMATED_LOG_HEIGHT = 80; // Approximate height per collapsed log entry
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 30 });
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateVisibleRange = () => {
+      const scrollTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+
+      const firstVisible = Math.floor(scrollTop / ESTIMATED_LOG_HEIGHT);
+      const visibleCount = Math.ceil(containerHeight / ESTIMATED_LOG_HEIGHT);
+      const lastVisible = firstVisible + visibleCount;
+
+      const newStart = Math.max(0, firstVisible - VISIBLE_BUFFER);
+      const newEnd = Math.min(logs.length, lastVisible + VISIBLE_BUFFER);
+
+      setVisibleRange((prev) => {
+        if (Math.abs(prev.start - newStart) > 3 || Math.abs(prev.end - newEnd) > 3) {
+          return { start: newStart, end: newEnd };
+        }
+        return prev;
+      });
+    };
+
+    updateVisibleRange();
+    container.addEventListener("scroll", updateVisibleRange, { passive: true });
+    return () => container.removeEventListener("scroll", updateVisibleRange);
+  }, [logs.length]);
 
   return (
     <div className="fixed inset-0 z-100 bg-theme-surface backdrop-blur-md flex flex-col animate-fade-in text-theme-text font-mono">
@@ -158,7 +192,10 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-theme-bg/50">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-theme-bg/50"
+      >
         {logs.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-theme-muted opacity-50">
             <svg
@@ -178,7 +215,17 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
           </div>
         )}
 
-        {logs.map((log) => {
+        {/* Placeholder for logs above visible range */}
+        {visibleRange.start > 0 && (
+          <div
+            style={{ height: visibleRange.start * ESTIMATED_LOG_HEIGHT }}
+            aria-hidden="true"
+          />
+        )}
+
+        {logs
+          .slice(visibleRange.start, visibleRange.end)
+          .map((log, sliceIndex) => {
           const isError = !!log.response?.error || !!log.request?.error;
           const isExpanded = expandedLogs.has(log.id);
           const hasToolCalls = log.toolCalls && log.toolCalls.length > 0;
@@ -535,6 +582,16 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             </div>
           );
         })}
+
+        {/* Placeholder for logs below visible range */}
+        {visibleRange.end < logs.length && (
+          <div
+            style={{
+              height: (logs.length - visibleRange.end) * ESTIMATED_LOG_HEIGHT,
+            }}
+            aria-hidden="true"
+          />
+        )}
       </div>
     </div>
   );

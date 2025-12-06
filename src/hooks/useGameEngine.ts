@@ -1185,11 +1185,11 @@ export const useGameEngine = () => {
         context,
       );
 
-      // Add force update logs to game state
+      // Add force update logs to game state (prepend for newest first)
       if (logs && logs.length > 0) {
         setGameState((prev) => ({
           ...prev,
-          logs: [...(prev.logs || []), ...logs],
+          logs: [...logs, ...(prev.logs || [])].slice(0, 100),
         }));
       }
 
