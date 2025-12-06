@@ -273,10 +273,14 @@ export const QUERY_TURN_TOOL = defineTool({
  */
 export const QUERY_SUMMARY_TOOL = defineTool({
   name: "query_summary",
-  description: `Search through story summaries. The current/latest summary is always visible in your context, so use this to search OLDER summaries when:
-- You need to recall events from much earlier in the story
-- You want to find when a specific event was first recorded
-- You need to trace the evolution of a plot thread across summaries
+  description: `Search through OLDER story summaries.
+
+**IMPORTANT**: The LATEST summary is ALREADY in your context (see <story_summary> section). Do NOT query recent summaries - you already have them!
+
+Use this ONLY when:
+- You need to recall events from MUCH EARLIER in the story (not recent events)
+- You want to trace the evolution of a plot thread across OLD summaries
+- You are specifically searching for historical context by keyword
 
 Returns matching summaries with both visible and hidden layers.`,
   parameters: z.object({
@@ -310,12 +314,16 @@ Returns matching summaries with both visible and hidden layers.`,
  */
 export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
   name: "query_recent_context",
-  description: `Get the most recent story segments for immediate context. Use this when:
-- You need to understand what just happened
-- You want to maintain narrative continuity
-- You need recent dialogue or action context
+  description: `Get story segments BEYOND what's in your current context window.
 
-Returns the last N segments (each segment = one node in story tree, either player action or narrative response).`,
+**IMPORTANT**: Recent segments are ALREADY in your context (see <recent_narrative> section). Do NOT query the last ~10 segments - you already have them!
+
+Use this ONLY when:
+- You need segments from EARLIER in the story that aren't in <recent_narrative>
+- You want to review specific dialogue from 20+ turns ago
+- You need to find a specific earlier event by scanning more history
+
+Returns segments (each segment = one node, either player action or narrative response).`,
   parameters: z.object({
     count: z
       .number()

@@ -785,6 +785,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
             accumulatedResponse,
             changedEntities,
             inputState,
+            settings,
           );
         }
 
@@ -983,6 +984,7 @@ export function executeToolCall(
   accumulatedResponse: GameResponse,
   changedEntities?: Map<string, string>,
   gameState?: GameState,
+  settings?: AISettings,
 ): unknown {
   // ============================================================================
   // STORY MEMORY QUERY TOOLS
@@ -997,7 +999,7 @@ export function executeToolCall(
     return executeQuerySummary(args, gameState);
   }
   if (name === "query_recent_context") {
-    return executeQueryRecentContext(args, gameState);
+    return executeQueryRecentContext(args, gameState, settings);
   }
 
   // ============================================================================
@@ -2031,6 +2033,22 @@ function executeQuerySummary(
     };
   }
 
+  // The latest summary is ALWAYS in context - exclude it from search
+  const latestSummaryIndex = summaries.length - 1;
+
+  // If there's only one summary, it's already in context
+  if (summaries.length === 1) {
+    return {
+      success: true,
+      hasSummary: true,
+      totalSummaries: 1,
+      results: [],
+      alreadyInContext: true,
+      message:
+        "The only summary is the LATEST summary, which is ALREADY in your context (see <story_summary> section). No need to query it - you already have access to it!",
+    };
+  }
+
   const {
     keyword,
     nodeRange,
@@ -2057,11 +2075,13 @@ function executeQuerySummary(
     }
   };
 
-  // Filter summaries
-  let filteredSummaries = summaries.map((summary, index) => ({
-    summary,
-    index,
-  }));
+  // Filter summaries - EXCLUDE the latest summary (index = summaries.length - 1)
+  let filteredSummaries = summaries
+    .map((summary, index) => ({
+      summary,
+      index,
+    }))
+    .filter(({ index }) => index < latestSummaryIndex); // Exclude latest
 
   // Keyword filter - search in all text fields
   if (keyword) {
@@ -2159,6 +2179,7 @@ function executeQuerySummary(
 function executeQueryRecentContext(
   args: Record<string, unknown>,
   gameState?: GameState,
+  settings?: AISettings,
 ): unknown {
   if (!gameState) {
     return {
@@ -2168,7 +2189,7 @@ function executeQueryRecentContext(
   }
 
   // Each segment is one node (user action OR model response), not a pair
-  const count = Math.min(Math.max((args.count as number) || 10, 1), 40);
+  const requestedCount = Math.min(Math.max((args.count as number) || 10, 1), 40);
   const currentFork = gameState.currentFork || [];
 
   if (currentFork.length === 0) {
@@ -2179,8 +2200,35 @@ function executeQueryRecentContext(
     };
   }
 
-  // Get recent segments directly
-  const startIndex = Math.max(0, currentFork.length - count);
+  // Calculate how many segments are in context based on actual context building logic:
+  // Context includes: (currentFork.length - summarizedIndex) + freshSegmentCount
+  // Use settings.freshSegmentCount if available, otherwise default to 4
+  const freshSegmentCount = settings?.freshSegmentCount ?? 4;
+
+  // Get the active node's summarizedIndex (where summarization ended)
+  const activeNode = gameState.nodes?.[gameState.activeNodeId || ""];
+  const summarizedIndex = activeNode?.summarizedIndex || 0;
+
+  // Segments in context = segments after summary + freshSegmentCount overlap
+  const segmentsInContext = Math.min(
+    currentFork.length,
+    (currentFork.length - summarizedIndex) + freshSegmentCount
+  );
+
+  // If requesting only segments already in context, warn the model
+  if (requestedCount <= segmentsInContext && currentFork.length >= requestedCount) {
+    return {
+      success: true,
+      alreadyInContext: true,
+      requestedCount,
+      contextIncludesLast: segmentsInContext,
+      segments: [],
+      message: `The last ${segmentsInContext} segments are ALREADY in your context (see <recent_narrative> section). You requested ${requestedCount} segments - no need to query, you already have them! If you need OLDER segments, request count > ${segmentsInContext} (e.g., ${segmentsInContext + 10} or more).`,
+    };
+  }
+
+  // Get segments BEYOND what's in context
+  const startIndex = Math.max(0, currentFork.length - requestedCount);
   const recentSegments = currentFork.slice(startIndex);
 
   // Format segments with clear markers
@@ -2196,10 +2244,14 @@ function executeQueryRecentContext(
     inGameTime: segment.stateSnapshot?.time,
   }));
 
+  // Calculate how many are beyond context
+  const beyondContextCount = Math.max(0, segments.length - segmentsInContext);
+
   return {
     success: true,
-    requestedCount: count,
+    requestedCount,
     returnedCount: segments.length,
+    newSegments: beyondContextCount,
     currentTurn: gameState.turnNumber ?? 0,
     totalSegments: currentFork.length,
     segments,
@@ -2207,6 +2259,8 @@ function executeQueryRecentContext(
      * Note: These are raw story segments containing dialogue/narrative.
      * For summarized context with visible/hidden layers, use query_summary.
      */
-    hint: `Showing the last ${segments.length} segments. Total segments in fork: ${currentFork.length}. For summarized story context, use query_summary.`,
+    hint: beyondContextCount > 0
+      ? `Showing ${segments.length} segments (${beyondContextCount} beyond context + ${Math.min(segmentsInContext, segments.length)} already in context). Total segments: ${currentFork.length}.`
+      : `All requested segments are in your context. The last ${segmentsInContext} segments are always in <recent_narrative>.`,
   };
 }
