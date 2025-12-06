@@ -1990,4 +1990,101 @@ export class GameDatabase {
       `Global state updated: ${updated.join(", ")}`,
     );
   }
+
+  // --- Unlock Method ---
+
+  public unlock(
+    category: string,
+    identifier: { id?: string; name?: string },
+    reason: string,
+  ): ToolCallResult<{
+    category: string;
+    identifier: string;
+    unlocked: boolean;
+  }> {
+    const { id, name } = identifier;
+    if (!id && !name) {
+      return createError(
+        "Either 'id' or 'name' must be provided to identify the entity",
+        "INVALID_DATA",
+      );
+    }
+
+    const findEntity = <T extends { id?: string; name?: string }>(
+      list: T[],
+    ): T | undefined => {
+      return list.find(
+        (item) =>
+          (id && matchesIdentifier(item.id, id)) ||
+          (name && matchesIdentifier(item.name, name)),
+      );
+    };
+
+    let entity: { unlocked?: boolean; unlockReason?: string } | undefined;
+    let entityIdentifier: string = id || name || "unknown";
+
+    switch (category) {
+      case "inventory": {
+        entity = findEntity(this.state.inventory);
+        break;
+      }
+      case "relationship": {
+        entity = findEntity(this.state.relationships);
+        break;
+      }
+      case "location": {
+        entity = findEntity(this.state.locations);
+        break;
+      }
+      case "quest": {
+        entity = findEntity(this.state.quests);
+        break;
+      }
+      case "knowledge": {
+        entity = findEntity(this.state.knowledge);
+        break;
+      }
+      case "timeline": {
+        entity = findEntity(this.state.timeline);
+        break;
+      }
+      case "faction": {
+        entity = findEntity(this.state.factions);
+        break;
+      }
+      case "skill": {
+        entity = findEntity(this.state.character.skills);
+        break;
+      }
+      case "condition": {
+        entity = findEntity(this.state.character.conditions);
+        break;
+      }
+      case "hidden_trait": {
+        entity = findEntity(this.state.character.hiddenTraits);
+        break;
+      }
+      default:
+        return createError(
+          `Unknown category: ${category}. Valid categories: inventory, relationship, location, quest, knowledge, timeline, faction, skill, condition, hidden_trait`,
+          "INVALID_DATA",
+        );
+    }
+
+    if (!entity) {
+      return createError(
+        `Entity not found in ${category} with ${id ? `id: ${id}` : `name: ${name}`}`,
+        "NOT_FOUND",
+      );
+    }
+
+    // Set unlock status
+    entity.unlocked = true;
+    entity.unlockReason = reason;
+
+    return createSuccess(
+      { category, identifier: entityIdentifier, unlocked: true },
+      `Unlocked ${category}: ${entityIdentifier} - ${reason}`,
+    );
+  }
 }

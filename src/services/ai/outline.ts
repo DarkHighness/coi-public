@@ -407,7 +407,13 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
 
-  return {
+  // Helper to force unlocked: false on entities with that field
+  const forceUnlockedFalse = <T extends { unlocked?: boolean }>(
+    items: T[],
+  ): T[] => items.map((item) => ({ ...item, unlocked: false }));
+
+  // Build outline with forced unlocked: false for all relevant entities
+  const outline: StoryOutline = {
     // Phase 1: World Foundation
     title: p1.title,
     initialTime: p1.initialTime,
@@ -415,32 +421,59 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     worldSetting: p1.worldSetting as StoryOutline["worldSetting"],
     mainGoal: p1.mainGoal as StoryOutline["mainGoal"],
 
-    // Phase 2: Character
-    character: p2.character as StoryOutline["character"],
+    // Phase 2: Character (with skills, conditions, hiddenTraits forced to unlocked: false)
+    character: {
+      ...p2.character,
+      skills: p2.character.skills
+        ? forceUnlockedFalse(p2.character.skills)
+        : undefined,
+      conditions: p2.character.conditions
+        ? forceUnlockedFalse(p2.character.conditions)
+        : undefined,
+      hiddenTraits: p2.character.hiddenTraits
+        ? forceUnlockedFalse(p2.character.hiddenTraits)
+        : undefined,
+    } as StoryOutline["character"],
 
-    // Phase 3: Locations
-    locations: p3.locations as StoryOutline["locations"],
+    // Phase 3: Locations (force unlocked: false)
+    locations: forceUnlockedFalse(
+      p3.locations as StoryOutline["locations"],
+    ) as StoryOutline["locations"],
 
-    // Phase 4: Factions
-    factions: p4.factions as StoryOutline["factions"],
+    // Phase 4: Factions (force unlocked: false)
+    factions: forceUnlockedFalse(
+      p4.factions as StoryOutline["factions"],
+    ) as StoryOutline["factions"],
 
-    // Phase 5: Relationships
-    relationships: p5.relationships as StoryOutline["relationships"],
+    // Phase 5: Relationships (force unlocked: false)
+    relationships: forceUnlockedFalse(
+      p5.relationships as StoryOutline["relationships"],
+    ) as StoryOutline["relationships"],
 
-    // Phase 6: Inventory
-    inventory: p6.inventory as StoryOutline["inventory"],
+    // Phase 6: Inventory (force unlocked: false)
+    inventory: forceUnlockedFalse(
+      p6.inventory as StoryOutline["inventory"],
+    ) as StoryOutline["inventory"],
 
-    // Phase 7: Quests
-    quests: p7.quests as StoryOutline["quests"],
+    // Phase 7: Quests (force unlocked: false)
+    quests: forceUnlockedFalse(
+      p7.quests as StoryOutline["quests"],
+    ) as StoryOutline["quests"],
 
-    // Phase 8: Knowledge
-    knowledge: p8.knowledge as StoryOutline["knowledge"],
+    // Phase 8: Knowledge (force unlocked: false)
+    knowledge: forceUnlockedFalse(
+      p8.knowledge as StoryOutline["knowledge"],
+    ) as StoryOutline["knowledge"],
 
-    // Phase 9: Timeline & Atmosphere
-    timeline: p9.timeline as StoryOutline["timeline"],
+    // Phase 9: Timeline (force unlocked: false) & Atmosphere
+    timeline: forceUnlockedFalse(
+      p9.timeline as StoryOutline["timeline"],
+    ) as StoryOutline["timeline"],
     initialAtmosphere:
       p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
   };
+
+  return outline;
 }
 
 /**

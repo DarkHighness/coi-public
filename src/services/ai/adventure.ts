@@ -1658,6 +1658,19 @@ export function executeToolCall(
   }
 
   // ============================================================================
+  // UNLOCK TOOL
+  // ============================================================================
+  if (name === "unlock_entity") {
+    const category = args.category as string;
+    const id = args.id as string | undefined;
+    const entityName = args.name as string | undefined;
+    const reason = args.reason as string;
+
+    const result = db.unlock(category, { id, name: entityName }, reason);
+    return result;
+  }
+
+  // ============================================================================
   // CONTROL TOOLS
   // ============================================================================
   if (name === "finish_turn") {

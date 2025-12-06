@@ -541,16 +541,6 @@ export const ADD_INVENTORY_TOOL = defineTool({
       .optional()
       .describe("Hidden properties (truth, secrets). AI/GM only."),
     lore: z.string().optional().describe("Brief lore/history."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Hidden truth revealed? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "When setting unlocked=true, provide a concise justification/evidence string.",
-      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -581,16 +571,6 @@ export const ADD_RELATIONSHIP_TOOL = defineTool({
       .optional()
       .describe("Hidden properties. AI/GM only."),
     notes: z.string().optional().describe("NPC's observations of player."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Hidden info revealed? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "When setting unlocked=true, provide a concise justification/evidence string.",
-      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -654,16 +634,6 @@ export const ADD_QUEST_TOOL = defineTool({
       .partial()
       .optional()
       .describe("Hidden properties. AI/GM only."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("True objectives revealed? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "When setting unlocked=true, provide a concise justification/evidence string.",
-      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -691,16 +661,6 @@ export const ADD_KNOWLEDGE_TOOL = defineTool({
       .optional()
       .describe("When discovered (game time)."),
     relatedTo: z.array(z.string()).optional().describe("Related entity IDs."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Full truth revealed? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "When setting unlocked=true, provide a concise justification/evidence string.",
-      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -732,10 +692,6 @@ export const ADD_TIMELINE_TOOL = defineTool({
       .boolean()
       .optional()
       .describe("Player knows about this? Default: true."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("True cause revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -779,16 +735,6 @@ export const ADD_FACTION_TOOL = defineTool({
       })
       .optional()
       .describe("Secret information. AI/GM only."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Hidden agenda revealed? Default: false."),
-    unlockReason: z
-      .string()
-      .optional()
-      .describe(
-        "REQUIRED when unlocked=true. Justify WHY player has complete understanding.",
-      ),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -863,10 +809,6 @@ export const ADD_CHARACTER_SKILL_TOOL = defineTool({
       .optional()
       .describe("Hidden properties."),
     category: z.string().optional().describe("Skill category."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Hidden info revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -897,10 +839,6 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
       .optional()
       .describe("Condition effects."),
     duration: z.number().int().optional().describe("Duration in turns."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Hidden info revealed? Default: false."),
     icon: z.string().optional().describe("Emoji icon."),
   }),
 });
@@ -920,10 +858,6 @@ export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
       .array(z.string())
       .optional()
       .describe("Trigger conditions."),
-    unlocked: z
-      .boolean()
-      .optional()
-      .describe("Trait revealed? Default: false."),
   }),
 });
 
@@ -1029,11 +963,6 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
       .nullish()
       .describe("Hidden properties. Null fields are deleted."),
     lore: z.string().nullish().describe("Lore. Null to remove."),
-    unlocked: z.boolean().nullish().describe("Reveal status."),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1059,11 +988,6 @@ export const UPDATE_RELATIONSHIP_TOOL = defineTool({
       .nullish()
       .describe("Hidden properties. Null fields are deleted."),
     notes: z.string().nullish().describe("Notes. Null to clear."),
-    unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1085,11 +1009,6 @@ export const UPDATE_LOCATION_TOOL = defineTool({
       .describe("Hidden properties. Null fields are deleted."),
     environment: z.string().nullish().describe("Environment. Null to remove."),
     isVisited: z.boolean().nullish().describe("Has been visited?"),
-    unlocked: z.boolean().nullish().describe("Secrets discovered?"),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1110,11 +1029,6 @@ export const UPDATE_QUEST_TOOL = defineTool({
       .partial()
       .nullish()
       .describe("Hidden properties. Null fields are deleted."),
-    unlocked: z.boolean().nullish().describe("True objectives revealed?"),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1159,11 +1073,6 @@ export const UPDATE_KNOWLEDGE_TOOL = defineTool({
       .array(z.string())
       .nullish()
       .describe("Related IDs. Null to clear."),
-    unlocked: z.boolean().nullish().describe("Full truth revealed?"),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1188,7 +1097,6 @@ export const UPDATE_TIMELINE_TOOL = defineTool({
       .describe("Involved IDs. Null to clear."),
     chainId: z.string().nullish().describe("CausalChain link. Null to unlink."),
     known: z.boolean().nullish().describe("Player knows?"),
-    unlocked: z.boolean().nullish().describe("True cause revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1236,11 +1144,6 @@ export const UPDATE_FACTION_TOOL = defineTool({
       })
       .nullish()
       .describe("Secret information. Null to clear all."),
-    unlocked: z.boolean().nullish().describe("Hidden agenda revealed?"),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("Justification/evidence when setting unlocked=true."),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1394,7 +1297,6 @@ export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
       .nullish()
       .describe("Hidden properties. Null to clear."),
     category: z.string().nullish().describe("Category. Null to remove."),
-    unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1432,7 +1334,6 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
       .int()
       .nullish()
       .describe("Duration in turns. Null to remove."),
-    unlocked: z.boolean().nullish().describe("Hidden info revealed?"),
     icon: z.string().nullish().describe("Icon. Null to remove."),
   }),
 });
@@ -1453,7 +1354,68 @@ export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
       .array(z.string())
       .nullish()
       .describe("Trigger conditions. Null to clear."),
-    unlocked: z.boolean().nullish().describe("Trait revealed?"),
+  }),
+});
+
+// ============================================================================
+// UNLOCK TOOL (Stage 4 - Update)
+// ============================================================================
+
+/**
+ * Entity category enum for unlock tool
+ */
+export const unlockEntityCategorySchema = z.enum([
+  "inventory",
+  "relationship",
+  "location",
+  "quest",
+  "knowledge",
+  "timeline",
+  "faction",
+  "skill",
+  "condition",
+  "trait",
+]);
+
+export const UNLOCK_ENTITY_TOOL = defineTool({
+  name: "unlock_entity",
+  description: `Unlock hidden information for an entity. Use this tool when the player has DEFINITIVELY discovered a hidden truth through concrete actions or revelations.
+
+STRICT REQUIREMENTS:
+1. Player must have obtained DEFINITIVE PROOF (not just suspicion or hints)
+2. The revelation must be COMPLETE (not partial)
+3. The player character must LOGICALLY know this now
+4. Provide a clear justification in the 'reason' field
+
+Examples of valid unlock scenarios:
+- Found a signed confession letter → unlock NPC's hidden motives
+- NPC explicitly confessed during interrogation → unlock NPC's secrets
+- Triggered and observed a trap mechanism → unlock location's hidden dangers
+- Completed investigation quest → unlock quest's true objectives
+
+DO NOT unlock just because:
+- Player suspects something (suspicion ≠ proof)
+- It would be dramatic (drama ≠ discovery)
+- The AI knows the truth (GM knowledge ≠ player discovery)`,
+  parameters: z.object({
+    category: unlockEntityCategorySchema.describe(
+      "Entity category to unlock. REQUIRED.",
+    ),
+    id: z
+      .string()
+      .optional()
+      .describe(
+        "Entity ID (e.g., inv:1, npc:2, loc:3). Either id or name required.",
+      ),
+    name: z
+      .string()
+      .optional()
+      .describe("Entity name. Either id or name required."),
+    reason: z
+      .string()
+      .describe(
+        "REQUIRED. Concise justification describing the exact evidence the player obtained.",
+      ),
   }),
 });
 
