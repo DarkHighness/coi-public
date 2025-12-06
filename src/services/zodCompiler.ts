@@ -676,6 +676,7 @@ export interface OpenAIToolDefinition {
   function: {
     name: string;
     description: string;
+    strict: boolean;
     parameters: OpenAISchema;
   };
 }
@@ -685,6 +686,7 @@ export interface OpenRouterToolDefinition {
   function: {
     name: string;
     description: string;
+    strict: boolean;
     parameters: OpenAISchema;
   };
 }
@@ -717,6 +719,7 @@ export function createOpenAITool(
     function: {
       name,
       description,
+      strict: true,
       parameters: zodToOpenAISchema(parameters, true),
     },
   };
@@ -735,6 +738,7 @@ export function createOpenRouterTool(
     function: {
       name,
       description,
+      strict: true,
       parameters: zodToOpenAISchema(parameters, true),
     },
   };

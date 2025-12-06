@@ -5,7 +5,7 @@
  * with validation and preview
  */
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { SaveSlot, ImportValidation, ImportResult } from "../types";
 import { validateImport, importSave } from "../services/saveExportService";
@@ -14,12 +14,15 @@ interface ImportSaveModalProps {
   existingSlots: SaveSlot[];
   onClose: () => void;
   onImportComplete: (result: ImportResult) => void;
+  /** Pre-selected file to validate and import */
+  initialFile?: File;
 }
 
 export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
   existingSlots,
   onClose,
   onImportComplete,
+  initialFile,
 }) => {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +32,14 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Auto-select initial file if provided
+  useEffect(() => {
+    if (initialFile) {
+      handleFileSelect(initialFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);

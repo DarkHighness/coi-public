@@ -41,6 +41,7 @@ export interface ToolResponsePart {
   type: "tool_result";
   toolResult: {
     id: string;
+    name: string;
     content: unknown;
     isError?: boolean;
   };
@@ -105,6 +106,7 @@ export const createToolResponseMessage = (
     type: "tool_result" as const,
     toolResult: {
       id: r.toolCallId,
+      name: r.name,
       content: r.content,
     },
   })),
@@ -144,7 +146,7 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
             .filter((p): p is ToolResponsePart => p.type === "tool_result")
             .map((p) => ({
               functionResponse: {
-                name: "unknown", // Gemini requires name but we might not have it here easily without tracking
+                name: p.toolResult.name,
                 response: { content: p.toolResult.content },
               },
             })),
@@ -287,6 +289,7 @@ export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
               id:
                 part.functionResponse.id ||
                 `call_${part.functionResponse.name}`,
+              name: part.functionResponse.name || "unknown",
               content: part.functionResponse.response?.content,
             },
           });
@@ -311,6 +314,7 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
         type: "tool_result",
         toolResult: {
           id: msg.tool_call_id,
+          name: msg.name || "unknown", // OpenAI tool messages don't always have name
           content: msg.content,
         },
       });

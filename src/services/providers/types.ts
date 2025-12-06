@@ -141,18 +141,23 @@ export interface ImageContentPart {
 
 /** 工具调用部分 */
 export interface ToolCallContentPart {
-  type: "tool_call";
-  id: string;
-  name: string;
-  arguments: Record<string, unknown>;
+  type: "tool_use";
+  toolUse: {
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+  };
 }
 
 /** 工具响应部分 */
 export interface ToolResponseContentPart {
-  type: "tool_response";
-  toolCallId: string;
-  name: string;
-  content: unknown;
+  type: "tool_result";
+  toolResult: {
+    id: string;
+    name: string;
+    content: unknown;
+    isError?: boolean;
+  };
 }
 
 /** 消息内容部分 */

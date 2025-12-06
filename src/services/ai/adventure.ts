@@ -2189,7 +2189,10 @@ function executeQueryRecentContext(
   }
 
   // Each segment is one node (user action OR model response), not a pair
-  const requestedCount = Math.min(Math.max((args.count as number) || 10, 1), 40);
+  const requestedCount = Math.min(
+    Math.max((args.count as number) || 10, 1),
+    40,
+  );
   const currentFork = gameState.currentFork || [];
 
   if (currentFork.length === 0) {
@@ -2212,11 +2215,14 @@ function executeQueryRecentContext(
   // Segments in context = segments after summary + freshSegmentCount overlap
   const segmentsInContext = Math.min(
     currentFork.length,
-    (currentFork.length - summarizedIndex) + freshSegmentCount
+    currentFork.length - summarizedIndex + freshSegmentCount,
   );
 
   // If requesting only segments already in context, warn the model
-  if (requestedCount <= segmentsInContext && currentFork.length >= requestedCount) {
+  if (
+    requestedCount <= segmentsInContext &&
+    currentFork.length >= requestedCount
+  ) {
     return {
       success: true,
       alreadyInContext: true,
@@ -2259,8 +2265,9 @@ function executeQueryRecentContext(
      * Note: These are raw story segments containing dialogue/narrative.
      * For summarized context with visible/hidden layers, use query_summary.
      */
-    hint: beyondContextCount > 0
-      ? `Showing ${segments.length} segments (${beyondContextCount} beyond context + ${Math.min(segmentsInContext, segments.length)} already in context). Total segments: ${currentFork.length}.`
-      : `All requested segments are in your context. The last ${segmentsInContext} segments are always in <recent_narrative>.`,
+    hint:
+      beyondContextCount > 0
+        ? `Showing ${segments.length} segments (${beyondContextCount} beyond context + ${Math.min(segmentsInContext, segments.length)} already in context). Total segments: ${currentFork.length}.`
+        : `All requested segments are in your context. The last ${segmentsInContext} segments are always in <recent_narrative>.`,
   };
 }

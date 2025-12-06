@@ -17,6 +17,7 @@ import {
   validateConnection,
   type OutlinePhaseProgress,
 } from "./services/aiService";
+import { importSave } from "./services/saveExportService";
 import { InitializingPage } from "./components/pages/InitializingPage";
 import { GamePage } from "./components/pages/GamePage";
 import { GlobalStyles } from "./components/GlobalStyles";
@@ -112,6 +113,8 @@ function AppContent() {
   const ragContext = useRAGContext();
 
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
+  // File to import when SaveManager opens
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   // Use Toast Context
   const { showToast } = useToast();
@@ -819,7 +822,11 @@ function AppContent() {
                 <StartScreen
                   onStart={handleStartGame}
                   onContinue={handleContinueGame}
-                  onLoad={(file) => setIsSaveManagerOpen(true)}
+                  onLoad={(file) => {
+                    // Open SaveManager with the file pre-selected in ImportSaveModal
+                    setImportFile(file);
+                    setIsSaveManagerOpen(true);
+                  }}
                   onOpenSaves={() => setIsSaveManagerOpen(true)}
                   onSettings={() => setIsSettingsOpen(true)}
                   latestSave={
@@ -884,12 +891,16 @@ function AppContent() {
             currentSlotId={null}
             onSwitch={handleLoadSlot}
             onDelete={deleteSlot}
-            onClose={() => setIsSaveManagerOpen(false)}
+            onClose={() => {
+              setIsSaveManagerOpen(false);
+              setImportFile(null);
+            }}
             onImportComplete={async (result) => {
               if (result.success) {
                 await refreshSlots();
               }
             }}
+            initialImportFile={importFile || undefined}
           />
         )}
       </Suspense>

@@ -507,15 +507,19 @@ function convertToOpenAIMessages(
     // 处理工具响应消息
     if (msg.role === "tool") {
       for (const part of msg.content) {
-        if (part.type === "tool_response") {
-          const tr = part as ToolResponseContentPart;
+        // Fix: Check for "tool_result" (from messageTypes.ts) not "tool_response"
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; content: unknown };
+          };
           const toolMsg: ChatCompletionToolMessageParam = {
             role: "tool",
-            tool_call_id: tr.toolCallId,
+            tool_call_id: tr.toolResult.id,
             content:
-              typeof tr.content === "string"
-                ? tr.content
-                : JSON.stringify(tr.content),
+              typeof tr.toolResult.content === "string"
+                ? tr.toolResult.content
+                : JSON.stringify(tr.toolResult.content),
           };
           result.push(toolMsg);
         }
@@ -526,7 +530,7 @@ function convertToOpenAIMessages(
     // 处理助手消息（可能包含工具调用）
     if (msg.role === "assistant") {
       const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_call",
+        (p): p is ToolCallContentPart => p.type === "tool_use",
       );
 
       if (toolCallParts.length > 0) {
@@ -539,11 +543,11 @@ function convertToOpenAIMessages(
           role: "assistant",
           content: textContent || null,
           tool_calls: toolCallParts.map((p) => ({
-            id: p.id,
+            id: p.toolUse.id,
             type: "function" as const,
             function: {
-              name: p.name,
-              arguments: JSON.stringify(p.arguments),
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
             },
           })),
         };

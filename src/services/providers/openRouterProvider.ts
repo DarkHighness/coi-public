@@ -483,15 +483,20 @@ function convertToOpenAIMessages(
   for (const msg of messages) {
     if (msg.role === "tool") {
       for (const part of msg.content) {
-        if (part.type === "tool_response") {
-          const tr = part as ToolResponseContentPart;
+        // Fix: Check for "tool_result" (from messageTypes.ts) not "tool_response"
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; name: string; content: unknown };
+          };
+          // OpenRouter SDK uses camelCase format
           result.push({
             role: "tool",
-            tool_call_id: tr.toolCallId,
+            toolCallId: tr.toolResult.id,
             content:
-              typeof tr.content === "string"
-                ? tr.content
-                : JSON.stringify(tr.content),
+              typeof tr.toolResult.content === "string"
+                ? tr.toolResult.content
+                : JSON.stringify(tr.toolResult.content),
           });
         }
       }
@@ -499,22 +504,23 @@ function convertToOpenAIMessages(
     }
     if (msg.role === "assistant") {
       const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_call",
+        (p): p is ToolCallContentPart => p.type === "tool_use",
       );
       if (toolCallParts.length > 0) {
         const textContent = msg.content
           .filter((p): p is TextContentPart => p.type === "text")
           .map((p) => p.text)
           .join("\n");
+        // OpenRouter SDK uses camelCase format
         result.push({
           role: "assistant",
           content: textContent || null,
-          tool_calls: toolCallParts.map((p) => ({
-            id: p.id,
+          toolCalls: toolCallParts.map((p) => ({
+            id: p.toolUse.id,
             type: "function",
             function: {
-              name: p.name,
-              arguments: JSON.stringify(p.arguments),
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
             },
           })),
         });

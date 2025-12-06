@@ -13,6 +13,8 @@ interface SaveManagerProps {
   onDelete: (id: string) => void;
   onClose: () => void;
   onImportComplete?: (result: ImportResult) => void;
+  /** Pre-selected file to import - opens ImportSaveModal automatically */
+  initialImportFile?: File;
 }
 
 export const SaveManager: React.FC<SaveManagerProps> = ({
@@ -22,10 +24,16 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   onDelete,
   onClose,
   onImportComplete,
+  initialImportFile,
 }) => {
   const { t } = useTranslation();
   const [exportingSlot, setExportingSlot] = useState<SaveSlot | null>(null);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  // Open import modal immediately if initialImportFile is provided
+  const [isImportModalOpen, setIsImportModalOpen] =
+    useState(!!initialImportFile);
+  const [importFile, setImportFile] = useState<File | undefined>(
+    initialImportFile,
+  );
 
   const handleExportClick = (slot: SaveSlot) => {
     setExportingSlot(slot);
@@ -247,7 +255,10 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
           {/* Footer with Import Button */}
           <div className="p-4 border-t border-theme-border flex justify-between items-center">
             <button
-              onClick={() => setIsImportModalOpen(true)}
+              onClick={() => {
+                setImportFile(undefined);
+                setIsImportModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 text-sm text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
             >
               <svg
@@ -285,8 +296,12 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
       {isImportModalOpen && (
         <ImportSaveModal
           existingSlots={slots}
-          onClose={() => setIsImportModalOpen(false)}
+          onClose={() => {
+            setIsImportModalOpen(false);
+            setImportFile(undefined);
+          }}
           onImportComplete={handleImportComplete}
+          initialFile={importFile}
         />
       )}
     </>

@@ -138,9 +138,19 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
       const newEnd = Math.min(logs.length, lastVisible + VISIBLE_BUFFER);
 
       setVisibleRange((prev) => {
+        // Always update when we're at the boundaries (start=0 or end=logs.length)
+        // This ensures scrolling to the very beginning or end always works
+        const atStartBoundary = newStart === 0 && prev.start !== 0;
+        const atEndBoundary =
+          newEnd === logs.length && prev.end !== logs.length;
+        const startNeedsUpdate = Math.abs(prev.start - newStart) > 3;
+        const endNeedsUpdate = Math.abs(prev.end - newEnd) > 3;
+
         if (
-          Math.abs(prev.start - newStart) > 3 ||
-          Math.abs(prev.end - newEnd) > 3
+          atStartBoundary ||
+          atEndBoundary ||
+          startNeedsUpdate ||
+          endNeedsUpdate
         ) {
           return { start: newStart, end: newEnd };
         }

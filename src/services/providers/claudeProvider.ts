@@ -538,15 +538,19 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
       }> = [];
 
       for (const part of msg.content) {
-        if (part.type === "tool_response") {
-          const tr = part as ToolResponseContentPart;
+        // Fix: Check for "tool_result" (from messageTypes.ts) not "tool_response"
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; content: unknown };
+          };
           toolContents.push({
             type: "tool_result",
-            tool_use_id: tr.toolCallId,
+            tool_use_id: tr.toolResult.id,
             content:
-              typeof tr.content === "string"
-                ? tr.content
-                : JSON.stringify(tr.content),
+              typeof tr.toolResult.content === "string"
+                ? tr.toolResult.content
+                : JSON.stringify(tr.toolResult.content),
           });
         }
       }
@@ -563,7 +567,7 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
     // 处理助手消息（可能包含工具调用）
     if (msg.role === "assistant") {
       const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_call",
+        (p): p is ToolCallContentPart => p.type === "tool_use",
       );
 
       if (toolCallParts.length > 0) {
@@ -586,9 +590,9 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
         for (const tc of toolCallParts) {
           content.push({
             type: "tool_use",
-            id: tc.id,
-            name: tc.name,
-            input: tc.arguments,
+            id: tc.toolUse.id,
+            name: tc.toolUse.name,
+            input: tc.toolUse.args,
           });
         }
 

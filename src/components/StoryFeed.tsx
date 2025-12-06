@@ -298,6 +298,19 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       const ESTIMATED_SEGMENT_HEIGHT = 300; // Approximate height per segment
 
       const updateVisibleRange = () => {
+        // During processing, ONLY allow end to grow for new content - skip all other updates
+        // This prevents shaking caused by height estimation errors during TypeWriter animation
+        if (gameState.isProcessing) {
+          setVisibleRange((prev) => {
+            // Only grow end if new content was added
+            if (currentHistory.length > prev.end) {
+              return { start: prev.start, end: currentHistory.length };
+            }
+            return prev;
+          });
+          return;
+        }
+
         const scrollTop = container.scrollTop;
         const containerHeight = container.clientHeight;
 
@@ -316,13 +329,12 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         );
 
         setVisibleRange((prev) => {
-          // Always update if end needs to grow (new content added)
-          // Apply threshold only for start changes during normal scrolling
-          const startChanged = Math.abs(prev.start - start) > 2;
+          // Use larger threshold to reduce flicker
+          const startChanged = Math.abs(prev.start - start) > 5;
           const endNeedsGrowth = end > prev.end;
-          const endChangedSignificantly = Math.abs(prev.end - end) > 2;
+          const endNeedsShrink = prev.end - end > 10;
 
-          if (startChanged || endNeedsGrowth || endChangedSignificantly) {
+          if (startChanged || endNeedsGrowth || endNeedsShrink) {
             return { start, end };
           }
           return prev;
@@ -336,7 +348,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         passive: true,
       });
       return () => container.removeEventListener("scroll", updateVisibleRange);
-    }, [layout, currentHistory.length, VISIBLE_BUFFER]);
+    }, [layout, currentHistory.length, VISIBLE_BUFFER, gameState.isProcessing]);
 
     // Intersection Observer for Scroll Layout to track viewed segment
     useEffect(() => {
