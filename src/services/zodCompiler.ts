@@ -13,7 +13,6 @@
 
 import {
   z,
-  ZodTypeAny,
   ZodObject,
   ZodArray,
   ZodEnum,
@@ -28,7 +27,9 @@ import {
   ZodEffects,
   ZodDiscriminatedUnion,
 } from "zod";
-import { Schema, Type } from "@google/genai";
+import type { ZodTypeAny } from "zod";
+import { Type } from "@google/genai";
+import type { Schema } from "@google/genai";
 
 // ============================================================================
 // OpenAI Schema Types
@@ -662,6 +663,269 @@ export const zodToOpenRouter = zodToOpenAIResponseFormat;
 export const zodToOpenRouterSchema = zodToOpenAISchema;
 
 // ============================================================================
+// Zod to Gemini Compatible Compiler (for OpenAI Channel)
+// ============================================================================
+
+/**
+ * 将 Zod Schema 编译为 Gemini 兼容的 JSON Schema (用于 OpenAI 渠道)
+ * - 使用标准 JSON Schema 小写类型 (type: "string")
+ * - 移除不支持的字段 (additionalProperties)
+ * - 使用 nullable: true 代替 union type null
+ */
+export function zodToGeminiCompatibleSchema(schema: ZodTypeAny): OpenAISchema {
+  return processZodToGeminiCompatible(schema);
+}
+
+function processZodToGeminiCompatible(
+  schema: ZodTypeAny,
+  isOptionalField: boolean = false,
+): OpenAISchema {
+  const typeName = schema._def.typeName;
+
+  // Handle effects
+  if (schema instanceof ZodEffects || typeName === "ZodEffects") {
+    return processZodToGeminiCompatible(
+      (schema as ZodEffects<any>)._def.schema,
+      isOptionalField,
+    );
+  }
+
+  // Handle optional
+  if (schema instanceof ZodOptional || typeName === "ZodOptional") {
+    return processZodToGeminiCompatible(
+      (schema as ZodOptional<any>)._def.innerType,
+      true,
+    );
+  }
+
+  // Handle nullable
+  if (schema instanceof ZodNullable || typeName === "ZodNullable") {
+    const innerSchema = processZodToGeminiCompatible(
+      (schema as ZodNullable<any>)._def.innerType,
+      isOptionalField,
+    );
+    // Use nullable: true property
+    // Make sure we don't duplicate or overwrite if it's already there
+    // We create a new object to ensure we don't mutate shared references if any
+    const result = { ...innerSchema, nullable: true };
+    return result;
+  }
+
+  // Handle default
+  if (schema instanceof ZodDefault || typeName === "ZodDefault") {
+    return processZodToGeminiCompatible(
+      (schema as ZodDefault<any>)._def.innerType,
+      true,
+    );
+  }
+
+  // Handle string
+  if (schema instanceof ZodString || typeName === "ZodString") {
+    const result: OpenAISchema = { type: "string" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle number
+  if (schema instanceof ZodNumber || typeName === "ZodNumber") {
+    const checks = (schema as ZodNumber)._def.checks || [];
+    const isInt = checks.some((c: any) => c.kind === "int");
+    const result: OpenAISchema = { type: isInt ? "integer" : "number" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle boolean
+  if (schema instanceof ZodBoolean || typeName === "ZodBoolean") {
+    const result: OpenAISchema = { type: "boolean" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle literal
+  if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
+    const value = (schema as ZodLiteral<any>)._def.value;
+    const result: OpenAISchema = {
+      type: "string",
+      enum: [String(value)],
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle enum
+  if (schema instanceof ZodEnum || typeName === "ZodEnum") {
+    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const result: OpenAISchema = {
+      type: "string",
+      enum: values,
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle union - Gemini doesn't support generic unions well, try to flatten or warn
+  if (schema instanceof ZodUnion || typeName === "ZodUnion") {
+    console.warn(
+      "Gemini Compatible Schema: Union types are not fully supported. Using first option or merging.",
+    );
+    // Simple fallback: use the first option
+    const options = (schema as ZodUnion<any>)._def.options;
+    if (options.length > 0) {
+      return processZodToGeminiCompatible(options[0]);
+    }
+    return { type: "string" };
+  }
+
+  // Handle discriminated union - Merge strategies similar to Native Gemini
+  if (
+    schema instanceof ZodDiscriminatedUnion ||
+    typeName === "ZodDiscriminatedUnion"
+  ) {
+    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .discriminator;
+    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .options as ZodObject<any>[];
+
+    const allProperties: Record<string, OpenAISchema> = {};
+    const discriminatorValues: string[] = [];
+    const requiredByAll = new Set<string>();
+    let firstVariant = true;
+
+    for (const option of options) {
+      const shape = option.shape;
+
+      // Get discriminator value
+      const discriminatorField = shape[discriminator];
+      if (
+        discriminatorField instanceof ZodLiteral ||
+        discriminatorField?._def?.typeName === "ZodLiteral"
+      ) {
+        discriminatorValues.push(
+          String((discriminatorField as ZodLiteral<any>)._def.value),
+        );
+      }
+
+      // Collect properties
+      const currentRequired = new Set<string>();
+      for (const [key, value] of Object.entries(shape)) {
+        if (key === discriminator) continue;
+
+        const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+        const isRequired =
+          fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault";
+        if (isRequired) currentRequired.add(key);
+
+        // Merge property schema using a permissive strategy
+        // For simplicity in this compatible mode, we just take the first seen or overwrite
+        // A robust implementation would check for type conflicts, but here we assume consistency
+        if (!allProperties[key]) {
+          allProperties[key] = processZodToGeminiCompatible(
+            value as ZodTypeAny,
+          );
+        }
+      }
+
+      if (firstVariant) {
+        currentRequired.forEach((k) => requiredByAll.add(k));
+        firstVariant = false;
+      } else {
+        // Intersect required fields
+        for (const k of requiredByAll) {
+          if (!currentRequired.has(k)) {
+            requiredByAll.delete(k);
+          }
+        }
+      }
+    }
+
+    // Add discriminator
+    allProperties[discriminator] = {
+      type: "string",
+      enum: discriminatorValues,
+      description: `Discriminator: ${discriminatorValues.join(", ")}`,
+    };
+
+    const required = [discriminator, ...Array.from(requiredByAll)];
+
+    const result: OpenAISchema = {
+      type: "object",
+      properties: allProperties,
+      required,
+      // NO additionalProperties: false
+    };
+
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle array
+  if (schema instanceof ZodArray || typeName === "ZodArray") {
+    const itemSchema = processZodToGeminiCompatible(
+      (schema as ZodArray<any>)._def.type,
+    );
+    const result: OpenAISchema = {
+      type: "array",
+      items: itemSchema,
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle object
+  if (schema instanceof ZodObject || typeName === "ZodObject") {
+    const shape = (schema as ZodObject<any>).shape;
+    const properties: Record<string, OpenAISchema> = {};
+    const required: string[] = [];
+
+    for (const [key, value] of Object.entries(shape)) {
+      properties[key] = processZodToGeminiCompatible(value as ZodTypeAny);
+
+      const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+      const isFieldOptional =
+        fieldTypeName === "ZodOptional" || fieldTypeName === "ZodDefault";
+
+      // Check for nullable wrapped optional
+      let isNullable = fieldTypeName === "ZodNullable";
+      if (isNullable) {
+        const innerType = (value as ZodNullable<any>)._def.innerType;
+        const innerTypeName = innerType._def.typeName;
+        if (
+          innerTypeName === "ZodOptional" ||
+          innerTypeName === "ZodDefault"
+        ) {
+          // It's optional if it's explicitly optional/default, even if nullable
+        } else {
+          // If it's just nullable (e.g. string | null), it is technically REQUIRED to be present (as null)
+          // UNLESS we want to relax it. Gemini usually prefers relaxed.
+          // Let's stick to: if it's not Optional/Default, it's required.
+          required.push(key);
+        }
+      } else if (!isFieldOptional) {
+        required.push(key);
+      }
+    }
+
+    const result: OpenAISchema = {
+      type: "object",
+      properties,
+      // NO additionalProperties: false
+    };
+
+    if (required.length > 0) {
+      result.required = required;
+    }
+
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Fallback
+  console.warn(`Unknown Zod type for Gemini Compatible: ${typeName}`);
+  return { type: "string" };
+}
+
+// ============================================================================
 // Tool Definition Compiler
 // ============================================================================
 
@@ -725,6 +989,7 @@ export function createOpenAITool(
   };
 }
 
+
 /**
  * 从 Zod Schema 创建 OpenRouter 工具定义 (Nested, Standard)
  */
@@ -740,6 +1005,25 @@ export function createOpenRouterTool(
       description,
       strict: true,
       parameters: zodToOpenAISchema(parameters, true),
+    },
+  };
+}
+
+/**
+ * 从 Zod Schema 创建 Gemini 兼容工具定义 (用于 OpenAI Connection)
+ */
+export function createGeminiCompatibleTool(
+  name: string,
+  description: string,
+  parameters: ZodTypeAny,
+): OpenAIToolDefinition {
+  return {
+    type: "function",
+    function: {
+      name,
+      description,
+      strict: false, // Gemini almost never claims strict support in this channel
+      parameters: zodToGeminiCompatibleSchema(parameters),
     },
   };
 }

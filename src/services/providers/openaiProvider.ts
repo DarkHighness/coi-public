@@ -47,8 +47,8 @@ import {
   createOpenAITool,
   zodToOpenAIResponseFormat,
   zodToOpenAISchema,
-  zodToGemini,
-  createGeminiTool,
+  zodToGeminiCompatibleSchema,
+  createGeminiCompatibleTool,
   isGeminiModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
@@ -286,11 +286,11 @@ export async function generateContent(
       // 转换消息格式
       const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-      // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 格式
+      // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 兼容格式 (OpenAI 结构但清理过的 Schema)
       const tools = options?.tools
         ? isGemini
           ? options.tools.map((t) =>
-              createGeminiTool(t.name, t.description, t.parameters),
+              createGeminiCompatibleTool(t.name, t.description, t.parameters),
             )
           : compileToolsForOpenAI(options.tools)
         : undefined;
@@ -307,10 +307,17 @@ export async function generateContent(
           tools,
           tool_choice: tools ? "auto" : undefined,
 
-          // 如果是 Gemini 模型且有 schema，使用 Gemini schema 格式
+          // 如果是 Gemini 模型且有 schema，使用 Gemini 兼容 schema 格式 (Standard JSON Schema cleanup)
           response_format: schema
             ? isGemini
-              ? ({ type: "json_schema", schema: zodToGemini(schema) } as any)
+              ? {
+                  type: "json_schema",
+                  json_schema: {
+                    name: "response",
+                    schema: zodToGeminiCompatibleSchema(schema),
+                    strict: false, // Gemini usually doesn't support strict mode via OpenAI compat
+                  },
+                }
               : zodToOpenAIResponseFormat(schema)
             : undefined,
         };
