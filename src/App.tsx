@@ -928,7 +928,7 @@ function AppContent() {
                   onThemePreview={setPreviewTheme}
                   setLanguage={setLanguage}
                   saveSlots={saveSlots}
-                  onSwitchSlot={loadSlot}
+                  onSwitchSlot={handleLoadSlot}
                   onDeleteSlot={deleteSlot}
                   onRefreshSlots={refreshSlots}
                 />

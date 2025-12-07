@@ -776,6 +776,15 @@ export const useGamePersistence = (
         setGameState(sanitized);
         setCurrentSlotId(id);
 
+        // Update slot timestamp to now so it becomes the latest save
+        const updatedSlots = saveSlots.map((s) =>
+          s.id === id ? { ...s, timestamp: Date.now() } : s,
+        );
+        setSaveSlots(updatedSlots);
+        saveMetadata("slots", updatedSlots).catch((err) =>
+          console.error("Failed to update slot timestamp:", err),
+        );
+
         return {
           success: true,
           embeddingIndex,
