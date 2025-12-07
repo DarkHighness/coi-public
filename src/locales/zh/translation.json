@@ -386,6 +386,8 @@
       "description": "其他配置选项",
       "detailedDescription": "详细描述",
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
+      "nsfw": "NSFW 模式",
+      "nsfwHelp": "启用NSFW内容生成。",
       "promptInjection": "提示词注入",
       "promptInjectionHelp": "基于模型关键词注入越狱提示词",
       "disableImagePrompt": "禁用图片提示",
@@ -808,7 +810,55 @@
       "confirm": "⚠️ SUDO ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
       "missingPrompt": "使用方法: /sudo <prompt>"
     },
-    "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/help - 显示帮助信息"
+    "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/rules - 打开自定义规则\n/help - 显示帮助信息"
+  },
+  "rules": {
+    "short": "规则",
+    "title": "自定义规则",
+    "subtitle": "定义 AI 生成故事时遵循的规则",
+    "add": "添加规则",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "toggle": "切换规则",
+    "added": "规则已添加",
+    "updated": "规则已更新",
+    "deleted": "规则已删除",
+    "fillRequired": "请填写所有字段",
+    "noRules": "此分类暂无规则",
+    "activeCount": "{{count}} 条活跃规则",
+    "titlePlaceholder": "规则标题...",
+    "contentPlaceholder": "详细描述规则内容...",
+    "category": {
+      "systemCore": "核心行为",
+      "worldSetting": "世界设定",
+      "protagonist": "主角设定",
+      "npcBehavior": "NPC行为",
+      "combatAction": "战斗&行动",
+      "writingStyle": "写作风格",
+      "dialogue": "对话风格",
+      "mystery": "悬念&伏笔",
+      "stateManagement": "状态管理",
+      "hiddenTruth": "隐藏真相",
+      "imageStyle": "图像风格",
+      "cultural": "文化适配",
+      "custom": "自定义"
+    },
+    "categoryDesc": {
+      "systemCore": "控制核心AI行为和哲学",
+      "worldSetting": "定义世界物理、魔法、科技",
+      "protagonist": "玩家角色相关规则",
+      "npcBehavior": "NPC行为和互动方式",
+      "combatAction": "战斗机制和行动规则",
+      "writingStyle": "叙事语调和写作风格",
+      "dialogue": "角色说话方式",
+      "mystery": "悬念和伏笔规则",
+      "stateManagement": "游戏状态更新方式",
+      "hiddenTruth": "秘密揭示时机",
+      "imageStyle": "图像视觉风格",
+      "cultural": "文化适配设置",
+      "custom": "任意自定义指令"
+    }
   },
   "stateEditor": {
     "title": "状态编辑器",
@@ -1040,7 +1090,9 @@
     "stageInstruction": "Stage 指令",
     "availableTools": "可用工具",
     "conversationHistory": "对话历史",
-    "rawResponse": "原始响应"
+    "rawResponse": "原始响应",
+    "injectedRules": "注入规则",
+    "nsfwEnabled": "NSFW 模式已启用"
   },
   "new-game": "旅程尚未开始...",
   "saveManager": {
@@ -1099,7 +1151,6 @@
     "success": "存档导入成功！",
     "error": "导入失败"
   },
-  "rules": "规则",
   "sidebar": {
     "tokens": "Token:",
     "location": {

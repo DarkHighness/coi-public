@@ -38,12 +38,10 @@ export const SettingsExtra: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.detailedDescription") ||
-                "Detailed Descriptions"}
+              {t("settings.extra.detailedDescription")}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
-              {t("settings.extra.detailedDescriptionHelp") ||
-                "Force AI to generate more detailed, sensory-rich descriptions for characters and environments."}
+              {t("settings.extra.detailedDescriptionHelp")}
             </div>
           </div>
           <button
@@ -57,6 +55,30 @@ export const SettingsExtra: React.FC = () => {
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
                 extra.detailedDescription ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* NSFW Toggle */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.nsfw")}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.nsfwHelp")}
+            </div>
+          </div>
+          <button
+            onClick={() => updateExtra("nsfw", !extra.nsfw)}
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.nsfw ? "bg-red-500" : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.nsfw ? "translate-x-5" : ""
               }`}
             />
           </button>

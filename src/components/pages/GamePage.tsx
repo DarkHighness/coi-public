@@ -74,6 +74,11 @@ const PhotoGalleryModal = React.lazy(() =>
     default: module.PhotoGalleryModal,
   })),
 );
+const RulesEditorModal = React.lazy(() =>
+  import("../RulesEditorModal").then((module) => ({
+    default: module.RulesEditorModal,
+  })),
+);
 
 interface GamePageProps {
   /** Callback when viewed segment changes (for parent theme/background updates) */
@@ -140,6 +145,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
   const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isRulesEditorOpen, setIsRulesEditorOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
   const [isTyping, setIsTyping] = useState(false);
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
@@ -174,7 +180,8 @@ export const GamePage: React.FC<GamePageProps> = ({
     isStateEditorOpen ||
     isRAGDebuggerOpen ||
     isGameStateViewerOpen ||
-    isGalleryOpen;
+    isGalleryOpen ||
+    isRulesEditorOpen;
 
   // Play ambience when no menus are blocking
   const shouldPlayAmbience = !isAnyMenuOpen;
@@ -472,6 +479,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onOpenStateEditor={() => setIsStateEditorOpen(true)}
             onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
+            onOpenRules={() => setIsRulesEditorOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
             onForceUpdate={handleForceUpdate}
             onImageUpload={handleImageUpload}
@@ -504,6 +512,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onOpenStateEditor={() => setIsStateEditorOpen(true)}
             onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
+            onOpenRules={() => setIsRulesEditorOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
             onForceUpdate={handleForceUpdate}
             onImageUpload={handleImageUpload}
@@ -591,6 +600,16 @@ export const GamePage: React.FC<GamePageProps> = ({
             onClose={() => setIsGalleryOpen(false)}
             currentSaveId={currentSlotId || undefined}
             currentSaveTitle={gameState.outline?.title}
+          />
+        )}
+
+        {isRulesEditorOpen && (
+          <RulesEditorModal
+            isOpen={isRulesEditorOpen}
+            onClose={() => setIsRulesEditorOpen(false)}
+            gameState={gameState}
+            setGameState={setGameState}
+            onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}
       </Suspense>

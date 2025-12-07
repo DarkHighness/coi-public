@@ -405,6 +405,9 @@ export interface GameState {
   // This stores the conversation history during phased outline generation
   // Cleared once outline is fully generated
   outlineConversation?: OutlineConversationState;
+
+  // Custom Rules for per-save prompt customization
+  customRules?: CustomRule[];
 }
 
 /** State for resuming outline generation after failure */
@@ -445,6 +448,41 @@ export interface ForkNode {
 export interface ForkTree {
   nodes: Record<number, ForkNode>; // forkId -> ForkNode
   nextForkId: number; // Counter for generating new fork IDs
+}
+
+// --- Custom Rules System ---
+
+/**
+ * Rule categories that map to specific sections in the AI prompts.
+ * Each category affects a different aspect of story generation.
+ */
+export type RuleCategory =
+  | "systemCore" // Core AI behavior & philosophy
+  | "worldSetting" // World physics, magic system, technology
+  | "protagonist" // Player character rules & constraints
+  | "npcBehavior" // NPC personality & interaction rules
+  | "combatAction" // Combat mechanics & action rules
+  | "writingStyle" // Narrative tone & writing craft
+  | "dialogue" // Dialogue & conversation rules
+  | "mystery" // Mystery, foreshadowing, revelation
+  | "stateManagement" // How game state is updated
+  | "hiddenTruth" // Unlocking & revelation rules
+  | "imageStyle" // Visual style for image generation
+  | "cultural" // Cultural adaptation overrides
+  | "custom"; // Free-form custom instructions
+
+/**
+ * A custom rule that modifies AI behavior for this save.
+ * Rules are stored per-save and injected into prompts based on category.
+ */
+export interface CustomRule {
+  id: string;
+  category: RuleCategory;
+  title: string; // Short title for display
+  content: string; // The actual rule text
+  enabled: boolean;
+  priority: number; // Order within category (lower = first)
+  createdAt: number;
 }
 
 export interface VisibleInfo {
@@ -502,6 +540,8 @@ export interface LogEntry {
     systemPrompt?: string;
     userPrompt?: string;
     modelConfig?: any;
+    injectedRules?: string[]; // Custom rules injected into prompt
+    nsfwEnabled?: boolean; // NSFW mode enabled
   };
   // Stage debugging: input messages sent to AI
   stageInput?: {
@@ -1048,6 +1088,7 @@ export interface AISettings {
   // Extra Settings
   extra?: {
     detailedDescription?: boolean;
+    nsfw?: boolean; // Enable NSFW/adult content generation
     promptInjectionEnabled?: boolean;
     disableImagePrompt?: boolean; // Completely disable imagePrompt generation
     customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)

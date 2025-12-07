@@ -9,6 +9,7 @@ import {
 // --- Scene Image Prompt ---
 
 import { getThemeStyle, getLoadedThemes } from "../themeRegistry";
+import { formatImageStyleRules } from "./rulesInjector";
 
 /**
  * NPC info extracted from AI prompt or game state
@@ -488,6 +489,12 @@ export const getSceneImagePrompt = (
   xmlPrompt += `\n<technical_specs>\n`;
   xmlPrompt += `  masterpiece, best quality, 8k uhd, ultra detailed, highly detailed, professional photography, award winning composition, sharp focus, crystal clear, photorealistic, ray tracing, path tracing, lumen reflections, global illumination, subsurface scattering, ambient occlusion, physically based rendering, depth of field, bokeh, cinematic color grading, film grain (subtle), lens flare (if appropriate), chromatic aberration (minimal), vignette (subtle), ISO 100, f/1.8, high shutter speed\n`;
   xmlPrompt += `</technical_specs>`;
+
+  // === CUSTOM IMAGE STYLE RULES ===
+  const customImageRules = formatImageStyleRules(gameState.customRules);
+  if (customImageRules) {
+    xmlPrompt += `\n<custom_style_requirements>\n${customImageRules}\n</custom_style_requirements>`;
+  }
 
   return styleBlock + xmlPrompt;
 };

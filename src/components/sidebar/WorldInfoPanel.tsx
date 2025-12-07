@@ -131,7 +131,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
               </div>
               {worldSetting.visible?.rules && (
                 <div className="text-xs text-theme-muted mt-2 pl-2">
-                  <span className="font-bold">📜 {t("rules")}:</span>{" "}
+                  <span className="font-bold">📜 {t("rules.short")}:</span>{" "}
                   <MarkdownText
                     content={worldSetting.visible.rules}
                     indentSize={2}

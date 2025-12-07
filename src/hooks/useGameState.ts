@@ -111,6 +111,9 @@ const INITIAL_STATE: GameState = {
   // Fork System
   forkId: 0,
   forkTree: INITIAL_FORK_TREE,
+
+  // Custom Rules
+  customRules: [],
 };
 
 export const useGameState = () => {
@@ -139,6 +142,8 @@ export const useGameState = () => {
       // God mode and unlocked mode
       godMode: false,
       unlockMode: false,
+      // Custom rules (preserve from previous or start empty)
+      customRules: [],
     });
   };
 

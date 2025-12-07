@@ -320,6 +320,8 @@ export const generateAdventureTurn = async (
     example,
     worldSetting,
     settings.extra?.disableImagePrompt,
+    gameState.customRules,
+    settings.extra?.nsfw,
   );
 
   // Handle prompt injection if enabled
@@ -385,12 +387,27 @@ export const generateAdventureTurn = async (
         ragContext,
       );
 
+      // Log injected rules and NSFW mode
+      const enabledRules = (gameState.customRules || []).filter(r => r.enabled);
+      const nsfwEnabled = settings.extra?.nsfw || false;
+      if (enabledRules.length > 0) {
+        console.log(
+          `[CustomRules] Injected ${enabledRules.length} rules:`,
+          enabledRules.map(r => `[${r.category}] ${r.title}`)
+        );
+      }
+      if (nsfwEnabled) {
+        console.warn(`[NSFW] NSFW mode is ENABLED`);
+      }
+
       const generationDetails: LogEntry["generationDetails"] = {
         dynamicContext,
         ragContext,
         ragQueries: gameState.ragQueries,
         systemPrompt: systemInstruction,
         userPrompt: context.userAction,
+        injectedRules: enabledRules.map(r => `[${r.category}] ${r.title}`),
+        nsfwEnabled,
       };
 
       // 5. Run inner loop

@@ -385,6 +385,37 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                             </div>
                           )}
 
+                        {/* Injected Rules */}
+                        {log.generationDetails.injectedRules &&
+                          log.generationDetails.injectedRules.length > 0 && (
+                            <div className="space-y-1">
+                              <span className="text-xs text-purple-400 uppercase font-bold">
+                                {t("logPanel.injectedRules") || "Injected Rules"} ({log.generationDetails.injectedRules.length})
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {log.generationDetails.injectedRules.map(
+                                  (rule, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-xs bg-purple-900/20 border border-purple-500/30 px-2 py-1 rounded text-purple-300"
+                                    >
+                                      {rule}
+                                    </span>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                        {/* NSFW Mode */}
+                        {log.generationDetails.nsfwEnabled && (
+                          <div className="space-y-1">
+                            <span className="text-xs bg-red-500/20 border border-red-500/30 px-2 py-1 rounded text-red-400 font-bold uppercase">
+                              {t("logPanel.nsfwEnabled") || "NSFW Mode Enabled"}
+                            </span>
+                          </div>
+                        )}
+
                         {log.generationDetails.systemPrompt && (
                           <div className="space-y-1">
                             <span className="text-xs text-theme-muted uppercase font-bold">

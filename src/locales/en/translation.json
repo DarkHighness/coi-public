@@ -408,6 +408,8 @@
       "description": "Additional configuration options",
       "detailedDescription": "Detailed Descriptions",
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
+      "nsfw": "NSFW Mode",
+      "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "promptInjection": "Prompt Injection",
       "promptInjectionHelp": "Inject jailbreak prompts based on model keywords.",
       "disableImagePrompt": "Disable Image Prompt",
@@ -796,7 +798,55 @@
       "confirm": "⚠️ SUDO ⚠️\n\nYou are about to force the following change:\n\"{{prompt}}\"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?",
       "missingPrompt": "Usage: /sudo <prompt>"
     },
-    "help": "Available Commands:\n/god - Toggle God Mode (all actions succeed, NPCs obey)\n/unlock - Reveal all hidden information\n/edit - Open GameState editor\n/help - Show this help message"
+    "help": "Available Commands:\n/god - Toggle God Mode (all actions succeed, NPCs obey)\n/unlock - Reveal all hidden information\n/edit - Open GameState editor\n/rules - Open Custom Rules Editor\n/help - Show this help message"
+  },
+  "rules": {
+    "short": "Rules",
+    "title": "Custom Rules",
+    "subtitle": "Define rules that guide the AI during story generation",
+    "add": "Add Rule",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "toggle": "Toggle rule",
+    "added": "Rule added",
+    "updated": "Rule updated",
+    "deleted": "Rule deleted",
+    "fillRequired": "Please fill in all fields",
+    "noRules": "No rules in this category",
+    "activeCount": "{{count}} active rules",
+    "titlePlaceholder": "Rule title...",
+    "contentPlaceholder": "Describe the rule in detail...",
+    "category": {
+      "systemCore": "Core Behavior",
+      "worldSetting": "World Setting",
+      "protagonist": "Protagonist",
+      "npcBehavior": "NPC Behavior",
+      "combatAction": "Combat & Action",
+      "writingStyle": "Writing Style",
+      "dialogue": "Dialogue",
+      "mystery": "Mystery & Clues",
+      "stateManagement": "State Management",
+      "hiddenTruth": "Hidden Truth",
+      "imageStyle": "Image Style",
+      "cultural": "Cultural",
+      "custom": "Custom"
+    },
+    "categoryDesc": {
+      "systemCore": "Control core AI behavior and philosophy",
+      "worldSetting": "Define world physics, magic, technology",
+      "protagonist": "Rules for the player character",
+      "npcBehavior": "How NPCs behave and interact",
+      "combatAction": "Combat mechanics and action rules",
+      "writingStyle": "Narrative tone and writing style",
+      "dialogue": "How characters speak",
+      "mystery": "Mystery and foreshadowing rules",
+      "stateManagement": "How game state updates",
+      "hiddenTruth": "When secrets are revealed",
+      "imageStyle": "Visual style for images",
+      "cultural": "Cultural adaptation settings",
+      "custom": "Any custom instructions"
+    }
   },
   "stateEditor": {
     "title": "State Editor",
@@ -1028,7 +1078,9 @@
     "stageInstruction": "Stage Instructions",
     "availableTools": "Available Tools",
     "conversationHistory": "Conversation History",
-    "rawResponse": "Raw Response"
+    "rawResponse": "Raw Response",
+    "injectedRules": "Injected Rules",
+    "nsfwEnabled": "NSFW Mode Enabled"
   },
   "new-game": "New Game",
   "saveManager": {
@@ -1086,7 +1138,6 @@
     "success": "Save imported successfully!",
     "error": "Import failed"
   },
-  "rules": "Rules",
   "sidebar": {
     "tokens": "Tokens:",
     "location": {

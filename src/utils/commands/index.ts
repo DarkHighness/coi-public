@@ -18,6 +18,7 @@ export type CommandAction =
   | { type: "open_editor" }
   | { type: "open_rag" }
   | { type: "open_viewer" }
+  | { type: "open_rules" }
   | { type: "force_update"; prompt: string }
   | { type: "none" };
 
@@ -34,6 +35,7 @@ const COMMANDS: Record<string, CommandHandler> = {
   "/edit": handleOpenEditor,
   "/rag": handleOpenRAG,
   "/view": handleOpenViewer,
+  "/rules": handleOpenRules,
   "/sudo": handleForceUpdate,
   "/help": handleHelp,
 };
@@ -156,6 +158,20 @@ function handleOpenViewer(
 }
 
 /**
+ * /rules - Open Custom Rules Editor
+ */
+function handleOpenRules(
+  args: string[],
+  context: CommandContext,
+): CommandResult {
+  return {
+    handled: true,
+    preventAction: true,
+    action: { type: "open_rules" },
+  };
+}
+
+/**
  * /sudo - Force World Update
  */
 function handleForceUpdate(
@@ -199,6 +215,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 /edit - Open GameState editor
 /rag - Open RAG Debugger
 /view - Open Game State Viewer
+/rules - Open Custom Rules Editor
 /sudo <prompt> - Force world update (one-time)
 /help - Show this help message`;
 
@@ -293,6 +310,7 @@ export function executeCommandAction(
     case "open_editor":
     case "open_rag":
     case "open_viewer":
+    case "open_rules":
       // This is handled by the UI component
       break;
 

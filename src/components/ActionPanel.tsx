@@ -18,6 +18,7 @@ interface ActionPanelProps {
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
+  onOpenRules?: () => void;
   onTriggerSave?: () => void;
   onRetry?: () => void;
   onForceUpdate?: (prompt: string) => void;
@@ -30,6 +31,7 @@ const SUPPORTED_COMMANDS = [
   { cmd: "/edit", desc: "Edit State" },
   { cmd: "/rag", desc: "RAG Debugger" },
   { cmd: "/view", desc: "View State" },
+  { cmd: "/rules", desc: "Custom Rules" },
   { cmd: "/sudo", desc: "Force Update" },
 ];
 
@@ -39,6 +41,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenStateEditor,
   onOpenRAG,
   onOpenViewer,
+  onOpenRules,
   onTriggerSave,
   onRetry,
   onForceUpdate,
@@ -164,6 +167,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         return;
       }
 
+      if (commandResult.action?.type === "open_rules") {
+        onOpenRules?.();
+        return;
+      }
+
       // If command doesn't prevent action, continue with normal flow
       if (!commandResult.preventAction) {
         onAction(customInput);
@@ -188,6 +196,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       onOpenRAG?.();
     } else if (action.type === "open_viewer") {
       onOpenViewer?.();
+    } else if (action.type === "open_rules") {
+      onOpenRules?.();
     } else if (action.type === "force_update") {
       onForceUpdate?.(action.prompt);
     } else {

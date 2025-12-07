@@ -35,6 +35,7 @@ interface DesktopGameLayoutProps {
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
+  onOpenRules?: () => void;
   onOpenGallery?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
@@ -65,6 +66,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onOpenStateEditor,
   onOpenRAG,
   onOpenViewer,
+  onOpenRules,
   onOpenGallery,
   onForceUpdate,
   onImageUpload,
@@ -197,6 +199,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onOpenStateEditor={onOpenStateEditor}
               onOpenRAG={onOpenRAG}
               onOpenViewer={onOpenViewer}
+              onOpenRules={onOpenRules}
               onTriggerSave={triggerSave}
               onRetry={onRetry}
               onForceUpdate={onForceUpdate}
