@@ -553,7 +553,10 @@
     "topK": "Top K",
     "topKHelp": "Limits vocabulary to top K tokens",
     "minP": "Min P",
-    "minPHelp": "Minimum probability threshold"
+    "minPHelp": "Minimum probability threshold",
+    "disableFilter": "Disable Model Filter",
+    "disableFilterHelp": "Show all models regardless of capability detection. Use with caution.",
+    "disableFilterWarning": "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?"
   },
   "summarySnapshot": "Story So Far",
   "customize": "Customize",

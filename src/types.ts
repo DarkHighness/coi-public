@@ -1095,6 +1095,7 @@ export interface AISettings {
     promptInjectionEnabled?: boolean;
     disableImagePrompt?: boolean; // Completely disable imagePrompt generation
     customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)
+    disableModelFilter?: boolean; // Bypass model capability filtering, show all models
   };
 }
 

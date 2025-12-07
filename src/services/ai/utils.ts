@@ -342,11 +342,22 @@ export const validateConnection = async (
 
 /**
  * 过滤模型列表
+ * @param models 模型列表
+ * @param type 功能类型
+ * @param disableFilter 是否禁用过滤（显示所有模型）
  */
 export const filterModels = (
   models: ModelInfo[],
   type: FunctionType,
+  disableFilter: boolean = false,
 ): ModelInfo[] => {
+  // If filtering is disabled, return all models sorted
+  if (disableFilter) {
+    return [...models].sort((a, b) =>
+      (a.name || a.id).localeCompare(b.name || b.id),
+    );
+  }
+
   let filtered = models;
 
   if (type === "image") {

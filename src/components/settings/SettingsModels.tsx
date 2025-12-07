@@ -31,7 +31,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const getFilteredModels = (providerId: string, type: FunctionKey) => {
     const list = providerModels[providerId] || [];
-    return filterModels(list, type);
+    return filterModels(list, type, currentSettings.extra?.disableModelFilter ?? false);
   };
 
   const getProviderById = (providerId: string) => {
@@ -175,6 +175,47 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             </svg>
           )}
           {t("refresh")}
+        </button>
+      </div>
+
+      {/* Disable Model Filter Toggle */}
+      <div className="flex items-center justify-between p-3 bg-theme-bg border border-yellow-500/30 rounded">
+        <div>
+          <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+            {t("models.disableFilter") || "Disable Model Filter"}
+          </div>
+          <div className="text-[10px] text-theme-muted mt-1">
+            {t("models.disableFilterHelp") || "Show all models, bypassing capability detection. Use with caution."}
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            const newValue = !currentSettings.extra?.disableModelFilter;
+            if (newValue) {
+              // Show warning when enabling
+              const confirmed = window.confirm(
+                t("models.disableFilterWarning") ||
+                  "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?"
+              );
+              if (!confirmed) return;
+            }
+            onUpdateSettings({
+              ...currentSettings,
+              extra: {
+                ...currentSettings.extra,
+                disableModelFilter: newValue,
+              },
+            });
+          }}
+          className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${
+            currentSettings.extra?.disableModelFilter ? "bg-yellow-500" : "bg-theme-border"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+              currentSettings.extra?.disableModelFilter ? "translate-x-5" : ""
+            }`}
+          />
         </button>
       </div>
 
