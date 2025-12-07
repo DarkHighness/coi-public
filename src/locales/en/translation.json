@@ -1331,5 +1331,10 @@
     "filterBySave": "Filter by save",
     "allSaves": "All saves",
     "untitled": "Untitled story"
+  },
+  "game": {
+    "errors": {
+      "summaryFailed": "Failed to generate summary"
+    }
   }
 }

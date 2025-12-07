@@ -207,6 +207,7 @@ export const useGameAction = ({
           summarySnapshot,
           contextNodes,
           logs: summaryLogs,
+          error: summaryError,
         } = await handleSummarization(
           gameStateRef.current,
           effectiveParentId,
@@ -422,10 +423,24 @@ export const useGameAction = ({
               .map((a) => ({ name: a.name || "Unknown Location" })) || [],
           entitiesUnlocked: unlockEvents.length > 0 ? unlockEvents : undefined,
           // NEW: System Toasts - Enforce required types
-          systemToasts: response.systemToasts?.map(t => ({
-            message: t.message || "Unknown system alert",
-            type: (t.type || "info") as "info" | "warning" | "error" | "success"
-          })),
+          systemToasts: [
+            ...(response.systemToasts?.map((t) => ({
+              message: t.message || "Unknown system alert",
+              type: (t.type || "info") as
+                | "info"
+                | "warning"
+                | "error"
+                | "success",
+            })) || []),
+            ...(summaryError
+              ? [
+                  {
+                    message: `${t("game.errors.summaryFailed")}: ${summaryError}`,
+                    type: "warning" as const,
+                  },
+                ]
+              : []),
+          ],
         };
 
         // Create Model Node using Helper

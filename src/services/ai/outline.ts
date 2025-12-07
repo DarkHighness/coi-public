@@ -498,7 +498,7 @@ export const summarizeContext = async (
   language: string,
   settings: AISettings,
   gameState: GameState,
-): Promise<{ summary: StorySummary | null; logs: LogEntry[] }> => {
+): Promise<{ summary: StorySummary | null; logs: LogEntry[]; error?: string }> => {
   const { runSummaryAgenticLoop } = await import("./summary");
 
   try {
@@ -510,6 +510,15 @@ export const summarizeContext = async (
       language,
       settings,
     });
+
+    // Check for null summary (failure)
+    if (!result.summary) {
+       return {
+         summary: null,
+         logs: result.logs,
+         error: "Summary generation failed",
+       };
+    }
 
     return {
       summary: result.summary,
@@ -531,6 +540,7 @@ export const summarizeContext = async (
           null,
         ),
       ],
+      error: error.message,
     };
   }
 };

@@ -1333,5 +1333,10 @@
     "filterBySave": "按存档筛选",
     "allSaves": "全部存档",
     "untitled": "未命名故事"
+  },
+  "game": {
+    "errors": {
+      "summaryFailed": "摘要生成失败"
+    }
   }
 }

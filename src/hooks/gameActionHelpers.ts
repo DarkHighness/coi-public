@@ -134,6 +134,7 @@ export const handleSummarization = async (
   summarySnapshot: StorySummary | undefined;
   contextNodes: StorySegment[];
   logs?: any[];
+  error?: string;
 }> => {
   let contextNodes = deriveHistory(gameState.nodes, effectiveParentId);
 
@@ -199,6 +200,18 @@ export const handleSummarization = async (
 
     lastIndex = totalLength;
     logs = sumResult.logs;
+
+    // Return error if present
+    if (sumResult.error) {
+      return {
+        effectiveSummaries,
+        lastIndex: baseIndex, // RESET lastIndex so we retry next time
+        summarySnapshot: undefined,
+        contextNodes,
+        logs: sumResult.logs,
+        error: sumResult.error,
+      };
+    }
   } else {
     // Ensure lastIndex is at least baseIndex to prevent regression
     lastIndex = Math.max(lastIndex, baseIndex);
