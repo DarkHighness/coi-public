@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 interface GlobalStylesProps {
   themeConfig: {
@@ -7,18 +7,13 @@ interface GlobalStylesProps {
 }
 
 export const GlobalStyles: React.FC<GlobalStylesProps> = ({ themeConfig }) => {
-  return (
-    <style>{`
-      :root {
-        --theme-bg: ${themeConfig.vars["--theme-bg"]};
-        --theme-surface: ${themeConfig.vars["--theme-surface"]};
-        --theme-surface-highlight: ${themeConfig.vars["--theme-surface-highlight"]};
-        --theme-border: ${themeConfig.vars["--theme-border"]};
-        --theme-primary: ${themeConfig.vars["--theme-primary"]};
-        --theme-primary-hover: ${themeConfig.vars["--theme-primary-hover"]};
-        --theme-text: ${themeConfig.vars["--theme-text"]};
-        --theme-muted: ${themeConfig.vars["--theme-muted"]};
-      }
-    `}</style>
-  );
+  // Apply CSS variables directly to :root via useEffect
+  useEffect(() => {
+    const root = document.documentElement;
+    Object.entries(themeConfig.vars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }, [themeConfig.vars]);
+
+  return null; // No DOM element needed
 };

@@ -381,14 +381,48 @@ function AppContent() {
     currentStoryTheme.defaultAtmosphere;
 
   // For visual theme:
-  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - If lockEnvTheme is enabled:
+  //   - If fixedEnvTheme is set, use that specific theme
+  //   - Otherwise, use the story's default envTheme
   // - Otherwise, derive from atmosphere using the mapping
   let currentEnvThemeKey: string;
   if (aiSettings.lockEnvTheme) {
-    currentEnvThemeKey = currentStoryTheme.envTheme;
+    // Use fixed theme if specified, otherwise use story's default
+    currentEnvThemeKey = aiSettings.fixedEnvTheme || currentStoryTheme.envTheme;
   } else {
     currentEnvThemeKey = getThemeKeyForAtmosphere(currentAtmosphere);
   }
+
+  // Debug state for theme overrides
+  const [debugState, setDebugState] = useState<{
+    lockedTheme: string | null;
+    lockedMode: "light" | "dark" | null;
+    showSlideshow: boolean;
+  }>({ lockedTheme: null, lockedMode: null, showSlideshow: false });
+
+  // Expose debug tools to window
+  useEffect(() => {
+    const w = window as any;
+
+    // Unified debug toggle
+    w.toggleThemeDebugger = () => {
+      setDebugState((prev) => {
+        const willShow = !prev.showSlideshow;
+        return {
+          ...prev,
+          showSlideshow: willShow,
+          // Reset locks when closing
+          lockedTheme: !willShow ? null : prev.lockedTheme,
+          lockedMode: !willShow ? null : prev.lockedMode,
+        };
+      });
+      console.log("[Debug] Toggled Theme Slideshow Debugger");
+    };
+
+    console.log(
+      "[Debug] Call `window.toggleThemeDebugger()` to open/close the theme slideshow.",
+    );
+  }, []);
 
   if (previewTheme) {
     const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
@@ -397,8 +431,63 @@ function AppContent() {
     currentEnvThemeKey = previewStoryTheme.envTheme;
   }
 
-  const currentThemeConfig =
-    ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+  // Apply debug overrides (Moved up to ensure consistent state usage)
+  if (debugState.lockedTheme) {
+    currentEnvThemeKey = debugState.lockedTheme;
+  }
+
+  // Theme Slideshow Logic
+  const allThemeKeys = React.useMemo(() => Object.keys(ENV_THEMES), []);
+
+  const handleNextTheme = React.useCallback(() => {
+    setDebugState((prev) => {
+      const currentIndex = prev.lockedTheme
+        ? allThemeKeys.indexOf(prev.lockedTheme)
+        : allThemeKeys.indexOf(currentEnvThemeKey);
+
+      const nextIndex = (currentIndex + 1) % allThemeKeys.length;
+      return { ...prev, lockedTheme: allThemeKeys[nextIndex] };
+    });
+  }, [allThemeKeys, currentEnvThemeKey]);
+
+  const handlePrevTheme = React.useCallback(() => {
+    setDebugState((prev) => {
+      const currentIndex = prev.lockedTheme
+        ? allThemeKeys.indexOf(prev.lockedTheme)
+        : allThemeKeys.indexOf(currentEnvThemeKey);
+
+      const nextIndex =
+        (currentIndex - 1 + allThemeKeys.length) % allThemeKeys.length;
+      return { ...prev, lockedTheme: allThemeKeys[nextIndex] };
+    });
+  }, [allThemeKeys, currentEnvThemeKey]);
+
+  const handleToggleMode = React.useCallback(() => {
+    setDebugState((prev) => {
+      const currentForToggle = prev.lockedMode || themeMode;
+      return {
+        ...prev,
+        lockedMode: currentForToggle === "light" ? "dark" : "light",
+      };
+    });
+  }, [themeMode]);
+
+  const rawThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
+
+  // Determine effective mode (debug override > state)
+  const effectiveMode = debugState.lockedMode || themeMode;
+
+  // Select appropriate vars based on mode
+  const activeVars =
+    effectiveMode === "light" && rawThemeConfig.dayVars
+      ? rawThemeConfig.dayVars
+      : rawThemeConfig.vars;
+
+  // Construct final config for GlobalStyles
+  const currentThemeConfig = {
+    ...rawThemeConfig,
+    vars: activeVars,
+  };
 
   // Determine current context for effects
   const isStartScreen = location.pathname === "/";
@@ -869,6 +958,7 @@ function AppContent() {
                   onOpenSettings={() => setIsSettingsOpen(true)}
                   onOpenSaves={() => setIsSaveManagerOpen(true)}
                   onViewedSegmentChange={setViewedSegment}
+                  overrideThemeConfig={currentThemeConfig}
                 />
               </SectionErrorBoundary>
             }
@@ -907,8 +997,9 @@ function AppContent() {
 
       {/* Critical Error Modal - covers persistence, app, and component errors */}
       {(persistenceError || appError || componentError) && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 max-w-md w-full text-center space-y-4">
+            {/* Error Modal Content (unchanged) */}
             <div className="text-4xl">⚠️</div>
             <h2 className="text-xl font-bold text-red-500">
               {t("app.errors.critical") || "Critical Error Detected"}
@@ -945,6 +1036,50 @@ function AppContent() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Debug Slideshow Overlay */}
+      {debugState.showSlideshow && (
+        <div className="fixed inset-0 z-[9999] pointer-events-none">
+          {/* Top Control Bar */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 pointer-events-auto bg-black/50 backdrop-blur px-6 py-3 rounded-full border border-white/10 shadow-xl">
+            <button
+              onClick={handleToggleMode}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              title={`Current Mode: ${effectiveMode}`}
+            >
+              {effectiveMode === "light" ? "☀️" : "🌙"}
+            </button>
+            <div className="text-lg font-bold font-mono text-white">
+              Theme:{" "}
+              <span className="text-theme-primary">{currentEnvThemeKey}</span>
+            </div>
+            <button
+              onClick={() =>
+                setDebugState((prev) => ({ ...prev, showSlideshow: false }))
+              }
+              className="text-white/50 hover:text-white px-2"
+              title="Close Debugger (Esc)"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Navigation Buttons */}
+          <button
+            onClick={handlePrevTheme}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/30 hover:bg-black/60 backdrop-blur border border-white/10 text-white transition-all pointer-events-auto hover:scale-110 active:scale-95"
+          >
+            ◀
+          </button>
+
+          <button
+            onClick={handleNextTheme}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/30 hover:bg-black/60 backdrop-blur border border-white/10 text-white transition-all pointer-events-auto hover:scale-110 active:scale-95"
+          >
+            ▶
+          </button>
         </div>
       )}
     </div>

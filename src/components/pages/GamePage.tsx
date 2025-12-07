@@ -82,12 +82,15 @@ interface GamePageProps {
   onOpenSettings: () => void;
   /** Callback to open saves modal */
   onOpenSaves: () => void;
+  /** Optional theme override from App (for debug/preview) */
+  overrideThemeConfig?: any;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
   onViewedSegmentChange,
   onOpenSettings,
   onOpenSaves,
+  overrideThemeConfig,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -103,8 +106,11 @@ export const GamePage: React.FC<GamePageProps> = ({
     saveSlots,
     currentSlotId,
     failedImageNodes,
-    themeFont,
+    themeFont: engineThemeFont,
   } = engineState;
+
+  // Use override font if provided (debug), otherwise usage engine state
+  const themeFont = overrideThemeConfig?.fontClass || engineThemeFont;
   const {
     setGameState,
     setLanguage,

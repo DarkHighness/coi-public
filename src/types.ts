@@ -1028,6 +1028,7 @@ export interface AISettings {
 
   // Visual Theme Settings
   lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes
+  fixedEnvTheme?: string; // If set, override with this specific envTheme key (e.g., "cyberpunk")
   /** 是否禁用环境视觉特效（如下雨、下雪等） */
   disableEnvironmentalEffects?: boolean;
 

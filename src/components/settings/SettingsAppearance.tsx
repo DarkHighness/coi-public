@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
+import { ENV_THEMES } from "../../utils/constants";
 
 export const SettingsAppearance: React.FC = () => {
   const { t } = useTranslation();
@@ -115,6 +116,42 @@ export const SettingsAppearance: React.FC = () => {
               />
             </button>
           </div>
+
+          {/* Fixed EnvTheme Dropdown - shown when lockEnvTheme is enabled */}
+          {currentSettings.lockEnvTheme && (
+            <div className="mt-4 pt-4 border-t border-theme-border/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-theme-text">
+                    {t("fixedEnvTheme") || "Fixed Theme"}
+                  </div>
+                  <div className="text-xs text-theme-muted">
+                    {t("fixedEnvThemeDesc") ||
+                      "Select a specific visual theme to use regardless of story context"}
+                  </div>
+                </div>
+                <select
+                  value={currentSettings.fixedEnvTheme || ""}
+                  onChange={(e) =>
+                    onUpdateSettings({
+                      ...currentSettings,
+                      fixedEnvTheme: e.target.value || undefined,
+                    })
+                  }
+                  className="bg-theme-bg border border-theme-border rounded px-3 py-1.5 text-sm text-theme-text focus:outline-none focus:border-theme-primary max-w-[180px]"
+                >
+                  <option value="">
+                    {t("fixedEnvThemeAuto") || "Auto (Story Default)"}
+                  </option>
+                  {Object.keys(ENV_THEMES).map((themeKey) => (
+                    <option key={themeKey} value={themeKey}>
+                      {themeKey}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
             <div>
