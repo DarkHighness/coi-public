@@ -25,6 +25,9 @@ export interface OpenAIConfig {
   baseUrl: string;
   modelId?: string;
   geminiCompatibility?: boolean;
+  geminiMessageFormat?: boolean; // 是否转换消息格式为 Gemini 原生格式
+  claudeCompatibility?: boolean;
+  claudeMessageFormat?: boolean; // 是否转换消息格式为 Claude 原生格式
 }
 
 /** OpenRouter Provider 配置 */

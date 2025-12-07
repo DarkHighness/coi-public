@@ -419,7 +419,13 @@
     "openaiTitle": "OpenAI / OpenRouter 配置",
     "apiKeyPlaceholder": "在此粘贴 API Key...",
     "geminiCompatibility": "Gemini 兼容模式",
-    "geminiCompatibilityHelp": "通过 OpenAI 兼容接口调用 Gemini 模型时启用特殊处理（如 Google AI Studio）。"
+    "geminiCompatibilityHelp": "通过 OpenAI 兼容接口调用 Gemini 模型时启用特殊处理（如 Google AI Studio）。",
+    "geminiMessageFormat": "Gemini 消息格式转换",
+    "geminiMessageFormatHelp": "由客户端转换消息格式。仅当代理不自动转换时启用。",
+    "claudeCompatibility": "Claude 兼容模式",
+    "claudeCompatibilityHelp": "通过 OpenAI 兼容接口调用 Claude 模型时启用特殊处理（如第三方代理）。",
+    "claudeMessageFormat": "Claude 消息格式转换",
+    "claudeMessageFormatHelp": "由客户端转换消息格式。仅当代理不自动转换时启用（如 OpenRouter 不需要）。"
   },
   "search": "搜索",
   "noResults": "未找到结果",

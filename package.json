@@ -46,6 +46,7 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-toml": "^0.8.5"
+    "vite-plugin-toml": "^0.8.5",
+    "vitest": "^4.0.15"
   }
 }

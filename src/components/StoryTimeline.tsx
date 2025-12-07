@@ -150,38 +150,42 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
         >
           <AnimatePresence initial={false}>
             {narrativeSegments.map((seg, index) => {
-                const isFirst = index === 0;
-                const isLast = index === narrativeSegments.length - 1;
-                const isExpanded = expandedItems.has(seg.id);
-                const isHovered = hoveredSegment === seg.id;
-                // Use content-visibility: auto for older items (not last 5) for native browser virtualization
-                const useContentVisibility = index < narrativeSegments.length - 5;
+              const isFirst = index === 0;
+              const isLast = index === narrativeSegments.length - 1;
+              const isExpanded = expandedItems.has(seg.id);
+              const isHovered = hoveredSegment === seg.id;
+              // Use content-visibility: auto for older items (not last 5) for native browser virtualization
+              const useContentVisibility = index < narrativeSegments.length - 5;
 
-                return (
-                  <div
-                    key={seg.id}
-                    style={{
-                      contentVisibility: useContentVisibility ? 'auto' : 'visible',
-                      containIntrinsicSize: useContentVisibility ? 'auto 80px' : 'auto',
-                    }}
-                  >
-                    <StoryTimelineItem
-                      segment={seg}
-                      index={index}
-                      isFirst={isFirst}
-                      isLast={isLast}
-                      isExpanded={isExpanded}
-                      isHovered={isHovered}
-                      onToggle={toggleItem}
-                      onHover={setHoveredSegment}
-                      onImageClick={setSelectedImage}
-                      onNavigateToSegment={onNavigateToSegment}
-                      onFork={onFork}
-                      isActive={seg.id === gameState.activeNodeId}
-                    />
-                  </div>
-                );
-              })}
+              return (
+                <div
+                  key={seg.id}
+                  style={{
+                    contentVisibility: useContentVisibility
+                      ? "auto"
+                      : "visible",
+                    containIntrinsicSize: useContentVisibility
+                      ? "auto 80px"
+                      : "auto",
+                  }}
+                >
+                  <StoryTimelineItem
+                    segment={seg}
+                    index={index}
+                    isFirst={isFirst}
+                    isLast={isLast}
+                    isExpanded={isExpanded}
+                    isHovered={isHovered}
+                    onToggle={toggleItem}
+                    onHover={setHoveredSegment}
+                    onImageClick={setSelectedImage}
+                    onNavigateToSegment={onNavigateToSegment}
+                    onFork={onFork}
+                    isActive={seg.id === gameState.activeNodeId}
+                  />
+                </div>
+              );
+            })}
           </AnimatePresence>
 
           {narrativeSegments.length === 0 && (

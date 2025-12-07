@@ -10,7 +10,7 @@ import { CustomRule, RuleCategory } from "../../types";
  */
 export function getRulesForCategory(
   rules: CustomRule[] | undefined,
-  category: RuleCategory
+  category: RuleCategory,
 ): CustomRule[] {
   if (!rules) return [];
   return rules
@@ -23,7 +23,7 @@ export function getRulesForCategory(
  */
 export function getRulesForCategories(
   rules: CustomRule[] | undefined,
-  categories: RuleCategory[]
+  categories: RuleCategory[],
 ): CustomRule[] {
   if (!rules) return [];
   return rules
@@ -37,7 +37,7 @@ export function getRulesForCategories(
 export function formatRulesBlock(
   rules: CustomRule[] | undefined,
   category: RuleCategory,
-  language?: string
+  language?: string,
 ): string {
   const categoryRules = getRulesForCategory(rules, category);
   if (categoryRules.length === 0) return "";
@@ -58,7 +58,7 @@ ${content}
  */
 export function formatAllRulesBlocks(
   rules: CustomRule[] | undefined,
-  language?: string
+  language?: string,
 ): string {
   if (!rules || rules.length === 0) return "";
 
@@ -83,7 +83,9 @@ export function formatAllRulesBlocks(
   for (const [category, categoryRules] of Object.entries(byCategory)) {
     const sorted = categoryRules.sort((a, b) => a.priority - b.priority);
     const content = sorted.map((r) => `- ${r.title}: ${r.content}`).join("\n");
-    blocks.push(`<custom_rules category="${category}">\n${content}\n</custom_rules>`);
+    blocks.push(
+      `<custom_rules category="${category}">\n${content}\n</custom_rules>`,
+    );
   }
 
   if (blocks.length === 0) return "";
@@ -99,9 +101,7 @@ ${blocks.join("\n\n")}
 /**
  * Get image-style specific rules formatted for image prompts
  */
-export function formatImageStyleRules(
-  rules: CustomRule[] | undefined
-): string {
+export function formatImageStyleRules(rules: CustomRule[] | undefined): string {
   const imageRules = getRulesForCategory(rules, "imageStyle");
   if (imageRules.length === 0) return "";
 

@@ -388,12 +388,14 @@ export const generateAdventureTurn = async (
       );
 
       // Log injected rules and NSFW mode
-      const enabledRules = (gameState.customRules || []).filter(r => r.enabled);
+      const enabledRules = (gameState.customRules || []).filter(
+        (r) => r.enabled,
+      );
       const nsfwEnabled = settings.extra?.nsfw || false;
       if (enabledRules.length > 0) {
         console.log(
           `[CustomRules] Injected ${enabledRules.length} rules:`,
-          enabledRules.map(r => `[${r.category}] ${r.title}`)
+          enabledRules.map((r) => `[${r.category}] ${r.title}`),
         );
       }
       if (nsfwEnabled) {
@@ -406,7 +408,7 @@ export const generateAdventureTurn = async (
         ragQueries: gameState.ragQueries,
         systemPrompt: systemInstruction,
         userPrompt: context.userAction,
-        injectedRules: enabledRules.map(r => `[${r.category}] ${r.title}`),
+        injectedRules: enabledRules.map((r) => `[${r.category}] ${r.title}`),
         nsfwEnabled,
       };
 

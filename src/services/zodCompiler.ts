@@ -1005,6 +1005,279 @@ export function createOpenRouterTool(
   };
 }
 
+// ============================================================================
+// Zod to Claude Compatible Compiler (for OpenAI Channel)
+// ============================================================================
+
+/**
+ * 独立的 Claude 兼容 Schema 处理器
+ * 与 Gemini 处理器逻辑相似但完全独立维护，便于未来差异化
+ */
+function processZodToClaudeCompatible(
+  schema: ZodTypeAny,
+  isOptionalField: boolean = false,
+): OpenAISchema {
+  const typeName = schema._def.typeName;
+
+  // Handle effects
+  if (schema instanceof ZodEffects || typeName === "ZodEffects") {
+    return processZodToClaudeCompatible(
+      (schema as ZodEffects<any>)._def.schema,
+      isOptionalField,
+    );
+  }
+
+  // Handle optional
+  if (schema instanceof ZodOptional || typeName === "ZodOptional") {
+    return processZodToClaudeCompatible(
+      (schema as ZodOptional<any>)._def.innerType,
+      true,
+    );
+  }
+
+  // Handle nullable
+  if (schema instanceof ZodNullable || typeName === "ZodNullable") {
+    const innerSchema = processZodToClaudeCompatible(
+      (schema as ZodNullable<any>)._def.innerType,
+      isOptionalField,
+    );
+    // Use nullable: true property
+    const result = { ...innerSchema, nullable: true };
+    return result;
+  }
+
+  // Handle default
+  if (schema instanceof ZodDefault || typeName === "ZodDefault") {
+    return processZodToClaudeCompatible(
+      (schema as ZodDefault<any>)._def.innerType,
+      true,
+    );
+  }
+
+  // Handle string
+  if (schema instanceof ZodString || typeName === "ZodString") {
+    const result: OpenAISchema = { type: "string" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle number
+  if (schema instanceof ZodNumber || typeName === "ZodNumber") {
+    const checks = (schema as ZodNumber)._def.checks || [];
+    const isInt = checks.some((c: any) => c.kind === "int");
+    const result: OpenAISchema = { type: isInt ? "integer" : "number" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle boolean
+  if (schema instanceof ZodBoolean || typeName === "ZodBoolean") {
+    const result: OpenAISchema = { type: "boolean" };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle literal
+  if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
+    const value = (schema as ZodLiteral<any>)._def.value;
+    const result: OpenAISchema = {
+      type: "string",
+      enum: [String(value)],
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle enum
+  if (schema instanceof ZodEnum || typeName === "ZodEnum") {
+    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const result: OpenAISchema = {
+      type: "string",
+      enum: values,
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle union - Claude doesn't support generic unions well, try to flatten or warn
+  if (schema instanceof ZodUnion || typeName === "ZodUnion") {
+    console.warn(
+      "Claude Compatible Schema: Union types are not fully supported. Using first option or merging.",
+    );
+    // Simple fallback: use the first option
+    const options = (schema as ZodUnion<any>)._def.options;
+    if (options.length > 0) {
+      return processZodToClaudeCompatible(options[0]);
+    }
+    return { type: "string" };
+  }
+
+  // Handle discriminated union - Merge strategies
+  if (
+    schema instanceof ZodDiscriminatedUnion ||
+    typeName === "ZodDiscriminatedUnion"
+  ) {
+    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .discriminator;
+    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .options as ZodObject<any>[];
+
+    const allProperties: Record<string, OpenAISchema> = {};
+    const discriminatorValues: string[] = [];
+    const requiredByAll = new Set<string>();
+    let firstVariant = true;
+
+    for (const option of options) {
+      const shape = option.shape;
+
+      // Get discriminator value
+      const discriminatorField = shape[discriminator];
+      if (
+        discriminatorField instanceof ZodLiteral ||
+        discriminatorField?._def?.typeName === "ZodLiteral"
+      ) {
+        discriminatorValues.push(
+          String((discriminatorField as ZodLiteral<any>)._def.value),
+        );
+      }
+
+      // Collect properties
+      const currentRequired = new Set<string>();
+      for (const [key, value] of Object.entries(shape)) {
+        if (key === discriminator) continue;
+
+        const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+        const isRequired =
+          fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault";
+        if (isRequired) currentRequired.add(key);
+
+        if (!allProperties[key]) {
+          allProperties[key] = processZodToClaudeCompatible(
+            value as ZodTypeAny,
+          );
+        }
+      }
+
+      if (firstVariant) {
+        currentRequired.forEach((k) => requiredByAll.add(k));
+        firstVariant = false;
+      } else {
+        // Intersect required fields
+        for (const k of requiredByAll) {
+          if (!currentRequired.has(k)) {
+            requiredByAll.delete(k);
+          }
+        }
+      }
+    }
+
+    // Add discriminator
+    allProperties[discriminator] = {
+      type: "string",
+      enum: discriminatorValues,
+      description: `Discriminator: ${discriminatorValues.join(", ")}`,
+    };
+
+    const required = [discriminator, ...Array.from(requiredByAll)];
+
+    const result: OpenAISchema = {
+      type: "object",
+      properties: allProperties,
+      required,
+      // NO additionalProperties: false
+    };
+
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle array
+  if (schema instanceof ZodArray || typeName === "ZodArray") {
+    const itemSchema = processZodToClaudeCompatible(
+      (schema as ZodArray<any>)._def.type,
+    );
+    const result: OpenAISchema = {
+      type: "array",
+      items: itemSchema,
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle object
+  if (schema instanceof ZodObject || typeName === "ZodObject") {
+    const shape = (schema as ZodObject<any>).shape;
+    const properties: Record<string, OpenAISchema> = {};
+    const required: string[] = [];
+
+    for (const [key, value] of Object.entries(shape)) {
+      properties[key] = processZodToClaudeCompatible(value as ZodTypeAny);
+
+      const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+      const isFieldOptional =
+        fieldTypeName === "ZodOptional" || fieldTypeName === "ZodDefault";
+
+      // Check for nullable wrapped optional
+      let isNullable = fieldTypeName === "ZodNullable";
+      if (isNullable) {
+        const innerType = (value as ZodNullable<any>)._def.innerType;
+        const innerTypeName = innerType._def.typeName;
+        if (innerTypeName === "ZodOptional" || innerTypeName === "ZodDefault") {
+          // It's optional if it's explicitly optional/default
+        } else {
+          required.push(key);
+        }
+      } else if (!isFieldOptional) {
+        required.push(key);
+      }
+    }
+
+    const result: OpenAISchema = {
+      type: "object",
+      properties,
+      // NO additionalProperties: false
+    };
+
+    if (required.length > 0) {
+      result.required = required;
+    }
+
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Fallback
+  console.warn(`Unknown Zod type for Claude Compatible: ${typeName}`);
+  return { type: "string" };
+}
+
+/**
+ * 将 Zod Schema 编译为 Claude 兼容的 JSON Schema (用于 OpenAI Connection)
+ * 使用独立的 Claude 处理器，与 Gemini 处理器完全分离
+ */
+export function zodToClaudeCompatibleSchema(schema: ZodTypeAny): OpenAISchema {
+  return processZodToClaudeCompatible(schema);
+}
+
+/**
+ * 从 Zod Schema 创建 Claude 兼容工具定义 (用于 OpenAI Connection)
+ */
+export function createClaudeCompatibleTool(
+  name: string,
+  description: string,
+  parameters: ZodTypeAny,
+): OpenAIToolDefinition {
+  return {
+    type: "function",
+    function: {
+      name,
+      description,
+      strict: false, // Claude via proxy doesn't use OpenAI Strict Mode
+      parameters: zodToClaudeCompatibleSchema(parameters),
+    },
+  };
+}
+
 /**
  * 从 Zod Schema 创建 Gemini 兼容工具定义 (用于 OpenAI Connection)
  */
@@ -1038,6 +1311,14 @@ export function isGeminiModel(modelId: string): boolean {
     lowerModelId.includes("google/gemini") ||
     lowerModelId.startsWith("gemini-")
   );
+}
+
+/**
+ * 检测模型 ID 是否为 Claude 模型
+ */
+export function isClaudeModel(modelId: string): boolean {
+  const lowerModelId = modelId.toLowerCase();
+  return lowerModelId.includes("claude") || lowerModelId.includes("anthropic");
 }
 
 // ============================================================================

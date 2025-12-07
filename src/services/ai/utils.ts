@@ -113,6 +113,9 @@ export const createProviderConfig = (
         baseUrl: instance.baseUrl,
         modelId: "",
         geminiCompatibility: instance.geminiCompatibility,
+        geminiMessageFormat: instance.geminiMessageFormat,
+        claudeCompatibility: instance.claudeCompatibility,
+        claudeMessageFormat: instance.claudeMessageFormat,
       };
     case "openrouter":
       return {

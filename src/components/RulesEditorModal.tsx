@@ -62,7 +62,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   // Get rules from gameState
   const rules = useMemo(
     () => gameState.customRules || [],
-    [gameState.customRules]
+    [gameState.customRules],
   );
 
   // Filter rules by selected category
@@ -87,7 +87,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   // Total active rules count
   const totalRulesCount = useMemo(
     () => rules.filter((r) => r.enabled).length,
-    [rules]
+    [rules],
   );
 
   // Generate unique ID
@@ -133,7 +133,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       customRules: (prev.customRules || []).map((r) =>
         r.id === editingRule.id
           ? { ...r, title: newTitle.trim(), content: newContent.trim() }
-          : r
+          : r,
       ),
     }));
 
@@ -158,7 +158,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
     setGameState((prev) => ({
       ...prev,
       customRules: (prev.customRules || []).map((r) =>
-        r.id === id ? { ...r, enabled: !r.enabled } : r
+        r.id === id ? { ...r, enabled: !r.enabled } : r,
       ),
     }));
   };
@@ -233,7 +233,9 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                 }`}
               >
                 <span>{CATEGORY_ICONS[category]}</span>
-                <span className="text-sm">{t(`rules.category.${category}`)}</span>
+                <span className="text-sm">
+                  {t(`rules.category.${category}`)}
+                </span>
                 {categoryRuleCounts[category] > 0 && (
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded-full ${
@@ -282,7 +284,9 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
             {/* Category Description - Desktop only */}
             <div className="hidden md:block flex-none p-4 bg-theme-bg/30 border-b border-theme-border">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{CATEGORY_ICONS[selectedCategory]}</span>
+                <span className="text-2xl">
+                  {CATEGORY_ICONS[selectedCategory]}
+                </span>
                 <div>
                   <h3 className="font-medium text-theme-text">
                     {t(`rules.category.${selectedCategory}`)}
@@ -298,7 +302,9 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
             <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
               {filteredRules.length === 0 && !isEditing ? (
                 <div className="text-center py-8 text-theme-muted">
-                  <div className="text-4xl mb-3">{CATEGORY_ICONS[selectedCategory]}</div>
+                  <div className="text-4xl mb-3">
+                    {CATEGORY_ICONS[selectedCategory]}
+                  </div>
                   <p className="text-sm">{t("rules.noRules")}</p>
                   <button
                     onClick={() => setIsEditing(true)}
@@ -323,7 +329,9 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                         <button
                           onClick={() => handleToggleRule(rule.id)}
                           className={`mt-0.5 w-10 h-6 rounded-full transition-colors flex-none relative ${
-                            rule.enabled ? "bg-theme-primary" : "bg-theme-muted/30"
+                            rule.enabled
+                              ? "bg-theme-primary"
+                              : "bg-theme-muted/30"
                           }`}
                           aria-label={t("rules.toggle")}
                         >

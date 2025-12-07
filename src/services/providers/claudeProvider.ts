@@ -43,7 +43,7 @@ import {
   AIProviderError,
   MalformedToolCallError,
 } from "./types";
-import { compileToolsForOpenAI, zodToOpenAISchema } from "../zodCompiler";
+import { zodToClaudeCompatibleSchema } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 import { withRetry, validateSchema } from "./utils";
 
@@ -288,6 +288,15 @@ export async function generateContent(
         ? convertToolsForClaude(options.tools)
         : undefined;
 
+      if (tools && tools.length > 0) {
+        console.log(
+          "[Claude] Tool definitions:",
+          JSON.stringify(tools.slice(0, 2), null, 2),
+        );
+        // Log full request for debugging
+        console.log("[Claude] Full tools count:", tools.length);
+      }
+
       // 计算 thinking budget
       let thinking: { type: "enabled"; budget_tokens: number } | undefined;
       if (options?.thinkingLevel) {
@@ -341,6 +350,12 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       console.log(
         `[Claude] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
+      );
+
+      // Debug: 打印完整请求参数
+      console.log(
+        "[Claude] Full request params:",
+        JSON.stringify(requestParams, null, 2),
       );
 
       if (options?.onChunk) {
@@ -623,24 +638,70 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
 
 /**
  * 转换工具定义到 Claude 格式
- * Claude 使用与 OpenAI 类似的格式，但有细微差别
+ *
+ * 根据 Anthropic 官方文档：
+ * - Claude 使用 input_schema 而不是 parameters
+ * - Claude 支持 strict: true 用于保证 schema 一致性
+ * - Claude 不支持 additionalProperties 字段
  */
 function convertToolsForClaude(
   tools: Array<{ name: string; description: string; parameters: ZodTypeAny }>,
 ): Tool[] {
   return tools.map((tool) => {
-    const schema = zodToOpenAISchema(tool.parameters, true);
+    // 使用 Claude 兼容的 schema 处理器
+    // - 使用简单类型 "string" 而不是数组 ["string", "null"]
+    // - 不包含 additionalProperties
+    const schema = zodToClaudeCompatibleSchema(tool.parameters);
+
+    // 构建 input_schema，只有在有必填字段时才包含 required
+    const inputSchema: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+    } = {
+      type: "object" as const,
+      properties: (schema.properties || {}) as Record<string, unknown>,
+    };
+
+    // 只有在有必填字段时才添加 required
+    if (schema.required && schema.required.length > 0) {
+      inputSchema.required = schema.required;
+    }
+
     return {
       name: tool.name,
       description: tool.description,
-      input_schema: {
-        type: "object" as const,
-        ...(schema as object),
-      },
-      // Enable strict tool use for better adherence
-      strict: true,
+      input_schema: inputSchema,
     };
   });
+}
+
+/**
+ * 递归移除 schema 中的 additionalProperties 字段
+ */
+function removeAdditionalProperties(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "additionalProperties") {
+      continue; // 跳过 additionalProperties
+    }
+    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      result[key] = removeAdditionalProperties(
+        value as Record<string, unknown>,
+      );
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        typeof item === "object" && item !== null
+          ? removeAdditionalProperties(item as Record<string, unknown>)
+          : item,
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 // ============================================================================

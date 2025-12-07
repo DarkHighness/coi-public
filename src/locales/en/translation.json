@@ -622,7 +622,13 @@
     "apiKeyPlaceholder": "Paste API Key here...",
     "baseUrlPlaceholder": "Base URL (Optional)",
     "geminiCompatibility": "Gemini Compatibility Mode",
-    "geminiCompatibilityHelp": "Enable special handling for Gemini models (e.g. Google AI Studio) via OpenAI-compatible endpoints."
+    "geminiCompatibilityHelp": "Enable special handling for Gemini models (e.g. Google AI Studio) via OpenAI-compatible endpoints.",
+    "geminiMessageFormat": "Gemini Message Format Conversion",
+    "geminiMessageFormatHelp": "Client-side message format conversion. Enable only if proxy doesn't convert automatically.",
+    "claudeCompatibility": "Claude Compatibility Mode",
+    "claudeCompatibilityHelp": "Enable special handling for Claude models (e.g. third-party proxies) via OpenAI-compatible endpoints.",
+    "claudeMessageFormat": "Claude Message Format Conversion",
+    "claudeMessageFormatHelp": "Client-side message format conversion. Enable only if proxy doesn't convert automatically (e.g. OpenRouter doesn't need this)."
   },
   "audioSettings": {
     "environment": "Environment Audio",

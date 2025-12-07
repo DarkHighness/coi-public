@@ -49,7 +49,10 @@ import {
   zodToOpenAISchema,
   zodToGeminiCompatibleSchema,
   createGeminiCompatibleTool,
+  createClaudeCompatibleTool,
+  zodToClaudeCompatibleSchema,
   isGeminiModel,
+  isClaudeModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
 import { withRetry, validateSchema } from "./utils";
@@ -282,18 +285,37 @@ export async function generateContent(
 
       // 检测是否为 Gemini 模型 (并且强制开启兼容模式)
       const isGemini = config.geminiCompatibility && isGeminiModel(model);
+      // 检测是否为 Claude 模型 (也使用类似 Gemini 的兼容模式)
+      const isClaude = config.claudeCompatibility && isClaudeModel(model);
+      const useCompat = isGemini || isClaude;
 
       // 转换消息格式
+      // 注意: 始终使用标准 OpenAI 格式，因为 OpenAI SDK 无法产生 Claude/Gemini 原生格式
+      // 消息格式转换应由代理服务（如 OpenRouter, LiteLLM）处理
+      // 兼容模式主要影响: schema 格式 (无 additionalProperties) 和 strict 设置 (false)
       const messages = convertToOpenAIMessages(systemInstruction, contents);
 
-      // 转换工具定义 - 如果是 Gemini 模型，使用 Gemini 兼容格式 (OpenAI 结构但清理过的 Schema)
-      const tools = options?.tools
-        ? isGemini
-          ? options.tools.map((t) =>
-              createGeminiCompatibleTool(t.name, t.description, t.parameters),
-            )
-          : compileToolsForOpenAI(options.tools)
-        : undefined;
+      // 转换工具定义 - 兼容模式处理
+      let tools;
+      if (options?.tools) {
+        if (isGemini) {
+          tools = options.tools.map((t) =>
+            createGeminiCompatibleTool(t.name, t.description, t.parameters),
+          );
+        } else if (isClaude) {
+          tools = options.tools.map((t) =>
+            createClaudeCompatibleTool(t.name, t.description, t.parameters),
+          );
+          console.log(
+            "[OpenAI-Claude] Tool definitions:",
+            JSON.stringify(tools.slice(0, 2), null, 2),
+          );
+        } else {
+          tools = compileToolsForOpenAI(options.tools);
+        }
+      } else {
+        tools = undefined;
+      }
 
       // 构建请求参数
       const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams =
@@ -312,16 +334,29 @@ export async function generateContent(
           // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
           response_format:
             schema && (!tools || tools.length === 0)
-              ? isGemini
-                ? {
-                    type: "json_schema",
-                    json_schema: {
-                      name: "response",
-                      schema: zodToGeminiCompatibleSchema(schema),
-                      strict: false, // Gemini usually doesn't support strict mode via OpenAI compat
-                    },
+              ? (() => {
+                  if (isGemini) {
+                    return {
+                      type: "json_schema",
+                      json_schema: {
+                        name: "response",
+                        schema: zodToGeminiCompatibleSchema(schema),
+                        strict: false,
+                      },
+                    };
+                  } else if (isClaude) {
+                    return {
+                      type: "json_schema",
+                      json_schema: {
+                        name: "response",
+                        schema: zodToClaudeCompatibleSchema(schema),
+                        strict: false,
+                      },
+                    };
+                  } else {
+                    return zodToOpenAIResponseFormat(schema);
                   }
-                : zodToOpenAIResponseFormat(schema)
+                })()
               : undefined,
         };
 
@@ -338,12 +373,12 @@ export async function generateContent(
         | AsyncIterable<ChatCompletionChunk>;
 
       console.log(
-        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, isGemini: ${isGemini}`,
+        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude})`,
       );
 
-      if (isGemini && schema) {
+      if (useCompat && schema) {
         console.log(
-          "[OpenAI] Detected Gemini model, using Gemini schema format:",
+          `[OpenAI] Detected Compatible Model (Gemini: ${isGemini}, Claude: ${isClaude}), using compatible schema format:`,
           JSON.stringify(requestParams.response_format, null, 2),
         );
       }
@@ -531,6 +566,10 @@ function convertToOpenAIMessages(
                 ? tr.toolResult.content
                 : JSON.stringify(tr.toolResult.content),
           };
+          console.log(
+            "[OpenAI] Tool message constructed:",
+            JSON.stringify(toolMsg, null, 2),
+          );
           result.push(toolMsg);
         }
       }
@@ -549,6 +588,193 @@ function convertToOpenAIMessages(
           .map((p) => p.text)
           .join("\n");
 
+        const assistantMsg: ChatCompletionAssistantMessageParam = {
+          role: "assistant",
+          content: textContent || null,
+          tool_calls: toolCallParts.map((p) => ({
+            id: p.toolUse.id,
+            type: "function" as const,
+            function: {
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
+            },
+          })),
+        };
+        result.push(assistantMsg);
+        continue;
+      }
+    }
+
+    // 处理普通文本消息
+    const textContent = msg.content
+      .filter((p): p is TextContentPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    result.push({
+      role: msg.role as "user" | "assistant",
+      content: textContent,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * 转换消息到 Claude 兼容格式 (通过 OpenAI 接口调用 Claude 时使用)
+ *
+ * 关键差异:
+ * - Claude 的 tool result 需要包装在 role: "user" 消息中，而不是 role: "tool"
+ * - 工具调用使用 tool_use 内容块而不是 tool_calls 数组
+ *
+ * 注意: 某些 OpenAI 兼容代理可能已处理此转换，但为安全起见此处提供完整转换
+ */
+function convertToClaudeCompatibleMessages(
+  systemInstruction: string,
+  messages: UnifiedMessage[],
+): ChatCompletionMessageParam[] {
+  const result: ChatCompletionMessageParam[] = [
+    { role: "system", content: systemInstruction },
+  ];
+
+  for (const msg of messages) {
+    // 处理工具响应消息 - Claude 期望 tool_result 在 user 消息中
+    if (msg.role === "tool") {
+      const toolResults: Array<{
+        type: "tool_result";
+        tool_use_id: string;
+        content: string;
+      }> = [];
+
+      for (const part of msg.content) {
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; content: unknown };
+          };
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: tr.toolResult.id,
+            content:
+              typeof tr.toolResult.content === "string"
+                ? tr.toolResult.content
+                : JSON.stringify(tr.toolResult.content),
+          });
+        }
+      }
+
+      if (toolResults.length > 0) {
+        // Claude 格式: tool_result 作为 user 消息的内容
+        // 通过 OpenAI 兼容接口时，仍使用 JSON 字符串表示
+        result.push({
+          role: "user",
+          content: JSON.stringify(toolResults),
+        });
+      }
+      continue;
+    }
+
+    // 处理助手消息（可能包含工具调用）
+    if (msg.role === "assistant") {
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_use",
+      );
+
+      if (toolCallParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\n");
+
+        // 使用标准 OpenAI 格式的 tool_calls - 代理会转换为 Claude 格式
+        const assistantMsg: ChatCompletionAssistantMessageParam = {
+          role: "assistant",
+          content: textContent || null,
+          tool_calls: toolCallParts.map((p) => ({
+            id: p.toolUse.id,
+            type: "function" as const,
+            function: {
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
+            },
+          })),
+        };
+        result.push(assistantMsg);
+        continue;
+      }
+    }
+
+    // 处理普通文本消息
+    const textContent = msg.content
+      .filter((p): p is TextContentPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    result.push({
+      role: msg.role as "user" | "assistant",
+      content: textContent,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * 转换消息到 Gemini 兼容格式 (通过 OpenAI 接口调用 Gemini 时使用)
+ *
+ * 关键差异:
+ * - Gemini 使用 role: "function" 而不是 role: "tool"
+ * - functionCall 和 functionResponse 使用不同的结构
+ *
+ * 注意: 某些 OpenAI 兼容代理可能已处理此转换，但为安全起见此处提供完整转换
+ */
+function convertToGeminiCompatibleMessages(
+  systemInstruction: string,
+  messages: UnifiedMessage[],
+): ChatCompletionMessageParam[] {
+  const result: ChatCompletionMessageParam[] = [
+    { role: "system", content: systemInstruction },
+  ];
+
+  for (const msg of messages) {
+    // 处理工具响应消息 - Gemini 使用 function role
+    if (msg.role === "tool") {
+      for (const part of msg.content) {
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; content: unknown };
+          };
+          // Gemini 格式: 使用 function role 和 functionResponse 结构
+          result.push({
+            role: "user", // OpenAI compatible format uses user for function responses
+            content: JSON.stringify({
+              type: "function_response",
+              name: tr.toolResult.id.split("_")[2] || "function", // 从 id 提取函数名
+              response:
+                typeof tr.toolResult.content === "string"
+                  ? tr.toolResult.content
+                  : JSON.stringify(tr.toolResult.content),
+            }),
+          });
+        }
+      }
+      continue;
+    }
+
+    // 处理助手消息（可能包含工具调用）
+    if (msg.role === "assistant") {
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_use",
+      );
+
+      if (toolCallParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\n");
+
+        // 使用标准 OpenAI 格式的 tool_calls
         const assistantMsg: ChatCompletionAssistantMessageParam = {
           role: "assistant",
           content: textContent || null,

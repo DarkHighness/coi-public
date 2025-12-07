@@ -26,6 +26,9 @@ interface ProviderFormData {
   enabled: boolean;
   isRestrictedChannel: boolean;
   geminiCompatibility?: boolean;
+  geminiMessageFormat?: boolean;
+  claudeCompatibility?: boolean;
+  claudeMessageFormat?: boolean;
 }
 
 type ModalMode = "add" | "edit" | "template" | null;
@@ -54,6 +57,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     enabled: true,
     isRestrictedChannel: false,
     geminiCompatibility: false,
+    geminiMessageFormat: false,
+    claudeCompatibility: false,
+    claudeMessageFormat: false,
   });
   const [selectedTemplate, setSelectedTemplate] =
     useState<ProviderTemplateKey>("openai");
@@ -120,6 +126,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       enabled: true,
       isRestrictedChannel: false,
       geminiCompatibility: false,
+      geminiMessageFormat: false,
+      claudeCompatibility: false,
+      claudeMessageFormat: false,
     });
     setModalMode("add");
   };
@@ -142,6 +151,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       enabled: instance.enabled,
       isRestrictedChannel: instance.isRestrictedChannel || false,
       geminiCompatibility: (instance as any).geminiCompatibility || false,
+      geminiMessageFormat: (instance as any).geminiMessageFormat || false,
+      claudeCompatibility: (instance as any).claudeCompatibility || false,
+      claudeMessageFormat: (instance as any).claudeMessageFormat || false,
     });
     setModalMode("edit");
   };
@@ -183,6 +195,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       enabled: formData.enabled,
       isRestrictedChannel: formData.isRestrictedChannel,
       geminiCompatibility: formData.geminiCompatibility,
+      geminiMessageFormat: formData.geminiMessageFormat,
+      claudeCompatibility: formData.claudeCompatibility,
+      claudeMessageFormat: formData.claudeMessageFormat,
       createdAt: Date.now(),
       lastModified: Date.now(),
     };
@@ -265,6 +280,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             enabled: formData.enabled,
             isRestrictedChannel: formData.isRestrictedChannel,
             geminiCompatibility: formData.geminiCompatibility,
+            geminiMessageFormat: formData.geminiMessageFormat,
+            claudeCompatibility: formData.claudeCompatibility,
+            claudeMessageFormat: formData.claudeMessageFormat,
             lastModified: Date.now(),
           }
         : inst,
@@ -841,6 +859,10 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                         setFormData({
                           ...formData,
                           geminiCompatibility: e.target.checked,
+                          // Reset message format when disabling compatibility
+                          geminiMessageFormat: e.target.checked
+                            ? formData.geminiMessageFormat
+                            : false,
                         })
                       }
                       className="mt-1"
@@ -858,6 +880,99 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Gemini Message Format Conversion (Only when Gemini compatibility is enabled) */}
+                {formData.protocol === "openai" &&
+                  formData.geminiCompatibility && (
+                    <div className="flex items-start gap-2 pt-2 pl-4">
+                      <input
+                        type="checkbox"
+                        id="geminiMessageFormat"
+                        checked={formData.geminiMessageFormat}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            geminiMessageFormat: e.target.checked,
+                          })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor="geminiMessageFormat"
+                          className="block text-sm font-medium text-theme-text"
+                        >
+                          {t("creds.geminiMessageFormat")}
+                        </label>
+                        <p className="text-xs text-theme-muted">
+                          {t("creds.geminiMessageFormatHelp")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Claude Compatibility Mode (Only for OpenAI protocol) */}
+                {formData.protocol === "openai" && (
+                  <div className="flex items-start gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="claudeCompatibility"
+                      checked={formData.claudeCompatibility}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          claudeCompatibility: e.target.checked,
+                          // Reset message format when disabling compatibility
+                          claudeMessageFormat: e.target.checked
+                            ? formData.claudeMessageFormat
+                            : false,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="claudeCompatibility"
+                        className="block text-sm font-medium text-theme-text"
+                      >
+                        {t("creds.claudeCompatibility")}
+                      </label>
+                      <p className="text-xs text-theme-muted">
+                        {t("creds.claudeCompatibilityHelp")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Claude Message Format Conversion (Only when Claude compatibility is enabled) */}
+                {formData.protocol === "openai" &&
+                  formData.claudeCompatibility && (
+                    <div className="flex items-start gap-2 pt-2 pl-4">
+                      <input
+                        type="checkbox"
+                        id="claudeMessageFormat"
+                        checked={formData.claudeMessageFormat}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            claudeMessageFormat: e.target.checked,
+                          })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor="claudeMessageFormat"
+                          className="block text-sm font-medium text-theme-text"
+                        >
+                          {t("creds.claudeMessageFormat")}
+                        </label>
+                        <p className="text-xs text-theme-muted">
+                          {t("creds.claudeMessageFormatHelp")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                 {/* Enabled */}
                 <div>
