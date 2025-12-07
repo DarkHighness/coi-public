@@ -599,27 +599,26 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
   // Farming / Green
   nature: {
     vars: {
-      "--theme-bg": "#14281d",
-      "--theme-surface": "#1d3b2a",
-      "--theme-surface-highlight": "#2d5740",
-      "--theme-border": "#4ade80",
-      "--theme-primary": "#86efac",
-      "--theme-primary-hover": "#4ade80",
-      "--theme-text": "#f0fdf4",
-      "--theme-muted": "#86efac",
+      "--theme-bg": "#051109", // Very dark green
+      "--theme-surface": "#0f2619",
+      "--theme-surface-highlight": "#1c3c2a",
+      "--theme-border": "#2d6a45", // Forest green border
+      "--theme-primary": "#4ade80", // Bright leaf green
+      "--theme-primary-hover": "#22c55e",
+      "--theme-text": "#ecfdf5",
+      "--theme-muted": "#6ee7b7",
       ...DEFAULT_STATE_VARS,
       "--theme-success": "#4ade80",
-      "--theme-success-muted": "#22c55e",
     },
     dayVars: {
       "--theme-bg": "#f0fdf4",
       "--theme-surface": "#ffffff",
       "--theme-surface-highlight": "#dcfce7",
       "--theme-border": "#86efac",
-      "--theme-primary": "#22c55e",
-      "--theme-primary-hover": "#16a34a",
-      "--theme-text": "#14532d",
-      "--theme-muted": "#15803d",
+      "--theme-primary": "#16a34a",
+      "--theme-primary-hover": "#15803d",
+      "--theme-text": "#052e16",
+      "--theme-muted": "#166534",
       ...DEFAULT_DAY_STATE_VARS,
     },
     fontClass: "font-sans",
@@ -683,27 +682,25 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
   // Survival / Rust
   wasteland: {
     vars: {
-      "--theme-bg": "#1a120b",
-      "--theme-surface": "#2e1f12",
-      "--theme-surface-highlight": "#4a321d",
-      "--theme-border": "#ea580c",
-      "--theme-primary": "#f97316",
-      "--theme-primary-hover": "#ea580c",
-      "--theme-text": "#fff7ed",
-      "--theme-muted": "#fdba74",
+      "--theme-bg": "#120c0a",
+      "--theme-surface": "#241812",
+      "--theme-surface-highlight": "#38251c",
+      "--theme-border": "#7c2d12", // Rust red/brown
+      "--theme-primary": "#ea580c", // Burnt orange
+      "--theme-primary-hover": "#c2410c",
+      "--theme-text": "#fed7aa", // Dusty text
+      "--theme-muted": "#9a3412",
       ...DEFAULT_STATE_VARS,
-      "--theme-warning": "#f97316",
-      "--theme-warning-muted": "#c2410c",
     },
     dayVars: {
       "--theme-bg": "#fff7ed",
-      "--theme-surface": "#ffffff",
+      "--theme-surface": "#f8e4d3", // Dusty paper
       "--theme-surface-highlight": "#ffedd5",
       "--theme-border": "#fdba74",
-      "--theme-primary": "#ea580c",
-      "--theme-primary-hover": "#c2410c",
+      "--theme-primary": "#9a3412",
+      "--theme-primary-hover": "#7c2d12",
       "--theme-text": "#431407",
-      "--theme-muted": "#9a3412",
+      "--theme-muted": "#7c2d12",
       ...DEFAULT_DAY_STATE_VARS,
     },
     fontClass: "font-scifi",
@@ -739,27 +736,25 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
   // Son in Law / Cyan
   cyan: {
     vars: {
-      "--theme-bg": "#111827",
-      "--theme-surface": "#1f2937",
-      "--theme-surface-highlight": "#374151",
-      "--theme-border": "#6b7280",
-      "--theme-primary": "#22d3ee",
+      "--theme-bg": "#030c14", // Deep ocean blue-black
+      "--theme-surface": "#082f49",
+      "--theme-surface-highlight": "#0c4a6e",
+      "--theme-border": "#0891b2",
+      "--theme-primary": "#22d3ee", // Electric cyan
       "--theme-primary-hover": "#06b6d4",
-      "--theme-text": "#f9fafb",
-      "--theme-muted": "#9ca3af",
+      "--theme-text": "#e0f2fe",
+      "--theme-muted": "#38bdf8",
       ...DEFAULT_STATE_VARS,
-      "--theme-info": "#22d3ee",
-      "--theme-info-muted": "#0891b2",
     },
     dayVars: {
-      "--theme-bg": "#f9fafb",
+      "--theme-bg": "#f0f9ff",
       "--theme-surface": "#ffffff",
-      "--theme-surface-highlight": "#f3f4f6",
-      "--theme-border": "#9ca3af",
-      "--theme-primary": "#06b6d4",
-      "--theme-primary-hover": "#0891b2",
-      "--theme-text": "#111827",
-      "--theme-muted": "#4b5563",
+      "--theme-surface-highlight": "#e0f2fe",
+      "--theme-border": "#7dd3fc",
+      "--theme-primary": "#0ea5e9", // Clear water blue
+      "--theme-primary-hover": "#0284c7",
+      "--theme-text": "#0c4a6e",
+      "--theme-muted": "#0369a1",
       ...DEFAULT_DAY_STATE_VARS,
     },
     fontClass: "font-sans",

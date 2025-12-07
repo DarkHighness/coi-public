@@ -53,9 +53,13 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
       } else {
         // Map specific weathers to core visual effects
         const w = resolvedAtmosphere.weather;
-        if (["rain", "drizzle", "heavy_rain", "storm", "thunderstorm"].includes(w)) {
+        if (
+          ["rain", "drizzle", "heavy_rain", "storm", "thunderstorm"].includes(w)
+        ) {
           detectedEffect = "rain";
-        } else if (["snow", "light_snow", "heavy_snow", "blizzard"].includes(w)) {
+        } else if (
+          ["snow", "light_snow", "heavy_snow", "blizzard"].includes(w)
+        ) {
           detectedEffect = "snow";
         } else if (["fog", "mist", "haze", "cloudy", "overcast"].includes(w)) {
           detectedEffect = "fog";
@@ -69,9 +73,21 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
           detectedEffect = "flicker";
         } else {
           // Fallback if generic string provided
-           // strict cast might fail if string is random, but detectedEffect is typed as VisualEffect
-           // We'll trust the mapping or fallback to null if unknown
-           detectedEffect = (["rain", "snow", "fog", "embers", "flicker", "sunny", "dust"].includes(w) ? w : null) as EffectType;
+          // strict cast might fail if string is random, but detectedEffect is typed as VisualEffect
+          // We'll trust the mapping or fallback to null if unknown
+          detectedEffect = (
+            [
+              "rain",
+              "snow",
+              "fog",
+              "embers",
+              "flicker",
+              "sunny",
+              "dust",
+            ].includes(w)
+              ? w
+              : null
+          ) as EffectType;
         }
       }
     }
@@ -143,7 +159,9 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
   // Derived intensity based on specific weather string
   const weather = resolvedAtmosphere.weather;
-  const isHeavyRain = ["heavy_rain", "storm", "thunderstorm"].includes(weather || "");
+  const isHeavyRain = ["heavy_rain", "storm", "thunderstorm"].includes(
+    weather || "",
+  );
   const isLightRain = weather === "drizzle";
   const isHeavySnow = ["heavy_snow", "blizzard"].includes(weather || "");
   const isLightSnow = weather === "light_snow";
@@ -193,7 +211,9 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
                 animationDuration: `${(0.5 + Math.random() * 0.3) * (isHeavyRain ? 0.7 : 1)}s`,
                 animationDelay: `${Math.random() * 2}s`,
                 opacity: (0.1 + Math.random() * 0.3) * (isHeavyRain ? 1.5 : 1),
-                height: isHeavyRain ? `${15 + Math.random() * 15}px` : undefined,
+                height: isHeavyRain
+                  ? `${15 + Math.random() * 15}px`
+                  : undefined,
               }}
             />
           ))}
@@ -224,7 +244,10 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
           {/* Multiple fog layers for depth */}
           <div
             className="weather-fog"
-            style={{ top: "0%", opacity: isHeavyFog ? 0.3 : isLightFog ? 0.1 : 0.15 }}
+            style={{
+              top: "0%",
+              opacity: isHeavyFog ? 0.3 : isLightFog ? 0.1 : 0.15,
+            }}
           ></div>
           <div
             className="weather-fog"
@@ -237,7 +260,11 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
           ></div>
           <div
             className="weather-fog"
-            style={{ top: "60%", opacity: isHeavyFog ? 0.2 : isLightFog ? 0.05 : 0.1, animationDuration: "100s" }}
+            style={{
+              top: "60%",
+              opacity: isHeavyFog ? 0.2 : isLightFog ? 0.05 : 0.1,
+              animationDuration: "100s",
+            }}
           ></div>
         </>
       )}
@@ -282,7 +309,9 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
       {!effectsDisabled && effect === "dust" && (
         <div className="w-full h-full pointer-events-none">
           {/* Dust tint */}
-          <div className={`absolute inset-0 bg-yellow-900/10 ${isSandstorm ? 'bg-orange-700/20' : ''}`}></div>
+          <div
+            className={`absolute inset-0 bg-yellow-900/10 ${isSandstorm ? "bg-orange-700/20" : ""}`}
+          ></div>
           {/* Dust particles */}
           {[...Array(isSandstorm ? 40 : 20)].map((_, i) => (
             <div
@@ -300,19 +329,21 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
             />
           ))}
           {/* Horizontal wind for sandstorm */}
-           {isSandstorm && [...Array(10)].map((_, i) => (
-             <div
-               key={`wind-${i}`}
-               className="weather-fog"
-               style={{
-                 top: `${Math.random() * 100}%`,
-                 opacity: 0.15,
-                 height: '20%',
-                 background: 'linear-gradient(90deg, transparent, rgba(160, 82, 45, 0.2), transparent)',
-                 animationDuration: `${2 + Math.random()}s`,
-               }}
-             />
-           ))}
+          {isSandstorm &&
+            [...Array(10)].map((_, i) => (
+              <div
+                key={`wind-${i}`}
+                className="weather-fog"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  opacity: 0.15,
+                  height: "20%",
+                  background:
+                    "linear-gradient(90deg, transparent, rgba(160, 82, 45, 0.2), transparent)",
+                  animationDuration: `${2 + Math.random()}s`,
+                }}
+              />
+            ))}
         </div>
       )}
     </div>

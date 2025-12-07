@@ -725,7 +725,6 @@
   "lockEnvThemeDesc": "Lock the visual theme to the current envTheme, ignoring story atmosphere changes",
   "disableEnvironmentalEffects": "Disable Environmental Effects",
   "disableEnvironmentalEffectsDesc": "Disable visual weather effects like rain, snow, and fog",
-  "themes": {},
   "typewriterSpeed": "Text Animation Speed",
   "typewriterSpeedDesc": "Speed of the typewriter effect for new story text.",
   "stackItemsPerPage": "Stack Layout Items Per Page",
@@ -1180,7 +1179,6 @@
       "embers": "Embers",
       "flicker": "Flicker"
     }
-
   },
   "common": {
     "retry": "Retry",
