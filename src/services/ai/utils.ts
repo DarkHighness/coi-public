@@ -300,18 +300,18 @@ export const getModels = async (
 export const validateConnection = async (
   settings: AISettings,
   providerId: string,
-): Promise<{ isValid: boolean; error?: string }> => {
+): Promise<{ isValid: boolean; error?: string; localError?: boolean }> => {
   // 直接查找 provider 实例，不检查 enabled 状态
   const instance = settings.providers.instances.find(
     (p) => p.id === providerId,
   );
   if (!instance) {
-    return { isValid: false, error: "Provider instance not found" };
+    return { isValid: false, error: "Provider instance not found", localError: true };
   }
 
   // 检查必要的配置
   if (!instance.apiKey || instance.apiKey.trim() === "") {
-    return { isValid: false, error: "API key is required" };
+    return { isValid: false, error: "API key is required", localError: true };
   }
 
   const config = createProviderConfig(instance);
@@ -336,7 +336,7 @@ export const validateConnection = async (
     return { isValid: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { isValid: false, error: message };
+    return { isValid: false, error: message, localError: false };
   }
 };
 

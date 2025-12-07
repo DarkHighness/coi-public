@@ -49,7 +49,7 @@ import {
   isGeminiModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
-import { withRetry, validateSchema } from "./utils";
+import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 // ============================================================================
 // SDK Client Creation
 // ============================================================================
@@ -357,7 +357,7 @@ async function handleNonStreamingResponse(
   }
   if (schema && content) {
     try {
-      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+      const cleanedContent = cleanJsonContent(content);
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
       return { result, usage, raw: data };
@@ -458,7 +458,7 @@ async function handleStreamingResponse(
   }
   if (schema && content) {
     try {
-      const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+      const cleanedContent = cleanJsonContent(content);
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
       return { result, usage, raw: null };

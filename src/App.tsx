@@ -608,11 +608,11 @@ function AppContent() {
     const storyInstance = getProviderInstance(storyProviderId);
     const storyProviderName = storyInstance?.name || storyProviderId;
 
-    const { isValid: storyValid, error: storyError } = await validateConnection(
+    const { isValid: storyValid, error: storyError, localError: storyLocalError } = await validateConnection(
       aiSettings,
       storyProviderId,
     );
-    if (!storyValid) {
+    if (!storyValid && !storyLocalError) {
       showToast(
         `${storyProviderName}: ${storyError || "Connection Failed"} - Story generation is required`,
         "error",
@@ -626,11 +626,11 @@ function AppContent() {
     const loreInstance = getProviderInstance(loreProviderId);
     const loreProviderName = loreInstance?.name || loreProviderId;
 
-    const { isValid: loreValid, error: loreError } = await validateConnection(
+    const { isValid: loreValid, error: loreError, localError: loreLocalError } = await validateConnection(
       aiSettings,
       loreProviderId,
     );
-    if (!loreValid) {
+    if (!loreValid && !loreLocalError) {
       showToast(
         `${loreProviderName}: ${loreError || "Connection Failed"} - Lore generation is required`,
         "error",
@@ -677,11 +677,11 @@ function AppContent() {
         // Skip if same as story provider (already checked)
         const instance = getProviderInstance(providerId);
         const providerName = instance?.name || providerId;
-        const { isValid, error } = await validateConnection(
+        const { isValid, error, localError } = await validateConnection(
           aiSettings,
           providerId,
         );
-        if (!isValid) {
+        if (!isValid && !localError) {
           console.warn(`${name} provider validation failed:`, error);
           showToast(
             `Warning: ${name} (${providerName}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`,

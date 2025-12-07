@@ -47,7 +47,7 @@ import {
 } from "./types";
 import { zodToGemini } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
-import { withRetry, validateSchema } from "./utils";
+import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -549,7 +549,7 @@ function parseJSONResponse(text: string): unknown {
   );
   try {
     // 清理 markdown 代码块
-    let cleaned = text.replace(/```json\n?|```/g, "").trim();
+    let cleaned = cleanJsonContent(text);
     // 尝试使用 jsonrepair 修复并解析
     return JSON.parse(jsonrepair(cleaned));
   } catch (error) {

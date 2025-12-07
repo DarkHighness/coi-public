@@ -112,3 +112,32 @@ export function validateSchema(
     throw new SchemaValidationError(provider, details, error);
   }
 }
+
+/**
+ * Clean JSON content from markdown code block wrappers
+ *
+ * Handles various formats:
+ * - ```json\n{...}\n```
+ * - ```JSON\n{...}\n```
+ * - ```\n{...}\n```
+ * - With or without trailing newlines
+ * - Mixed line endings (\n, \r\n)
+ *
+ * @param content Raw content that may be wrapped in markdown code blocks
+ * @returns Cleaned JSON string ready for parsing
+ */
+export function cleanJsonContent(content: string): string {
+  if (!content) return content;
+
+  let cleaned = content.trim();
+
+  // Remove leading markdown code block with optional language specifier
+  // Matches: ```json, ```JSON, ```, etc. followed by optional whitespace/newline
+  cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\r?\n?/, "");
+
+  // Remove trailing markdown code block
+  // Matches: ``` at the end, optionally preceded by newline
+  cleaned = cleaned.replace(/\r?\n?```\s*$/, "");
+
+  return cleaned.trim();
+}

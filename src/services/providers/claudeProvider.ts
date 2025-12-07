@@ -45,7 +45,7 @@ import {
 } from "./types";
 import { zodToClaudeCompatibleSchema } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
-import { withRetry, validateSchema } from "./utils";
+import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
 // ============================================================================
 // Configuration Types
@@ -491,7 +491,7 @@ Answer the user's request using relevant tools (if they are available). Before c
       // 如果有 schema，解析 JSON
       if (schema) {
         try {
-          const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+          const cleanedContent = cleanJsonContent(content);
           const result = JSON.parse(jsonrepair(cleanedContent));
           // Schema Validation
           validateSchema(result, schema, "claude");

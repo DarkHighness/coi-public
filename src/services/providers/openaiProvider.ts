@@ -55,7 +55,7 @@ import {
   isClaudeModel,
 } from "../zodCompiler";
 import type { ZodTypeAny } from "zod";
-import { withRetry, validateSchema } from "./utils";
+import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
 // ============================================================================
 // Response Types (兼容旧 API)
@@ -512,7 +512,7 @@ export async function generateContent(
 
       // 解析 JSON
       try {
-        const cleanedContent = content.replace(/```json\n?|```/g, "").trim();
+        const cleanedContent = cleanJsonContent(content);
         const result = JSON.parse(jsonrepair(cleanedContent));
 
         // Schema Validation
