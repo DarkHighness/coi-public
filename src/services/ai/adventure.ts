@@ -13,10 +13,7 @@ import {
   GameResponse,
 } from "../../types";
 
-import {
-  isContextLengthError,
-  truncateToolOutputs,
-} from "./contextCompressor";
+import { isContextLengthError, truncateToolOutputs } from "./contextCompressor";
 
 import { ToolCallResult, MalformedToolCallError } from "../providers/types";
 
@@ -369,71 +366,82 @@ export const generateAdventureTurn = async (
   const maxCompressionLevel = CompressionLevel.EXTREME;
 
   while (true) {
-      try {
-          // 1. Apply Semantic Compression (if needed)
-          const effectiveOptions = getCompressedContextOptions(contextOptions, compressionLevel);
-          const layers = buildLayeredContext(effectiveOptions);
+    try {
+      // 1. Apply Semantic Compression (if needed)
+      const effectiveOptions = getCompressedContextOptions(
+        contextOptions,
+        compressionLevel,
+      );
+      const layers = buildLayeredContext(effectiveOptions);
 
-          // Get RAG context from parameter
-          const ragContext: string | undefined = context.ragContext;
+      // Get RAG context from parameter
+      const ragContext: string | undefined = context.ragContext;
 
-          // 2. Build messages using layered context
-          const { messages, dynamicContext } = buildTurnMessages(
-            layers,
-            effectiveOptions.recentHistory, // Use compressed history
-            context.userAction,
-            ragContext,
-          );
+      // 2. Build messages using layered context
+      const { messages, dynamicContext } = buildTurnMessages(
+        layers,
+        effectiveOptions.recentHistory, // Use compressed history
+        context.userAction,
+        ragContext,
+      );
 
-          const generationDetails: LogEntry["generationDetails"] = {
-            dynamicContext,
-            ragContext,
-            ragQueries: gameState.ragQueries,
-            systemPrompt: systemInstruction,
-            userPrompt: context.userAction,
-          };
+      const generationDetails: LogEntry["generationDetails"] = {
+        dynamicContext,
+        ragContext,
+        ragQueries: gameState.ragQueries,
+        systemPrompt: systemInstruction,
+        userPrompt: context.userAction,
+      };
 
-          // 5. Run inner loop
+      // 5. Run inner loop
       const result = await runAgenticLoop(
-          instance.protocol,
-          instance,
-          modelId,
-          systemInstruction,
-          messages,
-          gameState,
-          generationDetails,
-          context.settings,
-          gameState.nextInitialStage,
+        instance.protocol,
+        instance,
+        modelId,
+        systemInstruction,
+        messages,
+        gameState,
+        generationDetails,
+        context.settings,
+        gameState.nextInitialStage,
       );
 
       // 6. Return response
       if (compressionLevel > CompressionLevel.NONE) {
-          result.response.systemToasts = [
-              ...(result.response.systemToasts || []),
-              {
-                  message: `Context compressed (Level ${compressionLevel}) due to size limits.`,
-                  type: "warning"
-              }
-          ];
+        result.response.systemToasts = [
+          ...(result.response.systemToasts || []),
+          {
+            message: `Context compressed (Level ${compressionLevel}) due to size limits.`,
+            type: "warning",
+          },
+        ];
 
-          // Inject Log Entry
-          result.logs.push(createLogEntry(
-              "system",
-              "context-manager",
-              "compression",
-              { compressionLevel, reason: "context_length_exceeded" },
-              { message: `Context rebuilt with compression level ${compressionLevel}` },
-          ));
+        // Inject Log Entry
+        result.logs.push(
+          createLogEntry(
+            "system",
+            "context-manager",
+            "compression",
+            { compressionLevel, reason: "context_length_exceeded" },
+            {
+              message: `Context rebuilt with compression level ${compressionLevel}`,
+            },
+          ),
+        );
       }
       return result;
     } catch (e: any) {
       if (isContextLengthError(e)) {
-          console.warn(`[Adventure] Context length exceeded with Content Compression Level ${compressionLevel}.`);
-          if (compressionLevel < maxCompressionLevel) {
-              compressionLevel = (compressionLevel + 1) as CompressionLevel;
-              console.log(`[Adventure] Retrying with Content Compression Level ${compressionLevel}...`);
-              continue;
-          }
+        console.warn(
+          `[Adventure] Context length exceeded with Content Compression Level ${compressionLevel}.`,
+        );
+        if (compressionLevel < maxCompressionLevel) {
+          compressionLevel = (compressionLevel + 1) as CompressionLevel;
+          console.log(
+            `[Adventure] Retrying with Content Compression Level ${compressionLevel}...`,
+          );
+          continue;
+        }
       }
       throw e;
     }
@@ -656,24 +664,28 @@ Consider setting nextInitialStage if you know what stage would be best for the n
 
         // 1. Handle Context Length Error -> Truncate Tools
         if (isContextLengthError(error)) {
-             console.warn(`[Agentic Loop] Context length exceeded at stage ${currentStage}. Attempting Tool Output Truncation.`);
+          console.warn(
+            `[Agentic Loop] Context length exceeded at stage ${currentStage}. Attempting Tool Output Truncation.`,
+          );
 
-             // Check if we can truncate tools further
-             // We can check if any tool output > 500 chars exists
-             // But truncateToolOutputs logic is idempotent (msg > 500 -> 500).
-             // Let's create a hash or check to see if it actually changes anything.
-             const beforeJson = JSON.stringify(conversationHistory);
-             conversationHistory = truncateToolOutputs(conversationHistory);
-             const afterJson = JSON.stringify(conversationHistory);
+          // Check if we can truncate tools further
+          // We can check if any tool output > 500 chars exists
+          // But truncateToolOutputs logic is idempotent (msg > 500 -> 500).
+          // Let's create a hash or check to see if it actually changes anything.
+          const beforeJson = JSON.stringify(conversationHistory);
+          conversationHistory = truncateToolOutputs(conversationHistory);
+          const afterJson = JSON.stringify(conversationHistory);
 
-             if (beforeJson !== afterJson) {
-                 console.log(`[Agentic Loop] Tool outputs truncated. Retrying...`);
-                 // Don't increment retryCount for context fix
-                 continue;
-             } else {
-                 console.warn(`[Agentic Loop] Tool truncation didn't reduce size (or already truncated). Bubble up error.`);
-                 throw error; // Let generateAdventureTurn handle it with semantic compression
-             }
+          if (beforeJson !== afterJson) {
+            console.log(`[Agentic Loop] Tool outputs truncated. Retrying...`);
+            // Don't increment retryCount for context fix
+            continue;
+          } else {
+            console.warn(
+              `[Agentic Loop] Tool truncation didn't reduce size (or already truncated). Bubble up error.`,
+            );
+            throw error; // Let generateAdventureTurn handle it with semantic compression
+          }
         }
 
         // 2. Handle Malformed Tool Calls -> Retry
@@ -682,10 +694,12 @@ Consider setting nextInitialStage if you know what stage would be best for the n
           errorMessage.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
-          console.warn(`[Agentic Loop] Malformed tool call. Retry ${retryCount}/${maxRetries}`);
+          console.warn(
+            `[Agentic Loop] Malformed tool call. Retry ${retryCount}/${maxRetries}`,
+          );
 
           if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
-             // Gemini fallback strategy
+            // Gemini fallback strategy
             effectiveToolConfig = undefined;
             effectiveSchema = finishTurnSchema;
             maxRetries = 4;

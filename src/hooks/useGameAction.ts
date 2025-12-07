@@ -262,7 +262,6 @@ export const useGameAction = ({
           }));
 
           updateProviderStats(
-            aiSettings,
             handleSaveSettings,
             aiSettings.story.providerId,
             aggregatedUsage,
@@ -383,17 +382,16 @@ export const useGameAction = ({
 
         // Check for System Toasts (e.g. from Context Compression)
         if (response.systemToasts && response.systemToasts.length > 0) {
-            // We need to import useToast hook logic here or dispatch event.
-            // Since useGameAction is a hook, we can just use the toast context if we had it passed in.
-            // Wait, useGameAction doesn't have toast context. It returns stateChanges.
-            // But we ARE returning stateChanges. Let's add them there?
-            // "entitiesUnlocked" is part of state changes.
-            // We need to modify stateChanges to include system alerts?
-            // Or better, let's look at where handleAction is called.
-            // Ah, AdventurePage calls handleAction.
-
-            // Actually, we can just hack it here if we want or return it.
-            // Let's add "systemNotifications" to "stateChanges" returned by handleAction.
+          // We need to import useToast hook logic here or dispatch event.
+          // Since useGameAction is a hook, we can just use the toast context if we had it passed in.
+          // Wait, useGameAction doesn't have toast context. It returns stateChanges.
+          // But we ARE returning stateChanges. Let's add them there?
+          // "entitiesUnlocked" is part of state changes.
+          // We need to modify stateChanges to include system alerts?
+          // Or better, let's look at where handleAction is called.
+          // Ah, AdventurePage calls handleAction.
+          // Actually, we can just hack it here if we want or return it.
+          // Let's add "systemNotifications" to "stateChanges" returned by handleAction.
         }
 
         const stateChanges = {
@@ -536,7 +534,6 @@ export const useGameAction = ({
 
         // Update provider stats
         updateProviderStats(
-          aiSettings,
           handleSaveSettings,
           aiSettings.story.providerId,
           usage,

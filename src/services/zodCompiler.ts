@@ -890,10 +890,7 @@ function processZodToGeminiCompatible(
       if (isNullable) {
         const innerType = (value as ZodNullable<any>)._def.innerType;
         const innerTypeName = innerType._def.typeName;
-        if (
-          innerTypeName === "ZodOptional" ||
-          innerTypeName === "ZodDefault"
-        ) {
+        if (innerTypeName === "ZodOptional" || innerTypeName === "ZodDefault") {
           // It's optional if it's explicitly optional/default, even if nullable
         } else {
           // If it's just nullable (e.g. string | null), it is technically REQUIRED to be present (as null)
@@ -988,7 +985,6 @@ export function createOpenAITool(
     },
   };
 }
-
 
 /**
  * 从 Zod Schema 创建 OpenRouter 工具定义 (Nested, Standard)

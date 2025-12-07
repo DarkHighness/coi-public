@@ -35,10 +35,7 @@ import {
   createToolResponseMessage,
 } from "../messageTypes";
 
-import {
-  GenerateContentResult,
-  generateContentUnifiedInternal,
-} from "./core";
+import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
 
 import {
   getProviderConfig,
@@ -65,9 +62,7 @@ export interface ForceUpdateResult {
 /**
  * 生成强制更新 (Force Update / Sudo)
  */
-import {
-  isContextLengthError,
-} from "./contextCompressor";
+import { isContextLengthError } from "./contextCompressor";
 import {
   getCompressedContextOptions,
   CompressionLevel,
@@ -96,88 +91,99 @@ export const generateForceUpdate = async (
 
   while (true) {
     try {
-        // 2. 构建完整上下文
-        let contextOptions: ContextBuilderOptions = {
-            outline: inputState.outline,
-            gameState: inputState,
-            recentHistory: context.recentHistory,
-            summaries: inputState.summaries || [],
-            godMode: true,
-            aliveEntities: inputState.aliveEntities,
-        };
+      // 2. 构建完整上下文
+      let contextOptions: ContextBuilderOptions = {
+        outline: inputState.outline,
+        gameState: inputState,
+        recentHistory: context.recentHistory,
+        summaries: inputState.summaries || [],
+        godMode: true,
+        aliveEntities: inputState.aliveEntities,
+      };
 
-        // Apply compression if needed
-        if (compressionLevel > CompressionLevel.NONE) {
-            contextOptions = getCompressedContextOptions(contextOptions, compressionLevel);
+      // Apply compression if needed
+      if (compressionLevel > CompressionLevel.NONE) {
+        contextOptions = getCompressedContextOptions(
+          contextOptions,
+          compressionLevel,
+        );
+      }
+
+      // Use buildLayeredContext to get the full context string
+      const layers = buildLayeredContext(contextOptions);
+      const fullContext = `${layers.staticLayer}\n${layers.semiStaticLayer}\n${layers.dynamicLayer}`;
+
+      // 3. 构建系统指令
+      const systemInstruction = getForceUpdateSystemInstruction(
+        language,
+        prompt,
+        fullContext,
+      );
+
+      // 4. 准备初始消息
+      const contextMessage = createUserMessage(
+        JSON.stringify({
+          task: "FORCE_UPDATE",
+          command: prompt,
+        }),
+      );
+
+      // 5. 运行 Force Update Loop
+      const result = await runForceUpdateLoop(
+        instance.protocol,
+        instance,
+        modelId,
+        systemInstruction,
+        [contextMessage],
+        inputState,
+        settings,
+      );
+
+      // Use reliable comparison
+      if ((compressionLevel as unknown as number) > 0) {
+        result.response.systemToasts = [
+          ...(result.response.systemToasts || []),
+          {
+            message: `Force Update compressed (Level ${compressionLevel}) due to limits.`,
+            type: "warning",
+          },
+        ];
+
+        // Inject Log Entry (ForceUpdateResult might not have logs array in type definition? Let's check types.ts later.
+        // ForceUpdateResult uses GameResponse? No.
+        // ForceUpdateResult is { success: boolean, data?: any, logs?: LogEntry[], response: ForceUpdateResponse }.
+        // Let's assume it has logs based on usage in useGameAction.
+        if (result.logs) {
+          result.logs.push(
+            createLogEntry(
+              "system",
+              "context-manager",
+              "compression",
+              { compressionLevel, reason: "context_length_exceeded" },
+              {
+                message: `Force Update context rebuilt with compression level ${compressionLevel}`,
+              },
+            ),
+          );
         }
+      }
 
-        // Use buildLayeredContext to get the full context string
-        const layers = buildLayeredContext(contextOptions);
-        const fullContext = `${layers.staticLayer}\n${layers.semiStaticLayer}\n${layers.dynamicLayer}`;
-
-        // 3. 构建系统指令
-        const systemInstruction = getForceUpdateSystemInstruction(
-            language,
-            prompt,
-            fullContext,
-        );
-
-        // 4. 准备初始消息
-        const contextMessage = createUserMessage(
-            JSON.stringify({
-            task: "FORCE_UPDATE",
-            command: prompt,
-            }),
-        );
-
-        // 5. 运行 Force Update Loop
-        const result = await runForceUpdateLoop(
-            instance.protocol,
-            instance,
-            modelId,
-            systemInstruction,
-            [contextMessage],
-            inputState,
-            settings,
-        );
-
-        // Use reliable comparison
-        if ((compressionLevel as unknown as number) > 0) {
-            result.response.systemToasts = [
-                ...(result.response.systemToasts || []),
-                {
-                    message: `Force Update compressed (Level ${compressionLevel}) due to limits.`,
-                    type: "warning"
-                }
-            ];
-
-             // Inject Log Entry (ForceUpdateResult might not have logs array in type definition? Let's check types.ts later.
-             // ForceUpdateResult uses GameResponse? No.
-             // ForceUpdateResult is { success: boolean, data?: any, logs?: LogEntry[], response: ForceUpdateResponse }.
-             // Let's assume it has logs based on usage in useGameAction.
-             if (result.logs) {
-                 result.logs.push(createLogEntry(
-                    "system",
-                    "context-manager",
-                    "compression",
-                    { compressionLevel, reason: "context_length_exceeded" },
-                    { message: `Force Update context rebuilt with compression level ${compressionLevel}` },
-                ));
-             }
-        }
-
-        return result;
+      return result;
     } catch (e: any) {
-        if (isContextLengthError(e)) {
-            console.warn(`[ForceUpdate] Context length exceeded with Content Compression Level ${compressionLevel}.`);
-            if (compressionLevel < maxCompressionLevel) {
-                // Manually increment since CompressionLevel is an enum/number
-                compressionLevel = (compressionLevel + 1) as CompressionLevel;
-                console.log(`[ForceUpdate] Retrying with Content Compression Level ${compressionLevel}...`);
-                continue;
-            }
+      if (isContextLengthError(e)) {
+        console.warn(
+          `[ForceUpdate] Context length exceeded with Content Compression Level ${compressionLevel}.`,
+        );
+        if (compressionLevel < maxCompressionLevel) {
+          // Manually increment since CompressionLevel is an enum/number
+          compressionLevel = (compressionLevel + 1) as CompressionLevel;
+          console.log(
+            `[ForceUpdate] Retrying with Content Compression Level ${compressionLevel}...`,
+          );
+          continue;
         }
-        throw e;
+      }
+      throw e;
     }
   }
 };

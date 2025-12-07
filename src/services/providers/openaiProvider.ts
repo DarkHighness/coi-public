@@ -310,18 +310,19 @@ export async function generateContent(
           // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
           // This applies to both standard OpenAI models and Gemini compatibility mode.
           // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
-          response_format: (schema && (!tools || tools.length === 0))
-            ? isGemini
-              ? {
-                  type: "json_schema",
-                  json_schema: {
-                    name: "response",
-                    schema: zodToGeminiCompatibleSchema(schema),
-                    strict: false, // Gemini usually doesn't support strict mode via OpenAI compat
-                  },
-                }
-              : zodToOpenAIResponseFormat(schema)
-            : undefined,
+          response_format:
+            schema && (!tools || tools.length === 0)
+              ? isGemini
+                ? {
+                    type: "json_schema",
+                    json_schema: {
+                      name: "response",
+                      schema: zodToGeminiCompatibleSchema(schema),
+                      strict: false, // Gemini usually doesn't support strict mode via OpenAI compat
+                    },
+                  }
+                : zodToOpenAIResponseFormat(schema)
+              : undefined,
         };
 
       let content = "";

@@ -1242,7 +1242,8 @@ export const CompressionLevel = {
   EXTREME: 3,
 } as const;
 
-export type CompressionLevel = typeof CompressionLevel[keyof typeof CompressionLevel];
+export type CompressionLevel =
+  (typeof CompressionLevel)[keyof typeof CompressionLevel];
 
 /**
  * Returns compressed options based on the level.
@@ -1250,7 +1251,7 @@ export type CompressionLevel = typeof CompressionLevel[keyof typeof CompressionL
  */
 export function getCompressedContextOptions(
   options: ContextBuilderOptions,
-  level: CompressionLevel
+  level: CompressionLevel,
 ): ContextBuilderOptions {
   if (level === CompressionLevel.NONE) return options;
 
@@ -1267,8 +1268,8 @@ export function getCompressedContextOptions(
   if (level === CompressionLevel.MODERATE) {
     // Priority: Shrink context length (history) first, keep strict entity limits largely intact
     if (newOptions.recentHistory) {
-        // Keep last 6 turns (approx 50-60% reduction in narrative history)
-        newOptions.recentHistory = newOptions.recentHistory.slice(-6);
+      // Keep last 6 turns (approx 50-60% reduction in narrative history)
+      newOptions.recentHistory = newOptions.recentHistory.slice(-6);
     }
     // Slight reduction in limits
     newOptions.limits = {
@@ -1304,7 +1305,9 @@ export function getCompressedContextOptions(
     }
     // Summaries: Keep only the very last one
     if (newOptions.summaries && newOptions.summaries.length > 0) {
-      newOptions.summaries = [newOptions.summaries[newOptions.summaries.length - 1]];
+      newOptions.summaries = [
+        newOptions.summaries[newOptions.summaries.length - 1],
+      ];
     }
   }
 
@@ -1325,7 +1328,9 @@ export function getCompressedContextOptions(
     }
     // Keep last summary
     if (newOptions.summaries && newOptions.summaries.length > 0) {
-      newOptions.summaries = [newOptions.summaries[newOptions.summaries.length - 1]];
+      newOptions.summaries = [
+        newOptions.summaries[newOptions.summaries.length - 1],
+      ];
     }
   }
 

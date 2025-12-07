@@ -151,11 +151,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
       if (changes.systemToasts && changes.systemToasts.length > 0) {
         changes.systemToasts.forEach((st) => {
-            allChanges.push({
-                msg: st.message,
-                type: st.type,
-                items: [],
-            });
+          allChanges.push({
+            msg: st.message,
+            type: st.type,
+            items: [],
+          });
         });
       }
 

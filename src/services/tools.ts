@@ -199,11 +199,15 @@ export type AgentStage = "query" | "add" | "remove" | "update" | "narrative";
  */
 export const QUERY_STORY_TOOL = defineTool({
   name: "query_story",
-  description: "Search story history. Supports regex, location/time filters, pagination.",
+  description:
+    "Search story history. Supports regex, location/time filters, pagination.",
   parameters: z.object({
     keyword: z.string().optional().describe("Regex pattern. Case-insensitive."),
     location: z.string().optional().describe("Filter by location."),
-    inGameTime: z.string().optional().describe("Filter by time (e.g., 'Day 3', 'night')."),
+    inGameTime: z
+      .string()
+      .optional()
+      .describe("Filter by time (e.g., 'Day 3', 'night')."),
     turnRange: z
       .object({
         start: z.number().optional(),
@@ -214,7 +218,10 @@ export const QUERY_STORY_TOOL = defineTool({
     order: z.enum(["asc", "desc"]).optional().describe("Default: 'desc'."),
     limit: z.number().optional().describe("Max results. Default: 10."),
     page: z.number().optional().describe("Page number (1-indexed)."),
-    includeContext: z.boolean().optional().describe("Include following player action."),
+    includeContext: z
+      .boolean()
+      .optional()
+      .describe("Include following player action."),
   }),
 });
 
@@ -234,7 +241,8 @@ export const QUERY_TURN_TOOL = defineTool({
  */
 export const QUERY_SUMMARY_TOOL = defineTool({
   name: "query_summary",
-  description: "Search OLDER summaries (latest already in context). Use for events from much earlier.",
+  description:
+    "Search OLDER summaries (latest already in context). Use for events from much earlier.",
   parameters: z.object({
     keyword: z.string().optional().describe("Regex to match in summary text."),
     nodeRange: z
@@ -255,9 +263,13 @@ export const QUERY_SUMMARY_TOOL = defineTool({
  */
 export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
   name: "query_recent_context",
-  description: "Get segments BEYOND current context window. Recent ~10 already in context.",
+  description:
+    "Get segments BEYOND current context window. Recent ~10 already in context.",
   parameters: z.object({
-    count: z.number().optional().describe("Number of segments. Default: 10, Max: 20."),
+    count: z
+      .number()
+      .optional()
+      .describe("Number of segments. Default: 10, Max: 20."),
   }),
 });
 
@@ -422,7 +434,8 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
 // DocumentType from rag/types.ts: "story" | "npc" | "location" | "item" | "knowledge" | "quest" | "event" | "outline"
 export const RAG_SEARCH_TOOL = defineTool({
   name: "rag_search",
-  description: "Semantic search across all game entities (story/npcs/locations/etc). Returns visible + hidden info.",
+  description:
+    "Semantic search across all game entities (story/npcs/locations/etc). Returns visible + hidden info.",
   parameters: z.object({
     query: z.string().describe("Natural language query."),
     types: z
@@ -456,8 +469,14 @@ export const ADD_INVENTORY_TOOL = defineTool({
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (inv:N)."),
     name: z.string().describe("Item name."),
-    visible: inventoryItemVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: inventoryItemHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    visible: inventoryItemVisibleSchema
+      .partial()
+      .optional()
+      .describe("Visible props."),
+    hidden: inventoryItemHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props (AI/GM)."),
     lore: z.string().optional().describe("Lore."),
     icon: z.string().optional().describe("Emoji."),
   }),
@@ -471,8 +490,14 @@ export const ADD_RELATIONSHIP_TOOL = defineTool({
     name: z.string().describe("NPC name."),
     currentLocation: z.string().optional().describe("Location ID (loc:N)."),
     known: z.boolean().optional().describe("Player knows NPC? Default: true."),
-    visible: relationshipVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: relationshipHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    visible: relationshipVisibleSchema
+      .partial()
+      .optional()
+      .describe("Visible props."),
+    hidden: relationshipHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props (AI/GM)."),
     notes: z.string().optional().describe("Notes."),
     icon: z.string().optional().describe("Emoji."),
   }),
@@ -484,11 +509,20 @@ export const ADD_LOCATION_TOOL = defineTool({
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (loc:N)."),
     name: z.string().describe("Location name."),
-    visible: locationVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: locationHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    visible: locationVisibleSchema
+      .partial()
+      .optional()
+      .describe("Visible props."),
+    hidden: locationHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props (AI/GM)."),
     environment: z.string().optional().describe("Atmosphere."),
     isVisited: z.boolean().optional().describe("Visited? Default: false."),
-    unlocked: z.boolean().optional().describe("Secrets unlocked? Default: false."),
+    unlocked: z
+      .boolean()
+      .optional()
+      .describe("Secrets unlocked? Default: false."),
     unlockReason: z.string().optional().describe("Unlock reason."),
     icon: z.string().optional().describe("Emoji."),
   }),
@@ -502,7 +536,10 @@ export const ADD_QUEST_TOOL = defineTool({
     title: z.string().describe("Quest title."),
     type: questTypeSchema.optional().describe("Quest type."),
     visible: questVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: questHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    hidden: questHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props (AI/GM)."),
     icon: z.string().optional().describe("Emoji."),
   }),
 });
@@ -514,8 +551,14 @@ export const ADD_KNOWLEDGE_TOOL = defineTool({
     id: z.string().optional().describe("Optional ID (know:N)."),
     title: z.string().describe("Title."),
     category: knowledgeCategorySchema.optional().describe("Category."),
-    visible: knowledgeVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: knowledgeHiddenSchema.partial().optional().describe("Hidden props (AI/GM)."),
+    visible: knowledgeVisibleSchema
+      .partial()
+      .optional()
+      .describe("Visible props."),
+    hidden: knowledgeHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props (AI/GM)."),
     discoveredAt: z.string().optional().describe("Discovered time."),
     relatedTo: z.array(z.string()).optional().describe("Related IDs."),
     icon: z.string().optional().describe("Emoji."),
@@ -530,7 +573,9 @@ export const ADD_TIMELINE_TOOL = defineTool({
     gameTime: z.string().optional().describe("Time."),
     category: timelineEventCategorySchema.optional().describe("Category."),
     visible: timelineEventVisibleSchema.optional().describe("Visible info."),
-    hidden: timelineEventHiddenSchema.optional().describe("Hidden info (AI/GM)."),
+    hidden: timelineEventHiddenSchema
+      .optional()
+      .describe("Hidden info (AI/GM)."),
     involvedEntities: z.array(z.string()).optional().describe("Involved IDs."),
     chainId: z.string().optional().describe("CausalChain link (chain:N)."),
     known: z.boolean().optional().describe("Player knows? Default: true."),
@@ -549,16 +594,25 @@ export const ADD_FACTION_TOOL = defineTool({
         agenda: z.string().optional().describe("Agenda."),
         members: z.array(factionMemberSchema).optional().describe("Members."),
         influence: z.string().optional().describe("Influence."),
-        relations: z.array(factionRelationSchema).optional().describe("Alliances."),
+        relations: z
+          .array(factionRelationSchema)
+          .optional()
+          .describe("Alliances."),
       })
       .optional()
       .describe("Public info."),
     hidden: z
       .object({
         agenda: z.string().optional().describe("Secret agenda."),
-        members: z.array(factionMemberSchema).optional().describe("Secret members."),
+        members: z
+          .array(factionMemberSchema)
+          .optional()
+          .describe("Secret members."),
         influence: z.string().optional().describe("True influence."),
-        relations: z.array(factionRelationSchema).optional().describe("Secret alliances."),
+        relations: z
+          .array(factionRelationSchema)
+          .optional()
+          .describe("Secret alliances."),
       })
       .optional()
       .describe("Hidden info (AI/GM)."),
@@ -626,8 +680,14 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
     id: z.string().optional().describe("Optional ID (cond:N)."),
     name: z.string().describe("Condition name."),
     type: conditionTypeSchema.optional().describe("Type."),
-    visible: conditionVisibleSchema.partial().optional().describe("Visible props."),
-    hidden: conditionHiddenSchema.partial().optional().describe("Hidden props."),
+    visible: conditionVisibleSchema
+      .partial()
+      .optional()
+      .describe("Visible props."),
+    hidden: conditionHiddenSchema
+      .partial()
+      .optional()
+      .describe("Hidden props."),
     effects: z
       .object({
         visible: z.array(z.string()).optional(),
@@ -648,7 +708,10 @@ export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
     name: z.string().describe("Trait name."),
     description: z.string().optional().describe("Description."),
     effects: z.array(z.string()).optional().describe("Effects."),
-    triggerConditions: z.array(z.string()).optional().describe("Trigger conditions."),
+    triggerConditions: z
+      .array(z.string())
+      .optional()
+      .describe("Trigger conditions."),
   }),
 });
 
@@ -741,8 +804,14 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
   parameters: z.object({
     id: z.string().describe("ID (inv:N)."),
     name: z.string().nullish().describe("New name."),
-    visible: inventoryItemVisibleSchema.partial().nullish().describe("Visible props."),
-    hidden: inventoryItemHiddenSchema.partial().nullish().describe("Hidden props."),
+    visible: inventoryItemVisibleSchema
+      .partial()
+      .nullish()
+      .describe("Visible props."),
+    hidden: inventoryItemHiddenSchema
+      .partial()
+      .nullish()
+      .describe("Hidden props."),
     lore: z.string().nullish().describe("Lore."),
     icon: z.string().nullish().describe("Emoji."),
   }),
@@ -756,8 +825,14 @@ export const UPDATE_RELATIONSHIP_TOOL = defineTool({
     name: z.string().nullish().describe("New name."),
     currentLocation: z.string().nullish().describe("Location ID."),
     known: z.boolean().nullish().describe("Known?"),
-    visible: relationshipVisibleSchema.partial().nullish().describe("Visible props."),
-    hidden: relationshipHiddenSchema.partial().nullish().describe("Hidden props."),
+    visible: relationshipVisibleSchema
+      .partial()
+      .nullish()
+      .describe("Visible props."),
+    hidden: relationshipHiddenSchema
+      .partial()
+      .nullish()
+      .describe("Hidden props."),
     notes: z.string().nullish().describe("Notes."),
     icon: z.string().nullish().describe("Emoji."),
   }),
@@ -769,7 +844,10 @@ export const UPDATE_LOCATION_TOOL = defineTool({
   parameters: z.object({
     id: z.string().describe("ID (loc:N)."),
     name: z.string().nullish().describe("New name."),
-    visible: locationVisibleSchema.partial().nullish().describe("Visible props."),
+    visible: locationVisibleSchema
+      .partial()
+      .nullish()
+      .describe("Visible props."),
     hidden: locationHiddenSchema.partial().nullish().describe("Hidden props."),
     environment: z.string().nullish().describe("Atmosphere."),
     isVisited: z.boolean().nullish().describe("Visited?"),
@@ -813,7 +891,10 @@ export const UPDATE_KNOWLEDGE_TOOL = defineTool({
     id: z.string().describe("ID (know:N)."),
     title: z.string().nullish().describe("New title."),
     category: knowledgeCategorySchema.nullish().describe("Category."),
-    visible: knowledgeVisibleSchema.partial().nullish().describe("Visible props."),
+    visible: knowledgeVisibleSchema
+      .partial()
+      .nullish()
+      .describe("Visible props."),
     hidden: knowledgeHiddenSchema.partial().nullish().describe("Hidden props."),
     discoveredAt: z.string().nullish().describe("Time."),
     relatedTo: z.array(z.string()).nullish().describe("Related IDs."),
@@ -848,16 +929,25 @@ export const UPDATE_FACTION_TOOL = defineTool({
         agenda: z.string().nullish().describe("Agenda."),
         members: z.array(factionMemberSchema).nullish().describe("Members."),
         influence: z.string().nullish().describe("Influence."),
-        relations: z.array(factionRelationSchema).nullish().describe("Relations."),
+        relations: z
+          .array(factionRelationSchema)
+          .nullish()
+          .describe("Relations."),
       })
       .nullish()
       .describe("Public info."),
     hidden: z
       .object({
         agenda: z.string().nullish().describe("Secret agenda."),
-        members: z.array(factionMemberSchema).nullish().describe("Secret members."),
+        members: z
+          .array(factionMemberSchema)
+          .nullish()
+          .describe("Secret members."),
         influence: z.string().nullish().describe("True influence."),
-        relations: z.array(factionRelationSchema).nullish().describe("Secret relations."),
+        relations: z
+          .array(factionRelationSchema)
+          .nullish()
+          .describe("Secret relations."),
       })
       .nullish()
       .describe("Hidden info."),
@@ -979,7 +1069,10 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
     id: z.string().optional().describe("ID (cond:N)."),
     name: z.string().optional().describe("Name."),
     type: conditionTypeSchema.nullish().describe("Type."),
-    visible: conditionVisibleSchema.partial().nullish().describe("Visible props."),
+    visible: conditionVisibleSchema
+      .partial()
+      .nullish()
+      .describe("Visible props."),
     hidden: conditionHiddenSchema.partial().nullish().describe("Hidden props."),
     effects: z
       .object({
@@ -1001,7 +1094,10 @@ export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
     name: z.string().optional().describe("Name."),
     description: z.string().nullish().describe("Description."),
     effects: z.array(z.string()).nullish().describe("Effects."),
-    triggerConditions: z.array(z.string()).nullish().describe("Trigger conditions."),
+    triggerConditions: z
+      .array(z.string())
+      .nullish()
+      .describe("Trigger conditions."),
   }),
 });
 
@@ -1027,7 +1123,8 @@ export const unlockEntityCategorySchema = z.enum([
 
 export const UNLOCK_ENTITY_TOOL = defineTool({
   name: "unlock_entity",
-  description: "Unlock entity hidden info. Requires PROOF and COMPLETE revelation.",
+  description:
+    "Unlock entity hidden info. Requires PROOF and COMPLETE revelation.",
   parameters: z.object({
     category: unlockEntityCategorySchema.describe("Category."),
     id: z.string().optional().describe("ID (inv:N)."),

@@ -1562,10 +1562,12 @@ This is a HINT for optimization. The system may still start from query if needed
       z.object({
         message: z.string(),
         type: z.enum(["info", "warning", "error", "success"]),
-      })
+      }),
     )
     .nullish()
-    .describe("System notifications to display to the user (e.g. compression warnings)."),
+    .describe(
+      "System notifications to display to the user (e.g. compression warnings).",
+    ),
   ending: z
     .enum([
       "continue",

@@ -23,8 +23,12 @@ import {
  * Helper to update provider token statistics
  */
 export const updateProviderStats = (
-  settings: AISettings,
-  updateSettings: (s: AISettings) => void,
+  updateSettings: (
+    s:
+      | AISettings
+      | Partial<AISettings>
+      | ((prev: AISettings) => AISettings | Partial<AISettings>),
+  ) => void,
   providerId: string,
   usage?: {
     promptTokens: number;
@@ -34,33 +38,36 @@ export const updateProviderStats = (
 ) => {
   if (!usage || !providerId) return;
 
-  const providerIndex = settings.providers.instances.findIndex(
-    (p) => p.id === providerId,
-  );
+  updateSettings((currentSettings) => {
+    const providerIndex = currentSettings.providers.instances.findIndex(
+      (p) => p.id === providerId,
+    );
 
-  if (providerIndex === -1) return;
+    if (providerIndex === -1) return currentSettings;
 
-  const instance = settings.providers.instances[providerIndex];
-  const newStats = {
-    promptTokens: (instance.tokenStats?.promptTokens || 0) + usage.promptTokens,
-    completionTokens:
-      (instance.tokenStats?.completionTokens || 0) + usage.completionTokens,
-    totalTokens: (instance.tokenStats?.totalTokens || 0) + usage.totalTokens,
-  };
+    const instance = currentSettings.providers.instances[providerIndex];
+    const newStats = {
+      promptTokens:
+        (instance.tokenStats?.promptTokens || 0) + usage.promptTokens,
+      completionTokens:
+        (instance.tokenStats?.completionTokens || 0) + usage.completionTokens,
+      totalTokens: (instance.tokenStats?.totalTokens || 0) + usage.totalTokens,
+    };
 
-  const newInstances = [...settings.providers.instances];
-  newInstances[providerIndex] = {
-    ...instance,
-    tokenStats: newStats,
-    lastModified: Date.now(),
-  };
+    const newInstances = [...currentSettings.providers.instances];
+    newInstances[providerIndex] = {
+      ...instance,
+      tokenStats: newStats,
+      lastModified: Date.now(),
+    };
 
-  updateSettings({
-    ...settings,
-    providers: {
-      ...settings.providers,
-      instances: newInstances,
-    },
+    return {
+      ...currentSettings,
+      providers: {
+        ...currentSettings.providers,
+        instances: newInstances,
+      },
+    };
   });
 };
 

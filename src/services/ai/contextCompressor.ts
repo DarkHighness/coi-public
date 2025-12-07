@@ -28,14 +28,15 @@ export const CompressionLevel = {
   EXTREME: 3,
 } as const;
 
-export type CompressionLevel = typeof CompressionLevel[keyof typeof CompressionLevel];
+export type CompressionLevel =
+  (typeof CompressionLevel)[keyof typeof CompressionLevel];
 
 /**
  * Compresses context by truncating large tool outputs.
  * This is "Level 1" compression - low impact, high return for data-heavy tools.
  */
 export function truncateToolOutputs(
-  messages: UnifiedMessage[]
+  messages: UnifiedMessage[],
 ): UnifiedMessage[] {
   console.log(`[ContextCompressor] Truncating tool outputs...`);
   return messages.map((msg) => {
@@ -44,7 +45,10 @@ export function truncateToolOutputs(
       return {
         ...msg,
         content: msg.content.map((part) => {
-          if (part.type === "tool_result" && typeof part.toolResult.content === "string") {
+          if (
+            part.type === "tool_result" &&
+            typeof part.toolResult.content === "string"
+          ) {
             const content = part.toolResult.content;
             if (content.length > 500) {
               return {

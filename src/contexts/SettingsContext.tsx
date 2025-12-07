@@ -16,7 +16,12 @@ const MODEL_CACHE_KEY = "chronicles_model_cache";
 
 interface SettingsContextType {
   settings: AISettings;
-  updateSettings: (newSettings: AISettings | Partial<AISettings>) => void;
+  updateSettings: (
+    newSettings:
+      | AISettings
+      | Partial<AISettings>
+      | ((prev: AISettings) => AISettings | Partial<AISettings>),
+  ) => void;
   resetSettings: () => void;
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
@@ -236,16 +241,27 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
    * Supports both full settings replacement and partial updates
    */
   const updateSettings = useCallback(
-    (newSettings: AISettings | Partial<AISettings>) => {
+    (
+      newSettings:
+        | AISettings
+        | Partial<AISettings>
+        | ((prev: AISettings) => AISettings | Partial<AISettings>),
+    ) => {
+      // Resolve the new settings if it's a function
+      const resolvedSettings =
+        typeof newSettings === "function"
+          ? newSettings(settingsRef.current)
+          : newSettings;
+
       const isFullSettings = (
         s: AISettings | Partial<AISettings>,
       ): s is AISettings => {
         return "providers" in s && "contextLen" in s && "story" in s;
       };
 
-      const mergedSettings = isFullSettings(newSettings)
-        ? newSettings
-        : mergeSettings({ ...settingsRef.current, ...newSettings });
+      const mergedSettings = isFullSettings(resolvedSettings)
+        ? resolvedSettings
+        : mergeSettings({ ...settingsRef.current, ...resolvedSettings });
 
       setSettings(mergedSettings);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedSettings));
