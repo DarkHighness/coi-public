@@ -439,6 +439,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
     // Handle Tool Calls
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
       .functionCalls;
+    const textContent = (result! as { content?: string }).content;
 
     if (result && functionCalls && functionCalls.length > 0) {
       let toolCalls: UnifiedToolCallResult[] = functionCalls;
@@ -464,6 +465,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
             name: fc.name,
             arguments: fc.args,
           })),
+          textContent,
         ),
       );
 

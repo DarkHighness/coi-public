@@ -86,17 +86,29 @@ export const createToolCallMessage = (
     name: string;
     arguments: Record<string, unknown>;
   }>,
-): UnifiedMessage => ({
-  role: "assistant",
-  content: toolCalls.map((tc) => ({
-    type: "tool_use" as const,
-    toolUse: {
-      id: tc.id,
-      name: tc.name,
-      args: tc.arguments,
-    },
-  })),
-});
+  textContent?: string,
+): UnifiedMessage => {
+  const content: MessagePart[] = [];
+
+  // Add text content if present (important for Claude and other models that return text with tool calls)
+  if (textContent) {
+    content.push({ type: "text", text: textContent });
+  }
+
+  // Add tool calls
+  for (const tc of toolCalls) {
+    content.push({
+      type: "tool_use" as const,
+      toolUse: {
+        id: tc.id,
+        name: tc.name,
+        args: tc.arguments,
+      },
+    });
+  }
+
+  return { role: "assistant", content };
+};
 
 export const createToolResponseMessage = (
   responses: Array<{ toolCallId: string; name: string; content: unknown }>,

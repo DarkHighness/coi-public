@@ -481,6 +481,7 @@ export const runSummaryAgenticLoop = async (
     // Process tool calls
     const functionCalls = (result as { functionCalls?: ToolCallResult[] })
       .functionCalls;
+    const textContent = (result as { content?: string }).content;
 
     if (functionCalls && functionCalls.length > 0) {
       const turnToolCalls: ToolCallRecord[] = [];
@@ -492,6 +493,7 @@ export const runSummaryAgenticLoop = async (
             name: fc.name,
             arguments: fc.args,
           })),
+          textContent,
         ),
       );
 

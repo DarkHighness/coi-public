@@ -492,10 +492,14 @@ export async function generateContent(
 
       console.log(`[OpenAI] Generation complete. Usage:`, usage);
 
-      // 如果有工具调用，返回工具调用结果
+      // 如果有工具调用，返回工具调用结果（同时保留 content）
       if (toolCalls.length > 0) {
         return {
-          result: { functionCalls: toolCalls },
+          result: {
+            functionCalls: toolCalls,
+            // 保留 content 以便在下次请求时包含
+            content: content || undefined,
+          },
           usage,
           raw: rawResponse,
         };

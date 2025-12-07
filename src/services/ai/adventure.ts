@@ -795,6 +795,8 @@ Consider setting nextInitialStage if you know what stage would be best for the n
 
     const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
       .functionCalls;
+    // 提取文本内容（某些模型如 Claude 会同时返回 content 和 tool_calls）
+    const textContent = (result! as { content?: string }).content;
 
     if (result && functionCalls && functionCalls.length > 0) {
       const toolCalls: UnifiedToolCallResult[] = functionCalls;
@@ -807,6 +809,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
             name: fc.name,
             arguments: fc.args,
           })),
+          textContent, // 传递文本内容以保持完整性
         ),
       );
 

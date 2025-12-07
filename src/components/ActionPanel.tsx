@@ -296,14 +296,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       <div className="bg-theme-bg/80 backdrop-blur-md p-4 pb-6 md:px-8">
         <div className="max-w-4xl mx-auto space-y-4">
-          {/* Action Chips (Choices) */}
-          {!gameState.isProcessing &&
-            !isTranslating &&
-            availableChoices.length > 0 && (
+          {/* Action Controls - Always show retry/jump buttons when not processing */}
+          {!gameState.isProcessing && !isTranslating && (
               <div className="animate-fade-in-up">
-                {/* Mobile Toggle + Retry Button */}
+                {/* Retry + Jump Buttons - Always visible */}
                 <div className="flex justify-center items-center gap-2 mb-2">
-                  {/* Retry Button */}
+                  {/* Retry Button - Always show */}
                   {onRetry && (
                     <button
                       onClick={onRetry}
@@ -426,99 +424,16 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     </>
                   )}
 
-                  {/* Mobile Toggle */}
-                  <button
-                    onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                    className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
-                  >
-                    {isChoicesExpanded ? (
-                      <>
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                        {t("hideChoices")}
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M5 15l7-7 7 7"
-                          ></path>
-                        </svg>
-                        {t("showChoices")} ({availableChoices.length})
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Choices List */}
-                <div
-                  className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
-                >
-                  {availableChoices.map((rawChoice, idx) => {
-                    const label = getChoiceLabel(rawChoice);
-                    return (
-                      <div
-                        key={idx}
-                        className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
-                      >
-                        <button
-                          onClick={() => onAction(label)}
-                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
-                        >
-                          <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            {idx + 1}
-                          </span>
-                          <div className="font-medium">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                p: ({ children }) => (
-                                  <span className="inline">{children}</span>
-                                ),
-                                strong: ({ children }) => (
-                                  <span className="font-bold">{children}</span>
-                                ),
-                                em: ({ children }) => (
-                                  <span className="italic">{children}</span>
-                                ),
-                              }}
-                            >
-                              {label}
-                            </ReactMarkdown>
-                          </div>
-                          {(rawChoice as any).consequence &&
-                            gameState.unlockMode && (
-                              <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
-                                {(rawChoice as any).consequence}
-                              </span>
-                            )}
-                        </button>
-                        <button
-                          onClick={(e) => handleRollClick(e, label)}
-                          className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
-                          title={t("roll")}
-                        >
+                  {/* Mobile Toggle - Only show when there are choices */}
+                  {availableChoices.length > 0 && (
+                    <button
+                      onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
+                      className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
+                    >
+                      {isChoicesExpanded ? (
+                        <>
                           <svg
-                            className="w-4 h-4"
+                            className="w-3 h-3"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -526,15 +441,102 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                              strokeWidth="2"
+                              d="M19 9l-7 7-7-7"
                             ></path>
                           </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
+                          {t("hideChoices")}
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 15l7-7 7 7"
+                            ></path>
+                          </svg>
+                          {t("showChoices")} ({availableChoices.length})
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
+
+                {/* Choices List - Only show when there are choices */}
+                {availableChoices.length > 0 && (
+                  <div
+                    className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
+                  >
+                    {availableChoices.map((rawChoice, idx) => {
+                      const label = getChoiceLabel(rawChoice);
+                      return (
+                        <div
+                          key={idx}
+                          className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
+                        >
+                          <button
+                            onClick={() => onAction(label)}
+                            className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
+                          >
+                            <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              {idx + 1}
+                            </span>
+                            <div className="font-medium">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => (
+                                    <span className="inline">{children}</span>
+                                  ),
+                                  strong: ({ children }) => (
+                                    <span className="font-bold">{children}</span>
+                                  ),
+                                  em: ({ children }) => (
+                                    <span className="italic">{children}</span>
+                                  ),
+                                }}
+                              >
+                                {label}
+                              </ReactMarkdown>
+                            </div>
+                            {(rawChoice as any).consequence &&
+                              gameState.unlockMode && (
+                                <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
+                                  {(rawChoice as any).consequence}
+                                </span>
+                              )}
+                          </button>
+                          <button
+                            onClick={(e) => handleRollClick(e, label)}
+                            className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
+                            title={t("roll")}
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                                d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                              ></path>
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
