@@ -135,6 +135,7 @@ export const DEFAULTS: AISettings = {
   manualImageGen: true, // Auto-generate by default
   enableFallbackBackground: true,
   lockEnvTheme: false,
+  disableEnvironmentalEffects: false,
   typewriterSpeed: 15, // Default: 15ms per character
   stackItemsPerPage: 10, // Default: 10 items per page in stack layout (must be even)
   stackShowOutline: true, // Default: show outline in stack mode

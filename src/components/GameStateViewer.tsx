@@ -425,7 +425,9 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
           {gameState.atmosphere.ambience && (
             <InfoRow
               label={t("gameViewer.ambience")}
-              value={gameState.atmosphere.ambience}
+              value={t(`ambience.${gameState.atmosphere.ambience}`, {
+                defaultValue: gameState.atmosphere.ambience,
+              })}
             />
           )}
         </Section>
@@ -581,13 +583,23 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                           {loc.visible.atmosphere.weather && (
                             <InfoRow
                               label={t("gameViewer.weather") || "Weather"}
-                              value={loc.visible.atmosphere.weather}
+                              value={t(
+                                `weather.${loc.visible.atmosphere.weather}`,
+                                {
+                                  defaultValue: loc.visible.atmosphere.weather,
+                                },
+                              )}
                             />
                           )}
                           {loc.visible.atmosphere.ambience && (
                             <InfoRow
                               label={t("gameViewer.ambience") || "Ambience"}
-                              value={loc.visible.atmosphere.ambience}
+                              value={t(
+                                `ambience.${loc.visible.atmosphere.ambience}`,
+                                {
+                                  defaultValue: loc.visible.atmosphere.ambience,
+                                },
+                              )}
                             />
                           )}
                         </div>
@@ -1037,7 +1049,9 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                                     : "bg-theme-surface text-theme-muted"
                         }`}
                       >
-                        {cond.type}
+                        {t(`conditionType.${cond.type}`, {
+                          defaultValue: cond.type,
+                        })}
                       </span>
                     )}
                     {cond.severity && (
@@ -1158,7 +1172,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                         {trait.name}
                       </span>
                       <span className="text-xs px-2 py-0.5 bg-theme-unlocked/10 text-theme-unlocked rounded border border-theme-unlocked/20 uppercase tracking-wider font-bold">
-                        {t("gameViewer.hidden")}
+                        {t("gameViewer.hiddenLabel")}
                       </span>
                     </div>
                     <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-unlocked/30">

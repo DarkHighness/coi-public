@@ -116,6 +116,41 @@ export const SettingsAppearance: React.FC = () => {
             </button>
           </div>
 
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
+            <div>
+              <div className="font-bold text-theme-text">
+                {t("disableEnvironmentalEffects") ||
+                  "Disable Environmental Effects"}
+              </div>
+              <div className="text-xs text-theme-muted">
+                {t("disableEnvironmentalEffectsDesc") ||
+                  "Disable visual weather effects like rain, snow, and fog"}
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                onUpdateSettings({
+                  ...currentSettings,
+                  disableEnvironmentalEffects:
+                    !currentSettings.disableEnvironmentalEffects,
+                })
+              }
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                currentSettings.disableEnvironmentalEffects
+                  ? "bg-theme-primary"
+                  : "bg-theme-border"
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  currentSettings.disableEnvironmentalEffects
+                    ? "left-7"
+                    : "left-1"
+                }`}
+              />
+            </button>
+          </div>
+
           <div className="mt-4 pt-4 border-t border-theme-border/50">
             <div className="flex items-center justify-between mb-3">
               <div>

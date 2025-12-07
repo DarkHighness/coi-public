@@ -1028,6 +1028,8 @@ export interface AISettings {
 
   // Visual Theme Settings
   lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes
+  /** 是否禁用环境视觉特效（如下雨、下雪等） */
+  disableEnvironmentalEffects?: boolean;
 
   // Typewriter Effect Settings
   typewriterSpeed: number; // Characters per interval (1-100, lower = faster)

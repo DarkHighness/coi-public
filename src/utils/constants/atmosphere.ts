@@ -24,11 +24,14 @@ export const AMBIENCES = [
   "rain",
   "storm",
   "cave",
+  "mountain",
+  "swamp",
 
   // Urban & Social
   "city",
   "market",
   "tavern",
+  "village",
 
   // Mood & Genre
   "mystical",
@@ -39,6 +42,11 @@ export const AMBIENCES = [
   // Tech & Sci-Fi
   "scifi",
   "dungeon",
+  "temple",
+  "castle",
+  "ruins",
+  "underwater",
+  "space",
 ] as const;
 
 export type Ambience = (typeof AMBIENCES)[number];
@@ -105,11 +113,18 @@ const AMBIENCE_TO_THEME: Record<Ambience, EnvThemeKey> = {
   rain: "mystery",
   storm: "horror",
   cave: "demonic",
+  mountain: "nature",
+  swamp: "wasteland",
+  underwater: "cyan",
 
   // Urban & Social
   city: "modern",
   market: "gold",
   tavern: "wuxia",
+  village: "nature",
+  temple: "gold",
+  castle: "royal",
+  ruins: "wasteland",
 
   // Mood & Genre
   mystical: "ethereal",
@@ -120,6 +135,7 @@ const AMBIENCE_TO_THEME: Record<Ambience, EnvThemeKey> = {
   // Tech & Sci-Fi
   scifi: "scifi",
   dungeon: "horror",
+  space: "obsidian",
 };
 
 // Mapping from ambience to default visual effect
@@ -132,11 +148,18 @@ const AMBIENCE_TO_EFFECT: Record<Ambience, VisualEffect> = {
   rain: "rain",
   storm: "rain",
   cave: "fog",
+  mountain: "sunny",
+  swamp: "fog",
+  underwater: "fog",
 
   // Urban & Social
   city: null,
   market: "sunny",
   tavern: "embers",
+  village: "sunny",
+  temple: "flicker",
+  castle: "sunny",
+  ruins: "dust",
 
   // Mood & Genre
   mystical: "fog",
@@ -147,6 +170,7 @@ const AMBIENCE_TO_EFFECT: Record<Ambience, VisualEffect> = {
   // Tech & Sci-Fi
   scifi: null,
   dungeon: "flicker",
+  space: null,
 };
 
 // Audio file mapping (ambience name matches audio folder)

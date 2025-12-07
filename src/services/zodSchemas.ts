@@ -318,6 +318,14 @@ export const ambienceSchema = z.enum([
   "snow",
   "storm",
   "tavern",
+  "mountain",
+  "swamp",
+  "village",
+  "temple",
+  "castle",
+  "ruins",
+  "underwater",
+  "space",
 ]);
 
 /** 天气特效枚举 */
@@ -329,6 +337,22 @@ export const weatherEffectSchema = z.enum([
   "embers",
   "flicker",
   "sunny",
+  "clear",
+  "partly_cloudy",
+  "cloudy",
+  "overcast",
+  "drizzle",
+  "heavy_rain",
+  "thunderstorm",
+  "light_snow",
+  "heavy_snow",
+  "blizzard",
+  "mist",
+  "haze",
+  "windy",
+  "gale",
+  "dust_storm",
+  "sandstorm",
 ]);
 
 /** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
