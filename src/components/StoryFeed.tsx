@@ -88,56 +88,33 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const playedAnimations = useRef<Set<string>>(new Set());
     const isInitialMount = useRef(true);
 
-    // Virtual list: track which segments are "visible" plus buffer
-    const VISIBLE_BUFFER = 10; // Render 10 segments above and below visible area
-    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 });
-
     const { t } = useTranslation();
 
     // Scroll to specific segment (for timeline navigation)
     const scrollToSegment = useCallback(
       (segmentId: string) => {
         if (layout === "scroll" && scrollContainerRef.current) {
-          // Find the index of the target segment
-          const targetIndex = currentHistory.findIndex(
-            (s) => s.id === segmentId,
-          );
-
-          if (targetIndex !== -1) {
-            // Update visible range to include the target segment (force it to render)
-            setVisibleRange({
-              start: Math.max(0, targetIndex - VISIBLE_BUFFER),
-              end: Math.min(
-                currentHistory.length,
-                targetIndex + VISIBLE_BUFFER + 1,
-              ),
-            });
-
-            // Use setTimeout to wait for the DOM to update after range change
-            setTimeout(() => {
-              const element = document.querySelector(
-                `[data-segment-id="${segmentId}"]`,
+          // Use setTimeout to ensure the DOM is ready
+          setTimeout(() => {
+            const element = document.querySelector(
+              `[data-segment-id="${segmentId}"]`,
+            );
+            if (element) {
+              element.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else {
+              // Fallback: estimate scroll position
+              const targetIndex = currentHistory.findIndex(
+                (s) => s.id === segmentId,
               );
-              if (element) {
-                element.scrollIntoView({ behavior: "smooth", block: "center" });
-              } else {
-                // Fallback: estimate scroll position
+              if (targetIndex !== -1) {
                 const estimatedPosition = targetIndex * 300;
                 scrollContainerRef.current?.scrollTo({
                   top: estimatedPosition,
                   behavior: "smooth",
                 });
               }
-            }, 50);
-          } else {
-            // Segment not found by ID, try document query as fallback
-            const element = document.querySelector(
-              `[data-segment-id="${segmentId}"]`,
-            );
-            if (element) {
-              element.scrollIntoView({ behavior: "smooth", block: "center" });
             }
-          }
+          }, 50);
         } else if (layout === "stack") {
           // Find the segment index and navigate to it
           const index = currentHistory.findIndex((s) => s.id === segmentId);
@@ -149,7 +126,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           }
         }
       },
-      [layout, currentHistory, stackItemsPerPage, VISIBLE_BUFFER],
+      [layout, currentHistory, stackItemsPerPage],
     );
 
     // Scroll to bottom (for continue game) - scroll to END of last segment
@@ -289,66 +266,6 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         return () => observer.disconnect();
       }
     }, [layout]);
-
-    // Virtual List: Update visible range on scroll
-    useEffect(() => {
-      if (layout !== "scroll" || !scrollContainerRef.current) return;
-
-      const container = scrollContainerRef.current;
-      const ESTIMATED_SEGMENT_HEIGHT = 300; // Approximate height per segment
-
-      const updateVisibleRange = () => {
-        // During processing, ONLY allow end to grow for new content - skip all other updates
-        // This prevents shaking caused by height estimation errors during TypeWriter animation
-        if (gameState.isProcessing) {
-          setVisibleRange((prev) => {
-            // Only grow end if new content was added
-            if (currentHistory.length > prev.end) {
-              return { start: prev.start, end: currentHistory.length };
-            }
-            return prev;
-          });
-          return;
-        }
-
-        const scrollTop = container.scrollTop;
-        const containerHeight = container.clientHeight;
-
-        // Estimate which segments are visible
-        const firstVisible = Math.floor(scrollTop / ESTIMATED_SEGMENT_HEIGHT);
-        const visibleCount = Math.ceil(
-          containerHeight / ESTIMATED_SEGMENT_HEIGHT,
-        );
-        const lastVisible = firstVisible + visibleCount;
-
-        // Add buffer
-        const start = Math.max(0, firstVisible - VISIBLE_BUFFER);
-        const end = Math.min(
-          currentHistory.length,
-          lastVisible + VISIBLE_BUFFER,
-        );
-
-        setVisibleRange((prev) => {
-          // Use larger threshold to reduce flicker
-          const startChanged = Math.abs(prev.start - start) > 5;
-          const endNeedsGrowth = end > prev.end;
-          const endNeedsShrink = prev.end - end > 10;
-
-          if (startChanged || endNeedsGrowth || endNeedsShrink) {
-            return { start, end };
-          }
-          return prev;
-        });
-      };
-
-      // Initial calculation
-      updateVisibleRange();
-
-      container.addEventListener("scroll", updateVisibleRange, {
-        passive: true,
-      });
-      return () => container.removeEventListener("scroll", updateVisibleRange);
-    }, [layout, currentHistory.length, VISIBLE_BUFFER, gameState.isProcessing]);
 
     // Intersection Observer for Scroll Layout to track viewed segment
     useEffect(() => {
@@ -565,19 +482,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
             {layout === "scroll" ? (
               <>
-                {/* Placeholder for segments above visible range */}
-                {visibleRange.start > 0 && (
-                  <div
-                    style={{ height: visibleRange.start * 300 }}
-                    aria-hidden="true"
-                  />
-                )}
-
-                {currentHistory
-                  .slice(visibleRange.start, visibleRange.end)
-                  .map((segment, sliceIndex) => {
-                    const index = visibleRange.start + sliceIndex;
-
+                {currentHistory.map((segment, index) => {
                     // Check if we should animate this card
                     const isAlreadyPlayed = playedAnimations.current.has(
                       segment.id,
@@ -601,6 +506,12 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                         <div
                           className="relative group/wrapper story-card-wrapper"
                           data-segment-id={segment.id}
+                          style={{
+                            // CSS content-visibility for native browser virtualization
+                            // Browser will skip rendering off-screen content but maintain layout
+                            contentVisibility: index < currentHistory.length - 3 ? 'auto' : 'visible',
+                            containIntrinsicSize: index < currentHistory.length - 3 ? 'auto 400px' : 'auto',
+                          }}
                         >
                           {/* Fork Button visible on hover for past segments - Fixed Accessibility */}
                           {index < currentHistory.length - 1 &&
@@ -676,16 +587,6 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                       </React.Fragment>
                     );
                   })}
-
-                {/* Placeholder for segments below visible range */}
-                {visibleRange.end < currentHistory.length && (
-                  <div
-                    style={{
-                      height: (currentHistory.length - visibleRange.end) * 300,
-                    }}
-                    aria-hidden="true"
-                  />
-                )}
               </>
             ) : (
               // Stack Layout - Paginated View

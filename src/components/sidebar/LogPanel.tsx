@@ -117,52 +117,6 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
     0,
   );
 
-  // Virtual list settings
-  const VISIBLE_BUFFER = 10;
-  const ESTIMATED_LOG_HEIGHT = 80; // Approximate height per collapsed log entry
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 30 });
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateVisibleRange = () => {
-      const scrollTop = container.scrollTop;
-      const containerHeight = container.clientHeight;
-
-      const firstVisible = Math.floor(scrollTop / ESTIMATED_LOG_HEIGHT);
-      const visibleCount = Math.ceil(containerHeight / ESTIMATED_LOG_HEIGHT);
-      const lastVisible = firstVisible + visibleCount;
-
-      const newStart = Math.max(0, firstVisible - VISIBLE_BUFFER);
-      const newEnd = Math.min(logs.length, lastVisible + VISIBLE_BUFFER);
-
-      setVisibleRange((prev) => {
-        // Always update when we're at the boundaries (start=0 or end=logs.length)
-        // This ensures scrolling to the very beginning or end always works
-        const atStartBoundary = newStart === 0 && prev.start !== 0;
-        const atEndBoundary =
-          newEnd === logs.length && prev.end !== logs.length;
-        const startNeedsUpdate = Math.abs(prev.start - newStart) > 3;
-        const endNeedsUpdate = Math.abs(prev.end - newEnd) > 3;
-
-        if (
-          atStartBoundary ||
-          atEndBoundary ||
-          startNeedsUpdate ||
-          endNeedsUpdate
-        ) {
-          return { start: newStart, end: newEnd };
-        }
-        return prev;
-      });
-    };
-
-    updateVisibleRange();
-    container.addEventListener("scroll", updateVisibleRange, { passive: true });
-    return () => container.removeEventListener("scroll", updateVisibleRange);
-  }, [logs.length]);
-
   return (
     <div className="fixed inset-0 z-100 bg-theme-surface backdrop-blur-md flex flex-col animate-fade-in text-theme-text font-mono">
       {/* Header */}
@@ -228,25 +182,21 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
           </div>
         )}
 
-        {/* Placeholder for logs above visible range */}
-        {visibleRange.start > 0 && (
-          <div
-            style={{ height: visibleRange.start * ESTIMATED_LOG_HEIGHT }}
-            aria-hidden="true"
-          />
-        )}
-
-        {logs
-          .slice(visibleRange.start, visibleRange.end)
-          .map((log, sliceIndex) => {
+        {logs.map((log, index) => {
             const isError = !!log.response?.error || !!log.request?.error;
             const isExpanded = expandedLogs.has(log.id);
             const hasToolCalls = log.toolCalls && log.toolCalls.length > 0;
             const isComplete = log.endpoint === "agentic_complete";
+            // Use content-visibility: auto for older items (not last 5) for native browser virtualization
+            const useContentVisibility = index < logs.length - 5;
 
             return (
               <div
                 key={log.id}
+                style={{
+                  contentVisibility: useContentVisibility ? 'auto' : 'visible',
+                  containIntrinsicSize: useContentVisibility ? 'auto 100px' : 'auto',
+                }}
                 className={`border rounded-lg overflow-hidden shadow-sm transition-all ${
                   isError
                     ? "border-theme-error/50 bg-theme-error/5"
@@ -632,14 +582,10 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             );
           })}
 
-        {/* Placeholder for logs below visible range */}
-        {visibleRange.end < logs.length && (
-          <div
-            style={{
-              height: (logs.length - visibleRange.end) * ESTIMATED_LOG_HEIGHT,
-            }}
-            aria-hidden="true"
-          />
+        {logs.length === 0 && (
+          <div className="flex justify-center items-center h-full text-theme-muted">
+            <p>{t("logPanel.noLogsAlt") || "No logs to display."}</p>
+          </div>
         )}
       </div>
     </div>

@@ -353,23 +353,35 @@ export class GameDatabase {
     return items;
   }
 
+  // Helper to match text against a term (supports regex)
+  private matchesTerm(text: string | undefined, term: string): boolean {
+    if (!text) return false;
+    try {
+      // Try to use the term as a regex pattern
+      const regex = new RegExp(term, "i");
+      return regex.test(text);
+    } catch {
+      // Fallback to simple includes if regex is invalid
+      return text.toLowerCase().includes(term.toLowerCase());
+    }
+  }
+
   // Type-safe filter function for entities with name/title/id/visible fields
   private filterEntities<T extends Record<string, unknown>>(
     list: T[],
     term?: string,
   ): T[] {
     if (!term) return list;
-    const lowerTerm = term.toLowerCase();
     return list.filter((item) => {
       const name = item.name as string | undefined;
       const title = item.title as string | undefined;
       const id = item.id as string | undefined;
       const visible = item.visible as { name?: string } | undefined;
       return (
-        (name && name.toLowerCase().includes(lowerTerm)) ||
-        (title && title.toLowerCase().includes(lowerTerm)) ||
-        (visible?.name && visible.name.toLowerCase().includes(lowerTerm)) ||
-        (id && String(id).toLowerCase().includes(lowerTerm))
+        this.matchesTerm(name, term) ||
+        this.matchesTerm(title, term) ||
+        this.matchesTerm(visible?.name, term) ||
+        this.matchesTerm(String(id || ""), term)
       );
     });
   }

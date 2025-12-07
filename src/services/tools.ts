@@ -202,12 +202,12 @@ export const QUERY_STORY_TOOL = defineTool({
   description:
     "Search story history. Supports regex, location/time filters, pagination.",
   parameters: z.object({
-    keyword: z.string().optional().describe("Regex pattern. Case-insensitive."),
-    location: z.string().optional().describe("Filter by location."),
+    keyword: z.string().optional().describe("Regex pattern (e.g., 'fire.*sword'). NO 'x or y' patterns."),
+    location: z.string().optional().describe("Location regex. NO 'x or y' patterns."),
     inGameTime: z
       .string()
       .optional()
-      .describe("Filter by time (e.g., 'Day 3', 'night')."),
+      .describe("Time regex (e.g., 'Day 3', 'night'). NO 'x or y' patterns."),
     turnRange: z
       .object({
         start: z.number().optional(),
@@ -244,7 +244,7 @@ export const QUERY_SUMMARY_TOOL = defineTool({
   description:
     "Search OLDER summaries (latest already in context). Use for events from much earlier.",
   parameters: z.object({
-    keyword: z.string().optional().describe("Regex to match in summary text."),
+    keyword: z.string().optional().describe("Regex pattern (e.g., 'battle.*dragon'). NO 'x or y' patterns."),
     nodeRange: z
       .object({
         start: z.number().optional(),
@@ -285,7 +285,7 @@ export const QUERY_INVENTORY_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Name, ID (inv:N), or keyword. Omit to list all."),
+      .describe("Name, ID (inv:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -296,7 +296,7 @@ export const QUERY_RELATIONSHIPS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Name, ID (npc:N), or keyword. Omit to list all."),
+      .describe("Name, ID (npc:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -307,7 +307,7 @@ export const QUERY_LOCATIONS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Name, ID (loc:N), or keyword. Omit to list all."),
+      .describe("Name, ID (loc:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -318,7 +318,7 @@ export const QUERY_QUESTS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Title, ID (quest:N), or keyword. Omit to list all."),
+      .describe("Title, ID (quest:N), or regex. NO 'x or y' patterns. Omit to list all."),
     status: z
       .enum(["active", "completed", "failed", "all"])
       .nullish()
@@ -333,7 +333,7 @@ export const QUERY_KNOWLEDGE_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Title, ID (know:N), or keyword. Omit to list all."),
+      .describe("Title, ID (know:N), or regex. NO 'x or y' patterns. Omit to list all."),
     category: knowledgeCategorySchema.nullish().describe("Filter by category."),
   }),
 });
@@ -345,7 +345,7 @@ export const QUERY_TIMELINE_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Keyword, ID (evt:N), or category. Omit for recent events."),
+      .describe("Regex, ID (evt:N), or category. NO 'x or y' patterns. Omit for recent events."),
   }),
 });
 
@@ -356,7 +356,7 @@ export const QUERY_CAUSAL_CHAIN_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Keyword or ID (chain:N). Omit to list all."),
+      .describe("Regex or ID (chain:N). NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -367,7 +367,7 @@ export const QUERY_FACTIONS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Name, ID (fac:N), or keyword. Omit to list all."),
+      .describe("Name, ID (fac:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -404,7 +404,7 @@ export const QUERY_CHARACTER_SKILLS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Skill name or ID (skill:N). Omit to list all."),
+      .describe("Skill name, ID (skill:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -415,7 +415,7 @@ export const QUERY_CHARACTER_CONDITIONS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Condition name or ID (cond:N). Omit to list all."),
+      .describe("Condition name, ID (cond:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 
@@ -426,7 +426,7 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe("Trait name or ID (trait:N). Omit to list all."),
+      .describe("Trait name, ID (trait:N), or regex. NO 'x or y' patterns. Omit to list all."),
   }),
 });
 

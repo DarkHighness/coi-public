@@ -580,6 +580,11 @@ Before proceeding, consider if you need to recall story history:
 - Use \`query_recent_context\` to see the last few turns of player-AI exchanges
 - Use \`query_turn\` to check current fork ID and turn number
 
+**REGEX SEARCH TIPS**:
+- Query fields support regex (e.g., 'fire.*sword', 'dragon|serpent')
+- NEVER use natural language "or" patterns like "xxx or xxx" or "xxx 或 xxx" - these will fail!
+- Use regex alternation (|) instead: 'dragon|serpent' NOT 'dragon or serpent'
+
 **WHEN TO QUERY**:
 - Unsure what happened earlier? Query first.
 - Referencing an NPC you haven't seen recently? Query their last appearance.
