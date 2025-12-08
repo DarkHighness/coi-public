@@ -22,7 +22,7 @@ import {
   UPDATE_TOOLS,
   COMPLETE_FORCE_UPDATE_TOOL,
 } from "../tools";
-import { forceUpdateSchema, ForceUpdateResponse } from "../schemas";
+import { buildForceUpdateSchema, ForceUpdateResponse } from "../schemas";
 import { getForceUpdateSystemInstruction } from "../prompts/index";
 import {
   buildLayeredContext,
@@ -240,6 +240,10 @@ const runForceUpdateLoop = async (
     factionActions: [],
     characterUpdates: undefined,
     timelineEvents: [],
+    // RAG properties - all optional
+    ragQueries: undefined,
+    ragCurrentForkOnly: undefined,
+    ragBeforeCurrentTurn: undefined,
   };
 
   const changedEntities: Map<string, string> = new Map();
@@ -368,7 +372,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
     const effectiveSchema = isGeminiProvider
       ? undefined
       : currentStage === "complete"
-        ? forceUpdateSchema
+        ? buildForceUpdateSchema(isRAGEnabled)
         : undefined;
 
     while (retryCount <= maxRetries) {
@@ -501,16 +505,19 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           if (updateData.aliveEntities) {
             accumulatedResponse.aliveEntities = updateData.aliveEntities;
           }
-          if (updateData.ragQueries) {
-            accumulatedResponse.ragQueries = updateData.ragQueries;
-          }
-          if (updateData.ragCurrentForkOnly !== undefined) {
-            accumulatedResponse.ragCurrentForkOnly =
-              updateData.ragCurrentForkOnly;
-          }
-          if (updateData.ragBeforeCurrentTurn !== undefined) {
-            accumulatedResponse.ragBeforeCurrentTurn =
-              updateData.ragBeforeCurrentTurn;
+          // Only process RAG fields if RAG is enabled and fields exist
+          if (isRAGEnabled) {
+            if ('ragQueries' in updateData && updateData.ragQueries) {
+              accumulatedResponse.ragQueries = updateData.ragQueries as string[];
+            }
+            if ('ragCurrentForkOnly' in updateData && updateData.ragCurrentForkOnly !== undefined) {
+              accumulatedResponse.ragCurrentForkOnly =
+                updateData.ragCurrentForkOnly as boolean;
+            }
+            if ('ragBeforeCurrentTurn' in updateData && updateData.ragBeforeCurrentTurn !== undefined) {
+              accumulatedResponse.ragBeforeCurrentTurn =
+                updateData.ragBeforeCurrentTurn as boolean;
+            }
           }
           if (updateData.nextInitialStage) {
             accumulatedResponse.nextInitialStage = updateData.nextInitialStage;
@@ -652,7 +659,7 @@ You MUST call complete_force_update with a narrative describing the changes.`,
       // No tool calls - check for direct schema response in complete stage
       if (currentStage === "complete") {
         try {
-          const updateData = forceUpdateSchema.parse(result);
+          const updateData = buildForceUpdateSchema(isRAGEnabled).parse(result);
           accumulatedResponse.narrative = updateData.narrative;
 
           // Copy new fields from forceUpdateSchema
@@ -668,16 +675,19 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           if (updateData.aliveEntities) {
             accumulatedResponse.aliveEntities = updateData.aliveEntities;
           }
-          if (updateData.ragQueries) {
-            accumulatedResponse.ragQueries = updateData.ragQueries;
-          }
-          if (updateData.ragCurrentForkOnly !== undefined) {
-            accumulatedResponse.ragCurrentForkOnly =
-              updateData.ragCurrentForkOnly;
-          }
-          if (updateData.ragBeforeCurrentTurn !== undefined) {
-            accumulatedResponse.ragBeforeCurrentTurn =
-              updateData.ragBeforeCurrentTurn;
+          // Only process RAG fields if RAG is enabled and fields exist
+          if (isRAGEnabled) {
+            if ('ragQueries' in updateData && updateData.ragQueries) {
+              accumulatedResponse.ragQueries = updateData.ragQueries as string[];
+            }
+            if ('ragCurrentForkOnly' in updateData && updateData.ragCurrentForkOnly !== undefined) {
+              accumulatedResponse.ragCurrentForkOnly =
+                updateData.ragCurrentForkOnly as boolean;
+            }
+            if ('ragBeforeCurrentTurn' in updateData && updateData.ragBeforeCurrentTurn !== undefined) {
+              accumulatedResponse.ragBeforeCurrentTurn =
+                updateData.ragBeforeCurrentTurn as boolean;
+            }
           }
           if (updateData.nextInitialStage) {
             accumulatedResponse.nextInitialStage = updateData.nextInitialStage;
