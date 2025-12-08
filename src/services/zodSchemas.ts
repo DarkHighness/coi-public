@@ -1615,12 +1615,13 @@ This is a HINT for optimization. The system may still start from query if needed
 // ============================================================================
 
 /**
- * finish_turn 响应 Schema
- * 用于验证模型通过 finish_turn 工具调用或直接返回的回合结束响应
+ * finish_turn 响应 Schema Builder
+ * 根据isRAGEnabled参数动态构建schema，当RAG未启用时不包含RAG相关字段
  */
-export const finishTurnSchema = z.object({
-  narrative: z.string().describe(
-    `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
+export function buildFinishTurnSchema(includeRAG: boolean = true) {
+  const baseFields = {
+    narrative: z.string().describe(
+      `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
 
 **MARKDOWN FORMATTING RULES:**
 Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
@@ -1672,27 +1673,27 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 - ✅ ALLOWED: "You raise your hand and cry out: '**Fireball!**'" (if Fireball is a spell name)
 - ✅ ALLOWED: "You channel your inner power and whisper '**Shadow Step**'..." (if it's a named technique)
 - ❌ NOT ALLOWED: Passive effects should still use description, not name`,
-  ),
-  choices: z
-    .array(
-      z.object({
-        text: z
-          .string()
-          .describe(
-            "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
-          ),
-        consequence: z
-          .string()
-          .nullish()
-          .describe(
-            "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
-          ),
-      }),
-    )
-    .min(2)
-    .max(4)
-    .describe(
-      `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
+    ),
+    choices: z
+      .array(
+        z.object({
+          text: z
+            .string()
+            .describe(
+              "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
+            ),
+          consequence: z
+            .string()
+            .nullish()
+            .describe(
+              "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
+            ),
+        }),
+      )
+      .min(2)
+      .max(4)
+      .describe(
+        `2-4 options for the player's next action. CRITICAL: Choices MUST be consistent with the player character's:
 1. **Knowledge/Cognition**: Only offer choices based on what the character KNOWS.
 2. **Personality/Background**: Choices should reflect the character's personality.
 3. **Current Conditions**: If the character is injured/exhausted, choices should reflect limitations.
@@ -1700,83 +1701,83 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types.
 
 **⚠️ NO GAME IDs**: Never include IDs like "inv:1", "npc:2", "loc:3" in choice text. Use natural names only.`,
-    ),
-  imagePrompt: z
-    .string()
-    .nullish()
-    .describe(
-      `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
-    ),
-  atmosphere: atmosphereSchema
-    .nullish()
-    .describe("Atmosphere settings (envTheme and ambience)."),
-  narrativeTone: z
-    .string()
-    .nullish()
-    .describe(
-      "Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy').",
-    ),
-  aliveEntities: z
-    .object({
-      inventory: z
-        .array(z.string())
-        .nullish()
-        .describe("Item IDs (inv:N) relevant for next turn."),
-      relationships: z
-        .array(z.string())
-        .nullish()
-        .describe("NPC IDs (npc:N) relevant for next turn."),
-      locations: z
-        .array(z.string())
-        .nullish()
-        .describe("Location IDs (loc:N) relevant for next turn."),
-      quests: z
-        .array(z.string())
-        .nullish()
-        .describe("Quest IDs (quest:N) relevant for next turn."),
-      knowledge: z
-        .array(z.string())
-        .nullish()
-        .describe("Knowledge IDs (know:N) relevant for next turn."),
-      timeline: z
-        .array(z.string())
-        .nullish()
-        .describe("Event IDs (evt:N) relevant for next turn."),
-      skills: z
-        .array(z.string())
-        .nullish()
-        .describe("Character skill IDs relevant for next turn."),
-      conditions: z
-        .array(z.string())
-        .nullish()
-        .describe("Character condition IDs relevant for next turn."),
-      hiddenTraits: z
-        .array(z.string())
-        .nullish()
-        .describe("Character hidden trait IDs relevant for next turn."),
-      causalChains: z
-        .array(z.string())
-        .nullish()
-        .describe(
-          "CausalChain chainIds with pending consequences that may trigger soon.",
-        ),
-    })
-    .nullish()
-    .describe(
-      "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
-    ),
-  ending: z
-    .enum([
-      "continue",
-      "death",
-      "victory",
-      "true_ending",
-      "bad_ending",
-      "neutral_ending",
-    ])
-    .nullish()
-    .describe(
-      `Story continuation status. IF NOT SET, DEFAULTS TO "continue":
+      ),
+    imagePrompt: z
+      .string()
+      .nullish()
+      .describe(
+        `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
+      ),
+    atmosphere: atmosphereSchema
+      .nullish()
+      .describe("Atmosphere settings (envTheme and ambience)."),
+    narrativeTone: z
+      .string()
+      .nullish()
+      .describe(
+        "Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+      ),
+    aliveEntities: z
+      .object({
+        inventory: z
+          .array(z.string())
+          .nullish()
+          .describe("Item IDs (inv:N) relevant for next turn."),
+        relationships: z
+          .array(z.string())
+          .nullish()
+          .describe("NPC IDs (npc:N) relevant for next turn."),
+        locations: z
+          .array(z.string())
+          .nullish()
+          .describe("Location IDs (loc:N) relevant for next turn."),
+        quests: z
+          .array(z.string())
+          .nullish()
+          .describe("Quest IDs (quest:N) relevant for next turn."),
+        knowledge: z
+          .array(z.string())
+          .nullish()
+          .describe("Knowledge IDs (know:N) relevant for next turn."),
+        timeline: z
+          .array(z.string())
+          .nullish()
+          .describe("Event IDs (evt:N) relevant for next turn."),
+        skills: z
+          .array(z.string())
+          .nullish()
+          .describe("Character skill IDs relevant for next turn."),
+        conditions: z
+          .array(z.string())
+          .nullish()
+          .describe("Character condition IDs relevant for next turn."),
+        hiddenTraits: z
+          .array(z.string())
+          .nullish()
+          .describe("Character hidden trait IDs relevant for next turn."),
+        causalChains: z
+          .array(z.string())
+          .nullish()
+          .describe(
+            "CausalChain chainIds with pending consequences that may trigger soon.",
+          ),
+      })
+      .nullish()
+      .describe(
+        "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
+      ),
+    ending: z
+      .enum([
+        "continue",
+        "death",
+        "victory",
+        "true_ending",
+        "bad_ending",
+        "neutral_ending",
+      ])
+      .nullish()
+      .describe(
+        `Story continuation status. IF NOT SET, DEFAULTS TO "continue":
 - "continue": Story continues normally (USE THIS IN MOST CASES)
 - "death": Player character dies or suffers irreversible fatal consequence
 - "victory": Main quest goal achieved, story concludes positively
@@ -1788,38 +1789,20 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 1. DEFAULT TO "continue" - Use this for 99% of turns.
 2. NEVER use endings other than "continue" in the first 5 turns.
 3. 'death' should ONLY occur after MULTIPLE clearly dangerous choices.`,
-    ),
-  forceEnd: z
-    .boolean()
-    .nullish()
-    .describe(
-      `Only relevant when 'ending' is set. Determines if the game ends permanently:
+      ),
+    forceEnd: z
+      .boolean()
+      .nullish()
+      .describe(
+        `Only relevant when 'ending' is set. Determines if the game ends permanently:
 - true: Game is OVER. Player cannot continue from this point.
 - false/omit: Player can choose to continue despite the ending.`,
-    ),
-  ragQueries: z
-    .array(z.string())
-    .nullish()
-    .describe(
-      `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
-    ),
-  ragCurrentForkOnly: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search within the current timeline branch.",
-    ),
-  ragBeforeCurrentTurn: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search content from before the current turn.",
-    ),
-  nextInitialStage: z
-    .enum(["query", "add", "remove", "update", "narrative"])
-    .nullish()
-    .describe(
-      `Suggest the initial stage for the NEXT turn after player makes a choice.
+      ),
+    nextInitialStage: z
+      .enum(["query", "add", "remove", "update", "narrative"])
+      .nullish()
+      .describe(
+        `Suggest the initial stage for the NEXT turn after player makes a choice.
 - "query": Start with queries (default, when uncertain about context)
 - "add": Skip to add stage (when you know new entities will be needed)
 - "remove": Skip to remove stage
@@ -1827,12 +1810,48 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 - "narrative": Skip directly to narrative (only for very simple responses)
 
 This is a HINT for optimization. The system may still start from query if needed.`,
-    ),
-});
+      ),
+  };
 
-export const forceUpdateSchema = z.object({
-  narrative: z.string()
-    .describe(`The narrative description of the changes made to the world as **Markdown formatted text**. Write in a vivid, engaging style.
+  const ragFields = includeRAG
+    ? {
+        ragQueries: z
+          .array(z.string())
+          .nullish()
+          .describe(
+            `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
+          ),
+        ragCurrentForkOnly: z
+          .boolean()
+          .nullish()
+          .describe(
+            "If true, next turn's RAG queries will only search within the current timeline branch.",
+          ),
+        ragBeforeCurrentTurn: z
+          .boolean()
+          .nullish()
+          .describe(
+            "If true, next turn's RAG queries will only search content from before the current turn.",
+          ),
+      }
+    : {};
+
+  return z.object({ ...baseFields, ...ragFields });
+}
+
+/**
+ * Default finish_turn schema with RAG fields included (for backward compatibility)
+ */
+export const finishTurnSchema = buildFinishTurnSchema(true);
+
+/**
+ * force_update 响应 Schema Builder
+ * 根据isRAGEnabled参数动态构建schema，当RAG未启用时不包含RAG相关字段
+ */
+export function buildForceUpdateSchema(includeRAG: boolean = true) {
+  const baseFields = {
+    narrative: z.string()
+      .describe(`The narrative description of the changes made to the world as **Markdown formatted text**. Write in a vivid, engaging style.
 
 **MARKDOWN FORMATTING RULES:**
 Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
@@ -1876,114 +1895,96 @@ Do NOT directly reference field names. Use descriptive sensations:
 In settings with magic/superpowers where "incantations" or "calling out names" are part of mechanics, you MAY reference skill/condition names when actively invoked:
 - ✅ ALLOWED: "You cry out: '**Fireball!**'" (if Fireball is a spell name)
 - ❌ NOT ALLOWED: Passive effects should still use description, not name`),
-  stateUpdates: z
-    .string()
-    .nullish()
-    .describe("A summary of the state updates applied (for logging)."),
-  choices: z
-    .array(
-      z.object({
-        text: z
-          .string()
-          .describe(
-            "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
-          ),
-        consequence: z
-          .string()
+    stateUpdates: z
+      .string()
+      .nullish()
+      .describe("A summary of the state updates applied (for logging)."),
+    choices: z
+      .array(
+        z.object({
+          text: z
+            .string()
+            .describe(
+              "The text of the choice. MUST use natural language, NEVER include game IDs like inv:N, npc:N, loc:N.",
+            ),
+          consequence: z
+            .string()
+            .nullish()
+            .describe(
+              "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
+            ),
+        }),
+      )
+      .min(2)
+      .max(4)
+      .describe(
+        "2-4 options for the player's next action after the force update.",
+      ),
+    atmosphere: atmosphereSchema
+      .nullish()
+      .describe(
+        "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
+      ),
+    narrativeTone: z
+      .string()
+      .nullish()
+      .describe(
+        "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
+      ),
+    aliveEntities: z
+      .object({
+        inventory: z
+          .array(z.string())
+          .nullish()
+          .describe("Item IDs (inv:N) relevant for next turn."),
+        relationships: z
+          .array(z.string())
+          .nullish()
+          .describe("NPC IDs (npc:N) relevant for next turn."),
+        locations: z
+          .array(z.string())
+          .nullish()
+          .describe("Location IDs (loc:N) relevant for next turn."),
+        quests: z
+          .array(z.string())
+          .nullish()
+          .describe("Quest IDs (quest:N) relevant for next turn."),
+        knowledge: z
+          .array(z.string())
+          .nullish()
+          .describe("Knowledge IDs (know:N) relevant for next turn."),
+        timeline: z
+          .array(z.string())
+          .nullish()
+          .describe("Event IDs (evt:N) relevant for next turn."),
+        skills: z
+          .array(z.string())
+          .nullish()
+          .describe("Character skill IDs relevant for next turn."),
+        conditions: z
+          .array(z.string())
+          .nullish()
+          .describe("Character condition IDs relevant for next turn."),
+        hiddenTraits: z
+          .array(z.string())
+          .nullish()
+          .describe("Character hidden trait IDs relevant for next turn."),
+        causalChains: z
+          .array(z.string())
           .nullish()
           .describe(
-            "A brief hint about the likely consequence of this choice. Can be null or omitted if no hint is needed.",
+            "CausalChain chainIds with pending consequences that may trigger soon.",
           ),
-      }),
-    )
-    .min(2)
-    .max(4)
-    .describe(
-      "2-4 options for the player's next action after the force update.",
-    ),
-  atmosphere: atmosphereSchema
-    .nullish()
-    .describe(
-      "Atmosphere settings with envTheme (visual) and ambience (audio) for this scene.",
-    ),
-  narrativeTone: z
-    .string()
-    .nullish()
-    .describe(
-      "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
-    ),
-  aliveEntities: z
-    .object({
-      inventory: z
-        .array(z.string())
-        .nullish()
-        .describe("Item IDs (inv:N) relevant for next turn."),
-      relationships: z
-        .array(z.string())
-        .nullish()
-        .describe("NPC IDs (npc:N) relevant for next turn."),
-      locations: z
-        .array(z.string())
-        .nullish()
-        .describe("Location IDs (loc:N) relevant for next turn."),
-      quests: z
-        .array(z.string())
-        .nullish()
-        .describe("Quest IDs (quest:N) relevant for next turn."),
-      knowledge: z
-        .array(z.string())
-        .nullish()
-        .describe("Knowledge IDs (know:N) relevant for next turn."),
-      timeline: z
-        .array(z.string())
-        .nullish()
-        .describe("Event IDs (evt:N) relevant for next turn."),
-      skills: z
-        .array(z.string())
-        .nullish()
-        .describe("Character skill IDs relevant for next turn."),
-      conditions: z
-        .array(z.string())
-        .nullish()
-        .describe("Character condition IDs relevant for next turn."),
-      hiddenTraits: z
-        .array(z.string())
-        .nullish()
-        .describe("Character hidden trait IDs relevant for next turn."),
-      causalChains: z
-        .array(z.string())
-        .nullish()
-        .describe(
-          "CausalChain chainIds with pending consequences that may trigger soon.",
-        ),
-    })
-    .nullish()
-    .describe(
-      "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
-    ),
-  ragQueries: z
-    .array(z.string())
-    .nullish()
-    .describe(
-      `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
-    ),
-  ragCurrentForkOnly: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search within the current timeline branch.",
-    ),
-  ragBeforeCurrentTurn: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search content from before the current turn.",
-    ),
-  nextInitialStage: z
-    .enum(["query", "add", "remove", "update", "narrative"])
-    .nullish()
-    .describe(
-      `Suggest the initial stage for the NEXT turn after player makes a choice.
+      })
+      .nullish()
+      .describe(
+        "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
+      ),
+    nextInitialStage: z
+      .enum(["query", "add", "remove", "update", "narrative"])
+      .nullish()
+      .describe(
+        `Suggest the initial stage for the NEXT turn after player makes a choice.
 - "query": Start with queries (default, when uncertain about context)
 - "add": Skip to add stage (when you know new entities will be needed)
 - "remove": Skip to remove stage
@@ -1991,8 +1992,39 @@ In settings with magic/superpowers where "incantations" or "calling out names" a
 - "narrative": Skip directly to narrative (only for very simple responses)
 
 This is a HINT for optimization. The system may still start from query if needed.`,
-    ),
-});
+      ),
+  };
+
+  const ragFields = includeRAG
+    ? {
+        ragQueries: z
+          .array(z.string())
+          .nullish()
+          .describe(
+            `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
+          ),
+        ragCurrentForkOnly: z
+          .boolean()
+          .nullish()
+          .describe(
+            "If true, next turn's RAG queries will only search within the current timeline branch.",
+          ),
+        ragBeforeCurrentTurn: z
+          .boolean()
+          .nullish()
+          .describe(
+            "If true, next turn's RAG queries will only search content from before the current turn.",
+          ),
+      }
+    : {};
+
+  return z.object({ ...baseFields, ...ragFields });
+}
+
+/**
+ * Default force_update schema with RAG fields included (for backward compatibility)
+ */
+export const forceUpdateSchema = buildForceUpdateSchema(true);
 
 /** finish_turn 响应类型 */
 export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;

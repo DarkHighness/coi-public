@@ -83,7 +83,7 @@ import {
   CharacterTraitPayload,
   CharacterProfilePayload,
 } from "../tools";
-import { finishTurnSchema } from "../schemas";
+import { buildFinishTurnSchema } from "../schemas";
 import { getCoreSystemInstruction } from "../prompts/index";
 import {
   buildLayeredContext,
@@ -601,7 +601,7 @@ When you query entities (items, NPCs, locations, etc.), remember:
 - Continuing a plot thread? Query to verify its current state.
 - Player mentions something from the past? Query to confirm details.
 
-Available tools: query_*, rag_search, next_stage, finish_turn
+Available tools: query_*${isRAGEnabled ? ", rag_search" : ""}, next_stage, finish_turn
 
 After querying (or if you have sufficient context):
 - Call next_stage (optionally with target) to proceed
@@ -662,7 +662,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
     let effectiveSchema = isGeminiProvider
       ? undefined
       : currentStage === "narrative"
-        ? finishTurnSchema
+        ? buildFinishTurnSchema(isRAGEnabled)
         : undefined;
 
     // Inner Retry Loop: Handle Dynamic Tool Output Truncation
@@ -733,7 +733,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
           if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
             // Gemini fallback strategy
             effectiveToolConfig = undefined;
-            effectiveSchema = finishTurnSchema;
+            effectiveSchema = buildFinishTurnSchema(isRAGEnabled);
             maxRetries = 4;
             continue;
           }
@@ -967,7 +967,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
       // No tool calls
       if (currentStage === "narrative") {
         try {
-          const finishTurnData = finishTurnSchema.parse(result);
+          const finishTurnData = buildFinishTurnSchema(isRAGEnabled).parse(result);
           processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
 
           const finalLog = createLogEntry(

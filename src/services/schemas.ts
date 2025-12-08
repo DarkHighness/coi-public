@@ -23,6 +23,9 @@ export {
   ambienceSchema,
   finishTurnSchema,
   forceUpdateSchema,
+  // Schema builders (for conditional RAG fields)
+  buildFinishTurnSchema,
+  buildForceUpdateSchema,
   // 分阶段 Outline Schemas
   outlinePhase1Schema,
   outlinePhase2Schema,
