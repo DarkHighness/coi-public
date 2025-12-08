@@ -408,9 +408,10 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p9 = partial.phase9 as OutlinePhase9;
 
   // Helper to force unlocked: false on entities with that field
+  // Added defensive check for undefined/null arrays
   const forceUnlockedFalse = <T extends { unlocked?: boolean }>(
-    items: T[],
-  ): T[] => items.map((item) => ({ ...item, unlocked: false }));
+    items: T[] | undefined | null,
+  ): T[] => (items || []).map((item) => ({ ...item, unlocked: false }));
 
   // Build outline with forced unlocked: false for all relevant entities
   const outline: StoryOutline = {

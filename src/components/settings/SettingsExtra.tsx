@@ -136,6 +136,33 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Force Tool Call Mode Toggle */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.forceToolCallMode") || "Tool Call Mode"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.forceToolCallModeHelp") ||
+                "Use tool_call instead of json_schema for structured output"}
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              updateExtra("forceToolCallMode", !extra.forceToolCallMode)
+            }
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.forceToolCallMode ? "bg-green-500" : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.forceToolCallMode ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Prompt Injection Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>

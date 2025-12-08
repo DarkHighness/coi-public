@@ -296,7 +296,10 @@ export async function generateContent(
       const messages = convertToOpenAIMessages(systemInstruction, contents);
 
       // 转换工具定义 - 兼容模式处理
-      let tools;
+      let tools: ChatCompletionTool[] | undefined;
+      let useToolCallForSchema = false;
+      let forceStructuredOutputTool = false;
+
       if (options?.tools) {
         if (isGemini) {
           tools = options.tools.map((t) =>
@@ -313,8 +316,49 @@ export async function generateContent(
         } else {
           tools = compileToolsForOpenAI(options.tools);
         }
-      } else {
-        tools = undefined;
+      }
+
+      // forceToolCallMode: wrap schema as a tool instead of using response_format
+      if (schema && options?.forceToolCallMode) {
+        // Use the correct tool format based on model type
+        let schemaAsTool: ChatCompletionTool;
+        if (isGemini) {
+          schemaAsTool = createGeminiCompatibleTool(
+            "structured_output",
+            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+            schema
+          );
+        } else if (isClaude) {
+          schemaAsTool = createClaudeCompatibleTool(
+            "structured_output",
+            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+            schema
+          );
+        } else {
+          schemaAsTool = createOpenAITool(
+            "structured_output",
+            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+            schema
+          );
+        }
+
+        if (tools && tools.length > 0) {
+          // Add to existing tools
+          tools = [...tools, schemaAsTool];
+        } else {
+          // Create new tools array and force calling this tool
+          tools = [schemaAsTool];
+          forceStructuredOutputTool = true;
+        }
+
+        // Add instruction to system message
+        if (messages.length > 0 && messages[0].role === "system") {
+          const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
+          messages[0].content = (messages[0].content as string) + structuredOutputInstruction;
+        }
+
+        useToolCallForSchema = true;
+        console.log(`[OpenAI] Using forceToolCallMode: schema wrapped as tool (${isGemini ? 'Gemini' : isClaude ? 'Claude' : 'OpenAI'} format)`);
       }
 
       // 构建请求参数
@@ -327,13 +371,15 @@ export async function generateContent(
           stream: !!options?.onChunk,
           // @ts-ignore
           tools,
-          tool_choice: tools ? "auto" : undefined,
+          tool_choice: forceStructuredOutputTool
+            ? { type: "function" as const, function: { name: "structured_output" } }
+            : tools ? "auto" : undefined,
 
           // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
           // This applies to both standard OpenAI models and Gemini compatibility mode.
           // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
           response_format:
-            schema && (!tools || tools.length === 0)
+            schema && !useToolCallForSchema && (!tools || tools.length === 0)
               ? (() => {
                   if (isGemini) {
                     return {
@@ -373,10 +419,10 @@ export async function generateContent(
         | AsyncIterable<ChatCompletionChunk>;
 
       console.log(
-        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude})`,
+        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude}), useToolCallForSchema: ${useToolCallForSchema}`,
       );
 
-      if (useCompat && schema) {
+      if (useCompat && schema && !useToolCallForSchema) {
         console.log(
           `[OpenAI] Detected Compatible Model (Gemini: ${isGemini}, Claude: ${isClaude}), using compatible schema format:`,
           JSON.stringify(requestParams.response_format, null, 2),
@@ -491,6 +537,19 @@ export async function generateContent(
       }
 
       console.log(`[OpenAI] Generation complete. Usage:`, usage);
+
+      // If using tool call mode for schema, extract the structured result from tool call args
+      if (useToolCallForSchema && toolCalls.length > 0) {
+        const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+        if (structuredOutputCall) {
+          const result = structuredOutputCall.args;
+          if (schema) {
+            validateSchema(result, schema, "openai");
+          }
+          console.log("[OpenAI] Extracted structured output from tool call");
+          return { result, usage, raw: rawResponse };
+        }
+      }
 
       // 如果有工具调用，返回工具调用结果（同时保留 content）
       if (toolCalls.length > 0) {

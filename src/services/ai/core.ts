@@ -70,6 +70,8 @@ export interface GenerateContentUnifiedOptions {
   settings?: AISettings;
   /** 自定义 log endpoint 名称 (默认: "generateContent") */
   logEndpoint?: string;
+  /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
+  forceToolCallMode?: boolean;
 }
 
 /**
@@ -92,6 +94,10 @@ export const generateContentUnifiedInternal = async (
   const storyConfig = options?.settings
     ? getProviderConfig(options.settings, "story")
     : null;
+
+  // Check for forceToolCallMode from options or settings
+  const forceToolCallMode = options?.forceToolCallMode ?? options?.settings?.extra?.forceToolCallMode;
+
   const mergedOptions: GenerateContentOptions = {
     thinkingLevel: options?.thinkingLevel || storyConfig?.thinkingLevel,
     mediaResolution: options?.mediaResolution || storyConfig?.mediaResolution,
@@ -101,6 +107,7 @@ export const generateContentUnifiedInternal = async (
     minP: options?.minP ?? storyConfig?.minP,
     onChunk: options?.onChunk,
     tools: options?.tools as GenerateContentOptions["tools"],
+    forceToolCallMode,
   };
 
   // Detect input format and convert as needed

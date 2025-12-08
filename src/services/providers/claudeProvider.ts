@@ -284,9 +284,38 @@ export async function generateContent(
       const messages = convertToClaudeMessages(contents);
 
       // 转换工具定义 (Claude 使用与 OpenAI 相似的格式)
-      const tools = options?.tools
+      let tools = options?.tools
         ? convertToolsForClaude(options.tools)
         : undefined;
+      let useToolCallForSchema = false;
+      let toolChoice: { type: "tool"; name: string } | undefined;
+
+      // forceToolCallMode: wrap schema as a tool instead of relying on JSON output
+      if (schema && options?.forceToolCallMode) {
+        const schemaObj = zodToClaudeCompatibleSchema(schema);
+        const schemaAsTool = {
+          name: "structured_output",
+          description: "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+          input_schema: {
+            type: "object" as const,
+            properties: (schemaObj.properties || {}) as Record<string, unknown>,
+            ...(schemaObj.required && schemaObj.required.length > 0 ? { required: schemaObj.required } : {}),
+          },
+        };
+
+        if (tools && tools.length > 0) {
+          // Add to existing tools
+          tools = [...tools, schemaAsTool];
+          // Keep toolChoice undefined to allow model to choose
+        } else {
+          // Create new tools array and force calling this tool
+          tools = [schemaAsTool];
+          toolChoice = { type: "tool", name: "structured_output" };
+        }
+
+        useToolCallForSchema = true;
+        console.log("[Claude] Using forceToolCallMode: schema wrapped as tool, added to tools array");
+      }
 
       if (tools && tools.length > 0) {
         console.log(
@@ -311,9 +340,14 @@ export async function generateContent(
         };
       }
 
-      // Chain of Thought prompt for tool use (Sonnet/Haiku)
+      // Chain of Thought prompt for tool use (Sonnet/Haiku) - skip for forceToolCallMode
       let finalSystemInstruction = systemInstruction;
-      if (
+
+      // Add structured output instruction if forceToolCallMode is enabled
+      if (useToolCallForSchema) {
+        const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
+        finalSystemInstruction = systemInstruction + structuredOutputInstruction;
+      } else if (
         tools &&
         tools.length > 0 &&
         (model.includes("sonnet") || model.includes("haiku"))
@@ -337,6 +371,7 @@ Answer the user's request using relevant tools (if they are available). Before c
           : { temperature: options?.temperature ?? 1.0 }),
         top_p: options?.topP,
         tools,
+        tool_choice: toolChoice,
       };
 
       let content = "";
@@ -473,6 +508,19 @@ Answer the user's request using relevant tools (if they are available). Before c
       }
 
       console.log(`[Claude] Generation complete. Usage:`, usage);
+
+      // If using tool call mode for schema, extract the structured result from tool call args
+      if (useToolCallForSchema && toolCalls.length > 0) {
+        const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+        if (structuredOutputCall) {
+          const result = structuredOutputCall.args;
+          if (schema) {
+            validateSchema(result, schema, "claude");
+          }
+          console.log("[Claude] Extracted structured output from tool call");
+          return { result, usage, raw: rawResponse };
+        }
+      }
 
       // 如果有工具调用，返回工具调用结果
       if (toolCalls.length > 0) {

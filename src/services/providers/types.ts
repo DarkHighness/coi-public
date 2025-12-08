@@ -89,6 +89,8 @@ export interface GenerateContentOptions {
   onChunk?: (text: string) => void;
   /** 工具定义列表 (使用 Zod Schema) */
   tools?: ZodToolDefinition[];
+  /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
+  forceToolCallMode?: boolean;
 }
 
 import type { ZodTypeAny, ZodObject, ZodRawShape, z } from "zod";

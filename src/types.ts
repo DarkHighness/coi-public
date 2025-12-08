@@ -1097,6 +1097,7 @@ export interface AISettings {
     customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
+    forceToolCallMode?: boolean; // Use tool_call instead of json_schema for structured output
   };
 }
 
