@@ -502,7 +502,7 @@ export const useGameEngine = () => {
           ...e,
           category: e.category || "world_event", // Default to world_event if missing
         })),
-        nextIds: {
+        nextIds: (outline as any).__nextIds || {
           item: (outline.inventory?.length || 0) + 1,
           npc: (outline.relationships?.length || 0) + 1,
           location: (outline.locations?.length || 0) + 1,
@@ -764,7 +764,7 @@ export const useGameEngine = () => {
           ...e,
           category: e.category || "world_event",
         })),
-        nextIds: {
+        nextIds: (outline as any).__nextIds || {
           item: (outline.inventory?.length || 0) + 1,
           npc: (outline.relationships?.length || 0) + 1,
           location: (outline.locations?.length || 0) + 1,

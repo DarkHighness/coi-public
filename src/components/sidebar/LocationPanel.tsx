@@ -501,7 +501,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   // Filter known locations and map to objects with ID for list management
   const locationItems = useMemo(() => {
     return locations.map((loc) => ({
-      id: loc.name, // Using name as ID for list management compatibility
+      id: loc.id || loc.name, // Use ID, fallback to name for compatibility
       name: loc.name,
       isCurrent: loc.name === currentLocation,
       data: loc,

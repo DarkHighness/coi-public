@@ -56,6 +56,7 @@ export function useListManagement<T extends { id: string | number }>(
   // Initialize customOrder with new items
   useEffect(() => {
     const newIds = items
+      .filter((i) => i.id !== undefined && i.id !== null)
       .map((i) => i.id.toString())
       .filter((id) => !customOrder.includes(id));
     if (newIds.length > 0) {
@@ -66,10 +67,12 @@ export function useListManagement<T extends { id: string | number }>(
     }
   }, [items, customOrder, onUpdate, safeListState]);
 
-  const processedItems = items.map((item) => ({
-    ...item,
-    isPinned: pinnedIds.includes(item.id.toString()),
-  }));
+  const processedItems = items
+    .filter((item) => item.id !== undefined && item.id !== null)
+    .map((item) => ({
+      ...item,
+      isPinned: pinnedIds.includes(item.id.toString()),
+    }));
 
   const sortedItems = processedItems.sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;

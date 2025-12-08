@@ -802,7 +802,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             <div className="grid grid-cols-1 gap-3">
               {character.attributes.map((attr, idx) => (
                 <div
-                  key={idx}
+                  key={attr.label || `attr-${idx}`}
                   className="bg-theme-surface-highlight/20 p-3 rounded border border-theme-border/50 flex flex-col"
                 >
                   <div className="flex justify-between items-center mb-2">
@@ -844,7 +844,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               </h4>
               <div className="flex flex-col">
                 {character.skills.map((skill, idx) => (
-                  <SkillItem key={idx} skill={skill} />
+                  <SkillItem key={skill.id || skill.name || `skill-${idx}`} skill={skill} />
                 ))}
               </div>
             </div>
@@ -858,7 +858,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             {character.conditions && character.conditions.length > 0 ? (
               <div className="flex flex-col">
                 {character.conditions.map((cond, idx) => (
-                  <ConditionItem key={idx} condition={cond} />
+                  <ConditionItem key={cond.id || cond.name || `cond-${idx}`} condition={cond} />
                 ))}
               </div>
             ) : (
@@ -899,7 +899,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   {character.hiddenTraits
                     .filter((t) => t.unlocked)
                     .map((trait, idx) => (
-                      <TraitItem key={idx} trait={trait} />
+                      <TraitItem key={trait.id || trait.name || `trait-${idx}`} trait={trait} />
                     ))}
                 </div>
               </div>
