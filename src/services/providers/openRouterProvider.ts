@@ -276,12 +276,12 @@ export async function generateContent(
             ? createGeminiTool(
                 "structured_output",
                 "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-                schema
+                schema,
               )
             : createOpenRouterTool(
                 "structured_output",
                 "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-                schema
+                schema,
               );
 
           // Add to existing tools or create new tools array
@@ -291,17 +291,23 @@ export async function generateContent(
           } else {
             requestParams.tools = [schemaAsTool];
             // Force calling this tool when no other tools exist
-            requestParams.toolChoice = { type: "function", function: { name: "structured_output" } };
+            requestParams.toolChoice = {
+              type: "function",
+              function: { name: "structured_output" },
+            };
           }
 
           // Add instruction to first message to inform model about structured output requirement
           if (messages.length > 0 && messages[0].role === "system") {
             const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-            messages[0].content = messages[0].content + structuredOutputInstruction;
+            messages[0].content =
+              messages[0].content + structuredOutputInstruction;
           }
 
           useToolCallForSchema = true;
-          console.log(`[OpenRouter] Using forceToolCallMode: schema wrapped as tool (${isGemini ? 'Gemini' : 'OpenAI'} format)`);
+          console.log(
+            `[OpenRouter] Using forceToolCallMode: schema wrapped as tool (${isGemini ? "Gemini" : "OpenAI"} format)`,
+          );
         } else if (!tools || tools.length === 0) {
           // Use responseFormat only when no tools are present
           const openAIFormat = zodToOpenAIResponseFormat(schema);
@@ -317,7 +323,12 @@ export async function generateContent(
       console.log(
         `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${requestParams.tools ? "yes" : "no"}, isGemini: ${isGemini}, useToolCallForSchema: ${useToolCallForSchema}`,
       );
-      if (isGemini && schema && !useToolCallForSchema && requestParams.responseFormat) {
+      if (
+        isGemini &&
+        schema &&
+        !useToolCallForSchema &&
+        requestParams.responseFormat
+      ) {
         console.log(
           "[OpenRouter] Detected Gemini model, using Gemini schema format:",
           JSON.stringify(requestParams.responseFormat, null, 2),
@@ -395,7 +406,9 @@ async function handleNonStreamingResponse(
 
   // If using tool call mode for schema, extract the structured result from tool call args
   if (useToolCallForSchema && toolCalls.length > 0) {
-    const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+    const structuredOutputCall = toolCalls.find(
+      (tc) => tc.name === "structured_output",
+    );
     if (structuredOutputCall) {
       const result = structuredOutputCall.args;
       if (schema) {
@@ -511,13 +524,17 @@ async function handleStreamingResponse(
 
   // If using tool call mode for schema, extract the structured result from tool call args
   if (useToolCallForSchema && toolCalls.length > 0) {
-    const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+    const structuredOutputCall = toolCalls.find(
+      (tc) => tc.name === "structured_output",
+    );
     if (structuredOutputCall) {
       const result = structuredOutputCall.args;
       if (schema) {
         validateSchema(result, schema, "openrouter");
       }
-      console.log("[OpenRouter] Extracted structured output from tool call (streaming)");
+      console.log(
+        "[OpenRouter] Extracted structured output from tool call (streaming)",
+      );
       return { result, usage, raw: null };
     }
   }

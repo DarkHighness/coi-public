@@ -13,74 +13,15 @@
 
 import { ENV_THEMES } from "./envThemes";
 import type { ThemeConfig } from "../../types";
+import { ambienceSchema, envThemeSchema } from "@/services/zodSchemas";
 
 // All available ambience types (matches audio folder names)
-export const AMBIENCES = [
-  // Nature & Weather
-  "forest",
-  "desert",
-  "ocean",
-  "snow",
-  "rain",
-  "storm",
-  "cave",
-  "mountain",
-  "swamp",
-
-  // Urban & Social
-  "city",
-  "market",
-  "tavern",
-  "village",
-
-  // Mood & Genre
-  "mystical",
-  "horror",
-  "combat",
-  "quiet",
-
-  // Tech & Sci-Fi
-  "scifi",
-  "dungeon",
-  "temple",
-  "castle",
-  "ruins",
-  "underwater",
-  "space",
-] as const;
+export const AMBIENCES = ambienceSchema.options;
 
 export type Ambience = (typeof AMBIENCES)[number];
 
 // Visual theme keys (matches envTheme in zodSchemas)
-export const ENV_THEME_KEYS = [
-  "fantasy",
-  "scifi",
-  "cyberpunk",
-  "horror",
-  "mystery",
-  "romance",
-  "royal",
-  "wuxia",
-  "demonic",
-  "ethereal",
-  "modern",
-  "gold",
-  "villain",
-  "sepia",
-  "rose",
-  "war",
-  "sunset",
-  "cold",
-  "violet",
-  "nature",
-  "artdeco",
-  "intrigue",
-  "wasteland",
-  "patriotic",
-  "cyan",
-  "silver",
-  "obsidian",
-] as const;
+export const ENV_THEME_KEYS = envThemeSchema.options;
 
 export type EnvThemeKey = (typeof ENV_THEME_KEYS)[number];
 

@@ -1,304 +1,309 @@
 /**
  * ============================================================================
- * Schema Flattener - 将嵌套 Schema 扁平化
+ * Schema Flattener - Flatten nested Zod schemas for AI generation
  * ============================================================================
  *
- * 用于将嵌套的 Zod/JSON Schema 转换为扁平结构，同时提供反向转换功能
- * 适用于不支持嵌套 JSON Schema 的模型
+ * Some AI models struggle with deeply nested JSON structures.
+ * This module provides utilities to:
+ * 1. Flatten nested Zod schemas into a flat structure
+ * 2. Unflatten AI responses back to the original nested structure
  *
- * 命名规则：
- * - 父级字段取首字母大写
- * - 叶子节点取完整 PascalCase
- * - 例如: visible.name → VName, hidden.realMotives → HRealMotives
+ * Naming Convention:
+ * - `name` → `Name`
+ * - `visible.description` → `VDescription`
+ * - `visible.sensory.texture` → `VSTexture`
+ * - `visible.items[].name` → `VI[].Name` (arrays reset flattening)
+ *
+ * Nullability Inheritance:
+ * - Parent nullable + child required → child becomes nullable
  */
 
-import { z, ZodObject, ZodTypeAny, ZodOptional, ZodNullable, ZodArray } from "zod";
+import {
+  z,
+  ZodObject,
+  ZodArray,
+  ZodOptional,
+  ZodNullable,
+  ZodDefault,
+  ZodEffects,
+} from "zod";
+import type { ZodTypeAny, ZodRawShape } from "zod";
+
+// ============================================================================
+// Prompt Field Name Conversion
+// ============================================================================
+
+/**
+ * Convert a nested field path to its flattened name
+ * e.g., "visible.description" -> "VDescription"
+ * e.g., "hidden.truth" -> "HTruth"
+ * e.g., "name" -> "Name"
+ */
+export function flattenFieldPath(path: string): string {
+  const parts = path.split(".");
+  if (parts.length === 1) {
+    return capitalize(parts[0]);
+  }
+  // First part gets full capitalize, rest get first letter uppercase
+  return parts
+    .map((p, i) => (i === 0 ? capitalize(p.charAt(0)) : capitalize(p)))
+    .join("");
+}
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface FlatFieldInfo {
-  path: string[]; // Original path, e.g., ["visible", "name"]
-  flatName: string; // Flattened name, e.g., "VName"
-  schema: ZodTypeAny; // The leaf schema
-  description?: string; // Original description
-  isOptional: boolean;
+/**
+ * Mapping of flattened field name to original nested path
+ */
+export interface FieldMapping {
+  flatName: string;
+  originalPath: string[];
   isNullable: boolean;
-  // 数组元素的 fieldMap（仅用于数组类型，用于还原数组元素）
-  elementFieldMap?: Map<string, FlatFieldInfo>;
+  description?: string;
+  schema: ZodTypeAny;
 }
 
-interface FlatteningContext {
-  fields: Map<string, FlatFieldInfo>; // flatName -> info
-  usedNames: Set<string>; // Track used names for uniqueness
+/**
+ * Result of schema flattening
+ */
+export interface FlattenResult {
+  flatSchema: ZodObject<ZodRawShape>;
+  fieldMappings: FieldMapping[];
 }
 
 // ============================================================================
-// Field Name Generation
+// Helper Functions
 // ============================================================================
 
 /**
- * Convert a string to PascalCase
+ * Get the first letter of a field name (uppercase)
  */
-function toPascalCase(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+function getAbbreviation(name: string): string {
+  return name.charAt(0).toUpperCase();
 }
 
 /**
- * Generate abbreviated field name from path
- *
- * Rules:
- * - Single segment: PascalCase (e.g., "name" → "Name")
- * - Multiple segments: Parent initials + Leaf PascalCase
- *   - First parent: first letter uppercase
- *   - Middle parents: first letter uppercase
- *   - Last segment (leaf): full PascalCase
- *
- * Examples:
- * - ["name"] → "Name"
- * - ["visible", "name"] → "VName"
- * - ["visible", "sensory", "texture"] → "VSTexture"
- * - ["hidden", "realMotives"] → "HRealMotives"
+ * Capitalize first letter
  */
-function generateFlatFieldName(path: string[]): string {
-  if (path.length === 0) return "";
-  if (path.length === 1) return toPascalCase(path[0]);
-
-  // Build prefix from parent segments (all but last)
-  let prefix = "";
-  for (let i = 0; i < path.length - 1; i++) {
-    prefix += path[i].charAt(0).toUpperCase();
-  }
-
-  // Add leaf name in PascalCase
-  const leafName = path[path.length - 1];
-  return prefix + toPascalCase(leafName);
+function capitalize(name: string): string {
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 /**
- * Ensure field name is unique within context
- * If collision detected, append parent info until unique
+ * Check if schema is nullable or optional
  */
-function ensureUniqueName(
-  baseName: string,
-  path: string[],
-  context: FlatteningContext
-): string {
-  let name = baseName;
-  let suffix = 0;
-
-  while (context.usedNames.has(name)) {
-    suffix++;
-    // Try adding more parent context
-    if (suffix <= path.length - 1) {
-      // Add more parent letters
-      name = "";
-      for (let i = 0; i < Math.min(suffix + 1, path.length - 1); i++) {
-        name += toPascalCase(path[i].substring(0, suffix + 1));
-      }
-      name += toPascalCase(path[path.length - 1]);
-    } else {
-      // Fall back to numeric suffix
-      name = baseName + suffix;
-    }
-  }
-
-  context.usedNames.add(name);
-  return name;
-}
-
-// ============================================================================
-// Schema Analysis
-// ============================================================================
-
-/**
- * Check if a Zod type is an object schema
- */
-function isZodObject(schema: ZodTypeAny): schema is ZodObject<any> {
-  return schema._def.typeName === "ZodObject";
+function isNullableOrOptional(schema: ZodTypeAny): boolean {
+  const typeName = schema._def.typeName;
+  return (
+    typeName === "ZodOptional" ||
+    typeName === "ZodNullable" ||
+    typeName === "ZodDefault"
+  );
 }
 
 /**
- * Check if a Zod type is an array schema
+ * Unwrap nullable/optional/default wrappers to get inner type
  */
-function isZodArray(schema: ZodTypeAny): schema is ZodArray<any> {
-  return schema._def.typeName === "ZodArray";
-}
-
-/**
- * Unwrap optional/nullable and get the inner type
- */
-function unwrapSchema(schema: ZodTypeAny): {
-  inner: ZodTypeAny;
-  isOptional: boolean;
-  isNullable: boolean;
-} {
+function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
   let current = schema;
-  let isOptional = false;
-  let isNullable = false;
+  let typeName = current._def.typeName;
 
-  // Unwrap layers
-  while (true) {
-    const typeName = current._def.typeName;
+  while (
+    typeName === "ZodOptional" ||
+    typeName === "ZodNullable" ||
+    typeName === "ZodDefault" ||
+    typeName === "ZodEffects"
+  ) {
     if (typeName === "ZodOptional") {
-      isOptional = true;
-      current = (current as ZodOptional<any>)._def.innerType;
+      current = (current as ZodOptional<ZodTypeAny>)._def.innerType;
     } else if (typeName === "ZodNullable") {
-      isNullable = true;
-      current = (current as ZodNullable<any>)._def.innerType;
+      current = (current as ZodNullable<ZodTypeAny>)._def.innerType;
     } else if (typeName === "ZodDefault") {
-      current = current._def.innerType;
-    } else {
-      break;
+      current = (current as ZodDefault<ZodTypeAny>)._def.innerType;
+    } else if (typeName === "ZodEffects") {
+      current = (current as ZodEffects<ZodTypeAny>)._def.schema;
     }
+    typeName = current._def.typeName;
   }
 
-  return { inner: current, isOptional, isNullable };
+  return current;
 }
 
 /**
- * Get description from a Zod schema
+ * Get description from schema
  */
 function getDescription(schema: ZodTypeAny): string | undefined {
-  return schema._def.description;
+  return schema._def.description || schema.description;
 }
 
 // ============================================================================
-// Flattening Logic
+// Schema Flattening
 // ============================================================================
 
 /**
- * Recursively collect all leaf fields from a schema
- *
- * 注意：当遇到数组时，数组成为新的 root，其内部元素保持原有嵌套结构不被扁平化
+ * Recursively collect field mappings from a schema
  */
 function collectFields(
   schema: ZodTypeAny,
   path: string[],
-  context: FlatteningContext,
-  parentOptional: boolean = false,
-  parentNullable: boolean = false
+  prefix: string,
+  parentNullable: boolean,
+  mappings: FieldMapping[],
 ): void {
-  const { inner, isOptional, isNullable } = unwrapSchema(schema);
-  const effectiveOptional = parentOptional || isOptional;
-  const effectiveNullable = parentNullable || isNullable;
+  const unwrapped = unwrapSchema(schema);
+  const isCurrentNullable = parentNullable || isNullableOrOptional(schema);
+  const typeName = unwrapped._def.typeName;
 
-  if (isZodObject(inner)) {
-    // Recurse into object properties
-    const shape = inner.shape;
-    for (const [key, value] of Object.entries(shape)) {
-      collectFields(
-        value as ZodTypeAny,
-        [...path, key],
-        context,
-        effectiveOptional,
-        effectiveNullable
-      );
-    }
-  } else if (isZodArray(inner)) {
-    // 数组成为新的 root - 但其内部元素的 schema 也需要被扁平化
-    const baseName = generateFlatFieldName(path);
-    const flatName = ensureUniqueName(baseName, path, context);
+  if (typeName === "ZodObject") {
+    // Process object properties
+    const shape = (unwrapped as ZodObject<ZodRawShape>)._def.shape();
 
-    // 获取数组元素的 schema
-    const elementSchema = inner._def.type;
-    const { inner: unwrappedElement } = unwrapSchema(elementSchema);
+    for (const [key, fieldSchema] of Object.entries(shape)) {
+      // Logic to filter out internal system fields
+      const INTERNAL_FIELDS = new Set([
+        "id",
+        "createdAt",
+        "updatedAt",
+        "modifiedAt",
+        "lastAccess",
+        "highlight",
+      ]);
 
-    // 如果元素是对象，递归扁平化它
-    let flattenedArraySchema: ZodTypeAny;
-    let elementFieldMap: Map<string, FlatFieldInfo> | undefined;
+      const fieldZod = fieldSchema as ZodTypeAny;
+      const desc = getDescription(fieldZod);
 
-    if (isZodObject(unwrappedElement)) {
-      // 递归扁平化元素 schema，并保存 fieldMap 用于还原
-      const { flatSchema: flatElementSchema, fieldMap: elemFieldMap } = flattenZodSchema(unwrappedElement);
-      elementFieldMap = elemFieldMap;
-      // 重新包装为数组
-      flattenedArraySchema = z.array(flatElementSchema);
-      // 保持原有的 optional/nullable 包装
-      if (isOptional) {
-        flattenedArraySchema = flattenedArraySchema.optional();
+      // Skip if in blacklist or explicitly marked invisible
+      if (INTERNAL_FIELDS.has(key) || (desc && desc.includes("INVISIBLE"))) {
+        continue;
       }
-      if (isNullable) {
-        flattenedArraySchema = flattenedArraySchema.nullable();
+
+      const fieldUnwrapped = unwrapSchema(fieldZod);
+      const fieldTypeName = fieldUnwrapped._def.typeName;
+      const newPath = [...path, key];
+      let newPrefix: string;
+      if (prefix === "") {
+        if (fieldTypeName === "ZodObject") {
+          newPrefix = getAbbreviation(key);
+        } else {
+          newPrefix = capitalize(key);
+        }
+      } else {
+        newPrefix = prefix + capitalize(key);
       }
-    } else {
-      // 元素不是对象，保持原样
-      flattenedArraySchema = schema;
+
+      if (fieldTypeName === "ZodObject") {
+        // Nested object - continue flattening with abbreviation
+        collectFields(
+          fieldZod,
+          newPath,
+          newPrefix,
+          isCurrentNullable || isNullableOrOptional(fieldZod),
+          mappings,
+        );
+      } else if (fieldTypeName === "ZodArray") {
+        // Array - reset flattening, process items separately
+        const itemSchema = (fieldUnwrapped as ZodArray<ZodTypeAny>)._def.type;
+        const itemUnwrapped = unwrapSchema(itemSchema);
+
+        if (itemUnwrapped._def.typeName === "ZodObject") {
+          // Array of objects - add the array field itself and process items
+          // The array items will be processed with their own prefix
+          const arrayFieldName = newPrefix;
+
+          // Create a flattened item schema
+          const itemMappings: FieldMapping[] = [];
+          collectFields(
+            itemSchema,
+            [],
+            "",
+            isCurrentNullable || isNullableOrOptional(fieldZod),
+            itemMappings,
+          );
+
+          // Create the flat item shape
+          const flatItemShape: ZodRawShape = {};
+          for (const m of itemMappings) {
+            flatItemShape[m.flatName] = m.isNullable
+              ? m.schema.nullish()
+              : m.schema;
+          }
+
+          // Add array field with flattened item schema
+          mappings.push({
+            flatName: arrayFieldName,
+            originalPath: newPath,
+            isNullable: isCurrentNullable || isNullableOrOptional(fieldZod),
+            description: getDescription(fieldZod),
+            schema: z.array(z.object(flatItemShape)),
+          });
+        } else {
+          // Array of primitives - keep as is
+          mappings.push({
+            flatName: newPrefix,
+            originalPath: newPath,
+            isNullable: isCurrentNullable || isNullableOrOptional(fieldZod),
+            description: getDescription(fieldZod),
+            schema: fieldUnwrapped,
+          });
+        }
+      } else {
+        // Primitive field - add directly with flat name
+        mappings.push({
+          flatName: newPrefix,
+          originalPath: newPath,
+          isNullable: isCurrentNullable || isNullableOrOptional(fieldZod),
+          description: getDescription(fieldZod),
+          schema: fieldUnwrapped,
+        });
+      }
     }
-
-    context.fields.set(flatName, {
-      path,
-      flatName,
-      schema: flattenedArraySchema,
-      description: getDescription(schema) || getDescription(inner),
-      isOptional: effectiveOptional,
-      isNullable: effectiveNullable,
-      elementFieldMap, // 存储元素的 fieldMap 用于还原
-    });
-  } else {
-    // Leaf field - add to context
-    const baseName = generateFlatFieldName(path);
-    const flatName = ensureUniqueName(baseName, path, context);
-
-    context.fields.set(flatName, {
-      path,
-      flatName,
-      schema: schema, // Keep original with optional/nullable wrappers
-      description: getDescription(schema) || getDescription(inner),
-      isOptional: effectiveOptional,
-      isNullable: effectiveNullable,
-    });
   }
 }
 
 /**
- * Flatten a Zod object schema into a flat structure
+ * Flatten a Zod schema for AI generation
  *
- * @param schema The original nested Zod schema
- * @returns Object containing flat schema and field mapping
+ * @param schema - The Zod schema to flatten
+ * @returns Flattened schema and field mappings for unflattening
  */
-export function flattenZodSchema(schema: ZodObject<any>): {
-  flatSchema: ZodObject<any>;
-  fieldMap: Map<string, FlatFieldInfo>;
-} {
-  const context: FlatteningContext = {
-    fields: new Map(),
-    usedNames: new Set(),
-  };
+export function flattenZodSchema(schema: ZodTypeAny): FlattenResult {
+  const mappings: FieldMapping[] = [];
+  collectFields(schema, [], "", false, mappings);
 
-  // Collect all fields recursively
-  collectFields(schema, [], context, false, false);
+  // Build flat schema shape
+  const flatShape: ZodRawShape = {};
+  for (const mapping of mappings) {
+    let fieldSchema = mapping.schema;
 
-  // Build the flat schema shape
-  const flatShape: Record<string, ZodTypeAny> = {};
-
-  for (const [flatName, info] of context.fields) {
-    let fieldSchema = info.schema;
-
-    // 只保留原始描述，不添加路径信息
-    if (info.description) {
-      fieldSchema = fieldSchema.describe(info.description);
+    // Add description if available
+    if (mapping.description) {
+      fieldSchema = fieldSchema.describe(mapping.description);
     }
-    flatShape[flatName] = fieldSchema;
+
+    // Apply nullability
+    if (mapping.isNullable) {
+      flatShape[mapping.flatName] = fieldSchema.nullish();
+    } else {
+      flatShape[mapping.flatName] = fieldSchema;
+    }
   }
 
   return {
     flatSchema: z.object(flatShape),
-    fieldMap: context.fields,
+    fieldMappings: mappings,
   };
 }
 
 // ============================================================================
-// Unflattening Logic
+// Result Unflattening
 // ============================================================================
 
 /**
  * Set a value at a nested path in an object
  */
 function setNestedValue(obj: any, path: string[], value: any): void {
-  if (path.length === 0) return;
-
   let current = obj;
   for (let i = 0; i < path.length - 1; i++) {
     const key = path[i];
@@ -307,205 +312,170 @@ function setNestedValue(obj: any, path: string[], value: any): void {
     }
     current = current[key];
   }
-
   current[path[path.length - 1]] = value;
 }
 
 /**
- * Convert a flat response back to nested structure
- *
- * @param flatData The flat data from model response
- * @param fieldMap The field mapping from flattening
- * @returns Nested data matching original schema structure
+ * Unflatten array items
  */
-export function unflattenResponse(
-  flatData: Record<string, any>,
-  fieldMap: Map<string, FlatFieldInfo>
-): Record<string, any> {
-  const result: Record<string, any> = {};
-
-  for (const [flatName, value] of Object.entries(flatData)) {
-    const info = fieldMap.get(flatName);
-    if (info) {
-      // 检查是否是数组值，如果有 elementFieldMap 说明元素需要递归还原
-      if (Array.isArray(value) && info.elementFieldMap) {
-        // 递归还原每个数组元素
-        const unflattenedArray = value.map((element: Record<string, any>) => {
-          if (typeof element === 'object' && element !== null) {
-            return unflattenResponse(element, info.elementFieldMap!);
-          }
-          return element;
-        });
-
-        setNestedValue(result, info.path, unflattenedArray);
-        continue;
+function unflattenArrayItems(
+  items: any[],
+  itemMappings: FieldMapping[],
+): any[] {
+  return items.map((item) => {
+    const nested: any = {};
+    for (const mapping of itemMappings) {
+      if (mapping.flatName in item) {
+        setNestedValue(nested, mapping.originalPath, item[mapping.flatName]);
       }
-
-      setNestedValue(result, info.path, value);
-    } else {
-      // Unknown field - keep at top level
-      result[flatName] = value;
     }
-  }
-
-  return result;
-}
-
-// ============================================================================
-// JSON Schema Flattening (for direct use with providers)
-// ============================================================================
-
-interface JSONSchemaProperty {
-  type?: string | string[];
-  description?: string;
-  enum?: any[];
-  items?: JSONSchemaProperty;
-  properties?: Record<string, JSONSchemaProperty>;
-  required?: string[];
-  nullable?: boolean;
-  [key: string]: any;
-}
-
-interface JSONSchema {
-  type: string;
-  properties?: Record<string, JSONSchemaProperty>;
-  required?: string[];
-  [key: string]: any;
+    return nested;
+  });
 }
 
 /**
- * Recursively collect fields from JSON schema
- */
-function collectJsonFields(
-  prop: JSONSchemaProperty,
-  path: string[],
-  context: FlatteningContext,
-  parentRequired: boolean = true
-): void {
-  // Handle nullable types
-  const isNullable = prop.nullable === true ||
-    (Array.isArray(prop.type) && prop.type.includes("null"));
-
-  const effectiveType = Array.isArray(prop.type)
-    ? prop.type.find(t => t !== "null")
-    : prop.type;
-
-  if (effectiveType === "object" && prop.properties) {
-    // Recurse into object properties
-    const requiredFields = new Set(prop.required || []);
-    for (const [key, value] of Object.entries(prop.properties)) {
-      collectJsonFields(
-        value,
-        [...path, key],
-        context,
-        parentRequired && requiredFields.has(key)
-      );
-    }
-  } else if (effectiveType === "array") {
-    // Keep arrays as-is
-    const baseName = generateFlatFieldName(path);
-    const flatName = ensureUniqueName(baseName, path, context);
-
-    context.fields.set(flatName, {
-      path,
-      flatName,
-      schema: z.any(), // Placeholder
-      description: prop.description,
-      isOptional: !parentRequired,
-      isNullable,
-    });
-  } else {
-    // Leaf field
-    const baseName = generateFlatFieldName(path);
-    const flatName = ensureUniqueName(baseName, path, context);
-
-    context.fields.set(flatName, {
-      path,
-      flatName,
-      schema: z.any(), // Placeholder
-      description: prop.description,
-      isOptional: !parentRequired,
-      isNullable,
-    });
-  }
-}
-
-/**
- * Flatten a JSON schema object
+ * Unflatten AI response back to nested structure
  *
- * @param schema The original nested JSON schema
- * @returns Object containing flat schema and field mapping
+ * @param flatResult - The flat response from AI
+ * @param fieldMappings - The field mappings from flattenZodSchema
+ * @returns Nested structure matching original schema
  */
-export function flattenJsonSchema(schema: JSONSchema): {
-  flatSchema: JSONSchema;
-  fieldMap: Map<string, FlatFieldInfo>;
-} {
-  const context: FlatteningContext = {
-    fields: new Map(),
-    usedNames: new Set(),
-  };
+export function unflattenResult(
+  flatResult: Record<string, unknown>,
+  fieldMappings: FieldMapping[],
+): Record<string, unknown> {
+  const nested: Record<string, unknown> = {};
 
-  if (schema.properties) {
-    const requiredFields = new Set(schema.required || []);
-    for (const [key, value] of Object.entries(schema.properties)) {
-      collectJsonFields(value, [key], context, requiredFields.has(key));
+  for (const mapping of fieldMappings) {
+    const flatName = mapping.flatName;
+
+    // Check if this is an array field (ends with [])
+    if (flatName.endsWith("[]")) {
+      const baseName = flatName.slice(0, -2);
+      // Find array value - could be at the flat name or base name
+      const arrayValue = flatResult[flatName] ?? flatResult[baseName];
+
+      if (Array.isArray(arrayValue)) {
+        // Get mappings for array items
+        // These are the mappings that were applied to array items during flattening
+        // We need to find them by looking at the array item schema
+        const itemMappings: FieldMapping[] = [];
+        const itemSchema = unwrapSchema(mapping.schema);
+        if (itemSchema._def.typeName === "ZodArray") {
+          const itemType = (itemSchema as ZodArray<ZodTypeAny>)._def.type;
+          collectFields(itemType, [], "", false, itemMappings);
+        }
+
+        if (itemMappings.length > 0) {
+          setNestedValue(
+            nested,
+            mapping.originalPath,
+            unflattenArrayItems(arrayValue, itemMappings),
+          );
+        } else {
+          // Primitive array
+          setNestedValue(nested, mapping.originalPath, arrayValue);
+        }
+      }
+    } else if (flatName in flatResult) {
+      setNestedValue(nested, mapping.originalPath, flatResult[flatName]);
     }
   }
 
-  // Build flat schema
-  const flatProperties: Record<string, JSONSchemaProperty> = {};
-  const flatRequired: string[] = [];
-
-  for (const [flatName, info] of context.fields) {
-    // Get the original property by traversing the path
-    let prop = schema;
-    for (const segment of info.path) {
-      prop = (prop.properties?.[segment] || {}) as any;
-    }
-
-    // Clone and enhance the property
-    const flatProp: JSONSchemaProperty = { ...prop };
-
-    // Enhance description with original path
-    const pathStr = info.path.join(".");
-    flatProp.description = info.description
-      ? `[${pathStr}] ${info.description}`
-      : `[${pathStr}]`;
-
-    flatProperties[flatName] = flatProp;
-
-    if (!info.isOptional) {
-      flatRequired.push(flatName);
-    }
-  }
-
-  return {
-    flatSchema: {
-      type: "object",
-      properties: flatProperties,
-      required: flatRequired.length > 0 ? flatRequired : undefined,
-    },
-    fieldMap: context.fields,
-  };
+  return nested;
 }
 
 // ============================================================================
-// Tool Schema Flattening
+// Debug Utilities
 // ============================================================================
 
 /**
- * Flatten tool parameters schema
- * Used for tool call definitions
+ * Log the flat schema structure for debugging
  */
-export function flattenToolSchema(schema: ZodObject<any>): {
-  flatSchema: ZodObject<any>;
-  fieldMap: Map<string, FlatFieldInfo>;
-} {
-  return flattenZodSchema(schema);
+export function logFlatSchema(result: FlattenResult): void {
+  console.log("[SchemaFlattener] Flattened schema mappings:");
+  for (const m of result.fieldMappings) {
+    console.log(
+      `  ${m.flatName} <- ${m.originalPath.join(".")}${m.isNullable ? " (nullable)" : ""}`,
+    );
+  }
 }
 
-// ============================================================================
-// Exports
-// ============================================================================
+/**
+ * Generate prompt instruction explaining the flattened schema structure
+ * This helps the AI understand the abbreviated field names
+ */
+export function generateFlatSchemaInstruction(
+  fieldMappings: FieldMapping[],
+): string {
+  // Group by whether it's an array field or a regular field
+  const arrayFields: FieldMapping[] = [];
+  const regularFields: FieldMapping[] = [];
 
-export type { FlatFieldInfo, JSONSchema, JSONSchemaProperty };
+  for (const m of fieldMappings) {
+    if (m.flatName.endsWith("[]")) {
+      arrayFields.push(m);
+    } else {
+      regularFields.push(m);
+    }
+  }
+
+  let instruction = `
+[FLATTENED SCHEMA STRUCTURE]
+The response schema uses abbreviated field names for better compatibility. Here is the mapping:
+
+`;
+
+  // Add regular field mappings
+  if (regularFields.length > 0) {
+    instruction += "Field Name Mappings:\n";
+    for (const m of regularFields) {
+      const originalPath = m.originalPath.join(".");
+      instruction += `  "${m.flatName}" → "${originalPath}"`;
+      if (m.description) {
+        instruction += ` - ${m.description}`;
+      }
+      instruction += "\n";
+    }
+  }
+
+  // Add array field mappings with their item field structures
+  if (arrayFields.length > 0) {
+    instruction += "\nArray Field Mappings:\n";
+    for (const m of arrayFields) {
+      const originalPath = m.originalPath.join(".");
+      const baseName = m.flatName.slice(0, -2);
+      instruction += `  "${baseName}" (array) → "${originalPath}[]"`;
+      if (m.description) {
+        instruction += ` - ${m.description}`;
+      }
+      instruction += "\n";
+
+      // Get item field mappings
+      const itemSchema = unwrapSchema(m.schema);
+      if (itemSchema._def.typeName === "ZodArray") {
+        const itemType = (itemSchema as ZodArray<ZodTypeAny>)._def.type;
+        const itemMappings: FieldMapping[] = [];
+        collectFields(itemType, [], "", false, itemMappings);
+
+        if (itemMappings.length > 0) {
+          instruction += "    Array item fields:\n";
+          for (const im of itemMappings) {
+            if (im.flatName.endsWith("[]")) {
+              // Nested array
+              instruction += `      "${im.flatName.slice(0, -2)}" (array) → "${im.originalPath.join(".")}[]"\n`;
+            } else {
+              instruction += `      "${im.flatName}" → "${im.originalPath.join(".")}"\n`;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  instruction += `
+IMPORTANT: Use the abbreviated field names in your JSON response, NOT the original nested paths.
+`;
+
+  return instruction;
+}

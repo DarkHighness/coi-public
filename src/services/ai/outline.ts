@@ -299,10 +299,13 @@ export const generateStoryOutlinePhased = async (
     }
   };
 
+  // Get flatten flag from settings
+  const flatten = settings.extra?.flattenSchema;
+
   // Phase 1: World Foundation
   await executePhase(
     1,
-    getOutlinePhase1Prompt(theme, language, customContext),
+    getOutlinePhase1Prompt(theme, language, customContext, flatten),
     outlinePhase1Schema,
     "phase1",
   );
@@ -310,7 +313,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 2: Protagonist Character
   await executePhase(
     2,
-    getOutlinePhase2Prompt(),
+    getOutlinePhase2Prompt(flatten),
     outlinePhase2Schema,
     "phase2",
   );
@@ -318,7 +321,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 3: Locations
   await executePhase(
     3,
-    getOutlinePhase3Prompt(),
+    getOutlinePhase3Prompt(flatten),
     outlinePhase3Schema,
     "phase3",
   );
@@ -326,7 +329,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 4: Factions
   await executePhase(
     4,
-    getOutlinePhase4Prompt(),
+    getOutlinePhase4Prompt(flatten),
     outlinePhase4Schema,
     "phase4",
   );
@@ -334,7 +337,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 5: Relationships (NPCs)
   await executePhase(
     5,
-    getOutlinePhase5Prompt(),
+    getOutlinePhase5Prompt(flatten),
     outlinePhase5Schema,
     "phase5",
   );
@@ -342,7 +345,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 6: Inventory
   await executePhase(
     6,
-    getOutlinePhase6Prompt(),
+    getOutlinePhase6Prompt(flatten),
     outlinePhase6Schema,
     "phase6",
   );
@@ -350,7 +353,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 7: Quests
   await executePhase(
     7,
-    getOutlinePhase7Prompt(),
+    getOutlinePhase7Prompt(flatten),
     outlinePhase7Schema,
     "phase7",
   );
@@ -358,7 +361,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 8: Knowledge
   await executePhase(
     8,
-    getOutlinePhase8Prompt(),
+    getOutlinePhase8Prompt(flatten),
     outlinePhase8Schema,
     "phase8",
   );
@@ -366,7 +369,7 @@ export const generateStoryOutlinePhased = async (
   // Phase 9: Timeline & Atmosphere
   await executePhase(
     9,
-    getOutlinePhase9Prompt(),
+    getOutlinePhase9Prompt(flatten),
     outlinePhase9Schema,
     "phase9",
   );

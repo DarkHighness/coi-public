@@ -72,7 +72,19 @@ export interface GenerateContentUnifiedOptions {
   logEndpoint?: string;
   /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
   forceToolCallMode?: boolean;
+  /** 展平嵌套 schema 结构用于 AI 生成 */
+  flattenSchema?: boolean;
 }
+
+// Import schema flattener
+import {
+  flattenZodSchema,
+  unflattenResult,
+  logFlatSchema,
+  generateFlatSchemaInstruction,
+  type FieldMapping,
+} from "../schemaFlattener";
+import type { ZodTypeAny } from "zod";
 
 /**
  * 统一内容生成助手 (内部使用 - 通过 provider protocol 调用)
@@ -95,8 +107,30 @@ export const generateContentUnifiedInternal = async (
     ? getProviderConfig(options.settings, "story")
     : null;
 
-  // Check for forceToolCallMode from options or settings
-  const forceToolCallMode = options?.forceToolCallMode ?? options?.settings?.extra?.forceToolCallMode;
+  // Check for forceToolCallMode and flattenSchema from options or settings
+  const forceToolCallMode =
+    options?.forceToolCallMode ?? options?.settings?.extra?.forceToolCallMode;
+  const flattenSchema =
+    options?.flattenSchema ?? options?.settings?.extra?.flattenSchema;
+
+  // Schema flattening support
+  // Note: The actual prompts should contain the flattened field names when flatten is enabled
+  // This code transforms the Zod schema to use flattened field names
+  let effectiveSchema = schema;
+  let fieldMappings: FieldMapping[] | undefined;
+
+  if (flattenSchema && schema) {
+    try {
+      const flattenResult = flattenZodSchema(schema as ZodTypeAny);
+      effectiveSchema = flattenResult.flatSchema;
+      fieldMappings = flattenResult.fieldMappings;
+      logFlatSchema(flattenResult);
+      console.log("[Core] Using flattened schema for AI generation");
+    } catch (e) {
+      console.warn("[Core] Failed to flatten schema, using original:", e);
+      effectiveSchema = schema;
+    }
+  }
 
   const mergedOptions: GenerateContentOptions = {
     thinkingLevel: options?.thinkingLevel || storyConfig?.thinkingLevel,
@@ -108,6 +142,7 @@ export const generateContentUnifiedInternal = async (
     onChunk: options?.onChunk,
     tools: options?.tools as GenerateContentOptions["tools"],
     forceToolCallMode,
+    flattenSchema,
   };
 
   // Detect input format and convert as needed
@@ -144,7 +179,7 @@ export const generateContentUnifiedInternal = async (
         modelId,
         systemInstruction,
         geminiContents as Parameters<typeof generateGeminiContent>[3],
-        schema as Parameters<typeof generateGeminiContent>[4],
+        effectiveSchema as Parameters<typeof generateGeminiContent>[4],
         mergedOptions,
       );
       result = response.result;
@@ -174,7 +209,7 @@ export const generateContentUnifiedInternal = async (
           modelId,
           systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          schema as Parameters<typeof generateOpenAIContent>[4],
+          effectiveSchema as Parameters<typeof generateOpenAIContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -186,7 +221,7 @@ export const generateContentUnifiedInternal = async (
           modelId,
           systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          schema as Parameters<typeof generateOpenRouterContent>[4],
+          effectiveSchema as Parameters<typeof generateOpenRouterContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -198,7 +233,7 @@ export const generateContentUnifiedInternal = async (
           modelId,
           systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          schema as Parameters<typeof generateClaudeContent>[4],
+          effectiveSchema as Parameters<typeof generateClaudeContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -218,6 +253,24 @@ export const generateContentUnifiedInternal = async (
       );
     }
     throw error;
+  }
+
+  // Unflatten result if schema was flattened
+  if (
+    fieldMappings &&
+    typeof result === "object" &&
+    result !== null &&
+    !("functionCalls" in result)
+  ) {
+    try {
+      result = unflattenResult(
+        result as Record<string, unknown>,
+        fieldMappings,
+      );
+      console.log("[Core] Unflattened AI response to nested structure");
+    } catch (e) {
+      console.warn("[Core] Failed to unflatten result, using flat result:", e);
+    }
   }
 
   const log = createLogEntry(

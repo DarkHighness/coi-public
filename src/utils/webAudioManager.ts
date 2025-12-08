@@ -4,24 +4,9 @@
  * that can be unlocked once through user interaction.
  */
 
-export const ENVIRONMENTS = [
-  "cave",
-  "city",
-  "combat",
-  "desert",
-  "dungeon",
-  "forest",
-  "horror",
-  "market",
-  "mystical",
-  "ocean",
-  "quiet",
-  "rain",
-  "scifi",
-  "snow",
-  "storm",
-  "tavern",
-] as const;
+import { ambienceSchema } from "@/services/zodSchemas";
+
+export const ENVIRONMENTS = ambienceSchema.options;
 
 export type Environment = (typeof ENVIRONMENTS)[number];
 

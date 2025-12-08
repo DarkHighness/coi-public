@@ -241,11 +241,8 @@ export async function generateContent(
       const client = createGeminiClient(config);
 
       // 构建生成配置
-      const { config: generationConfig, useToolCallForSchema } = buildGenerationConfig(
-        systemInstruction,
-        schema,
-        options,
-      );
+      const { config: generationConfig, useToolCallForSchema } =
+        buildGenerationConfig(systemInstruction, schema, options);
 
       let text = "";
       let functionCalls: ToolCallResult[] = [];
@@ -332,13 +329,17 @@ export async function generateContent(
 
       // If using tool call mode for schema, extract the structured result from function call args
       if (useToolCallForSchema && functionCalls.length > 0) {
-        const structuredOutputCall = functionCalls.find(fc => fc.name === "structured_output");
+        const structuredOutputCall = functionCalls.find(
+          (fc) => fc.name === "structured_output",
+        );
         if (structuredOutputCall) {
           const result = structuredOutputCall.args;
           if (schema) {
             validateSchema(result, schema, "gemini");
           }
-          console.log("[Gemini] Extracted structured output from function call");
+          console.log(
+            "[Gemini] Extracted structured output from function call",
+          );
           return { result, usage, raw: rawResponse };
         }
       }
@@ -514,22 +515,29 @@ function buildGenerationConfig(
 
   // Handle schema for structured output
   if (schema) {
-    if (options?.forceToolCallMode || (options?.tools && options.tools.length > 0)) {
+    if (
+      options?.forceToolCallMode ||
+      (options?.tools && options.tools.length > 0)
+    ) {
       // forceToolCallMode OR existing tools: wrap schema as a function declaration
       // (Gemini cannot use responseSchema when tools are present)
       const structuredOutputFunc = {
         name: "structured_output",
-        description: "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+        description:
+          "Return the structured output according to the schema. You MUST call this tool to provide your response.",
         parameters: zodToGemini(schema),
       };
       functionDeclarations.push(structuredOutputFunc);
 
       // Add instruction to system prompt
       const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" function to return your response in the required format. Do not output JSON directly - always use the function call.]`;
-      modifiedSystemInstruction = systemInstruction + structuredOutputInstruction;
+      modifiedSystemInstruction =
+        systemInstruction + structuredOutputInstruction;
 
       useToolCallForSchema = true;
-      console.log("[Gemini] Using forceToolCallMode: schema wrapped as function, added to tools");
+      console.log(
+        "[Gemini] Using forceToolCallMode: schema wrapped as function, added to tools",
+      );
     } else {
       // No tools, no forceToolCallMode: use responseSchema
       config.responseMimeType = "application/json";
@@ -546,7 +554,10 @@ function buildGenerationConfig(
     config.tools = [{ functionDeclarations }];
 
     // Configure tool calling behavior
-    if (useToolCallForSchema && (!options?.tools || options.tools.length === 0)) {
+    if (
+      useToolCallForSchema &&
+      (!options?.tools || options.tools.length === 0)
+    ) {
       // Only structured_output tool exists, force calling it
       config.toolConfig = {
         functionCallingConfig: {

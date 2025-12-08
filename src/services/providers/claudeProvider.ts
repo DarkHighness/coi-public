@@ -295,11 +295,14 @@ export async function generateContent(
         const schemaObj = zodToClaudeCompatibleSchema(schema);
         const schemaAsTool = {
           name: "structured_output",
-          description: "Return the structured output according to the schema. You MUST call this tool to provide your response.",
+          description:
+            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
           input_schema: {
             type: "object" as const,
             properties: (schemaObj.properties || {}) as Record<string, unknown>,
-            ...(schemaObj.required && schemaObj.required.length > 0 ? { required: schemaObj.required } : {}),
+            ...(schemaObj.required && schemaObj.required.length > 0
+              ? { required: schemaObj.required }
+              : {}),
           },
         };
 
@@ -314,7 +317,9 @@ export async function generateContent(
         }
 
         useToolCallForSchema = true;
-        console.log("[Claude] Using forceToolCallMode: schema wrapped as tool, added to tools array");
+        console.log(
+          "[Claude] Using forceToolCallMode: schema wrapped as tool, added to tools array",
+        );
       }
 
       if (tools && tools.length > 0) {
@@ -346,7 +351,8 @@ export async function generateContent(
       // Add structured output instruction if forceToolCallMode is enabled
       if (useToolCallForSchema) {
         const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-        finalSystemInstruction = systemInstruction + structuredOutputInstruction;
+        finalSystemInstruction =
+          systemInstruction + structuredOutputInstruction;
       } else if (
         tools &&
         tools.length > 0 &&
@@ -511,7 +517,9 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       // If using tool call mode for schema, extract the structured result from tool call args
       if (useToolCallForSchema && toolCalls.length > 0) {
-        const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+        const structuredOutputCall = toolCalls.find(
+          (tc) => tc.name === "structured_output",
+        );
         if (structuredOutputCall) {
           const result = structuredOutputCall.args;
           if (schema) {

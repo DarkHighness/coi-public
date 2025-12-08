@@ -306,7 +306,11 @@ export const validateConnection = async (
     (p) => p.id === providerId,
   );
   if (!instance) {
-    return { isValid: false, error: "Provider instance not found", localError: true };
+    return {
+      isValid: false,
+      error: "Provider instance not found",
+      localError: true,
+    };
   }
 
   // 检查必要的配置

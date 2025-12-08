@@ -326,19 +326,19 @@ export async function generateContent(
           schemaAsTool = createGeminiCompatibleTool(
             "structured_output",
             "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema
+            schema,
           );
         } else if (isClaude) {
           schemaAsTool = createClaudeCompatibleTool(
             "structured_output",
             "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema
+            schema,
           );
         } else {
           schemaAsTool = createOpenAITool(
             "structured_output",
             "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema
+            schema,
           );
         }
 
@@ -354,11 +354,14 @@ export async function generateContent(
         // Add instruction to system message
         if (messages.length > 0 && messages[0].role === "system") {
           const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-          messages[0].content = (messages[0].content as string) + structuredOutputInstruction;
+          messages[0].content =
+            (messages[0].content as string) + structuredOutputInstruction;
         }
 
         useToolCallForSchema = true;
-        console.log(`[OpenAI] Using forceToolCallMode: schema wrapped as tool (${isGemini ? 'Gemini' : isClaude ? 'Claude' : 'OpenAI'} format)`);
+        console.log(
+          `[OpenAI] Using forceToolCallMode: schema wrapped as tool (${isGemini ? "Gemini" : isClaude ? "Claude" : "OpenAI"} format)`,
+        );
       }
 
       // 构建请求参数
@@ -372,8 +375,13 @@ export async function generateContent(
           // @ts-ignore
           tools,
           tool_choice: forceStructuredOutputTool
-            ? { type: "function" as const, function: { name: "structured_output" } }
-            : tools ? "auto" : undefined,
+            ? {
+                type: "function" as const,
+                function: { name: "structured_output" },
+              }
+            : tools
+              ? "auto"
+              : undefined,
 
           // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
           // This applies to both standard OpenAI models and Gemini compatibility mode.
@@ -540,7 +548,9 @@ export async function generateContent(
 
       // If using tool call mode for schema, extract the structured result from tool call args
       if (useToolCallForSchema && toolCalls.length > 0) {
-        const structuredOutputCall = toolCalls.find(tc => tc.name === "structured_output");
+        const structuredOutputCall = toolCalls.find(
+          (tc) => tc.name === "structured_output",
+        );
         if (structuredOutputCall) {
           const result = structuredOutputCall.args;
           if (schema) {

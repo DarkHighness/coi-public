@@ -31,7 +31,11 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const getFilteredModels = (providerId: string, type: FunctionKey) => {
     const list = providerModels[providerId] || [];
-    return filterModels(list, type, currentSettings.extra?.disableModelFilter ?? false);
+    return filterModels(
+      list,
+      type,
+      currentSettings.extra?.disableModelFilter ?? false,
+    );
   };
 
   const getProviderById = (providerId: string) => {
@@ -185,7 +189,8 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             {t("models.disableFilter") || "Disable Model Filter"}
           </div>
           <div className="text-[10px] text-theme-muted mt-1">
-            {t("models.disableFilterHelp") || "Show all models, bypassing capability detection. Use with caution."}
+            {t("models.disableFilterHelp") ||
+              "Show all models, bypassing capability detection. Use with caution."}
           </div>
         </div>
         <button
@@ -195,7 +200,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               // Show warning when enabling
               const confirmed = window.confirm(
                 t("models.disableFilterWarning") ||
-                  "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?"
+                  "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?",
               );
               if (!confirmed) return;
             }
@@ -208,7 +213,9 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             });
           }}
           className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${
-            currentSettings.extra?.disableModelFilter ? "bg-yellow-500" : "bg-theme-border"
+            currentSettings.extra?.disableModelFilter
+              ? "bg-yellow-500"
+              : "bg-theme-border"
           }`}
         >
           <span

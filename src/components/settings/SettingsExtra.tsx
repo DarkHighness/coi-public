@@ -163,6 +163,31 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Flatten Schema Mode Toggle */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.flattenSchema") || "Flatten Schema Mode"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.flattenSchemaHelp") ||
+                "Flatten nested schema structures for AI generation"}
+            </div>
+          </div>
+          <button
+            onClick={() => updateExtra("flattenSchema", !extra.flattenSchema)}
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.flattenSchema ? "bg-green-500" : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.flattenSchema ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Prompt Injection Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>

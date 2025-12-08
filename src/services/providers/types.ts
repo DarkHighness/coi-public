@@ -91,6 +91,8 @@ export interface GenerateContentOptions {
   tools?: ZodToolDefinition[];
   /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
   forceToolCallMode?: boolean;
+  /** 展平嵌套 schema 结构用于 AI 生成 */
+  flattenSchema?: boolean;
 }
 
 import type { ZodTypeAny, ZodObject, ZodRawShape, z } from "zod";

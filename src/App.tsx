@@ -608,10 +608,11 @@ function AppContent() {
     const storyInstance = getProviderInstance(storyProviderId);
     const storyProviderName = storyInstance?.name || storyProviderId;
 
-    const { isValid: storyValid, error: storyError, localError: storyLocalError } = await validateConnection(
-      aiSettings,
-      storyProviderId,
-    );
+    const {
+      isValid: storyValid,
+      error: storyError,
+      localError: storyLocalError,
+    } = await validateConnection(aiSettings, storyProviderId);
     if (!storyValid && !storyLocalError) {
       showToast(
         `${storyProviderName}: ${storyError || "Connection Failed"} - Story generation is required`,
@@ -626,10 +627,11 @@ function AppContent() {
     const loreInstance = getProviderInstance(loreProviderId);
     const loreProviderName = loreInstance?.name || loreProviderId;
 
-    const { isValid: loreValid, error: loreError, localError: loreLocalError } = await validateConnection(
-      aiSettings,
-      loreProviderId,
-    );
+    const {
+      isValid: loreValid,
+      error: loreError,
+      localError: loreLocalError,
+    } = await validateConnection(aiSettings, loreProviderId);
     if (!loreValid && !loreLocalError) {
       showToast(
         `${loreProviderName}: ${loreError || "Connection Failed"} - Lore generation is required`,

@@ -421,7 +421,9 @@
       "liteMode": "Lite Mode",
       "liteModeHelp": "Reduce prompt overhead for models with limited context",
       "forceToolCallMode": "Tool Call Mode",
-      "forceToolCallModeHelp": "Use tool_call instead of json_schema for structured output"
+      "forceToolCallModeHelp": "Use tool_call instead of json_schema for structured output",
+      "flattenSchema": "Flatten Schema Mode",
+      "flattenSchemaHelp": "Flatten nested JSON structures for AI generation"
     }
   },
   "narrator": "Narrator",

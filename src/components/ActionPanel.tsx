@@ -298,44 +298,112 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         <div className="max-w-4xl mx-auto space-y-4">
           {/* Action Controls - Always show retry/jump buttons when not processing */}
           {!gameState.isProcessing && !isTranslating && (
-              <div className="animate-fade-in-up">
-                {/* Retry + Jump Buttons - Always visible */}
-                <div className="flex justify-center items-center gap-2 mb-2">
-                  {/* Retry Button - Always show */}
-                  {onRetry && (
-                    <button
-                      onClick={onRetry}
-                      disabled={isDisabled}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={t("retryGeneration")}
+            <div className="animate-fade-in-up">
+              {/* Retry + Jump Buttons - Always visible */}
+              <div className="flex justify-center items-center gap-2 mb-2">
+                {/* Retry Button - Always show */}
+                {onRetry && (
+                  <button
+                    onClick={onRetry}
+                    disabled={isDisabled}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={t("retryGeneration")}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        ></path>
-                      </svg>
-                      <span className="hidden sm:inline">
-                        {t("retryGeneration")}
-                      </span>
-                    </button>
-                  )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">
+                      {t("retryGeneration")}
+                    </span>
+                  </button>
+                )}
 
-                  {/* Jump Button & Inline UI */}
-                  {onJumpToSegment && (
-                    <>
-                      {!isJumpOpen ? (
+                {/* Jump Button & Inline UI */}
+                {onJumpToSegment && (
+                  <>
+                    {!isJumpOpen ? (
+                      <button
+                        onClick={() => setIsJumpOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-border rounded-full text-xs font-bold text-theme-muted uppercase tracking-widest hover:text-theme-primary hover:border-theme-primary transition-colors shadow-sm"
+                        title={t("jumpToSegment") || "Jump to Segment"}
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                          ></path>
+                        </svg>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface border border-theme-primary/30 rounded-full pl-3 pr-1 py-1">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={jumpInputValue}
+                          placeholder={t("jumpPlaceholder") || "Seg #"}
+                          onChange={(e) => setJumpInputValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              onJumpToSegment(jumpInputValue);
+                              setIsJumpOpen(false);
+                              setJumpInputValue("");
+                            } else if (e.key === "Escape") {
+                              setIsJumpOpen(false);
+                            }
+                          }}
+                          className="w-16 bg-transparent text-xs font-mono text-theme-primary placeholder-theme-muted/50 focus:outline-none"
+                        />
                         <button
-                          onClick={() => setIsJumpOpen(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-border rounded-full text-xs font-bold text-theme-muted uppercase tracking-widest hover:text-theme-primary hover:border-theme-primary transition-colors shadow-sm"
-                          title={t("jumpToSegment") || "Jump to Segment"}
+                          onClick={() => {
+                            if (jumpInputValue) {
+                              onJumpToSegment(jumpInputValue);
+                              setIsJumpOpen(false);
+                              setJumpInputValue("");
+                            }
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors"
+                        >
+                          {t("jumpGo") || "Go"}
+                        </button>
+                        <div className="w-px h-3 bg-theme-border mx-1" />
+                        <button
+                          onClick={() => {
+                            onJumpToSegment("start");
+                            setIsJumpOpen(false);
+                          }}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                        >
+                          {t("jumpToStart") || "Top"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            onJumpToSegment("end");
+                            setIsJumpOpen(false);
+                          }}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                        >
+                          {t("jumpToEnd") || "Bot"}
+                        </button>
+                        <button
+                          onClick={() => setIsJumpOpen(false)}
+                          className="ml-1 p-1 rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
                         >
                           <svg
                             className="w-3 h-3"
@@ -347,198 +415,130 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth="2"
-                              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                              d="M6 18L18 6M6 6l12 12"
                             ></path>
                           </svg>
                         </button>
-                      ) : (
-                        <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface border border-theme-primary/30 rounded-full pl-3 pr-1 py-1">
-                          <input
-                            autoFocus
-                            type="text"
-                            value={jumpInputValue}
-                            placeholder={t("jumpPlaceholder") || "Seg #"}
-                            onChange={(e) => setJumpInputValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                onJumpToSegment(jumpInputValue);
-                                setIsJumpOpen(false);
-                                setJumpInputValue("");
-                              } else if (e.key === "Escape") {
-                                setIsJumpOpen(false);
-                              }
-                            }}
-                            className="w-16 bg-transparent text-xs font-mono text-theme-primary placeholder-theme-muted/50 focus:outline-none"
-                          />
-                          <button
-                            onClick={() => {
-                              if (jumpInputValue) {
-                                onJumpToSegment(jumpInputValue);
-                                setIsJumpOpen(false);
-                                setJumpInputValue("");
-                              }
-                            }}
-                            className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors"
-                          >
-                            {t("jumpGo") || "Go"}
-                          </button>
-                          <div className="w-px h-3 bg-theme-border mx-1" />
-                          <button
-                            onClick={() => {
-                              onJumpToSegment("start");
-                              setIsJumpOpen(false);
-                            }}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
-                          >
-                            {t("jumpToStart") || "Top"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              onJumpToSegment("end");
-                              setIsJumpOpen(false);
-                            }}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
-                          >
-                            {t("jumpToEnd") || "Bot"}
-                          </button>
-                          <button
-                            onClick={() => setIsJumpOpen(false)}
-                            className="ml-1 p-1 rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
-                          >
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                              ></path>
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                      </div>
+                    )}
+                  </>
+                )}
 
-                  {/* Mobile Toggle - Only show when there are choices */}
-                  {availableChoices.length > 0 && (
-                    <button
-                      onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                      className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
-                    >
-                      {isChoicesExpanded ? (
-                        <>
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 9l-7 7-7-7"
-                            ></path>
-                          </svg>
-                          {t("hideChoices")}
-                        </>
-                      ) : (
-                        <>
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M5 15l7-7 7 7"
-                            ></path>
-                          </svg>
-                          {t("showChoices")} ({availableChoices.length})
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Choices List - Only show when there are choices */}
+                {/* Mobile Toggle - Only show when there are choices */}
                 {availableChoices.length > 0 && (
-                  <div
-                    className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
+                  <button
+                    onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
+                    className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
                   >
-                    {availableChoices.map((rawChoice, idx) => {
-                      const label = getChoiceLabel(rawChoice);
-                      return (
-                        <div
-                          key={idx}
-                          className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
+                    {isChoicesExpanded ? (
+                      <>
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          <button
-                            onClick={() => onAction(label)}
-                            className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
-                          >
-                            <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              {idx + 1}
-                            </span>
-                            <div className="font-medium">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                  p: ({ children }) => (
-                                    <span className="inline">{children}</span>
-                                  ),
-                                  strong: ({ children }) => (
-                                    <span className="font-bold">{children}</span>
-                                  ),
-                                  em: ({ children }) => (
-                                    <span className="italic">{children}</span>
-                                  ),
-                                }}
-                              >
-                                {label}
-                              </ReactMarkdown>
-                            </div>
-                            {(rawChoice as any).consequence &&
-                              gameState.unlockMode && (
-                                <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
-                                  {(rawChoice as any).consequence}
-                                </span>
-                              )}
-                          </button>
-                          <button
-                            onClick={(e) => handleRollClick(e, label)}
-                            className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
-                            title={t("roll")}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.5"
-                                d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
-                              ></path>
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                          ></path>
+                        </svg>
+                        {t("hideChoices")}
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M5 15l7-7 7 7"
+                          ></path>
+                        </svg>
+                        {t("showChoices")} ({availableChoices.length})
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
-            )}
+
+              {/* Choices List - Only show when there are choices */}
+              {availableChoices.length > 0 && (
+                <div
+                  className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
+                >
+                  {availableChoices.map((rawChoice, idx) => {
+                    const label = getChoiceLabel(rawChoice);
+                    return (
+                      <div
+                        key={idx}
+                        className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
+                      >
+                        <button
+                          onClick={() => onAction(label)}
+                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
+                        >
+                          <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            {idx + 1}
+                          </span>
+                          <div className="font-medium">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => (
+                                  <span className="inline">{children}</span>
+                                ),
+                                strong: ({ children }) => (
+                                  <span className="font-bold">{children}</span>
+                                ),
+                                em: ({ children }) => (
+                                  <span className="italic">{children}</span>
+                                ),
+                              }}
+                            >
+                              {label}
+                            </ReactMarkdown>
+                          </div>
+                          {(rawChoice as any).consequence &&
+                            gameState.unlockMode && (
+                              <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
+                                {(rawChoice as any).consequence}
+                              </span>
+                            )}
+                        </button>
+                        <button
+                          onClick={(e) => handleRollClick(e, label)}
+                          className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
+                          title={t("roll")}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.5"
+                              d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Command Hints - Only show when user starts with / */}
           {customInput.startsWith("/") && (
