@@ -582,6 +582,14 @@ Before proceeding, consider if you need to recall story history:
 - Use \`query_recent_context\` to see the last few turns of player-AI exchanges
 - Use \`query_turn\` to check current fork ID and turn number
 
+**VISIBILITY LAYER REMINDER**:
+When you query entities (items, NPCs, locations, etc.), remember:
+- Query results contain BOTH \`visible\` (player's perception) and \`hidden\` (GM's truth) layers
+- You see EVERYTHING as the GM
+- Use \`hidden\` for internal logic, NPC behavior, world consistency
+- Use \`visible\` for what appears in the narrative (unless \`unlocked: true\`)
+- The \`unlocked\` flag tells you if the player has discovered the hidden truth
+
 **REGEX SEARCH TIPS**:
 - Query fields support regex (e.g., 'fire.*sword', 'dragon|serpent')
 - NEVER use natural language "or" patterns like "xxx or xxx" or "xxx 或 xxx" - these will fail!
@@ -1074,28 +1082,8 @@ function trackChangedEntity(
   }
 }
 
-/**
- * Wraps query results with visibility hints for AI.
- * This makes it explicit which fields are visible to the protagonist vs. GM-only.
- */
-function wrapWithVisibilityHints<T>(
-  result: { success: boolean; data?: T; message?: string; error?: string },
-  entityType: string,
-): unknown {
-  if (!result.success) return result;
 
-  return {
-    ...result,
-    _visibilityGuide: {
-      explanation: `Each ${entityType} has 'visible' (protagonist's knowledge) and 'hidden' (GM-only truth) layers.`,
-      visibleFields: "Information the protagonist knows or perceives",
-      hiddenFields:
-        "True information only the GM (you) knows - use for consistency but don't reveal to player unless unlocked",
-      unlockedFlag:
-        "When 'unlocked: true', the protagonist has discovered the hidden truth",
-    },
-  };
-}
+
 
 /**
  * Execute tool calls for the staged agentic loop
@@ -1127,93 +1115,54 @@ export function executeToolCall(
   }
 
   // ============================================================================
-  // QUERY TOOLS (with visibility hints)
+  // ENTITY QUERY TOOLS
   // ============================================================================
   if (name === "query_inventory") {
-    return wrapWithVisibilityHints(
-      db.query("inventory", args.query as string),
-      "item",
-    );
+    return db.query("inventory", args.query as string);
   }
   if (name === "query_relationships") {
-    return wrapWithVisibilityHints(
-      db.query("relationship", args.query as string),
-      "NPC/relationship",
-    );
+    return db.query("relationship", args.query as string);
   }
   if (name === "query_locations") {
-    return wrapWithVisibilityHints(
-      db.query("location", args.query as string),
-      "location",
-    );
+    return db.query("location", args.query as string);
   }
   if (name === "query_quests") {
-    return wrapWithVisibilityHints(
-      db.query("quest", args.query as string),
-      "quest",
-    );
+    return db.query("quest", args.query as string);
   }
   if (name === "query_knowledge") {
-    return wrapWithVisibilityHints(
-      db.query("knowledge", args.query as string),
-      "knowledge entry",
-    );
+    return db.query("knowledge", args.query as string);
   }
   if (name === "query_timeline") {
-    return wrapWithVisibilityHints(
-      db.query("timeline", args.query as string),
-      "timeline event",
-    );
+    return db.query("timeline", args.query as string);
   }
   if (name === "query_causal_chain") {
-    return wrapWithVisibilityHints(
-      db.query("causal_chain", args.query as string),
-      "causal chain",
-    );
+    return db.query("causal_chain", args.query as string);
   }
   if (name === "query_factions") {
-    return wrapWithVisibilityHints(
-      db.query("faction", args.query as string),
-      "faction",
-    );
+    return db.query("faction", args.query as string);
   }
   if (name === "query_global") {
-    return wrapWithVisibilityHints(db.query("global"), "global state");
+    return db.query("global");
   }
   // Character query tools
   if (name === "query_character_profile") {
-    return wrapWithVisibilityHints(
-      db.query("character", "profile"),
-      "character profile",
-    );
+    return db.query("character", "profile");
   }
   if (name === "query_character_attributes") {
     const typedArgs = getTypedArgs("query_character_attributes", args);
-    return wrapWithVisibilityHints(
-      db.query("character", "attributes", typedArgs.name ?? undefined),
-      "character attribute",
-    );
+    return db.query("character", "attributes", typedArgs.name ?? undefined);
   }
   if (name === "query_character_skills") {
     const typedArgs = getTypedArgs("query_character_skills", args);
-    return wrapWithVisibilityHints(
-      db.query("character", "skills", typedArgs.query ?? undefined),
-      "character skill",
-    );
+    return db.query("character", "skills", typedArgs.query ?? undefined);
   }
   if (name === "query_character_conditions") {
     const typedArgs = getTypedArgs("query_character_conditions", args);
-    return wrapWithVisibilityHints(
-      db.query("character", "conditions", typedArgs.query ?? undefined),
-      "character condition",
-    );
+    return db.query("character", "conditions", typedArgs.query ?? undefined);
   }
   if (name === "query_character_traits") {
     const typedArgs = getTypedArgs("query_character_traits", args);
-    return wrapWithVisibilityHints(
-      db.query("character", "hiddenTraits", typedArgs.query ?? undefined),
-      "character trait",
-    );
+    return db.query("character", "hiddenTraits", typedArgs.query ?? undefined);
   }
   // RAG search
   if (name === "rag_search") {
