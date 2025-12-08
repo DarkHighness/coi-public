@@ -583,6 +583,8 @@ export interface ContextBuilderOptions {
     skills?: number;
     conditions?: number;
   };
+  /** 精简模式 - 减少 token 开销 */
+  liteMode?: boolean;
 }
 
 const DEFAULT_LIMITS = {
@@ -593,6 +595,17 @@ const DEFAULT_LIMITS = {
   knowledge: 8,
   skills: 5,
   conditions: 5,
+};
+
+/** 精简模式下的实体数量限制 */
+const LITE_MODE_LIMITS = {
+  inventory: 2,
+  relationships: 2,
+  locations: 2,
+  quests: 1,
+  knowledge: 3,
+  skills: 2,
+  conditions: 2,
 };
 
 /**
@@ -614,9 +627,12 @@ export function buildLayeredContext(
     godMode = false,
     aliveEntities,
     limits = DEFAULT_LIMITS,
+    liteMode = false,
   } = options;
 
-  const mergedLimits = { ...DEFAULT_LIMITS, ...limits };
+  // 精简模式使用更低的限制
+  const baseLimits = liteMode ? LITE_MODE_LIMITS : DEFAULT_LIMITS;
+  const mergedLimits = { ...baseLimits, ...limits };
 
   // ========== 静态层 ==========
   const staticParts: string[] = [];
@@ -672,10 +688,12 @@ export function buildLayeredContext(
   // 1. 当前状态（时间、位置等）
   dynamicParts.push(buildCurrentStateContext(gameState));
 
-  // 2. 实体的动态属性（状态、好感度等）
-  dynamicParts.push(
-    buildEntitiesDynamicContext(gameState, mergedLimits, aliveEntities),
-  );
+  // 2. 实体的动态属性（状态、好感度等）- 精简模式下跳过
+  if (!liteMode) {
+    dynamicParts.push(
+      buildEntitiesDynamicContext(gameState, mergedLimits, aliveEntities),
+    );
+  }
 
   // 3. 最近对话
   if (recentHistory && recentHistory.length > 0) {
@@ -695,8 +713,10 @@ ${recentContext}
 </recent_narrative>`);
   }
 
-  // 4. 待触发的因果链后果
-  dynamicParts.push(buildPendingConsequencesContext(gameState));
+  // 4. 待触发的因果链后果 - 精简模式下跳过
+  if (!liteMode) {
+    dynamicParts.push(buildPendingConsequencesContext(gameState));
+  }
 
   // 5. God Mode 提示
   if (godMode) {

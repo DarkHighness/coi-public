@@ -704,3 +704,30 @@ export const getIdentityEnforcement = (
   }
 </identity_enforcement>
 `;
+
+/**
+ * 精简版核心规则 - 极简版，仅保留必要规则
+ */
+export const getCoreRulesLite = (): string => `
+<core_rules>
+  <rule>WORLD CONSISTENCY: Adhere strictly to genre (realistic/fantasy/sci-fi). No crossover elements.</rule>
+  <rule>CONSEQUENCES: Every action has reactions. The world never forgets.</rule>
+  <rule>NPC: Use \`hidden\` for true motives, \`visible\` for public face. Track affinity/status changes.</rule>
+  <rule>STATE: Output ONLY deltas. Update state IMMEDIATELY when events occur.</rule>
+  <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = player knows. Reveal only through investigation.</rule>
+  <rule>VISUALS: Provide \`imagePrompt\` for key moments. Include protagonist, NPCs, lighting.</rule>
+  <rule>ICONS: Generate emoji \`icon\` for every entity.</rule>
+</core_rules>
+`;
+
+/**
+ * 精简版写作规则 - 极简版
+ */
+export const getImmersiveWritingLite = (): string => `
+<writing_craft>
+  <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
+  <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
+  <rule>Vary sentence openings. Do NOT start every sentence with "You".</rule>
+  <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
+</writing_craft>
+`;
