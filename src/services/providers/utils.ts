@@ -131,6 +131,9 @@ export function cleanJsonContent(content: string): string {
 
   let cleaned = content.trim();
 
+  // Remove the think block <think></think>
+  cleaned = cleaned.replace(/<think>.*?<\/think>/s, "");
+
   // Remove leading markdown code block with optional language specifier
   // Matches: ```json, ```JSON, ```, etc. followed by optional whitespace/newline
   cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\r?\n?/, "");
