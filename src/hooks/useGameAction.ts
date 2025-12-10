@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useToast } from "../contexts/ToastContext";
 import {
   AISettings,
   StorySegment,
@@ -46,6 +47,7 @@ export const useGameAction = ({
   triggerSave,
 }: UseGameActionProps) => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   // Ref to access latest state in async callbacks/closures
   const gameStateRef = useRef(gameState);
@@ -561,6 +563,10 @@ export const useGameAction = ({
         };
       } catch (error) {
         console.error("Game Loop Error:", error);
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        showToast(errorMsg, "error", 5000);
+
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,

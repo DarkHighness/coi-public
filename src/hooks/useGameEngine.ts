@@ -41,6 +41,7 @@ import { useGameAction } from "./useGameAction";
 import { saveImage } from "../utils/imageStorage";
 
 import { preloadAudio } from "../utils/audioLoader";
+import { useToast } from "../contexts/ToastContext";
 
 /**
  * Update RAG documents for changed entities in background (non-blocking)
@@ -150,6 +151,7 @@ export const useGameEngine = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
 
   // Derive view from path
   const view = useMemo(() => {
@@ -373,6 +375,8 @@ export const useGameEngine = () => {
         outlineError instanceof Error
           ? outlineError.message
           : "Failed to generate story outline";
+
+      showToast(errorMessage, "error", 5000);
 
       setGameState((prev) => ({
         ...prev,
@@ -617,6 +621,12 @@ export const useGameEngine = () => {
         } catch (error) {
           // Unexpected error during first turn
           console.error("Unexpected error during first turn", error);
+          const errorMsg =
+            error instanceof Error
+              ? error.message
+              : "Unknown error during first turn";
+          showToast(errorMsg, "error", 5000);
+
           // Don't delete save or navigate away - outline is still valid
           // Set error state so player can retry
           setGameState((prev) => ({
@@ -631,6 +641,9 @@ export const useGameEngine = () => {
       // This catch block now only handles errors AFTER outline generation
       // (e.g., state processing errors, navigation errors)
       console.error("Post-outline processing failed", e);
+      const postErrorMsg =
+        e instanceof Error ? e.message : "Failed to initialize game state";
+      showToast(postErrorMsg, "error", 5000);
       deleteSlot(slotId);
       setCurrentSlotId(null);
       setGameState((prev) => ({
@@ -841,9 +854,13 @@ export const useGameEngine = () => {
       }, 100);
     } catch (e) {
       console.error("[ResumeOutline] Resume failed", e);
+      const resumeErrorMsg =
+        e instanceof Error ? e.message : "Failed to resume story generation";
+      showToast(resumeErrorMsg, "error", 5000);
+
       setGameState((prev) => ({
         ...prev,
-        error: "Failed to resume outline generation",
+        error: resumeErrorMsg,
         isProcessing: false,
       }));
       navigate("/");
