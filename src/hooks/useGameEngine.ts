@@ -27,7 +27,6 @@ import {
   createStateSnapshot,
   restoreStateFromSnapshot,
   createFork,
-  normalizeAliveEntities,
 } from "../utils/snapshotManager";
 import {
   getThemeKeyForAtmosphere,
@@ -1295,9 +1294,6 @@ export const useGameEngine = () => {
           atmosphere: responseAtmosphere,
           veoScript: gameStateRef.current.veoScript,
           uiState: gameStateRef.current.uiState,
-          aliveEntities: normalizeAliveEntities(response.aliveEntities),
-          ragQueries: response.ragQueries,
-          nextInitialStage: response.nextInitialStage,
         }),
       };
 
@@ -1326,9 +1322,6 @@ export const useGameEngine = () => {
           nextIds: finalState.nextIds,
           timeline: finalState.timeline,
           causalChains: finalState.causalChains,
-          aliveEntities: normalizeAliveEntities(response.aliveEntities),
-          ragQueries: response.ragQueries,
-          nextInitialStage: response.nextInitialStage,
           atmosphere: responseAtmosphere,
           isProcessing: false,
         };

@@ -423,7 +423,9 @@
       "forceToolCallMode": "Tool Call Mode",
       "forceToolCallModeHelp": "Use tool_call instead of json_schema for structured output",
       "flattenSchema": "Flatten Schema Mode",
-      "flattenSchemaHelp": "Flatten nested JSON structures for AI generation"
+      "flattenSchemaHelp": "Flatten nested JSON structures for AI generation",
+      "jsonObjectMode": "JSON Object Mode",
+      "jsonObjectModeHelp": "Refer to DeepSeek's JSON Object compatibility mode"
     }
   },
   "narrator": "Narrator",

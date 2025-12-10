@@ -5,11 +5,7 @@ import {
   StorySummary,
   LanguageCode,
 } from "../types";
-import {
-  createFork,
-  createStateSnapshot,
-  normalizeAliveEntities,
-} from "../utils/snapshotManager";
+import { createFork, createStateSnapshot } from "../utils/snapshotManager";
 import { getRAGService } from "../services/rag";
 import { deriveHistory } from "../utils/storyUtils";
 import { summarizeContext } from "../services/aiService";
@@ -163,18 +159,29 @@ export const handleSummarization = async (
 
   if (!isInit) contextNodes.push(tempUserNode);
 
-  const limit = aiSettings.contextLen || 10;
-  const summaryStep = limit;
-
+  // Determine Trigger Condition
   let effectiveSummaries = [...baseSummaries];
   let lastIndex = baseIndex;
   let summarySnapshot: StorySummary | undefined;
   let logs: any[] = [];
 
   const totalLength = contextNodes.length;
+
+  let shouldSummarize = false;
+  const tokenLimit = aiSettings.maxContextTokens;
+  const turnLimit = aiSettings.contextLen || 10;
+
   const nodesToSummarizeCount = totalLength - lastIndex;
 
-  if (nodesToSummarizeCount >= summaryStep) {
+  // Turn-Based Trigger
+  if (nodesToSummarizeCount >= turnLimit) {
+    console.log(
+      `[Summarization] Turn limit triggered: ${nodesToSummarizeCount} >= ${turnLimit}`,
+    );
+    shouldSummarize = true;
+  }
+
+  if (shouldSummarize) {
     const toSummarize = contextNodes.slice(lastIndex, totalLength);
 
     // Get previous summary (null if none exists)

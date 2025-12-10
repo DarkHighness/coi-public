@@ -227,6 +227,7 @@ export type StorySummary = ZodStorySummary;
 // GameResponse extends ZodGameResponse with system-populated fields
 export type GameResponse = ZodGameResponse & {
   finalState?: GameState; // System-populated after agentic loop processing
+  activeHistory?: UnifiedMessage[]; // Updated persistent history
 };
 export type { Atmosphere, EnvTheme, Ambience, Skill, Condition };
 export type {
@@ -268,7 +269,7 @@ export type {
  * - known: Whether player knows this entity exists
  * - notes: NPC observations of player behavior
  * - highlight: Set true by AI when entity changes (cleared by UI after render)
- * - aliveEntities: AI marks entities needed for next turn
+
  *
  * MIXED FIELDS (AI sets initial, system may override):
  * - status: AI updates, but system may have constraints
@@ -299,21 +300,6 @@ export interface StateChanges {
 export type ActionResult =
   | { success: true; stateChanges: StateChanges }
   | { success: false; error: string };
-
-// Alive Entities: entities marked by AI as needed for next turn
-export interface AliveEntities {
-  inventory: string[]; // inv:N IDs
-  relationships: string[]; // npc:N IDs
-  locations: string[]; // loc:N IDs
-  quests: string[]; // quest:N IDs
-  knowledge: string[]; // know:N IDs
-  timeline: string[]; // evt:N IDs
-  // Character internal attributes (subset tracking)
-  skills: string[]; // Character skill IDs relevant to next turn
-  conditions: string[]; // Character condition IDs relevant to next turn
-  hiddenTraits: string[]; // Character hidden trait IDs relevant to next turn
-  causalChains: string[]; // CausalChain chainIds with pending consequences
-}
 
 export interface GameState {
   // Tree Structure: ID -> Segment
@@ -381,15 +367,6 @@ export interface GameState {
   timeline: TimelineEvent[];
   causalChains: CausalChain[];
 
-  // Context Priority System: entities AI marked as relevant for next turn
-  // Cleared at start of each turn, populated by AI via finish_turn
-  aliveEntities: AliveEntities;
-  // RAG Queries: semantic search queries for next turn context
-  // Populated by AI via finish_turn, used at start of next turn
-  ragQueries?: string[];
-  // Next Initial Stage: suggested starting stage for next turn
-  // Populated by AI via finish_turn, used at start of next turn
-  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
   // Current turn number (incremented on each player action)
   turnNumber: number;
 
@@ -408,6 +385,24 @@ export interface GameState {
 
   // Custom Rules for per-save prompt customization
   customRules?: CustomRule[];
+
+  /**
+   * TRANSIENT: Conversation history cache (never persisted to saves)
+   *
+   * Contains the full UnifiedMessage[] array as returned by runAgenticLoop.
+   * This is NEVER transformed, sliced, or filtered - used exactly as-is.
+   *
+   * Accumulates across turns until cleared by:
+   * - Summary creation
+   * - Context length overflow
+   * - Model/compatibility settings change
+   * - Fork creation
+   * - Save load
+   *
+   * When loading a save, this field is always undefined and will be rebuilt
+   * by the provider on the next turn.
+   */
+  activeHistory?: UnifiedMessage[];
 }
 
 /** State for resuming outline generation after failure */
@@ -536,7 +531,7 @@ export interface LogEntry {
   generationDetails?: {
     dynamicContext?: string;
     ragContext?: string;
-    ragQueries?: string[];
+
     systemPrompt?: string;
     userPrompt?: string;
     modelConfig?: any;
@@ -695,9 +690,7 @@ export interface GameStateSnapshot {
   veoScript?: string;
 
   // Context Priority System
-  aliveEntities: AliveEntities;
-  ragQueries?: string[];
-  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
+  activeHistory?: UnifiedMessage[]; // Persistent detailed history between summaries
   turnNumber: number;
 
   // Fork System (Critical for RAG filtering across timelines)
@@ -1046,7 +1039,8 @@ export interface AISettings {
   // Multi-Provider Management
   providers: ProviderManagement;
 
-  contextLen: number; // Max conversation turns before summarization
+  contextLen: number; // Max conversation turns before summarization (fallback)
+  maxContextTokens?: number; // Max estimated tokens before summarization (overrides contextLen)
   freshSegmentCount: number; // Number of fresh segments to keep alongside summary for narrative continuity
 
   story: FunctionConfig;
@@ -1099,6 +1093,7 @@ export interface AISettings {
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceToolCallMode?: boolean; // Use tool_call instead of json_schema for structured output
     flattenSchema?: boolean; // Flatten nested schemas for AI generation (helps some models)
+    jsonObjectMode?: boolean; // Use JSON object mode with example output instead of strict schema
   };
 }
 

@@ -1170,22 +1170,58 @@ export const UNLOCK_ENTITY_TOOL = defineTool({
 // CONTROL TOOLS
 // ============================================================================
 
-// Stage schema for next_stage tool parameter validation
-export const agentStageSchema = z.enum([
-  "query",
-  "add",
-  "remove",
-  "update",
-  "narrative",
-]);
+// ============================================================================
+// SEARCH TOOL (Dynamic Tool Loading)
+// ============================================================================
 
-export const NEXT_STAGE_TOOL = defineTool({
-  name: "next_stage",
-  description: "Proceed to next or specific stage.",
-  parameters: z.object({
-    target: agentStageSchema.optional().describe("Target stage."),
-  }),
+export type ToolOperation =
+  | "add"
+  | "update"
+  | "remove"
+  | "query"
+  | "narrative"
+  | "unlock";
+
+export const searchToolSchema = z.object({
+  queries: z
+    .array(
+      z.object({
+        operation: z
+          .enum(["add", "update", "remove", "query", "unlock"])
+          .describe("Action type."),
+        entity: z
+          .enum([
+            "inventory",
+            "relationship",
+            "location",
+            "quest",
+            "knowledge",
+            "timeline",
+            "faction",
+            "causal_chain",
+            "skill",
+            "condition",
+            "trait",
+            "rag",
+          ])
+          .describe("Entity type to search for."),
+      }),
+    )
+    .describe("List of tool types to search for."),
 });
+
+export const SEARCH_TOOL = defineTool({
+  name: "search_tool",
+  description:
+    "Find and load tools for specific operations. Use this to get tools you need.",
+  parameters: searchToolSchema,
+});
+
+export type SearchToolParams = InferToolParams<typeof SEARCH_TOOL>;
+
+// ============================================================================
+// CONTROL TOOLS
+// ============================================================================
 
 export const FINISH_TURN_TOOL = defineTool({
   name: "finish_turn",
@@ -1200,7 +1236,7 @@ export const COMPLETE_FORCE_UPDATE_TOOL = defineTool({
 });
 
 // ============================================================================
-// SUMMARY AGENTIC LOOP TOOLS
+// SUMMARY AGENTIC LOOP TOOLS (Preserved)
 // ============================================================================
 
 /**
@@ -1216,13 +1252,13 @@ export const SUMMARY_QUERY_SEGMENTS_TOOL = defineTool({
   name: "summary_query_segments",
   description: `Query specific segments from the story being summarized.
 
-Use this when you need MORE DETAIL about:
-- A specific turn or range of turns
-- What exactly happened in a scene
-- Exact dialogue or descriptions
-- Specific NPC interactions
+ Use this when you need MORE DETAIL about:
+ - A specific turn or range of turns
+ - What exactly happened in a scene
+ - Exact dialogue or descriptions
+ - Specific NPC interactions
 
-You already have the previous summary and current turn info. Use this to fill in gaps.`,
+ You already have the previous summary and current turn info. Use this to fill in gaps.`,
   parameters: z.object({
     turnRange: z
       .object({
@@ -1248,14 +1284,14 @@ export const SUMMARY_QUERY_STATE_TOOL = defineTool({
   name: "summary_query_state",
   description: `Query current game state entities.
 
-Use this when you need to know:
-- Current inventory items and their descriptions
-- NPC relationship statuses
-- Known locations
-- Active/completed quests
-- Character attributes/skills
+ Use this when you need to know:
+ - Current inventory items and their descriptions
+ - NPC relationship statuses
+ - Known locations
+ - Active/completed quests
+ - Character attributes/skills
 
-This helps you accurately describe state changes in the summary.`,
+ This helps you accurately describe state changes in the summary.`,
   parameters: z.object({
     entities: z
       .array(
@@ -1279,14 +1315,14 @@ export const FINISH_SUMMARY_TOOL = defineTool({
   name: "finish_summary",
   description: `Complete the summarization with the final summary object.
 
-You MUST provide:
-- displayText: 2-3 sentence summary for UI (visible layer only, story language)
-- visible: What the PROTAGONIST knows/experienced
-- hidden: GM-only truth the protagonist does NOT know
+ You MUST provide:
+ - displayText: 2-3 sentence summary for UI (visible layer only, story language)
+ - visible: What the PROTAGONIST knows/experienced
+ - hidden: GM-only truth the protagonist does NOT know
 
-Preserve the visible/hidden separation carefully:
-- Player events, discoveries, actions → visible
-- Behind-the-scenes NPC actions, hidden plots, unrevealed secrets → hidden`,
+ Preserve the visible/hidden separation carefully:
+ - Player events, discoveries, actions → visible
+ - Behind-the-scenes NPC actions, hidden plots, unrevealed secrets → hidden`,
   parameters: z.object({
     displayText: z
       .string()
@@ -1373,16 +1409,122 @@ export function getNextSummaryStage(
 }
 
 // ============================================================================
-// TOOL GROUPS BY STAGE
+// TOOL GROUPS & MAPPING
 // ============================================================================
 
-export const QUERY_TOOLS: ZodToolDefinition[] = [
-  // Story Memory Tools (use these first when uncertain about history)
+// Grouping for search mapping
+export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
+  // Inventory
+  "add:inventory": [ADD_INVENTORY_TOOL],
+  "update:inventory": [UPDATE_INVENTORY_TOOL],
+  "remove:inventory": [REMOVE_INVENTORY_TOOL],
+  "query:inventory": [QUERY_INVENTORY_TOOL],
+  "unlock:inventory": [UNLOCK_ENTITY_TOOL], // Unlock is often generic but let's map it
+
+  // Relationship / NPC
+  "add:relationship": [ADD_RELATIONSHIP_TOOL],
+  "update:relationship": [UPDATE_RELATIONSHIP_TOOL],
+  "remove:relationship": [REMOVE_RELATIONSHIP_TOOL],
+  "query:relationship": [QUERY_RELATIONSHIPS_TOOL],
+  "unlock:relationship": [UNLOCK_ENTITY_TOOL],
+
+  // Location
+  "add:location": [ADD_LOCATION_TOOL],
+  "update:location": [UPDATE_LOCATION_TOOL],
+  "remove:location": [REMOVE_LOCATION_TOOL],
+  "query:location": [QUERY_LOCATIONS_TOOL],
+  "unlock:location": [UNLOCK_ENTITY_TOOL],
+
+  // Quest
+  "add:quest": [ADD_QUEST_TOOL],
+  "update:quest": [UPDATE_QUEST_TOOL, COMPLETE_QUEST_TOOL, FAIL_QUEST_TOOL],
+  "remove:quest": [REMOVE_QUEST_TOOL],
+  "query:quest": [QUERY_QUESTS_TOOL],
+  "unlock:quest": [UNLOCK_ENTITY_TOOL],
+
+  // Knowledge
+  "add:knowledge": [ADD_KNOWLEDGE_TOOL],
+  "update:knowledge": [UPDATE_KNOWLEDGE_TOOL],
+  "query:knowledge": [QUERY_KNOWLEDGE_TOOL],
+  "unlock:knowledge": [UNLOCK_ENTITY_TOOL],
+
+  // Timeline
+  "add:timeline": [ADD_TIMELINE_TOOL],
+  "update:timeline": [UPDATE_TIMELINE_TOOL],
+  "query:timeline": [QUERY_TIMELINE_TOOL],
+  "unlock:timeline": [UNLOCK_ENTITY_TOOL],
+
+  // Faction
+  "add:faction": [ADD_FACTION_TOOL],
+  "update:faction": [UPDATE_FACTION_TOOL],
+  "remove:faction": [REMOVE_FACTION_TOOL],
+  "query:faction": [QUERY_FACTIONS_TOOL],
+  "unlock:faction": [UNLOCK_ENTITY_TOOL],
+
+  // Causal Chain
+  "add:causal_chain": [ADD_CAUSAL_CHAIN_TOOL],
+  "update:causal_chain": [
+    UPDATE_CAUSAL_CHAIN_TOOL,
+    TRIGGER_CAUSAL_CHAIN_TOOL,
+    RESOLVE_CAUSAL_CHAIN_TOOL,
+    INTERRUPT_CAUSAL_CHAIN_TOOL,
+  ],
+  "query:causal_chain": [QUERY_CAUSAL_CHAIN_TOOL],
+
+  // Character Attributes
+  "add:attribute": [ADD_CHARACTER_ATTRIBUTE_TOOL],
+  "update:attribute": [UPDATE_CHARACTER_ATTRIBUTE_TOOL],
+  "remove:attribute": [REMOVE_CHARACTER_ATTRIBUTE_TOOL],
+  "query:attribute": [QUERY_CHARACTER_ATTRIBUTES_TOOL],
+
+  // Character Skills
+  "add:skill": [ADD_CHARACTER_SKILL_TOOL],
+  "update:skill": [UPDATE_CHARACTER_SKILL_TOOL],
+  "remove:skill": [REMOVE_CHARACTER_SKILL_TOOL],
+  "query:skill": [QUERY_CHARACTER_SKILLS_TOOL],
+  "unlock:skill": [UNLOCK_ENTITY_TOOL],
+
+  // Character Conditions
+  "add:condition": [ADD_CHARACTER_CONDITION_TOOL],
+  "update:condition": [UPDATE_CHARACTER_CONDITION_TOOL],
+  "remove:condition": [REMOVE_CHARACTER_CONDITION_TOOL],
+  "query:condition": [QUERY_CHARACTER_CONDITIONS_TOOL],
+  "unlock:condition": [UNLOCK_ENTITY_TOOL],
+
+  // Character Traits
+  "add:trait": [ADD_CHARACTER_TRAIT_TOOL],
+  "update:trait": [UPDATE_CHARACTER_TRAIT_TOOL],
+  "remove:trait": [REMOVE_CHARACTER_TRAIT_TOOL],
+  "query:trait": [QUERY_CHARACTER_TRAITS_TOOL],
+  "unlock:trait": [UNLOCK_ENTITY_TOOL],
+
+  // Character Profile
+  "update:profile": [UPDATE_CHARACTER_PROFILE_TOOL],
+  "query:profile": [QUERY_CHARACTER_PROFILE_TOOL],
+
+  // Global / World
+  "update:world": [UPDATE_WORLD_INFO_TOOL, UPDATE_GLOBAL_TOOL],
+  "query:global": [QUERY_GLOBAL_TOOL],
+
+  // General Query
+  "query:story": [
+    QUERY_STORY_TOOL,
+    QUERY_TURN_TOOL,
+    QUERY_SUMMARY_TOOL,
+    QUERY_RECENT_CONTEXT_TOOL,
+  ],
+  "query:rag": [RAG_SEARCH_TOOL],
+};
+
+// Also export a flat list if needed, or helper
+export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
+  SEARCH_TOOL,
+  FINISH_TURN_TOOL,
+  COMPLETE_FORCE_UPDATE_TOOL,
   QUERY_STORY_TOOL,
   QUERY_TURN_TOOL,
   QUERY_SUMMARY_TOOL,
   QUERY_RECENT_CONTEXT_TOOL,
-  // Game State Tools
   QUERY_INVENTORY_TOOL,
   QUERY_RELATIONSHIPS_TOOL,
   QUERY_LOCATIONS_TOOL,
@@ -1398,9 +1540,6 @@ export const QUERY_TOOLS: ZodToolDefinition[] = [
   QUERY_CHARACTER_CONDITIONS_TOOL,
   QUERY_CHARACTER_TRAITS_TOOL,
   RAG_SEARCH_TOOL,
-];
-
-export const ADD_TOOLS: ZodToolDefinition[] = [
   ADD_INVENTORY_TOOL,
   ADD_RELATIONSHIP_TOOL,
   ADD_LOCATION_TOOL,
@@ -1413,9 +1552,6 @@ export const ADD_TOOLS: ZodToolDefinition[] = [
   ADD_CHARACTER_SKILL_TOOL,
   ADD_CHARACTER_CONDITION_TOOL,
   ADD_CHARACTER_TRAIT_TOOL,
-];
-
-export const REMOVE_TOOLS: ZodToolDefinition[] = [
   REMOVE_INVENTORY_TOOL,
   REMOVE_RELATIONSHIP_TOOL,
   REMOVE_LOCATION_TOOL,
@@ -1425,9 +1561,6 @@ export const REMOVE_TOOLS: ZodToolDefinition[] = [
   REMOVE_CHARACTER_SKILL_TOOL,
   REMOVE_CHARACTER_CONDITION_TOOL,
   REMOVE_CHARACTER_TRAIT_TOOL,
-];
-
-export const UPDATE_TOOLS: ZodToolDefinition[] = [
   UPDATE_INVENTORY_TOOL,
   UPDATE_RELATIONSHIP_TOOL,
   UPDATE_LOCATION_TOOL,
@@ -1448,99 +1581,35 @@ export const UPDATE_TOOLS: ZodToolDefinition[] = [
   UPDATE_CHARACTER_SKILL_TOOL,
   UPDATE_CHARACTER_CONDITION_TOOL,
   UPDATE_CHARACTER_TRAIT_TOOL,
+  UNLOCK_ENTITY_TOOL,
 ];
 
-export const NARRATIVE_TOOLS: ZodToolDefinition[] = [FINISH_TURN_TOOL];
-
-export const CONTROL_TOOLS: ZodToolDefinition[] = [NEXT_STAGE_TOOL];
-
-/**
- * Get tools available for a specific stage
- * All stages now include FINISH_TURN_TOOL for early completion
- */
-export function getToolsForStage(
-  stage: AgentStage,
-  includeRAG: boolean = true,
+// Helper to find tools
+export function findTools(
+  operation: string,
+  entity: string,
 ): ZodToolDefinition[] {
-  // finish_turn is available in ALL stages for early completion
-  const commonTools = [NEXT_STAGE_TOOL, FINISH_TURN_TOOL];
-
-  switch (stage) {
-    case "query":
-      const queryTools = includeRAG
-        ? QUERY_TOOLS
-        : QUERY_TOOLS.filter((t) => t.name !== "rag_search");
-      return [...queryTools, ...commonTools];
-    case "add":
-      return [...ADD_TOOLS, ...commonTools];
-    case "remove":
-      return [...REMOVE_TOOLS, ...commonTools];
-    case "update":
-      return [...UPDATE_TOOLS, ...commonTools];
-    case "narrative":
-      // narrative stage: only finish_turn (no next_stage needed)
-      return NARRATIVE_TOOLS;
-    default:
-      return [];
+  const key = `${operation}:${entity}`;
+  if (TOOL_MAP[key]) {
+    return TOOL_MAP[key];
   }
-}
 
-/**
- * Stage order for sequential progression
- */
-export const STAGE_ORDER: AgentStage[] = [
-  "query",
-  "add",
-  "remove",
-  "update",
-  "narrative",
-];
-
-/**
- * Get the next stage in the flow
- */
-export function getNextStage(currentStage: AgentStage): AgentStage | null {
-  const currentIndex = STAGE_ORDER.indexOf(currentStage);
-  if (currentIndex === -1 || currentIndex === STAGE_ORDER.length - 1) {
-    return null;
+  // Fuzzy or broad matching could go here
+  if (operation === "query" && entity === "all") {
+    return [
+      QUERY_STORY_TOOL,
+      QUERY_TURN_TOOL,
+      QUERY_INVENTORY_TOOL,
+      QUERY_RELATIONSHIPS_TOOL,
+      QUERY_QUESTS_TOOL,
+    ];
   }
-  return STAGE_ORDER[currentIndex + 1];
+
+  return [];
 }
 
-/**
- * Check if a stage transition is valid
- * Allow any forward or backward transition
- */
-export function isValidStageTransition(
-  from: AgentStage,
-  to: AgentStage,
-): boolean {
-  return from !== to; // Can transition to any different stage
-}
-
-/**
- * Parse and validate a stage string
- */
-export function parseStage(
-  stage: string | undefined | null,
-): AgentStage | null {
-  if (!stage) return null;
-  if (STAGE_ORDER.includes(stage as AgentStage)) {
-    return stage as AgentStage;
-  }
-  return null;
-}
-
-// Legacy export for backwards compatibility
-export const TOOLS: ZodToolDefinition[] = [
-  ...QUERY_TOOLS,
-  ...ADD_TOOLS,
-  ...REMOVE_TOOLS,
-  ...UPDATE_TOOLS,
-  ...NARRATIVE_TOOLS,
-  ...CONTROL_TOOLS,
-  COMPLETE_FORCE_UPDATE_TOOL,
-];
+// Legacy export for backwards compatibility (though mostly unused now)
+export const TOOLS = ALL_DEFINED_TOOLS;
 
 // ============================================================================
 // TYPE INFERENCE FROM ZOD SCHEMAS
@@ -1703,8 +1772,11 @@ export type QueryRecentContextParams = InferToolParams<
   typeof QUERY_RECENT_CONTEXT_TOOL
 >;
 
+// Unlock Tool Types
+export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
+
 // Control Types
-export type NextStageParams = InferToolParams<typeof NEXT_STAGE_TOOL>;
+// export type NextStageParams = InferToolParams<typeof NEXT_STAGE_TOOL>; // Removed
 
 // Finish Turn and Force Update Types
 export type FinishTurnParams = z.infer<typeof finishTurnSchema>;
@@ -1716,6 +1788,9 @@ export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
 // ============================================================================
 
 export interface ToolParamsMap {
+  // Search tool
+  search_tool: SearchToolParams;
+
   // Story Memory Query tools
   query_story: QueryStoryParams;
   query_turn: QueryTurnParams;
@@ -1785,10 +1860,11 @@ export interface ToolParamsMap {
   update_character_skill: UpdateCharacterSkillParams;
   update_character_condition: UpdateCharacterConditionParams;
   update_character_trait: UpdateCharacterTraitParams;
+  unlock_entity: UnlockEntityParams;
 
   // Control tools
-  next_stage: NextStageParams;
   finish_turn: FinishTurnParams;
+  complete_force_update: ForceUpdateParams;
 }
 
 export type ToolName = keyof ToolParamsMap;

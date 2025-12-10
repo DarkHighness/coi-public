@@ -93,6 +93,8 @@ export interface GenerateContentOptions {
   forceToolCallMode?: boolean;
   /** 展平嵌套 schema 结构用于 AI 生成 */
   flattenSchema?: boolean;
+  /** JSON Object 兼容模式 - 使用示例输出而不是严格 schema */
+  jsonObjectMode?: boolean;
 }
 
 import type { ZodTypeAny, ZodObject, ZodRawShape, z } from "zod";

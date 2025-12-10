@@ -3,12 +3,7 @@
  * Handles migration of save data between versions
  */
 
-import type {
-  GameState,
-  SaveVersionInfo,
-  VersionedGameState,
-  AliveEntities,
-} from "../types";
+import type { GameState, SaveVersionInfo, VersionedGameState } from "../types";
 import { CURRENT_SAVE_VERSION } from "../types";
 
 // ============================================================================

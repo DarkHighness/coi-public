@@ -315,25 +315,6 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                         </div>
                       )}
 
-                      {log.generationDetails.ragQueries &&
-                        log.generationDetails.ragQueries.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-theme-muted uppercase font-bold">
-                              {t("logPanel.ragQueries") || "RAG Queries"}
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                              {log.generationDetails.ragQueries.map((q, i) => (
-                                <span
-                                  key={i}
-                                  className="text-xs bg-theme-surface-highlight border border-theme-border/50 px-2 py-1 rounded text-theme-muted"
-                                >
-                                  {q}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                       {/* Injected Rules */}
                       {log.generationDetails.injectedRules &&
                         log.generationDetails.injectedRules.length > 0 && (

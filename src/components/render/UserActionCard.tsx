@@ -1,5 +1,4 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownText } from "./MarkdownText";
 
 interface UserActionCardProps {
   text: string;
@@ -16,7 +15,7 @@ export const UserActionCard: React.FC<UserActionCardProps> = ({
         {labelDecided}
       </span>
       <div className="font-medium text-lg prose prose-invert max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        <MarkdownText disableIndent content={text}></MarkdownText>
       </div>
     </div>
   </div>

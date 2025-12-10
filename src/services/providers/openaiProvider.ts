@@ -389,6 +389,10 @@ export async function generateContent(
           response_format:
             schema && !useToolCallForSchema && (!tools || tools.length === 0)
               ? (() => {
+                  // JSON Object Mode: Use simple json_object type instead of strict schema
+                  if (options?.jsonObjectMode) {
+                    return { type: "json_object" as const };
+                  }
                   if (isGemini) {
                     return {
                       type: "json_schema",

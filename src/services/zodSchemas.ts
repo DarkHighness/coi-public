@@ -1537,50 +1537,6 @@ export const gameResponseSchema = z.object({
     )
     .nullish()
     .describe("Track when world-level secrets are unlocked."),
-  aliveEntities: z
-    .object({
-      inventory: z.array(z.string()).nullish(),
-      relationships: z.array(z.string()).nullish(),
-      locations: z.array(z.string()).nullish(),
-      quests: z.array(z.string()).nullish(),
-      knowledge: z.array(z.string()).nullish(),
-      timeline: z.array(z.string()).nullish(),
-      skills: z.array(z.string()).nullish(),
-      conditions: z.array(z.string()).nullish(),
-      hiddenTraits: z.array(z.string()).nullish(),
-      causalChains: z.array(z.string()).nullish(),
-    })
-    .nullish()
-    .describe("IDs of entities relevant for next turn context."),
-  ragQueries: z
-    .array(z.string())
-    .nullish()
-    .describe("Semantic search queries for next turn context."),
-  ragCurrentForkOnly: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search within the current timeline branch.",
-    ),
-  ragBeforeCurrentTurn: z
-    .boolean()
-    .nullish()
-    .describe(
-      "If true, next turn's RAG queries will only search content from before the current turn.",
-    ),
-  nextInitialStage: z
-    .enum(["query", "add", "remove", "update", "narrative"])
-    .nullish()
-    .describe(
-      `Suggest the initial stage for the NEXT turn after player makes a choice.
-- "query": Start with queries (default, when uncertain about context)
-- "add": Skip to add stage (when you know new entities will be needed)
-- "remove": Skip to remove stage
-- "update": Skip to update stage (when context is well-established)
-- "narrative": Skip directly to narrative (only for very simple responses)
-
-This is a HINT for optimization. The system may still start from query if needed.`,
-    ),
   systemToasts: z
     .array(
       z.object({

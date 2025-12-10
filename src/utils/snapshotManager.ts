@@ -3,7 +3,6 @@ import type {
   StorySummary,
   StorySegment,
   GameStateSnapshot,
-  AliveEntities,
   ForkTree,
 } from "../types";
 import type { AtmosphereObject } from "./constants/atmosphere";
@@ -16,50 +15,9 @@ export interface SnapshotMetadata {
   atmosphere: AtmosphereObject;
   veoScript?: string;
   uiState: GameState["uiState"];
-  aliveEntities?: AliveEntities;
-  ragQueries?: string[];
-  nextInitialStage?: "query" | "add" | "remove" | "update" | "narrative";
   turnNumber?: number;
   forkId?: number;
   forkTree?: ForkTree;
-}
-
-// Default empty alive entities
-const EMPTY_ALIVE_ENTITIES: AliveEntities = {
-  inventory: [],
-  relationships: [],
-  locations: [],
-  quests: [],
-  knowledge: [],
-  timeline: [],
-  skills: [],
-  conditions: [],
-  hiddenTraits: [],
-  causalChains: [],
-};
-
-/**
- * Normalize alive entities from AI response (partial) to full AliveEntities
- * Ensures all fields are present with default empty arrays
- */
-export function normalizeAliveEntities(
-  partial: Partial<AliveEntities> | undefined | null,
-): AliveEntities {
-  if (!partial) {
-    return { ...EMPTY_ALIVE_ENTITIES };
-  }
-  return {
-    inventory: partial.inventory ?? [],
-    relationships: partial.relationships ?? [],
-    locations: partial.locations ?? [],
-    quests: partial.quests ?? [],
-    knowledge: partial.knowledge ?? [],
-    timeline: partial.timeline ?? [],
-    skills: partial.skills ?? [],
-    conditions: partial.conditions ?? [],
-    hiddenTraits: partial.hiddenTraits ?? [],
-    causalChains: partial.causalChains ?? [],
-  };
 }
 
 // Default empty fork tree
@@ -111,11 +69,6 @@ export function createStateSnapshot(
     atmosphere: metadata.atmosphere,
     veoScript: metadata.veoScript,
 
-    // Context Priority System
-    aliveEntities:
-      metadata.aliveEntities || gameState.aliveEntities || EMPTY_ALIVE_ENTITIES,
-    ragQueries: metadata.ragQueries || gameState.ragQueries,
-    nextInitialStage: metadata.nextInitialStage || gameState.nextInitialStage,
     turnNumber: metadata.turnNumber ?? gameState.turnNumber ?? 0,
 
     // Fork System
@@ -154,9 +107,6 @@ export function restoreStateFromSnapshot(
     uiState: snapshot.uiState,
     atmosphere,
     veoScript: snapshot.veoScript,
-    aliveEntities: snapshot.aliveEntities,
-    ragQueries: snapshot.ragQueries,
-    nextInitialStage: snapshot.nextInitialStage,
     turnNumber: snapshot.turnNumber,
     // Note: forkId and forkTree are NOT restored here - they're managed by fork logic
     // When navigating to a node (forking), the caller should increment forkId and update forkTree

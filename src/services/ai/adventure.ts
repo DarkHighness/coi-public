@@ -2,80 +2,37 @@ import {
   AISettings,
   LogEntry,
   TokenUsage,
-  ToolCallRecord,
   ProviderProtocol,
   ProviderInstance,
   GameState,
   TurnContext,
   StorySegment,
   UnifiedMessage,
-  UnifiedToolCallResult,
   GameResponse,
 } from "../../types";
 
-import { isContextLengthError, truncateToolOutputs } from "./contextCompressor";
+import {
+  isContextLengthError,
+  ContextOverflowError,
+} from "./contextCompressor";
 
-import { ToolCallResult, MalformedToolCallError } from "../providers/types";
+import {
+  ToolCallResult,
+  MalformedToolCallError,
+  ZodToolDefinition,
+} from "../providers/types";
 
 import { GameDatabase } from "../gameDatabase";
 import {
-  TOOLS,
-  getToolsForStage,
-  getNextStage,
-  AgentStage,
-  STAGE_ORDER,
-  parseStage,
-  isValidStageTransition,
-  // Runtime validation
-  safeValidateToolArgs,
-  // Tool parameter types
-  ToolParamsMap,
-  ToolName,
+  SEARCH_TOOL,
+  FINISH_TURN_TOOL,
+  COMPLETE_FORCE_UPDATE_TOOL,
+  QUERY_STORY_TOOL,
+  QUERY_TURN_TOOL,
+  findTools,
   getTypedArgs,
-  // Character tool parameter types
-  AddCharacterAttributeParams,
-  UpdateCharacterAttributeParams,
-  RemoveCharacterAttributeParams,
-  AddCharacterSkillParams,
-  UpdateCharacterSkillParams,
-  RemoveCharacterSkillParams,
-  AddCharacterConditionParams,
-  UpdateCharacterConditionParams,
-  RemoveCharacterConditionParams,
-  AddCharacterTraitParams,
-  UpdateCharacterTraitParams,
-  RemoveCharacterTraitParams,
-  UpdateCharacterProfileParams,
-  // Entity tool parameter types
-  AddInventoryParams,
-  UpdateInventoryParams,
-  RemoveInventoryParams,
-  AddRelationshipParams,
-  UpdateRelationshipParams,
-  RemoveRelationshipParams,
-  AddLocationParams,
-  UpdateLocationParams,
-  RemoveLocationParams,
-  AddQuestParams,
-  UpdateQuestParams,
-  RemoveQuestParams,
-  CompleteQuestParams,
-  FailQuestParams,
-  AddKnowledgeParams,
-  UpdateKnowledgeParams,
-  AddTimelineParams,
-  UpdateTimelineParams,
-  AddFactionParams,
-  UpdateFactionParams,
-  RemoveFactionParams,
-  AddCausalChainParams,
-  UpdateCausalChainParams,
-  TriggerCausalChainParams,
-  ResolveCausalChainParams,
-  InterruptCausalChainParams,
-  UpdateWorldInfoParams,
-  UpdateGlobalParams,
   RagSearchParams,
+  SearchToolParams,
   // Payload types for GameDatabase
   CharacterAttributePayload,
   CharacterSkillPayload,
@@ -83,14 +40,8 @@ import {
   CharacterTraitPayload,
   CharacterProfilePayload,
 } from "../tools";
-import { buildFinishTurnSchema } from "../schemas";
 import { getCoreSystemInstruction } from "../prompts/index";
-import {
-  buildLayeredContext,
-  ContextBuilderOptions,
-  CompressionLevel,
-  getCompressedContextOptions,
-} from "../prompts/contextBuilder";
+import { buildLayeredContext } from "../prompts/contextBuilder";
 
 import {
   createUserMessage,
@@ -105,8 +56,9 @@ import {
   createProviderConfig,
   createLogEntry,
   resolveThemeConfig,
-  getProviderInstance,
 } from "./utils";
+
+// Import History management
 
 // Import prompt injection data
 // @ts-ignore
@@ -142,27 +94,6 @@ export function processFinishTurnResponse(
     accumulatedResponse.narrativeTone = finishTurnData.narrativeTone as string;
   }
 
-  // Extract alive entities for next turn context
-  if (finishTurnData.aliveEntities) {
-    accumulatedResponse.aliveEntities =
-      finishTurnData.aliveEntities as GameResponse["aliveEntities"];
-  }
-
-  // Extract RAG queries for next turn context
-  if (finishTurnData.ragQueries && Array.isArray(finishTurnData.ragQueries)) {
-    accumulatedResponse.ragQueries = finishTurnData.ragQueries as string[];
-  }
-
-  // Extract RAG filter flags
-  if (finishTurnData.ragCurrentForkOnly !== undefined) {
-    accumulatedResponse.ragCurrentForkOnly =
-      finishTurnData.ragCurrentForkOnly as boolean;
-  }
-  if (finishTurnData.ragBeforeCurrentTurn !== undefined) {
-    accumulatedResponse.ragBeforeCurrentTurn =
-      finishTurnData.ragBeforeCurrentTurn as boolean;
-  }
-
   // Extract ending type - "continue" means no ending, story continues
   if (finishTurnData.ending && finishTurnData.ending !== "continue") {
     accumulatedResponse.ending =
@@ -172,12 +103,6 @@ export function processFinishTurnResponse(
   // Extract forceEnd flag (handle null from OpenAI strict schema)
   if (finishTurnData.forceEnd === true || finishTurnData.forceEnd === false) {
     accumulatedResponse.forceEnd = finishTurnData.forceEnd;
-  }
-
-  // Extract nextInitialStage for next turn optimization
-  if (finishTurnData.nextInitialStage) {
-    accumulatedResponse.nextInitialStage =
-      finishTurnData.nextInitialStage as GameResponse["nextInitialStage"];
   }
 
   // Attach the FINAL STATE from the DB
@@ -190,6 +115,8 @@ export interface AgenticLoopResult {
   logs: LogEntry[];
   usage: TokenUsage;
   changedEntities: Array<{ id: string; type: string }>; // Changed entities with their types for efficient RAG updates
+  /** Updated conversation history - use exactly as-is, do not transform */
+  activeHistory: UnifiedMessage[];
 }
 
 /**
@@ -202,16 +129,17 @@ export interface AgenticLoopResult {
  * 4. Dynamic context (current state, recent history) - changes every turn
  * 5. RAG context (if enabled) - changes based on semantic search
  * 6. User action - the actual player input
+ *
+ * NOTE: This function now builds the INITIAL context only.
+ * The actual conversation history is managed by the History Manager.
  */
-export const buildTurnMessages = (
+export const buildInitialContext = (
   layers: ReturnType<typeof buildLayeredContext>,
-  recentHistory: StorySegment[],
-  userAction: string,
   ragContext?: string,
-): { messages: UnifiedMessage[]; dynamicContext: string } => {
+): UnifiedMessage[] => {
   const messages: UnifiedMessage[] = [];
 
-  // === Message 1: Static Layer (rarely changes - best for prefix cache) ===
+  // === 1. Static Layer: World Foundation ===
   if (layers.staticLayer) {
     messages.push(
       createUserMessage(`[CONTEXT: World Foundation]\n${layers.staticLayer}`),
@@ -222,7 +150,7 @@ export const buildTurnMessages = (
     });
   }
 
-  // === Message 2: Semi-Static Layer (summaries, descriptions) ===
+  // === 2. Semi-Static Layer: Story Background ===
   if (layers.semiStaticLayer) {
     messages.push(
       createUserMessage(
@@ -235,7 +163,7 @@ export const buildTurnMessages = (
     });
   }
 
-  // === Message 3: RAG Context (semantic search results) ===
+  // === 3. RAG Context (semantic search results) ===
   if (ragContext && ragContext.trim()) {
     messages.push(
       createUserMessage(
@@ -248,7 +176,7 @@ export const buildTurnMessages = (
     });
   }
 
-  // === Message 4: Dynamic Layer (current state, entities state) ===
+  // === 4. Dynamic Layer: Current Situation ===
   messages.push(
     createUserMessage(`[CONTEXT: Current Situation]\n${layers.dynamicLayer}`),
   );
@@ -262,10 +190,34 @@ export const buildTurnMessages = (
     ],
   });
 
-  // === Final Message: User Action ===
-  messages.push(createUserMessage(userAction));
+  return messages;
+};
 
-  return { messages, dynamicContext: layers.dynamicLayer };
+/**
+ * @deprecated Use buildInitialContext instead
+ * Kept for backward compatibility
+ */
+export const buildTurnMessages = (
+  layers: ReturnType<typeof buildLayeredContext>,
+  userAction: string,
+  ragContext?: string,
+): {
+  messages: UnifiedMessage[];
+  staticMessages: UnifiedMessage[];
+  dynamicMessages: UnifiedMessage[];
+  userMessages: UnifiedMessage[];
+  dynamicContext: string;
+} => {
+  const baseMessages = buildInitialContext(layers, ragContext);
+  const userMessages = [createUserMessage(userAction)];
+
+  return {
+    messages: [...baseMessages, ...userMessages],
+    staticMessages: baseMessages.slice(0, -2), // All except dynamic
+    dynamicMessages: baseMessages.slice(-2), // Dynamic layer
+    userMessages,
+    dynamicContext: layers.dynamicLayer,
+  };
 };
 
 /**
@@ -322,6 +274,7 @@ export const generateAdventureTurn = async (
     settings.extra?.disableImagePrompt,
     gameState.customRules,
     settings.extra?.nsfw,
+    settings.extra?.liteMode,
   );
 
   // Handle prompt injection if enabled
@@ -353,117 +306,83 @@ export const generateAdventureTurn = async (
     }
   }
 
-  // ===== NEW: Build layered context using contextBuilder =====
-  const contextOptions: ContextBuilderOptions = {
+  // ===== Build layered context using contextBuilder =====
+  const layers = buildLayeredContext({
     outline: gameState.outline,
     gameState,
-    recentHistory: context.recentHistory,
-    summaries: gameState.summaries,
     godMode: gameState.godMode,
-    aliveEntities: gameState.aliveEntities,
+  });
+
+  // Get RAG context from parameter
+  const ragContext: string | undefined = context.ragContext;
+
+  // Build messages using layered context
+  const buildResult = buildTurnMessages(layers, context.userAction, ragContext);
+  const { staticMessages, dynamicMessages, userMessages, dynamicContext } =
+    buildResult;
+
+  // Log injected rules and NSFW mode
+  const enabledRules = (gameState.customRules || []).filter((r) => r.enabled);
+  const nsfwEnabled = settings.extra?.nsfw || false;
+  if (enabledRules.length > 0) {
+    console.log(
+      `[CustomRules] Injected ${enabledRules.length} rules:`,
+      enabledRules.map((r) => `[${r.category}] ${r.title}`),
+    );
+  }
+  if (nsfwEnabled) {
+    console.warn(`[NSFW] NSFW mode is ENABLED`);
+  }
+
+  const generationDetails: LogEntry["generationDetails"] = {
+    dynamicContext,
+    ragContext,
+    systemPrompt: systemInstruction,
+    userPrompt: context.userAction,
+    injectedRules: enabledRules.map((r) => `[${r.category}] ${r.title}`),
+    nsfwEnabled,
   };
 
-  // Outer Retry Loop: Handle Base Context Compression (Semantic Reduction)
-  let compressionLevel: CompressionLevel = CompressionLevel.NONE;
-  const maxCompressionLevel = CompressionLevel.EXTREME;
+  // === CONTEXT CONSTRUCTION ===
+  // Order: [Static] -> [Cached History] -> [Dynamic] -> [User Action]
+  const cachedHistory = gameState.activeHistory || [];
 
-  while (true) {
-    try {
-      // 1. Apply Semantic Compression (if needed)
-      const effectiveOptions = getCompressedContextOptions(
-        contextOptions,
-        compressionLevel,
-      );
-      const layers = buildLayeredContext(effectiveOptions);
+  const fullContext = [
+    ...staticMessages,
+    ...cachedHistory,
+    ...dynamicMessages,
+    ...userMessages,
+  ];
 
-      // Get RAG context from parameter
-      const ragContext: string | undefined = context.ragContext;
+  // Detect SUDO mode from user action prefix
+  const isSudoMode = context.userAction.startsWith("[SUDO]");
 
-      // 2. Build messages using layered context
-      const { messages, dynamicContext } = buildTurnMessages(
-        layers,
-        effectiveOptions.recentHistory, // Use compressed history
-        context.userAction,
-        ragContext,
-      );
+  // Run agentic loop (will throw on context overflow)
+  try {
+    const result = await runAgenticLoop(
+      instance.protocol,
+      instance,
+      modelId,
+      systemInstruction,
+      fullContext,
+      gameState,
+      generationDetails,
+      context.settings,
+      isSudoMode,
+    );
 
-      // Log injected rules and NSFW mode
-      const enabledRules = (gameState.customRules || []).filter(
-        (r) => r.enabled,
-      );
-      const nsfwEnabled = settings.extra?.nsfw || false;
-      if (enabledRules.length > 0) {
-        console.log(
-          `[CustomRules] Injected ${enabledRules.length} rules:`,
-          enabledRules.map((r) => `[${r.category}] ${r.title}`),
-        );
-      }
-      if (nsfwEnabled) {
-        console.warn(`[NSFW] NSFW mode is ENABLED`);
-      }
+    // === USE HISTORY AS-IS (NO TRANSFORMATION) ===
+    // The provider returns the full conversation history
+    // We use it exactly as returned - no slicing, no filtering
+    result.response.activeHistory = result.activeHistory;
 
-      const generationDetails: LogEntry["generationDetails"] = {
-        dynamicContext,
-        ragContext,
-        ragQueries: gameState.ragQueries,
-        systemPrompt: systemInstruction,
-        userPrompt: context.userAction,
-        injectedRules: enabledRules.map((r) => `[${r.category}] ${r.title}`),
-        nsfwEnabled,
-      };
-
-      // 5. Run inner loop
-      const result = await runAgenticLoop(
-        instance.protocol,
-        instance,
-        modelId,
-        systemInstruction,
-        messages,
-        gameState,
-        generationDetails,
-        context.settings,
-        gameState.nextInitialStage,
-      );
-
-      // 6. Return response
-      if (compressionLevel > CompressionLevel.NONE) {
-        result.response.systemToasts = [
-          ...(result.response.systemToasts || []),
-          {
-            message: `Context compressed (Level ${compressionLevel}) due to size limits.`,
-            type: "warning",
-          },
-        ];
-
-        // Inject Log Entry
-        result.logs.push(
-          createLogEntry(
-            "system",
-            "context-manager",
-            "compression",
-            { compressionLevel, reason: "context_length_exceeded" },
-            {
-              message: `Context rebuilt with compression level ${compressionLevel}`,
-            },
-          ),
-        );
-      }
-      return result;
-    } catch (e: any) {
-      if (isContextLengthError(e)) {
-        console.warn(
-          `[Adventure] Context length exceeded with Content Compression Level ${compressionLevel}.`,
-        );
-        if (compressionLevel < maxCompressionLevel) {
-          compressionLevel = (compressionLevel + 1) as CompressionLevel;
-          console.log(
-            `[Adventure] Retrying with Content Compression Level ${compressionLevel}...`,
-          );
-          continue;
-        }
-      }
-      throw e;
+    return result;
+  } catch (e: any) {
+    if (isContextLengthError(e)) {
+      // Context overflow - clear cache and let caller handle
+      throw new Error("CONTEXT_LENGTH_EXCEEDED: " + e.message);
     }
+    throw e;
   }
 };
 
@@ -483,6 +402,16 @@ export const generateAdventureTurn = async (
  * - AI can finish early from ANY stage via finish_turn
  * - nextInitialStage in finish_turn suggests starting stage for next player turn
  */
+/**
+ * Agentic Loop with Dynamic Tool Loading (Search-based)
+ *
+ * Logic:
+ * 1. Start with minimal tools (SEARCH_TOOL, FINISH_TURN_TOOL, basic queries).
+ * 2. Model uses SEARCH_TOOL to request more tools (e.g., "add:inventory").
+ * 3. System finds tools, adds to active set, and returns confirmation.
+ * 4. Model uses new tools.
+ * 5. Model calls FINISH_TURN_TOOL when done.
+ */
 export const runAgenticLoop = async (
   protocol: ProviderProtocol,
   instance: ProviderInstance,
@@ -492,14 +421,13 @@ export const runAgenticLoop = async (
   inputState: GameState,
   generationDetails: LogEntry["generationDetails"] | undefined,
   settings: AISettings,
-  initialStage?: AgentStage, // Optional: start from a specific stage (from previous turn's nextInitialStage)
+  isSudoMode: boolean = false,
 ): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
-  // Stage-based limits instead of turn-based
-  let stageTransitions = 0;
-  const maxStageTransitions = 15; // Maximum stage transitions allowed
-  const maxIterationsPerStage = 5; // Maximum iterations within a single stage
+  // Token/Turn limits
+  let loopIterations = 0;
+  const maxLoopIterations = 20; // Hard limit to prevent infinite loops
 
   const allLogs: LogEntry[] = [];
 
@@ -533,22 +461,23 @@ export const runAgenticLoop = async (
     totalTokens: 0,
   };
 
-  let lastLog: LogEntry = createLogEntry(
-    protocol,
-    modelId,
-    "agentic_init",
-    { initializing: true },
-    {},
-    totalUsage,
-  );
-
   const isRAGEnabled = settings.embedding?.enabled ?? false;
-  const isGeminiProvider = protocol === "gemini";
 
-  // Current stage tracking - can start from suggested stage
-  let currentStage: AgentStage =
-    initialStage && STAGE_ORDER.includes(initialStage) ? initialStage : "query";
-  let stageIterations = 0;
+  // Initial Tools Set - use complete_force_update for SUDO mode, finish_turn otherwise
+  let activeTools: ZodToolDefinition[] = [
+    SEARCH_TOOL,
+    isSudoMode ? COMPLETE_FORCE_UPDATE_TOOL : FINISH_TURN_TOOL,
+    QUERY_STORY_TOOL,
+    QUERY_TURN_TOOL, // Essential for context
+  ];
+
+  // If RAG enabled, add RAG tool? Or make it searchable?
+  if (isRAGEnabled) {
+    const ragTools = findTools("query", "rag_search");
+    if (ragTools.length > 0) {
+      activeTools.push(ragTools[0]);
+    }
+  }
 
   // Inject ready consequences
   const readyConsequences = db.getReadyConsequences();
@@ -566,83 +495,47 @@ export const runAgenticLoop = async (
 
     conversationHistory.push(
       createUserMessage(
-        `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${readyList}\n\nUse trigger_causal_chain in UPDATE stage if appropriate.`,
+        `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${readyList}\n\nSearch for 'update:causal_chain' to trigger these.`,
       ),
     );
   }
 
-  // Stage instruction helper with updated descriptions
-  const addStageInstruction = (stage: AgentStage) => {
-    const instructions: Record<AgentStage, string> = {
-      query: `[STAGE: QUERY]
-**MEMORY CHECK - DO THIS FIRST**:
-Before proceeding, consider if you need to recall story history:
-- Use \`query_story\` to search for past events, dialogues, or details by keyword/location
-- Use \`query_summary\` to get the overall story summary (visible + hidden layers)
-- Use \`query_recent_context\` to see the last few turns of player-AI exchanges
-- Use \`query_turn\` to check current fork ID and turn number
+  // Initial System Instruction for Tool Usage
+  const finishToolName = isSudoMode ? "complete_force_update" : "finish_turn";
 
-**VISIBILITY LAYER REMINDER**:
-When you query entities (items, NPCs, locations, etc.), remember:
-- Query results contain BOTH \`visible\` (player's perception) and \`hidden\` (GM's truth) layers
-- You see EVERYTHING as the GM
-- Use \`hidden\` for internal logic, NPC behavior, world consistency
-- Use \`visible\` for what appears in the narrative (unless \`unlocked: true\`)
-- The \`unlocked\` flag tells you if the player has discovered the hidden truth
+  if (isSudoMode) {
+    // SUDO mode specific instruction
+    conversationHistory.push(
+      createUserMessage(`[SYSTEM: FORCE UPDATE MODE (/sudo)]
+This is a **GM COMMAND**. You must:
+1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
+2. Use \`search_tool\` to load any tools you need for state changes.
+3. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
+4. Call \`complete_force_update\` with narrative describing the new reality and choices.
+`),
+    );
+  } else {
+    // Normal turn instruction
+    conversationHistory.push(
+      createUserMessage(`[SYSTEM: TOOL USAGE INSTRUCTION]
+You are in AGENTIC MODE.
+1. You have limited tools initially: \`search_tool\` and \`${finishToolName}\`.
+2. **SEARCH FIRST**: If you need to ADD, UPDATE, REMOVE, QUERY, or UNLOCK specific entities, use \`search_tool\` to load them.
+3. **USE TOOLS**: Once loaded, use the tools to modify the game state.
+4. **FINISH**: When done, use \`${finishToolName}\` with narrative and choices.
+`),
+    );
+  }
 
-**REGEX SEARCH TIPS**:
-- Query fields support regex (e.g., 'fire.*sword', 'dragon|serpent')
-- NEVER use natural language "or" patterns like "xxx or xxx" or "xxx 或 xxx" - these will fail!
-- Use regex alternation (|) instead: 'dragon|serpent' NOT 'dragon or serpent'
-
-**WHEN TO QUERY**:
-- Unsure what happened earlier? Query first.
-- Referencing an NPC you haven't seen recently? Query their last appearance.
-- Continuing a plot thread? Query to verify its current state.
-- Player mentions something from the past? Query to confirm details.
-
-Available tools: query_*${isRAGEnabled ? ", rag_search" : ""}, next_stage, finish_turn
-
-After querying (or if you have sufficient context):
-- Call next_stage (optionally with target) to proceed
-- Call finish_turn to complete the turn early if ready
-`,
-      add: `[STAGE: ADD]
-Available tools: add_*, next_stage, finish_turn
-- Add new entities (items, NPCs, locations, etc.)
-- Call next_stage to proceed, or next_stage(target=...) to jump
-- Call finish_turn to complete the turn early`,
-      remove: `[STAGE: REMOVE]
-Available tools: remove_*, next_stage, finish_turn
-- Remove entities that no longer exist
-- Call next_stage to proceed, or next_stage(target=...) to jump
-- Call finish_turn to complete the turn early`,
-      update: `[STAGE: UPDATE]
-Available tools: update_*, complete_quest, fail_quest, trigger_causal_chain, next_stage, finish_turn
-- Update existing entities
-- Call next_stage to proceed to narrative
-- Call finish_turn to complete the turn early`,
-      narrative: `[STAGE: NARRATIVE]
-Available tool: finish_turn
-You MUST call finish_turn with your narrative, choices, and atmosphere to complete this turn.
-Consider setting nextInitialStage if you know what stage would be best for the next turn.`,
-    };
-    conversationHistory.push(createUserMessage(instructions[stage]));
-  };
-
-  addStageInstruction(currentStage);
-
-  while (stageTransitions < maxStageTransitions) {
+  while (loopIterations < maxLoopIterations) {
     console.log(
-      `[Agentic Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}, Total transitions: ${stageTransitions}`,
+      `[Agentic Loop] Iteration: ${loopIterations + 1}, Active Tools: ${activeTools.length}`,
     );
 
-    // Get tools for current stage (all stages now include finish_turn)
-    const stageTools = getToolsForStage(currentStage, isRAGEnabled);
-    const toolConfig = stageTools.map((t) => ({
+    const toolConfig = activeTools.map((t) => ({
       name: t.name,
       description: t.description,
-      parameters: t.parameters,
+      parameters: t.parameters as any, // Cast to avoid Zod type mismatch
     }));
 
     let result: GenerateContentResult["result"];
@@ -651,21 +544,10 @@ Consider setting nextInitialStage if you know what stage would be best for the n
     let maxRetries = 2; // For malformed tool calls
     let retryCount = 0;
 
-    // Compression state
-    // Note: Semantic compression is handled by the outer loop in generateAdventureTurn.
-    // Here we only handle tool output truncation.
-
-    let lastError: Error | null = null;
-
     let effectiveToolConfig: typeof toolConfig | undefined = toolConfig;
-    // Only use schema in narrative stage for non-Gemini providers
-    let effectiveSchema = isGeminiProvider
-      ? undefined
-      : currentStage === "narrative"
-        ? buildFinishTurnSchema(isRAGEnabled)
-        : undefined;
+    let effectiveSchema = undefined;
 
-    // Inner Retry Loop: Handle Dynamic Tool Output Truncation
+    // Inner Retry Loop: Handle Dynamic Tool Output Truncation & Retries
     while (retryCount <= maxRetries) {
       try {
         const config = createProviderConfig(instance);
@@ -679,70 +561,37 @@ Consider setting nextInitialStage if you know what stage would be best for the n
           {
             tools: effectiveToolConfig,
             generationDetails,
-            logEndpoint: `adventure-${currentStage}`,
+            settings, // Pass settings to enable jsonObjectMode
+            logEndpoint: `adventure-loop-${loopIterations}`,
           },
         );
 
         result = resultData.result;
         usage = resultData.usage;
-        console.log(
-          `[Agentic Loop] Stage ${currentStage} response. Tools: ${toolConfig.length}`,
-        );
+        console.log(`[Agentic Loop] Iteration ${loopIterations} response.`);
         break;
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
-        lastError = error;
-        const errorMessage = error.message || "";
 
-        // 1. Handle Context Length Error -> Truncate Tools
         if (isContextLengthError(error)) {
+          // Context overflow - throw to trigger History rebuild
           console.warn(
-            `[Agentic Loop] Context length exceeded at stage ${currentStage}. Attempting Tool Output Truncation.`,
+            `[Agentic Loop] Context length error. Triggering rebuild...`,
           );
-
-          // Check if we can truncate tools further
-          // We can check if any tool output > 500 chars exists
-          // But truncateToolOutputs logic is idempotent (msg > 500 -> 500).
-          // Let's create a hash or check to see if it actually changes anything.
-          const beforeJson = JSON.stringify(conversationHistory);
-          conversationHistory = truncateToolOutputs(conversationHistory);
-          const afterJson = JSON.stringify(conversationHistory);
-
-          if (beforeJson !== afterJson) {
-            console.log(`[Agentic Loop] Tool outputs truncated. Retrying...`);
-            // Don't increment retryCount for context fix
-            continue;
-          } else {
-            console.warn(
-              `[Agentic Loop] Tool truncation didn't reduce size (or already truncated). Bubble up error.`,
-            );
-            throw error; // Let generateAdventureTurn handle it with semantic compression
-          }
+          throw new ContextOverflowError(error);
         }
 
-        // 2. Handle Malformed Tool Calls -> Retry
+        // Malformed handling
         if (
           e instanceof MalformedToolCallError ||
-          errorMessage.includes("MALFORMED_FUNCTION_CALL")
+          (e as Error).message.includes("MALFORMED_FUNCTION_CALL")
         ) {
           retryCount++;
           console.warn(
-            `[Agentic Loop] Malformed tool call. Retry ${retryCount}/${maxRetries}`,
+            `[Agentic Loop] Malformed tool call. Retry ${retryCount}`,
           );
-
-          if (isGeminiProvider && retryCount === 2 && effectiveToolConfig) {
-            // Gemini fallback strategy
-            effectiveToolConfig = undefined;
-            effectiveSchema = buildFinishTurnSchema(isRAGEnabled);
-            maxRetries = 4;
-            continue;
-          }
-
-          if (retryCount <= maxRetries) {
-            const delayMs = Math.min(500 * Math.pow(2, retryCount - 1), 4000);
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-            continue;
-          }
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
         }
 
         throw error;
@@ -755,299 +604,141 @@ Consider setting nextInitialStage if you know what stage would be best for the n
       totalUsage.totalTokens += usage!.totalTokens || 0;
     }
 
-    // Helper to extract text from message content
-    const getMessageText = (content: UnifiedMessage["content"]): string => {
-      return content
-        .filter((part) => part.type === "text" && part.text)
-        .map((part) => part.text)
-        .join("\n");
-    };
+    // Parse output
+    const text = (result as any).text || (result as any).content || "";
+    const functionCalls = (result as any).functionCalls as
+      | ToolCallResult[]
+      | undefined;
 
-    // Prepare stage input for debugging
-    const lastStageInstruction = conversationHistory
-      .filter((m) => {
-        const text = getMessageText(m.content);
-        return m.role === "user" && text.startsWith("[STAGE:");
-      })
-      .pop();
-
-    const stageInput = {
-      conversationHistory: JSON.stringify(conversationHistory, null, 2),
-      availableTools: toolConfig.map((t) => t.name),
-      stageInstruction: lastStageInstruction
-        ? getMessageText(lastStageInstruction.content)
-        : undefined,
-    };
-
-    // Prepare raw response for debugging
-    const rawResponse = JSON.stringify(result, null, 2);
-
-    lastLog = createLogEntry(
-      protocol,
-      modelId,
-      `agentic_${currentStage}_${stageIterations + 1}`,
-      { stage: currentStage, iteration: stageIterations + 1 },
-      {
-        hasToolCalls: !!(result! as { functionCalls?: unknown }).functionCalls,
-        toolCount:
-          (result! as { functionCalls?: ToolCallResult[] }).functionCalls
-            ?.length || 0,
-      },
-      usage!,
-      undefined, // toolCalls - will be set later
-      generationDetails,
-      undefined, // parsedResult
-      stageInput,
-      rawResponse,
-    );
-
-    const functionCalls = (result! as { functionCalls?: ToolCallResult[] })
-      .functionCalls;
-    // 提取文本内容（某些模型如 Claude 会同时返回 content 和 tool_calls）
-    const textContent = (result! as { content?: string }).content;
-
-    if (result && functionCalls && functionCalls.length > 0) {
-      const toolCalls: UnifiedToolCallResult[] = functionCalls;
-      const turnToolCalls: ToolCallRecord[] = [];
-
+    // Record Assistant Message
+    if (functionCalls && functionCalls.length > 0) {
       conversationHistory.push(
         createToolCallMessage(
-          toolCalls.map((fc) => ({
-            id: fc.id,
+          functionCalls.map((fc) => ({
+            id: fc.id || `call_${Math.random().toString(36).substr(2, 9)}`,
             name: fc.name,
             arguments: fc.args,
           })),
-          textContent, // 传递文本内容以保持完整性
+          text,
         ),
       );
+    } else if (text) {
+      // Just text message
+      conversationHistory.push({
+        role: "assistant", // Manually matching UnifiedMessage structure
+        content: [{ type: "text", text: text }],
+      });
+    }
 
-      const toolResponses: Array<{
+    // If no tool calls, model might be chatting. Remind it to finish or search.
+    if (!functionCalls || functionCalls.length === 0) {
+      if (text.length > 0) {
+        conversationHistory.push(
+          createUserMessage(
+            `[SYSTEM] I see you wrote some text. If you are done, please use \`${finishToolName}\`. If you need to change state, use \`search_tool\` to find tools.`,
+          ),
+        );
+        loopIterations++;
+        continue;
+      }
+    }
+
+    // Process Tool Calls
+    let turnFinished = false;
+
+    if (functionCalls) {
+      const toolResponses: {
         toolCallId: string;
         name: string;
         content: unknown;
-      }> = [];
-      let targetStage: AgentStage | null = null; // For directed stage jumps
+      }[] = [];
 
-      for (const call of toolCalls) {
-        const { id: callId, name, args } = call;
-        console.log(`[Agentic Loop] Tool: ${name}`, args);
-
+      for (const call of functionCalls) {
         let output: unknown;
+        try {
+          // SPECIAL HANDLE: search_tool
+          if (call.name === "search_tool") {
+            const params = call.args as SearchToolParams;
+            const addedTools: string[] = [];
 
-        if (name === "next_stage") {
-          // Support both automatic and directed stage transitions
-          const requestedTarget = parseStage(args.target as string);
-
-          if (requestedTarget) {
-            // Directed jump to specific stage
-            if (isValidStageTransition(currentStage, requestedTarget)) {
-              targetStage = requestedTarget;
-              output = {
-                success: true,
-                message: `Jumping to ${requestedTarget} stage.`,
-              };
-            } else {
-              output = {
-                success: false,
-                error: `Invalid transition: already in ${currentStage}.`,
-              };
+            if (params.queries) {
+              for (const q of params.queries) {
+                const found = findTools(q.operation, q.entity);
+                for (const tool of found) {
+                  if (!activeTools.some((t) => t.name === tool.name)) {
+                    activeTools.push(tool);
+                    addedTools.push(tool.name);
+                  }
+                }
+              }
             }
-          } else {
-            // Default: advance to next stage in sequence
-            const nextStage = getNextStage(currentStage);
-            if (nextStage) {
-              targetStage = nextStage;
-              output = {
-                success: true,
-                message: `Advancing to ${nextStage} stage.`,
-              };
-            } else {
-              output = {
-                success: false,
-                error: "Already at final stage. Use finish_turn to complete.",
-              };
+
+            output = `Found and activated tools: ${addedTools.join(", ") || "None (maybe already active?)"}`;
+          }
+          // SPECIAL HANDLE: finish_turn or complete_force_update
+          else if (
+            call.name === "finish_turn" ||
+            call.name === "complete_force_update"
+          ) {
+            // Validate
+            try {
+              // Note: safeValidateToolArgs might throw
+              processFinishTurnResponse(call.args, accumulatedResponse, db);
+              output =
+                call.name === "complete_force_update"
+                  ? "Force update completed. State captured."
+                  : "Turn finished. State captured.";
+              turnFinished = true;
+            } catch (err: any) {
+              output = `Error finishing turn: ${err.message}`;
             }
           }
-        } else if (name === "finish_turn") {
-          // finish_turn can be called from ANY stage
-          processFinishTurnResponse(args, accumulatedResponse, db);
-
-          turnToolCalls.push({
-            name: "finish_turn",
-            input: {
-              narrative: (args.narrative as string)?.substring(0, 100) + "...",
-              choices: args.choices,
-              nextInitialStage: args.nextInitialStage,
-            },
-            output: { success: true },
-            timestamp: Date.now(),
-          });
-
-          lastLog.toolCalls = turnToolCalls;
-          allLogs.push(lastLog);
-
-          const finalLog = createLogEntry(
-            protocol,
-            modelId,
-            "agentic_complete",
-            { stageTransitions, finalStage: currentStage },
-            {
-              totalToolCalls: allLogs.reduce(
-                (sum, log) => sum + (log.toolCalls?.length || 0),
-                0,
-              ),
-            },
-            totalUsage,
-          );
-          allLogs.push(finalLog);
-
-          return {
-            response: accumulatedResponse,
-            logs: allLogs,
-            usage: totalUsage,
-            changedEntities: Array.from(changedEntities.entries()).map(
-              ([id, type]) => ({ id, type }),
-            ),
-          };
-        } else {
-          output = executeToolCall(
-            name,
-            args,
-            db,
-            accumulatedResponse,
-            changedEntities,
-            inputState,
-            settings,
-          );
-        }
-
-        turnToolCalls.push({
-          name,
-          input: args,
-          output,
-          timestamp: Date.now(),
-        });
-        toolResponses.push({ toolCallId: callId, name, content: output });
-      }
-
-      lastLog.toolCalls = turnToolCalls;
-      allLogs.push(lastLog);
-      conversationHistory.push(createToolResponseMessage(toolResponses));
-
-      if (targetStage) {
-        // Transition to target stage (either directed or sequential)
-        currentStage = targetStage;
-        stageIterations = 0;
-        stageTransitions++;
-        addStageInstruction(currentStage);
-      } else {
-        // No stage transition requested, increment iteration counter
-        stageIterations++;
-        if (stageIterations >= maxIterationsPerStage) {
-          console.warn(
-            `[Agentic Loop] Max iterations (${maxIterationsPerStage}) in ${currentStage}, auto-advancing`,
-          );
-          const nextStage = getNextStage(currentStage);
-          if (nextStage) {
-            currentStage = nextStage;
-            stageIterations = 0;
-            stageTransitions++;
-            addStageInstruction(currentStage);
-          } else {
-            // Force narrative stage if stuck at the end
-            conversationHistory.push(
-              createUserMessage(
-                `You've reached the maximum iterations. Please call finish_turn to complete the turn.`,
-              ),
+          // STANDARD HANDLE
+          else {
+            output = executeToolCall(
+              call.name,
+              call.args,
+              db,
+              accumulatedResponse,
+              changedEntities,
+              inputState,
+              settings,
             );
           }
+        } catch (err: any) {
+          output = `Tool execution failed: ${err.message}`;
         }
-      }
-    } else {
-      // No tool calls
-      if (currentStage === "narrative") {
-        try {
-          const finishTurnData =
-            buildFinishTurnSchema(isRAGEnabled).parse(result);
-          processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
 
-          const finalLog = createLogEntry(
+        toolResponses.push({
+          toolCallId: call.id || "unknown",
+          name: call.name,
+          content: output,
+        });
+
+        // Log tool usage
+        allLogs.push(
+          createLogEntry(
             protocol,
             modelId,
-            "agentic_complete",
-            { stageTransitions, method: "schema_response" },
-            {
-              totalToolCalls: allLogs.reduce(
-                (sum, log) => sum + (log.toolCalls?.length || 0),
-                0,
-              ),
-            },
-            totalUsage,
-          );
-          allLogs.push(lastLog);
-          allLogs.push(finalLog);
-
-          return {
-            response: accumulatedResponse,
-            logs: allLogs,
-            usage: totalUsage,
-            changedEntities: Array.from(changedEntities.entries()).map(
-              ([id, type]) => ({ id, type }),
-            ),
-          };
-        } catch (validationError) {
-          if (result && (result as GameResponse).narrative) {
-            allLogs.push(lastLog);
-            return {
-              response: result as GameResponse,
-              logs: allLogs,
-              usage: totalUsage,
-              changedEntities: Array.from(changedEntities.entries()).map(
-                ([id, type]) => ({ id, type }),
-              ),
-            };
-          }
-
-          allLogs.push(lastLog);
-          return {
-            response: {
-              ...accumulatedResponse,
-              narrative:
-                typeof result === "string" ? result : JSON.stringify(result),
-              choices: [{ text: "Continue" }],
-            },
-            logs: allLogs,
-            usage: totalUsage,
-            changedEntities: Array.from(changedEntities.entries()).map(
-              ([id, type]) => ({ id, type }),
-            ),
-          };
-        }
-      } else {
-        // Prompt to use tools or advance stage
-        conversationHistory.push(
-          createUserMessage(
-            `You must use available tools, call next_stage, or call finish_turn. Current stage: ${currentStage}`,
+            "tool_execution",
+            { tool: call.name, args: call.args, output },
+            {},
           ),
         );
-        stageIterations++;
-
-        if (stageIterations >= maxIterationsPerStage) {
-          const nextStage = getNextStage(currentStage);
-          if (nextStage) {
-            currentStage = nextStage;
-            stageIterations = 0;
-            stageTransitions++;
-            addStageInstruction(currentStage);
-          }
-        }
       }
+
+      conversationHistory.push(createToolResponseMessage(toolResponses));
     }
+
+    if (turnFinished) {
+      break;
+    }
+
+    loopIterations++;
   }
 
-  console.warn(
-    `[Agentic Loop] Max stage transitions (${maxStageTransitions}) reached`,
-  );
+  // After loop - return the FULL conversation history as-is
+  // This is critical for KV cache: we don't slice, filter, or transform
   return {
     response: accumulatedResponse,
     logs: allLogs,
@@ -1055,6 +746,7 @@ Consider setting nextInitialStage if you know what stage would be best for the n
     changedEntities: Array.from(changedEntities.entries()).map(
       ([id, type]) => ({ id, type }),
     ),
+    activeHistory: conversationHistory, // Return the complete history for reuse
   };
 };
 
@@ -1746,8 +1438,8 @@ export function executeToolCall(
   // ============================================================================
   // CONTROL TOOLS
   // ============================================================================
-  if (name === "finish_turn") {
-    // finish_turn is handled separately in the main loop
+  if (name === "finish_turn" || name === "complete_force_update") {
+    // finish_turn and complete_force_update are handled separately in the main loop
     return { success: true };
   }
   if (name === "next_stage") {

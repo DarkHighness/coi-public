@@ -310,13 +310,18 @@ export async function generateContent(
           );
         } else if (!tools || tools.length === 0) {
           // Use responseFormat only when no tools are present
-          const openAIFormat = zodToOpenAIResponseFormat(schema);
-          requestParams.responseFormat = isGemini
-            ? { type: "json_schema", schema: zodToGemini(schema) }
-            : {
-                type: openAIFormat.type,
-                jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
-              };
+          // JSON Object Mode: Use simple json_object type instead of strict schema
+          if (options?.jsonObjectMode) {
+            requestParams.responseFormat = { type: "json_object" };
+          } else {
+            const openAIFormat = zodToOpenAIResponseFormat(schema);
+            requestParams.responseFormat = isGemini
+              ? { type: "json_schema", schema: zodToGemini(schema) }
+              : {
+                  type: openAIFormat.type,
+                  jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
+                };
+          }
         }
         // If tools exist but forceToolCallMode is not enabled, skip responseFormat (OpenAI conflict)
       }

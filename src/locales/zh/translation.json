@@ -401,7 +401,9 @@
       "forceToolCallMode": "工具调用模式",
       "forceToolCallModeHelp": "使用 tool_call 代替 json_schema 进行结构化输出",
       "flattenSchema": "展平结构模式",
-      "flattenSchemaHelp": "展平嵌套的JSON结构，帮助部分模型更好地生成"
+      "flattenSchemaHelp": "展平嵌套的JSON结构，帮助部分模型更好地生成",
+      "jsonObjectMode": "JSON 对象模式",
+      "jsonObjectModeHelp": "参考 DeepSeek 的 JSON Object 兼容性模式"
     }
   },
   "themeMode": "主题模式",

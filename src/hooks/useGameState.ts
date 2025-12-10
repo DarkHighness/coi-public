@@ -1,26 +1,6 @@
 import { useState } from "react";
-import {
-  GameState,
-  StoryOutline,
-  CharacterStatus,
-  AliveEntities,
-  ForkTree,
-} from "../types";
+import { GameState, StoryOutline, CharacterStatus, ForkTree } from "../types";
 import { DEFAULT_CHARACTER } from "../utils/constants";
-
-// Default empty alive entities
-const EMPTY_ALIVE_ENTITIES: AliveEntities = {
-  inventory: [],
-  relationships: [],
-  locations: [],
-  quests: [],
-  knowledge: [],
-  timeline: [],
-  skills: [],
-  conditions: [],
-  hiddenTraits: [],
-  causalChains: [],
-};
 
 // Default fork tree (original timeline)
 const INITIAL_FORK_TREE: ForkTree = {
@@ -104,8 +84,6 @@ const INITIAL_STATE: GameState = {
   timeline: [],
   causalChains: [],
 
-  // Context Priority System
-  aliveEntities: EMPTY_ALIVE_ENTITIES,
   turnNumber: 0,
 
   // Fork System
@@ -131,8 +109,6 @@ export const useGameState = () => {
       activeNodeId: null,
       outline: null,
       logs: [],
-      // Reset context priority system
-      aliveEntities: EMPTY_ALIVE_ENTITIES,
       turnNumber: 0,
       // Reset fork system
       forkId: 0,

@@ -127,9 +127,6 @@ function cleanupStateForExport(
     }
   }
 
-  // Remove RAG queries and other ephemeral data
-  delete cleanState.ragQueries;
-
   // Clear logs if not included
   if (!options.includeLogs) {
     cleanState.logs = [];
@@ -693,9 +690,6 @@ function cleanupImportedState(state: VersionedGameState): VersionedGameState {
   state.isImageGenerating = false;
   state.generatingNodeId = null;
   state.error = null;
-
-  // Clear RAG queries (will be regenerated)
-  delete state.ragQueries;
 
   // Clear embedding index (will be regenerated)
   delete state._embeddingIndex;

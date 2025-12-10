@@ -11,7 +11,6 @@ import {
 } from "../types";
 import { generateAdventureTurn } from "../services/aiService";
 import { LANG_MAP } from "../utils/constants";
-import { normalizeAliveEntities } from "../utils/snapshotManager";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import {
   updateProviderStats,
@@ -53,6 +52,9 @@ export const useGameAction = ({
   const gameStateRef = useRef(gameState);
   const processingRef = useRef(false);
 
+  // Track previous settings for cache invalidation
+  const prevSettingsRef = useRef<string | undefined>(undefined);
+
   // Update refs when state changes
   gameStateRef.current = gameState;
   processingRef.current = gameState.isProcessing;
@@ -72,6 +74,39 @@ export const useGameAction = ({
         fromNodeId,
         preventFork,
       });
+
+      // Detect settings change and clear cache if needed
+      const storyProvider = aiSettings.providers.instances.find(
+        (p) => p.id === aiSettings.story.providerId,
+      );
+      const currentSettingsKey = JSON.stringify({
+        modelId: aiSettings.story.modelId,
+        providerId: aiSettings.story.providerId,
+        geminiCompat: storyProvider?.geminiCompatibility,
+        claudeCompat: storyProvider?.claudeCompatibility,
+      });
+
+      let shouldClearHistory = false;
+      if (
+        prevSettingsRef.current &&
+        prevSettingsRef.current !== currentSettingsKey
+      ) {
+        console.log("[Context] Settings changed - clearing message cache");
+        shouldClearHistory = true;
+      }
+
+      prevSettingsRef.current = currentSettingsKey;
+
+      // If settings changed, clear activeHistory via setGameState
+      if (shouldClearHistory) {
+        setGameState((prev) => ({ ...prev, activeHistory: undefined }));
+        // Also update ref immediately for this turn
+        gameStateRef.current = {
+          ...gameStateRef.current,
+          activeHistory: undefined,
+        };
+      }
+
       // Check both the ref (immediate) and state (persisted)
       if (
         (processingRef.current && !isInit) ||
@@ -152,6 +187,9 @@ export const useGameAction = ({
 
       if (!isInit) {
         setGameState((prev) => {
+          // Check if fork ID changed - clear history for KV cache rebuild
+          const forkChanged = currentForkId !== prev.forkId;
+
           // If reusing, just set processing and clear error
           if (reuseExistingNode) {
             return {
@@ -160,6 +198,8 @@ export const useGameAction = ({
               error: null,
               forkId: currentForkId,
               forkTree: currentForkTree,
+              // Clear activeHistory if fork changed
+              activeHistory: forkChanged ? undefined : prev.activeHistory,
             };
           }
 
@@ -195,6 +235,8 @@ export const useGameAction = ({
             currentFork: deriveHistory(newNodes, userNodeId),
             forkId: currentForkId,
             forkTree: currentForkTree,
+            // Clear activeHistory if fork changed
+            activeHistory: forkChanged ? undefined : prev.activeHistory,
           };
         });
       } else {
@@ -304,13 +346,21 @@ export const useGameAction = ({
           freshCount,
         );
 
+        // Prepare state for generation (clearing persistent history if summarized)
+        const effectiveGameState = {
+          ...gameStateRef.current,
+          activeHistory: summarySnapshot
+            ? undefined
+            : gameStateRef.current.activeHistory,
+        };
+
         // Generate Turn - pass GameState directly with TurnContext
         const {
           response,
           logs: turnLogs,
           usage,
           changedEntities,
-        } = await generateAdventureTurn(gameStateRef.current, {
+        } = await generateAdventureTurn(effectiveGameState, {
           recentHistory: segmentsToSend,
           userAction: action,
           language: LANG_MAP[language],
@@ -484,11 +534,8 @@ export const useGameAction = ({
             nextIds: finalState.nextIds,
             timeline: finalState.timeline,
             causalChains: finalState.causalChains,
-
-            // Context Priority System: update alive entities and increment turn
-            aliveEntities: normalizeAliveEntities(response.aliveEntities),
-            ragQueries: response.ragQueries,
-            nextInitialStage: response.nextInitialStage,
+            // Update persistent history (clear if summarized this turn)
+            activeHistory: summarySnapshot ? undefined : response.activeHistory,
             turnNumber: prev.turnNumber + 1,
 
             summaries: effectiveSummaries,
@@ -565,12 +612,28 @@ export const useGameAction = ({
         console.error("Game Loop Error:", error);
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
-        showToast(errorMsg, "error", 5000);
+
+        // Check for context overflow
+        if (errorMsg.includes("CONTEXT_LENGTH_EXCEEDED")) {
+          console.log("[Context] Overflow detected - clearing message cache");
+          gameStateRef.current.activeHistory = undefined;
+          showToast(
+            "Context too long. Please create a summary to continue.",
+            "warning",
+            5000,
+          );
+        } else {
+          showToast(errorMsg, "error", 5000);
+        }
 
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,
           error: error instanceof Error ? error.message : "Unknown error",
+          // Clear cache on overflow
+          activeHistory: errorMsg.includes("CONTEXT_LENGTH_EXCEEDED")
+            ? undefined
+            : prev.activeHistory,
         }));
         processingRef.current = false;
         return {

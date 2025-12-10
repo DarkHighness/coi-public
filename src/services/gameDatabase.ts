@@ -87,12 +87,15 @@ export type QueryResultMap = {
 
 // Modify target to result type mapping
 export type ModifyResultMap = {
-  inventory: InventoryItem | { removed: string };
-  relationship: Relationship | { removed: string };
-  location: Location | { removed: string };
-  quest: Quest | { removed: string };
-  knowledge: KnowledgeEntry;
-  faction: Faction | { removed: string };
+  inventory: InventoryItem | { id: string; name: string } | { removed: string };
+  relationship:
+    | Relationship
+    | { id: string; name: string }
+    | { removed: string };
+  location: Location | { id: string; name: string } | { removed: string };
+  quest: Quest | { id: string; name: string } | { removed: string };
+  knowledge: KnowledgeEntry | { id: string; name: string };
+  faction: Faction | { id: string; name: string } | { removed: string };
   world_info: { updated: string[] };
   character: { updated: string[] };
   timeline: TimelineEvent;
@@ -630,7 +633,9 @@ export class GameDatabase {
       name?: string;
       unlockReason?: string;
     },
-  ): ToolCallResult<InventoryItem | { removed: string }> {
+  ): ToolCallResult<
+    InventoryItem | { id: string; name: string } | { removed: string }
+  > {
     if (action === "add") {
       if (!data.name) {
         return createError(
@@ -684,7 +689,7 @@ export class GameDatabase {
       };
       this.state.inventory.push(newItem);
       return createSuccess(
-        newItem,
+        { id: newItem.id, name: newItem.name },
         `Added item: ${newItem.name} (${newItem.id})`,
       );
     }
@@ -770,7 +775,9 @@ export class GameDatabase {
       hidden?: any;
       unlockReason?: string;
     },
-  ): ToolCallResult<Relationship | { removed: string }> {
+  ): ToolCallResult<
+    Relationship | { id: string; name: string } | { removed: string }
+  > {
     const getName = () => data.visible?.name || data.name;
 
     if (action === "add") {
@@ -930,7 +937,9 @@ export class GameDatabase {
       isCurrent?: boolean;
       unlockReason?: string;
     },
-  ): ToolCallResult<Location | { removed: string }> {
+  ): ToolCallResult<
+    Location | { id: string; name: string } | { removed: string }
+  > {
     if (action === "add") {
       if (!data.name) {
         return createError(
@@ -987,7 +996,7 @@ export class GameDatabase {
       }
 
       return createSuccess(
-        newLocation,
+        { id: newLocation.id, name: newLocation.name },
         `Added location: ${newLocation.name} (${newLocation.id})`,
       );
     }
@@ -1084,7 +1093,9 @@ export class GameDatabase {
   private modifyQuest(
     action: string,
     data: Partial<Quest> & { id?: string; unlockReason?: string },
-  ): ToolCallResult<Quest | { removed: string }> {
+  ): ToolCallResult<
+    Quest | { id: string; name: string } | { removed: string }
+  > {
     if (action === "add") {
       if (!data.title) {
         return createError(
@@ -1138,7 +1149,7 @@ export class GameDatabase {
       };
       this.state.quests.push(newQuest);
       return createSuccess(
-        newQuest,
+        { id: newQuest.id, name: newQuest.title },
         `Added quest: ${newQuest.title} (${newQuest.id})`,
       );
     }
@@ -1220,7 +1231,7 @@ export class GameDatabase {
   private modifyKnowledge(
     action: string,
     data: Partial<KnowledgeEntry> & { id?: string; unlockReason?: string },
-  ): ToolCallResult<KnowledgeEntry> {
+  ): ToolCallResult<KnowledgeEntry | { id: string; name: string }> {
     if (action === "add") {
       if (!data.title) {
         return createError(
@@ -1275,7 +1286,7 @@ export class GameDatabase {
       };
       this.state.knowledge.push(newKnowledge);
       return createSuccess(
-        newKnowledge,
+        { id: newKnowledge.id, name: newKnowledge.title },
         `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})`,
       );
     }
@@ -1338,7 +1349,9 @@ export class GameDatabase {
   private modifyFaction(
     action: string,
     data: Partial<Faction> & { id?: string; unlockReason?: string },
-  ): ToolCallResult<Faction | { removed: string }> {
+  ): ToolCallResult<
+    Faction | { id: string; name: string } | { removed: string }
+  > {
     if (action === "add") {
       if (!data.name) {
         return createError(
@@ -1380,7 +1393,7 @@ export class GameDatabase {
       };
       this.state.factions.push(newFaction);
       return createSuccess(
-        newFaction,
+        { id: newFaction.id, name: newFaction.name },
         `Added faction: ${newFaction.name} (${newFaction.id})`,
       );
     }
