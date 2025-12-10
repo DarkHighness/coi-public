@@ -447,7 +447,9 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
 
       const newId = hasId ? item.id : `${prefix}:${idNumber}`;
       if (!hasId) {
-        console.warn(`[OutlineMerge] Auto-assigning ID ${newId} to entity without ID`);
+        console.warn(
+          `[OutlineMerge] Auto-assigning ID ${newId} to entity without ID`,
+        );
       }
 
       // Track maximum ID for this type

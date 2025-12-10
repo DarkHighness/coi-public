@@ -267,7 +267,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </div>
         <input
           type="range"
-          min="1"
+          min="0"
           max="10"
           step="1"
           value={currentSettings.freshSegmentCount ?? 4}

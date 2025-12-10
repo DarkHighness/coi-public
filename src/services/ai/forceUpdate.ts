@@ -507,14 +507,21 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           }
           // Only process RAG fields if RAG is enabled and fields exist
           if (isRAGEnabled) {
-            if ('ragQueries' in updateData && updateData.ragQueries) {
-              accumulatedResponse.ragQueries = updateData.ragQueries as string[];
+            if ("ragQueries" in updateData && updateData.ragQueries) {
+              accumulatedResponse.ragQueries =
+                updateData.ragQueries as string[];
             }
-            if ('ragCurrentForkOnly' in updateData && updateData.ragCurrentForkOnly !== undefined) {
+            if (
+              "ragCurrentForkOnly" in updateData &&
+              updateData.ragCurrentForkOnly !== undefined
+            ) {
               accumulatedResponse.ragCurrentForkOnly =
                 updateData.ragCurrentForkOnly as boolean;
             }
-            if ('ragBeforeCurrentTurn' in updateData && updateData.ragBeforeCurrentTurn !== undefined) {
+            if (
+              "ragBeforeCurrentTurn" in updateData &&
+              updateData.ragBeforeCurrentTurn !== undefined
+            ) {
               accumulatedResponse.ragBeforeCurrentTurn =
                 updateData.ragBeforeCurrentTurn as boolean;
             }
@@ -677,14 +684,21 @@ You MUST call complete_force_update with a narrative describing the changes.`,
           }
           // Only process RAG fields if RAG is enabled and fields exist
           if (isRAGEnabled) {
-            if ('ragQueries' in updateData && updateData.ragQueries) {
-              accumulatedResponse.ragQueries = updateData.ragQueries as string[];
+            if ("ragQueries" in updateData && updateData.ragQueries) {
+              accumulatedResponse.ragQueries =
+                updateData.ragQueries as string[];
             }
-            if ('ragCurrentForkOnly' in updateData && updateData.ragCurrentForkOnly !== undefined) {
+            if (
+              "ragCurrentForkOnly" in updateData &&
+              updateData.ragCurrentForkOnly !== undefined
+            ) {
               accumulatedResponse.ragCurrentForkOnly =
                 updateData.ragCurrentForkOnly as boolean;
             }
-            if ('ragBeforeCurrentTurn' in updateData && updateData.ragBeforeCurrentTurn !== undefined) {
+            if (
+              "ragBeforeCurrentTurn" in updateData &&
+              updateData.ragBeforeCurrentTurn !== undefined
+            ) {
               accumulatedResponse.ragBeforeCurrentTurn =
                 updateData.ragBeforeCurrentTurn as boolean;
             }

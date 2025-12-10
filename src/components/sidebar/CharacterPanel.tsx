@@ -844,7 +844,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               </h4>
               <div className="flex flex-col">
                 {character.skills.map((skill, idx) => (
-                  <SkillItem key={skill.id || skill.name || `skill-${idx}`} skill={skill} />
+                  <SkillItem
+                    key={skill.id || skill.name || `skill-${idx}`}
+                    skill={skill}
+                  />
                 ))}
               </div>
             </div>
@@ -858,7 +861,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             {character.conditions && character.conditions.length > 0 ? (
               <div className="flex flex-col">
                 {character.conditions.map((cond, idx) => (
-                  <ConditionItem key={cond.id || cond.name || `cond-${idx}`} condition={cond} />
+                  <ConditionItem
+                    key={cond.id || cond.name || `cond-${idx}`}
+                    condition={cond}
+                  />
                 ))}
               </div>
             ) : (
@@ -899,7 +905,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   {character.hiddenTraits
                     .filter((t) => t.unlocked)
                     .map((trait, idx) => (
-                      <TraitItem key={trait.id || trait.name || `trait-${idx}`} trait={trait} />
+                      <TraitItem
+                        key={trait.id || trait.name || `trait-${idx}`}
+                        trait={trait}
+                      />
                     ))}
                 </div>
               </div>

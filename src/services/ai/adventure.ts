@@ -967,7 +967,8 @@ Consider setting nextInitialStage if you know what stage would be best for the n
       // No tool calls
       if (currentStage === "narrative") {
         try {
-          const finishTurnData = buildFinishTurnSchema(isRAGEnabled).parse(result);
+          const finishTurnData =
+            buildFinishTurnSchema(isRAGEnabled).parse(result);
           processFinishTurnResponse(finishTurnData, accumulatedResponse, db);
 
           const finalLog = createLogEntry(
@@ -1081,9 +1082,6 @@ function trackChangedEntity(
     changedEntities.set(entity.id, entityType);
   }
 }
-
-
-
 
 /**
  * Execute tool calls for the staged agentic loop
