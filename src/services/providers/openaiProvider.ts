@@ -297,8 +297,6 @@ export async function generateContent(
 
       // 转换工具定义 - 兼容模式处理
       let tools: ChatCompletionTool[] | undefined;
-      let useToolCallForSchema = false;
-      let forceStructuredOutputTool = false;
 
       if (options?.tools) {
         if (isGemini) {
@@ -318,53 +316,29 @@ export async function generateContent(
         }
       }
 
-      // forceToolCallMode: wrap schema as a tool instead of using response_format
-      if (schema && options?.forceToolCallMode) {
-        // Use the correct tool format based on model type
-        let schemaAsTool: ChatCompletionTool;
-        if (isGemini) {
-          schemaAsTool = createGeminiCompatibleTool(
-            "structured_output",
-            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema,
-          );
-        } else if (isClaude) {
-          schemaAsTool = createClaudeCompatibleTool(
-            "structured_output",
-            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema,
-          );
+      // 构建请求参数
+      // Convert toolChoice to OpenAI format
+      let toolChoice:
+        | OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
+        | undefined;
+      if (tools && tools.length > 0) {
+        if (options?.toolChoice === "required") {
+          toolChoice = "required";
+        } else if (options?.toolChoice === "none") {
+          toolChoice = "none";
+        } else if (
+          options?.toolChoice &&
+          typeof options.toolChoice === "object"
+        ) {
+          toolChoice = {
+            type: "function",
+            function: { name: options.toolChoice.name },
+          };
         } else {
-          schemaAsTool = createOpenAITool(
-            "structured_output",
-            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-            schema,
-          );
+          toolChoice = "auto";
         }
-
-        if (tools && tools.length > 0) {
-          // Add to existing tools
-          tools = [...tools, schemaAsTool];
-        } else {
-          // Create new tools array and force calling this tool
-          tools = [schemaAsTool];
-          forceStructuredOutputTool = true;
-        }
-
-        // Add instruction to system message
-        if (messages.length > 0 && messages[0].role === "system") {
-          const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-          messages[0].content =
-            (messages[0].content as string) + structuredOutputInstruction;
-        }
-
-        useToolCallForSchema = true;
-        console.log(
-          `[OpenAI] Using forceToolCallMode: schema wrapped as tool (${isGemini ? "Gemini" : isClaude ? "Claude" : "OpenAI"} format)`,
-        );
       }
 
-      // 构建请求参数
       const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams =
         {
           model,
@@ -374,25 +348,14 @@ export async function generateContent(
           stream: !!options?.onChunk,
           // @ts-ignore
           tools,
-          tool_choice: forceStructuredOutputTool
-            ? {
-                type: "function" as const,
-                function: { name: "structured_output" },
-              }
-            : tools
-              ? "auto"
-              : undefined,
+          tool_choice: toolChoice,
 
           // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
           // This applies to both standard OpenAI models and Gemini compatibility mode.
           // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
           response_format:
-            schema && !useToolCallForSchema && (!tools || tools.length === 0)
+            schema && !tools
               ? (() => {
-                  // JSON Object Mode: Use simple json_object type instead of strict schema
-                  if (options?.jsonObjectMode) {
-                    return { type: "json_object" as const };
-                  }
                   if (isGemini) {
                     return {
                       type: "json_schema",
@@ -431,10 +394,10 @@ export async function generateContent(
         | AsyncIterable<ChatCompletionChunk>;
 
       console.log(
-        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude}), useToolCallForSchema: ${useToolCallForSchema}`,
+        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude})`,
       );
 
-      if (useCompat && schema && !useToolCallForSchema) {
+      if (useCompat && schema && !tools) {
         console.log(
           `[OpenAI] Detected Compatible Model (Gemini: ${isGemini}, Claude: ${isClaude}), using compatible schema format:`,
           JSON.stringify(requestParams.response_format, null, 2),
@@ -549,21 +512,6 @@ export async function generateContent(
       }
 
       console.log(`[OpenAI] Generation complete. Usage:`, usage);
-
-      // If using tool call mode for schema, extract the structured result from tool call args
-      if (useToolCallForSchema && toolCalls.length > 0) {
-        const structuredOutputCall = toolCalls.find(
-          (tc) => tc.name === "structured_output",
-        );
-        if (structuredOutputCall) {
-          const result = structuredOutputCall.args;
-          if (schema) {
-            validateSchema(result, schema, "openai");
-          }
-          console.log("[OpenAI] Extracted structured output from tool call");
-          return { result, usage, raw: rawResponse };
-        }
-      }
 
       // 如果有工具调用，返回工具调用结果（同时保留 content）
       if (toolCalls.length > 0) {

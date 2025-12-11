@@ -241,7 +241,7 @@ export async function generateContent(
       const client = createGeminiClient(config);
 
       // 构建生成配置
-      const { config: generationConfig, useToolCallForSchema } =
+      const { config: generationConfig, modifiedSystemInstruction } =
         buildGenerationConfig(systemInstruction, schema, options);
 
       let text = "";
@@ -254,7 +254,7 @@ export async function generateContent(
       let rawResponse: unknown;
 
       console.log(
-        `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}, useToolCallForSchema: ${useToolCallForSchema}`,
+        `[Gemini] Starting generation with model: ${model}, tools: ${options?.tools ? "yes" : "no"}`,
       );
 
       if (options?.onChunk) {
@@ -326,23 +326,6 @@ export async function generateContent(
       };
 
       console.log(`[Gemini] Generation complete. Usage:`, usage);
-
-      // If using tool call mode for schema, extract the structured result from function call args
-      if (useToolCallForSchema && functionCalls.length > 0) {
-        const structuredOutputCall = functionCalls.find(
-          (fc) => fc.name === "structured_output",
-        );
-        if (structuredOutputCall) {
-          const result = structuredOutputCall.args;
-          if (schema) {
-            validateSchema(result, schema, "gemini");
-          }
-          console.log(
-            "[Gemini] Extracted structured output from function call",
-          );
-          return { result, usage, raw: rawResponse };
-        }
-      }
 
       // 如果有工具调用，返回工具调用结果
       if (functionCalls.length > 0) {
@@ -490,13 +473,9 @@ function buildGenerationConfig(
   systemInstruction: string,
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
-): { config: GenerateContentConfig; useToolCallForSchema: boolean } {
+): { config: GenerateContentConfig; modifiedSystemInstruction: string } {
   const config: GenerateContentConfig = {};
-  let useToolCallForSchema = false;
   let modifiedSystemInstruction = systemInstruction;
-
-  // Gemini CANNOT use tools and responseSchema together
-  // When forceToolCallMode is enabled, we always use tools for structured output
 
   // 工具配置 - 从 Zod 直接编译到 Gemini 格式
   let functionDeclarations: Array<{
@@ -514,32 +493,15 @@ function buildGenerationConfig(
   }
 
   // Handle schema for structured output
+  // Gemini CANNOT use tools and responseSchema together
   if (schema) {
-    if (
-      options?.forceToolCallMode ||
-      (options?.tools && options.tools.length > 0)
-    ) {
-      // forceToolCallMode OR existing tools: wrap schema as a function declaration
-      // (Gemini cannot use responseSchema when tools are present)
-      const structuredOutputFunc = {
-        name: "structured_output",
-        description:
-          "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-        parameters: zodToGemini(schema),
-      };
-      functionDeclarations.push(structuredOutputFunc);
-
-      // Add instruction to system prompt
-      const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" function to return your response in the required format. Do not output JSON directly - always use the function call.]`;
-      modifiedSystemInstruction =
-        systemInstruction + structuredOutputInstruction;
-
-      useToolCallForSchema = true;
+    if (options?.tools && options.tools.length > 0) {
+      // When tools exist, cannot use responseSchema - will parse from content
       console.log(
-        "[Gemini] Using forceToolCallMode: schema wrapped as function, added to tools",
+        "[Gemini] Tools present, schema will be validated from content",
       );
     } else {
-      // No tools, no forceToolCallMode: use responseSchema
+      // No tools: use responseSchema
       config.responseMimeType = "application/json";
       config.responseSchema = zodToGemini(schema);
       console.log(
@@ -553,20 +515,28 @@ function buildGenerationConfig(
   if (functionDeclarations.length > 0) {
     config.tools = [{ functionDeclarations }];
 
-    // Configure tool calling behavior
-    if (
-      useToolCallForSchema &&
-      (!options?.tools || options.tools.length === 0)
-    ) {
-      // Only structured_output tool exists, force calling it
+    // Configure tool calling behavior based on toolChoice
+    if (options?.toolChoice === "required") {
+      config.toolConfig = {
+        functionCallingConfig: {
+          mode: "ANY" as any, // Force calling at least one tool
+        },
+      };
+    } else if (options?.toolChoice === "none") {
+      config.toolConfig = {
+        functionCallingConfig: {
+          mode: "NONE" as any,
+        },
+      };
+    } else if (options?.toolChoice && typeof options.toolChoice === "object") {
       config.toolConfig = {
         functionCallingConfig: {
           mode: "ANY" as any,
-          allowedFunctionNames: ["structured_output"],
+          allowedFunctionNames: [options.toolChoice.name],
         },
       };
     }
-    // If there are other tools, let the model choose (no toolConfig needed)
+    // Default is "auto" - no toolConfig needed
   }
 
   if (modifiedSystemInstruction) {
@@ -604,7 +574,7 @@ function buildGenerationConfig(
     },
   ];
 
-  return { config, useToolCallForSchema };
+  return { config, modifiedSystemInstruction };
 }
 
 /**

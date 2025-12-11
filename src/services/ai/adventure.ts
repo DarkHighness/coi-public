@@ -13,7 +13,9 @@ import {
 
 import {
   isContextLengthError,
+  isInvalidArgumentError,
   ContextOverflowError,
+  HistoryCorruptedError,
 } from "./contextCompressor";
 
 import {
@@ -561,7 +563,7 @@ You are in AGENTIC MODE.
           {
             tools: effectiveToolConfig,
             generationDetails,
-            settings, // Pass settings to enable jsonObjectMode
+            settings,
             logEndpoint: `adventure-loop-${loopIterations}`,
           },
         );
@@ -579,6 +581,14 @@ You are in AGENTIC MODE.
             `[Agentic Loop] Context length error. Triggering rebuild...`,
           );
           throw new ContextOverflowError(error);
+        }
+
+        if (isInvalidArgumentError(error)) {
+          // Invalid argument (corrupted history) - throw to trigger History rebuild
+          console.warn(
+            `[Agentic Loop] Invalid argument error. Triggering history rebuild...`,
+          );
+          throw new HistoryCorruptedError(error);
         }
 
         // Malformed handling

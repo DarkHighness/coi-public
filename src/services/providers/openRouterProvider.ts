@@ -250,6 +250,27 @@ export async function generateContent(
             )
           : convertToOpenRouterTools(options.tools)
         : undefined;
+
+      // Convert toolChoice
+      let toolChoice: any = undefined;
+      if (tools && tools.length > 0) {
+        if (options?.toolChoice === "required") {
+          toolChoice = "required";
+        } else if (options?.toolChoice === "none") {
+          toolChoice = "none";
+        } else if (
+          options?.toolChoice &&
+          typeof options.toolChoice === "object"
+        ) {
+          toolChoice = {
+            type: "function",
+            function: { name: options.toolChoice.name },
+          };
+        } else {
+          toolChoice = "auto";
+        }
+      }
+
       // Build request parameters
       const requestParams: any = {
         model,
@@ -260,80 +281,24 @@ export async function generateContent(
         minP: options?.minP,
         stream: !!options?.onChunk,
         tools,
-        toolChoice: tools ? "auto" : undefined,
+        toolChoice,
       };
 
-      // Track if we're using tool call mode for structured output
-      let useToolCallForSchema = false;
-
-      // Add schema for structured output
-      // SDK expects camelCase format, not snake_case
-      if (schema) {
-        // forceToolCallMode: wrap schema as a tool instead of using responseFormat
-        if (options?.forceToolCallMode) {
-          // Use the correct tool format based on model type
-          const schemaAsTool = isGemini
-            ? createGeminiTool(
-                "structured_output",
-                "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-                schema,
-              )
-            : createOpenRouterTool(
-                "structured_output",
-                "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-                schema,
-              );
-
-          // Add to existing tools or create new tools array
-          if (tools && tools.length > 0) {
-            requestParams.tools = [...tools, schemaAsTool];
-            // Keep toolChoice as "auto" since there are other tools
-          } else {
-            requestParams.tools = [schemaAsTool];
-            // Force calling this tool when no other tools exist
-            requestParams.toolChoice = {
-              type: "function",
-              function: { name: "structured_output" },
+      // Add schema for structured output (only when no tools are present)
+      if (schema && (!tools || tools.length === 0)) {
+        const openAIFormat = zodToOpenAIResponseFormat(schema);
+        requestParams.responseFormat = isGemini
+          ? { type: "json_schema", schema: zodToGemini(schema) }
+          : {
+              type: openAIFormat.type,
+              jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
             };
-          }
-
-          // Add instruction to first message to inform model about structured output requirement
-          if (messages.length > 0 && messages[0].role === "system") {
-            const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-            messages[0].content =
-              messages[0].content + structuredOutputInstruction;
-          }
-
-          useToolCallForSchema = true;
-          console.log(
-            `[OpenRouter] Using forceToolCallMode: schema wrapped as tool (${isGemini ? "Gemini" : "OpenAI"} format)`,
-          );
-        } else if (!tools || tools.length === 0) {
-          // Use responseFormat only when no tools are present
-          // JSON Object Mode: Use simple json_object type instead of strict schema
-          if (options?.jsonObjectMode) {
-            requestParams.responseFormat = { type: "json_object" };
-          } else {
-            const openAIFormat = zodToOpenAIResponseFormat(schema);
-            requestParams.responseFormat = isGemini
-              ? { type: "json_schema", schema: zodToGemini(schema) }
-              : {
-                  type: openAIFormat.type,
-                  jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
-                };
-          }
-        }
-        // If tools exist but forceToolCallMode is not enabled, skip responseFormat (OpenAI conflict)
       }
+
       console.log(
-        `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${requestParams.tools ? "yes" : "no"}, isGemini: ${isGemini}, useToolCallForSchema: ${useToolCallForSchema}`,
+        `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${requestParams.tools ? "yes" : "no"}, isGemini: ${isGemini}`,
       );
-      if (
-        isGemini &&
-        schema &&
-        !useToolCallForSchema &&
-        requestParams.responseFormat
-      ) {
+      if (isGemini && schema && !tools && requestParams.responseFormat) {
         console.log(
           "[OpenRouter] Detected Gemini model, using Gemini schema format:",
           JSON.stringify(requestParams.responseFormat, null, 2),
@@ -347,7 +312,6 @@ export async function generateContent(
             requestParams,
             options.onChunk,
             schema,
-            useToolCallForSchema,
           );
         } else {
           // Non-streaming response
@@ -355,7 +319,6 @@ export async function generateContent(
             client,
             requestParams,
             schema,
-            useToolCallForSchema,
           );
         }
       } catch (error) {
@@ -382,7 +345,6 @@ async function handleNonStreamingResponse(
   client: OpenRouter,
   params: any,
   schema?: ZodTypeAny,
-  useToolCallForSchema?: boolean,
 ): Promise<OpenRouterContentGenerationResponse> {
   const response = await client.chat.send(params, createRequestOptions());
   const data = response as any;
@@ -408,21 +370,6 @@ async function handleNonStreamingResponse(
     cacheWrite: data.usage?.cacheCreationInputTokens || 0,
   };
   console.log(`[OpenRouter] Generation complete. Usage:`, usage);
-
-  // If using tool call mode for schema, extract the structured result from tool call args
-  if (useToolCallForSchema && toolCalls.length > 0) {
-    const structuredOutputCall = toolCalls.find(
-      (tc) => tc.name === "structured_output",
-    );
-    if (structuredOutputCall) {
-      const result = structuredOutputCall.args;
-      if (schema) {
-        validateSchema(result, schema, "openrouter");
-      }
-      console.log("[OpenRouter] Extracted structured output from tool call");
-      return { result, usage, raw: data };
-    }
-  }
 
   if (toolCalls.length > 0) {
     return {
@@ -455,7 +402,6 @@ async function handleStreamingResponse(
   params: any,
   onChunk: (text: string) => void,
   schema?: ZodTypeAny,
-  useToolCallForSchema?: boolean,
 ): Promise<OpenRouterContentGenerationResponse> {
   const stream = await client.chat.send(
     { ...params, stream: true },
@@ -526,23 +472,6 @@ async function handleStreamingResponse(
     }
   }
   console.log(`[OpenRouter] Stream complete. Usage:`, usage);
-
-  // If using tool call mode for schema, extract the structured result from tool call args
-  if (useToolCallForSchema && toolCalls.length > 0) {
-    const structuredOutputCall = toolCalls.find(
-      (tc) => tc.name === "structured_output",
-    );
-    if (structuredOutputCall) {
-      const result = structuredOutputCall.args;
-      if (schema) {
-        validateSchema(result, schema, "openrouter");
-      }
-      console.log(
-        "[OpenRouter] Extracted structured output from tool call (streaming)",
-      );
-      return { result, usage, raw: null };
-    }
-  }
 
   if (toolCalls.length > 0) {
     return {

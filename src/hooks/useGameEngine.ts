@@ -22,6 +22,7 @@ import {
   generateForceUpdate,
   type OutlinePhaseProgress,
 } from "../services/aiService";
+import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
 import {
   createStateSnapshot,
@@ -339,14 +340,13 @@ export const useGameEngine = () => {
         customContext,
         t,
         {
-          onChunk: onStream,
           onPhaseProgress,
           // Do NOT resume from saved conversation - this is a fresh new game
-          resumeFromConversation: undefined,
+          resumeFrom: undefined,
           // Pass settings for the generation
           settings: aiSettings,
           // Save conversation state after each phase for fault recovery
-          onSaveConversation: async (
+          onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
           ) => {
             // Update state and get the new state for saving
@@ -375,17 +375,42 @@ export const useGameEngine = () => {
           ? outlineError.message
           : "Failed to generate story outline";
 
-      showToast(errorMessage, "error", 5000);
+      // Check if history was corrupted - if so, clear the saved conversation
+      const isHistoryCorrupted = outlineError instanceof HistoryCorruptedError;
+      if (isHistoryCorrupted) {
+        console.log(
+          "[StartNewGame] History corrupted - clearing saved conversation state",
+        );
+        setGameState((prev) => ({
+          ...prev,
+          outlineConversation: undefined,
+        }));
+      }
+
+      showToast(
+        isHistoryCorrupted
+          ? "History cache corrupted. The cache has been cleared. Please retry."
+          : errorMessage,
+        "error",
+        5000,
+      );
 
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        // Clear outline conversation if corrupted
+        outlineConversation: isHistoryCorrupted
+          ? undefined
+          : prev.outlineConversation,
       }));
 
       // Check if we have saved conversation state from previous phases
+      // (but NOT if history was corrupted - we need to start fresh in that case)
       const savedConversation = gameStateRef.current.outlineConversation;
       const hasProgress =
-        savedConversation && savedConversation.currentPhase > 0;
+        !isHistoryCorrupted &&
+        savedConversation &&
+        savedConversation.currentPhase > 0;
 
       // Show alert asking if user wants to retry
       const retryMessage = hasProgress
@@ -685,10 +710,9 @@ export const useGameEngine = () => {
         t,
         {
           settings: aiSettings,
-          onChunk: onStream,
           onPhaseProgress,
-          resumeFromConversation: savedConversation,
-          onSaveConversation: async (
+          resumeFrom: savedConversation,
+          onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
           ) => {
             const updatedState = {
@@ -853,14 +877,30 @@ export const useGameEngine = () => {
       }, 100);
     } catch (e) {
       console.error("[ResumeOutline] Resume failed", e);
-      const resumeErrorMsg =
-        e instanceof Error ? e.message : "Failed to resume story generation";
+
+      // Check if history was corrupted - if so, clear the saved conversation
+      const isHistoryCorrupted = e instanceof HistoryCorruptedError;
+      if (isHistoryCorrupted) {
+        console.log(
+          "[ResumeOutline] History corrupted - clearing saved conversation state",
+        );
+      }
+
+      const resumeErrorMsg = isHistoryCorrupted
+        ? "History cache corrupted. The cache has been cleared. Please retry from the beginning."
+        : e instanceof Error
+          ? e.message
+          : "Failed to resume story generation";
       showToast(resumeErrorMsg, "error", 5000);
 
       setGameState((prev) => ({
         ...prev,
         error: resumeErrorMsg,
         isProcessing: false,
+        // Clear outline conversation if corrupted
+        outlineConversation: isHistoryCorrupted
+          ? undefined
+          : prev.outlineConversation,
       }));
       navigate("/");
     }

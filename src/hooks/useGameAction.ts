@@ -10,6 +10,7 @@ import {
   LanguageCode,
 } from "../types";
 import { generateAdventureTurn } from "../services/aiService";
+import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import {
@@ -613,12 +614,22 @@ export const useGameAction = ({
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
 
+        // Check for history corrupted error (e.g., invalid argument errors)
+        const isHistoryCorrupted = error instanceof HistoryCorruptedError;
+
         // Check for context overflow
-        if (errorMsg.includes("CONTEXT_LENGTH_EXCEEDED")) {
-          console.log("[Context] Overflow detected - clearing message cache");
+        if (
+          errorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
+          isHistoryCorrupted
+        ) {
+          console.log(
+            `[Context] ${isHistoryCorrupted ? "History corrupted" : "Overflow"} detected - clearing message cache`,
+          );
           gameStateRef.current.activeHistory = undefined;
           showToast(
-            "Context too long. Please create a summary to continue.",
+            isHistoryCorrupted
+              ? "History cache corrupted. The cache has been cleared. Please retry."
+              : "Context too long. Please create a summary to continue.",
             "warning",
             5000,
           );
@@ -626,14 +637,15 @@ export const useGameAction = ({
           showToast(errorMsg, "error", 5000);
         }
 
+        const shouldClearHistory =
+          errorMsg.includes("CONTEXT_LENGTH_EXCEEDED") || isHistoryCorrupted;
+
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,
           error: error instanceof Error ? error.message : "Unknown error",
-          // Clear cache on overflow
-          activeHistory: errorMsg.includes("CONTEXT_LENGTH_EXCEEDED")
-            ? undefined
-            : prev.activeHistory,
+          // Clear cache on overflow or corruption
+          activeHistory: shouldClearHistory ? undefined : prev.activeHistory,
         }));
         processingRef.current = false;
         return {

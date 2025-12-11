@@ -89,12 +89,12 @@ export interface GenerateContentOptions {
   onChunk?: (text: string) => void;
   /** 工具定义列表 (使用 Zod Schema) */
   tools?: ZodToolDefinition[];
-  /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
-  forceToolCallMode?: boolean;
-  /** 展平嵌套 schema 结构用于 AI 生成 */
-  flattenSchema?: boolean;
-  /** JSON Object 兼容模式 - 使用示例输出而不是严格 schema */
-  jsonObjectMode?: boolean;
+  /** 工具调用选项: "auto" | "required" | "none" | { name: string } */
+  toolChoice?:
+    | "auto"
+    | "required"
+    | "none"
+    | { type: "function"; name: string };
 }
 
 import type { ZodTypeAny, ZodObject, ZodRawShape, z } from "zod";

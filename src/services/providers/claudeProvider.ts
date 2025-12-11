@@ -284,43 +284,9 @@ export async function generateContent(
       const messages = convertToClaudeMessages(contents);
 
       // 转换工具定义 (Claude 使用与 OpenAI 相似的格式)
-      let tools = options?.tools
+      const tools = options?.tools
         ? convertToolsForClaude(options.tools)
         : undefined;
-      let useToolCallForSchema = false;
-      let toolChoice: { type: "tool"; name: string } | undefined;
-
-      // forceToolCallMode: wrap schema as a tool instead of relying on JSON output
-      if (schema && options?.forceToolCallMode) {
-        const schemaObj = zodToClaudeCompatibleSchema(schema);
-        const schemaAsTool = {
-          name: "structured_output",
-          description:
-            "Return the structured output according to the schema. You MUST call this tool to provide your response.",
-          input_schema: {
-            type: "object" as const,
-            properties: (schemaObj.properties || {}) as Record<string, unknown>,
-            ...(schemaObj.required && schemaObj.required.length > 0
-              ? { required: schemaObj.required }
-              : {}),
-          },
-        };
-
-        if (tools && tools.length > 0) {
-          // Add to existing tools
-          tools = [...tools, schemaAsTool];
-          // Keep toolChoice undefined to allow model to choose
-        } else {
-          // Create new tools array and force calling this tool
-          tools = [schemaAsTool];
-          toolChoice = { type: "tool", name: "structured_output" };
-        }
-
-        useToolCallForSchema = true;
-        console.log(
-          "[Claude] Using forceToolCallMode: schema wrapped as tool, added to tools array",
-        );
-      }
 
       if (tools && tools.length > 0) {
         console.log(
@@ -345,15 +311,10 @@ export async function generateContent(
         };
       }
 
-      // Chain of Thought prompt for tool use (Sonnet/Haiku) - skip for forceToolCallMode
+      // Chain of Thought prompt for tool use (Sonnet/Haiku)
       let finalSystemInstruction = systemInstruction;
 
-      // Add structured output instruction if forceToolCallMode is enabled
-      if (useToolCallForSchema) {
-        const structuredOutputInstruction = `\n\n[IMPORTANT: You MUST use the "structured_output" tool to return your response in the required format. Do not output JSON directly in your response - always use the tool call.]`;
-        finalSystemInstruction =
-          systemInstruction + structuredOutputInstruction;
-      } else if (
+      if (
         tools &&
         tools.length > 0 &&
         (model.includes("sonnet") || model.includes("haiku"))
@@ -362,6 +323,24 @@ export async function generateContent(
 Answer the user's request using relevant tools (if they are available). Before calling a tool, do some analysis. First, think about which of the provided tools is the relevant tool to answer the user's request. Second, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, proceed with the tool call. BUT, if one of the values for a required parameter is missing, DO NOT invoke the function (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters. DO NOT ask for more information on optional parameters if it is not provided.
 `;
         finalSystemInstruction = `${systemInstruction}\n\n${cotPrompt}`;
+      }
+
+      // Convert toolChoice to Claude format
+      let toolChoice: MessageCreateParams["tool_choice"] = undefined;
+      if (tools && tools.length > 0) {
+        if (options?.toolChoice === "required") {
+          toolChoice = { type: "any" };
+        } else if (options?.toolChoice === "none") {
+          // Claude doesn't have a "none" option, just don't pass tools
+          // But we keep tools in case model needs them for context
+        } else if (
+          options?.toolChoice &&
+          typeof options.toolChoice === "object"
+        ) {
+          toolChoice = { type: "tool", name: options.toolChoice.name };
+        } else {
+          toolChoice = { type: "auto" };
+        }
       }
 
       // 构建请求参数
@@ -514,21 +493,6 @@ Answer the user's request using relevant tools (if they are available). Before c
       }
 
       console.log(`[Claude] Generation complete. Usage:`, usage);
-
-      // If using tool call mode for schema, extract the structured result from tool call args
-      if (useToolCallForSchema && toolCalls.length > 0) {
-        const structuredOutputCall = toolCalls.find(
-          (tc) => tc.name === "structured_output",
-        );
-        if (structuredOutputCall) {
-          const result = structuredOutputCall.args;
-          if (schema) {
-            validateSchema(result, schema, "claude");
-          }
-          console.log("[Claude] Extracted structured output from tool call");
-          return { result, usage, raw: rawResponse };
-        }
-      }
 
       // 如果有工具调用，返回工具调用结果
       if (toolCalls.length > 0) {

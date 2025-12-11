@@ -6,7 +6,18 @@ import {
   StorySummary,
   StorySegment,
   GameState,
+  TokenUsage,
+  ProviderProtocol,
+  ProviderInstance,
+  UnifiedMessage,
+  OutlineConversationState,
 } from "../../types";
+
+import { ToolCallResult, ZodToolDefinition } from "../providers/types";
+import {
+  isInvalidArgumentError,
+  HistoryCorruptedError,
+} from "./contextCompressor";
 
 import {
   OutlinePhase1,
@@ -44,12 +55,76 @@ import {
 
 import { THEMES } from "../../utils/constants";
 
-import { GenerateContentResult, generateContentUnified } from "./core";
+import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
 
-import { getProviderConfig, createLogEntry } from "./utils";
+import {
+  getProviderConfig,
+  createLogEntry,
+  createProviderConfig,
+} from "./utils";
+
+import {
+  createUserMessage,
+  createToolCallMessage,
+  createToolResponseMessage,
+} from "../messageTypes";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
+
+// ============================================================================
+// Tool Definitions for Outline Generation
+// ============================================================================
+
+// Define tools for each phase
+const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
+  {
+    name: "submit_phase1_world_foundation",
+    description:
+      "Submit Phase 1: World Foundation including title, premise, setting, and main goal",
+    parameters: outlinePhase1Schema,
+  },
+  {
+    name: "submit_phase2_character",
+    description: "Submit Phase 2: Protagonist character details",
+    parameters: outlinePhase2Schema,
+  },
+  {
+    name: "submit_phase3_locations",
+    description: "Submit Phase 3: Key locations in the story world",
+    parameters: outlinePhase3Schema,
+  },
+  {
+    name: "submit_phase4_factions",
+    description: "Submit Phase 4: Factions and groups",
+    parameters: outlinePhase4Schema,
+  },
+  {
+    name: "submit_phase5_relationships",
+    description: "Submit Phase 5: NPCs and relationships",
+    parameters: outlinePhase5Schema,
+  },
+  {
+    name: "submit_phase6_inventory",
+    description: "Submit Phase 6: Initial inventory items",
+    parameters: outlinePhase6Schema,
+  },
+  {
+    name: "submit_phase7_quests",
+    description: "Submit Phase 7: Available quests",
+    parameters: outlinePhase7Schema,
+  },
+  {
+    name: "submit_phase8_knowledge",
+    description: "Submit Phase 8: Initial knowledge",
+    parameters: outlinePhase8Schema,
+  },
+  {
+    name: "submit_phase9_timeline",
+    description: "Submit Phase 9: Timeline events and initial atmosphere",
+    parameters: outlinePhase9Schema,
+  },
+];
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -65,42 +140,20 @@ export interface OutlinePhaseProgress {
   error?: string;
 }
 
-/** Conversation message format for outline generation */
-export type OutlineConversationMessage = {
-  role: "user" | "model";
-  parts: { text: string }[];
-};
-
-/** Conversation state for resuming outline generation */
-export interface OutlineConversationState {
-  theme: string;
-  language: string;
-  customContext?: string;
-  systemInstruction: string;
-  messages: OutlineConversationMessage[];
-  partial: PartialStoryOutline;
-  currentPhase: number;
-}
-
 /** Options for phased outline generation */
 export interface PhasedOutlineOptions {
   onPhaseProgress?: (progress: OutlinePhaseProgress) => void;
-  onChunk?: (text: string) => void;
-  /** Resume from saved conversation state */
-  resumeFromConversation?: OutlineConversationState;
-  /** Callback to save conversation state after each phase for fault recovery */
-  onSaveConversation?: (state: OutlineConversationState) => void;
-  /** 可选的设置对象，如果不提供则使用全局设置 */
-  settings?: AISettings;
+  /** Resume from phase checkpoint */
+  resumeFrom?: OutlineConversationState;
+  /** Callback to save checkpoint after each phase */
+  onSaveCheckpoint?: (state: OutlineConversationState) => void;
+  settings: AISettings;
 }
 
 /**
- * Generate story outline in phases (multi-turn conversation)
- * This avoids "schema produces a constraint that has too many states" errors
- * by splitting the large schema into smaller per-phase schemas.
- *
- * Supports fault recovery by saving conversation state after each phase.
- * All JSON output is compact (no pretty printing) for efficiency.
+ * Generate story outline using agentic loop with phase tools
+ * Each phase is a separate tool that the AI calls to submit that phase's data.
+ * All phases share the same conversation history for KV cache optimization.
  */
 export const generateStoryOutlinePhased = async (
   theme: string,
@@ -113,25 +166,23 @@ export const generateStoryOutlinePhased = async (
     throw new Error("settings is required in options");
   }
   const settings = options.settings;
-  // Use "lore" model config for outline generation (typically more capable model)
+
+  // Use "lore" model config for outline generation
   const providerInfo = getProviderConfig(settings, "lore");
   if (!providerInfo) {
     throw new Error("Lore provider not configured");
   }
-  const { instance, config, modelId } = providerInfo;
+  const { instance, modelId } = providerInfo;
   const logs: LogEntry[] = [];
 
-  // Initialize from resume state or fresh
-  let partial: PartialStoryOutline = {};
-  let conversationHistory: OutlineConversationMessage[] = [];
-  let systemInstruction: string;
+  // Get theme data
+  const themeConfig = THEMES[theme] || THEMES["fantasy"];
+  const isRestricted = themeConfig?.restricted || false;
 
-  // Get theme data for Phase 1
   let themeDataWorldSetting: string | undefined;
   let themeDataBackgroundTemplate: string | undefined;
   let themeDataExample: string | undefined;
   let themeDataNarrativeStyle: string | undefined;
-  let isRestricted = false;
 
   if (tFunc) {
     themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
@@ -148,67 +199,80 @@ export const generateStoryOutlinePhased = async (
     themeDataExample = themeData.example;
   }
 
-  const themeConfig = THEMES[theme] || THEMES["fantasy"];
-  isRestricted = themeConfig?.restricted || false;
+  // Build system instruction
+  let systemInstruction = getOutlineSystemInstruction(
+    language,
+    isRestricted,
+    themeDataNarrativeStyle,
+    themeDataBackgroundTemplate,
+    themeDataExample,
+    themeDataWorldSetting,
+  );
 
-  // Resume from saved conversation state if available
-  if (options?.resumeFromConversation) {
-    const resumeState = options.resumeFromConversation;
-    partial = resumeState.partial;
-    conversationHistory = [...resumeState.messages];
-    systemInstruction = resumeState.systemInstruction;
-    console.log(
-      `[OutlinePhased] Resuming from phase ${resumeState.currentPhase}`,
+  // Inject custom prompts if needed
+  const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
+  const customPromptInjection = settings.extra?.customPromptInjection?.trim();
+
+  if (customPromptInjection) {
+    systemInstruction = `${customPromptInjection}\n\n${systemInstruction}`;
+    console.warn(
+      `[OutlineAgentic] Injecting custom prompt (${customPromptInjection.length} chars)`,
     );
-  } else {
-    // Build fresh system instruction
-    systemInstruction = getOutlineSystemInstruction(
-      language,
-      isRestricted,
-      themeDataNarrativeStyle,
-      themeDataBackgroundTemplate,
-      themeDataExample,
-      themeDataWorldSetting,
+  } else if (promptInjectionEnabled && promptInjectionData) {
+    const loweredModelId = modelId.toLowerCase();
+    const matchedPrompt = promptInjectionData.prompts.find((p) =>
+      p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())),
     );
-
-    // Inject prompt injections from config
-    const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
-    const customPromptInjection = settings.extra?.customPromptInjection?.trim();
-
-    // Custom prompt injection takes priority over model-based injection
-    if (customPromptInjection) {
-      systemInstruction = `${customPromptInjection}\n\n${systemInstruction}`;
-      console.warn(
-        `[PromptInjection] Injecting custom prompt (${customPromptInjection.length} chars)`,
-      );
-    } else if (promptInjectionEnabled && promptInjectionData) {
-      const loweredModelId = modelId.toLowerCase();
-      console.log(
-        `[PromptInjection] Checking for prompts to inject for model ${modelId}`,
-      );
-      const matchedPrompt = promptInjectionData.prompts.find((p) =>
-        p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())),
-      );
-      if (matchedPrompt) {
-        systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
-        console.warn(
-          `[PromptInjection] Injecting outline prompt for model ${modelId} (matched keywords: ${matchedPrompt.keywords.join(", ")})`,
-        );
-      }
+    if (matchedPrompt) {
+      systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
+      console.warn(`[OutlineAgentic] Injecting prompt for model ${modelId}`);
     }
   }
 
-  // Helper to save conversation state
-  const saveConversationState = (currentPhase: number) => {
-    if (options?.onSaveConversation) {
-      options.onSaveConversation({
+  // Initialize or restore from checkpoint
+  let conversationHistory: UnifiedMessage[];
+  let partial: PartialStoryOutline;
+  let currentPhase: number;
+
+  if (options.resumeFrom) {
+    // Resume from checkpoint
+    conversationHistory = [...options.resumeFrom.conversationHistory];
+    partial = { ...options.resumeFrom.partial };
+    currentPhase = options.resumeFrom.currentPhase;
+    console.log(`[OutlineAgentic] Resuming from phase ${currentPhase}`);
+  } else {
+    // Start fresh
+    conversationHistory = [];
+    partial = {};
+    currentPhase = 1;
+
+    // Add initial task instruction
+    conversationHistory.push(
+      createUserMessage(`[OUTLINE GENERATION TASK]
+Generate a story outline in 9 phases. Each phase builds upon the previous ones.
+
+Theme: ${theme}
+Language: ${language}
+${customContext ? `Custom Context: ${customContext}` : ""}
+
+**PROCESS:**
+- You will receive one phase instruction at a time
+- For each phase, you MUST call the provided tool to submit your data
+- After submitting, wait for the next phase instruction
+`),
+    );
+  }
+
+  // Helper to save checkpoint
+  const saveCheckpoint = (phase: number) => {
+    if (options.onSaveCheckpoint) {
+      options.onSaveCheckpoint({
         theme,
         language,
         customContext,
-        systemInstruction,
-        messages: conversationHistory,
-        partial,
-        currentPhase,
+        conversationHistory: [...conversationHistory],
+        partial: { ...partial },
+        currentPhase: phase,
       });
     }
   };
@@ -231,154 +295,165 @@ export const generateStoryOutlinePhased = async (
     }
   };
 
-  // Determine starting phase based on resume data (from saved conversation)
-  let startPhase = 1;
-  if (options?.resumeFromConversation) {
-    startPhase = options.resumeFromConversation.currentPhase;
-  } else if (partial.phase9) {
-    startPhase = 10; // All done
-  } else if (partial.phase8) {
-    startPhase = 9;
-  } else if (partial.phase7) {
-    startPhase = 8;
-  } else if (partial.phase6) {
-    startPhase = 7;
-  } else if (partial.phase5) {
-    startPhase = 6;
-  } else if (partial.phase4) {
-    startPhase = 5;
-  } else if (partial.phase3) {
-    startPhase = 4;
-  } else if (partial.phase2) {
-    startPhase = 3;
-  } else if (partial.phase1) {
-    startPhase = 2;
-  }
+  // Agentic loop for each phase
+  while (currentPhase <= 9) {
+    const phaseNum = currentPhase;
+    const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum - 1];
 
-  // Helper to execute a single phase
-  const executePhase = async <T>(
-    phaseNum: number,
-    prompt: string,
-    schema: any, // Using any for Zod schema to avoid complex type issues
-    field: keyof PartialStoryOutline,
-  ) => {
-    if (startPhase > phaseNum) return;
-
+    console.log(`[OutlineAgentic] Starting Phase ${phaseNum}`);
     reportProgress(phaseNum, "starting");
-    conversationHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+    // Add phase-specific prompt
+    const phasePrompt = getPhasePrompt(
+      phaseNum,
+      theme,
+      language,
+      customContext,
+    );
+    if (phasePrompt) {
+      conversationHistory.push(createUserMessage(phasePrompt));
+    }
 
     try {
       reportProgress(phaseNum, "generating");
-      const { result, log } = await generateContentUnified(
+
+      // Call AI with ONLY the current phase's tool (forced tool call)
+      const config = createProviderConfig(instance);
+      const resultData = await generateContentUnifiedInternal(
         instance.protocol,
+        config,
         modelId,
         systemInstruction,
         conversationHistory,
-        schema,
-        { settings, logEndpoint: `outline-phase${phaseNum}` },
+        undefined, // No schema, using tools
+        {
+          tools: [
+            {
+              name: phaseTool.name,
+              description: phaseTool.description,
+              parameters: phaseTool.parameters,
+            },
+          ],
+          toolChoice: "required", // Force the model to call the tool
+          settings,
+          logEndpoint: `outline-phase${phaseNum}`,
+        },
       );
 
-      // Update partial outline
-      (partial as any)[field] = result;
-
-      // Add to conversation history
-      conversationHistory.push({
-        role: "model",
-        parts: [{ text: JSON.stringify(result) }],
-      });
-
+      const { result, log } = resultData;
       if (log) logs.push(log);
-      reportProgress(phaseNum, "completed");
 
-      // Save state for next phase (phaseNum + 1)
-      saveConversationState(phaseNum + 1);
+      // Check if we got the expected tool call
+      if (
+        result &&
+        typeof result === "object" &&
+        "functionCalls" in result &&
+        Array.isArray(result.functionCalls)
+      ) {
+        const toolCalls = result.functionCalls as ToolCallResult[];
+
+        if (toolCalls.length === 0) {
+          throw new Error(`Phase ${phaseNum}: No tool call received`);
+        }
+
+        const toolCall = toolCalls[0];
+        if (toolCall.name !== phaseTool.name) {
+          throw new Error(
+            `Phase ${phaseNum}: Expected ${phaseTool.name}, got ${toolCall.name}`,
+          );
+        }
+
+        // Store phase data
+        const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
+        (partial as any)[phaseKey] = toolCall.args;
+
+        console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
+        reportProgress(phaseNum, "completed");
+
+        // Add assistant message with tool call
+        conversationHistory.push(
+          createToolCallMessage([
+            {
+              id: toolCall.id,
+              name: toolCall.name,
+              arguments: toolCall.args,
+            },
+          ]),
+        );
+
+        // Add tool response
+        conversationHistory.push(
+          createToolResponseMessage([
+            {
+              toolCallId: toolCall.id,
+              name: toolCall.name,
+              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 9 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
+            },
+          ]),
+        );
+
+        // Move to next phase and save checkpoint
+        currentPhase++;
+        saveCheckpoint(currentPhase);
+      } else {
+        throw new Error(`Phase ${phaseNum}: No function calls in response`);
+      }
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
+      console.error(`[OutlineAgentic] Phase ${phaseNum} failed:`, error);
       reportProgress(phaseNum, "error", error);
+
+      // Check for invalid argument error (likely corrupted conversation history)
+      if (isInvalidArgumentError(e)) {
+        console.warn(
+          `[OutlineAgentic] Invalid argument error detected (likely corrupted history). Triggering rebuild...`,
+        );
+        throw new HistoryCorruptedError(e);
+      }
+
       throw e;
     }
-  };
+  }
 
-  // Get flatten flag from settings
-  const flatten = settings.extra?.flattenSchema;
-
-  // Phase 1: World Foundation
-  await executePhase(
-    1,
-    getOutlinePhase1Prompt(theme, language, customContext, flatten),
-    outlinePhase1Schema,
-    "phase1",
-  );
-
-  // Phase 2: Protagonist Character
-  await executePhase(
-    2,
-    getOutlinePhase2Prompt(flatten),
-    outlinePhase2Schema,
-    "phase2",
-  );
-
-  // Phase 3: Locations
-  await executePhase(
-    3,
-    getOutlinePhase3Prompt(flatten),
-    outlinePhase3Schema,
-    "phase3",
-  );
-
-  // Phase 4: Factions
-  await executePhase(
-    4,
-    getOutlinePhase4Prompt(flatten),
-    outlinePhase4Schema,
-    "phase4",
-  );
-
-  // Phase 5: Relationships (NPCs)
-  await executePhase(
-    5,
-    getOutlinePhase5Prompt(flatten),
-    outlinePhase5Schema,
-    "phase5",
-  );
-
-  // Phase 6: Inventory
-  await executePhase(
-    6,
-    getOutlinePhase6Prompt(flatten),
-    outlinePhase6Schema,
-    "phase6",
-  );
-
-  // Phase 7: Quests
-  await executePhase(
-    7,
-    getOutlinePhase7Prompt(flatten),
-    outlinePhase7Schema,
-    "phase7",
-  );
-
-  // Phase 8: Knowledge
-  await executePhase(
-    8,
-    getOutlinePhase8Prompt(flatten),
-    outlinePhase8Schema,
-    "phase8",
-  );
-
-  // Phase 9: Timeline & Atmosphere
-  await executePhase(
-    9,
-    getOutlinePhase9Prompt(flatten),
-    outlinePhase9Schema,
-    "phase9",
-  );
-
-  // Merge all phases into complete StoryOutline
+  // Merge all phases into complete outline
+  console.log("[OutlineAgentic] All phases completed, merging outline");
   const outline = mergeOutlinePhases(partial);
 
   return { outline, logs };
 };
+
+/**
+ * Get the prompt for a specific phase
+ */
+function getPhasePrompt(
+  phase: number,
+  theme: string,
+  language: string,
+  customContext?: string,
+): string | null {
+  switch (phase) {
+    case 1:
+      return getOutlinePhase1Prompt(theme, language, customContext);
+    case 2:
+      return getOutlinePhase2Prompt();
+    case 3:
+      return getOutlinePhase3Prompt();
+    case 4:
+      return getOutlinePhase4Prompt();
+    case 5:
+      return getOutlinePhase5Prompt();
+    case 6:
+      return getOutlinePhase6Prompt();
+    case 7:
+      return getOutlinePhase7Prompt();
+    case 8:
+      return getOutlinePhase8Prompt();
+    case 9:
+      return getOutlinePhase9Prompt();
+    default:
+      return null;
+  }
+}
 
 /**
  * Merge partial outline phases into a complete StoryOutline

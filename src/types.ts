@@ -410,10 +410,9 @@ export interface OutlineConversationState {
   theme: string;
   language: string;
   customContext?: string;
-  systemInstruction: string;
-  messages: Array<{ role: "user" | "model"; parts: { text: string }[] }>;
+  conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
-  currentPhase: number; // 1-5, indicates which phase to resume from
+  currentPhase: number; // 1-9, indicates which phase to resume from
 }
 
 /** Partial results from phased outline generation */
@@ -1091,9 +1090,6 @@ export interface AISettings {
     customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
-    forceToolCallMode?: boolean; // Use tool_call instead of json_schema for structured output
-    flattenSchema?: boolean; // Flatten nested schemas for AI generation (helps some models)
-    jsonObjectMode?: boolean; // Use JSON object mode with example output instead of strict schema
   };
 }
 

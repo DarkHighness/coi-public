@@ -419,13 +419,7 @@
       "customPromptInjectionPlaceholder": "Enter custom prompt to inject before system instructions...",
       "customPromptInjectionWarning": "⚠ Custom injection is active. Model-based injection is disabled.",
       "liteMode": "Lite Mode",
-      "liteModeHelp": "Reduce prompt overhead for models with limited context",
-      "forceToolCallMode": "Tool Call Mode",
-      "forceToolCallModeHelp": "Use tool_call instead of json_schema for structured output",
-      "flattenSchema": "Flatten Schema Mode",
-      "flattenSchemaHelp": "Flatten nested JSON structures for AI generation",
-      "jsonObjectMode": "JSON Object Mode",
-      "jsonObjectModeHelp": "Refer to DeepSeek's JSON Object compatibility mode"
+      "liteModeHelp": "Reduce prompt overhead for models with limited context"
     }
   },
   "narrator": "Narrator",

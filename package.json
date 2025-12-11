@@ -40,6 +40,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "@webgpu/types": "^0.1.66",
     "i18next-cli": "^1.25.1",
+    "knip": "^5.73.3",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.20.6",

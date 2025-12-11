@@ -65,90 +65,17 @@ export interface GenerateContentUnifiedOptions {
   minP?: number;
   onChunk?: (text: string) => void;
   tools?: Array<{ name: string; description: string; parameters: unknown }>;
+  /** 工具调用选项: "auto" | "required" | "none" | { type: "function"; name: string } */
+  toolChoice?:
+    | "auto"
+    | "required"
+    | "none"
+    | { type: "function"; name: string };
   generationDetails?: LogEntry["generationDetails"];
   /** 设置对象 */
   settings?: AISettings;
   /** 自定义 log endpoint 名称 (默认: "generateContent") */
   logEndpoint?: string;
-  /** 强制使用 tool_call 模式代替 json_schema 进行结构化输出 */
-  forceToolCallMode?: boolean;
-  /** 展平嵌套 schema 结构用于 AI 生成 */
-  flattenSchema?: boolean;
-}
-
-// Import schema flattener
-import {
-  flattenZodSchema,
-  unflattenResult,
-  logFlatSchema,
-  generateFlatSchemaInstruction,
-  type FieldMapping,
-} from "../schemaFlattener";
-import type {
-  ZodTypeAny,
-  ZodObject,
-  ZodArray,
-  ZodOptional,
-  ZodNullable,
-  ZodEnum,
-  ZodLiteral,
-  ZodUnion,
-} from "zod";
-
-/**
- * Generate example output from a Zod schema
- * Used for JSON Object Mode to provide AI with expected output format
- */
-function generateExampleOutput(schema: ZodTypeAny): unknown {
-  const typeName = schema._def?.typeName;
-
-  switch (typeName) {
-    case "ZodObject": {
-      const shape = (schema as ZodObject<any>).shape;
-      const result: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(shape)) {
-        result[key] = generateExampleOutput(value as ZodTypeAny);
-      }
-      return result;
-    }
-    case "ZodArray": {
-      const innerType = (schema as ZodArray<any>)._def.type;
-      return [generateExampleOutput(innerType)];
-    }
-    case "ZodOptional":
-    case "ZodNullable": {
-      const innerType = (schema as ZodOptional<any> | ZodNullable<any>)._def
-        .innerType;
-      return generateExampleOutput(innerType);
-    }
-    case "ZodEnum": {
-      const values = (schema as ZodEnum<any>)._def.values;
-      return values[0] || "value";
-    }
-    case "ZodLiteral": {
-      return (schema as ZodLiteral<any>)._def.value;
-    }
-    case "ZodUnion": {
-      const options = (schema as ZodUnion<any>)._def.options;
-      return options.length > 0 ? generateExampleOutput(options[0]) : null;
-    }
-    case "ZodString":
-      // Check for description to provide better examples
-      const desc = schema._def?.description || "";
-      if (desc.toLowerCase().includes("narrative"))
-        return "The story continues...";
-      if (desc.toLowerCase().includes("name")) return "Example Name";
-      if (desc.toLowerCase().includes("id")) return "item:1";
-      return "string_value";
-    case "ZodNumber":
-      return 0;
-    case "ZodBoolean":
-      return false;
-    case "ZodNull":
-      return null;
-    default:
-      return "unknown";
-  }
 }
 
 /**
@@ -172,59 +99,6 @@ export const generateContentUnifiedInternal = async (
     ? getProviderConfig(options.settings, "story")
     : null;
 
-  // Check for forceToolCallMode, flattenSchema, and jsonObjectMode from options or settings
-  const forceToolCallMode =
-    options?.forceToolCallMode ?? options?.settings?.extra?.forceToolCallMode;
-  const flattenSchema =
-    options?.flattenSchema ?? options?.settings?.extra?.flattenSchema;
-  const jsonObjectMode = options?.settings?.extra?.jsonObjectMode ?? false;
-
-  // Schema flattening support
-  // Note: The actual prompts should contain the flattened field names when flatten is enabled
-  // This code transforms the Zod schema to use flattened field names
-  let effectiveSchema = schema;
-  let fieldMappings: FieldMapping[] | undefined;
-  let effectiveSystemInstruction = systemInstruction;
-
-  // Step 1: Handle schema flattening (if enabled)
-  if (flattenSchema && schema) {
-    try {
-      const flattenResult = flattenZodSchema(schema as ZodTypeAny);
-      effectiveSchema = flattenResult.flatSchema;
-      fieldMappings = flattenResult.fieldMappings;
-      logFlatSchema(flattenResult);
-      console.log("[Core] Using flattened schema for AI generation");
-    } catch (e) {
-      console.warn("[Core] Failed to flatten schema, using original:", e);
-      effectiveSchema = schema;
-    }
-  }
-
-  // Step 2: Prepare JSON Object Mode example (if enabled)
-  // Will be added to the last user message instead of system instruction
-  let jsonExampleText: string | undefined;
-  if (jsonObjectMode && effectiveSchema && !options?.tools?.length) {
-    try {
-      const exampleOutput = generateExampleOutput(
-        effectiveSchema as ZodTypeAny,
-      );
-      jsonExampleText = `
-
-<json_output_format>
-You MUST respond with a valid JSON object matching this exact structure.
-Do not include any text outside the JSON object.
-
-**Example Output:**
-\`\`\`json
-${JSON.stringify(exampleOutput, null, 2)}
-\`\`\`
-</json_output_format>`;
-      console.log("[Core] Using JSON Object mode with example output");
-    } catch (e) {
-      console.warn("[Core] Failed to generate JSON example, using schema:", e);
-    }
-  }
-
   const mergedOptions: GenerateContentOptions = {
     thinkingLevel: options?.thinkingLevel || storyConfig?.thinkingLevel,
     mediaResolution: options?.mediaResolution || storyConfig?.mediaResolution,
@@ -234,9 +108,7 @@ ${JSON.stringify(exampleOutput, null, 2)}
     minP: options?.minP ?? storyConfig?.minP,
     onChunk: options?.onChunk,
     tools: options?.tools as GenerateContentOptions["tools"],
-    forceToolCallMode,
-    flattenSchema,
-    jsonObjectMode,
+    toolChoice: options?.toolChoice,
   };
 
   // Detect input format and convert as needed
@@ -256,49 +128,6 @@ ${JSON.stringify(exampleOutput, null, 2)}
     typeof contents[0] === "object" &&
     "parts" in contents[0];
 
-  // Helper: Add JSON example to the last user message
-  const addJsonExampleToLastUserMessage = (
-    messages: any[],
-    isGemini: boolean,
-  ): any[] => {
-    if (!jsonExampleText || messages.length === 0) return messages;
-
-    const messagesCopy = [...messages];
-    // Find last user message
-    for (let i = messagesCopy.length - 1; i >= 0; i--) {
-      const msg = messagesCopy[i];
-      if (msg.role === "user") {
-        if (isGemini) {
-          // Gemini format: {role, parts: [{text}]}
-          const lastPart = msg.parts[msg.parts.length - 1];
-          if (lastPart && "text" in lastPart) {
-            messagesCopy[i] = {
-              ...msg,
-              parts: [
-                ...msg.parts.slice(0, -1),
-                { text: lastPart.text + jsonExampleText },
-              ],
-            };
-          }
-        } else {
-          // UnifiedMessage format: {role, content: [{type, text}]}
-          const lastContent = msg.content[msg.content.length - 1];
-          if (lastContent && lastContent.type === "text") {
-            messagesCopy[i] = {
-              ...msg,
-              content: [
-                ...msg.content.slice(0, -1),
-                { type: "text", text: lastContent.text + jsonExampleText },
-              ],
-            };
-          }
-        }
-        break;
-      }
-    }
-    return messagesCopy;
-  };
-
   try {
     if (protocol === "gemini") {
       // Gemini expects Content[] format (with 'parts')
@@ -311,18 +140,12 @@ ${JSON.stringify(exampleOutput, null, 2)}
         geminiContents = contents; // Assume it's already correct
       }
 
-      // Add JSON example to last user message if needed
-      geminiContents = addJsonExampleToLastUserMessage(
-        geminiContents as any[],
-        true,
-      );
-
       const response = await generateGeminiContent(
         config as GeminiConfig,
         modelId,
-        effectiveSystemInstruction,
+        systemInstruction,
         geminiContents as Parameters<typeof generateGeminiContent>[3],
-        effectiveSchema as Parameters<typeof generateGeminiContent>[4],
+        schema as Parameters<typeof generateGeminiContent>[4],
         mergedOptions,
       );
       result = response.result;
@@ -346,19 +169,13 @@ ${JSON.stringify(exampleOutput, null, 2)}
         unifiedContents = contents as UnifiedMessage[];
       }
 
-      // Add JSON example to last user message if needed
-      unifiedContents = addJsonExampleToLastUserMessage(
-        unifiedContents as any[],
-        false,
-      ) as UnifiedMessage[];
-
       if (protocol === "openai") {
         const response = await generateOpenAIContent(
           config as OpenAIConfig,
           modelId,
-          effectiveSystemInstruction,
+          systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          effectiveSchema as Parameters<typeof generateOpenAIContent>[4],
+          schema as Parameters<typeof generateOpenAIContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -368,9 +185,9 @@ ${JSON.stringify(exampleOutput, null, 2)}
         const response = await generateOpenRouterContent(
           config as OpenRouterConfig,
           modelId,
-          effectiveSystemInstruction,
+          systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          effectiveSchema as Parameters<typeof generateOpenRouterContent>[4],
+          schema as Parameters<typeof generateOpenRouterContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -380,9 +197,9 @@ ${JSON.stringify(exampleOutput, null, 2)}
         const response = await generateClaudeContent(
           config as ClaudeConfig,
           modelId,
-          effectiveSystemInstruction,
+          systemInstruction,
           unifiedContents as ProviderUnifiedMessage[],
-          effectiveSchema as Parameters<typeof generateClaudeContent>[4],
+          schema as Parameters<typeof generateClaudeContent>[4],
           mergedOptions,
         );
         result = response.result;
@@ -402,24 +219,6 @@ ${JSON.stringify(exampleOutput, null, 2)}
       );
     }
     throw error;
-  }
-
-  // Unflatten result if schema was flattened
-  if (
-    fieldMappings &&
-    typeof result === "object" &&
-    result !== null &&
-    !("functionCalls" in result)
-  ) {
-    try {
-      result = unflattenResult(
-        result as Record<string, unknown>,
-        fieldMappings,
-      );
-      console.log("[Core] Unflattened AI response to nested structure");
-    } catch (e) {
-      console.warn("[Core] Failed to unflatten result, using flat result:", e);
-    }
   }
 
   const log = createLogEntry(
