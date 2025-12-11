@@ -351,6 +351,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         Array.isArray(result.functionCalls)
       ) {
         const toolCalls = result.functionCalls as ToolCallResult[];
+        // Get text content if present (some models return text with tool calls)
+        const textContent = (result as { content?: string }).content;
 
         if (toolCalls.length === 0) {
           throw new Error(`Phase ${phaseNum}: No tool call received`);
@@ -363,22 +365,41 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
           );
         }
 
-        // Store phase data
-        const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
-        (partial as any)[phaseKey] = toolCall.args;
+        // Validate the tool call arguments against the schema
+        try {
+          const validatedData = phaseTool.parameters.parse(toolCall.args);
+          // Store validated phase data
+          const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
+          (partial as any)[phaseKey] = validatedData;
+        } catch (validationError) {
+          const errorMsg =
+            validationError instanceof Error
+              ? validationError.message
+              : String(validationError);
+          console.error(
+            `[OutlineAgentic] Phase ${phaseNum} schema validation failed:`,
+            errorMsg,
+          );
+          throw new Error(
+            `Phase ${phaseNum}: Schema validation failed - ${errorMsg}`,
+          );
+        }
 
         console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
         reportProgress(phaseNum, "completed");
 
-        // Add assistant message with tool call
+        // Add assistant message with tool call (and text content if present)
         conversationHistory.push(
-          createToolCallMessage([
-            {
-              id: toolCall.id,
-              name: toolCall.name,
-              arguments: toolCall.args,
-            },
-          ]),
+          createToolCallMessage(
+            [
+              {
+                id: toolCall.id,
+                name: toolCall.name,
+                arguments: toolCall.args,
+              },
+            ],
+            textContent,
+          ),
         );
 
         // Add tool response
@@ -506,7 +527,17 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     prefix: string,
     nextIdKey: keyof typeof maxIds,
   ): T[] => {
-    if (!items || items.length === 0) return [];
+    // Validate that items is actually an array
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      if (items && !Array.isArray(items)) {
+        console.error(
+          `[OutlineMerge] Expected array for ${prefix}, got:`,
+          typeof items,
+          items,
+        );
+      }
+      return [];
+    }
     let counter = 1;
     const result = items.map((item) => {
       const hasId = !!item.id;

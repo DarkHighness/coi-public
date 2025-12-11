@@ -34,6 +34,7 @@ export interface ToolCallPart {
     id: string;
     name: string;
     args: Record<string, unknown>;
+    thoughtSignature?: string; // Gemini's thought signature for tool calls
   };
 }
 
@@ -130,6 +131,7 @@ export interface ToolCallResult {
   id: string;
   name: string;
   args: Record<string, unknown>;
+  thoughtSignature?: string; // Gemini's thought signature for tool calls
 }
 
 export interface AIGenerationResult {
@@ -174,13 +176,20 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
           role: "model",
           parts: msg.content
             .filter((p): p is ToolCallPart => p.type === "tool_use")
-            .map((p) => ({
-              functionCall: {
-                id: p.toolUse.id,
-                name: p.toolUse.name,
-                args: p.toolUse.args,
-              },
-            })),
+            .map((p) => {
+              const part: any = {
+                functionCall: {
+                  id: p.toolUse.id,
+                  name: p.toolUse.name,
+                  args: p.toolUse.args,
+                },
+              };
+              // Include thoughtSignature if present
+              if (p.toolUse.thoughtSignature) {
+                part.thoughtSignature = p.toolUse.thoughtSignature;
+              }
+              return part;
+            }),
         };
       }
 
@@ -227,14 +236,21 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
     ) {
       const toolCalls = msg.content
         .filter((p): p is ToolCallPart => p.type === "tool_use")
-        .map((p) => ({
-          id: p.toolUse.id,
-          type: "function",
-          function: {
-            name: p.toolUse.name,
-            arguments: JSON.stringify(p.toolUse.args),
-          },
-        }));
+        .map((p) => {
+          const toolCall: any = {
+            id: p.toolUse.id,
+            type: "function",
+            function: {
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
+            },
+          };
+          // Include thought_signature if present (for Gemini compatibility)
+          if (p.toolUse.thoughtSignature) {
+            toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+          }
+          return toolCall;
+        });
 
       // Check if there's also text content
       const textContent = msg.content
@@ -291,6 +307,8 @@ export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
               id: part.functionCall.id || `call_${part.functionCall.name}`,
               name: part.functionCall.name,
               args: part.functionCall.args || {},
+              // Extract thoughtSignature if present
+              thoughtSignature: part.thoughtSignature,
             },
           });
         }
@@ -346,6 +364,8 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
               id: tc.id,
               name: tc.function.name,
               args: JSON.parse(tc.function.arguments || "{}"),
+              // Extract thought_signature if present (Gemini via OpenAI proxy)
+              thoughtSignature: tc.function.thought_signature,
             },
           });
         }

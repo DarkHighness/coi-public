@@ -305,6 +305,9 @@ export async function generateContent(
               id: `gemini_call_${p.functionCall.name}_${index}`,
               name: p.functionCall.name || "",
               args: (p.functionCall.args as Record<string, unknown>) || {},
+              // Extract thoughtSignature if present
+              thoughtSignature:
+                (p as any).thoughtSignature || (p as any).thought_signature,
             }));
           }
         }
@@ -327,10 +330,14 @@ export async function generateContent(
 
       console.log(`[Gemini] Generation complete. Usage:`, usage);
 
-      // 如果有工具调用，返回工具调用结果
+      // 如果有工具调用，返回工具调用结果（同时保留 text 作为 content）
       if (functionCalls.length > 0) {
         return {
-          result: { functionCalls },
+          result: {
+            functionCalls,
+            // 保留 content 以便在下次请求时包含
+            content: text || undefined,
+          },
           usage,
           raw: rawResponse,
         };
@@ -421,6 +428,9 @@ async function streamGeneration(
             id: `gemini_call_${part.functionCall.name}_${functionCalls.length}`,
             name: part.functionCall.name || "",
             args: (part.functionCall.args as Record<string, unknown>) || {},
+            // Extract thoughtSignature if present
+            thoughtSignature:
+              (part as any).thoughtSignature || (part as any).thought_signature,
           });
         }
       }

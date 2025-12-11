@@ -416,7 +416,12 @@ export async function generateContent(
         // 累积工具调用信息
         const accumulatedToolCalls: Map<
           number,
-          { id: string; name: string; arguments: string }
+          {
+            id: string;
+            name: string;
+            arguments: string;
+            thoughtSignature?: string;
+          }
         > = new Map();
 
         for await (const chunk of response) {
@@ -445,6 +450,7 @@ export async function generateContent(
                   id: tc.id || `tool_${index}`,
                   name: tc.function?.name || "",
                   arguments: tc.function?.arguments || "",
+                  thoughtSignature: (tc.function as any)?.thought_signature,
                 });
               }
             }
@@ -468,6 +474,7 @@ export async function generateContent(
               id: tc.id,
               name: tc.name,
               args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
+              thoughtSignature: tc.thoughtSignature,
             });
           } catch (parseError) {
             console.error(
@@ -494,6 +501,8 @@ export async function generateContent(
             id: tc.id,
             name: tc.function.name,
             args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+            // Extract thought_signature if present (Gemini compatibility)
+            thoughtSignature: (tc.function as any).thought_signature,
           }));
         }
 
@@ -616,14 +625,21 @@ function convertToOpenAIMessages(
         const assistantMsg: ChatCompletionAssistantMessageParam = {
           role: "assistant",
           content: textContent || null,
-          tool_calls: toolCallParts.map((p) => ({
-            id: p.toolUse.id,
-            type: "function" as const,
-            function: {
-              name: p.toolUse.name,
-              arguments: JSON.stringify(p.toolUse.args),
-            },
-          })),
+          tool_calls: toolCallParts.map((p) => {
+            const toolCall: any = {
+              id: p.toolUse.id,
+              type: "function" as const,
+              function: {
+                name: p.toolUse.name,
+                arguments: JSON.stringify(p.toolUse.args),
+              },
+            };
+            // Include thought_signature if present (Gemini compatibility)
+            if (p.toolUse.thoughtSignature) {
+              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            }
+            return toolCall;
+          }),
         };
         result.push(assistantMsg);
         continue;
@@ -715,14 +731,21 @@ function convertToClaudeCompatibleMessages(
         const assistantMsg: ChatCompletionAssistantMessageParam = {
           role: "assistant",
           content: textContent || null,
-          tool_calls: toolCallParts.map((p) => ({
-            id: p.toolUse.id,
-            type: "function" as const,
-            function: {
-              name: p.toolUse.name,
-              arguments: JSON.stringify(p.toolUse.args),
-            },
-          })),
+          tool_calls: toolCallParts.map((p) => {
+            const toolCall: any = {
+              id: p.toolUse.id,
+              type: "function" as const,
+              function: {
+                name: p.toolUse.name,
+                arguments: JSON.stringify(p.toolUse.args),
+              },
+            };
+            // Include thought_signature if present
+            if (p.toolUse.thoughtSignature) {
+              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            }
+            return toolCall;
+          }),
         };
         result.push(assistantMsg);
         continue;
@@ -803,14 +826,21 @@ function convertToGeminiCompatibleMessages(
         const assistantMsg: ChatCompletionAssistantMessageParam = {
           role: "assistant",
           content: textContent || null,
-          tool_calls: toolCallParts.map((p) => ({
-            id: p.toolUse.id,
-            type: "function" as const,
-            function: {
-              name: p.toolUse.name,
-              arguments: JSON.stringify(p.toolUse.args),
-            },
-          })),
+          tool_calls: toolCallParts.map((p) => {
+            const toolCall: any = {
+              id: p.toolUse.id,
+              type: "function" as const,
+              function: {
+                name: p.toolUse.name,
+                arguments: JSON.stringify(p.toolUse.args),
+              },
+            };
+            // Include thought_signature if present (Gemini compatibility)
+            if (p.toolUse.thoughtSignature) {
+              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            }
+            return toolCall;
+          }),
         };
         result.push(assistantMsg);
         continue;

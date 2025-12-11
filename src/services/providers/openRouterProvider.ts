@@ -357,6 +357,8 @@ async function handleNonStreamingResponse(
       id: tc.id,
       name: tc.function.name,
       args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+      // Extract thought_signature if present (Gemini via OpenRouter)
+      thoughtSignature: tc.function.thought_signature,
     }));
   }
   if (choice?.finishReason === "content_filter") {
@@ -373,7 +375,11 @@ async function handleNonStreamingResponse(
 
   if (toolCalls.length > 0) {
     return {
-      result: { functionCalls: toolCalls },
+      result: {
+        functionCalls: toolCalls,
+        // 保留 content 以便在下次请求时包含
+        content: content || undefined,
+      },
       usage,
       raw: data,
     };
@@ -415,7 +421,7 @@ async function handleStreamingResponse(
   };
   const accumulatedToolCalls: Map<
     number,
-    { id: string; name: string; arguments: string }
+    { id: string; name: string; arguments: string; thoughtSignature?: string }
   > = new Map();
   try {
     for await (const chunk of stream as any) {
@@ -437,6 +443,7 @@ async function handleStreamingResponse(
               id: tc.id || `tool_${index}`,
               name: tc.function?.name || "",
               arguments: tc.function?.arguments || "",
+              thoughtSignature: tc.function?.thought_signature,
             });
           }
         }
@@ -462,6 +469,7 @@ async function handleStreamingResponse(
         id: tc.id,
         name: tc.name,
         args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
+        thoughtSignature: tc.thoughtSignature,
       });
     } catch (parseError) {
       console.error(
@@ -475,7 +483,11 @@ async function handleStreamingResponse(
 
   if (toolCalls.length > 0) {
     return {
-      result: { functionCalls: toolCalls },
+      result: {
+        functionCalls: toolCalls,
+        // 保留 content 以便在下次请求时包含
+        content: content || undefined,
+      },
       usage,
       raw: null,
     };
@@ -539,14 +551,21 @@ function convertToOpenAIMessages(
         result.push({
           role: "assistant",
           content: textContent || null,
-          toolCalls: toolCallParts.map((p) => ({
-            id: p.toolUse.id,
-            type: "function",
-            function: {
-              name: p.toolUse.name,
-              arguments: JSON.stringify(p.toolUse.args),
-            },
-          })),
+          toolCalls: toolCallParts.map((p) => {
+            const toolCall: any = {
+              id: p.toolUse.id,
+              type: "function",
+              function: {
+                name: p.toolUse.name,
+                arguments: JSON.stringify(p.toolUse.args),
+              },
+            };
+            // Include thought_signature if present (Gemini compatibility)
+            if (p.toolUse.thoughtSignature) {
+              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            }
+            return toolCall;
+          }),
         });
         continue;
       }

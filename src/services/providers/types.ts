@@ -155,6 +155,7 @@ export interface ToolCallContentPart {
     id: string;
     name: string;
     args: Record<string, unknown>;
+    thoughtSignature?: string; // Gemini's thought signature for tool calls
   };
 }
 
@@ -191,6 +192,7 @@ export interface ToolCallResult {
   id: string;
   name: string;
   args: Record<string, unknown>;
+  thoughtSignature?: string; // Gemini's thought signature for tool calls
 }
 
 /** 生成结果 - 工具调用 */
