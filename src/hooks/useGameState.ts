@@ -37,6 +37,7 @@ const INITIAL_STATE: GameState = {
     locations: { pinnedIds: [], customOrder: [] },
     relationships: { pinnedIds: [], customOrder: [] },
     knowledge: { pinnedIds: [], customOrder: [] },
+    quests: { pinnedIds: [], customOrder: [] },
     sidebarCollapsed: false,
     timelineCollapsed: false,
     feedLayout: "scroll", // Default layout mode

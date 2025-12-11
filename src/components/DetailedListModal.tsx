@@ -2,17 +2,31 @@ import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
-interface DetailedListModalProps<T> {
+interface DetailedListModalProps<T extends { id: string | number }> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   items: T[];
-  renderItem: (item: T) => React.ReactNode;
+  renderItem: (
+    item: T,
+    options?: {
+      isEditMode: boolean;
+      isDragging: boolean;
+      onDragStart: (e: React.DragEvent) => void;
+      onDragEnter: (e: React.DragEvent) => void;
+      onDragOver: (e: React.DragEvent) => void;
+      onDrop: (e: React.DragEvent) => void;
+      onDragEnd: () => void;
+    },
+  ) => React.ReactNode;
   searchFilter: (item: T, query: string) => boolean;
   themeFont: string;
+  // Optional: enable edit mode support
+  enableEditMode?: boolean;
+  onReorderItem?: (dragId: string, hoverId: string) => void;
 }
 
-export function DetailedListModal<T>({
+export function DetailedListModal<T extends { id: string | number }>({
   isOpen,
   onClose,
   title,
@@ -20,14 +34,45 @@ export function DetailedListModal<T>({
   renderItem,
   searchFilter,
   themeFont,
+  enableEditMode = false,
+  onReorderItem,
 }: DetailedListModalProps<T>) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     return items.filter((item) => searchFilter(item, searchQuery));
   }, [items, searchQuery, searchFilter]);
+
+  const handleDragStart = (e: React.DragEvent, id: string | number) => {
+    const idStr = id.toString();
+    setDraggedId(idStr);
+    e.dataTransfer.setData("text/plain", idStr);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+    const targetIdStr = targetId.toString();
+    if (!isEditMode || !draggedId || draggedId === targetIdStr) return;
+    onReorderItem?.(draggedId, targetIdStr);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+  };
 
   if (!isOpen) return null;
 
@@ -41,25 +86,68 @@ export function DetailedListModal<T>({
           >
             {title}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-theme-muted hover:text-theme-primary transition-colors p-2 -mr-2"
-            aria-label={t("close") || "Close"}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-2">
+            {enableEditMode && (
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`p-2 rounded transition-colors ${
+                  isEditMode
+                    ? "bg-theme-primary text-theme-bg"
+                    : "text-theme-muted hover:text-theme-primary"
+                }`}
+                title={isEditMode ? t("done") : t("edit")}
+              >
+                {isEditMode ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-theme-muted hover:text-theme-primary transition-colors p-2 -mr-2"
+              aria-label={t("close") || "Close"}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -91,8 +179,23 @@ export function DetailedListModal<T>({
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain">
           {filteredItems.length > 0 ? (
-            filteredItems.map((item, idx) => (
-              <div key={idx}>{renderItem(item)}</div>
+            filteredItems.map((item) => (
+              <div key={item.id}>
+                {renderItem(
+                  item,
+                  enableEditMode
+                    ? {
+                        isEditMode,
+                        isDragging: draggedId === item.id.toString(),
+                        onDragStart: (e) => handleDragStart(e, item.id),
+                        onDragEnter: (e) => handleDragEnter(e, item.id),
+                        onDragOver: handleDragOver,
+                        onDrop: handleDrop,
+                        onDragEnd: handleDragEnd,
+                      }
+                    : undefined,
+                )}
+              </div>
             ))
           ) : (
             <div className="text-center text-theme-muted py-8 italic">

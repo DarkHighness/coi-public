@@ -220,13 +220,15 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
         title={t("inventory")}
         items={allItems}
         themeFont={themeFont}
+        enableEditMode={true}
+        onReorderItem={reorderItem}
         searchFilter={(item: any, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
             .toLowerCase()
             .includes(query.toLowerCase())
         }
-        renderItem={(item) => (
+        renderItem={(item, dragOptions) => (
           <InventoryItem
             key={item.id}
             item={item}
@@ -234,6 +236,12 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             context={itemContext}
             isPinned={isPinned(item.id)}
             onPin={() => togglePin(item.id)}
+            isEditMode={dragOptions?.isEditMode}
+            isDragging={dragOptions?.isDragging}
+            onDragStart={dragOptions?.onDragStart}
+            onDragEnter={dragOptions?.onDragEnter}
+            onDragOver={dragOptions?.onDragOver}
+            onDrop={dragOptions?.onDrop}
           />
         )}
       />

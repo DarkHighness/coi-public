@@ -753,6 +753,8 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         title={t("relationships")}
         items={allItems}
         themeFont={themeFont}
+        enableEditMode={true}
+        onReorderItem={reorderItem}
         searchFilter={(item, query) =>
           (item.visible?.name || "")
             .toLowerCase()
@@ -761,21 +763,21 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             .toLowerCase()
             .includes(query.toLowerCase())
         }
-        renderItem={(item) => (
+        renderItem={(item, dragOptions) => (
           <RelationshipItem
             key={item.id}
             rel={item}
             locations={locations}
-            enableDrag={false}
+            enableDrag={dragOptions?.isEditMode || false}
             expandedItems={expandedItems}
-            isEditMode={false}
-            draggedId={null}
+            isEditMode={dragOptions?.isEditMode || false}
+            draggedId={dragOptions?.isDragging ? item.id.toString() : null}
             onToggle={toggleItem}
-            onDragStart={() => {}}
-            onDragEnter={() => {}}
-            onDragOver={() => {}}
-            onDragEnd={() => {}}
-            onDrop={() => {}}
+            onDragStart={dragOptions?.onDragStart || (() => {})}
+            onDragEnter={dragOptions?.onDragEnter || (() => {})}
+            onDragOver={dragOptions?.onDragOver || (() => {})}
+            onDragEnd={dragOptions?.onDragEnd || (() => {})}
+            onDrop={dragOptions?.onDrop || (() => {})}
             onTogglePin={togglePin}
             isPinned={isPinned}
             getAffinityColor={getAffinityColor}

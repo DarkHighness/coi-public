@@ -155,6 +155,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <QuestPanel
             quests={gameState.quests || []}
             themeFont={currentThemeConfig.fontClass}
+            listState={gameState.uiState?.quests}
+            onUpdateList={(newState) => onUpdateUIState("quests", newState)}
           />
         </div>
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
@@ -182,6 +184,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <KnowledgePanel
             knowledge={gameState.knowledge || []}
             themeFont={currentThemeConfig.fontClass}
+            listState={gameState.uiState?.knowledge}
+            onUpdateList={(newState) => onUpdateUIState("knowledge", newState)}
           />
         </div>
 

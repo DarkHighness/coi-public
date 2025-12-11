@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { KnowledgeEntry } from "../../types";
+import { KnowledgeEntry, ListState } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { useListManagement } from "../../hooks/useListManagement";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
   themeFont: string;
+  listState: ListState;
+  onUpdateList: (newState: ListState) => void;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -31,6 +34,14 @@ interface KnowledgeItemProps {
   isModal: boolean;
   onToggle: (id: string | number, isModal: boolean) => void;
   t: any; // Or specific translation function type
+  isPinned?: boolean;
+  onPin?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isEditMode?: boolean;
+  isDragging?: boolean;
 }
 
 const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
@@ -39,6 +50,14 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   isModal,
   onToggle,
   t,
+  isPinned,
+  onPin,
+  onDragStart,
+  onDragEnter,
+  onDragOver,
+  onDrop,
+  isEditMode,
+  isDragging,
 }) => {
   const [isHighlight, setIsHighlight] = useState(k.highlight || false);
 
@@ -50,16 +69,57 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
     }
   };
 
+  const handleDragEnd = () => {
+    // Cleanup is handled by parent
+  };
+
   return (
     <div
       className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-3
         ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+        ${isDragging ? "opacity-50 scale-95" : ""}
+        ${isEditMode ? "cursor-grab active:cursor-grabbing" : ""}
       `}
+      draggable={isEditMode}
+      onDragStart={onDragStart}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={handleDragEnd}
     >
       <div
         className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-center justify-between gap-3"
         onClick={handleToggle}
       >
+        {/* Pin button - only show in edit mode or if pinned */}
+        {(isEditMode || isPinned) && onPin && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPin();
+            }}
+            className={`p-1 rounded transition-colors shrink-0 ${
+              isPinned
+                ? "text-theme-primary"
+                : "text-theme-muted hover:text-theme-primary"
+            }`}
+            title={isPinned ? t("unpin") : t("pin")}
+          >
+            <svg
+              className="w-3 h-3"
+              fill={isPinned ? "currentColor" : "none"}
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+              />
+            </svg>
+          </button>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-1">
             <span className="text-xl">
@@ -211,6 +271,8 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
   knowledge,
   themeFont,
+  listState,
+  onUpdateList,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -221,8 +283,14 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
   const [modalExpandedKnowledge, setModalExpandedKnowledge] = useState<
     Set<string | number>
   >(new Set());
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
+  const safeKnowledge = Array.isArray(knowledge) ? knowledge : [];
   const DISPLAY_LIMIT = 4; // Show limited number in sidebar
+
+  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
+    useListManagement(safeKnowledge, listState, onUpdateList, DISPLAY_LIMIT);
 
   const toggleKnowledge = (
     knowledgeId: string | number,
@@ -240,17 +308,33 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
     });
   };
 
-  // Group by category for display
-  const knowledgeByCategory: Record<string, KnowledgeEntry[]> = {};
-  knowledge.forEach((k) => {
-    if (!knowledgeByCategory[k.category]) {
-      knowledgeByCategory[k.category] = [];
-    }
-    knowledgeByCategory[k.category].push(k);
-  });
+  const handleDragStart = (e: React.DragEvent, id: string | number) => {
+    const idStr = id.toString();
+    setDraggedId(idStr);
+    e.dataTransfer.setData("text/plain", idStr);
+    e.dataTransfer.effectAllowed = "move";
+  };
 
-  // Flatten for display limit
-  const displayKnowledge = knowledge.slice(0, DISPLAY_LIMIT);
+  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+    const targetIdStr = targetId.toString();
+    if (!isEditMode || !draggedId || draggedId === targetIdStr) return;
+    reorderItem(draggedId, targetIdStr);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string | number) => {
+    e.preventDefault();
+    // Final reorder is already done by dragEnter, just clear state
+    setDraggedId(null);
+  };
 
   return (
     <div>
@@ -273,6 +357,74 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditMode(!isEditMode);
+            }}
+            className={`p-1 rounded transition-colors ${
+              isEditMode
+                ? "bg-theme-primary text-theme-bg"
+                : "text-theme-muted hover:text-theme-primary"
+            }`}
+            title={isEditMode ? t("done") : t("edit")}
+          >
+            {isEditMode ? (
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            )}
+          </button>
+
+          {allItems.length > DISPLAY_LIMIT && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsModalOpen(true);
+              }}
+              className="text-theme-muted hover:text-theme-primary p-1"
+              title={t("viewAll")}
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          )}
+
           <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
@@ -295,21 +447,33 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
 
       {isOpen && (
         <div className="space-y-3 animate-[fade-in_0.3s_ease-in]">
-          {displayKnowledge.map((k) => (
-            <KnowledgeItem
-              key={k.id}
-              k={k}
-              expandedSet={expandedKnowledge}
-              isModal={false}
-              onToggle={toggleKnowledge}
-              t={t}
-            />
-          ))}
-
-          {knowledge.length === 0 && (
+          {visibleItems.length === 0 ? (
             <div className="text-theme-muted text-xs italic p-4 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
               {t("knowledgePanel.empty")}
             </div>
+          ) : (
+            visibleItems.map((k) => (
+              <KnowledgeItem
+                key={k.id}
+                k={k}
+                expandedSet={expandedKnowledge}
+                isModal={false}
+                onToggle={toggleKnowledge}
+                t={t}
+                isPinned={isPinned(k.id)}
+                onPin={() => togglePin(k.id)}
+                onDragStart={
+                  isEditMode ? (e) => handleDragStart(e, k.id) : undefined
+                }
+                onDragEnter={
+                  isEditMode ? (e) => handleDragEnter(e, k.id) : undefined
+                }
+                onDragOver={isEditMode ? handleDragOver : undefined}
+                onDrop={isEditMode ? (e) => handleDrop(e, k.id) : undefined}
+                isEditMode={isEditMode}
+                isDragging={draggedId === k.id.toString()}
+              />
+            ))
           )}
         </div>
       )}
@@ -318,8 +482,10 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={t("knowledgePanel.title")}
-        items={knowledge}
+        items={allItems}
         themeFont={themeFont}
+        enableEditMode={true}
+        onReorderItem={reorderItem}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
@@ -327,7 +493,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             .includes(query.toLowerCase()) ||
           item.category.toLowerCase().includes(query.toLowerCase())
         }
-        renderItem={(item) => (
+        renderItem={(item, dragOptions) => (
           <KnowledgeItem
             key={item.id}
             k={item}
@@ -335,6 +501,14 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             isModal={true}
             onToggle={toggleKnowledge}
             t={t}
+            isPinned={isPinned(item.id)}
+            onPin={() => togglePin(item.id)}
+            isEditMode={dragOptions?.isEditMode}
+            isDragging={dragOptions?.isDragging}
+            onDragStart={dragOptions?.onDragStart}
+            onDragEnter={dragOptions?.onDragEnter}
+            onDragOver={dragOptions?.onDragOver}
+            onDrop={dragOptions?.onDrop}
           />
         )}
       />

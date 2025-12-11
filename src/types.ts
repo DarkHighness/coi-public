@@ -576,6 +576,7 @@ export interface UIState {
   locations: ListState;
   relationships: ListState;
   knowledge: ListState; // UI state for knowledge panel
+  quests: ListState; // UI state for quests panel
   showSystemFooter?: boolean; // Persisted state for system footer
   sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
