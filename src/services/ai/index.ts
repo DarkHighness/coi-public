@@ -6,4 +6,4 @@ export * from "./outline";
 export * from "./summary";
 export * from "./media";
 export * from "./embeddings";
-export * from "./history";
+export * from "./sessionManager";

@@ -418,7 +418,8 @@ export async function generateContent(
       // 兼容模式下的 thinking 参数 (通过 OpenAI 接口调用 Claude/Gemini)
       // 代理服务会将这些参数转换为原生格式
       if (useCompat && (options?.thinkingLevel || options?.reasoningEffort)) {
-        const thinkingParam = options?.reasoningEffort || options?.thinkingLevel;
+        const thinkingParam =
+          options?.reasoningEffort || options?.thinkingLevel;
         if (thinkingParam) {
           (requestParams as any).reasoning_effort = thinkingParam;
         }
@@ -571,7 +572,9 @@ export async function generateContent(
         // 提取 reasoning content (OpenAI o1/o3 系列)
         if (isReasoning && (message as any)?.reasoning_content) {
           reasoningContent = (message as any).reasoning_content;
-          console.log(`[OpenAI] Extracted reasoning content (${reasoningContent.length} chars)`);
+          console.log(
+            `[OpenAI] Extracted reasoning content (${reasoningContent.length} chars)`,
+          );
         }
       }
 
@@ -617,7 +620,7 @@ export async function generateContent(
           return {
             result: { ...result, _reasoning: reasoningContent },
             usage,
-            raw: rawResponse
+            raw: rawResponse,
           };
         }
 
@@ -753,7 +756,7 @@ function convertToReasoningMessages(
   if (systemInstruction) {
     result.push({
       role: "developer" as any,
-      content: systemInstruction
+      content: systemInstruction,
     });
   }
 
@@ -841,7 +844,10 @@ function convertToReasoningMessages(
 
     if (textContent) {
       result.push({
-        role: msg.role === "developer" ? ("developer" as any) : (msg.role as "user" | "assistant"),
+        role:
+          msg.role === "developer"
+            ? ("developer" as any)
+            : (msg.role as "user" | "assistant"),
         content: textContent,
       });
     }
@@ -1318,6 +1324,209 @@ export async function generateEmbedding(
 }
 
 // ============================================================================
+// Native Message Builders (Provider-Native Format)
+// ============================================================================
+
+/**
+ * 构建系统消息
+ */
+export function buildSystemMessage(
+  content: string,
+): ChatCompletionMessageParam {
+  return { role: "system", content };
+}
+
+/**
+ * 构建开发者消息 (用于 o1/o3 reasoning 模型)
+ */
+export function buildDeveloperMessage(
+  content: string,
+): ChatCompletionMessageParam {
+  return { role: "developer" as any, content };
+}
+
+/**
+ * 构建用户消息
+ */
+export function buildUserMessage(content: string): ChatCompletionMessageParam {
+  return { role: "user", content };
+}
+
+/**
+ * 构建助手消息
+ */
+export function buildAssistantMessage(
+  content: string,
+): ChatCompletionMessageParam {
+  return { role: "assistant", content };
+}
+
+/**
+ * 构建带工具调用的助手消息
+ */
+export function buildToolCallMessage(
+  toolCalls: Array<{
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+    thoughtSignature?: string;
+  }>,
+  content?: string,
+): ChatCompletionAssistantMessageParam {
+  return {
+    role: "assistant",
+    content: content || null,
+    tool_calls: toolCalls.map((tc) => {
+      const toolCall: any = {
+        id: tc.id,
+        type: "function" as const,
+        function: {
+          name: tc.name,
+          arguments: JSON.stringify(tc.args),
+        },
+      };
+      if (tc.thoughtSignature) {
+        toolCall.function.thought_signature = tc.thoughtSignature;
+      }
+      return toolCall;
+    }),
+  };
+}
+
+/**
+ * 构建工具响应消息
+ */
+export function buildToolResponseMessage(
+  toolCallId: string,
+  content: unknown,
+): ChatCompletionToolMessageParam {
+  return {
+    role: "tool",
+    tool_call_id: toolCallId,
+    content: typeof content === "string" ? content : JSON.stringify(content),
+  };
+}
+
+/**
+ * 从 AI 响应提取工具调用
+ */
+export function extractToolCalls(response: ChatCompletion): Array<{
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  thoughtSignature?: string;
+}> {
+  const message = response.choices[0]?.message;
+  if (!message?.tool_calls) return [];
+
+  return message.tool_calls.map((tc) => ({
+    id: tc.id,
+    name: tc.function.name,
+    args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+    thoughtSignature: (tc.function as any).thought_signature,
+  }));
+}
+
+/**
+ * 从 AI 响应提取文本内容
+ */
+export function extractTextContent(response: ChatCompletion): string {
+  return response.choices[0]?.message?.content || "";
+}
+
+/**
+ * 从 UnifiedMessage 转换为 OpenAI ChatCompletionMessageParam
+ * (用于初始上下文构建，仅在会话创建时调用一次)
+ */
+export function fromUnifiedMessage(
+  message: UnifiedMessage,
+): ChatCompletionMessageParam {
+  // 处理工具响应消息
+  if (message.role === "tool") {
+    const toolResult = message.content.find(
+      (p): p is ToolResponseContentPart => p.type === "tool_result",
+    );
+    if (toolResult) {
+      return buildToolResponseMessage(
+        toolResult.toolResult.id,
+        toolResult.toolResult.content,
+      );
+    }
+  }
+
+  // 处理助手消息（可能包含工具调用）
+  if (message.role === "assistant") {
+    const toolCallParts = message.content.filter(
+      (p): p is ToolCallContentPart => p.type === "tool_use",
+    );
+
+    if (toolCallParts.length > 0) {
+      const textContent = message.content
+        .filter((p): p is TextContentPart => p.type === "text")
+        .map((p) => p.text)
+        .join("\n");
+
+      return buildToolCallMessage(
+        toolCallParts.map((p) => ({
+          id: p.toolUse.id,
+          name: p.toolUse.name,
+          args: p.toolUse.args,
+          thoughtSignature: p.toolUse.thoughtSignature,
+        })),
+        textContent || undefined,
+      );
+    }
+  }
+
+  // 处理普通文本消息
+  const textContent = message.content
+    .filter((p): p is TextContentPart => p.type === "text")
+    .map((p) => p.text)
+    .join("\n");
+
+  if (message.role === "system") {
+    return buildSystemMessage(textContent);
+  } else if (message.role === "assistant") {
+    return buildAssistantMessage(textContent);
+  } else {
+    return buildUserMessage(textContent);
+  }
+}
+
+/**
+ * 批量从 UnifiedMessage[] 转换为 ChatCompletionMessageParam[]
+ * (用于初始上下文构建)
+ *
+ * @param systemInstruction 系统指令
+ * @param messages UnifiedMessage 数组
+ * @param isReasoning 是否为 reasoning 模型 (使用 developer role)
+ */
+export function fromUnifiedMessages(
+  systemInstruction: string,
+  messages: UnifiedMessage[],
+  isReasoning: boolean = false,
+): ChatCompletionMessageParam[] {
+  const result: ChatCompletionMessageParam[] = [];
+
+  // 添加系统指令
+  if (systemInstruction) {
+    result.push(
+      isReasoning
+        ? buildDeveloperMessage(systemInstruction)
+        : buildSystemMessage(systemInstruction),
+    );
+  }
+
+  // 转换消息
+  for (const msg of messages) {
+    if (msg.role === "system") continue; // 跳过系统消息，已在上面处理
+    result.push(fromUnifiedMessage(msg));
+  }
+
+  return result;
+}
+
+// ============================================================================
 // Re-exports for Backward Compatibility
 // ============================================================================
 
@@ -1334,3 +1543,6 @@ export type {
 
 // Alias for backward compatibility
 export type { EmbeddingResponse as EmbeddingResult };
+
+// Re-export ChatCompletionMessageParam for session management
+export type { ChatCompletionMessageParam };

@@ -17,6 +17,7 @@ import {
 } from "../utils/indexedDB";
 import { deleteImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "../services/rag";
+import { sessionManager } from "../services/ai/sessionManager";
 import { useTranslation } from "react-i18next";
 
 // Default nextIds structure for recovery
@@ -393,6 +394,9 @@ export const useGamePersistence = (
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // Initialize session manager for persistent history cache
+        await sessionManager.initialize();
+
         // Load save slots metadata
         let slots = await loadMetadata("slots");
         if (slots && Array.isArray(slots)) {
@@ -804,11 +808,12 @@ export const useGamePersistence = (
     const newSlots = saveSlots.filter((s) => s.id !== id);
     setSaveSlots(newSlots);
 
-    // Update IndexedDB asynchronously
+    // Update IndexedDB asynchronously, including session cache cleanup
     Promise.all([
       saveMetadata("slots", newSlots),
       deleteGameState(id),
       deleteImagesBySaveId(id),
+      sessionManager.deleteSlotSessions(id),
     ]).catch((error) => {
       console.error("Failed to delete slot:", error);
     });
@@ -825,6 +830,9 @@ export const useGamePersistence = (
         await deleteGameState(slot.id);
         await deleteImagesBySaveId(slot.id);
       }
+
+      // Clear session cache
+      await sessionManager.clearAll();
 
       // Clear metadata
       await saveMetadata("slots", []);

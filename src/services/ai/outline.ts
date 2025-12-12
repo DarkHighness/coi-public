@@ -69,8 +69,27 @@ import {
   createToolResponseMessage,
 } from "../messageTypes";
 
+import { sessionManager } from "./sessionManager";
+
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
+
+// ============================================================================
+// Error Detection Helpers
+// ============================================================================
+
+/**
+ * 检测是否是 tool_choice 不支持的错误
+ */
+function isToolChoiceNotSupportedError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return (
+    msg.includes("Tool choice must be auto") ||
+    msg.includes("tool_choice is not supported") ||
+    msg.includes("'tool_choice' must be 'auto'") ||
+    msg.includes("does not support required tool_choice")
+  );
+}
 
 // ============================================================================
 // Tool Definitions for Outline Generation
@@ -273,6 +292,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         conversationHistory: [...conversationHistory],
         partial: { ...partial },
         currentPhase: phase,
+        modelId, // Track which model was used
+        providerId: instance.id, // Track which provider was used
       });
     }
   };
@@ -292,6 +313,89 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         partialOutline: partial,
         error,
       });
+    }
+  };
+
+  // Create a session for outline generation (for capability tracking)
+  // Use a special forkId=-1 to indicate outline phase
+  const outlineSession = await sessionManager.getOrCreateSession({
+    slotId: options.resumeFrom ? "outline-resume" : "outline-new",
+    forkId: -1,
+    providerId: instance.id,
+    modelId,
+    protocol: instance.protocol,
+  });
+
+  // Helper to make API call with retry on tool choice error
+  const callWithToolChoiceFallback = async (
+    phaseTool: ZodToolDefinition,
+    phaseNum: number,
+  ) => {
+    const config = createProviderConfig(instance);
+    const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
+      outlineSession.id,
+      "required",
+    );
+
+    try {
+      return await generateContentUnifiedInternal(
+        instance.protocol,
+        config,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        undefined,
+        {
+          tools: [
+            {
+              name: phaseTool.name,
+              description: phaseTool.description,
+              parameters: phaseTool.parameters,
+            },
+          ],
+          toolChoice: effectiveToolChoice,
+          settings,
+          logEndpoint: `outline-phase${phaseNum}`,
+        },
+      );
+    } catch (e) {
+      // Check if this is a tool_choice not supported error
+      if (
+        isToolChoiceNotSupportedError(e) &&
+        effectiveToolChoice === "required"
+      ) {
+        console.warn(
+          `[OutlineAgentic] Tool choice 'required' not supported, falling back to 'auto'`,
+        );
+        // Update session capability
+        sessionManager.setCapability(
+          outlineSession.id,
+          "supportsRequiredToolChoice",
+          false,
+        );
+        // Retry with auto
+        return await generateContentUnifiedInternal(
+          instance.protocol,
+          config,
+          modelId,
+          systemInstruction,
+          conversationHistory,
+          undefined,
+          {
+            tools: [
+              {
+                name: phaseTool.name,
+                description: phaseTool.description,
+                parameters: phaseTool.parameters,
+              },
+            ],
+            toolChoice: "auto",
+            settings,
+            logEndpoint: `outline-phase${phaseNum}`,
+          },
+        );
+      }
+      throw e;
     }
   };
 
@@ -317,28 +421,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     try {
       reportProgress(phaseNum, "generating");
 
-      // Call AI with ONLY the current phase's tool (forced tool call)
-      const config = createProviderConfig(instance);
-      const resultData = await generateContentUnifiedInternal(
-        instance.protocol,
-        config,
-        modelId,
-        systemInstruction,
-        conversationHistory,
-        undefined, // No schema, using tools
-        {
-          tools: [
-            {
-              name: phaseTool.name,
-              description: phaseTool.description,
-              parameters: phaseTool.parameters,
-            },
-          ],
-          toolChoice: "required", // Force the model to call the tool
-          settings,
-          logEndpoint: `outline-phase${phaseNum}`,
-        },
-      );
+      // Call AI with tool choice fallback support
+      const resultData = await callWithToolChoiceFallback(phaseTool, phaseNum);
 
       const { result, log } = resultData;
       if (log) logs.push(log);

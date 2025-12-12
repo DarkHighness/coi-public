@@ -442,7 +442,9 @@ Answer the user's request using relevant tools (if they are available). Before c
         }
 
         if (thinkingContent) {
-          console.log(`[Claude] Extracted thinking content from stream (${thinkingContent.length} chars)`);
+          console.log(
+            `[Claude] Extracted thinking content from stream (${thinkingContent.length} chars)`,
+          );
         }
 
         // 解析累积的工具调用
@@ -490,7 +492,9 @@ Answer the user's request using relevant tools (if they are available). Before c
         }
 
         if (thinkingContent) {
-          console.log(`[Claude] Extracted thinking content (${thinkingContent.length} chars)`);
+          console.log(
+            `[Claude] Extracted thinking content (${thinkingContent.length} chars)`,
+          );
         }
 
         // 检查停止原因
@@ -539,7 +543,11 @@ Answer the user's request using relevant tools (if they are available). Before c
           // Schema Validation
           validateSchema(result, schema, "claude");
           if (thinkingContent) {
-            return { result: { ...result, _thinking: thinkingContent }, usage, raw: rawResponse };
+            return {
+              result: { ...result, _thinking: thinkingContent },
+              usage,
+              raw: rawResponse,
+            };
           }
           return { result, usage, raw: rawResponse };
         } catch (error) {
@@ -643,7 +651,7 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
 
         // 检查是否有 reasoning/thinking content
         const reasoningParts = msg.content.filter(
-          (p) => p.type === "reasoning"
+          (p) => p.type === "reasoning",
         );
 
         // const content: Array<

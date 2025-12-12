@@ -2,7 +2,6 @@ import {
   TokenUsage,
   GameState,
   TurnContext,
-  UnifiedMessage,
   GameResponse,
   LogEntry,
 } from "../../types";
@@ -14,14 +13,13 @@ import { generateAdventureTurn, AgenticLoopResult } from "./adventure";
 // ============================================================================
 
 /**
- * Result of force update (same as AgenticLoopResult with extra fields)
+ * Result of force update (same as AgenticLoopResult, history managed internally)
  */
 export interface ForceUpdateResult {
   response: GameResponse;
   logs: LogEntry[];
   usage: TokenUsage;
   changedEntities: Array<{ id: string; type: string }>;
-  activeHistory: UnifiedMessage[];
 }
 
 /**
@@ -35,6 +33,7 @@ export interface ForceUpdateResult {
  * while force update is a one-time GM command (/sudo).
  *
  * This ensures the same KV cache, same agentic loop, same tools system.
+ * History is managed internally by the session manager.
  */
 export const generateForceUpdate = async (
   prompt: string,
@@ -52,6 +51,7 @@ export const generateForceUpdate = async (
 
   // Use the same adventure turn generation
   // Note: We do NOT modify godMode - that's a separate permanent state
+  // History is managed internally by session manager
   const result: AgenticLoopResult = await generateAdventureTurn(
     inputState,
     sudoContext,
@@ -72,6 +72,5 @@ export const generateForceUpdate = async (
     logs: result.logs,
     usage: result.usage,
     changedEntities: result.changedEntities,
-    activeHistory: result.activeHistory,
   };
 };

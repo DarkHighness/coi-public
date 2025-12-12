@@ -65,7 +65,7 @@ export function requiresHistoryRebuild(error: any): boolean {
 
 /**
  * Context Overflow Error - thrown when context exceeds provider limits.
- * Caller should handle by triggering History rebuild (create Summary, clear activeHistory).
+ * Caller should handle by triggering History rebuild (session manager clears history on overflow).
  */
 export class ContextOverflowError extends Error {
   constructor(originalError: Error) {

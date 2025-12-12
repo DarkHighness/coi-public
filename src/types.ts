@@ -227,7 +227,6 @@ export type StorySummary = ZodStorySummary;
 // GameResponse extends ZodGameResponse with system-populated fields
 export type GameResponse = ZodGameResponse & {
   finalState?: GameState; // System-populated after agentic loop processing
-  activeHistory?: UnifiedMessage[]; // Updated persistent history
 };
 export type { Atmosphere, EnvTheme, Ambience, Skill, Condition };
 export type {
@@ -385,24 +384,6 @@ export interface GameState {
 
   // Custom Rules for per-save prompt customization
   customRules?: CustomRule[];
-
-  /**
-   * TRANSIENT: Conversation history cache (never persisted to saves)
-   *
-   * Contains the full UnifiedMessage[] array as returned by runAgenticLoop.
-   * This is NEVER transformed, sliced, or filtered - used exactly as-is.
-   *
-   * Accumulates across turns until cleared by:
-   * - Summary creation
-   * - Context length overflow
-   * - Model/compatibility settings change
-   * - Fork creation
-   * - Save load
-   *
-   * When loading a save, this field is always undefined and will be rebuilt
-   * by the provider on the next turn.
-   */
-  activeHistory?: UnifiedMessage[];
 }
 
 /** State for resuming outline generation after failure */
@@ -413,6 +394,10 @@ export interface OutlineConversationState {
   conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
   currentPhase: number; // 1-9, indicates which phase to resume from
+  /** Model ID used for this outline generation (for mismatch detection) */
+  modelId?: string;
+  /** Provider ID used for this outline generation (for mismatch detection) */
+  providerId?: string;
 }
 
 /** Partial results from phased outline generation */
@@ -647,6 +632,8 @@ export interface TurnContext {
   ragContext?: string;
   previousError?: string;
   settings: AISettings;
+  /** Slot ID for session management - required for internal history tracking */
+  slotId: string;
 }
 
 export interface GameStateSnapshot {
@@ -689,8 +676,7 @@ export interface GameStateSnapshot {
   atmosphere: AtmosphereObject; // Unified atmosphere { envTheme, ambience }
   veoScript?: string;
 
-  // Context Priority System
-  activeHistory?: UnifiedMessage[]; // Persistent detailed history between summaries
+  // Turn tracking
   turnNumber: number;
 
   // Fork System (Critical for RAG filtering across timelines)

@@ -60,7 +60,8 @@ import {
   resolveThemeConfig,
 } from "./utils";
 
-// Import History management
+// Import Session Manager for internal history tracking
+import { sessionManager, SessionConfig } from "./sessionManager";
 
 // Import prompt injection data
 // @ts-ignore
@@ -117,8 +118,8 @@ export interface AgenticLoopResult {
   logs: LogEntry[];
   usage: TokenUsage;
   changedEntities: Array<{ id: string; type: string }>; // Changed entities with their types for efficient RAG updates
-  /** Updated conversation history - use exactly as-is, do not transform */
-  activeHistory: UnifiedMessage[];
+  /** Internal conversation history - used by session manager, not exposed to caller */
+  _conversationHistory: UnifiedMessage[];
 }
 
 /**
@@ -345,10 +346,27 @@ export const generateAdventureTurn = async (
     nsfwEnabled,
   };
 
+  // === SESSION-BASED HISTORY MANAGEMENT ===
+  // Create session config - any change automatically invalidates old session
+  const sessionConfig: SessionConfig = {
+    slotId: context.slotId,
+    forkId: gameState.forkId ?? 0,
+    providerId: instance.id,
+    modelId,
+    protocol: instance.protocol,
+  };
+
+  // Get or create session (async - may load from IndexedDB)
+  const session = await sessionManager.getOrCreateSession(sessionConfig);
+
+  // Get cached history from session (in UnifiedMessage format for now)
+  // TODO: In future, this will be provider-native format
+  const cachedHistory = sessionManager.getHistory(
+    session.id,
+  ) as UnifiedMessage[];
+
   // === CONTEXT CONSTRUCTION ===
   // Order: [Static] -> [Cached History] -> [Dynamic] -> [User Action]
-  const cachedHistory = gameState.activeHistory || [];
-
   const fullContext = [
     ...staticMessages,
     ...cachedHistory,
@@ -373,15 +391,14 @@ export const generateAdventureTurn = async (
       isSudoMode,
     );
 
-    // === USE HISTORY AS-IS (NO TRANSFORMATION) ===
-    // The provider returns the full conversation history
-    // We use it exactly as returned - no slicing, no filtering
-    result.response.activeHistory = result.activeHistory;
+    // Update session history with the new conversation
+    sessionManager.setHistory(session.id, result._conversationHistory);
 
     return result;
   } catch (e: any) {
     if (isContextLengthError(e)) {
-      // Context overflow - clear cache and let caller handle
+      // Context overflow - notify session manager and let caller handle
+      await sessionManager.onContextOverflow(session.id);
       throw new Error("CONTEXT_LENGTH_EXCEEDED: " + e.message);
     }
     throw e;
@@ -424,6 +441,7 @@ export const runAgenticLoop = async (
   generationDetails: LogEntry["generationDetails"] | undefined,
   settings: AISettings,
   isSudoMode: boolean = false,
+  _sessionId?: string, // Session ID for future native format storage
 ): Promise<AgenticLoopResult> => {
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
@@ -747,8 +765,7 @@ You are in AGENTIC MODE.
     loopIterations++;
   }
 
-  // After loop - return the FULL conversation history as-is
-  // This is critical for KV cache: we don't slice, filter, or transform
+  // After loop - return the FULL conversation history for session manager
   return {
     response: accumulatedResponse,
     logs: allLogs,
@@ -756,7 +773,7 @@ You are in AGENTIC MODE.
     changedEntities: Array.from(changedEntities.entries()).map(
       ([id, type]) => ({ id, type }),
     ),
-    activeHistory: conversationHistory, // Return the complete history for reuse
+    _conversationHistory: conversationHistory, // Internal: stored by session manager
   };
 };
 

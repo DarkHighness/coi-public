@@ -135,7 +135,12 @@ export interface ZodToolDefinition {
 // ============================================================================
 
 /** 消息角色 */
-export type MessageRole = "system" | "user" | "assistant" | "tool" | "developer";
+export type MessageRole =
+  | "system"
+  | "user"
+  | "assistant"
+  | "tool"
+  | "developer";
 
 /** 文本内容部分 */
 export interface TextContentPart {

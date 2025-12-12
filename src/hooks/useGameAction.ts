@@ -11,6 +11,7 @@ import {
 } from "../types";
 import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
+import { sessionManager } from "../services/ai/sessionManager";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import {
@@ -53,9 +54,6 @@ export const useGameAction = ({
   const gameStateRef = useRef(gameState);
   const processingRef = useRef(false);
 
-  // Track previous settings for cache invalidation
-  const prevSettingsRef = useRef<string | undefined>(undefined);
-
   // Update refs when state changes
   gameStateRef.current = gameState;
   processingRef.current = gameState.isProcessing;
@@ -75,38 +73,6 @@ export const useGameAction = ({
         fromNodeId,
         preventFork,
       });
-
-      // Detect settings change and clear cache if needed
-      const storyProvider = aiSettings.providers.instances.find(
-        (p) => p.id === aiSettings.story.providerId,
-      );
-      const currentSettingsKey = JSON.stringify({
-        modelId: aiSettings.story.modelId,
-        providerId: aiSettings.story.providerId,
-        geminiCompat: storyProvider?.geminiCompatibility,
-        claudeCompat: storyProvider?.claudeCompatibility,
-      });
-
-      let shouldClearHistory = false;
-      if (
-        prevSettingsRef.current &&
-        prevSettingsRef.current !== currentSettingsKey
-      ) {
-        console.log("[Context] Settings changed - clearing message cache");
-        shouldClearHistory = true;
-      }
-
-      prevSettingsRef.current = currentSettingsKey;
-
-      // If settings changed, clear activeHistory via setGameState
-      if (shouldClearHistory) {
-        setGameState((prev) => ({ ...prev, activeHistory: undefined }));
-        // Also update ref immediately for this turn
-        gameStateRef.current = {
-          ...gameStateRef.current,
-          activeHistory: undefined,
-        };
-      }
 
       // Check both the ref (immediate) and state (persisted)
       if (
@@ -199,8 +165,7 @@ export const useGameAction = ({
               error: null,
               forkId: currentForkId,
               forkTree: currentForkTree,
-              // Clear activeHistory if fork changed
-              activeHistory: forkChanged ? undefined : prev.activeHistory,
+              // History invalidation handled by session manager
             };
           }
 
@@ -236,8 +201,7 @@ export const useGameAction = ({
             currentFork: deriveHistory(newNodes, userNodeId),
             forkId: currentForkId,
             forkTree: currentForkTree,
-            // Clear activeHistory if fork changed
-            activeHistory: forkChanged ? undefined : prev.activeHistory,
+            // History invalidation handled by session manager (forkId change creates new session)
           };
         });
       } else {
@@ -311,6 +275,16 @@ export const useGameAction = ({
             aiSettings.story.providerId,
             aggregatedUsage,
           );
+
+          // Notify session manager that summary was created
+          // This clears the cached history so the next turn starts fresh
+          if (summarySnapshot) {
+            const sessionId = `${currentSlotId || "default"}:${gameStateRef.current.forkId ?? 0}:${aiSettings.story.providerId}:${aiSettings.story.modelId}`;
+            await sessionManager.onSummaryCreated(
+              sessionId,
+              String(summarySnapshot.id || Date.now()),
+            );
+          }
         }
 
         // Update the user node in state with the FINAL summary state for this turn
@@ -347,12 +321,10 @@ export const useGameAction = ({
           freshCount,
         );
 
-        // Prepare state for generation (clearing persistent history if summarized)
+        // Prepare state for generation
+        // Note: History is now managed internally by session manager
         const effectiveGameState = {
           ...gameStateRef.current,
-          activeHistory: summarySnapshot
-            ? undefined
-            : gameStateRef.current.activeHistory,
         };
 
         // Generate Turn - pass GameState directly with TurnContext
@@ -368,6 +340,7 @@ export const useGameAction = ({
           themeKey: gameStateRef.current.theme,
           tFunc: t,
           settings: aiSettings,
+          slotId: currentSlotId || "default",
         });
 
         // ===== STATE UPDATE =====
@@ -535,8 +508,7 @@ export const useGameAction = ({
             nextIds: finalState.nextIds,
             timeline: finalState.timeline,
             causalChains: finalState.causalChains,
-            // Update persistent history (clear if summarized this turn)
-            activeHistory: summarySnapshot ? undefined : response.activeHistory,
+            // History is now managed internally by session manager
             turnNumber: prev.turnNumber + 1,
 
             summaries: effectiveSummaries,
@@ -623,9 +595,9 @@ export const useGameAction = ({
           isHistoryCorrupted
         ) {
           console.log(
-            `[Context] ${isHistoryCorrupted ? "History corrupted" : "Overflow"} detected - clearing message cache`,
+            `[Context] ${isHistoryCorrupted ? "History corrupted" : "Overflow"} detected - session manager will handle cache clearing`,
           );
-          gameStateRef.current.activeHistory = undefined;
+          // Session manager handles history clearing on context overflow
           showToast(
             isHistoryCorrupted
               ? "History cache corrupted. The cache has been cleared. Please retry."
@@ -637,15 +609,11 @@ export const useGameAction = ({
           showToast(errorMsg, "error", 5000);
         }
 
-        const shouldClearHistory =
-          errorMsg.includes("CONTEXT_LENGTH_EXCEEDED") || isHistoryCorrupted;
-
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,
           error: error instanceof Error ? error.message : "Unknown error",
-          // Clear cache on overflow or corruption
-          activeHistory: shouldClearHistory ? undefined : prev.activeHistory,
+          // History clearing handled by session manager
         }));
         processingRef.current = false;
         return {

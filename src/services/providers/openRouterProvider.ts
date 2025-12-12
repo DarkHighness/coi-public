@@ -287,7 +287,8 @@ export async function generateContent(
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型或兼容模式)
       // OpenRouter 会自动将 reasoning_effort 转换为各 provider 的原生格式
       if (options?.reasoningEffort || options?.thinkingLevel) {
-        const reasoningParam = options?.reasoningEffort || options?.thinkingLevel;
+        const reasoningParam =
+          options?.reasoningEffort || options?.thinkingLevel;
         if (reasoningParam) {
           requestParams.reasoning_effort = reasoningParam;
         }
@@ -410,7 +411,11 @@ async function handleNonStreamingResponse(
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
       if (reasoningContent) {
-        return { result: { ...result, _reasoning: reasoningContent }, usage, raw: data };
+        return {
+          result: { ...result, _reasoning: reasoningContent },
+          usage,
+          raw: data,
+        };
       }
       return { result, usage, raw: data };
     } catch (error) {
@@ -535,7 +540,11 @@ async function handleStreamingResponse(
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
       if (reasoningContent) {
-        return { result: { ...result, _reasoning: reasoningContent }, usage, raw: null };
+        return {
+          result: { ...result, _reasoning: reasoningContent },
+          usage,
+          raw: null,
+        };
       }
       return { result, usage, raw: null };
     } catch (error) {

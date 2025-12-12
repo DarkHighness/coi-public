@@ -933,6 +933,183 @@ export async function generateEmbedding(
 }
 
 // ============================================================================
+// Native Message Builders (Provider-Native Format)
+// ============================================================================
+
+/**
+ * 构建用户文本消息
+ */
+export function buildUserMessage(text: string): Content {
+  return { role: "user", parts: [{ text }] };
+}
+
+/**
+ * 构建模型文本消息
+ */
+export function buildModelMessage(text: string): Content {
+  return { role: "model", parts: [{ text }] };
+}
+
+/**
+ * 构建多部分消息
+ */
+export function buildMultiPartMessage(
+  role: "user" | "model",
+  parts: Part[],
+): Content {
+  return { role, parts };
+}
+
+/**
+ * 构建函数调用消息 (模型响应)
+ */
+export function buildFunctionCallMessage(
+  functionCalls: Array<{
+    id?: string;
+    name: string;
+    args: Record<string, unknown>;
+  }>,
+  contentText?: string,
+): Content {
+  const parts: Part[] = functionCalls.map((fc) => ({
+    functionCall: { name: fc.name, args: fc.args },
+  }));
+
+  // 如果有 content 文本，添加到前面
+  if (contentText) {
+    parts.unshift({ text: contentText });
+  }
+
+  return { role: "model", parts };
+}
+
+/**
+ * 构建函数响应消息 (用户提供的工具结果)
+ */
+export function buildFunctionResponseMessage(
+  responses: Array<{ name: string; response: unknown }>,
+): Content {
+  return {
+    role: "user",
+    parts: responses.map((r) => ({
+      functionResponse: {
+        name: r.name,
+        response: { content: r.response },
+      },
+    })),
+  };
+}
+
+/**
+ * 从 AI 响应提取函数调用
+ *
+ * @param response Gemini generateContent 响应
+ * @returns 提取的函数调用数组
+ */
+export function extractFunctionCalls(response: unknown): Array<{
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  thoughtSignature?: string;
+}> {
+  const resp = response as {
+    candidates?: Array<{
+      content?: {
+        parts?: Part[];
+      };
+    }>;
+  };
+
+  const parts = resp.candidates?.[0]?.content?.parts;
+  if (!parts) return [];
+
+  return parts
+    .filter(
+      (p): p is Part & { functionCall: FunctionCall } =>
+        p.functionCall !== undefined,
+    )
+    .map((p, index) => ({
+      id: `gemini_call_${p.functionCall.name}_${index}`,
+      name: p.functionCall.name || "",
+      args: (p.functionCall.args as Record<string, unknown>) || {},
+      thoughtSignature:
+        (p as any).thoughtSignature || (p as any).thought_signature,
+    }));
+}
+
+/**
+ * 从 AI 响应提取文本内容
+ */
+export function extractTextContent(response: unknown): string {
+  const resp = response as {
+    candidates?: Array<{
+      content?: {
+        parts?: Part[];
+      };
+    }>;
+  };
+
+  const parts = resp.candidates?.[0]?.content?.parts;
+  if (!parts) return "";
+
+  return parts
+    .filter((p): p is Part & { text: string } => p.text !== undefined)
+    .map((p) => p.text)
+    .join("");
+}
+
+/**
+ * 从 UnifiedMessage 转换为 Gemini Content
+ * (用于初始上下文构建，仅在会话创建时调用一次)
+ */
+export function fromUnifiedMessage(message: UnifiedMessage): Content {
+  const role = message.role === "assistant" ? "model" : message.role;
+
+  // 处理工具响应消息
+  if (message.role === "tool") {
+    const toolResponses = message.content
+      .filter((p): p is ToolResponseContentPart => p.type === "tool_result")
+      .map((p) => ({
+        name: p.toolResult.name,
+        response: p.toolResult.content,
+      }));
+    return buildFunctionResponseMessage(toolResponses);
+  }
+
+  // 处理普通消息
+  const parts: Part[] = [];
+
+  for (const part of message.content) {
+    if (part.type === "text") {
+      parts.push({ text: (part as TextContentPart).text });
+    } else if (part.type === "tool_use") {
+      const toolCall = part as ToolCallContentPart;
+      parts.push({
+        functionCall: {
+          name: toolCall.toolUse.name,
+          args: toolCall.toolUse.args,
+        },
+      });
+    }
+  }
+
+  return {
+    role: role === "system" ? "user" : role === "model" ? "model" : "user",
+    parts,
+  };
+}
+
+/**
+ * 批量从 UnifiedMessage[] 转换为 Content[]
+ * (用于初始上下文构建)
+ */
+export function fromUnifiedMessages(messages: UnifiedMessage[]): Content[] {
+  return messages
+    .filter((m) => m.role !== "system") // System 在 Gemini 中单独处理
+    .map(fromUnifiedMessage);
+}
+
+// ============================================================================
 // Re-exports for Backward Compatibility
 // ============================================================================
 
@@ -950,3 +1127,6 @@ export type {
 
 // Alias for backward compatibility
 export type { EmbeddingResponse as EmbeddingResult };
+
+// Re-export Content type for session management
+export type { Content, Part };

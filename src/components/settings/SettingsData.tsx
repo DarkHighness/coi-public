@@ -5,6 +5,7 @@ import { SettingsDataProps } from "./types";
 import { useRAG } from "../../hooks/useRAG";
 import { GlobalStorageStats } from "../../services/rag";
 import { getImageStorageStats } from "../../utils/imageStorage";
+import { sessionManager } from "../../services/ai/sessionManager";
 
 export const SettingsData: React.FC<SettingsDataProps> = ({
   saveCount = 0,
@@ -23,11 +24,16 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
     count: number;
     size: number;
   } | null>(null);
+  const [sessionStats, setSessionStats] = useState<{
+    persistedSessionCount: number;
+    totalHistoryItems: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchStorageEstimate();
     fetchRagStats();
     fetchImageStats();
+    fetchSessionStats();
 
     // Poll for RAG stats updates
     let intervalId: NodeJS.Timeout;
@@ -69,6 +75,18 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       setImageStats(stats);
     } catch (error) {
       console.error("Failed to fetch image stats:", error);
+    }
+  };
+
+  const fetchSessionStats = async () => {
+    try {
+      const stats = await sessionManager.getStats();
+      setSessionStats({
+        persistedSessionCount: stats.persistedSessionCount,
+        totalHistoryItems: stats.totalHistoryItems,
+      });
+    } catch (error) {
+      console.error("Failed to fetch session stats:", error);
     }
   };
 
@@ -308,6 +326,87 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
             ></path>
           </svg>
           {t("data.clearImages")}
+        </button>
+      </div>
+
+      {/* Clear Session Cache */}
+      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
+            {t("data.sessionCache", "AI Context Cache")}
+          </h3>
+          <button
+            onClick={fetchSessionStats}
+            className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
+          >
+            {t("refresh")}
+          </button>
+        </div>
+        <p className="text-xs text-theme-muted mb-3">
+          {t(
+            "data.sessionCacheDesc",
+            "Cached conversation history reduces token usage when resuming games",
+          )}
+        </p>
+        {sessionStats && (
+          <div className="space-y-2 text-sm mb-4">
+            <div className="flex justify-between items-center">
+              <span className="text-theme-muted">
+                {t("data.cachedSessions", "Cached Sessions")}:
+              </span>
+              <span className="text-theme-text font-mono">
+                {sessionStats.persistedSessionCount}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-theme-muted">
+                {t("data.totalMessages", "Total Messages")}:
+              </span>
+              <span className="text-theme-text font-mono">
+                {sessionStats.totalHistoryItems}
+              </span>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={async () => {
+            if (
+              window.confirm(
+                t(
+                  "data.confirmClearSessionCache",
+                  "Clear all cached AI context? This won't affect your saves.",
+                ),
+              )
+            ) {
+              try {
+                await sessionManager.clearAll();
+                showToast(
+                  t("data.sessionCacheCleared", "Session cache cleared"),
+                  "info",
+                );
+                fetchSessionStats();
+              } catch (error) {
+                console.error("Failed to clear session cache:", error);
+                showToast("Failed to clear session cache", "error");
+              }
+            }
+          }}
+          className="w-full px-4 py-3 bg-theme-surface border border-theme-border hover:border-theme-primary text-theme-text rounded hover:bg-theme-surface-highlight transition-colors font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            ></path>
+          </svg>
+          {t("data.clearSessionCache", "Clear Cache")}
         </button>
       </div>
 

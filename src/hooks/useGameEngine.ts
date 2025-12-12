@@ -694,6 +694,48 @@ export const useGameEngine = () => {
     }
 
     const { theme, customContext } = savedConversation;
+
+    // Check for model mismatch - if user changed model, warn and offer to restart
+    const currentLoreConfig = aiSettings.lore;
+    const savedModelId = savedConversation.modelId;
+    const savedProviderId = savedConversation.providerId;
+
+    if (
+      savedModelId &&
+      (savedModelId !== currentLoreConfig.modelId ||
+        savedProviderId !== currentLoreConfig.providerId)
+    ) {
+      // Model has changed - prompt user
+      const confirmRestart = window.confirm(
+        t("outline.modelMismatch", {
+          oldModel: savedModelId,
+          newModel: currentLoreConfig.modelId,
+          defaultValue: `The outline was started with model "${savedModelId}" but you're now using "${currentLoreConfig.modelId}". Continuing with a different model may cause errors.\n\nClick OK to restart from scratch with the new model, or Cancel to continue anyway (not recommended).`,
+        }),
+      );
+
+      if (confirmRestart) {
+        // Clear the saved conversation and restart fresh
+        console.log(
+          "[ResumeOutline] User chose to restart with new model, clearing saved conversation",
+        );
+        setGameState((prev) => ({
+          ...prev,
+          outlineConversation: undefined,
+        }));
+        // Return to let the caller handle starting a fresh game
+        showToast(
+          t("outline.restartingWithNewModel", "Restarting with new model..."),
+          "info",
+        );
+        return;
+      }
+      // User chose to continue anyway - log warning
+      console.warn(
+        `[ResumeOutline] User chose to continue with mismatched model: saved=${savedModelId}, current=${currentLoreConfig.modelId}`,
+      );
+    }
+
     console.log(
       `[ResumeOutline] Resuming from phase ${savedConversation.currentPhase} for theme ${theme}`,
     );
@@ -1233,6 +1275,7 @@ export const useGameEngine = () => {
         themeKey: gameStateRef.current.theme,
         tFunc: t,
         settings: aiSettings,
+        slotId: currentSlotId || "default",
       };
 
       const { response, logs } = await generateForceUpdate(
