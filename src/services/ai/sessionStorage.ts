@@ -24,20 +24,43 @@ export interface SessionConfig {
 }
 
 /**
- * 会话能力标志 - 记录 Provider/Model 支持的功能
- * 这些标志在运行时检测并持久化，避免重复尝试不支持的功能
+ * ModelCapabilities - 记录 Provider/Model 支持的功能。
+ *
+ * 这些标志在运行时检测并持久化，避免重复尝试不支持的功能。
  */
-export interface SessionCapabilities {
+export interface ModelCapabilities {
   /** 是否支持 tool_choice: "required" (强制调用工具) */
   supportsRequiredToolChoice: boolean;
-  // 未来扩展:
-  // supportsStreaming: boolean;
-  // supportsImages: boolean;
+  /** 是否支持 tools (function calling) */
+  supportsTools: boolean;
+  /** 是否支持并行工具调用 */
+  supportsParallelTools: boolean;
+  /** 是否支持图像生成 */
+  supportsImage: boolean;
+  /** 是否支持视频生成 */
+  supportsVideo: boolean;
+  /** 是否支持语音/TTS */
+  supportsAudio: boolean;
+  /** 是否支持 Embedding */
+  supportsEmbedding: boolean;
 }
 
+/** ProviderCacheHint - 每个 Provider 自己维护的 KV cache / prefix cache hint。 */
+export type ProviderCacheHint =
+  | { protocol: "gemini"; cachedContentName?: string }
+  | { protocol: "openai"; cacheKey?: string }
+  | { protocol: "openrouter"; cacheKey?: string }
+  | { protocol: "claude"; cacheKey?: string };
+
 /** 默认能力值 (乐观假设，直到检测到不支持) */
-export const DEFAULT_CAPABILITIES: SessionCapabilities = {
+export const DEFAULT_MODEL_CAPABILITIES: ModelCapabilities = {
   supportsRequiredToolChoice: true,
+  supportsTools: true,
+  supportsParallelTools: true,
+  supportsImage: false,
+  supportsVideo: false,
+  supportsAudio: false,
+  supportsEmbedding: false,
 };
 
 export interface StoredSession {
@@ -48,8 +71,10 @@ export interface StoredSession {
   lastSummaryId: string | null;
   createdAt: number;
   lastAccessedAt: number;
-  /** 运行时检测到的能力标志 */
-  capabilities: SessionCapabilities;
+  /** 运行时检测到的模型能力 */
+  modelCapabilities: ModelCapabilities;
+  /** Provider 自己维护的 cache hint */
+  cacheHint: ProviderCacheHint | null;
 }
 
 // =============================================================================
@@ -57,7 +82,8 @@ export interface StoredSession {
 // =============================================================================
 
 const DB_NAME = "coi-session-cache";
-const DB_VERSION = 1;
+// NOTE: 彻底重构后，不做迁移；升级版本并在 onupgradeneeded 中重建 store 来清空旧数据。
+const DB_VERSION = 2;
 const STORE_NAME = "sessions";
 const MAX_SESSIONS = 100;
 
@@ -96,15 +122,17 @@ class SessionStorage {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Create sessions store with indexes
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
-          store.createIndex("slotId", "slotId", { unique: false });
-          store.createIndex("lastAccessedAt", "lastAccessedAt", {
-            unique: false,
-          });
-          console.log("[SessionStorage] Created sessions store");
+        // 彻底重构：直接清空旧数据（不做迁移）。
+        if (db.objectStoreNames.contains(STORE_NAME)) {
+          db.deleteObjectStore(STORE_NAME);
         }
+
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+        store.createIndex("slotId", "slotId", { unique: false });
+        store.createIndex("lastAccessedAt", "lastAccessedAt", {
+          unique: false,
+        });
+        console.log("[SessionStorage] Recreated sessions store (cleared old data)");
       };
     });
 

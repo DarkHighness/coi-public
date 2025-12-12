@@ -22,29 +22,30 @@ import {
   StorySegment,
   GameState,
   UnifiedMessage,
-} from "../../types";
+} from "../../../../types";
 
-import { ToolCallResult } from "../providers/types";
-import { GameDatabase } from "../gameDatabase";
+import { ToolCallResult } from "../../../providers/types";
+import { GameDatabase } from "../../../gameDatabase";
 import {
   getSummaryToolsForStage,
   SummaryStage,
   getNextSummaryStage,
   SUMMARY_STAGE_ORDER,
-} from "../tools";
+} from "../../../tools";
 
 import {
   createUserMessage,
   createToolCallMessage,
   createToolResponseMessage,
-} from "../messageTypes";
+} from "../../../messageTypes";
 
-import { generateContentUnifiedInternal } from "./core";
 import {
   getProviderConfig,
   createLogEntry,
   createProviderConfig,
-} from "./utils";
+} from "../../utils";
+
+import { sessionManager } from "../../sessionManager";
 
 // ============================================================================
 // Types
@@ -397,6 +398,15 @@ export const runSummaryAgenticLoop = async (
   const { instance, modelId } = providerInfo;
   const protocol = instance.protocol;
 
+  const summarySession = await sessionManager.getOrCreateSession({
+    slotId: "summary",
+    forkId: -2,
+    providerId: instance.id,
+    modelId,
+    protocol: instance.protocol,
+  });
+  const provider = sessionManager.getProvider(summarySession.id, instance);
+
   // Initialize
   const systemInstruction = getSummarySystemInstruction(language);
   const initialContext = buildSummaryInitialContext(input);
@@ -457,19 +467,21 @@ export const runSummaryAgenticLoop = async (
     };
 
     // Generate response
-    const config = createProviderConfig(instance);
-    const { result, usage } = await generateContentUnifiedInternal(
-      protocol,
-      config,
+    const { result, usage, raw } = await provider.generateChat({
       modelId,
       systemInstruction,
-      conversationHistory,
-      undefined, // No schema needed, using tools
-      { tools: toolConfig, logEndpoint: `summary-${currentStage}` },
-    );
+      messages: conversationHistory as unknown[],
+      tools: toolConfig,
+      thinkingLevel: settings.story?.thinkingLevel,
+      mediaResolution: settings.story?.mediaResolution,
+      temperature: settings.story?.temperature,
+      topP: settings.story?.topP,
+      topK: settings.story?.topK,
+      minP: settings.story?.minP,
+    });
 
     // Capture raw response for logging
-    const rawResponse = JSON.stringify(result, null, 2);
+    const rawResponse = JSON.stringify(raw ?? result, null, 2);
 
     // Accumulate usage
     if (usage) {

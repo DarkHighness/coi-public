@@ -42,7 +42,7 @@ import {
   getVeoScriptPrompt,
 } from "../prompts/index";
 
-import { GenerateContentResult, generateContentUnified } from "./core";
+import { createProvider } from "./provider/createProvider";
 
 import { getProviderConfig, createLogEntry } from "./utils";
 
@@ -172,7 +172,16 @@ export const translateGameContent = async (
   if (!providerInfo) {
     throw new Error("Translation provider not configured");
   }
-  const { instance, modelId } = providerInfo;
+  const {
+    instance,
+    modelId,
+    thinkingLevel,
+    mediaResolution,
+    temperature,
+    topP,
+    topK,
+    minP,
+  } = providerInfo;
 
   // 提取需要翻译的文本字段
   const segmentsToTranslate = segments.map((s) => ({
@@ -191,17 +200,30 @@ export const translateGameContent = async (
   const prompt = getTranslationPrompt(targetLanguage, JSON.stringify(payload));
   const sys =
     "Professional translator. Translate all text fields while preserving JSON structure and IDs. Maintain tone and style appropriate to the content. Output valid JSON.";
-  const contents = [{ role: "user", parts: [{ text: prompt }] }];
+  const contents: unknown[] =
+    instance.protocol === "gemini"
+      ? ([{ role: "user", parts: [{ text: prompt }] }] as unknown[])
+      : ([
+          {
+            role: "user",
+            content: [{ type: "text", text: prompt }],
+          },
+        ] as unknown[]);
 
   try {
-    const { result } = await generateContentUnified(
-      instance.protocol,
+    const provider = createProvider(instance);
+    const { result } = await provider.generateChat({
       modelId,
-      sys,
-      contents,
-      translationSchema,
-      { settings, logEndpoint: "translation" },
-    );
+      systemInstruction: sys,
+      messages: contents,
+      schema: translationSchema,
+      thinkingLevel,
+      mediaResolution,
+      temperature,
+      topP,
+      topK,
+      minP,
+    });
 
     // 合并翻译结果和原始 segments
     const translatedPayload = result as {
@@ -424,20 +446,42 @@ export const generateVeoScript = async (
   if (!providerInfo) {
     throw new Error("Script provider not configured");
   }
-  const { instance, modelId } = providerInfo;
+  const {
+    instance,
+    modelId,
+    thinkingLevel,
+    mediaResolution,
+    temperature,
+    topP,
+    topK,
+    minP,
+  } = providerInfo;
   const sys =
     "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
-  const contents = [{ role: "user", parts: [{ text: prompt }] }];
+  const contents: unknown[] =
+    instance.protocol === "gemini"
+      ? ([{ role: "user", parts: [{ text: prompt }] }] as unknown[])
+      : ([
+          {
+            role: "user",
+            content: [{ type: "text", text: prompt }],
+          },
+        ] as unknown[]);
 
   try {
-    const { result } = await generateContentUnified(
-      instance.protocol,
+    const provider = createProvider(instance);
+    const { result } = await provider.generateChat({
       modelId,
-      sys,
-      contents,
-      undefined, // no schema for script generation
-      { settings, logEndpoint: "veoScript" },
-    );
+      systemInstruction: sys,
+      messages: contents,
+      schema: undefined,
+      thinkingLevel,
+      mediaResolution,
+      temperature,
+      topP,
+      topK,
+      minP,
+    });
     // result should be the text string since no schema was provided
     return typeof result === "string" ? result : JSON.stringify(result);
   } catch (e: unknown) {

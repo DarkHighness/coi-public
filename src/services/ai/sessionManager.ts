@@ -16,17 +16,21 @@
  * - 内存中只保留当前存档的会话，其他会话持久化到 IndexedDB
  */
 
-import type { ProviderProtocol } from "../../types";
+import type { ProviderInstance, ProviderProtocol } from "../../types";
 import {
   sessionStorage,
   StoredSession,
   SessionConfig,
-  SessionCapabilities,
-  DEFAULT_CAPABILITIES,
+  ModelCapabilities,
+  ProviderCacheHint,
+  DEFAULT_MODEL_CAPABILITIES,
 } from "./sessionStorage";
 
+import type { ProviderBase } from "./provider/interfaces";
+import { createProvider } from "./provider/createProvider";
+
 // Re-export types
-export type { SessionConfig, StoredSession, SessionCapabilities };
+export type { SessionConfig, StoredSession, ModelCapabilities, ProviderCacheHint };
 
 // =============================================================================
 // Session Types
@@ -60,8 +64,13 @@ interface Session {
   lastAccessedAt: number;
   /** 是否有未持久化的变更 */
   dirty: boolean;
-  /** 运行时检测到的能力标志 */
-  capabilities: SessionCapabilities;
+  /** 运行时检测到的模型能力 */
+  modelCapabilities: ModelCapabilities;
+  /** Provider 自己维护的 cache hint */
+  cacheHint: ProviderCacheHint | null;
+
+  /** 运行时缓存：固定 Provider 实例（不持久化） */
+  runtimeProvider?: ProviderBase;
 }
 
 // =============================================================================
@@ -142,8 +151,12 @@ class HistorySessionManager {
       this.currentSession = {
         ...stored,
         dirty: false,
-        // 合并默认能力值（兼容旧版本存储）
-        capabilities: { ...DEFAULT_CAPABILITIES, ...stored.capabilities },
+        // 合并默认能力值（彻底重构后仍允许缺省字段）
+        modelCapabilities: {
+          ...DEFAULT_MODEL_CAPABILITIES,
+          ...(stored.modelCapabilities || (stored as any).capabilities),
+        },
+        cacheHint: stored.cacheHint ?? null,
       };
       console.log(
         `[SessionManager] Loaded session from storage: ${newSessionId} (${stored.nativeHistory.length} messages)`,
@@ -160,7 +173,8 @@ class HistorySessionManager {
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
       dirty: false,
-      capabilities: { ...DEFAULT_CAPABILITIES },
+      modelCapabilities: { ...DEFAULT_MODEL_CAPABILITIES },
+      cacheHint: null,
     };
 
     this.currentSession = session;
@@ -174,6 +188,31 @@ class HistorySessionManager {
    */
   getCurrentSession(): Session | null {
     return this.currentSession;
+  }
+
+  /**
+   * 获取/缓存当前会话关联的 Provider。
+   * 设计约束：一个 Session 只能绑定一个固定 Provider（providerId + protocol）。
+   */
+  getProvider(sessionId: string, instance: ProviderInstance): ProviderBase {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      throw new Error(`[SessionManager] Session not current: ${sessionId}`);
+    }
+    if (this.currentSession.config.providerId !== instance.id) {
+      throw new Error(
+        `[SessionManager] Provider mismatch for session ${sessionId}: expected ${this.currentSession.config.providerId}, got ${instance.id}`,
+      );
+    }
+    if (this.currentSession.config.protocol !== instance.protocol) {
+      throw new Error(
+        `[SessionManager] Protocol mismatch for session ${sessionId}: expected ${this.currentSession.config.protocol}, got ${instance.protocol}`,
+      );
+    }
+
+    if (!this.currentSession.runtimeProvider) {
+      this.currentSession.runtimeProvider = createProvider(instance);
+    }
+    return this.currentSession.runtimeProvider;
   }
 
   /**
@@ -226,6 +265,7 @@ class HistorySessionManager {
     );
     this.currentSession.nativeHistory = [];
     this.currentSession.lastSummaryId = summaryId;
+    this.currentSession.cacheHint = null;
     this.currentSession.lastAccessedAt = Date.now();
     this.currentSession.dirty = true;
 
@@ -257,6 +297,7 @@ class HistorySessionManager {
       `[SessionManager] Context overflow, clearing history for session: ${sessionId}`,
     );
     this.currentSession.nativeHistory = [];
+    this.currentSession.cacheHint = null;
     this.currentSession.lastAccessedAt = Date.now();
     this.currentSession.dirty = true;
 
@@ -373,29 +414,29 @@ class HistorySessionManager {
   }
 
   // ===========================================================================
-  // Capability Management
+  // ModelCapabilities Management
   // ===========================================================================
 
   /**
    * 获取会话能力标志
    */
-  getCapability<K extends keyof SessionCapabilities>(
+  getModelCapability<K extends keyof ModelCapabilities>(
     sessionId: string,
     key: K,
-  ): SessionCapabilities[K] {
+  ): ModelCapabilities[K] {
     if (!this.currentSession || this.currentSession.id !== sessionId) {
-      return DEFAULT_CAPABILITIES[key];
+      return DEFAULT_MODEL_CAPABILITIES[key];
     }
-    return this.currentSession.capabilities[key];
+    return this.currentSession.modelCapabilities[key];
   }
 
   /**
    * 设置会话能力标志（自动触发持久化）
    */
-  setCapability<K extends keyof SessionCapabilities>(
+  setModelCapability<K extends keyof ModelCapabilities>(
     sessionId: string,
     key: K,
-    value: SessionCapabilities[K],
+    value: ModelCapabilities[K],
   ): void {
     if (!this.currentSession || this.currentSession.id !== sessionId) {
       console.warn(
@@ -404,12 +445,12 @@ class HistorySessionManager {
       return;
     }
 
-    const oldValue = this.currentSession.capabilities[key];
+    const oldValue = this.currentSession.modelCapabilities[key];
     if (oldValue !== value) {
       console.log(
         `[SessionManager] Capability ${key} changed: ${oldValue} -> ${value}`,
       );
-      this.currentSession.capabilities[key] = value;
+      this.currentSession.modelCapabilities[key] = value;
       this.currentSession.dirty = true;
       this.schedulePersist();
     }
@@ -431,7 +472,7 @@ class HistorySessionManager {
     }
 
     // 如果请求 required，检查会话是否支持
-    const supportsRequired = this.getCapability(
+    const supportsRequired = this.getModelCapability(
       sessionId,
       "supportsRequiredToolChoice",
     );
@@ -444,6 +485,35 @@ class HistorySessionManager {
     }
 
     return "required";
+  }
+
+  // ===========================================================================
+  // Cache Hint Management
+  // ===========================================================================
+
+  getCacheHint(sessionId: string): ProviderCacheHint | null {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      return null;
+    }
+    return this.currentSession.cacheHint;
+  }
+
+  setCacheHint(sessionId: string, hint: ProviderCacheHint | null): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(
+        `[SessionManager] Cannot set cache hint: session not current: ${sessionId}`,
+      );
+      return;
+    }
+
+    const old = this.currentSession.cacheHint;
+    const next = hint;
+    const changed = JSON.stringify(old) !== JSON.stringify(next);
+    if (!changed) return;
+
+    this.currentSession.cacheHint = next;
+    this.currentSession.dirty = true;
+    this.schedulePersist();
   }
   // Private Methods
   // ===========================================================================
@@ -492,7 +562,8 @@ class HistorySessionManager {
       lastSummaryId: this.currentSession.lastSummaryId,
       createdAt: this.currentSession.createdAt,
       lastAccessedAt: this.currentSession.lastAccessedAt,
-      capabilities: this.currentSession.capabilities,
+      modelCapabilities: this.currentSession.modelCapabilities,
+      cacheHint: this.currentSession.cacheHint,
     };
 
     try {

@@ -11,13 +11,13 @@ import {
   ProviderInstance,
   UnifiedMessage,
   OutlineConversationState,
-} from "../../types";
+} from "../../../../types";
 
-import { ToolCallResult, ZodToolDefinition } from "../providers/types";
+import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
   isInvalidArgumentError,
   HistoryCorruptedError,
-} from "./contextCompressor";
+} from "../../contextCompressor";
 
 import {
   OutlinePhase1,
@@ -38,7 +38,7 @@ import {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
-} from "../schemas";
+} from "../../../schemas";
 
 import {
   getOutlineSystemInstruction,
@@ -51,25 +51,26 @@ import {
   getOutlinePhase7Prompt,
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
-} from "../prompts/index";
+} from "../../../prompts/index";
 
-import { THEMES } from "../../utils/constants";
-
-import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
+import { THEMES } from "../../../../utils/constants";
 
 import {
   getProviderConfig,
   createLogEntry,
   createProviderConfig,
-} from "./utils";
+} from "../../utils";
 
 import {
   createUserMessage,
   createToolCallMessage,
   createToolResponseMessage,
-} from "../messageTypes";
+} from "../../../messageTypes";
 
-import { sessionManager } from "./sessionManager";
+import { sessionManager } from "../../sessionManager";
+
+import { detectModelCapabilitiesViaApi } from "../../provider/registry";
+import { buildCacheHint } from "../../provider/cacheHint";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
@@ -326,38 +327,100 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     protocol: instance.protocol,
   });
 
+  // Cache hint (provider-specific) - based on the initial prefix messages
+  // Outline 的静态前缀包括初始 system prompt 与首批 user 指令。
+  const initialPrefix = conversationHistory.slice(0, 2);
+  const cacheHint = buildCacheHint(instance.protocol, systemInstruction, initialPrefix);
+  sessionManager.setCacheHint(outlineSession.id, cacheHint);
+
+  // Refresh model capabilities via vendor API (cached, session-persisted)
+  detectModelCapabilitiesViaApi(instance.protocol, instance, modelId)
+    .then((caps) => {
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsTools",
+        caps.supportsTools,
+      );
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsParallelTools",
+        caps.supportsParallelTools,
+      );
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsImage",
+        caps.supportsImage,
+      );
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsVideo",
+        caps.supportsVideo,
+      );
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsAudio",
+        caps.supportsAudio,
+      );
+      sessionManager.setModelCapability(
+        outlineSession.id,
+        "supportsEmbedding",
+        caps.supportsEmbedding,
+      );
+    })
+    .catch(() => {
+      // best-effort; ignore
+    });
+
   // Helper to make API call with retry on tool choice error
   const callWithToolChoiceFallback = async (
     phaseTool: ZodToolDefinition,
     phaseNum: number,
   ) => {
-    const config = createProviderConfig(instance);
+    const provider = sessionManager.getProvider(outlineSession.id, instance);
     const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
       outlineSession.id,
       "required",
     );
 
     try {
-      return await generateContentUnifiedInternal(
-        instance.protocol,
-        config,
+      const { result, usage, raw } = await provider.generateChat({
         modelId,
         systemInstruction,
-        conversationHistory,
-        undefined,
-        {
-          tools: [
-            {
-              name: phaseTool.name,
-              description: phaseTool.description,
-              parameters: phaseTool.parameters,
-            },
-          ],
-          toolChoice: effectiveToolChoice,
-          settings,
-          logEndpoint: `outline-phase${phaseNum}`,
-        },
-      );
+        messages: conversationHistory as unknown[],
+        tools: [
+          {
+            name: phaseTool.name,
+            description: phaseTool.description,
+            parameters: phaseTool.parameters,
+          },
+        ],
+        toolChoice: effectiveToolChoice,
+        thinkingLevel: settings.story?.thinkingLevel,
+        mediaResolution: settings.story?.mediaResolution,
+        temperature: settings.story?.temperature,
+        topP: settings.story?.topP,
+        topK: settings.story?.topK,
+        minP: settings.story?.minP,
+      });
+
+      return {
+        result,
+        usage,
+        raw,
+        log: createLogEntry(
+          instance.protocol,
+          modelId,
+          `outline-phase${phaseNum}`,
+          { tool: phaseTool.name },
+          raw,
+          usage,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
+      };
     } catch (e) {
       // Check if this is a tool_choice not supported error
       if (
@@ -368,32 +431,50 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
           `[OutlineAgentic] Tool choice 'required' not supported, falling back to 'auto'`,
         );
         // Update session capability
-        sessionManager.setCapability(
+        sessionManager.setModelCapability(
           outlineSession.id,
           "supportsRequiredToolChoice",
           false,
         );
         // Retry with auto
-        return await generateContentUnifiedInternal(
-          instance.protocol,
-          config,
+        const { result, usage, raw } = await provider.generateChat({
           modelId,
           systemInstruction,
-          conversationHistory,
-          undefined,
-          {
-            tools: [
-              {
-                name: phaseTool.name,
-                description: phaseTool.description,
-                parameters: phaseTool.parameters,
-              },
-            ],
-            toolChoice: "auto",
-            settings,
-            logEndpoint: `outline-phase${phaseNum}`,
-          },
-        );
+          messages: conversationHistory as unknown[],
+          tools: [
+            {
+              name: phaseTool.name,
+              description: phaseTool.description,
+              parameters: phaseTool.parameters,
+            },
+          ],
+          toolChoice: "auto",
+          thinkingLevel: settings.story?.thinkingLevel,
+          mediaResolution: settings.story?.mediaResolution,
+          temperature: settings.story?.temperature,
+          topP: settings.story?.topP,
+          topK: settings.story?.topK,
+          minP: settings.story?.minP,
+        });
+
+        return {
+          result,
+          usage,
+          raw,
+          log: createLogEntry(
+            instance.protocol,
+            modelId,
+            `outline-phase${phaseNum}`,
+            { tool: phaseTool.name, toolChoice: "auto" },
+            raw,
+            usage,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+          ),
+        };
       }
       throw e;
     }
@@ -775,7 +856,7 @@ export const summarizeContext = async (
   logs: LogEntry[];
   error?: string;
 }> => {
-  const { runSummaryAgenticLoop } = await import("./summary");
+  const { runSummaryAgenticLoop } = await import("../summary/summary");
 
   try {
     const result = await runSummaryAgenticLoop({

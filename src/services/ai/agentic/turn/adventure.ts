@@ -7,24 +7,23 @@ import {
   GameState,
   TurnContext,
   StorySegment,
-  UnifiedMessage,
   GameResponse,
-} from "../../types";
+} from "../../../../types";
 
 import {
   isContextLengthError,
   isInvalidArgumentError,
   ContextOverflowError,
   HistoryCorruptedError,
-} from "./contextCompressor";
+} from "../../contextCompressor";
 
 import {
   ToolCallResult,
   MalformedToolCallError,
   ZodToolDefinition,
-} from "../providers/types";
+} from "../../../providers/types";
 
-import { GameDatabase } from "../gameDatabase";
+import { GameDatabase } from "../../../gameDatabase";
 import {
   SEARCH_TOOL,
   FINISH_TURN_TOOL,
@@ -41,27 +40,33 @@ import {
   CharacterConditionPayload,
   CharacterTraitPayload,
   CharacterProfilePayload,
-} from "../tools";
-import { getCoreSystemInstruction } from "../prompts/index";
-import { buildLayeredContext } from "../prompts/contextBuilder";
+} from "../../../tools";
+import { getCoreSystemInstruction } from "../../../prompts/index";
+import { buildLayeredContext } from "../../../prompts/contextBuilder";
 
 import {
   createUserMessage,
   createToolCallMessage,
   createToolResponseMessage,
-} from "../messageTypes";
+  fromGeminiFormat,
+  toGeminiFormat,
+  UnifiedMessage,
+} from "../../../messageTypes";
 
-import { GenerateContentResult, generateContentUnifiedInternal } from "./core";
+import { createProvider } from "../../provider/createProvider";
 
 import {
   getProviderConfig,
   createProviderConfig,
   createLogEntry,
   resolveThemeConfig,
-} from "./utils";
+} from "../../utils";
+
+import { detectModelCapabilitiesViaApi } from "../../provider/registry";
+import { buildCacheHint } from "../../provider/cacheHint";
 
 // Import Session Manager for internal history tracking
-import { sessionManager, SessionConfig } from "./sessionManager";
+import { sessionManager, SessionConfig } from "../../sessionManager";
 
 // Import prompt injection data
 // @ts-ignore
@@ -359,11 +364,47 @@ export const generateAdventureTurn = async (
   // Get or create session (async - may load from IndexedDB)
   const session = await sessionManager.getOrCreateSession(sessionConfig);
 
-  // Get cached history from session (in UnifiedMessage format for now)
-  // TODO: In future, this will be provider-native format
-  const cachedHistory = sessionManager.getHistory(
-    session.id,
-  ) as UnifiedMessage[];
+  // Cache hint (provider-specific) - derived from system + static prefix
+  // If static prefix changes, hint changes as well.
+  const cacheHint = buildCacheHint(instance.protocol, systemInstruction, staticMessages);
+  sessionManager.setCacheHint(session.id, cacheHint);
+
+  // Refresh model capabilities via vendor API (cached, session-persisted)
+  // NOTE: supportsRequiredToolChoice 由 Session 层运行时探测与降级维护。
+  detectModelCapabilitiesViaApi(instance.protocol, instance, modelId)
+    .then((caps) => {
+      sessionManager.setModelCapability(session.id, "supportsTools", caps.supportsTools);
+      sessionManager.setModelCapability(
+        session.id,
+        "supportsParallelTools",
+        caps.supportsParallelTools,
+      );
+      sessionManager.setModelCapability(session.id, "supportsImage", caps.supportsImage);
+      sessionManager.setModelCapability(session.id, "supportsVideo", caps.supportsVideo);
+      sessionManager.setModelCapability(session.id, "supportsAudio", caps.supportsAudio);
+      sessionManager.setModelCapability(
+        session.id,
+        "supportsEmbedding",
+        caps.supportsEmbedding,
+      );
+    })
+    .catch(() => {
+      // best-effort; ignore
+    });
+
+  // Get cached history from session (provider-native)
+  // - gemini: Content[] (parts)
+  // - others: UnifiedMessage[]
+  const cachedHistoryNative = sessionManager.getHistory(session.id);
+  const cachedHistory: UnifiedMessage[] =
+    instance.protocol === "gemini"
+      ? fromGeminiFormat(
+          cachedHistoryNative as Array<{
+            role: string;
+            parts: Array<{ text?: string }>;
+          }>,
+        )
+      : (cachedHistoryNative as UnifiedMessage[]);
 
   // === CONTEXT CONSTRUCTION ===
   // Order: [Static] -> [Cached History] -> [Dynamic] -> [User Action]
@@ -389,10 +430,15 @@ export const generateAdventureTurn = async (
       generationDetails,
       context.settings,
       isSudoMode,
+      session.id,
     );
 
-    // Update session history with the new conversation
-    sessionManager.setHistory(session.id, result._conversationHistory);
+    // Update session history with the new conversation (provider-native)
+    const nextHistoryNative: unknown[] =
+      instance.protocol === "gemini"
+        ? (toGeminiFormat(result._conversationHistory) as unknown[])
+        : (result._conversationHistory as unknown[]);
+    sessionManager.setHistory(session.id, nextHistoryNative);
 
     return result;
   } catch (e: any) {
@@ -443,6 +489,9 @@ export const runAgenticLoop = async (
   isSudoMode: boolean = false,
   _sessionId?: string, // Session ID for future native format storage
 ): Promise<AgenticLoopResult> => {
+  const provider = _sessionId
+    ? sessionManager.getProvider(_sessionId, instance)
+    : createProvider(instance);
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
   // Token/Turn limits
@@ -558,7 +607,7 @@ You are in AGENTIC MODE.
       parameters: t.parameters as any, // Cast to avoid Zod type mismatch
     }));
 
-    let result: GenerateContentResult["result"];
+    let result: any;
     let usage: TokenUsage;
 
     let maxRetries = 2; // For malformed tool calls
@@ -570,24 +619,29 @@ You are in AGENTIC MODE.
     // Inner Retry Loop: Handle Dynamic Tool Output Truncation & Retries
     while (retryCount <= maxRetries) {
       try {
-        const config = createProviderConfig(instance);
-        const resultData = await generateContentUnifiedInternal(
-          protocol,
-          config,
-          modelId,
-          systemInstruction,
-          conversationHistory,
-          effectiveSchema,
-          {
-            tools: effectiveToolConfig,
-            generationDetails,
-            settings,
-            logEndpoint: `adventure-loop-${loopIterations}`,
-          },
-        );
+        const storyCfg = settings.story;
+        const requestMessages: unknown[] =
+          protocol === "gemini"
+            ? (toGeminiFormat(conversationHistory) as unknown[])
+            : (conversationHistory as unknown[]);
 
-        result = resultData.result;
-        usage = resultData.usage;
+        const { result: providerResult, usage: providerUsage } =
+          await provider.generateChat({
+            modelId,
+            systemInstruction,
+            messages: requestMessages,
+            schema: effectiveSchema,
+            tools: effectiveToolConfig,
+            thinkingLevel: storyCfg?.thinkingLevel,
+            mediaResolution: storyCfg?.mediaResolution,
+            temperature: storyCfg?.temperature,
+            topP: storyCfg?.topP,
+            topK: storyCfg?.topK,
+            minP: storyCfg?.minP,
+          });
+
+        result = providerResult;
+        usage = providerUsage;
         console.log(`[Agentic Loop] Iteration ${loopIterations} response.`);
         break;
       } catch (e) {
@@ -1486,7 +1540,7 @@ export async function executeRagSearch(
   db: GameDatabase,
 ): Promise<unknown> {
   // Dynamic import to avoid circular dependencies if any, and because it's a separate service
-  const { getRAGService } = await import("../rag");
+  const { getRAGService } = await import("../../../rag");
   const ragService = getRAGService();
 
   if (!ragService) {

@@ -4,9 +4,9 @@ import {
   TurnContext,
   GameResponse,
   LogEntry,
-} from "../../types";
+} from "../../../../types";
 
-import { generateAdventureTurn, AgenticLoopResult } from "./adventure";
+import { generateAdventureTurn, AgenticLoopResult } from "../turn/adventure";
 
 // ============================================================================
 // Force Update Logic - Thin wrapper over generateAdventureTurn
