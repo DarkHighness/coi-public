@@ -75,6 +75,8 @@ export interface ModelInfo extends BaseModelInfo {
 export interface GenerateContentOptions {
   /** Gemini Thinking 模式级别 */
   thinkingLevel?: "low" | "medium" | "high";
+  /** OpenAI Reasoning 模式级别 (o1/o3 系列) */
+  reasoningEffort?: "low" | "medium" | "high";
   /** 媒体分辨率 (Gemini Vision) */
   mediaResolution?: "low" | "medium" | "high";
   /** 生成温度 (0-2) */
@@ -133,7 +135,7 @@ export interface ZodToolDefinition {
 // ============================================================================
 
 /** 消息角色 */
-export type MessageRole = "system" | "user" | "assistant" | "tool";
+export type MessageRole = "system" | "user" | "assistant" | "tool" | "developer";
 
 /** 文本内容部分 */
 export interface TextContentPart {
@@ -146,6 +148,12 @@ export interface ImageContentPart {
   type: "image";
   mimeType: string;
   data: string; // base64
+}
+
+/** Reasoning/thinking 内容部分 (OpenAI o1/o3, Claude Extended Thinking) */
+export interface ReasoningContentPart {
+  type: "reasoning";
+  reasoning: string;
 }
 
 /** 工具调用部分 */
@@ -175,7 +183,8 @@ export type ContentPart =
   | TextContentPart
   | ImageContentPart
   | ToolCallContentPart
-  | ToolResponseContentPart;
+  | ToolResponseContentPart
+  | ReasoningContentPart;
 
 /** 统一消息格式 */
 export interface UnifiedMessage {

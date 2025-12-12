@@ -37,6 +37,7 @@ import {
   TextContentPart,
   ToolCallContentPart,
   ToolResponseContentPart,
+  ReasoningContentPart,
   SafetyFilterError,
   JSONParseError,
   AIProviderError,
@@ -140,6 +141,18 @@ export async function getModels(config: OpenAIConfig): Promise<ModelInfo[]> {
 }
 
 /**
+ * 检测是否为 OpenAI reasoning 模型
+ */
+function isReasoningModel(model: string): boolean {
+  const lowerModel = model.toLowerCase();
+  return (
+    lowerModel.startsWith("o1") ||
+    lowerModel.startsWith("o3") ||
+    lowerModel.includes("reasoning")
+  );
+}
+
+/**
  * 根据模型 ID 推断能力
  */
 function inferModelCapabilities(
@@ -212,6 +225,16 @@ function inferModelCapabilities(
         capabilities.parallelTools = true;
       }
     }
+  }
+
+  // Reasoning 模型特殊处理 (o1/o3 系列)
+  // 早期 reasoning 模型可能不支持工具调用
+  if (id.startsWith("o1") || id.startsWith("o3")) {
+    capabilities.text = true;
+    // o1-2024-12-17 及之后版本支持工具调用
+    // 为简化起见，假设所有模型都支持（如不支持，API 会返回错误）
+    capabilities.tools = true;
+    capabilities.parallelTools = false; // Reasoning 模型通常不支持并行工具调用
   }
 
   return capabilities;
@@ -289,11 +312,17 @@ export async function generateContent(
       const isClaude = config.claudeCompatibility && isClaudeModel(model);
       const useCompat = isGemini || isClaude;
 
+      // 检测是否为 OpenAI reasoning 模型
+      const isReasoning = isReasoningModel(model);
+
       // 转换消息格式
       // 注意: 始终使用标准 OpenAI 格式，因为 OpenAI SDK 无法产生 Claude/Gemini 原生格式
       // 消息格式转换应由代理服务（如 OpenRouter, LiteLLM）处理
       // 兼容模式主要影响: schema 格式 (无 additionalProperties) 和 strict 设置 (false)
-      const messages = convertToOpenAIMessages(systemInstruction, contents);
+      // Reasoning 模型使用 developer message 而不是 system message
+      const messages = isReasoning
+        ? convertToReasoningMessages(systemInstruction, contents)
+        : convertToOpenAIMessages(systemInstruction, contents);
 
       // 转换工具定义 - 兼容模式处理
       let tools: ChatCompletionTool[] | undefined;
@@ -381,6 +410,20 @@ export async function generateContent(
               : undefined,
         };
 
+      // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
+      if (isReasoning && options?.reasoningEffort) {
+        (requestParams as any).reasoning_effort = options.reasoningEffort;
+      }
+
+      // 兼容模式下的 thinking 参数 (通过 OpenAI 接口调用 Claude/Gemini)
+      // 代理服务会将这些参数转换为原生格式
+      if (useCompat && (options?.thinkingLevel || options?.reasoningEffort)) {
+        const thinkingParam = options?.reasoningEffort || options?.thinkingLevel;
+        if (thinkingParam) {
+          (requestParams as any).reasoning_effort = thinkingParam;
+        }
+      }
+
       let content = "";
       let toolCalls: ToolCallResult[] = [];
       let usage: TokenUsage = {
@@ -392,6 +435,7 @@ export async function generateContent(
         | ChatCompletion
         | ChatCompletionChunk
         | AsyncIterable<ChatCompletionChunk>;
+      let reasoningContent = ""; // Reasoning content (OpenAI o1/o3)
 
       console.log(
         `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude})`,
@@ -432,6 +476,11 @@ export async function generateContent(
           if (delta?.content) {
             content += delta.content;
             options.onChunk(delta.content);
+          }
+
+          // 处理 reasoning content (OpenAI reasoning 模型)
+          if (isReasoning && (delta as any)?.reasoning_content) {
+            reasoningContent += (delta as any).reasoning_content;
           }
 
           // 处理工具调用 (流式模式下工具调用是增量传输的)
@@ -518,18 +567,31 @@ export async function generateContent(
           totalTokens: response.usage?.total_tokens || 0,
           cacheRead: response.usage?.prompt_tokens_details?.cached_tokens || 0,
         };
+
+        // 提取 reasoning content (OpenAI o1/o3 系列)
+        if (isReasoning && (message as any)?.reasoning_content) {
+          reasoningContent = (message as any).reasoning_content;
+          console.log(`[OpenAI] Extracted reasoning content (${reasoningContent.length} chars)`);
+        }
       }
 
       console.log(`[OpenAI] Generation complete. Usage:`, usage);
 
-      // 如果有工具调用，返回工具调用结果（同时保留 content）
+      // 如果有工具调用，返回工具调用结果（同时保留 content 和 reasoning）
       if (toolCalls.length > 0) {
+        const toolResult: any = {
+          functionCalls: toolCalls,
+          // 保留 content 以便在下次请求时包含
+          content: content || undefined,
+        };
+
+        // 如果有 reasoning content，也包含进去
+        if (reasoningContent) {
+          toolResult._reasoning = reasoningContent;
+        }
+
         return {
-          result: {
-            functionCalls: toolCalls,
-            // 保留 content 以便在下次请求时包含
-            content: content || undefined,
-          },
+          result: toolResult,
           usage,
           raw: rawResponse,
         };
@@ -550,6 +612,15 @@ export async function generateContent(
           validateSchema(result, schema, "openai");
         }
 
+        // 如果有 reasoning content，添加到结果中
+        if (reasoningContent) {
+          return {
+            result: { ...result, _reasoning: reasoningContent },
+            usage,
+            raw: rawResponse
+          };
+        }
+
         return { result, usage, raw: rawResponse };
       } catch (error) {
         // 如果有 schema 但解析失败
@@ -562,7 +633,11 @@ export async function generateContent(
           throw new JSONParseError("openai", content.substring(0, 500), error);
         }
         // 返回纯文本
-        return { result: { narrative: content }, usage, raw: rawResponse };
+        const narrative: any = { narrative: content };
+        if (reasoningContent) {
+          narrative._reasoning = reasoningContent;
+        }
+        return { result: narrative, usage, raw: rawResponse };
       }
     },
     3,
@@ -656,6 +731,120 @@ function convertToOpenAIMessages(
       role: msg.role as "user" | "assistant",
       content: textContent,
     });
+  }
+
+  return result;
+}
+
+/**
+ * 转换消息到 OpenAI Reasoning 模型格式
+ *
+ * 关键差异:
+ * - 使用 "developer" role 替代 "system" role
+ * - 需要处理和保留 reasoning content parts
+ */
+function convertToReasoningMessages(
+  systemInstruction: string,
+  messages: UnifiedMessage[],
+): ChatCompletionMessageParam[] {
+  const result: ChatCompletionMessageParam[] = [];
+
+  // Reasoning 模型使用 developer 角色替代 system
+  if (systemInstruction) {
+    result.push({
+      role: "developer" as any,
+      content: systemInstruction
+    });
+  }
+
+  for (const msg of messages) {
+    // 处理工具响应消息
+    if (msg.role === "tool") {
+      for (const part of msg.content) {
+        if (part.type === "tool_result") {
+          const tr = part as {
+            type: "tool_result";
+            toolResult: { id: string; content: unknown };
+          };
+          const toolMsg: ChatCompletionToolMessageParam = {
+            role: "tool",
+            tool_call_id: tr.toolResult.id,
+            content:
+              typeof tr.toolResult.content === "string"
+                ? tr.toolResult.content
+                : JSON.stringify(tr.toolResult.content),
+          };
+          result.push(toolMsg);
+        }
+      }
+      continue;
+    }
+
+    // 处理助手消息（可能包含工具调用和 reasoning content）
+    if (msg.role === "assistant") {
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_use",
+      );
+
+      const reasoningParts = msg.content.filter(
+        (p): p is ReasoningContentPart => p.type === "reasoning",
+      );
+
+      if (toolCallParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\\n");
+
+        const assistantMsg: ChatCompletionAssistantMessageParam = {
+          role: "assistant",
+          content: textContent || null,
+          tool_calls: toolCallParts.map((p) => ({
+            id: p.toolUse.id,
+            type: "function" as const,
+            function: {
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
+            },
+          })),
+        };
+        result.push(assistantMsg);
+
+        // 如果有 reasoning content，添加为后续消息
+        // 注意：OpenAI API 可能要求 reasoning content 在响应中自动包含
+        // 这里我们只是保留历史记录中的 reasoning content
+        continue;
+      }
+
+      // 如果有 reasoning content 但没有工具调用，包含在文本中
+      if (reasoningParts.length > 0) {
+        const textContent = msg.content
+          .filter((p): p is TextContentPart => p.type === "text")
+          .map((p) => p.text)
+          .join("\\n");
+
+        // Reasoning content 通常不需要显式发送回模型
+        // 它会自动出现在响应中，我们只是记录它
+        result.push({
+          role: "assistant",
+          content: textContent,
+        });
+        continue;
+      }
+    }
+
+    // 处理普通文本消息
+    const textContent = msg.content
+      .filter((p): p is TextContentPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\\n");
+
+    if (textContent) {
+      result.push({
+        role: msg.role === "developer" ? ("developer" as any) : (msg.role as "user" | "assistant"),
+        content: textContent,
+      });
+    }
   }
 
   return result;

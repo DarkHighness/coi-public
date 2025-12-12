@@ -284,6 +284,15 @@ export async function generateContent(
         toolChoice,
       };
 
+      // 添加 reasoning_effort 参数 (OpenAI reasoning 模型或兼容模式)
+      // OpenRouter 会自动将 reasoning_effort 转换为各 provider 的原生格式
+      if (options?.reasoningEffort || options?.thinkingLevel) {
+        const reasoningParam = options?.reasoningEffort || options?.thinkingLevel;
+        if (reasoningParam) {
+          requestParams.reasoning_effort = reasoningParam;
+        }
+      }
+
       // Add schema for structured output (only when no tools are present)
       if (schema && (!tools || tools.length === 0)) {
         const openAIFormat = zodToOpenAIResponseFormat(schema);
@@ -371,15 +380,26 @@ async function handleNonStreamingResponse(
     cacheRead: data.usage?.cacheReadInputTokens || 0,
     cacheWrite: data.usage?.cacheCreationInputTokens || 0,
   };
+
+  // 提取 reasoning content (如果存在)
+  let reasoningContent = "";
+  if (message?.reasoning_content) {
+    reasoningContent = message.reasoning_content;
+  }
+
   console.log(`[OpenRouter] Generation complete. Usage:`, usage);
 
   if (toolCalls.length > 0) {
+    const toolResult: any = {
+      functionCalls: toolCalls,
+      // 保留 content 以便在下次请求时包含
+      content: content || undefined,
+    };
+    if (reasoningContent) {
+      toolResult._reasoning = reasoningContent;
+    }
     return {
-      result: {
-        functionCalls: toolCalls,
-        // 保留 content 以便在下次请求时包含
-        content: content || undefined,
-      },
+      result: toolResult,
       usage,
       raw: data,
     };
@@ -389,6 +409,9 @@ async function handleNonStreamingResponse(
       const cleanedContent = cleanJsonContent(content);
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
+      if (reasoningContent) {
+        return { result: { ...result, _reasoning: reasoningContent }, usage, raw: data };
+      }
       return { result, usage, raw: data };
     } catch (error) {
       console.error(`[OpenRouter] Failed to parse JSON content:`, content);
@@ -398,7 +421,12 @@ async function handleNonStreamingResponse(
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }
-  return { result: content, usage, raw: data };
+  // 返回纯文本
+  const result: any = { content };
+  if (reasoningContent) {
+    result._reasoning = reasoningContent;
+  }
+  return { result, usage, raw: data };
 }
 /**
  * Handle streaming response using SDK
@@ -414,6 +442,7 @@ async function handleStreamingResponse(
     createRequestOptions(),
   );
   let content = "";
+  let reasoningContent = ""; // 累积 reasoning content
   let usage: TokenUsage = {
     promptTokens: 0,
     completionTokens: 0,
@@ -429,6 +458,10 @@ async function handleStreamingResponse(
       if (delta?.content) {
         content += delta.content;
         onChunk(delta.content);
+      }
+      // 处理 reasoning content
+      if (delta?.reasoning_content) {
+        reasoningContent += delta.reasoning_content;
       }
       if (delta?.toolCalls) {
         for (const tc of delta.toolCalls) {
@@ -482,12 +515,16 @@ async function handleStreamingResponse(
   console.log(`[OpenRouter] Stream complete. Usage:`, usage);
 
   if (toolCalls.length > 0) {
+    const toolResult: any = {
+      functionCalls: toolCalls,
+      // 保留 content 以便在下次请求时包含
+      content: content || undefined,
+    };
+    if (reasoningContent) {
+      toolResult._reasoning = reasoningContent;
+    }
     return {
-      result: {
-        functionCalls: toolCalls,
-        // 保留 content 以便在下次请求时包含
-        content: content || undefined,
-      },
+      result: toolResult,
       usage,
       raw: null,
     };
@@ -497,6 +534,9 @@ async function handleStreamingResponse(
       const cleanedContent = cleanJsonContent(content);
       const result = JSON.parse(jsonrepair(cleanedContent));
       validateSchema(result, schema, "openrouter");
+      if (reasoningContent) {
+        return { result: { ...result, _reasoning: reasoningContent }, usage, raw: null };
+      }
       return { result, usage, raw: null };
     } catch (error) {
       console.error(`[OpenRouter] Failed to parse JSON content:`, content);
@@ -506,7 +546,12 @@ async function handleStreamingResponse(
       throw new JSONParseError("openrouter", content.substring(0, 500), error);
     }
   }
-  return { result: content, usage, raw: null };
+  // 返回纯文本
+  const result: any = { content };
+  if (reasoningContent) {
+    result._reasoning = reasoningContent;
+  }
+  return { result, usage, raw: null };
 }
 /**
  * Convert messages to OpenAI format

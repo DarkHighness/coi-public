@@ -367,6 +367,7 @@ Answer the user's request using relevant tools (if they are available). Before c
         totalTokens: 0,
       };
       let rawResponse: Message | AsyncIterable<MessageStreamEvent>;
+      let thinkingContent = ""; // Claude Extended Thinking content
 
       console.log(
         `[Claude] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}`,
@@ -413,6 +414,9 @@ Answer the user's request using relevant tools (if they are available). Before c
               // 文本内容
               content += delta.text;
               options.onChunk(delta.text);
+            } else if (delta.type === "thinking_delta") {
+              // Thinking content (Claude Extended Thinking)
+              thinkingContent += (delta as any).thinking || "";
             } else if (delta.type === "input_json_delta") {
               // 工具调用参数（增量）
               const existing = accumulatedToolCalls.get(currentToolIndex);
@@ -435,6 +439,10 @@ Answer the user's request using relevant tools (if they are available). Before c
                 (event.message.usage as any).cache_read_input_tokens || 0;
             }
           }
+        }
+
+        if (thinkingContent) {
+          console.log(`[Claude] Extracted thinking content from stream (${thinkingContent.length} chars)`);
         }
 
         // 解析累积的工具调用
@@ -468,6 +476,9 @@ Answer the user's request using relevant tools (if they are available). Before c
         for (const block of response.content) {
           if (block.type === "text") {
             content += (block as TextBlock).text;
+          } else if (block.type === "thinking") {
+            // 提取 thinking content (Claude Extended Thinking)
+            thinkingContent += (block as any).thinking || "";
           } else if (block.type === "tool_use") {
             const toolBlock = block as ToolUseBlock;
             toolCalls.push({
@@ -476,6 +487,10 @@ Answer the user's request using relevant tools (if they are available). Before c
               args: toolBlock.input as Record<string, unknown>,
             });
           }
+        }
+
+        if (thinkingContent) {
+          console.log(`[Claude] Extracted thinking content (${thinkingContent.length} chars)`);
         }
 
         // 检查停止原因
@@ -494,14 +509,18 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       console.log(`[Claude] Generation complete. Usage:`, usage);
 
-      // 如果有工具调用，返回工具调用结果（同时保留 content）
+      // 如果有工具调用，返回工具调用结果（同时保留 content 和 thinking）
       if (toolCalls.length > 0) {
+        const toolResult: any = {
+          functionCalls: toolCalls,
+          // 保留 content 以便在下次请求时包含
+          content: content || undefined,
+        };
+        if (thinkingContent) {
+          toolResult._thinking = thinkingContent;
+        }
         return {
-          result: {
-            functionCalls: toolCalls,
-            // 保留 content 以便在下次请求时包含
-            content: content || undefined,
-          },
+          result: toolResult,
           usage,
           raw: rawResponse,
         };
@@ -519,6 +538,9 @@ Answer the user's request using relevant tools (if they are available). Before c
           const result = JSON.parse(jsonrepair(cleanedContent));
           // Schema Validation
           validateSchema(result, schema, "claude");
+          if (thinkingContent) {
+            return { result: { ...result, _thinking: thinkingContent }, usage, raw: rawResponse };
+          }
           return { result, usage, raw: rawResponse };
         } catch (error) {
           console.error(`[Claude] Failed to parse JSON content:`, content);
@@ -531,7 +553,11 @@ Answer the user's request using relevant tools (if they are available). Before c
       }
 
       // 返回纯文本
-      return { result: { narrative: content }, usage, raw: rawResponse };
+      const narrative: any = { narrative: content };
+      if (thinkingContent) {
+        narrative._thinking = thinkingContent;
+      }
+      return { result: narrative, usage, raw: rawResponse };
     },
     3,
     1000,
@@ -615,10 +641,27 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
           .map((p) => p.text)
           .join("\n");
 
-        const content: Array<
-          | { type: "text"; text: string }
-          | { type: "tool_use"; id: string; name: string; input: unknown }
-        > = [];
+        // 检查是否有 reasoning/thinking content
+        const reasoningParts = msg.content.filter(
+          (p) => p.type === "reasoning"
+        );
+
+        // const content: Array<
+        //   | { type: "text"; text: string }
+        //   | { type: "thinking"; thinking: string }
+        //   | { type: "tool_use"; id: string; name: string; input: unknown }
+        // > = [];
+        // 使用 any[] 以支持 thinking blocks（SDK 类型定义可能不完整）
+        const content: any[] = [];
+
+        // Claude 要求在多轮对话中保留 thinking blocks
+        // 如果有 thinking content，首先添加它
+        for (const rp of reasoningParts) {
+          content.push({
+            type: "thinking",
+            thinking: (rp as any).reasoning,
+          });
+        }
 
         // 添加文本内容（如果有）
         if (textContent) {
