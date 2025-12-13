@@ -59,6 +59,7 @@ import {
   getProviderConfig,
   createLogEntry,
   createProviderConfig,
+  extractJson,
 } from "../../utils";
 
 import {
@@ -278,6 +279,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
 **PROCESS:**
 - You will receive one phase instruction at a time
 - For each phase, you MUST call the provided tool to submit your data
+- **CRITICAL**: You must invoke the tool function directly. Do NOT return the schema as a JSON text block.
 - After submitting, wait for the next phase instruction
 `),
     );
@@ -330,46 +332,12 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
   // Cache hint (provider-specific) - based on the initial prefix messages
   // Outline 的静态前缀包括初始 system prompt 与首批 user 指令。
   const initialPrefix = conversationHistory.slice(0, 2);
-  const cacheHint = buildCacheHint(instance.protocol, systemInstruction, initialPrefix);
+  const cacheHint = buildCacheHint(
+    instance.protocol,
+    systemInstruction,
+    initialPrefix,
+  );
   sessionManager.setCacheHint(outlineSession.id, cacheHint);
-
-  // Refresh model capabilities via vendor API (cached, session-persisted)
-  detectModelCapabilitiesViaApi(instance.protocol, instance, modelId)
-    .then((caps) => {
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsTools",
-        caps.supportsTools,
-      );
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsParallelTools",
-        caps.supportsParallelTools,
-      );
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsImage",
-        caps.supportsImage,
-      );
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsVideo",
-        caps.supportsVideo,
-      );
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsAudio",
-        caps.supportsAudio,
-      );
-      sessionManager.setModelCapability(
-        outlineSession.id,
-        "supportsEmbedding",
-        caps.supportsEmbedding,
-      );
-    })
-    .catch(() => {
-      // best-effort; ignore
-    });
 
   // Helper to make API call with retry on tool choice error
   const callWithToolChoiceFallback = async (
@@ -489,13 +457,15 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     reportProgress(phaseNum, "starting");
 
     // Add phase-specific prompt
-    const phasePrompt = getPhasePrompt(
+    let phasePrompt = getPhasePrompt(
       phaseNum,
       theme,
       language,
       customContext,
     );
     if (phasePrompt) {
+      // Dynamically append tool usage emphasis
+      phasePrompt += `\n\nUse tool \`${phaseTool.name}\` to submit.`;
       conversationHistory.push(createUserMessage(phasePrompt));
     }
 
@@ -519,11 +489,29 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         // Get text content if present (some models return text with tool calls)
         const textContent = (result as { content?: string }).content;
 
-        if (toolCalls.length === 0) {
+        let finalToolCalls = toolCalls;
+
+        // Fallback: If no tool calls but text content exists, try to extract JSON
+        if (finalToolCalls.length === 0 && textContent) {
+           const potentialJson = extractJson(textContent);
+           if (potentialJson) {
+             const parseResult = phaseTool.parameters.safeParse(potentialJson);
+             if (parseResult.success) {
+               console.log(`[OutlineAgentic] FALLBACK: Detected valid JSON for phase ${phaseNum}`);
+               finalToolCalls = [{
+                 id: `fallback_${Date.now()}`,
+                 name: phaseTool.name,
+                 args: parseResult.data,
+               }];
+             }
+           }
+        }
+
+        if (finalToolCalls.length === 0) {
           throw new Error(`Phase ${phaseNum}: No tool call received`);
         }
 
-        const toolCall = toolCalls[0];
+        const toolCall = finalToolCalls[0];
         if (toolCall.name !== phaseTool.name) {
           throw new Error(
             `Phase ${phaseNum}: Expected ${phaseTool.name}, got ${toolCall.name}`,

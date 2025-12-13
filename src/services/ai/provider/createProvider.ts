@@ -15,6 +15,7 @@ import {
   generateVideo as generateGeminiVideo,
   generateSpeech as generateGeminiSpeech,
   generateEmbedding as generateGeminiEmbedding,
+  fromUnifiedMessages as fromUnifiedToGemini,
 } from "../../providers/geminiProvider";
 
 import {
@@ -36,7 +37,10 @@ import {
   generateEmbedding as generateClaudeEmbedding,
 } from "../../providers/claudeProvider";
 
-import { createProviderConfig, detectModelCapabilitiesViaApi } from "./registry";
+import {
+  createProviderConfig,
+  detectModelCapabilitiesViaApi,
+} from "./registry";
 import type {
   ProviderBase,
   ProviderModelCapabilities,
@@ -62,8 +66,14 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
     instanceId: instance.id,
     instance,
 
-    async getModelCapabilities(modelId: string): Promise<ProviderModelCapabilities> {
-      const caps = await detectModelCapabilitiesViaApi(instance.protocol, instance, modelId);
+    async getModelCapabilities(
+      modelId: string,
+    ): Promise<ProviderModelCapabilities> {
+      const caps = await detectModelCapabilitiesViaApi(
+        instance.protocol,
+        instance,
+        modelId,
+      );
       return {
         supportsRequiredToolChoice: true, // runtime-detected in Session
         supportsTools: caps.supportsTools,
@@ -75,7 +85,9 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       };
     },
 
-    async generateChat(request: ChatGenerateRequest): Promise<ChatGenerateResponse> {
+    async generateChat(
+      request: ChatGenerateRequest,
+    ): Promise<ChatGenerateResponse> {
       const cfg = createProviderConfig(instance) as
         | GeminiConfig
         | OpenAIConfig
@@ -95,11 +107,13 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       };
 
       if (instance.protocol === "gemini") {
+        // Convert UnifiedMessage[] to Gemini's native Content[] format
+        const geminiMessages = fromUnifiedToGemini(request.messages as any);
         const { result, usage, raw } = await generateGeminiContent(
           cfg as GeminiConfig,
           request.modelId,
           request.systemInstruction,
-          request.messages as any,
+          geminiMessages,
           ensureSchema(request.schema),
           options as any,
         );
@@ -139,10 +153,14 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         return { result, usage, raw };
       }
 
-      throw new Error(`Chat generation not supported by protocol: ${instance.protocol}`);
+      throw new Error(
+        `Chat generation not supported by protocol: ${instance.protocol}`,
+      );
     },
 
-    async generateImage(request: ImageGenerateRequest): Promise<ImageGenerateResponse> {
+    async generateImage(
+      request: ImageGenerateRequest,
+    ): Promise<ImageGenerateResponse> {
       const cfg = createProviderConfig(instance) as
         | GeminiConfig
         | OpenAIConfig
@@ -154,22 +172,39 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       let raw;
 
       if (instance.protocol === "openai") {
-        const res = await generateOpenAIImage(cfg as OpenAIConfig, request.modelId, request.prompt, request.resolution);
+        const res = await generateOpenAIImage(
+          cfg as OpenAIConfig,
+          request.modelId,
+          request.prompt,
+          request.resolution,
+        );
         url = res.url;
         usage = res.usage;
         raw = res.raw;
       } else if (instance.protocol === "openrouter") {
-        const res = await generateOpenRouterImage(cfg as OpenRouterConfig, request.modelId, request.prompt, request.resolution);
+        const res = await generateOpenRouterImage(
+          cfg as OpenRouterConfig,
+          request.modelId,
+          request.prompt,
+          request.resolution,
+        );
         url = res.url;
         usage = res.usage;
         raw = res.raw;
       } else if (instance.protocol === "gemini") {
-        const res = await generateGeminiImage(cfg as GeminiConfig, request.modelId, request.prompt, request.resolution);
+        const res = await generateGeminiImage(
+          cfg as GeminiConfig,
+          request.modelId,
+          request.prompt,
+          request.resolution,
+        );
         url = res.url;
         usage = res.usage;
         raw = res.raw;
       } else {
-        throw new Error(`Image generation not supported by protocol: ${instance.protocol}`);
+        throw new Error(
+          `Image generation not supported by protocol: ${instance.protocol}`,
+        );
       }
 
       let blob: Blob | undefined;
@@ -187,16 +222,27 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       return { url, usage, raw, blob };
     },
 
-    async generateVideo(request: VideoGenerateRequest): Promise<VideoGenerateResponse> {
+    async generateVideo(
+      request: VideoGenerateRequest,
+    ): Promise<VideoGenerateResponse> {
       if (instance.protocol !== "gemini") {
-        throw new Error(`Video generation not supported by protocol: ${instance.protocol}`);
+        throw new Error(
+          `Video generation not supported by protocol: ${instance.protocol}`,
+        );
       }
       const cfg = createProviderConfig(instance) as GeminiConfig;
-      const res = await generateGeminiVideo(cfg, request.modelId, request.prompt, request.resolution);
+      const res = await generateGeminiVideo(
+        cfg,
+        request.modelId,
+        request.prompt,
+        request.resolution,
+      );
       return { url: res.url, usage: res.usage, raw: res.raw };
     },
 
-    async generateSpeech(request: SpeechGenerateRequest): Promise<SpeechGenerateResponse> {
+    async generateSpeech(
+      request: SpeechGenerateRequest,
+    ): Promise<SpeechGenerateResponse> {
       const cfg = createProviderConfig(instance) as
         | GeminiConfig
         | OpenAIConfig
@@ -246,10 +292,14 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         return { audio: res.audio, usage: res.usage, raw: res.raw };
       }
 
-      throw new Error(`Speech generation not supported by protocol: ${instance.protocol}`);
+      throw new Error(
+        `Speech generation not supported by protocol: ${instance.protocol}`,
+      );
     },
 
-    async generateEmbedding(request: EmbeddingGenerateRequest): Promise<EmbeddingGenerateResponse> {
+    async generateEmbedding(
+      request: EmbeddingGenerateRequest,
+    ): Promise<EmbeddingGenerateResponse> {
       const cfg = createProviderConfig(instance) as
         | GeminiConfig
         | OpenAIConfig
@@ -257,35 +307,73 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         | ClaudeConfig;
 
       if (instance.protocol === "gemini") {
-        const res = await generateGeminiEmbedding(cfg as GeminiConfig, request.modelId, request.texts, request.dimensions, undefined);
+        const res = await generateGeminiEmbedding(
+          cfg as GeminiConfig,
+          request.modelId,
+          request.texts,
+          request.dimensions,
+          undefined,
+        );
         return {
           embeddings: res.embeddings,
-          usage: { promptTokens: res.usage.promptTokens, totalTokens: res.usage.totalTokens },
+          usage: {
+            promptTokens: res.usage.promptTokens,
+            totalTokens: res.usage.totalTokens,
+          },
         };
       }
       if (instance.protocol === "openai") {
-        const res = await generateOpenAIEmbedding(cfg as OpenAIConfig, request.modelId, request.texts, request.dimensions, undefined);
+        const res = await generateOpenAIEmbedding(
+          cfg as OpenAIConfig,
+          request.modelId,
+          request.texts,
+          request.dimensions,
+          undefined,
+        );
         return {
           embeddings: res.embeddings,
-          usage: { promptTokens: res.usage.promptTokens, totalTokens: res.usage.totalTokens },
+          usage: {
+            promptTokens: res.usage.promptTokens,
+            totalTokens: res.usage.totalTokens,
+          },
         };
       }
       if (instance.protocol === "openrouter") {
-        const res = await generateOpenRouterEmbedding(cfg as OpenRouterConfig, request.modelId, request.texts, request.dimensions, undefined);
+        const res = await generateOpenRouterEmbedding(
+          cfg as OpenRouterConfig,
+          request.modelId,
+          request.texts,
+          request.dimensions,
+          undefined,
+        );
         return {
           embeddings: res.embeddings,
-          usage: { promptTokens: res.usage.promptTokens, totalTokens: res.usage.totalTokens },
+          usage: {
+            promptTokens: res.usage.promptTokens,
+            totalTokens: res.usage.totalTokens,
+          },
         };
       }
       if (instance.protocol === "claude") {
-        const res = await generateClaudeEmbedding(cfg as ClaudeConfig, request.modelId, request.texts, request.dimensions, undefined);
+        const res = await generateClaudeEmbedding(
+          cfg as ClaudeConfig,
+          request.modelId,
+          request.texts,
+          request.dimensions,
+          undefined,
+        );
         return {
           embeddings: res.embeddings,
-          usage: { promptTokens: res.usage.promptTokens, totalTokens: res.usage.totalTokens },
+          usage: {
+            promptTokens: res.usage.promptTokens,
+            totalTokens: res.usage.totalTokens,
+          },
         };
       }
 
-      throw new Error(`Embedding not supported by protocol: ${instance.protocol}`);
+      throw new Error(
+        `Embedding not supported by protocol: ${instance.protocol}`,
+      );
     },
   };
 }

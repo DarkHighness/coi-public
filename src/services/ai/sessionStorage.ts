@@ -75,6 +75,8 @@ export interface StoredSession {
   modelCapabilities: ModelCapabilities;
   /** Provider 自己维护的 cache hint */
   cacheHint: ProviderCacheHint | null;
+  /** Checkpoint Stack (History Lengths) */
+  checkpoints?: number[];
 }
 
 // =============================================================================
@@ -132,7 +134,9 @@ class SessionStorage {
         store.createIndex("lastAccessedAt", "lastAccessedAt", {
           unique: false,
         });
-        console.log("[SessionStorage] Recreated sessions store (cleared old data)");
+        console.log(
+          "[SessionStorage] Recreated sessions store (cleared old data)",
+        );
       };
     });
 

@@ -468,7 +468,7 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
 export const RAG_SEARCH_TOOL = defineTool({
   name: "rag_search",
   description:
-    "Semantic search across all game entities (story/npcs/locations/etc). Returns visible + hidden info.",
+    "Semantic search for long-term memory retrieval. Use when re-encountering entities, checking lore/history, or verifying facts not in immediate context.",
   parameters: z.object({
     query: z.string().describe("Natural language query."),
     types: z
@@ -1213,7 +1213,7 @@ export const searchToolSchema = z.object({
 export const SEARCH_TOOL = defineTool({
   name: "search_tool",
   description:
-    "Find and load tools for specific operations. Use this to get tools you need.",
+    "System Tool: Dynamically load specific toolsets (e.g., inventory tools, quest tools) if they are not currently available. Use this when you want to perform an action but lack the specific tool.",
   parameters: searchToolSchema,
 });
 

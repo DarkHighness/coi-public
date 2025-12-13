@@ -1065,9 +1065,16 @@ export function extractTextContent(response: unknown): string {
 export function fromUnifiedMessage(message: UnifiedMessage): Content {
   const role = message.role === "assistant" ? "model" : message.role;
 
+  // Handle legacy format where content might be a string
+  const contentArray = Array.isArray(message.content)
+    ? message.content
+    : message.content
+      ? [{ type: "text" as const, text: String(message.content) }]
+      : [];
+
   // 处理工具响应消息
   if (message.role === "tool") {
-    const toolResponses = message.content
+    const toolResponses = contentArray
       .filter((p): p is ToolResponseContentPart => p.type === "tool_result")
       .map((p) => ({
         name: p.toolResult.name,
@@ -1079,7 +1086,7 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
   // 处理普通消息
   const parts: Part[] = [];
 
-  for (const part of message.content) {
+  for (const part of contentArray) {
     if (part.type === "text") {
       parts.push({ text: (part as TextContentPart).text });
     } else if (part.type === "tool_use") {
@@ -1093,6 +1100,15 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
     }
   }
 
+  // Validate that parts array is not empty
+  if (parts.length === 0) {
+    console.warn(
+      "[Gemini] Message with no valid parts detected, adding empty text part to prevent API error",
+      message,
+    );
+    parts.push({ text: "" });
+  }
+
   return {
     role: role === "system" ? "user" : role === "model" ? "model" : "user",
     parts,
@@ -1103,10 +1119,19 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
  * 批量从 UnifiedMessage[] 转换为 Content[]
  * (用于初始上下文构建)
  */
-export function fromUnifiedMessages(messages: UnifiedMessage[]): Content[] {
+export function fromUnifiedMessages(
+  messages: (UnifiedMessage | Content)[],
+): Content[] {
   return messages
-    .filter((m) => m.role !== "system") // System 在 Gemini 中单独处理
-    .map(fromUnifiedMessage);
+    .filter((m) => (m as any).role !== "system") // System 在 Gemini 中单独处理
+    .map((m) => {
+      // Check if it's already a Gemini Content object (has parts)
+      // UnifiedMessage has 'content', Content has 'parts'
+      if ((m as any).parts && !(m as any).content) {
+        return m as Content;
+      }
+      return fromUnifiedMessage(m as UnifiedMessage);
+    });
 }
 
 // ============================================================================

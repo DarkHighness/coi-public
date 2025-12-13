@@ -294,6 +294,7 @@ export const useGameEngine = () => {
     customContext?: string,
     onStream?: (text: string) => void,
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
+    existingSlotId?: string,
   ) => {
     let selectedTheme =
       initialTheme ||
@@ -311,7 +312,7 @@ export const useGameEngine = () => {
       );
     }
 
-    const slotId = createSaveSlot(selectedTheme);
+    const slotId = existingSlotId || createSaveSlot(selectedTheme);
     setCurrentSlotId(slotId);
 
     // Note: RAG context switching is now handled automatically by the SharedWorker
@@ -715,25 +716,30 @@ export const useGameEngine = () => {
       );
 
       if (confirmRestart) {
-        // Clear the saved conversation and restart fresh
+        // User wants to restart with new model - clear conversation and start fresh in same slot
         console.log(
-          "[ResumeOutline] User chose to restart with new model, clearing saved conversation",
+          "[ResumeOutline] User chose to restart with new model, clearing conversation state",
         );
-        setGameState((prev) => ({
-          ...prev,
-          outlineConversation: undefined,
-        }));
-        // Return to let the caller handle starting a fresh game
+
         showToast(
           t("outline.restartingWithNewModel", "Restarting with new model..."),
           "info",
         );
-        return;
+
+        // Restart game generation using the existing slot
+        return startNewGame(
+          theme,
+          customContext,
+          onStream,
+          onPhaseProgress,
+          currentSlotId || undefined,
+        );
+      } else {
+        // User chose to continue anyway - log warning
+        console.warn(
+          `[ResumeOutline] User chose to continue with mismatched model: saved=${savedModelId}, current=${currentLoreConfig.modelId}`,
+        );
       }
-      // User chose to continue anyway - log warning
-      console.warn(
-        `[ResumeOutline] User chose to continue with mismatched model: saved=${savedModelId}, current=${currentLoreConfig.modelId}`,
-      );
     }
 
     console.log(

@@ -578,7 +578,9 @@
     "goal": "目标",
     "world": "世界观",
     "generating": "与世界连接中...",
-    "currentGoal": "当前目标"
+    "currentGoal": "当前目标",
+    "modelMismatch": "故事大纲是使用模型 \"{{oldModel}}\" 开始的，但您现在使用的是 \"{{newModel}}\"。继续使用不同的模型可能会导致错误。\n\n点击确定以使用新模型从头开始，或点击取消继续（不推荐）。",
+    "restartingWithNewModel": "正在使用新模型重新开始..."
   },
   "tree": {
     "map": "命运地图",
@@ -696,7 +698,12 @@
     "clearRag": "清空 RAG 知识库",
     "clearRagDesc": "删除所有 RAG 索引和向量数据。下次加载存档时将重新构建索引。",
     "confirmClearRag": "确定要清空 RAG 知识库吗？这将需要重新处理文档。",
-    "clearRagSuccess": "RAG 知识库已清空。"
+    "clearRagSuccess": "RAG 知识库已清空。",
+    "cachedSessions": "缓存会话",
+    "totalMessages": "总消息数",
+    "clearSessionCache": "清空会话缓存",
+    "sessionCache": "会话缓存",
+    "sessionCacheDesc": "缓存历史会话已在继续游戏时更好的命中前缀缓存"
   },
 
   "customTips": "添加细节以指导你的冒险故事",

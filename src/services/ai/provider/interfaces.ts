@@ -1,4 +1,8 @@
-import type { ProviderInstance, ProviderProtocol, TokenUsage } from "../../../types";
+import type {
+  ProviderInstance,
+  ProviderProtocol,
+  TokenUsage,
+} from "../../../types";
 import type { ZodTypeAny } from "zod";
 
 import type { ZodToolDefinition } from "../../providers/types";
@@ -19,7 +23,11 @@ export interface ChatGenerateRequest {
   /** provider-native messages; Provider 层不强制统一格式 */
   messages: unknown[];
   tools?: Array<Pick<ZodToolDefinition, "name" | "description" | "parameters">>;
-  toolChoice?: "auto" | "required" | "none" | { type: "function"; name: string };
+  toolChoice?:
+    | "auto"
+    | "required"
+    | "none"
+    | { type: "function"; name: string };
   schema?: ZodTypeAny;
   /** 不支持 streaming，本项目可忽略 */
   temperature?: number;
@@ -97,7 +105,11 @@ export interface ProviderBase {
   generateChat(request: ChatGenerateRequest): Promise<ChatGenerateResponse>;
 
   generateImage?(request: ImageGenerateRequest): Promise<ImageGenerateResponse>;
-  generateSpeech?(request: SpeechGenerateRequest): Promise<SpeechGenerateResponse>;
+  generateSpeech?(
+    request: SpeechGenerateRequest,
+  ): Promise<SpeechGenerateResponse>;
   generateVideo?(request: VideoGenerateRequest): Promise<VideoGenerateResponse>;
-  generateEmbedding?(request: EmbeddingGenerateRequest): Promise<EmbeddingGenerateResponse>;
+  generateEmbedding?(
+    request: EmbeddingGenerateRequest,
+  ): Promise<EmbeddingGenerateResponse>;
 }

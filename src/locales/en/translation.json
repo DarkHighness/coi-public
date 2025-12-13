@@ -690,7 +690,6 @@
     "storageUsed": "Storage Used",
     "storageQuota": "Storage Quota",
     "storageUsage": "Storage Usage",
-
     "storageUnavailable": "Storage information unavailable",
     "imageStorageInfo": "Image Storage Info",
     "totalImages": "Total Images",
@@ -708,7 +707,12 @@
     "import": "Import Data",
     "importDesc": "Restore game data from a JSON file",
     "importSuccess": "Game data imported successfully",
-    "importError": "Failed to import data: Invalid format"
+    "importError": "Failed to import data: Invalid format",
+    "cachedSessions": "Cached Sessions",
+    "totalMessages": "Total Messages",
+    "clearSessionCache": "Clear Session Cache",
+    "sessionCache": "Session Cache",
+    "sessionCacheDesc": "Cached history sessions are better hit prefix cache when continuing the game"
   },
   "customTips": "Add details to guide your adventure's story",
   "tip": "Tips",

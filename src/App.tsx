@@ -763,6 +763,19 @@ function AppContent() {
           (text) => setStreamedText((prev) => prev + text),
           (progress) => setPhaseProgress(progress),
         );
+      } else if (gameState.theme) {
+        // Fresh save (has theme but no outline/conversation) - start from beginning
+        console.log(
+          "[ContinueGame] Fresh save detected, starting outline generation",
+        );
+        setStreamedText("");
+        setPhaseProgress(null);
+        await startNewGame(
+          gameState.theme,
+          gameState.customContext,
+          (text) => setStreamedText((prev) => prev + text),
+          (progress) => setPhaseProgress(progress),
+        );
       } else {
         // No valid state to continue from - this shouldn't happen
         console.warn("[ContinueGame] No valid state to continue from");

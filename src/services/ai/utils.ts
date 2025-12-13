@@ -461,3 +461,62 @@ export const resolveThemeConfig = (
     isRestricted,
   };
 };
+
+/**
+ * Extract JSON from text
+ * Tries strategies:
+ * 1. Full text parse
+ * 2. Markdown JSON block
+ * 3. Brute force regex for {} or []
+ */
+export const extractJson = (text: string): unknown | null => {
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // Continue
+  }
+
+  // Strategy 2: Markdown block
+  const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (markdownMatch) {
+    try {
+      return JSON.parse(markdownMatch[1]);
+    } catch (e) {
+      // Continue
+    }
+  }
+
+  // Strategy 3: Find first { or [ and last matching } or ]
+  // This is a simplified regex approach, usually effective for single objects
+  const firstOpenBrace = text.indexOf("{");
+  const firstOpenBracket = text.indexOf("[");
+
+  let start: number = -1;
+  let end: number = -1;
+
+  if (firstOpenBrace !== -1 && (firstOpenBracket === -1 || firstOpenBrace < firstOpenBracket)) {
+      start = firstOpenBrace;
+      const lastCloseBrace = text.lastIndexOf("}");
+      if(lastCloseBrace !== -1) end = lastCloseBrace + 1;
+
+  } else if (firstOpenBracket !== -1) {
+      start = firstOpenBracket;
+      const lastCloseBracket = text.lastIndexOf("]");
+      if(lastCloseBracket !== -1) end = lastCloseBracket + 1;
+  }
+
+  if (start !== -1 && end !== -1 && end > start) {
+      try {
+          const substring = text.substring(start, end);
+          return JSON.parse(substring);
+      } catch(e) {
+          // One retry: sometimes there is trailing text like "}" or "]" which regex picked up naively
+          // But strict JSON parsing failed.
+          // For now, return null.
+      }
+  }
+
+  return null;
+}

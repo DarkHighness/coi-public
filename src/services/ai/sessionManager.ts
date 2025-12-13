@@ -28,9 +28,16 @@ import {
 
 import type { ProviderBase } from "./provider/interfaces";
 import { createProvider } from "./provider/createProvider";
+import { detectModelCapabilitiesViaApi } from "./provider/registry";
+// createProviderConfig is likely not needed if we use getProvider logic
 
 // Re-export types
-export type { SessionConfig, StoredSession, ModelCapabilities, ProviderCacheHint };
+export type {
+  SessionConfig,
+  StoredSession,
+  ModelCapabilities,
+  ProviderCacheHint,
+};
 
 // =============================================================================
 // Session Types
@@ -71,6 +78,12 @@ interface Session {
 
   /** 运行时缓存：固定 Provider 实例（不持久化） */
   runtimeProvider?: ProviderBase;
+
+  /**
+   * Checkpoint Stack (History Lengths)
+   * 支持精确的回滚机制 (Undo/Retry)
+   */
+  checkpoints: number[];
 }
 
 // =============================================================================
@@ -118,6 +131,48 @@ class HistorySessionManager {
    * @param config 会话配置
    * @returns 会话对象
    */
+  /**
+   * Ensure capabilities are detected for the session
+   */
+  async ensureCapabilities(sessionId: string): Promise<void> {
+    const session = this.currentSession;
+    if (!session || session.id !== sessionId) return;
+
+    try {
+      const provider = await this.getProvider(sessionId);
+      if (!provider) return;
+
+      const caps = await detectModelCapabilitiesViaApi(
+        session.config.protocol,
+        provider.instance,
+        session.config.modelId,
+      );
+
+      // Update capabilities
+      const currentJSON = JSON.stringify(session.modelCapabilities);
+      const newCaps = { ...session.modelCapabilities, ...caps };
+      const newJSON = JSON.stringify(newCaps);
+
+      if (currentJSON !== newJSON) {
+        session.modelCapabilities = newCaps;
+        session.dirty = true;
+        this.schedulePersist();
+        console.log(
+          `[SessionManager] Capabilities updated for ${sessionId}`,
+          caps,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[SessionManager] Failed to verify capabilities for ${sessionId}:`,
+        err,
+      );
+    }
+  }
+
+  /**
+   * 获取或创建会话
+   */
   async getOrCreateSession(config: SessionConfig): Promise<Session> {
     const newSessionId = this.generateSessionId(config);
 
@@ -141,6 +196,8 @@ class HistorySessionManager {
 
     // 已有内存会话
     if (this.currentSession) {
+      // Ensure capabilities are verified even for cached sessions (in case of restart)
+      await this.ensureCapabilities(this.currentSession.id);
       this.currentSession.lastAccessedAt = Date.now();
       return this.currentSession;
     }
@@ -148,18 +205,91 @@ class HistorySessionManager {
     // 尝试从 IndexedDB 加载
     const stored = await this.loadSessionFromStorage(newSessionId);
     if (stored) {
+      // SANITIZATION: Remove dangling/invalid tail messages
+      // This handles cases where the app exited while waiting for AI response
+      let sanitizedHistory = [...stored.nativeHistory];
+      let wasSanitized = false;
+
+      while (sanitizedHistory.length > 0) {
+        const last = sanitizedHistory[sanitizedHistory.length - 1] as any;
+
+        // 1. Remove dangling user messages (Interrupted request)
+        if (
+          last &&
+          (last.role === "user" ||
+            last.role === "function" ||
+            last.role === "tool")
+        ) {
+          console.warn(
+            `[SessionManager] Found dangling ${last.role} message in loaded session ${newSessionId}, removing.`,
+          );
+          sanitizedHistory.pop();
+          wasSanitized = true;
+          continue;
+        }
+
+        // 2. Remove empty/invalid model messages (API error or empty partial)
+        if (last && (last.role === "model" || last.role === "assistant")) {
+          // Gemini: Check for empty parts
+          if (
+            last.parts &&
+            Array.isArray(last.parts) &&
+            last.parts.length === 0
+          ) {
+            console.warn(
+              `[SessionManager] Found empty model message in loaded session ${newSessionId}, removing.`,
+            );
+            sanitizedHistory.pop();
+            wasSanitized = true;
+            continue;
+          }
+          // OpenAI/Generic: Check for empty content (if no tool calls)
+          if (
+            (!last.content || last.content === "") &&
+            (!last.tool_calls || last.tool_calls.length === 0)
+          ) {
+            // Note: Some models return empty content with tool calls, which IS valid.
+            // So we only remove if NO content AND NO tool calls.
+            // But usually we just check parts for Gemini.
+            // For safety, let's just stick to the evident "empty parts" for now.
+          }
+        }
+
+        break;
+      }
+
       this.currentSession = {
         ...stored,
-        dirty: false,
+        nativeHistory: sanitizedHistory,
+        dirty: wasSanitized, // Mark dirty if changed so we save the clean version later
         // 合并默认能力值（彻底重构后仍允许缺省字段）
         modelCapabilities: {
           ...DEFAULT_MODEL_CAPABILITIES,
           ...(stored.modelCapabilities || (stored as any).capabilities),
         },
         cacheHint: stored.cacheHint ?? null,
+        // Upgrade legacy session: init checkpoints
+        checkpoints: (stored as any).checkpoints || [],
       };
+
+      // SANITIZATION: Deduplicate history
+      const originalLength = this.currentSession.nativeHistory.length;
+      this.currentSession.nativeHistory = this.deduplicateHistory(
+        this.currentSession.nativeHistory,
+      );
+      if (this.currentSession.nativeHistory.length !== originalLength) {
+        wasSanitized = true;
+        console.log(
+          `[SessionManager] Deduplicated history: ${originalLength} -> ${this.currentSession.nativeHistory.length}`,
+        );
+      }
+
+      if (wasSanitized) {
+        this.schedulePersist();
+      }
+
       console.log(
-        `[SessionManager] Loaded session from storage: ${newSessionId} (${stored.nativeHistory.length} messages)`,
+        `[SessionManager] Loaded session from storage: ${newSessionId} (${this.currentSession.nativeHistory.length} messages${wasSanitized ? ", sanitized" : ""})`,
       );
       return this.currentSession;
     }
@@ -172,15 +302,69 @@ class HistorySessionManager {
       lastSummaryId: null,
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
-      dirty: false,
+      dirty: true,
       modelCapabilities: { ...DEFAULT_MODEL_CAPABILITIES },
       cacheHint: null,
+      checkpoints: [],
     };
 
     this.currentSession = session;
     console.log(`[SessionManager] Created new session: ${newSessionId}`);
+    this.currentSlotId = config.slotId;
+    this.schedulePersist();
+    return this.currentSession;
+  }
 
-    return session;
+  /**
+   * 记录检查点 (Checkpoint)
+   * 标记当前回合开始时的历史长度
+   */
+  checkpoint(sessionId: string): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(`[SessionManager] Session not current: ${sessionId}`);
+      return;
+    }
+
+    const currentLen = this.currentSession.nativeHistory.length;
+    // Don't push duplicate checkpoints if length hasn't changed (idempotent)
+    const lastCheckpoint =
+      this.currentSession.checkpoints[
+        this.currentSession.checkpoints.length - 1
+      ];
+    if (lastCheckpoint === currentLen) return;
+
+    this.currentSession.checkpoints.push(currentLen);
+    this.currentSession.dirty = true;
+    console.log(`[SessionManager] Checkpoint created at index ${currentLen}`);
+    this.schedulePersist();
+  }
+
+  /**
+   * 回滚到上一个检查点 (Rollback to Last Start)
+   */
+  rollbackToLastCheckpoint(sessionId: string): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(`[SessionManager] Session not current: ${sessionId}`);
+      return;
+    }
+
+    if (this.currentSession.checkpoints.length === 0) {
+      console.warn(`[SessionManager] No checkpoints to rollback to.`);
+      return;
+    }
+
+    const targetLen = this.currentSession.checkpoints.pop()!;
+    console.log(
+      `[SessionManager] Rolling back to checkpoint index ${targetLen}`,
+    );
+
+    if (targetLen <= this.currentSession.nativeHistory.length) {
+      this.currentSession.nativeHistory =
+        this.currentSession.nativeHistory.slice(0, targetLen);
+      this.currentSession.lastAccessedAt = Date.now();
+      this.currentSession.dirty = true;
+      this.schedulePersist();
+    }
   }
 
   /**
@@ -194,25 +378,35 @@ class HistorySessionManager {
    * 获取/缓存当前会话关联的 Provider。
    * 设计约束：一个 Session 只能绑定一个固定 Provider（providerId + protocol）。
    */
-  getProvider(sessionId: string, instance: ProviderInstance): ProviderBase {
+  getProvider(sessionId: string, instance?: ProviderInstance): ProviderBase {
     if (!this.currentSession || this.currentSession.id !== sessionId) {
       throw new Error(`[SessionManager] Session not current: ${sessionId}`);
     }
-    if (this.currentSession.config.providerId !== instance.id) {
-      throw new Error(
-        `[SessionManager] Provider mismatch for session ${sessionId}: expected ${this.currentSession.config.providerId}, got ${instance.id}`,
-      );
-    }
-    if (this.currentSession.config.protocol !== instance.protocol) {
-      throw new Error(
-        `[SessionManager] Protocol mismatch for session ${sessionId}: expected ${this.currentSession.config.protocol}, got ${instance.protocol}`,
-      );
+
+    if (instance) {
+      if (this.currentSession.config.providerId !== instance.id) {
+        throw new Error(
+          `[SessionManager] Provider mismatch for session ${sessionId}: expected ${this.currentSession.config.providerId}, got ${instance.id}`,
+        );
+      }
+      if (this.currentSession.config.protocol !== instance.protocol) {
+        throw new Error(
+          `[SessionManager] Protocol mismatch for session ${sessionId}: expected ${this.currentSession.config.protocol}, got ${instance.protocol}`,
+        );
+      }
+
+      if (!this.currentSession.runtimeProvider) {
+        this.currentSession.runtimeProvider = createProvider(instance);
+      }
     }
 
-    if (!this.currentSession.runtimeProvider) {
-      this.currentSession.runtimeProvider = createProvider(instance);
+    if (this.currentSession.runtimeProvider) {
+      return this.currentSession.runtimeProvider;
     }
-    return this.currentSession.runtimeProvider;
+
+    throw new Error(
+      "[SessionManager] Provider instance required to initialize runtime provider",
+    );
   }
 
   /**
@@ -247,6 +441,73 @@ class HistorySessionManager {
       return 0;
     }
     return this.currentSession.nativeHistory.length;
+  }
+
+  /**
+   * 检查会话历史是否为空
+   */
+  isEmpty(sessionId: string): boolean {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      return true;
+    }
+    return this.currentSession.nativeHistory.length === 0;
+  }
+
+  /**
+   * 追加历史记录 (增量更新)
+   */
+  appendHistory(sessionId: string, newMessages: unknown[]): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(`[SessionManager] Session not current: ${sessionId}`);
+      return;
+    }
+
+    const preLength = this.currentSession.nativeHistory.length;
+    const merged = [...this.currentSession.nativeHistory, ...newMessages];
+
+    console.log(
+      `[SessionManager] Appending ${newMessages.length} messages. Merged length: ${merged.length}`,
+    );
+
+    this.currentSession.nativeHistory = this.deduplicateHistory(merged);
+
+    if (this.currentSession.nativeHistory.length !== merged.length) {
+      console.log(
+        `[SessionManager] Deduplication removed ${merged.length - this.currentSession.nativeHistory.length} messages.`,
+      );
+    }
+
+    this.currentSession.lastAccessedAt = Date.now();
+    this.currentSession.dirty = true;
+    this.schedulePersist();
+  }
+
+  /**
+   * 回滚历史记录 (删除最后 N 条消息)
+   */
+
+  rollbackHistory(sessionId: string, count: number): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(`[SessionManager] Session not current: ${sessionId}`);
+      return;
+    }
+
+    if (count <= 0) return;
+
+    console.log(
+      `[SessionManager] Rolling back ${count} messages from session ${sessionId}`,
+    );
+    const len = this.currentSession.nativeHistory.length;
+    // Ensure we don't rollback more than exists
+    const safeCount = Math.min(count, len);
+
+    this.currentSession.nativeHistory = this.currentSession.nativeHistory.slice(
+      0,
+      len - safeCount,
+    );
+    this.currentSession.lastAccessedAt = Date.now();
+    this.currentSession.dirty = true;
+    this.schedulePersist();
   }
 
   /**
@@ -564,6 +825,7 @@ class HistorySessionManager {
       lastAccessedAt: this.currentSession.lastAccessedAt,
       modelCapabilities: this.currentSession.modelCapabilities,
       cacheHint: this.currentSession.cacheHint,
+      checkpoints: this.currentSession.checkpoints,
     };
 
     try {
@@ -583,6 +845,9 @@ class HistorySessionManager {
   /**
    * 调度延迟持久化（防抖）
    */
+  /**
+   * 调度延迟持久化（防抖）
+   */
   private schedulePersist(): void {
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
@@ -590,6 +855,36 @@ class HistorySessionManager {
     this.persistTimer = setTimeout(() => {
       this.persistCurrentSession().catch(console.error);
     }, this.PERSIST_DEBOUNCE);
+  }
+
+  /**
+   * 去重历史记录 (移除相邻的重复消息)
+   * 使用 JSON.stringify 进行深度比较
+   */
+  private deduplicateHistory(history: unknown[]): unknown[] {
+    if (history.length === 0) return history;
+
+    const result: unknown[] = [history[0]];
+    let lastJson = JSON.stringify(history[0]);
+
+    for (let i = 1; i < history.length; i++) {
+      const current = history[i];
+      const currentJson = JSON.stringify(current);
+
+      if (currentJson !== lastJson) {
+        result.push(current);
+        lastJson = currentJson;
+      } else {
+        // Found duplicate, skip it
+        console.debug(
+          "[SessionManager] Removed duplicate message at index",
+          i,
+          current,
+        );
+      }
+    }
+
+    return result;
   }
 }
 

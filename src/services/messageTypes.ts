@@ -172,24 +172,36 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         msg.role === "assistant" &&
         msg.content.some((p) => p.type === "tool_use")
       ) {
+        const parts: any[] = [];
+
+        // Include text content if present (some models return text with tool calls)
+        const textParts = msg.content
+          .filter((p): p is TextPart => p.type === "text")
+          .map((p) => ({ text: p.text }));
+        parts.push(...textParts);
+
+        // Include tool calls
+        const toolParts = msg.content
+          .filter((p): p is ToolCallPart => p.type === "tool_use")
+          .map((p) => {
+            const part: any = {
+              functionCall: {
+                id: p.toolUse.id,
+                name: p.toolUse.name,
+                args: p.toolUse.args,
+              },
+            };
+            // Include thoughtSignature if present
+            if (p.toolUse.thoughtSignature) {
+              part.thoughtSignature = p.toolUse.thoughtSignature;
+            }
+            return part;
+          });
+        parts.push(...toolParts);
+
         return {
           role: "model",
-          parts: msg.content
-            .filter((p): p is ToolCallPart => p.type === "tool_use")
-            .map((p) => {
-              const part: any = {
-                functionCall: {
-                  id: p.toolUse.id,
-                  name: p.toolUse.name,
-                  args: p.toolUse.args,
-                },
-              };
-              // Include thoughtSignature if present
-              if (p.toolUse.thoughtSignature) {
-                part.thoughtSignature = p.toolUse.thoughtSignature;
-              }
-              return part;
-            }),
+          parts,
         };
       }
 
@@ -198,11 +210,21 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         .filter((p): p is TextPart => p.type === "text")
         .map((p) => ({ text: p.text }));
 
+      // Validate that we have at least one text part
+      if (textParts.length === 0) {
+        console.warn(
+          "[toGeminiFormat] Message with no text parts, adding empty text to prevent API error:",
+          msg,
+        );
+        textParts.push({ text: "" });
+      }
+
       return {
         role: msg.role === "assistant" ? "model" : msg.role,
         parts: textParts,
       };
-    });
+    })
+    .filter((msg) => msg.parts && msg.parts.length > 0); // Filter out messages with empty parts
 };
 
 /**

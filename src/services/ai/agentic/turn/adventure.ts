@@ -60,9 +60,9 @@ import {
   createProviderConfig,
   createLogEntry,
   resolveThemeConfig,
+  extractJson,
 } from "../../utils";
 
-import { detectModelCapabilitiesViaApi } from "../../provider/registry";
 import { buildCacheHint } from "../../provider/cacheHint";
 
 // Import Session Manager for internal history tracking
@@ -366,54 +366,123 @@ export const generateAdventureTurn = async (
 
   // Cache hint (provider-specific) - derived from system + static prefix
   // If static prefix changes, hint changes as well.
-  const cacheHint = buildCacheHint(instance.protocol, systemInstruction, staticMessages);
+  const cacheHint = buildCacheHint(
+    instance.protocol,
+    systemInstruction,
+    staticMessages,
+  );
   sessionManager.setCacheHint(session.id, cacheHint);
 
-  // Refresh model capabilities via vendor API (cached, session-persisted)
-  // NOTE: supportsRequiredToolChoice 由 Session 层运行时探测与降级维护。
-  detectModelCapabilitiesViaApi(instance.protocol, instance, modelId)
-    .then((caps) => {
-      sessionManager.setModelCapability(session.id, "supportsTools", caps.supportsTools);
-      sessionManager.setModelCapability(
-        session.id,
-        "supportsParallelTools",
-        caps.supportsParallelTools,
-      );
-      sessionManager.setModelCapability(session.id, "supportsImage", caps.supportsImage);
-      sessionManager.setModelCapability(session.id, "supportsVideo", caps.supportsVideo);
-      sessionManager.setModelCapability(session.id, "supportsAudio", caps.supportsAudio);
-      sessionManager.setModelCapability(
-        session.id,
-        "supportsEmbedding",
-        caps.supportsEmbedding,
-      );
-    })
-    .catch(() => {
-      // best-effort; ignore
-    });
+  // === SESSION HISTORY MANAGEMENT (New Architecture) ===
+  // 1. Check if session is empty (New Session / Overflow Reset)
+  const isSessionEmpty = sessionManager.isEmpty(session.id);
 
-  // Get cached history from session (provider-native)
-  // - gemini: Content[] (parts)
-  // - others: UnifiedMessage[]
-  const cachedHistoryNative = sessionManager.getHistory(session.id);
-  const cachedHistory: UnifiedMessage[] =
+  // 2. INITIALIZATION (Inject Context ONLY if empty)
+  if (isSessionEmpty) {
+    console.log(
+      `[Adventure] Session ${session.id} is empty. Initializing context...`,
+    );
+
+    // Construct Initial History: [Static] + [Hydrated] + [Dynamic Initial]
+    let initialHistory: UnifiedMessage[] = [...staticMessages];
+
+    // Hydration (Recent History)
+    if (context.recentHistory && context.recentHistory.length > 0) {
+      console.log(
+        `[Adventure] Hydrating ${context.recentHistory.length} segments.`,
+      );
+      const hydratedMessages = context.recentHistory.map((seg) => {
+        const role = seg.role === "model" ? "assistant" : seg.role;
+        return {
+          role: role as "user" | "assistant" | "system",
+          content: [{ type: "text" as const, text: seg.text }],
+        };
+      });
+      initialHistory = [...initialHistory, ...hydratedMessages];
+    } else {
+      // If no recent history, inject Dynamic Layer (Initial State)
+      // Note: If we hydrated, the last state is effectively the dynamic state?
+      // User said: "Inject World and Current State".
+      // Dynamic Layer contains "Current Situation".
+      initialHistory = [...initialHistory, ...dynamicMessages];
+    }
+
+    // Save Initial History
+    const initialHistoryNative: unknown[] =
+      instance.protocol === "gemini"
+        ? (toGeminiFormat(initialHistory) as unknown[])
+        : (initialHistory as unknown[]);
+    sessionManager.setHistory(session.id, initialHistoryNative);
+  }
+
+  // 3. GET ACTIVE CONTEXT
+  // Load current history (which now includes Initial Context if valid)
+  const activeHistoryNative = sessionManager.getHistory(session.id);
+  let activeHistory: UnifiedMessage[] =
     instance.protocol === "gemini"
       ? fromGeminiFormat(
-          cachedHistoryNative as Array<{
+          activeHistoryNative as Array<{
             role: string;
             parts: Array<{ text?: string }>;
           }>,
         )
-      : (cachedHistoryNative as UnifiedMessage[]);
+      : (activeHistoryNative as UnifiedMessage[]);
 
-  // === CONTEXT CONSTRUCTION ===
-  // Order: [Static] -> [Cached History] -> [Dynamic] -> [User Action]
-  const fullContext = [
-    ...staticMessages,
-    ...cachedHistory,
-    ...dynamicMessages,
-    ...userMessages,
-  ];
+  // === RETRY DETECTION ===
+  // Check if the current user action matches the LAST user message in history.
+  // If so, this is a "Retry" or "Regenerate" action.
+  // We must ROLLBACK the history to remove the previous attempt (User + AI)
+  // to avoid [User A, AI A, User A, AI B] duplication.
+
+  if (activeHistory.length > 0) {
+    let lastUserIndex = -1;
+    // Find last user message from the end
+    for (let i = activeHistory.length - 1; i >= 0; i--) {
+      if (activeHistory[i].role === "user") {
+        lastUserIndex = i;
+        break;
+      }
+    }
+
+    if (lastUserIndex !== -1) {
+      const lastUserMsg = activeHistory[lastUserIndex];
+      // Compare content text
+      const lastUserText =
+        lastUserMsg.content.find((p) => p.type === "text")?.text || "";
+      // Handle SUDO prefix in comparison if present in history or current action?
+      // Usually currentAction has SUDO. History message should match.
+
+      if (lastUserText === context.userAction) {
+        console.log(
+          `[Adventure] proper Retry detected! Rolling back to last checkpoint.`,
+        );
+
+        // Use stack-based rollback implementation
+        sessionManager.rollbackToLastCheckpoint(session.id);
+
+        // Refresh activeHistory after rollback to ensure we build on clean state
+        const refreshedHistoryNative = sessionManager.getHistory(session.id);
+        activeHistory =
+          instance.protocol === "gemini"
+            ? fromGeminiFormat(
+                refreshedHistoryNative as Array<{
+                  role: string;
+                  parts: Array<{ text?: string }>;
+                }>,
+              )
+            : (refreshedHistoryNative as UnifiedMessage[]);
+      }
+    }
+  }
+
+  // === CHECKPOINT ===
+  // Mark the start of this new turn (after potential rollback/hydration)
+  sessionManager.checkpoint(session.id);
+
+  // 4. CONSTRUCT REQUEST CONTEXT
+  // Request = [Active History] + [User Action]
+  // Note: We DO NOT inject static/dynamic messages here again!
+  const fullContext = [...activeHistory, ...userMessages];
 
   // Detect SUDO mode from user action prefix
   const isSudoMode = context.userAction.startsWith("[SUDO]");
@@ -433,12 +502,30 @@ export const generateAdventureTurn = async (
       session.id,
     );
 
-    // Update session history with the new conversation (provider-native)
-    const nextHistoryNative: unknown[] =
+    // 5. APPEND NEW MESSAGES (Update)
+    // We only want to save the DELTA (User Action + AI Responses/ToolCalls)
+    // The `result._conversationHistory` contains EVERYTHING (Old + New).
+    // We need to extract the new part.
+    // Strategy: The prompt was `fullContext` = `activeHistory` + `userMessages`.
+    // The result history starts with `fullContext`.
+    // So new messages are everything AFTER `activeHistory`.
+    // Wait, `fullContext` includes `userMessages`.
+    // So `Delta` = `UserMessages` + `AI generated messages`.
+
+    // Calculate start index for new messages
+    // It should be equal to activeHistory.length
+    const newMessages = result._conversationHistory.slice(activeHistory.length);
+
+    console.log(
+      `[Adventure] Appending ${newMessages.length} new messages to history.`,
+    );
+
+    // Append to Session
+    const newMessagesNative: unknown[] =
       instance.protocol === "gemini"
-        ? (toGeminiFormat(result._conversationHistory) as unknown[])
-        : (result._conversationHistory as unknown[]);
-    sessionManager.setHistory(session.id, nextHistoryNative);
+        ? (toGeminiFormat(newMessages) as unknown[])
+        : (newMessages as unknown[]);
+    sessionManager.appendHistory(session.id, newMessagesNative);
 
     return result;
   } catch (e: any) {
@@ -706,10 +793,39 @@ You are in AGENTIC MODE.
       );
     } else if (text) {
       // Just text message
-      conversationHistory.push({
-        role: "assistant", // Manually matching UnifiedMessage structure
-        content: [{ type: "text", text: text }],
-      });
+      // fallback detection: if activeTools.length === 1, try to parse JSON
+      let fallbackSuccess = false;
+      if (activeTools.length === 1 && effectiveToolConfig) {
+        const potentialJson = extractJson(text);
+        if (potentialJson) {
+           const tool = activeTools[0];
+           const parseResult = tool.parameters.safeParse(potentialJson);
+           if (parseResult.success) {
+             console.log(`[Agentic Loop] FALLBACK: Detected valid JSON for single tool ${tool.name}`);
+             const fallbackId = `call_${Math.random().toString(36).substr(2, 9)}`;
+
+             // Construct tool call
+             conversationHistory.push(
+               createToolCallMessage(
+                 [{
+                   id: fallbackId,
+                   name: tool.name,
+                   arguments: parseResult.data,
+                 }],
+                 text // Keep original text as content
+               )
+             );
+             fallbackSuccess = true;
+           }
+        }
+      }
+
+      if (!fallbackSuccess) {
+        conversationHistory.push({
+          role: "assistant", // Manually matching UnifiedMessage structure
+          content: [{ type: "text", text: text }],
+        });
+      }
     }
 
     // If no tool calls, model might be chatting. Remind it to finish or search.

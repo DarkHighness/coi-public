@@ -313,10 +313,18 @@ export const useGameAction = ({
         }
 
         // Apply freshSegmentCount overlap for narrative continuity
-        // This ensures AI sees some segments BEFORE the summary point
+        // [FIX] Derive history from PARENT node to avoid including the current optimistic user node
+        // This prevents double-submission of the user action (once in history, once as prompt)
         const freshCount = aiSettings.freshSegmentCount ?? 4;
+
+        // We use the UPDATED nodes from gameStateRef (which includes the new node),
+        // but we start traversal from the PARENT to get "history before this turn"
+        const parentHistory = effectiveParentId
+          ? deriveHistory(gameStateRef.current.nodes, effectiveParentId)
+          : []; // If no parent (start of game), history is empty
+
         const segmentsToSend = getSegmentsForAI(
-          contextNodes,
+          parentHistory,
           lastIndex,
           freshCount,
         );

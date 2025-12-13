@@ -1,4 +1,9 @@
-import type { AISettings, ModelInfo, ProviderInstance, ProviderProtocol } from "../../../types";
+import type {
+  AISettings,
+  ModelInfo,
+  ProviderInstance,
+  ProviderProtocol,
+} from "../../../types";
 
 import type {
   GeminiConfig,
@@ -67,7 +72,9 @@ export function getProviderInstance(
   providerId: string,
   requireEnabled: boolean = true,
 ): ProviderInstance | null {
-  const instance = settings.providers.instances.find((p) => p.id === providerId);
+  const instance = settings.providers.instances.find(
+    (p) => p.id === providerId,
+  );
   if (!instance) {
     console.error(`Provider instance not found: ${providerId}`);
     return null;
@@ -163,48 +170,46 @@ export async function getModelsForInstance(
   const config = createProviderConfig(instance);
 
   switch (instance.protocol) {
-    case "gemini":
-      {
-        const models = await getGeminiModels(config as GeminiConfig);
-        MODEL_LIST_CACHE[cacheKey] = {
-          timestamp: Date.now(),
-          configHash,
-          models,
-        };
-        return models;
-      }
-    case "openai":
-      {
-        const models = await getOpenAIModels(config as OpenAIConfig);
-        MODEL_LIST_CACHE[cacheKey] = {
-          timestamp: Date.now(),
-          configHash,
-          models,
-        };
-        return models;
-      }
-    case "openrouter":
-      {
-        const models = await getOpenRouterModels(config as OpenRouterConfig);
-        MODEL_LIST_CACHE[cacheKey] = {
-          timestamp: Date.now(),
-          configHash,
-          models,
-        };
-        return models;
-      }
-    case "claude":
-      {
-        const models = await getClaudeModels(config as ClaudeConfig);
-        MODEL_LIST_CACHE[cacheKey] = {
-          timestamp: Date.now(),
-          configHash,
-          models,
-        };
-        return models;
-      }
+    case "gemini": {
+      const models = await getGeminiModels(config as GeminiConfig);
+      MODEL_LIST_CACHE[cacheKey] = {
+        timestamp: Date.now(),
+        configHash,
+        models,
+      };
+      return models;
+    }
+    case "openai": {
+      const models = await getOpenAIModels(config as OpenAIConfig);
+      MODEL_LIST_CACHE[cacheKey] = {
+        timestamp: Date.now(),
+        configHash,
+        models,
+      };
+      return models;
+    }
+    case "openrouter": {
+      const models = await getOpenRouterModels(config as OpenRouterConfig);
+      MODEL_LIST_CACHE[cacheKey] = {
+        timestamp: Date.now(),
+        configHash,
+        models,
+      };
+      return models;
+    }
+    case "claude": {
+      const models = await getClaudeModels(config as ClaudeConfig);
+      MODEL_LIST_CACHE[cacheKey] = {
+        timestamp: Date.now(),
+        configHash,
+        models,
+      };
+      return models;
+    }
     default:
-      throw new Error(`Unknown protocol: ${(instance as ProviderInstance).protocol}`);
+      throw new Error(
+        `Unknown protocol: ${(instance as ProviderInstance).protocol}`,
+      );
   }
 }
 
@@ -227,7 +232,9 @@ export async function validateConnectionForInstance(
       await validateClaudeConnection(config as ClaudeConfig);
       return;
     default:
-      throw new Error(`Unknown protocol: ${(instance as ProviderInstance).protocol}`);
+      throw new Error(
+        `Unknown protocol: ${(instance as ProviderInstance).protocol}`,
+      );
   }
 }
 
@@ -242,7 +249,10 @@ export async function detectModelCapabilitiesViaApi(
     const modelInfo = models.find((m) => m.id === modelId);
     return modelInfoToCapabilities(protocol, modelInfo);
   } catch (e) {
-    console.warn("[ProviderRegistry] detectModelCapabilitiesViaApi failed, fallback to protocol defaults", e);
+    console.warn(
+      "[ProviderRegistry] detectModelCapabilitiesViaApi failed, fallback to protocol defaults",
+      e,
+    );
     return modelInfoToCapabilities(protocol, undefined);
   }
 }
