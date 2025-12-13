@@ -1187,7 +1187,7 @@ export const searchToolSchema = z.object({
     .array(
       z.object({
         operation: z
-          .enum(["add", "update", "remove", "query", "unlock"])
+          .enum(["add", "update", "remove", "query", "unlock", "list"])
           .describe("Action type."),
         entity: z
           .enum([
@@ -1202,6 +1202,11 @@ export const searchToolSchema = z.object({
             "skill",
             "condition",
             "trait",
+            "attribute", // Added
+            "profile",   // Added
+            "global",    // Added
+            "story",     // Added
+            "turn",      // Added
             "rag",
           ])
           .describe("Entity type to search for."),
@@ -1516,9 +1521,45 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "query:rag": [RAG_SEARCH_TOOL],
 };
 
+
+/**
+ * Generic List Tool.
+ * Use this to get a paginated list of entity ID and Names.
+ * Efficient for discovering what exists without loading full details.
+ */
+export const LIST_TOOL = defineTool({
+  name: "list",
+  description: "List entity IDs and names with pagination.",
+  parameters: z.object({
+    type: z
+      .enum([
+        "inventory",
+        "relationship",
+        "location",
+        "quest",
+        "knowledge",
+        "faction",
+        "timeline",
+        "causal_chain",
+        "global",
+        "attribute",
+        "profile",
+        "skill",
+        "condition",
+        "trait",
+      ])
+      .describe("Entity type to list."),
+    page: z.number().optional().describe("Page number (1-indexed). Default: 1."),
+    limit: z.number().optional().describe("Items per page. Default: 10."),
+    search: z.string().optional().describe("Optional name filter."),
+  }),
+});
+
 // Also export a flat list if needed, or helper
+
 export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   SEARCH_TOOL,
+  LIST_TOOL,
   FINISH_TURN_TOOL,
   COMPLETE_FORCE_UPDATE_TOOL,
   QUERY_STORY_TOOL,
@@ -1593,20 +1634,100 @@ export function findTools(
   if (TOOL_MAP[key]) {
     return TOOL_MAP[key];
   }
+  // Fuzzy / Aggregate Logic
 
-  // Fuzzy or broad matching could go here
-  if (operation === "query" && entity === "all") {
-    return [
-      QUERY_STORY_TOOL,
-      QUERY_TURN_TOOL,
-      QUERY_INVENTORY_TOOL,
-      QUERY_RELATIONSHIPS_TOOL,
-      QUERY_QUESTS_TOOL,
+  // 1. Character Aggregate
+  // "character" -> profile, attributes, skills, conditions, traits
+  if (entity === "character") {
+    const subEntities = [
+      "profile",
+      "attribute",
+      "skill",
+      "condition",
+      "trait",
     ];
+    let tools: ZodToolDefinition[] = [];
+    for (const sub of subEntities) {
+      const specificKey = `${operation}:${sub}`;
+      if (TOOL_MAP[specificKey]) {
+        tools = tools.concat(TOOL_MAP[specificKey]);
+      }
+    }
+    // Also check for direct matches if any (rare for character)
+    if (tools.length > 0) return tools;
   }
+
+  // 2. World / Global Aggregate
+  if (entity === "world" || entity === "global") {
+      const subEntities = ["global", "world"]; // "world" for update:world which maps to [UPDATE_WORLD_INFO, UPDATE_GLOBAL]
+      let tools: ZodToolDefinition[] = [];
+
+      // Attempt direct mapping first for aliases
+      if (TOOL_MAP[`${operation}:world`]) tools = tools.concat(TOOL_MAP[`${operation}:world`]);
+      if (TOOL_MAP[`${operation}:global`]) tools = tools.concat(TOOL_MAP[`${operation}:global`]);
+
+      if (tools.length > 0) return tools;
+  }
+
+  // 3. Story / Turn
+  if (entity === "story" && operation === "query") {
+      return [QUERY_STORY_TOOL, QUERY_SUMMARY_TOOL];
+  }
+  if (entity === "turn" && operation === "query") {
+      return [QUERY_TURN_TOOL, QUERY_RECENT_CONTEXT_TOOL];
+  }
+
+  // 4. List Tool Fallback
+  if (operation === "list") {
+    return [LIST_TOOL];
+  }
+
+  // 5. Query All Fallback (Legacy preserved, but Matrix Logic is better)
+  if (operation === "query" && entity === "all") {
+    // Return all query tools
+     let tools: ZodToolDefinition[] = [];
+     for (const key in TOOL_MAP) {
+         if (key.startsWith("query:")) {
+             tools = tools.concat(TOOL_MAP[key]);
+         }
+     }
+     return tools;
+  }
+
+  // 6. Matrix Search / Fallback Logic
+  // If operation is "all" (e.g. search_tool with operation="all", entity="inventory") -> return add, update, remove, query for inventory
+  if (operation === "all") {
+      let tools: ZodToolDefinition[] = [];
+      const suffix = `:${entity}`;
+      for (const key in TOOL_MAP) {
+          if (key.endsWith(suffix)) {
+              tools = tools.concat(TOOL_MAP[key]);
+          }
+      }
+      // If we found tools, return them
+      if (tools.length > 0) return tools;
+  }
+
+  // If entity is "all" (e.g. search_tool with operation="query", entity="all") -> return all query tools
+  // (Covered partially above, but generic here)
+  if (entity === "all") {
+      let tools: ZodToolDefinition[] = [];
+      const prefix = `${operation}:`;
+      for (const key in TOOL_MAP) {
+          if (key.startsWith(prefix)) {
+              tools = tools.concat(TOOL_MAP[key]);
+          }
+      }
+       if (tools.length > 0) return tools;
+  }
+
+  // 7. Wildcard / "Generic" Search
+  // If user asks for "inventory" without operation, or "add" without entity (less common)
+  // We can try to match segments of the key
 
   return [];
 }
+
 
 // Legacy export for backwards compatibility (though mostly unused now)
 export const TOOLS = ALL_DEFINED_TOOLS;
@@ -1782,6 +1903,9 @@ export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
 export type FinishTurnParams = z.infer<typeof finishTurnSchema>;
 export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
 
+export type ListToolParams = InferToolParams<typeof LIST_TOOL>;
+
+
 // ============================================================================
 // TOOL PARAMETER TYPE MAP
 // Maps tool names to their parameter types for type-safe tool handling
@@ -1790,6 +1914,9 @@ export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
 export interface ToolParamsMap {
   // Search tool
   search_tool: SearchToolParams;
+
+  // List tool
+  list: ListToolParams;
 
   // Story Memory Query tools
   query_story: QueryStoryParams;

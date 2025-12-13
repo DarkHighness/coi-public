@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
 import type { AtmosphereObject } from "../utils/constants/atmosphere";
+import { repairGameState, syncIdCounter } from "./stateRepair";
 
 // --- Tool Call Result Types ---
 
@@ -108,6 +109,21 @@ export type ModifyResultMap = {
 
 // --- Helper Functions ---
 
+export interface ListItem {
+  id: string;
+  name: string;
+  // Optional extras for context
+  type?: string;
+  info?: string;
+}
+
+export interface PaginatedListResult {
+  items: ListItem[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 const createSuccess = <T>(data: T, message: string): ToolCallSuccess<T> => ({
   success: true,
   data,
@@ -172,8 +188,14 @@ export class GameDatabase {
 
   constructor(initialState: GameState) {
     // Deep copy to ensure we don't mutate the original state reference until ready
+    // Deep copy to ensure we don't mutate the original state reference until ready
     this.state = JSON.parse(JSON.stringify(initialState));
+
+    // Auto-repair on load: Fix duplicate IDs and sync nextId counters
+    repairGameState(this.state);
   }
+
+
 
   public getState(): GameState {
     return this.state;
@@ -582,6 +604,119 @@ export class GameDatabase {
     }
   }
 
+  // --- List Method ---
+
+  public list(
+    target: string,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+  ): ToolCallResult<PaginatedListResult> {
+    const term = search?.toLowerCase();
+
+    // Helper for pagination
+    const paginate = (items: ListItem[]): PaginatedListResult => {
+      const filtered = term
+        ? items.filter(
+            (i) =>
+              i.name.toLowerCase().includes(term) ||
+              i.id.toLowerCase().includes(term),
+          )
+        : items;
+
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit);
+      const safePage = Math.max(1, Math.min(page, totalPages || 1));
+      const start = (safePage - 1) * limit;
+      const end = start + limit;
+
+      return {
+        items: filtered.slice(start, end),
+        total,
+        page: safePage,
+        totalPages,
+      };
+    };
+
+    try {
+      let items: ListItem[] = [];
+
+      switch (target as any) {
+        case "inventory":
+          items = this.state.inventory.map((i) => ({
+            id: i.id,
+            name: i.name,
+            info: (i.visible as any)?.description?.substring(0, 50) + "...",
+          }));
+          break;
+        case "relationship":
+          items = this.state.relationships.map((r) => ({
+            id: r.id,
+            name: (r.visible as any)?.name || "Unknown",
+            info: `Relationship: ${(r.visible as any)?.relationshipType || 'Unknown'}`,
+          }));
+          break;
+        case "location":
+          items = this.state.locations.map((l) => ({
+            id: l.id,
+            name: l.name,
+            info: l.id === this.state.currentLocation ? "(Current Location)" : (l.isVisited ? "Visited" : "Unknown"),
+          }));
+          break;
+        case "quest":
+          items = this.state.quests.map((q) => ({
+            id: q.id,
+            name: (q as any).title || (q.visible as any)?.name || "Quest",
+            info: `Status: ${(q as any).status || (q.visible as any)?.status || 'Active'}`,
+          }));
+          break;
+        case "knowledge":
+          items = this.state.knowledge.map((k) => ({
+            id: k.id,
+            name: k.id,
+            info: (k as any).description?.substring(0, 50) || "Knowledge entry",
+          }));
+          break;
+        case "faction":
+          items = this.state.factions.map((f) => ({
+            id: f.id,
+            name: f.name,
+            info: (f as any).description?.substring(0, 50) || "Faction",
+          }));
+          break;
+        case "timeline":
+          items = this.state.timeline.map((t) => ({
+            id: t.id,
+            name: (t as any).title || "Event",
+            info: `Turn: ${(t as any).turnNumber}`,
+          }));
+          break;
+        case "causal_chain":
+          items = this.state.causalChains.map((c) => ({
+            id: c.chainId,
+            name: c.chainId,
+            info: (c as any).rootCause?.description?.substring(0, 50) + "...",
+          }));
+          break;
+        case "global":
+           items = [{
+               id: "global",
+               name: "Global State",
+               info: `Time: ${this.state.time}, Loc: ${this.state.currentLocation}`
+           }];
+           break;
+        default:
+          return createError(`Unknown list target: ${target}`, "INVALID_ACTION");
+      }
+
+      const result = paginate(items);
+      return createSuccess(result, `Listed ${target} (Page ${result.page}/${result.totalPages})`);
+
+    } catch (error) {
+       return createError(`List failed: ${error}`, "UNKNOWN");
+    }
+  }
+
   // --- Modification Methods ---
 
   public modify(
@@ -624,6 +759,8 @@ export class GameDatabase {
     }
   }
 
+
+
   // --- Specific Modifiers ---
 
   private modifyInventory(
@@ -644,19 +781,26 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.inventory.some(
-        (i) =>
-          (data.id && matchesIdentifier(i.id, data.id)) ||
-          matchesIdentifier(i.name, data.name),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.inventory.some((i) => matchesIdentifier(i.id, finalId))) {
+        const generatedId = this.generateId("inventory");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
+      }
+
+      // 2. Check Name Conflict (Keep strict to prevent logical duplicates)
+      const nameExists = this.state.inventory.some((i) => matchesIdentifier(i.name, data.name));
+      if (nameExists) {
         return createError(
           `Item "${data.name}" already exists`,
           "ALREADY_EXISTS",
         );
       }
 
-      const newId = data.id || this.generateId("inventory");
+      const newId = finalId || this.generateId("inventory");
+      if (finalId) syncIdCounter(this.state, "inventory", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -690,7 +834,7 @@ export class GameDatabase {
       this.state.inventory.push(newItem);
       return createSuccess(
         { id: newItem.id, name: newItem.name },
-        `Added item: ${newItem.name} (${newItem.id})`,
+        `Added item: ${newItem.name} (${newItem.id})${conflictNote}`,
       );
     }
 
@@ -789,16 +933,23 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.relationships.some(
-        (r) =>
-          (data.id && matchesIdentifier(r.id, data.id)) ||
-          matchesIdentifier(r.visible.name, name),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.relationships.some((r) => matchesIdentifier(r.id, finalId))) {
+         const generatedId = this.generateId("npc");
+         conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+         finalId = generatedId;
+      }
+
+      // 2. Check Name Conflict
+      const nameExists = this.state.relationships.some((r) => matchesIdentifier(r.visible.name, name));
+      if (nameExists) {
         return createError(`NPC "${name}" already exists`, "ALREADY_EXISTS");
       }
 
-      const newId = data.id || this.generateId("npc");
+      const newId = finalId || this.generateId("npc");
+      if (finalId) syncIdCounter(this.state, "npc", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -846,7 +997,7 @@ export class GameDatabase {
       this.state.relationships.push(newNpc);
       return createSuccess(
         newNpc,
-        `Added NPC: ${newNpc.visible.name} (${newNpc.id})`,
+        `Added NPC: ${newNpc.visible.name} (${newNpc.id})${conflictNote}`,
       );
     }
 
@@ -948,17 +1099,26 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.locations.find((l) =>
-        matchesIdentifier(l.name, data.name),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.locations.some((l) => matchesIdentifier(l.id, finalId))) {
+          const generatedId = this.generateId("location");
+          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+          finalId = generatedId;
+      }
+
+      // 2. Check Name Conflict
+      const nameExists = this.state.locations.some((l) => matchesIdentifier(l.name, data.name));
+      if (nameExists) {
         return createError(
           `Location "${data.name}" already exists`,
           "ALREADY_EXISTS",
         );
       }
 
-      const newId = data.id || this.generateId("location");
+      const newId = finalId || this.generateId("location");
+      if (finalId) syncIdCounter(this.state, "location", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -997,7 +1157,7 @@ export class GameDatabase {
 
       return createSuccess(
         { id: newLocation.id, name: newLocation.name },
-        `Added location: ${newLocation.name} (${newLocation.id})`,
+        `Added location: ${newLocation.name} (${newLocation.id})${conflictNote}`,
       );
     }
 
@@ -1104,17 +1264,26 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.quests.find((q) =>
-        matchesIdentifier(q.title, data.title),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.quests.some((q) => matchesIdentifier(q.id, finalId))) {
+          const generatedId = this.generateId("quest");
+          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+          finalId = generatedId;
+      }
+
+      // 2. Check Title Conflict
+      const nameExists = this.state.quests.some((q) => matchesIdentifier(q.title, data.title));
+      if (nameExists) {
         return createError(
           `Quest "${data.title}" already exists`,
           "ALREADY_EXISTS",
         );
       }
 
-      const newId = data.id || this.generateId("quest");
+      const newId = finalId || this.generateId("quest");
+      if (finalId) syncIdCounter(this.state, "quest", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1150,7 +1319,7 @@ export class GameDatabase {
       this.state.quests.push(newQuest);
       return createSuccess(
         { id: newQuest.id, name: newQuest.title },
-        `Added quest: ${newQuest.title} (${newQuest.id})`,
+        `Added quest: ${newQuest.title} (${newQuest.id})${conflictNote}`,
       );
     }
 
@@ -1240,17 +1409,26 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.knowledge.find((k) =>
-        matchesIdentifier(k.title, data.title),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.knowledge.some((k) => matchesIdentifier(k.id, finalId))) {
+          const generatedId = this.generateId("knowledge");
+          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+          finalId = generatedId;
+      }
+
+      // 2. Check Title Conflict
+      const nameExists = this.state.knowledge.some((k) => matchesIdentifier(k.title, data.title));
+      if (nameExists) {
         return createError(
           `Knowledge "${data.title}" already exists`,
           "ALREADY_EXISTS",
         );
       }
 
-      const newId = data.id || this.generateId("knowledge");
+      const newId = finalId || this.generateId("knowledge");
+      if (finalId) syncIdCounter(this.state, "knowledge", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1287,7 +1465,7 @@ export class GameDatabase {
       this.state.knowledge.push(newKnowledge);
       return createSuccess(
         { id: newKnowledge.id, name: newKnowledge.title },
-        `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})`,
+        `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})${conflictNote}`,
       );
     }
 
@@ -1360,17 +1538,26 @@ export class GameDatabase {
         );
       }
 
-      const exists = this.state.factions.find((f) =>
-        matchesIdentifier(f.name, data.name),
-      );
-      if (exists) {
+      // 1. Resolve ID Conflict
+      let finalId = data.id;
+      let conflictNote = "";
+      if (finalId && this.state.factions.some((f) => matchesIdentifier(f.id, finalId))) {
+           const generatedId = this.generateId("faction");
+           conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+           finalId = generatedId;
+      }
+
+      // 2. Check Name Conflict
+      const nameExists = this.state.factions.some((f) => matchesIdentifier(f.name, data.name));
+      if (nameExists) {
         return createError(
           `Faction "${data.name}" already exists`,
           "ALREADY_EXISTS",
         );
       }
 
-      const newId = data.id || this.generateId("faction");
+      const newId = finalId || this.generateId("faction");
+      if (finalId) syncIdCounter(this.state, "faction", finalId);
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1394,7 +1581,7 @@ export class GameDatabase {
       this.state.factions.push(newFaction);
       return createSuccess(
         { id: newFaction.id, name: newFaction.name },
-        `Added faction: ${newFaction.name} (${newFaction.id})`,
+        `Added faction: ${newFaction.name} (${newFaction.id})${conflictNote}`,
       );
     }
 

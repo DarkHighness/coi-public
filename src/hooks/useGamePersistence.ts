@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { repairGameState } from "../services/stateRepair";
 import {
   GameState,
   SaveSlot,
@@ -493,7 +494,14 @@ export const useGamePersistence = (
               }
               // === END MIGRATION ===
 
-              setGameState(sanitized);
+              // === END MIGRATION ===
+
+              // === END MIGRATION ===
+
+              // Repair state using cleanup utility (fixes duplicate IDs and syncs nextId)
+              const repairedState = repairGameState(sanitized);
+
+              setGameState(repairedState);
               setCurrentSlotId(lastSlotId);
 
               // Log embedding index availability for debugging
@@ -777,7 +785,12 @@ export const useGamePersistence = (
         lastSavedActiveNodeRef.current = sanitized.activeNodeId;
         lastSavedNodeIdRef.current = sanitized.activeNodeId;
 
-        setGameState(sanitized);
+        lastSavedNodeIdRef.current = sanitized.activeNodeId;
+
+        // Repair state using cleanup utility (fixes duplicate IDs and syncs nextId)
+        const repairedState = repairGameState(sanitized);
+
+        setGameState(repairedState);
         setCurrentSlotId(id);
 
         // Update slot timestamp to now so it becomes the latest save

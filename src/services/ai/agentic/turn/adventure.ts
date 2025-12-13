@@ -1002,6 +1002,19 @@ export function executeToolCall(
   }
 
   // ============================================================================
+  // LIST TOOL
+  // ============================================================================
+  if (name === "list") {
+    const typedArgs = getTypedArgs("list", args);
+    return db.list(
+      typedArgs.type,
+      typedArgs.page,
+      typedArgs.limit,
+      typedArgs.search
+    );
+  }
+
+  // ============================================================================
   // ENTITY QUERY TOOLS
   // ============================================================================
   if (name === "query_inventory") {

@@ -287,7 +287,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
             <>
               <span className="text-theme-muted/50">•</span>
               <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold">
-                {t("timeline.moment")} {index + 1}
+                {t("timeline.turn")} {segment.stateSnapshot.turnNumber}
               </span>
               <span className="text-theme-muted/80">
                 {segment.stateSnapshot.currentLocation}

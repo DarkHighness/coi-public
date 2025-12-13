@@ -253,6 +253,7 @@
   "timeline": {
     "title": "Journey Timeline",
     "moment": "Moment",
+    "turn": "Turn",
     "empty": "The chronicle awaits...",
     "export": "Export Timeline",
     "exportTitle": "Chronicles of Infinity",

@@ -228,6 +228,7 @@
   "timeline": {
     "title": "旅程时间轴",
     "moment": "时刻",
+    "turn": "回合",
     "empty": "编年史等待书写...",
     "export": "导出时间轴",
     "exportTitle": "无尽编年史",

@@ -546,7 +546,11 @@ function buildGenerationConfig(
         },
       };
     }
+
     // Default is "auto" - no toolConfig needed
+
+    // Safety Force: Prevent Python Helper Hallucination (causes MALFORMED_FUNCTION_CALL)
+    modifiedSystemInstruction += `\n\n[CRITICAL INSTRUCTION: You use the Google GenAI SDK. You must NOT output Python code, function calls like 'print(...)', or markdown code blocks for tools. You MUST use the standard JSON tool declaration format. Writing native code will cause a Protocol Error.]`;
   }
 
   if (modifiedSystemInstruction) {
