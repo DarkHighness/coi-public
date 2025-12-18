@@ -512,6 +512,7 @@ export const ADD_INVENTORY_TOOL = defineTool({
       .describe("Hidden props (AI/GM)."),
     lore: z.string().optional().describe("Lore."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -531,6 +532,7 @@ export const ADD_RELATIONSHIP_TOOL = defineTool({
       .partial()
       .optional()
       .describe("Hidden props (AI/GM)."),
+    observation: z.string().optional().describe("Observation."),
     notes: z.string().optional().describe("Notes."),
     icon: z.string().optional().describe("Emoji."),
   }),
@@ -558,6 +560,7 @@ export const ADD_LOCATION_TOOL = defineTool({
       .describe("Secrets unlocked? Default: false."),
     unlockReason: z.string().optional().describe("Unlock reason."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -574,6 +577,7 @@ export const ADD_QUEST_TOOL = defineTool({
       .optional()
       .describe("Hidden props (AI/GM)."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -595,6 +599,7 @@ export const ADD_KNOWLEDGE_TOOL = defineTool({
     discoveredAt: z.string().optional().describe("Discovered time."),
     relatedTo: z.array(z.string()).optional().describe("Related IDs."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -613,6 +618,7 @@ export const ADD_TIMELINE_TOOL = defineTool({
     chainId: z.string().optional().describe("CausalChain link (chain:N)."),
     known: z.boolean().optional().describe("Player knows? Default: true."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -650,6 +656,7 @@ export const ADD_FACTION_TOOL = defineTool({
       .optional()
       .describe("Hidden info (AI/GM)."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -703,6 +710,7 @@ export const ADD_CHARACTER_SKILL_TOOL = defineTool({
     hidden: skillHiddenSchema.partial().optional().describe("Hidden props."),
     category: z.string().optional().describe("Category."),
     icon: z.string().optional().describe("Emoji."),
+    notes: z.string().optional().describe("Notes."),
   }),
 });
 
@@ -847,6 +855,7 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
       .describe("Hidden props."),
     lore: z.string().nullish().describe("Lore."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -867,6 +876,7 @@ export const UPDATE_RELATIONSHIP_TOOL = defineTool({
       .nullish()
       .describe("Hidden props."),
     notes: z.string().nullish().describe("Notes."),
+    observation: z.string().nullish().describe("Observation."),
     icon: z.string().nullish().describe("Emoji."),
   }),
 });
@@ -885,6 +895,7 @@ export const UPDATE_LOCATION_TOOL = defineTool({
     environment: z.string().nullish().describe("Atmosphere."),
     isVisited: z.boolean().nullish().describe("Visited?"),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -898,6 +909,7 @@ export const UPDATE_QUEST_TOOL = defineTool({
     visible: questVisibleSchema.partial().nullish().describe("Visible props."),
     hidden: questHiddenSchema.partial().nullish().describe("Hidden props."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -932,6 +944,7 @@ export const UPDATE_KNOWLEDGE_TOOL = defineTool({
     discoveredAt: z.string().nullish().describe("Time."),
     relatedTo: z.array(z.string()).nullish().describe("Related IDs."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -948,6 +961,7 @@ export const UPDATE_TIMELINE_TOOL = defineTool({
     chainId: z.string().nullish().describe("CausalChain link."),
     known: z.boolean().nullish().describe("Known?"),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -985,6 +999,7 @@ export const UPDATE_FACTION_TOOL = defineTool({
       .nullish()
       .describe("Hidden info."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -1092,6 +1107,7 @@ export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
     hidden: skillHiddenSchema.partial().nullish().describe("Hidden props."),
     category: z.string().nullish().describe("Category."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 
@@ -1116,6 +1132,7 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
       .describe("Effects."),
     duration: z.number().int().nullish().describe("Duration."),
     icon: z.string().nullish().describe("Emoji."),
+    notes: z.string().nullish().describe("Notes."),
   }),
 });
 

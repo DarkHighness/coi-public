@@ -132,6 +132,12 @@ export const inventoryItemSchema = z.object({
     .describe(
       "Last access timestamp {forkId, turnNumber, timestamp}. INVISIBLE to AI.",
     ),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -235,10 +241,16 @@ export const relationshipSchema = z.object({
     .describe("The NPC's current location ID (e.g., 'loc:1')."),
   visible: relationshipVisibleSchema,
   hidden: relationshipHiddenSchema,
-  notes: z
+  observation: z
     .string()
     .nullish()
     .describe("NPC's observations of player's displayed knowledge/behavior."),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
   unlocked: z
     .boolean()
     .nullish()
@@ -448,7 +460,12 @@ export const locationSchema = z.object({
   lastAccess: accessTimestampSchema
     .nullish()
     .describe("Last access timestamp. INVISIBLE to AI."),
-  notes: z.string().nullish(),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -513,6 +530,13 @@ export const questSchema = z.object({
   lastAccess: accessTimestampSchema
     .nullish()
     .describe("Last access timestamp. INVISIBLE to AI."),
+
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -562,6 +586,12 @@ export const skillSchema = z.object({
     .nullish()
     .describe("A single emoji representing this skill."),
   highlight: z.boolean().nullish(),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -712,6 +742,12 @@ export const knowledgeEntrySchema = z.object({
   lastAccess: accessTimestampSchema
     .nullish()
     .describe("Last access timestamp. INVISIBLE to AI."),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -782,7 +818,19 @@ export const timelineEventSchema = z.object({
   lastAccess: accessTimestampSchema
     .nullish()
     .describe("Last access timestamp. INVISIBLE to AI."),
+  range: z
+    .object({
+      start: z.number(),
+      end: z.number(),
+    })
+    .nullish(),
   highlight: z.boolean().nullish(),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
@@ -914,6 +962,12 @@ export const factionSchema = z.object({
     .nullish()
     .describe("A single emoji representing this faction."),
   highlight: z.boolean().nullish(),
+  notes: z
+    .string()
+    .nullish()
+    .describe(
+      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+    ),
 });
 
 // ============================================================================
