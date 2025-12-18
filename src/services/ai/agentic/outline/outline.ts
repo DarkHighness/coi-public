@@ -71,6 +71,7 @@ import {
 import { sessionManager } from "../../sessionManager";
 
 import { buildCacheHint } from "../../provider/cacheHint";
+import { callWithAgenticRetry } from "../retry";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
@@ -322,8 +323,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
   );
   sessionManager.setCacheHint(outlineSession.id, cacheHint);
 
-  // Helper to make API call
-  const callWithToolChoice = async (
+  // Helper to make API call with retry
+  const callAIWithRetry = async (
     phaseTool: ZodToolDefinition,
     phaseNum: number,
   ) => {
@@ -334,44 +335,50 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
       settings.extra?.forceAutoToolChoice,
     );
 
-    const { result, usage, raw } = await provider.generateChat({
-      modelId,
-      systemInstruction,
-      messages: conversationHistory as unknown[],
-      tools: [
-        {
-          name: phaseTool.name,
-          description: phaseTool.description,
-          parameters: phaseTool.parameters,
-        },
-      ],
-      toolChoice: effectiveToolChoice,
-      thinkingLevel: settings.story?.thinkingLevel,
-      mediaResolution: settings.story?.mediaResolution,
-      temperature: settings.story?.temperature,
-      topP: settings.story?.topP,
-      topK: settings.story?.topK,
-      minP: settings.story?.minP,
-    });
-
-    return {
-      result,
-      usage,
-      raw,
-      log: createLogEntry(
-        instance.protocol,
+    const resp = await callWithAgenticRetry(
+      provider,
+      {
         modelId,
-        `outline-phase${phaseNum}`,
-        { tool: phaseTool.name },
-        raw,
-        usage,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-      ),
-    };
+        systemInstruction,
+        messages: [], // Will be overwritten by callWithAgenticRetry
+        tools: [
+          {
+            name: phaseTool.name,
+            description: phaseTool.description,
+            parameters: phaseTool.parameters,
+          },
+        ],
+        toolChoice: effectiveToolChoice,
+        thinkingLevel: settings.story?.thinkingLevel,
+        mediaResolution: settings.story?.mediaResolution,
+        temperature: settings.story?.temperature,
+        topP: settings.story?.topP,
+        topK: settings.story?.topK,
+        minP: settings.story?.minP,
+      },
+      conversationHistory,
+      {
+        maxRetries: 3,
+        requiredToolName: phaseTool.name,
+        schema: phaseTool.parameters,
+      },
+    );
+
+    const logEntry = createLogEntry(
+      instance.protocol,
+      modelId,
+      `outline-phase${phaseNum}`,
+      { tool: phaseTool.name, retries: resp.retries },
+      resp.raw,
+      resp.usage,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
+
+    return { result: resp.result, log: logEntry };
   };
 
   // Agentic loop for each phase
@@ -398,10 +405,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     try {
       reportProgress(phaseNum, "generating");
 
-      // Call AI with tool choice
-      const resultData = await callWithToolChoice(phaseTool, phaseNum);
+      const { result, log } = await callAIWithRetry(phaseTool, phaseNum);
 
-      const { result, log } = resultData;
       if (log) logs.push(log);
 
       // Check if we got the expected tool call
@@ -409,35 +414,13 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         result &&
         typeof result === "object" &&
         "functionCalls" in result &&
-        Array.isArray(result.functionCalls)
+        Array.isArray(result.functionCalls) &&
+        result.functionCalls.length > 0
       ) {
         const toolCalls = result.functionCalls as ToolCallResult[];
-        // Get text content if present (some models return text with tool calls)
         const textContent = (result as { content?: string }).content;
 
-        let finalToolCalls = toolCalls;
-
-        // Fallback: If no tool calls but text content exists, try to extract JSON
-        if (finalToolCalls.length === 0 && textContent) {
-           const potentialJson = extractJson(textContent);
-           if (potentialJson) {
-             const parseResult = phaseTool.parameters.safeParse(potentialJson);
-             if (parseResult.success) {
-               console.log(`[OutlineAgentic] FALLBACK: Detected valid JSON for phase ${phaseNum}`);
-               finalToolCalls = [{
-                 id: `fallback_${Date.now()}`,
-                 name: phaseTool.name,
-                 args: parseResult.data,
-               }];
-             }
-           }
-        }
-
-        if (finalToolCalls.length === 0) {
-          throw new Error(`Phase ${phaseNum}: No tool call received`);
-        }
-
-        const toolCall = finalToolCalls[0];
+        const toolCall = toolCalls[0];
         if (toolCall.name !== phaseTool.name) {
           throw new Error(
             `Phase ${phaseNum}: Expected ${phaseTool.name}, got ${toolCall.name}`,

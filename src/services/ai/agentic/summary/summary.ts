@@ -46,6 +46,7 @@ import {
 } from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
+import { callWithAgenticRetry } from "../retry";
 
 // ============================================================================
 // Types
@@ -466,19 +467,30 @@ export const runSummaryAgenticLoop = async (
       nodeRange: input.nodeRange,
     };
 
-    // Generate response
-    const { result, usage, raw } = await provider.generateChat({
-      modelId,
-      systemInstruction,
-      messages: conversationHistory as unknown[],
-      tools: toolConfig,
-      thinkingLevel: settings.story?.thinkingLevel,
-      mediaResolution: settings.story?.mediaResolution,
-      temperature: settings.story?.temperature,
-      topP: settings.story?.topP,
-      topK: settings.story?.topK,
-      minP: settings.story?.minP,
-    });
+    // Generate response with retry
+    const { result, usage, raw, retries } = await callWithAgenticRetry(
+      provider,
+      {
+        modelId,
+        systemInstruction,
+        messages: [], // Overwritten
+        tools: toolConfig,
+        toolChoice: "required", // Summary always requires the tool
+        thinkingLevel: settings.story?.thinkingLevel,
+        mediaResolution: settings.story?.mediaResolution,
+        temperature: settings.story?.temperature,
+        topP: settings.story?.topP,
+        topK: settings.story?.topK,
+        minP: settings.story?.minP,
+      },
+      conversationHistory,
+      {
+        maxRetries: 3,
+        onRetry: (msg, count) => {
+          console.warn(`[Summary Loop] Retry ${count} due to: ${msg}`);
+        },
+      }
+    );
 
     // Capture raw response for logging
     const rawResponse = JSON.stringify(raw ?? result, null, 2);

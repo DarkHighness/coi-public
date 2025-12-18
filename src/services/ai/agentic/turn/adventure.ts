@@ -64,6 +64,7 @@ import {
 } from "../../utils";
 
 import { buildCacheHint } from "../../provider/cacheHint";
+import { callWithAgenticRetry } from "../retry";
 
 // Import Session Manager for internal history tracking
 import { sessionManager, SessionConfig } from "../../sessionManager";
@@ -697,74 +698,67 @@ You are in AGENTIC MODE.
     let result: any;
     let usage: TokenUsage;
 
-    let maxRetries = 2; // For malformed tool calls
-    let retryCount = 0;
-
-    let effectiveToolConfig: typeof toolConfig | undefined = toolConfig;
     let effectiveSchema = undefined;
 
-    // Inner Retry Loop: Handle Dynamic Tool Output Truncation & Retries
-    while (retryCount <= maxRetries) {
-      try {
-        const storyCfg = settings.story;
-        const requestMessages: unknown[] =
-          protocol === "gemini"
-            ? (toGeminiFormat(conversationHistory) as unknown[])
-            : (conversationHistory as unknown[]);
+    // Inner Retry Loop: Use callWithAgenticRetry
+    try {
+      const storyCfg = settings.story;
+      const effectiveToolChoice = _sessionId
+        ? sessionManager.getEffectiveToolChoice(
+            _sessionId,
+            "required",
+            settings.extra?.forceAutoToolChoice,
+          )
+        : "auto";
 
-        const { result: providerResult, usage: providerUsage } =
-          await provider.generateChat({
-            modelId,
-            systemInstruction,
-            messages: requestMessages,
-            schema: effectiveSchema,
-            tools: effectiveToolConfig,
-            thinkingLevel: storyCfg?.thinkingLevel,
-            mediaResolution: storyCfg?.mediaResolution,
-            temperature: storyCfg?.temperature,
-            topP: storyCfg?.topP,
-            topK: storyCfg?.topK,
-            minP: storyCfg?.minP,
-          });
-
-        result = providerResult;
-        usage = providerUsage;
-        console.log(`[Agentic Loop] Iteration ${loopIterations} response.`);
-        break;
-      } catch (e) {
-        const error = e instanceof Error ? e : new Error(String(e));
-
-        if (isContextLengthError(error)) {
-          // Context overflow - throw to trigger History rebuild
-          console.warn(
-            `[Agentic Loop] Context length error. Triggering rebuild...`,
-          );
-          throw new ContextOverflowError(error);
+      const resp = await callWithAgenticRetry(
+        provider,
+        {
+          modelId,
+          systemInstruction,
+          messages: [], // Overwritten by callWithAgenticRetry
+          schema: effectiveSchema,
+          tools: toolConfig,
+          toolChoice: effectiveToolChoice,
+          thinkingLevel: storyCfg?.thinkingLevel,
+          mediaResolution: storyCfg?.mediaResolution,
+          temperature: storyCfg?.temperature,
+          topP: storyCfg?.topP,
+          topK: storyCfg?.topK,
+          minP: storyCfg?.minP,
+        },
+        conversationHistory,
+        {
+          maxRetries: 2,
+          onRetry: (err, count) => {
+            console.warn(`[Agentic Loop] Retry ${count} due to: ${err}`);
+          }
         }
+      );
 
-        if (isInvalidArgumentError(error)) {
-          // Invalid argument (corrupted history) - throw to trigger History rebuild
-          console.warn(
-            `[Agentic Loop] Invalid argument error. Triggering history rebuild...`,
-          );
-          throw new HistoryCorruptedError(error);
-        }
+      result = resp.result;
+      usage = resp.usage;
+      console.log(`[Agentic Loop] Iteration ${loopIterations} response after ${resp.retries} retries.`);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
 
-        // Malformed handling
-        if (
-          e instanceof MalformedToolCallError ||
-          (e as Error).message.includes("MALFORMED_FUNCTION_CALL")
-        ) {
-          retryCount++;
-          console.warn(
-            `[Agentic Loop] Malformed tool call. Retry ${retryCount}`,
-          );
-          await new Promise((r) => setTimeout(r, 500));
-          continue;
-        }
-
-        throw error;
+      if (isContextLengthError(error)) {
+        // Context overflow - throw to trigger History rebuild
+        console.warn(
+          `[Agentic Loop] Context length error. Triggering rebuild...`,
+        );
+        throw new ContextOverflowError(error);
       }
+
+      if (isInvalidArgumentError(error)) {
+        // Invalid argument (corrupted history) - throw to trigger History rebuild
+        console.warn(
+          `[Agentic Loop] Invalid argument error. Triggering history rebuild...`,
+        );
+        throw new HistoryCorruptedError(error);
+      }
+
+      throw error;
     }
 
     if (usage!) {
@@ -792,48 +786,18 @@ You are in AGENTIC MODE.
         ),
       );
     } else if (text) {
-      // Just text message
-      // fallback detection: if activeTools.length === 1, try to parse JSON
-      let fallbackSuccess = false;
-      if (activeTools.length === 1 && effectiveToolConfig) {
-        const potentialJson = extractJson(text);
-        if (potentialJson) {
-           const tool = activeTools[0];
-           const parseResult = tool.parameters.safeParse(potentialJson);
-           if (parseResult.success) {
-             console.log(`[Agentic Loop] FALLBACK: Detected valid JSON for single tool ${tool.name}`);
-             const fallbackId = `call_${Math.random().toString(36).substr(2, 9)}`;
-
-             // Construct tool call
-             conversationHistory.push(
-               createToolCallMessage(
-                 [{
-                   id: fallbackId,
-                   name: tool.name,
-                   arguments: parseResult.data,
-                 }],
-                 text // Keep original text as content
-               )
-             );
-             fallbackSuccess = true;
-           }
-        }
-      }
-
-      if (!fallbackSuccess) {
-        conversationHistory.push({
-          role: "assistant", // Manually matching UnifiedMessage structure
-          content: [{ type: "text", text: text }],
-        });
-      }
+      conversationHistory.push({
+        role: "assistant",
+        content: [{ type: "text", text: text }],
+      });
     }
 
-    // If no tool calls, model might be chatting. Remind it to finish or search.
+    // If no tool calls, model might be chatting. Remind it explicitly to use tools.
     if (!functionCalls || functionCalls.length === 0) {
       if (text.length > 0) {
         conversationHistory.push(
           createUserMessage(
-            `[SYSTEM] I see you wrote some text. If you are done, please use \`${finishToolName}\`. If you need to change state, use \`search_tool\` to find tools.`,
+            `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one tool to progress. Use \`search_tool\` to load more state or \`${finishToolName}\` to finalize the narrative. Bare text is not allowed.`,
           ),
         );
         loopIterations++;
