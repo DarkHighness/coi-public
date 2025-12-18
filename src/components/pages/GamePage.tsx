@@ -127,6 +127,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     deleteSlot,
     triggerSave,
     handleForceUpdate,
+    rebuildContext,
   } = engineActions;
 
   // Toast Context for toast notifications
@@ -461,6 +462,7 @@ export const GamePage: React.FC<GamePageProps> = ({
               setIsMagicMirrorOpen(true);
             }}
             onRetry={handleRetry}
+            onRebuildContext={rebuildContext}
             onFork={handleFork}
             onAction={handlePlayerAction}
             onNewGame={handleNewGameClick}
@@ -494,6 +496,7 @@ export const GamePage: React.FC<GamePageProps> = ({
               setIsMagicMirrorOpen(true);
             }}
             onRetry={handleRetry}
+            onRebuildContext={rebuildContext}
             onFork={handleFork}
             onAction={handlePlayerAction}
             onNewGame={handleNewGameClick}

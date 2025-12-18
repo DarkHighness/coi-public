@@ -643,5 +643,107 @@ export const useGameAction = ({
     ],
   );
 
-  return { handleAction };
+  const handleRebuildContext = useCallback(async () => {
+    if (processingRef.current || gameStateRef.current.isProcessing) return;
+
+    if (!window.confirm(t("confirmRebuildContext"))) return;
+
+    processingRef.current = true;
+    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+
+    try {
+      const parentId = gameStateRef.current.activeNodeId;
+      if (!parentId) throw new Error("No active node to rebuild context from");
+
+      const pNode = gameStateRef.current.nodes[parentId];
+      const baseSummaries = pNode.summaries || [];
+      const baseIndex = pNode.summarizedIndex || 0;
+
+      const { effectiveSummaries, lastIndex, summarySnapshot, logs } =
+        await handleSummarization(
+          gameStateRef.current,
+          parentId,
+          `rebuild-${Date.now()}`,
+          "", // No new action
+          baseSummaries,
+          baseIndex,
+          false,
+          aiSettings,
+          language,
+          true, // FORCE SUMMARIZE
+        );
+
+      if (logs && logs.length > 0) {
+        const aggregatedUsage = logs.reduce(
+          (acc, log) => ({
+            promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
+            completionTokens:
+              acc.completionTokens + (log.usage?.completionTokens || 0),
+            totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
+            cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
+            cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
+          }),
+          {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+          },
+        );
+
+        setGameState((prev) => ({
+          ...prev,
+          logs: [...logs, ...prev.logs].slice(0, 100),
+          tokenUsage: {
+            promptTokens:
+              (prev.tokenUsage?.promptTokens || 0) +
+              aggregatedUsage.promptTokens,
+            completionTokens:
+              (prev.tokenUsage?.completionTokens || 0) +
+              aggregatedUsage.completionTokens,
+            totalTokens:
+              (prev.tokenUsage?.totalTokens || 0) + aggregatedUsage.totalTokens,
+            cacheRead:
+              (prev.tokenUsage?.cacheRead || 0) + aggregatedUsage.cacheRead,
+            cacheWrite:
+              (prev.tokenUsage?.cacheWrite || 0) + aggregatedUsage.cacheWrite,
+          },
+        }));
+      }
+
+      if (summarySnapshot) {
+        // Update state with new summaries
+        setGameState((prev) => ({
+          ...prev,
+          summaries: effectiveSummaries,
+          lastSummarizedIndex: lastIndex,
+          isProcessing: false,
+        }));
+
+        // Clear history cache in session manager
+        const sessionId = `${currentSlotId || "default"}:${gameStateRef.current.forkId ?? 0}:${aiSettings.story.providerId}:${aiSettings.story.modelId}`;
+        await sessionManager.onSummaryCreated(
+          sessionId,
+          String(summarySnapshot.id || Date.now()),
+        );
+
+        showToast(t("game.success.contextRebuilt"), "success");
+        triggerSave();
+      } else {
+        // No new summary created (maybe already summarized or no new nodes)
+        setGameState((prev) => ({ ...prev, isProcessing: false }));
+        showToast(t("game.info.noNewNodesToSummarize"), "info");
+      }
+    } catch (error) {
+      console.error("Rebuild context failed:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      showToast(errorMsg, "error", 5000);
+      setGameState((prev) => ({ ...prev, isProcessing: false, error: errorMsg }));
+    } finally {
+      processingRef.current = false;
+    }
+  }, [aiSettings, language, currentSlotId, t, showToast, setGameState, triggerSave]);
+
+  return { handleAction, handleRebuildContext };
 };

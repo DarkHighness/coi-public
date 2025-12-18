@@ -139,6 +139,8 @@ export interface GameEngineActions {
   triggerSave: () => void;
   /** Force update game state with AI */
   handleForceUpdate: (prompt: string) => void;
+  /** Rebuild story context/summaries manually */
+  rebuildContext: () => Promise<void>;
   /** Set Magic Mirror modal state */
   setIsMagicMirrorOpen: (open: boolean) => void;
   /** Set Magic Mirror image */
@@ -240,6 +242,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         updateNodeAudio: engine.updateNodeAudio,
         triggerSave: engine.triggerSave,
         handleForceUpdate: engine.handleForceUpdate,
+        rebuildContext: engine.rebuildContext,
         setIsMagicMirrorOpen: engine.setIsMagicMirrorOpen,
         setMagicMirrorImage: engine.setMagicMirrorImage,
         setIsVeoScriptOpen: engine.setIsVeoScriptOpen,

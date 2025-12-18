@@ -190,6 +190,7 @@
   "autoSaving": "已自动保存",
   "missingApiKey": "缺少 API Key，请在设置中配置。",
   "confirmNewGame": "确定要开始新游戏吗？所有当前进度将会丢失。",
+  "confirmRebuildContext": "确定要重建故事上下文吗？这将总结当前历史并清理 AI 的内存缓存。如果故事响应变慢或 AI 变得混乱，请使用此功能。",
   "loadError": "存档文件无效。",
   "menu": "菜单",
   "mainMenu": "主菜单",
@@ -271,6 +272,7 @@
   "showChoices": "显示选项",
   "hideChoices": "隐藏选项",
   "retryGeneration": "重新生成",
+  "rebuildContext": "重建上下文",
   "skills": "技能",
   "emptySkills": "暂未习得技能。",
   "status": "状态",
@@ -1478,6 +1480,12 @@
     "untitled": "未命名故事"
   },
   "game": {
+    "success": {
+      "contextRebuilt": "上下文重建成功！故事已总结并清理历史。"
+    },
+    "info": {
+      "noNewNodesToSummarize": "没有显著的新事件需要总结。上下文已处于精简状态。"
+    },
     "errors": {
       "summaryFailed": "摘要生成失败"
     }

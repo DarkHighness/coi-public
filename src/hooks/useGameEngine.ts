@@ -271,7 +271,7 @@ export const useGameEngine = () => {
   // --- Core Game Loop ---
   // Note: generateImageForNode is defined later but we can reference it here
   // because hooks are called in order and we'll pass the actual function
-  const { handleAction } = useGameAction({
+  const { handleAction, handleRebuildContext } = useGameAction({
     gameState,
     setGameState,
     aiSettings,
@@ -1442,6 +1442,7 @@ export const useGameEngine = () => {
     handleAction,
     startNewGame,
     resumeOutlineGeneration,
+    rebuildContext: handleRebuildContext,
     isAutoSaving,
     isMagicMirrorOpen,
     setIsMagicMirrorOpen,

@@ -21,6 +21,7 @@ interface ActionPanelProps {
   onOpenRules?: () => void;
   onTriggerSave?: () => void;
   onRetry?: () => void;
+  onRebuildContext?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onJumpToSegment?: (segmentId: string) => void;
 }
@@ -44,6 +45,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onOpenRules,
   onTriggerSave,
   onRetry,
+  onRebuildContext,
   onForceUpdate,
   onJumpToSegment,
 }) => {
@@ -324,6 +326,33 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     </svg>
                     <span className="hidden sm:inline">
                       {t("retryGeneration")}
+                    </span>
+                  </button>
+                )}
+
+                {/* Rebuild Context Button */}
+                {onRebuildContext && (
+                  <button
+                    onClick={onRebuildContext}
+                    disabled={isDisabled}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-warning/50 rounded-full text-xs font-bold text-theme-warning uppercase tracking-widest hover:bg-theme-warning hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={t("rebuildContext") || "Rebuild Context"}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">
+                      {t("rebuildContext") || "Rebuild Context"}
                     </span>
                   </button>
                 )}

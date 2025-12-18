@@ -212,6 +212,9 @@ export const generateStoryOutlinePhased = async (
     themeDataBackgroundTemplate,
     themeDataExample,
     themeDataWorldSetting,
+    settings.extra?.liteMode,
+    settings.extra?.nsfw,
+    settings.extra?.detailedDescription,
   );
 
   // Inject custom prompts if needed

@@ -20,6 +20,7 @@ interface MobileGameLayoutProps {
   // Callbacks
   onAnimate: (url: string) => void;
   onRetry: () => void;
+  onRebuildContext?: () => void;
   onFork: (nodeId: string) => void;
   onAction: (action: string) => Promise<void>;
   onNewGame: () => void;
@@ -56,6 +57,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   currentAmbience,
   onAnimate,
   onRetry,
+  onRebuildContext,
   onFork,
   onAction,
   onNewGame,
@@ -179,6 +181,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onOpenRules={onOpenRules}
             onTriggerSave={triggerSave}
             onRetry={onRetry}
+            onRebuildContext={onRebuildContext}
             onForceUpdate={onForceUpdate}
             onJumpToSegment={handleJumpToSegment}
           />

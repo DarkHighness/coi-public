@@ -131,6 +131,7 @@ export const handleSummarization = async (
   isInit: boolean,
   aiSettings: AISettings,
   language: LanguageCode,
+  forceSummarize: boolean = false,
 ): Promise<{
   effectiveSummaries: StorySummary[];
   lastIndex: number;
@@ -141,23 +142,24 @@ export const handleSummarization = async (
 }> => {
   let contextNodes = deriveHistory(gameState.nodes, effectiveParentId);
 
-  // Create temp user node for context calculation
-  const tempUserNode: StorySegment = {
-    segmentIdx:
-      (gameState.nodes[effectiveParentId || ""]?.segmentIdx ?? -1) + 1,
-    id: effectiveUserNodeId,
-    parentId: effectiveParentId,
-    text: action,
-    choices: [],
-    imagePrompt: "",
-    role: "user",
-    timestamp: Date.now(),
-    summaries: baseSummaries,
-    summarizedIndex: baseIndex,
-    ending: "continue",
-  };
-
-  if (!isInit) contextNodes.push(tempUserNode);
+  // Create temp user node for context calculation (only if not forced or if we have an action)
+  if (!isInit && action) {
+    const tempUserNode: StorySegment = {
+      segmentIdx:
+        (gameState.nodes[effectiveParentId || ""]?.segmentIdx ?? -1) + 1,
+      id: effectiveUserNodeId,
+      parentId: effectiveParentId,
+      text: action,
+      choices: [],
+      imagePrompt: "",
+      role: "user",
+      timestamp: Date.now(),
+      summaries: baseSummaries,
+      summarizedIndex: baseIndex,
+      ending: "continue",
+    };
+    contextNodes.push(tempUserNode);
+  }
 
   // Determine Trigger Condition
   let effectiveSummaries = [...baseSummaries];
@@ -167,14 +169,13 @@ export const handleSummarization = async (
 
   const totalLength = contextNodes.length;
 
-  let shouldSummarize = false;
-  const tokenLimit = aiSettings.maxContextTokens;
+  let shouldSummarize = forceSummarize;
   const turnLimit = aiSettings.contextLen || 10;
 
   const nodesToSummarizeCount = totalLength - lastIndex;
 
   // Turn-Based Trigger
-  if (nodesToSummarizeCount >= turnLimit) {
+  if (!shouldSummarize && nodesToSummarizeCount >= turnLimit) {
     console.log(
       `[Summarization] Turn limit triggered: ${nodesToSummarizeCount} >= ${turnLimit}`,
     );

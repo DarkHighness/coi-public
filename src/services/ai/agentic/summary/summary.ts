@@ -79,7 +79,13 @@ export interface SummaryLoopInput {
 
 const getSummarySystemInstruction = (
   language: string,
+  isLiteMode?: boolean,
+  isNSFW?: boolean,
+  isDetailedDescription?: boolean,
 ): string => `You are a diligent chronicler tasked with summarizing story events in a world simulation.
+${isLiteMode ? "Focus on core facts and essential plot points only. Be concise." : ""}
+${isNSFW ? "Maintain neutrality even when summarizing mature or violent content." : ""}
+${isDetailedDescription ? "Ensure key sensory details and character emotional shifts are captured in the summary." : ""}
 
 <role>
 You maintain two layers of knowledge:
@@ -409,7 +415,12 @@ export const runSummaryAgenticLoop = async (
   const provider = sessionManager.getProvider(summarySession.id, instance);
 
   // Initialize
-  const systemInstruction = getSummarySystemInstruction(language);
+  const systemInstruction = getSummarySystemInstruction(
+    language,
+    settings.extra?.liteMode,
+    settings.extra?.nsfw,
+    settings.extra?.detailedDescription,
+  );
   const initialContext = buildSummaryInitialContext(input);
 
   let conversationHistory: UnifiedMessage[] = [
@@ -475,7 +486,11 @@ export const runSummaryAgenticLoop = async (
         systemInstruction,
         messages: [], // Overwritten
         tools: toolConfig,
-        toolChoice: "required", // Summary always requires the tool
+        toolChoice: sessionManager.getEffectiveToolChoice(
+          summarySession.id,
+          "required",
+          settings.extra?.forceAutoToolChoice,
+        ),
         thinkingLevel: settings.story?.thinkingLevel,
         mediaResolution: settings.story?.mediaResolution,
         temperature: settings.story?.temperature,

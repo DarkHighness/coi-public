@@ -217,6 +217,7 @@
   "autoSaving": "Auto-saved",
   "missingApiKey": "Missing API Key. Please configure settings.",
   "confirmNewGame": "Are you sure you want to start a new game? All progress will be lost.",
+  "confirmRebuildContext": "Are you sure you want to rebuild the story context? This will summarize the current history and clear the AI's memory cache. Use this if the story becomes slow or the AI gets confused.",
   "loadError": "Invalid save file.",
   "menu": "Menu",
   "mainMenu": "Main Menu",
@@ -334,6 +335,7 @@
   "showChoices": "Show Choices",
   "hideChoices": "Hide Choices",
   "retryGeneration": "Retry",
+  "rebuildContext": "Rebuild Context",
   "next": "Next",
   "latest": "Latest",
   "roll": "Roll (Risk)",
@@ -1475,6 +1477,12 @@
     "untitled": "Untitled story"
   },
   "game": {
+    "success": {
+      "contextRebuilt": "Context rebuilt successfully! History has been summarized."
+    },
+    "info": {
+      "noNewNodesToSummarize": "No new events to summarize. Context is already up to date."
+    },
     "errors": {
       "summaryFailed": "Failed to generate summary"
     }
