@@ -732,13 +732,15 @@ You are in AGENTIC MODE.
           maxRetries: 2,
           onRetry: (err, count) => {
             console.warn(`[Agentic Loop] Retry ${count} due to: ${err}`);
-          }
-        }
+          },
+        },
       );
 
       result = resp.result;
       usage = resp.usage;
-      console.log(`[Agentic Loop] Iteration ${loopIterations} response after ${resp.retries} retries.`);
+      console.log(
+        `[Agentic Loop] Iteration ${loopIterations} response after ${resp.retries} retries.`,
+      );
     } catch (e) {
       const error = e instanceof Error ? e : new Error(String(e));
 
@@ -974,7 +976,7 @@ export function executeToolCall(
       typedArgs.type,
       typedArgs.page,
       typedArgs.limit,
-      typedArgs.search
+      typedArgs.search,
     );
   }
 

@@ -32,7 +32,6 @@ import {
   validateConnection as validateClaudeConnection,
 } from "../../providers/claudeProvider";
 
-
 interface ModelListCacheEntry {
   timestamp: number;
   configHash: string;

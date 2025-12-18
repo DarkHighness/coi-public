@@ -195,8 +195,6 @@ export class GameDatabase {
     repairGameState(this.state);
   }
 
-
-
   public getState(): GameState {
     return this.state;
   }
@@ -653,21 +651,26 @@ export class GameDatabase {
           items = this.state.relationships.map((r) => ({
             id: r.id,
             name: (r.visible as any)?.name || "Unknown",
-            info: `Relationship: ${(r.visible as any)?.relationshipType || 'Unknown'}`,
+            info: `Relationship: ${(r.visible as any)?.relationshipType || "Unknown"}`,
           }));
           break;
         case "location":
           items = this.state.locations.map((l) => ({
             id: l.id,
             name: l.name,
-            info: l.id === this.state.currentLocation ? "(Current Location)" : (l.isVisited ? "Visited" : "Unknown"),
+            info:
+              l.id === this.state.currentLocation
+                ? "(Current Location)"
+                : l.isVisited
+                  ? "Visited"
+                  : "Unknown",
           }));
           break;
         case "quest":
           items = this.state.quests.map((q) => ({
             id: q.id,
             name: (q as any).title || (q.visible as any)?.name || "Quest",
-            info: `Status: ${(q as any).status || (q.visible as any)?.status || 'Active'}`,
+            info: `Status: ${(q as any).status || (q.visible as any)?.status || "Active"}`,
           }));
           break;
         case "knowledge":
@@ -699,21 +702,28 @@ export class GameDatabase {
           }));
           break;
         case "global":
-           items = [{
-               id: "global",
-               name: "Global State",
-               info: `Time: ${this.state.time}, Loc: ${this.state.currentLocation}`
-           }];
-           break;
+          items = [
+            {
+              id: "global",
+              name: "Global State",
+              info: `Time: ${this.state.time}, Loc: ${this.state.currentLocation}`,
+            },
+          ];
+          break;
         default:
-          return createError(`Unknown list target: ${target}`, "INVALID_ACTION");
+          return createError(
+            `Unknown list target: ${target}`,
+            "INVALID_ACTION",
+          );
       }
 
       const result = paginate(items);
-      return createSuccess(result, `Listed ${target} (Page ${result.page}/${result.totalPages})`);
-
+      return createSuccess(
+        result,
+        `Listed ${target} (Page ${result.page}/${result.totalPages})`,
+      );
     } catch (error) {
-       return createError(`List failed: ${error}`, "UNKNOWN");
+      return createError(`List failed: ${error}`, "UNKNOWN");
     }
   }
 
@@ -759,8 +769,6 @@ export class GameDatabase {
     }
   }
 
-
-
   // --- Specific Modifiers ---
 
   private modifyInventory(
@@ -784,14 +792,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.inventory.some((i) => matchesIdentifier(i.id, finalId))) {
+      if (
+        finalId &&
+        this.state.inventory.some((i) => matchesIdentifier(i.id, finalId))
+      ) {
         const generatedId = this.generateId("inventory");
         conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
         finalId = generatedId;
       }
 
       // 2. Check Name Conflict (Keep strict to prevent logical duplicates)
-      const nameExists = this.state.inventory.some((i) => matchesIdentifier(i.name, data.name));
+      const nameExists = this.state.inventory.some((i) =>
+        matchesIdentifier(i.name, data.name),
+      );
       if (nameExists) {
         return createError(
           `Item "${data.name}" already exists`,
@@ -936,14 +949,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.relationships.some((r) => matchesIdentifier(r.id, finalId))) {
-         const generatedId = this.generateId("npc");
-         conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-         finalId = generatedId;
+      if (
+        finalId &&
+        this.state.relationships.some((r) => matchesIdentifier(r.id, finalId))
+      ) {
+        const generatedId = this.generateId("npc");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
       }
 
       // 2. Check Name Conflict
-      const nameExists = this.state.relationships.some((r) => matchesIdentifier(r.visible.name, name));
+      const nameExists = this.state.relationships.some((r) =>
+        matchesIdentifier(r.visible.name, name),
+      );
       if (nameExists) {
         return createError(`NPC "${name}" already exists`, "ALREADY_EXISTS");
       }
@@ -1102,14 +1120,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.locations.some((l) => matchesIdentifier(l.id, finalId))) {
-          const generatedId = this.generateId("location");
-          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-          finalId = generatedId;
+      if (
+        finalId &&
+        this.state.locations.some((l) => matchesIdentifier(l.id, finalId))
+      ) {
+        const generatedId = this.generateId("location");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
       }
 
       // 2. Check Name Conflict
-      const nameExists = this.state.locations.some((l) => matchesIdentifier(l.name, data.name));
+      const nameExists = this.state.locations.some((l) =>
+        matchesIdentifier(l.name, data.name),
+      );
       if (nameExists) {
         return createError(
           `Location "${data.name}" already exists`,
@@ -1267,14 +1290,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.quests.some((q) => matchesIdentifier(q.id, finalId))) {
-          const generatedId = this.generateId("quest");
-          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-          finalId = generatedId;
+      if (
+        finalId &&
+        this.state.quests.some((q) => matchesIdentifier(q.id, finalId))
+      ) {
+        const generatedId = this.generateId("quest");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
       }
 
       // 2. Check Title Conflict
-      const nameExists = this.state.quests.some((q) => matchesIdentifier(q.title, data.title));
+      const nameExists = this.state.quests.some((q) =>
+        matchesIdentifier(q.title, data.title),
+      );
       if (nameExists) {
         return createError(
           `Quest "${data.title}" already exists`,
@@ -1412,14 +1440,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.knowledge.some((k) => matchesIdentifier(k.id, finalId))) {
-          const generatedId = this.generateId("knowledge");
-          conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-          finalId = generatedId;
+      if (
+        finalId &&
+        this.state.knowledge.some((k) => matchesIdentifier(k.id, finalId))
+      ) {
+        const generatedId = this.generateId("knowledge");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
       }
 
       // 2. Check Title Conflict
-      const nameExists = this.state.knowledge.some((k) => matchesIdentifier(k.title, data.title));
+      const nameExists = this.state.knowledge.some((k) =>
+        matchesIdentifier(k.title, data.title),
+      );
       if (nameExists) {
         return createError(
           `Knowledge "${data.title}" already exists`,
@@ -1541,14 +1574,19 @@ export class GameDatabase {
       // 1. Resolve ID Conflict
       let finalId = data.id;
       let conflictNote = "";
-      if (finalId && this.state.factions.some((f) => matchesIdentifier(f.id, finalId))) {
-           const generatedId = this.generateId("faction");
-           conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-           finalId = generatedId;
+      if (
+        finalId &&
+        this.state.factions.some((f) => matchesIdentifier(f.id, finalId))
+      ) {
+        const generatedId = this.generateId("faction");
+        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
+        finalId = generatedId;
       }
 
       // 2. Check Name Conflict
-      const nameExists = this.state.factions.some((f) => matchesIdentifier(f.name, data.name));
+      const nameExists = this.state.factions.some((f) =>
+        matchesIdentifier(f.name, data.name),
+      );
       if (nameExists) {
         return createError(
           `Faction "${data.name}" already exists`,

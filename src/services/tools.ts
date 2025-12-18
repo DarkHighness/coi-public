@@ -1203,10 +1203,10 @@ export const searchToolSchema = z.object({
             "condition",
             "trait",
             "attribute", // Added
-            "profile",   // Added
-            "global",    // Added
-            "story",     // Added
-            "turn",      // Added
+            "profile", // Added
+            "global", // Added
+            "story", // Added
+            "turn", // Added
             "rag",
           ])
           .describe("Entity type to search for."),
@@ -1521,7 +1521,6 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "query:rag": [RAG_SEARCH_TOOL],
 };
 
-
 /**
  * Generic List Tool.
  * Use this to get a paginated list of entity ID and Names.
@@ -1549,7 +1548,10 @@ export const LIST_TOOL = defineTool({
         "trait",
       ])
       .describe("Entity type to list."),
-    page: z.number().optional().describe("Page number (1-indexed). Default: 1."),
+    page: z
+      .number()
+      .optional()
+      .describe("Page number (1-indexed). Default: 1."),
     limit: z.number().optional().describe("Items per page. Default: 10."),
     search: z.string().optional().describe("Optional name filter."),
   }),
@@ -1639,13 +1641,7 @@ export function findTools(
   // 1. Character Aggregate
   // "character" -> profile, attributes, skills, conditions, traits
   if (entity === "character") {
-    const subEntities = [
-      "profile",
-      "attribute",
-      "skill",
-      "condition",
-      "trait",
-    ];
+    const subEntities = ["profile", "attribute", "skill", "condition", "trait"];
     let tools: ZodToolDefinition[] = [];
     for (const sub of subEntities) {
       const specificKey = `${operation}:${sub}`;
@@ -1659,22 +1655,24 @@ export function findTools(
 
   // 2. World / Global Aggregate
   if (entity === "world" || entity === "global") {
-      const subEntities = ["global", "world"]; // "world" for update:world which maps to [UPDATE_WORLD_INFO, UPDATE_GLOBAL]
-      let tools: ZodToolDefinition[] = [];
+    const subEntities = ["global", "world"]; // "world" for update:world which maps to [UPDATE_WORLD_INFO, UPDATE_GLOBAL]
+    let tools: ZodToolDefinition[] = [];
 
-      // Attempt direct mapping first for aliases
-      if (TOOL_MAP[`${operation}:world`]) tools = tools.concat(TOOL_MAP[`${operation}:world`]);
-      if (TOOL_MAP[`${operation}:global`]) tools = tools.concat(TOOL_MAP[`${operation}:global`]);
+    // Attempt direct mapping first for aliases
+    if (TOOL_MAP[`${operation}:world`])
+      tools = tools.concat(TOOL_MAP[`${operation}:world`]);
+    if (TOOL_MAP[`${operation}:global`])
+      tools = tools.concat(TOOL_MAP[`${operation}:global`]);
 
-      if (tools.length > 0) return tools;
+    if (tools.length > 0) return tools;
   }
 
   // 3. Story / Turn
   if (entity === "story" && operation === "query") {
-      return [QUERY_STORY_TOOL, QUERY_SUMMARY_TOOL];
+    return [QUERY_STORY_TOOL, QUERY_SUMMARY_TOOL];
   }
   if (entity === "turn" && operation === "query") {
-      return [QUERY_TURN_TOOL, QUERY_RECENT_CONTEXT_TOOL];
+    return [QUERY_TURN_TOOL, QUERY_RECENT_CONTEXT_TOOL];
   }
 
   // 4. List Tool Fallback
@@ -1685,40 +1683,40 @@ export function findTools(
   // 5. Query All Fallback (Legacy preserved, but Matrix Logic is better)
   if (operation === "query" && entity === "all") {
     // Return all query tools
-     let tools: ZodToolDefinition[] = [];
-     for (const key in TOOL_MAP) {
-         if (key.startsWith("query:")) {
-             tools = tools.concat(TOOL_MAP[key]);
-         }
-     }
-     return tools;
+    let tools: ZodToolDefinition[] = [];
+    for (const key in TOOL_MAP) {
+      if (key.startsWith("query:")) {
+        tools = tools.concat(TOOL_MAP[key]);
+      }
+    }
+    return tools;
   }
 
   // 6. Matrix Search / Fallback Logic
   // If operation is "all" (e.g. search_tool with operation="all", entity="inventory") -> return add, update, remove, query for inventory
   if (operation === "all") {
-      let tools: ZodToolDefinition[] = [];
-      const suffix = `:${entity}`;
-      for (const key in TOOL_MAP) {
-          if (key.endsWith(suffix)) {
-              tools = tools.concat(TOOL_MAP[key]);
-          }
+    let tools: ZodToolDefinition[] = [];
+    const suffix = `:${entity}`;
+    for (const key in TOOL_MAP) {
+      if (key.endsWith(suffix)) {
+        tools = tools.concat(TOOL_MAP[key]);
       }
-      // If we found tools, return them
-      if (tools.length > 0) return tools;
+    }
+    // If we found tools, return them
+    if (tools.length > 0) return tools;
   }
 
   // If entity is "all" (e.g. search_tool with operation="query", entity="all") -> return all query tools
   // (Covered partially above, but generic here)
   if (entity === "all") {
-      let tools: ZodToolDefinition[] = [];
-      const prefix = `${operation}:`;
-      for (const key in TOOL_MAP) {
-          if (key.startsWith(prefix)) {
-              tools = tools.concat(TOOL_MAP[key]);
-          }
+    let tools: ZodToolDefinition[] = [];
+    const prefix = `${operation}:`;
+    for (const key in TOOL_MAP) {
+      if (key.startsWith(prefix)) {
+        tools = tools.concat(TOOL_MAP[key]);
       }
-       if (tools.length > 0) return tools;
+    }
+    if (tools.length > 0) return tools;
   }
 
   // 7. Wildcard / "Generic" Search
@@ -1727,7 +1725,6 @@ export function findTools(
 
   return [];
 }
-
 
 // Legacy export for backwards compatibility (though mostly unused now)
 export const TOOLS = ALL_DEFINED_TOOLS;
@@ -1904,7 +1901,6 @@ export type FinishTurnParams = z.infer<typeof finishTurnSchema>;
 export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;
 
 export type ListToolParams = InferToolParams<typeof LIST_TOOL>;
-
 
 // ============================================================================
 // TOOL PARAMETER TYPE MAP

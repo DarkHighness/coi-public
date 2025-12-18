@@ -99,7 +99,6 @@ export interface ProviderBase {
   instanceId: string;
   instance: ProviderInstance;
 
-
   generateChat(request: ChatGenerateRequest): Promise<ChatGenerateResponse>;
 
   generateImage?(request: ImageGenerateRequest): Promise<ImageGenerateResponse>;

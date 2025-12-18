@@ -29,11 +29,7 @@ import { createProvider } from "./provider/createProvider";
 // createProviderConfig is likely not needed if we use getProvider logic
 
 // Re-export types
-export type {
-  SessionConfig,
-  StoredSession,
-  ProviderCacheHint,
-};
+export type { SessionConfig, StoredSession, ProviderCacheHint };
 
 // =============================================================================
 // Session Types
@@ -625,7 +621,6 @@ class HistorySessionManager {
   // ===========================================================================
   // ModelCapabilities Management
   // ===========================================================================
-
 
   /**
    * 获取有效的 toolChoice（考虑会话能力）

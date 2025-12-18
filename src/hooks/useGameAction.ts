@@ -739,11 +739,23 @@ export const useGameAction = ({
       console.error("Rebuild context failed:", error);
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
       showToast(errorMsg, "error", 5000);
-      setGameState((prev) => ({ ...prev, isProcessing: false, error: errorMsg }));
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+        error: errorMsg,
+      }));
     } finally {
       processingRef.current = false;
     }
-  }, [aiSettings, language, currentSlotId, t, showToast, setGameState, triggerSave]);
+  }, [
+    aiSettings,
+    language,
+    currentSlotId,
+    t,
+    showToast,
+    setGameState,
+    triggerSave,
+  ]);
 
   return { handleAction, handleRebuildContext };
 };

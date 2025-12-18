@@ -496,27 +496,29 @@ export const extractJson = (text: string): unknown | null => {
   let start: number = -1;
   let end: number = -1;
 
-  if (firstOpenBrace !== -1 && (firstOpenBracket === -1 || firstOpenBrace < firstOpenBracket)) {
-      start = firstOpenBrace;
-      const lastCloseBrace = text.lastIndexOf("}");
-      if(lastCloseBrace !== -1) end = lastCloseBrace + 1;
-
+  if (
+    firstOpenBrace !== -1 &&
+    (firstOpenBracket === -1 || firstOpenBrace < firstOpenBracket)
+  ) {
+    start = firstOpenBrace;
+    const lastCloseBrace = text.lastIndexOf("}");
+    if (lastCloseBrace !== -1) end = lastCloseBrace + 1;
   } else if (firstOpenBracket !== -1) {
-      start = firstOpenBracket;
-      const lastCloseBracket = text.lastIndexOf("]");
-      if(lastCloseBracket !== -1) end = lastCloseBracket + 1;
+    start = firstOpenBracket;
+    const lastCloseBracket = text.lastIndexOf("]");
+    if (lastCloseBracket !== -1) end = lastCloseBracket + 1;
   }
 
   if (start !== -1 && end !== -1 && end > start) {
-      try {
-          const substring = text.substring(start, end);
-          return JSON.parse(substring);
-      } catch(e) {
-          // One retry: sometimes there is trailing text like "}" or "]" which regex picked up naively
-          // But strict JSON parsing failed.
-          // For now, return null.
-      }
+    try {
+      const substring = text.substring(start, end);
+      return JSON.parse(substring);
+    } catch (e) {
+      // One retry: sometimes there is trailing text like "}" or "]" which regex picked up naively
+      // But strict JSON parsing failed.
+      // For now, return null.
+    }
   }
 
   return null;
-}
+};

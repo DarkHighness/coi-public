@@ -37,9 +37,7 @@ import {
   generateEmbedding as generateClaudeEmbedding,
 } from "../../providers/claudeProvider";
 
-import {
-  createProviderConfig,
-} from "./registry";
+import { createProviderConfig } from "./registry";
 import type {
   ProviderBase,
   ProviderModelCapabilities,
@@ -64,7 +62,6 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
     protocol: instance.protocol,
     instanceId: instance.id,
     instance,
-
 
     async generateChat(
       request: ChatGenerateRequest,

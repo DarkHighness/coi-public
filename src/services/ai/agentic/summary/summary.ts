@@ -504,7 +504,7 @@ export const runSummaryAgenticLoop = async (
         onRetry: (msg, count) => {
           console.warn(`[Summary Loop] Retry ${count} due to: ${msg}`);
         },
-      }
+      },
     );
 
     // Capture raw response for logging

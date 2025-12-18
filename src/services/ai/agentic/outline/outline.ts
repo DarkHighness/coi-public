@@ -76,7 +76,6 @@ import { callWithAgenticRetry } from "../retry";
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
 
-
 // ============================================================================
 // Tool Definitions for Outline Generation
 // ============================================================================
@@ -393,12 +392,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     reportProgress(phaseNum, "starting");
 
     // Add phase-specific prompt
-    let phasePrompt = getPhasePrompt(
-      phaseNum,
-      theme,
-      language,
-      customContext,
-    );
+    let phasePrompt = getPhasePrompt(phaseNum, theme, language, customContext);
     if (phasePrompt) {
       // Dynamically append tool usage emphasis
       phasePrompt += `\n\nUse tool \`${phaseTool.name}\` to submit.`;
