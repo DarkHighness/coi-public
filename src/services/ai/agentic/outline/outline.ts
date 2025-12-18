@@ -360,7 +360,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
       },
       conversationHistory,
       {
-        maxRetries: 3,
+        maxRetries: settings.extra?.maxErrorRetries ?? 3,
         requiredToolName: phaseTool.name,
         schema: phaseTool.parameters,
       },

@@ -500,7 +500,7 @@ export const runSummaryAgenticLoop = async (
       },
       conversationHistory,
       {
-        maxRetries: 3,
+        maxRetries: settings.extra?.maxErrorRetries ?? 3,
         onRetry: (msg, count) => {
           console.warn(`[Summary Loop] Retry ${count} due to: ${msg}`);
         },

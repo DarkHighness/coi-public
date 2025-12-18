@@ -1078,6 +1078,8 @@ export interface AISettings {
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
+    maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
+    maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)
   };
 }
 

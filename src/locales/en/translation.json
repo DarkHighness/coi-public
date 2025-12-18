@@ -424,7 +424,13 @@
       "liteMode": "Lite Mode",
       "liteModeHelp": "Reduce prompt overhead for models with limited context",
       "forceAutoToolChoice": "Force Auto Tool Choice",
-      "forceAutoToolChoiceHelp": "Always use 'auto' for tool choice, overriding 'required' requests. Improves compatibility for some models."
+      "forceAutoToolChoiceHelp": "Always use 'auto' for tool choice, overriding 'required' requests. Improves compatibility for some models.",
+      "agenticLoop": "Agentic Loop Settings",
+      "agenticLoopHelp": "Configure the behavior of AI agentic loop execution.",
+      "maxAgenticRounds": "Max Rounds",
+      "maxAgenticRoundsHelp": "Maximum number of rounds for agentic loop (default: 20)",
+      "maxErrorRetries": "Max Error Retries",
+      "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)"
     }
   },
   "narrator": "Narrator",

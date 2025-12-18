@@ -402,7 +402,13 @@
       "liteMode": "精简模式",
       "liteModeHelp": "减少 prompt 开销，适用于上下文有限的模型",
       "forceAutoToolChoice": "强制自动工具选择",
-      "forceAutoToolChoiceHelp": "始终将工具选择设置为 'auto'，忽略 'required' 请求。提高某些模型的兼容性。"
+      "forceAutoToolChoiceHelp": "始终将工具选择设置为 'auto'，忽略 'required' 请求。提高某些模型的兼容性。",
+      "agenticLoop": "代理循环设置",
+      "agenticLoopHelp": "配置 AI 代理循环执行的行为。",
+      "maxAgenticRounds": "最大轮数",
+      "maxAgenticRoundsHelp": "代理循环的最大轮数（默认：20）",
+      "maxErrorRetries": "最大错误重试次数",
+      "maxErrorRetriesHelp": "发生错误时的最大重试次数（默认：3）"
     }
   },
   "themeMode": "主题模式",

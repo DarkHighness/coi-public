@@ -224,6 +224,71 @@ export const SettingsExtra: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Agentic Loop Settings */}
+        <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-4">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.agenticLoop") || "Agentic Loop Settings"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.agenticLoopHelp") ||
+                "Configure the behavior of AI agentic loop execution."}
+            </div>
+          </div>
+
+          {/* Max Rounds */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.maxAgenticRounds") || "Max Rounds"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.maxAgenticRoundsHelp") ||
+                  "Maximum number of rounds for agentic loop (default: 10)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={extra.maxAgenticRounds ?? 20}
+              onChange={(e) =>
+                updateExtra(
+                  "maxAgenticRounds",
+                  Math.max(1, Math.min(100, parseInt(e.target.value) || 20))
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
+
+          {/* Max Error Retries */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.maxErrorRetries") || "Max Error Retries"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.maxErrorRetriesHelp") ||
+                  "Maximum retry attempts on error (default: 3)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={0}
+              max={10}
+              value={extra.maxErrorRetries ?? 3}
+              onChange={(e) =>
+                updateExtra(
+                  "maxErrorRetries",
+                  Math.max(0, Math.min(10, parseInt(e.target.value) || 3))
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

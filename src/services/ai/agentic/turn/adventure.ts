@@ -582,9 +582,10 @@ export const runAgenticLoop = async (
     : createProvider(instance);
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
-  // Token/Turn limits
+  // Token/Turn limits - use settings or defaults
   let loopIterations = 0;
-  const maxLoopIterations = 20; // Hard limit to prevent infinite loops
+  const maxLoopIterations = settings.extra?.maxAgenticRounds ?? 20; // Configurable, default 20
+  const maxErrorRetries = settings.extra?.maxErrorRetries ?? 3; // Configurable, default 3
 
   const allLogs: LogEntry[] = [];
 
@@ -729,7 +730,7 @@ You are in AGENTIC MODE.
         },
         conversationHistory,
         {
-          maxRetries: 2,
+          maxRetries: maxErrorRetries,
           onRetry: (err, count) => {
             console.warn(`[Agentic Loop] Retry ${count} due to: ${err}`);
           },
