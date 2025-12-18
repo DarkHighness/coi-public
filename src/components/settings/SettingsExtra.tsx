@@ -256,7 +256,7 @@ export const SettingsExtra: React.FC = () => {
               onChange={(e) =>
                 updateExtra(
                   "maxAgenticRounds",
-                  Math.max(1, Math.min(100, parseInt(e.target.value) || 20))
+                  Math.max(1, Math.min(100, parseInt(e.target.value) || 20)),
                 )
               }
               className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
@@ -282,7 +282,7 @@ export const SettingsExtra: React.FC = () => {
               onChange={(e) =>
                 updateExtra(
                   "maxErrorRetries",
-                  Math.max(0, Math.min(10, parseInt(e.target.value) || 3))
+                  Math.max(0, Math.min(10, parseInt(e.target.value) || 3)),
                 )
               }
               className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
