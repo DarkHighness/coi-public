@@ -164,14 +164,13 @@ class HistorySessionManager {
         const last = sanitizedHistory[sanitizedHistory.length - 1] as any;
 
         // 1. Remove dangling user messages (Interrupted request)
-        if (
-          last &&
-          (last.role === "user" ||
-            last.role === "function" ||
-            last.role === "tool")
-        ) {
+        // NOTE: We only remove "user" role messages here.
+        // "function" and "tool" messages are valid tool call responses and should NOT be removed.
+        // If a tool message is at the end, the AI was processing the tool result when interrupted.
+        // This is a valid state that can be resumed.
+        if (last && last.role === "user") {
           console.warn(
-            `[SessionManager] Found dangling ${last.role} message in loaded session ${newSessionId}, removing.`,
+            `[SessionManager] Found dangling user message in loaded session ${newSessionId}, removing.`,
           );
           sanitizedHistory.pop();
           wasSanitized = true;

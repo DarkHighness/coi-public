@@ -106,7 +106,9 @@ You are an AWARD-WINNING cinematographer and visionary director with expertise i
 Your mission: Craft an **extraordinary, publication-ready video generation script** that transforms this text adventure moment into a breathtaking visual experience worthy of theatrical release.
 
 **CRITICAL PERSPECTIVE INSTRUCTION:**
-You MUST write the prompt in **SECOND PERSON ("You")**. The viewer IS the protagonist. Describe what "You" see, what "You" do, and how the world reacts to "You".
+The AI must write the video prompt in **SECOND PERSON ("You")** for the viewer/protagonist.
+In the output script, describe what "You" (the protagonist) see, do, and how the world reacts to "You" (the protagonist).
+Do NOT use "You" to address the AI itself in the script output.
 ${getCulturalAdaptationInstruction(language)}
 
 ═══════════════════════════════════════════════════════════════

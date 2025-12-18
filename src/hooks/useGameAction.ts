@@ -11,7 +11,6 @@ import {
 } from "../types";
 import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
-import { sessionManager } from "../services/ai/sessionManager";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import {
@@ -19,6 +18,7 @@ import {
   handleForking,
   handleSummarization,
   createModelNode,
+  notifySessionSummaryCreated,
 } from "./gameActionHelpers";
 
 interface UseGameActionProps {
@@ -279,10 +279,11 @@ export const useGameAction = ({
           // Notify session manager that summary was created
           // This clears the cached history so the next turn starts fresh
           if (summarySnapshot) {
-            const sessionId = `${currentSlotId || "default"}:${gameStateRef.current.forkId ?? 0}:${aiSettings.story.providerId}:${aiSettings.story.modelId}`;
-            await sessionManager.onSummaryCreated(
-              sessionId,
-              String(summarySnapshot.id || Date.now()),
+            await notifySessionSummaryCreated(
+              aiSettings,
+              currentSlotId || "default",
+              currentForkId,
+              summarySnapshot.id || Date.now(),
             );
           }
         }
@@ -713,19 +714,50 @@ export const useGameAction = ({
       }
 
       if (summarySnapshot) {
-        // Update state with new summaries
-        setGameState((prev) => ({
-          ...prev,
-          summaries: effectiveSummaries,
-          lastSummarizedIndex: lastIndex,
-          isProcessing: false,
-        }));
+        // Update the active node to become a node WITH the summary attached
+        // The summary covers all content from the previous summary to this node
+        // The active node (last model/command output) gets the summarySnapshot
+        setGameState((prev) => {
+          const activeNodeId = prev.activeNodeId;
+
+          // If no active node, just update global state
+          if (!activeNodeId || !prev.nodes[activeNodeId]) {
+            return {
+              ...prev,
+              summaries: effectiveSummaries,
+              lastSummarizedIndex: lastIndex,
+              isProcessing: false,
+            };
+          }
+
+          // Update the active node with new summarization metadata
+          // Set summarySnapshot to make this node "the node with summary"
+          const activeNode = prev.nodes[activeNodeId];
+          const updatedActiveNode: StorySegment = {
+            ...activeNode,
+            summaries: effectiveSummaries,
+            summarizedIndex: lastIndex,
+            summarySnapshot: summarySnapshot, // Attach the summary to this node
+          };
+
+          return {
+            ...prev,
+            nodes: {
+              ...prev.nodes,
+              [activeNodeId]: updatedActiveNode,
+            },
+            summaries: effectiveSummaries,
+            lastSummarizedIndex: lastIndex,
+            isProcessing: false,
+          };
+        });
 
         // Clear history cache in session manager
-        const sessionId = `${currentSlotId || "default"}:${gameStateRef.current.forkId ?? 0}:${aiSettings.story.providerId}:${aiSettings.story.modelId}`;
-        await sessionManager.onSummaryCreated(
-          sessionId,
-          String(summarySnapshot.id || Date.now()),
+        await notifySessionSummaryCreated(
+          aiSettings,
+          currentSlotId || "default",
+          gameStateRef.current.forkId ?? 0,
+          summarySnapshot.id || Date.now(),
         );
 
         showToast(t("game.success.contextRebuilt"), "success");

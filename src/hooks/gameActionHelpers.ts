@@ -14,6 +14,51 @@ import {
   AtmosphereObject,
   normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
+import { sessionManager } from "../services/ai/sessionManager";
+import { getProviderInstance } from "../services/ai/provider/registry";
+
+/**
+ * Safely notify session manager that a summary was created.
+ *
+ * This is needed because summarization uses a separate session (slotId: "summary", forkId: -2).
+ * After summarization, the summary session becomes "current", so we need to switch back
+ * to the story session before calling onSummaryCreated.
+ *
+ * @param aiSettings - AI settings to get provider info
+ * @param slotId - Current save slot ID
+ * @param forkId - Current fork ID
+ * @param summaryId - ID of the created summary
+ * @returns Promise that resolves when session is cleared
+ */
+export const notifySessionSummaryCreated = async (
+  aiSettings: AISettings,
+  slotId: string,
+  forkId: number,
+  summaryId: string | number,
+): Promise<void> => {
+  const storyProvider = getProviderInstance(
+    aiSettings,
+    aiSettings.story.providerId,
+  );
+  if (!storyProvider) {
+    console.warn(
+      "[notifySessionSummaryCreated] Story provider not found, skipping session clear",
+    );
+    return;
+  }
+
+  // Get or create the story session to make it current
+  const storySession = await sessionManager.getOrCreateSession({
+    slotId,
+    forkId,
+    providerId: aiSettings.story.providerId,
+    modelId: aiSettings.story.modelId,
+    protocol: storyProvider.protocol,
+  });
+
+  // Now we can safely call onSummaryCreated
+  await sessionManager.onSummaryCreated(storySession.id, String(summaryId));
+};
 
 /**
  * Helper to update provider token statistics
