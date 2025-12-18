@@ -11,38 +11,12 @@
 
 import type { ProviderProtocol } from "../../types";
 
-// =============================================================================
-// Types
-// =============================================================================
-
 export interface SessionConfig {
   slotId: string;
   forkId: number;
   providerId: string;
   modelId: string;
   protocol: ProviderProtocol;
-}
-
-/**
- * ModelCapabilities - 记录 Provider/Model 支持的功能。
- *
- * 这些标志在运行时检测并持久化，避免重复尝试不支持的功能。
- */
-export interface ModelCapabilities {
-  /** 是否支持 tool_choice: "required" (强制调用工具) */
-  supportsRequiredToolChoice: boolean;
-  /** 是否支持 tools (function calling) */
-  supportsTools: boolean;
-  /** 是否支持并行工具调用 */
-  supportsParallelTools: boolean;
-  /** 是否支持图像生成 */
-  supportsImage: boolean;
-  /** 是否支持视频生成 */
-  supportsVideo: boolean;
-  /** 是否支持语音/TTS */
-  supportsAudio: boolean;
-  /** 是否支持 Embedding */
-  supportsEmbedding: boolean;
 }
 
 /** ProviderCacheHint - 每个 Provider 自己维护的 KV cache / prefix cache hint。 */
@@ -52,17 +26,6 @@ export type ProviderCacheHint =
   | { protocol: "openrouter"; cacheKey?: string }
   | { protocol: "claude"; cacheKey?: string };
 
-/** 默认能力值 (乐观假设，直到检测到不支持) */
-export const DEFAULT_MODEL_CAPABILITIES: ModelCapabilities = {
-  supportsRequiredToolChoice: true,
-  supportsTools: true,
-  supportsParallelTools: true,
-  supportsImage: false,
-  supportsVideo: false,
-  supportsAudio: false,
-  supportsEmbedding: false,
-};
-
 export interface StoredSession {
   id: string;
   slotId: string;
@@ -71,8 +34,6 @@ export interface StoredSession {
   lastSummaryId: string | null;
   createdAt: number;
   lastAccessedAt: number;
-  /** 运行时检测到的模型能力 */
-  modelCapabilities: ModelCapabilities;
   /** Provider 自己维护的 cache hint */
   cacheHint: ProviderCacheHint | null;
   /** Checkpoint Stack (History Lengths) */

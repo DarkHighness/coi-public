@@ -39,7 +39,6 @@ import {
 
 import {
   createProviderConfig,
-  detectModelCapabilitiesViaApi,
 } from "./registry";
 import type {
   ProviderBase,
@@ -66,24 +65,6 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
     instanceId: instance.id,
     instance,
 
-    async getModelCapabilities(
-      modelId: string,
-    ): Promise<ProviderModelCapabilities> {
-      const caps = await detectModelCapabilitiesViaApi(
-        instance.protocol,
-        instance,
-        modelId,
-      );
-      return {
-        supportsRequiredToolChoice: true, // runtime-detected in Session
-        supportsTools: caps.supportsTools,
-        supportsParallelTools: caps.supportsParallelTools,
-        supportsImage: caps.supportsImage,
-        supportsVideo: caps.supportsVideo,
-        supportsAudio: caps.supportsAudio,
-        supportsEmbedding: caps.supportsEmbedding,
-      };
-    },
 
     async generateChat(
       request: ChatGenerateRequest,

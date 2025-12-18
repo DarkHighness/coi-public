@@ -70,28 +70,11 @@ import {
 
 import { sessionManager } from "../../sessionManager";
 
-import { detectModelCapabilitiesViaApi } from "../../provider/registry";
 import { buildCacheHint } from "../../provider/cacheHint";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
 
-// ============================================================================
-// Error Detection Helpers
-// ============================================================================
-
-/**
- * 检测是否是 tool_choice 不支持的错误
- */
-function isToolChoiceNotSupportedError(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e);
-  return (
-    msg.includes("Tool choice must be auto") ||
-    msg.includes("tool_choice is not supported") ||
-    msg.includes("'tool_choice' must be 'auto'") ||
-    msg.includes("does not support required tool_choice")
-  );
-}
 
 // ============================================================================
 // Tool Definitions for Outline Generation
@@ -339,8 +322,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
   );
   sessionManager.setCacheHint(outlineSession.id, cacheHint);
 
-  // Helper to make API call with retry on tool choice error
-  const callWithToolChoiceFallback = async (
+  // Helper to make API call
+  const callWithToolChoice = async (
     phaseTool: ZodToolDefinition,
     phaseNum: number,
   ) => {
@@ -348,104 +331,47 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
       outlineSession.id,
       "required",
+      settings.extra?.forceAutoToolChoice,
     );
 
-    try {
-      const { result, usage, raw } = await provider.generateChat({
+    const { result, usage, raw } = await provider.generateChat({
+      modelId,
+      systemInstruction,
+      messages: conversationHistory as unknown[],
+      tools: [
+        {
+          name: phaseTool.name,
+          description: phaseTool.description,
+          parameters: phaseTool.parameters,
+        },
+      ],
+      toolChoice: effectiveToolChoice,
+      thinkingLevel: settings.story?.thinkingLevel,
+      mediaResolution: settings.story?.mediaResolution,
+      temperature: settings.story?.temperature,
+      topP: settings.story?.topP,
+      topK: settings.story?.topK,
+      minP: settings.story?.minP,
+    });
+
+    return {
+      result,
+      usage,
+      raw,
+      log: createLogEntry(
+        instance.protocol,
         modelId,
-        systemInstruction,
-        messages: conversationHistory as unknown[],
-        tools: [
-          {
-            name: phaseTool.name,
-            description: phaseTool.description,
-            parameters: phaseTool.parameters,
-          },
-        ],
-        toolChoice: effectiveToolChoice,
-        thinkingLevel: settings.story?.thinkingLevel,
-        mediaResolution: settings.story?.mediaResolution,
-        temperature: settings.story?.temperature,
-        topP: settings.story?.topP,
-        topK: settings.story?.topK,
-        minP: settings.story?.minP,
-      });
-
-      return {
-        result,
-        usage,
+        `outline-phase${phaseNum}`,
+        { tool: phaseTool.name },
         raw,
-        log: createLogEntry(
-          instance.protocol,
-          modelId,
-          `outline-phase${phaseNum}`,
-          { tool: phaseTool.name },
-          raw,
-          usage,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-        ),
-      };
-    } catch (e) {
-      // Check if this is a tool_choice not supported error
-      if (
-        isToolChoiceNotSupportedError(e) &&
-        effectiveToolChoice === "required"
-      ) {
-        console.warn(
-          `[OutlineAgentic] Tool choice 'required' not supported, falling back to 'auto'`,
-        );
-        // Update session capability
-        sessionManager.setModelCapability(
-          outlineSession.id,
-          "supportsRequiredToolChoice",
-          false,
-        );
-        // Retry with auto
-        const { result, usage, raw } = await provider.generateChat({
-          modelId,
-          systemInstruction,
-          messages: conversationHistory as unknown[],
-          tools: [
-            {
-              name: phaseTool.name,
-              description: phaseTool.description,
-              parameters: phaseTool.parameters,
-            },
-          ],
-          toolChoice: "auto",
-          thinkingLevel: settings.story?.thinkingLevel,
-          mediaResolution: settings.story?.mediaResolution,
-          temperature: settings.story?.temperature,
-          topP: settings.story?.topP,
-          topK: settings.story?.topK,
-          minP: settings.story?.minP,
-        });
-
-        return {
-          result,
-          usage,
-          raw,
-          log: createLogEntry(
-            instance.protocol,
-            modelId,
-            `outline-phase${phaseNum}`,
-            { tool: phaseTool.name, toolChoice: "auto" },
-            raw,
-            usage,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-          ),
-        };
-      }
-      throw e;
-    }
+        usage,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ),
+    };
   };
 
   // Agentic loop for each phase
@@ -472,8 +398,8 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     try {
       reportProgress(phaseNum, "generating");
 
-      // Call AI with tool choice fallback support
-      const resultData = await callWithToolChoiceFallback(phaseTool, phaseNum);
+      // Call AI with tool choice
+      const resultData = await callWithToolChoice(phaseTool, phaseNum);
 
       const { result, log } = resultData;
       if (log) logs.push(log);

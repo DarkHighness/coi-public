@@ -8,7 +8,6 @@ import type { ZodTypeAny } from "zod";
 import type { ZodToolDefinition } from "../../providers/types";
 
 export interface ProviderModelCapabilities {
-  supportsRequiredToolChoice: boolean;
   supportsTools: boolean;
   supportsParallelTools: boolean;
   supportsImage: boolean;
@@ -100,7 +99,6 @@ export interface ProviderBase {
   instanceId: string;
   instance: ProviderInstance;
 
-  getModelCapabilities(modelId: string): Promise<ProviderModelCapabilities>;
 
   generateChat(request: ChatGenerateRequest): Promise<ChatGenerateResponse>;
 

@@ -32,8 +32,6 @@ import {
   validateConnection as validateClaudeConnection,
 } from "../../providers/claudeProvider";
 
-import type { ModelCapabilities } from "../sessionStorage";
-import { modelInfoToCapabilities } from "./modelCapabilities";
 
 interface ModelListCacheEntry {
   timestamp: number;
@@ -235,24 +233,5 @@ export async function validateConnectionForInstance(
       throw new Error(
         `Unknown protocol: ${(instance as ProviderInstance).protocol}`,
       );
-  }
-}
-
-export async function detectModelCapabilitiesViaApi(
-  protocol: ProviderProtocol,
-  instance: ProviderInstance,
-  modelId: string,
-): Promise<Omit<ModelCapabilities, "supportsRequiredToolChoice">> {
-  // 通过 vendor 的模型列表 API 探测；失败则回退到 protocol 默认。
-  try {
-    const models = await getModelsForInstance(instance);
-    const modelInfo = models.find((m) => m.id === modelId);
-    return modelInfoToCapabilities(protocol, modelInfo);
-  } catch (e) {
-    console.warn(
-      "[ProviderRegistry] detectModelCapabilitiesViaApi failed, fallback to protocol defaults",
-      e,
-    );
-    return modelInfoToCapabilities(protocol, undefined);
   }
 }

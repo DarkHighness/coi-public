@@ -21,21 +21,17 @@ import {
   sessionStorage,
   StoredSession,
   SessionConfig,
-  ModelCapabilities,
   ProviderCacheHint,
-  DEFAULT_MODEL_CAPABILITIES,
 } from "./sessionStorage";
 
 import type { ProviderBase } from "./provider/interfaces";
 import { createProvider } from "./provider/createProvider";
-import { detectModelCapabilitiesViaApi } from "./provider/registry";
 // createProviderConfig is likely not needed if we use getProvider logic
 
 // Re-export types
 export type {
   SessionConfig,
   StoredSession,
-  ModelCapabilities,
   ProviderCacheHint,
 };
 
@@ -71,8 +67,6 @@ interface Session {
   lastAccessedAt: number;
   /** 是否有未持久化的变更 */
   dirty: boolean;
-  /** 运行时检测到的模型能力 */
-  modelCapabilities: ModelCapabilities;
   /** Provider 自己维护的 cache hint */
   cacheHint: ProviderCacheHint | null;
 
@@ -131,44 +125,6 @@ class HistorySessionManager {
    * @param config 会话配置
    * @returns 会话对象
    */
-  /**
-   * Ensure capabilities are detected for the session
-   */
-  async ensureCapabilities(sessionId: string): Promise<void> {
-    const session = this.currentSession;
-    if (!session || session.id !== sessionId) return;
-
-    try {
-      const provider = await this.getProvider(sessionId);
-      if (!provider) return;
-
-      const caps = await detectModelCapabilitiesViaApi(
-        session.config.protocol,
-        provider.instance,
-        session.config.modelId,
-      );
-
-      // Update capabilities
-      const currentJSON = JSON.stringify(session.modelCapabilities);
-      const newCaps = { ...session.modelCapabilities, ...caps };
-      const newJSON = JSON.stringify(newCaps);
-
-      if (currentJSON !== newJSON) {
-        session.modelCapabilities = newCaps;
-        session.dirty = true;
-        this.schedulePersist();
-        console.log(
-          `[SessionManager] Capabilities updated for ${sessionId}`,
-          caps,
-        );
-      }
-    } catch (err) {
-      console.warn(
-        `[SessionManager] Failed to verify capabilities for ${sessionId}:`,
-        err,
-      );
-    }
-  }
 
   /**
    * 获取或创建会话
@@ -196,8 +152,6 @@ class HistorySessionManager {
 
     // 已有内存会话
     if (this.currentSession) {
-      // Ensure capabilities are verified even for cached sessions (in case of restart)
-      await this.ensureCapabilities(this.currentSession.id);
       this.currentSession.lastAccessedAt = Date.now();
       return this.currentSession;
     }
@@ -262,11 +216,6 @@ class HistorySessionManager {
         ...stored,
         nativeHistory: sanitizedHistory,
         dirty: wasSanitized, // Mark dirty if changed so we save the clean version later
-        // 合并默认能力值（彻底重构后仍允许缺省字段）
-        modelCapabilities: {
-          ...DEFAULT_MODEL_CAPABILITIES,
-          ...(stored.modelCapabilities || (stored as any).capabilities),
-        },
         cacheHint: stored.cacheHint ?? null,
         // Upgrade legacy session: init checkpoints
         checkpoints: (stored as any).checkpoints || [],
@@ -303,7 +252,6 @@ class HistorySessionManager {
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
       dirty: true,
-      modelCapabilities: { ...DEFAULT_MODEL_CAPABILITIES },
       cacheHint: null,
       checkpoints: [],
     };
@@ -678,44 +626,6 @@ class HistorySessionManager {
   // ModelCapabilities Management
   // ===========================================================================
 
-  /**
-   * 获取会话能力标志
-   */
-  getModelCapability<K extends keyof ModelCapabilities>(
-    sessionId: string,
-    key: K,
-  ): ModelCapabilities[K] {
-    if (!this.currentSession || this.currentSession.id !== sessionId) {
-      return DEFAULT_MODEL_CAPABILITIES[key];
-    }
-    return this.currentSession.modelCapabilities[key];
-  }
-
-  /**
-   * 设置会话能力标志（自动触发持久化）
-   */
-  setModelCapability<K extends keyof ModelCapabilities>(
-    sessionId: string,
-    key: K,
-    value: ModelCapabilities[K],
-  ): void {
-    if (!this.currentSession || this.currentSession.id !== sessionId) {
-      console.warn(
-        `[SessionManager] Cannot set capability: session not current: ${sessionId}`,
-      );
-      return;
-    }
-
-    const oldValue = this.currentSession.modelCapabilities[key];
-    if (oldValue !== value) {
-      console.log(
-        `[SessionManager] Capability ${key} changed: ${oldValue} -> ${value}`,
-      );
-      this.currentSession.modelCapabilities[key] = value;
-      this.currentSession.dirty = true;
-      this.schedulePersist();
-    }
-  }
 
   /**
    * 获取有效的 toolChoice（考虑会话能力）
@@ -727,25 +637,16 @@ class HistorySessionManager {
   getEffectiveToolChoice(
     sessionId: string,
     requested: "auto" | "required" | "none",
+    forceAuto?: boolean,
   ): "auto" | "required" | "none" {
-    if (requested !== "required") {
-      return requested;
-    }
-
-    // 如果请求 required，检查会话是否支持
-    const supportsRequired = this.getModelCapability(
-      sessionId,
-      "supportsRequiredToolChoice",
-    );
-
-    if (!supportsRequired) {
+    if (forceAuto) {
       console.log(
-        `[SessionManager] Downgrading toolChoice from "required" to "auto" (not supported)`,
+        `[SessionManager] forceAutoToolChoice is enabled, overriding toolChoice to "auto"`,
       );
       return "auto";
     }
 
-    return "required";
+    return requested;
   }
 
   // ===========================================================================
@@ -823,7 +724,6 @@ class HistorySessionManager {
       lastSummaryId: this.currentSession.lastSummaryId,
       createdAt: this.currentSession.createdAt,
       lastAccessedAt: this.currentSession.lastAccessedAt,
-      modelCapabilities: this.currentSession.modelCapabilities,
       cacheHint: this.currentSession.cacheHint,
       checkpoints: this.currentSession.checkpoints,
     };

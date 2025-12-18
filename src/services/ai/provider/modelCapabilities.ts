@@ -1,9 +1,9 @@
 import type { ModelInfo, ProviderProtocol } from "../../../types";
-import type { ModelCapabilities } from "../sessionStorage";
+import type { ProviderModelCapabilities } from "./interfaces";
 
 const DEFAULTS_BY_PROTOCOL: Record<
   ProviderProtocol,
-  Omit<ModelCapabilities, "supportsRequiredToolChoice">
+  ProviderModelCapabilities
 > = {
   gemini: {
     supportsTools: true,
@@ -42,7 +42,7 @@ const DEFAULTS_BY_PROTOCOL: Record<
 export function modelInfoToCapabilities(
   protocol: ProviderProtocol,
   modelInfo: ModelInfo | undefined,
-): Omit<ModelCapabilities, "supportsRequiredToolChoice"> {
+): ProviderModelCapabilities {
   const fallback = DEFAULTS_BY_PROTOCOL[protocol];
   const caps = modelInfo?.capabilities;
 

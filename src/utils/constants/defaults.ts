@@ -162,4 +162,7 @@ export const DEFAULTS: AISettings = {
       turnDecayFactor: 0.01, // Priority loss per turn difference
     },
   },
+  extra: {
+    forceAutoToolChoice: false,
+  },
 };

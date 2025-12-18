@@ -82,6 +82,10 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
         ...(parsed.embedding?.lru || {}),
       },
     },
+    extra: {
+      ...DEFAULTS.extra,
+      ...(parsed.extra || {}),
+    },
   };
 }
 
