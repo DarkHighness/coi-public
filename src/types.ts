@@ -266,7 +266,7 @@ export type {
  * - hidden.*: All hidden layer content (GM knowledge)
  * - unlocked: AI decides when hidden info is revealed (narrative judgment)
  * - known: Whether player knows this entity exists
- * - notes: NPC observations of player behavior
+ * - observation: NPC observations of player behavior
  * - highlight: Set true by AI when entity changes (cleared by UI after render)
 
  *
@@ -695,7 +695,7 @@ export interface InventoryAction {
   visible?: {
     description?: string;
     usage?: string;
-    notes?: string;
+    observation?: string;
     sensory?: {
       texture?: string;
       weight?: string;

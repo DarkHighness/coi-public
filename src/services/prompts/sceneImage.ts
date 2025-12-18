@@ -19,6 +19,7 @@ interface NPCInfo {
   description?: string;
   appearance?: string;
   status?: string;
+  notes?: string; // Writer's consistency notes
 }
 
 /**
@@ -76,6 +77,7 @@ const extractContextFromGameState = (
         description: `${r.visible?.description || ""} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
         appearance: r.visible?.appearance || "",
         status: `${r.visible?.status || ""} (Actual: ${r.hidden?.status || "Normal"})`,
+        notes: r.notes || "", // Writer's notes for consistency
       });
     }
   });
@@ -374,6 +376,11 @@ export const getSceneImagePrompt = (
           xmlPrompt += `      <resource>${resource}</resource>\n`;
         });
         xmlPrompt += `    </visible_resources>\n`;
+      }
+
+      // Writer's notes for consistency
+      if (currentLocation.notes) {
+        xmlPrompt += `    <writer_notes>${currentLocation.notes}</writer_notes>\n`;
       }
     } else {
       // Fallback to just the location name

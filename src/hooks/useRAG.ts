@@ -864,7 +864,7 @@ function extractNPCContent(npc: Relationship): string {
       parts.push(
         `    <perceived_status>${npc.visible.status}</perceived_status>`,
       );
-    if (npc.notes) parts.push(`    <player_notes>${npc.notes}</player_notes>`);
+    if (npc.observation) parts.push(`    <npc_observation_about_player>${npc.observation}</npc_observation_about_player>`);
     parts.push("  </visible>");
   }
 
@@ -966,8 +966,8 @@ function extractItemContent(item: InventoryItem): string {
       parts.push(`    <description>${item.visible.description}</description>`);
     if (item.visible.usage)
       parts.push(`    <usage>${item.visible.usage}</usage>`);
-    if (item.visible.notes)
-      parts.push(`    <notes>${item.visible.notes}</notes>`);
+    if (item.visible.observation)
+      parts.push(`    <player_notes_about_item>${item.visible.observation}</player_notes_about_item>`);
     parts.push("  </visible>");
   }
 

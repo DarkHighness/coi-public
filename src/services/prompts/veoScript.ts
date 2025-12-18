@@ -40,6 +40,7 @@ export const getVeoScriptPrompt = (
               `<item>
                 <name>${i.name}</name>
                 <description>${i.visible?.description || "Unknown item"}</description>
+                <sensory>${i.visible?.sensory ? `texture: ${i.visible.sensory.texture || ""}, weight: ${i.visible.sensory.weight || ""}, smell: ${i.visible.sensory.smell || ""}` : ""}</sensory>
                 <hidden_truth>${i.hidden?.truth || "None"}</hidden_truth>
               </item>`,
           )
@@ -59,6 +60,7 @@ export const getVeoScriptPrompt = (
                 <description>${r.visible.description}</description>
                 <appearance>${r.visible.appearance || "Unknown appearance"}</appearance>
                 <status>${r.visible.relationshipType}</status>
+                <notes>${r.notes || ""}</notes>
                 <hidden_truth>Real Personality: ${r.hidden.realPersonality}; True Motives: ${r.hidden.realMotives}; True Status: ${r.hidden.relationshipType}</hidden_truth>
               </npc>`,
           )
@@ -78,6 +80,8 @@ export const getVeoScriptPrompt = (
       <name>${currentLocationName}</name>
       <description>${locationObj?.visible?.description || "Unknown location"}</description>
       <environment>${locationObj?.environment || "N/A"}</environment>
+      <notes>${locationObj?.notes || ""}</notes>
+      <sensory>${locationObj?.visible?.sensory ? `smell: ${locationObj.visible.sensory.smell || ""}, sound: ${locationObj.visible.sensory.sound || ""}, lighting: ${locationObj.visible.sensory.lighting || ""}, temperature: ${locationObj.visible.sensory.temperature || ""}` : ""}</sensory>
     </location>
     <protagonist>
       <race>${characterRace}</race>

@@ -831,7 +831,7 @@ export class GameDatabase {
         name: data.name,
         visible: {
           description: data.visible?.description || "A mysterious item.",
-          notes: data.visible?.notes,
+          observation: data.visible?.observation,
         },
         hidden: {
           truth: data.hidden?.truth || "The truth is hidden.",

@@ -70,7 +70,10 @@ export const hiddenInfoSchema = z.object({
 export const inventoryItemVisibleSchema = z.object({
   description: z.string().describe("Visual description of the item."),
   usage: z.string().nullish().describe("How to use the item."),
-  notes: z.string().nullish().describe("Player's notes about the item."),
+  observation: z
+    .string()
+    .nullish()
+    .describe("Player's personal notes or observations about the item."),
   sensory: z
     .object({
       texture: z.string().nullish().describe("Tactile feel of the item."),

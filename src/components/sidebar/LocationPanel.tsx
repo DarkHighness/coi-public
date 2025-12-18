@@ -433,7 +433,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                     </div>
                   )}
 
-                  {locationData.notes && (
+                  {/* {locationData.notes && (
                     <div className="pt-2 border-t border-theme-border/20 mt-2">
                       <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold block mb-1">
                         {t("notes") || "Notes"}
@@ -445,7 +445,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         />
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               ) : (
                 <div className="text-xs text-theme-muted italic opacity-50">
