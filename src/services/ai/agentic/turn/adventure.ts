@@ -393,7 +393,17 @@ export const generateAdventureTurn = async (
         `[Adventure] Hydrating ${context.recentHistory.length} segments.`,
       );
       const hydratedMessages = context.recentHistory.map((seg) => {
-        const role = seg.role === "model" ? "assistant" : seg.role;
+        let role: string = seg.role;
+
+        // Map 'model' and 'system' (narrative) to 'assistant'
+        if (role === "model" || role === "system") {
+          role = "assistant";
+        }
+        // Map 'command' to 'user'
+        else if (role === "command") {
+          role = "user";
+        }
+
         return {
           role: role as "user" | "assistant" | "system",
           content: [{ type: "text" as const, text: seg.text }],
@@ -428,6 +438,14 @@ export const generateAdventureTurn = async (
           }>,
         )
       : (activeHistoryNative as UnifiedMessage[]);
+
+  // Sanitize history to ensure no invalid roles (e.g. 'command') exist from previous versions
+  activeHistory = activeHistory.map((msg) => {
+    if ((msg.role as string) === "command") {
+      return { ...msg, role: "user" };
+    }
+    return msg;
+  });
 
   // === RETRY DETECTION ===
   // Check if the current user action matches the LAST user message in history.
