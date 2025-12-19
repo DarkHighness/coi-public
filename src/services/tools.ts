@@ -1422,11 +1422,69 @@ export const FINISH_SUMMARY_TOOL = defineTool({
 });
 
 /**
+ * Load additional query tools during summary generation.
+ * Use this when you need to query specific game state entities.
+ */
+export const SUMMARY_LOAD_QUERY_TOOL = defineTool({
+  name: "summary_load_query",
+  description: `Load additional query tools to examine game state.
+
+Use this to request access to specific entity query tools:
+- inventory: Query player's items
+- relationships: Query NPC relationships
+- locations: Query known locations
+- quests: Query quest status
+- knowledge: Query player knowledge
+- factions: Query faction info
+- timeline: Query timeline events
+- character: Query character profile/attributes/skills/conditions/traits
+
+Once loaded, the tools will be available in subsequent turns.`,
+  parameters: z.object({
+    entities: z
+      .array(
+        z.enum([
+          "inventory",
+          "relationships",
+          "locations",
+          "quests",
+          "knowledge",
+          "factions",
+          "timeline",
+          "character",
+        ]),
+      )
+      .describe("Which entity types to load query tools for"),
+  }),
+});
+
+/**
+ * Find query tools for given entity types
+ */
+export function findQueryToolsForEntities(
+  entities: string[],
+): ZodToolDefinition[] {
+  const tools: ZodToolDefinition[] = [];
+  for (const entity of entities) {
+    const key = `query:${entity}`;
+    if (TOOL_MAP[key]) {
+      for (const tool of TOOL_MAP[key]) {
+        if (!tools.some((t) => t.name === tool.name)) {
+          tools.push(tool);
+        }
+      }
+    }
+  }
+  return tools;
+}
+
+/**
  * Summary tools grouped by stage
  */
 export const SUMMARY_QUERY_TOOLS: ZodToolDefinition[] = [
   SUMMARY_QUERY_SEGMENTS_TOOL,
   SUMMARY_QUERY_STATE_TOOL,
+  SUMMARY_LOAD_QUERY_TOOL,
 ];
 
 export const SUMMARY_FINISH_TOOLS: ZodToolDefinition[] = [FINISH_SUMMARY_TOOL];

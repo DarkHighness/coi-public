@@ -24,13 +24,14 @@ import {
   UnifiedMessage,
 } from "../../../../types";
 
-import { ToolCallResult } from "../../../providers/types";
+import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import { GameDatabase } from "../../../gameDatabase";
 import {
   getSummaryToolsForStage,
   SummaryStage,
   getNextSummaryStage,
   SUMMARY_STAGE_ORDER,
+  findQueryToolsForEntities,
 } from "../../../tools";
 
 import {
@@ -123,13 +124,17 @@ You are the GM - you know everything. Your job is to:
 const getSummaryStageInstruction = (stage: SummaryStage): string => {
   const instructions: Record<SummaryStage, string> = {
     query: `[STAGE: QUERY]
-Review the context provided. If you need more detail about specific events or current state:
-- Use \`summary_query_segments\` to examine specific turns in detail
-- Use \`summary_query_state\` to check current entity states (inventory, relationships, etc.)
+Review the context provided. You have these tools available:
+
+1. \`summary_query_segments\` - Examine specific turns in detail (use sparingly, segments already provided in context)
+2. \`summary_query_state\` - Check current entity states (inventory, relationships, etc.)
+3. \`summary_load_query\` - Load additional query tools for specific entities:
+   - entities: ["inventory", "relationships", "locations", "quests", "knowledge", "factions", "timeline", "character"]
+   - Once loaded, use the new tools (e.g., query_inventory, query_relationships) for detailed queries
 
 When you have enough information, call \`finish_summary\` to complete the summary.
 
-Available tools: summary_query_segments, summary_query_state, finish_summary`,
+Available tools: summary_query_segments, summary_query_state, summary_load_query, finish_summary`,
 
     finish: `[STAGE: FINISH]
 You MUST now call \`finish_summary\` with the complete summary.
@@ -450,6 +455,9 @@ export const runSummaryAgenticLoop = async (
   const maxIterations = 10; // Safety limit
   const maxIterationsPerStage = 5;
 
+  // Dynamic tool tracking - start with base stage tools
+  let activeTools: ZodToolDefinition[] = [...getSummaryToolsForStage("query")];
+
   // Add initial stage instruction
   conversationHistory.push(
     createUserMessage(getSummaryStageInstruction(currentStage)),
@@ -457,12 +465,11 @@ export const runSummaryAgenticLoop = async (
 
   while (stageIterations < maxIterations) {
     console.log(
-      `[Summary Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}`,
+      `[Summary Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}, Active Tools: ${activeTools.length}`,
     );
 
-    // Get tools for current stage
-    const stageTools = getSummaryToolsForStage(currentStage);
-    const toolConfig = stageTools.map((t) => ({
+    // Use active tools (includes dynamically loaded query tools)
+    const toolConfig = activeTools.map((t) => ({
       name: t.name,
       description: t.description,
       parameters: t.parameters,
@@ -543,12 +550,34 @@ export const runSummaryAgenticLoop = async (
         content: unknown;
       }> = [];
 
+      // Track errors in this turn
+      let hasErrors = false;
+      const failedTools: string[] = [];
+
       for (const call of functionCalls) {
         const { id: callId, name, args } = call;
         console.log(`[Summary Loop] Tool: ${name}`, args);
 
         // Handle finish_summary
         if (name === "finish_summary") {
+          // Block if there were errors in this turn
+          if (hasErrors) {
+            const errorOutput = {
+              success: false,
+              error: `[ERROR: TOOL_FAILURES] Cannot finish summary. The following tools failed:\n- ${failedTools.join("\n- ")}\n\nFix these errors before calling finish_summary.`,
+              code: "BLOCKED_BY_ERRORS",
+              failedTools,
+            };
+            turnToolCalls.push({
+              name,
+              input: args,
+              output: errorOutput,
+              timestamp: Date.now(),
+            });
+            toolResponses.push({ toolCallId: callId, name, content: errorOutput });
+            continue;
+          }
+
           const summary: StorySummary = {
             id: (input.previousSummary?.id ?? -1) + 1,
             displayText: args.displayText as string,
@@ -594,8 +623,47 @@ export const runSummaryAgenticLoop = async (
           };
         }
 
+        // Handle summary_load_query - dynamically load query tools
+        if (name === "summary_load_query") {
+          const entities = args.entities as string[];
+          const loadedTools = findQueryToolsForEntities(entities);
+          const addedTools: string[] = [];
+
+          for (const tool of loadedTools) {
+            if (!activeTools.some((t) => t.name === tool.name)) {
+              activeTools.push(tool);
+              addedTools.push(tool.name);
+            }
+          }
+
+          const output = {
+            success: true,
+            message: `Loaded ${addedTools.length} query tools: ${addedTools.join(", ") || "None (already active)"}`,
+            loadedTools: addedTools,
+          };
+
+          turnToolCalls.push({
+            name,
+            input: args,
+            output,
+            timestamp: Date.now(),
+          });
+          toolResponses.push({ toolCallId: callId, name, content: output });
+          continue;
+        }
+
         // Execute other tools
         const output = executeSummaryToolCall(name, args, input, db);
+
+        // Track errors from query tools
+        if (output && typeof output === 'object' && 'success' in output && (output as any).success === false) {
+          hasErrors = true;
+          failedTools.push(name);
+        }
+        if (output && typeof output === 'object' && 'error' in output && (output as any).error === 'REDUNDANT_QUERY') {
+          // REDUNDANT_QUERY is not a blocking error, just a warning
+          // Don't add to failedTools
+        }
 
         turnToolCalls.push({
           name,

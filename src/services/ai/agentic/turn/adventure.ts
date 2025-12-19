@@ -34,6 +34,7 @@ import {
   getTypedArgs,
   RagSearchParams,
   SearchToolParams,
+  ALL_DEFINED_TOOLS,
   // Payload types for GameDatabase
   CharacterAttributePayload,
   CharacterSkillPayload,
@@ -844,10 +845,16 @@ You are in AGENTIC MODE.
         content: unknown;
       }[] = [];
 
+      // Track errors in this turn
+      let hasErrors = false;
+      const failedTools: string[] = [];
+
       for (const call of functionCalls) {
         let output: unknown;
+        let isError = false;
+
         try {
-          // SPECIAL HANDLE: search_tool
+          // SPECIAL HANDLE: search_tool (no validation needed, simple string params)
           if (call.name === "search_tool") {
             const params = call.args as SearchToolParams;
             const addedTools: string[] = [];
@@ -871,33 +878,103 @@ You are in AGENTIC MODE.
             call.name === "finish_turn" ||
             call.name === "complete_force_update"
           ) {
-            // Validate
-            try {
-              // Note: safeValidateToolArgs might throw
-              processFinishTurnResponse(call.args, accumulatedResponse, db);
-              output =
-                call.name === "complete_force_update"
-                  ? "Force update completed. State captured."
-                  : "Turn finished. State captured.";
-              turnFinished = true;
-            } catch (err: any) {
-              output = `Error finishing turn: ${err.message}`;
+            // Block if there were errors in this turn
+            if (hasErrors) {
+              output = {
+                success: false,
+                error: `[ERROR: TOOL_FAILURES] Cannot finish turn. The following tools failed in this turn:\n- ${failedTools.join("\n- ")}\n\nYou MUST fix these errors before calling ${call.name}. Review the error messages and call the failed tools again with corrected parameters.`,
+                code: "BLOCKED_BY_ERRORS",
+                failedTools,
+              };
+              isError = true;
+            } else {
+              // Validate finish_turn args
+              const finishToolDef = ALL_DEFINED_TOOLS.find(t => t.name === call.name);
+              if (finishToolDef) {
+                const validationResult = finishToolDef.parameters.safeParse(call.args);
+                if (!validationResult.success) {
+                  const zodErrors = validationResult.error.errors
+                    .map(e => `- ${e.path.join('.') || '(root)'}: ${e.message}`)
+                    .join('\n');
+                  output = {
+                    success: false,
+                    error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
+                    code: "INVALID_PARAMS",
+                  };
+                  isError = true;
+                }
+              }
+
+              if (!isError) {
+                try {
+                  processFinishTurnResponse(call.args, accumulatedResponse, db);
+                  output =
+                    call.name === "complete_force_update"
+                      ? "Force update completed. State captured."
+                      : "Turn finished. State captured.";
+                  turnFinished = true;
+                } catch (err: any) {
+                  output = {
+                    success: false,
+                    error: `Error finishing turn: ${err.message}`,
+                    code: "EXECUTION_ERROR",
+                  };
+                  isError = true;
+                }
+              }
             }
           }
-          // STANDARD HANDLE
+          // STANDARD HANDLE: Validate then execute
           else {
-            output = executeToolCall(
-              call.name,
-              call.args,
-              db,
-              accumulatedResponse,
-              changedEntities,
-              inputState,
-              settings,
-            );
+            // Find tool definition for validation
+            const toolDef = ALL_DEFINED_TOOLS.find(t => t.name === call.name);
+
+            if (toolDef) {
+              const validationResult = toolDef.parameters.safeParse(call.args);
+              if (!validationResult.success) {
+                const zodErrors = validationResult.error.errors
+                  .map(e => `- ${e.path.join('.') || '(root)'}: ${e.message}`)
+                  .join('\n');
+                output = {
+                  success: false,
+                  error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
+                  code: "INVALID_PARAMS",
+                };
+                isError = true;
+                hasErrors = true;
+                failedTools.push(call.name);
+              }
+            }
+
+            // Only execute if validation passed
+            if (!isError) {
+              output = executeToolCall(
+                call.name,
+                call.args,
+                db,
+                accumulatedResponse,
+                changedEntities,
+                inputState,
+                settings,
+              );
+
+              // Check if execution returned an error
+              if (output && typeof output === 'object' && 'success' in output && (output as any).success === false) {
+                isError = true;
+                hasErrors = true;
+                failedTools.push(call.name);
+              }
+            }
           }
         } catch (err: any) {
-          output = `Tool execution failed: ${err.message}`;
+          output = {
+            success: false,
+            error: `Tool execution failed: ${err.message}`,
+            code: "EXECUTION_ERROR",
+          };
+          isError = true;
+          hasErrors = true;
+          failedTools.push(call.name);
         }
 
         toolResponses.push({

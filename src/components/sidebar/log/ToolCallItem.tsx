@@ -4,19 +4,22 @@ import type { ToolCallItemProps } from "./types";
 
 /** Component to render a single tool call with expandable input/output */
 export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const isError = call.output?.success === false;
+  const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
 
   const isQuery = call.name.startsWith("query_");
   const isFinish = call.name === "finish_turn";
-  const isSuccess = call.output?.success !== false;
+  const isSuccess = !isError;
 
   const statusColor = isSuccess ? "text-theme-success" : "text-theme-error";
-  const bgColor = isFinish
-    ? "bg-theme-primary/10 border-theme-primary/30"
-    : isQuery
-      ? "bg-blue-900/10 border-blue-500/30"
-      : "bg-theme-surface-highlight/30 border-theme-border/50";
+  const bgColor = isError
+    ? "bg-red-900/20 border-red-500/50"
+    : isFinish
+      ? "bg-theme-primary/10 border-theme-primary/30"
+      : isQuery
+        ? "bg-blue-900/10 border-blue-500/30"
+        : "bg-theme-surface-highlight/30 border-theme-border/50";
 
   return (
     <div className={`rounded border ${bgColor} overflow-hidden`}>
