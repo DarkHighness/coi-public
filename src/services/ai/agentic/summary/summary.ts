@@ -531,6 +531,7 @@ export const runSummaryAgenticLoop = async (
             id: fc.id,
             name: fc.name,
             arguments: fc.args,
+            thoughtSignature: fc.thoughtSignature, // Include for Gemini 3 models
           })),
           textContent,
         ),

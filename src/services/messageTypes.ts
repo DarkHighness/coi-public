@@ -86,6 +86,7 @@ export const createToolCallMessage = (
     id: string;
     name: string;
     arguments: Record<string, unknown>;
+    thoughtSignature?: string; // Required for Gemini 3 models
   }>,
   textContent?: string,
 ): UnifiedMessage => {
@@ -104,6 +105,7 @@ export const createToolCallMessage = (
         id: tc.id,
         name: tc.name,
         args: tc.arguments,
+        thoughtSignature: tc.thoughtSignature, // Include for Gemini 3 models
       },
     });
   }
@@ -267,9 +269,14 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
               arguments: JSON.stringify(p.toolUse.args),
             },
           };
-          // Include thought_signature if present (for Gemini compatibility)
+          // Include thought_signature if present (for Gemini 3 compatibility via OpenAI proxy)
+          // Gemini 3 uses extra_content.google.thought_signature format
           if (p.toolUse.thoughtSignature) {
-            toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            toolCall.extra_content = {
+              google: {
+                thought_signature: p.toolUse.thoughtSignature,
+              },
+            };
           }
           return toolCall;
         });
@@ -387,7 +394,10 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
               name: tc.function.name,
               args: JSON.parse(tc.function.arguments || "{}"),
               // Extract thought_signature if present (Gemini via OpenAI proxy)
-              thoughtSignature: tc.function.thought_signature,
+              // Gemini 3 uses extra_content.google.thought_signature format
+              thoughtSignature:
+                tc.extra_content?.google?.thought_signature ||
+                tc.function?.thought_signature,
             },
           });
         }

@@ -202,6 +202,7 @@ export async function callWithAgenticRetry(
           id: fc.id,
           name: fc.name,
           arguments: fc.args,
+          thoughtSignature: fc.thoughtSignature, // Include for Gemini 3 models
         })),
         textContent,
       ),

@@ -71,7 +71,12 @@ export function createGeminiClient(config: GeminiConfig): GoogleGenAI {
   if (!config.apiKey) {
     throw new AIProviderError("Gemini API key is required", "gemini");
   }
-  return new GoogleGenAI({ apiKey: config.apiKey });
+  return new GoogleGenAI({
+    apiKey: config.apiKey,
+    httpOptions: {
+      baseUrl: config.baseUrl || "https://generativelanguage.googleapis.com",
+    },
+  });
 }
 
 /** 兼容旧 API 的别名 */
@@ -966,18 +971,29 @@ export function buildMultiPartMessage(
 
 /**
  * 构建函数调用消息 (模型响应)
+ *
+ * 对于 Gemini 3 模型，thoughtSignature 是必须的，需要在第一个 functionCall part 上包含
  */
 export function buildFunctionCallMessage(
   functionCalls: Array<{
     id?: string;
     name: string;
     args: Record<string, unknown>;
+    thoughtSignature?: string;
   }>,
   contentText?: string,
 ): Content {
-  const parts: Part[] = functionCalls.map((fc) => ({
-    functionCall: { name: fc.name, args: fc.args },
-  }));
+  const parts: Part[] = functionCalls.map((fc, index) => {
+    const part: any = {
+      functionCall: { name: fc.name, args: fc.args },
+    };
+    // Include thoughtSignature if present (required for Gemini 3 models)
+    // For parallel calls, only the first functionCall needs the signature
+    if (fc.thoughtSignature) {
+      part.thoughtSignature = fc.thoughtSignature;
+    }
+    return part;
+  });
 
   // 如果有 content 文本，添加到前面
   if (contentText) {

@@ -368,7 +368,10 @@ async function handleNonStreamingResponse(
       name: tc.function.name,
       args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
       // Extract thought_signature if present (Gemini via OpenRouter)
-      thoughtSignature: tc.function.thought_signature,
+      // Gemini 3 uses extra_content.google.thought_signature format
+      thoughtSignature:
+        tc.extra_content?.google?.thought_signature ||
+        tc.function?.thought_signature,
     }));
   }
   if (choice?.finishReason === "content_filter") {
@@ -481,7 +484,10 @@ async function handleStreamingResponse(
               id: tc.id || `tool_${index}`,
               name: tc.function?.name || "",
               arguments: tc.function?.arguments || "",
-              thoughtSignature: tc.function?.thought_signature,
+              // Gemini 3 uses extra_content.google.thought_signature format
+              thoughtSignature:
+                tc.extra_content?.google?.thought_signature ||
+                tc.function?.thought_signature,
             });
           }
         }
@@ -614,9 +620,14 @@ function convertToOpenAIMessages(
                 arguments: JSON.stringify(p.toolUse.args),
               },
             };
-            // Include thought_signature if present (Gemini compatibility)
+            // Include thought_signature if present (Gemini 3 compatibility)
+            // Gemini 3 uses extra_content.google.thought_signature format
             if (p.toolUse.thoughtSignature) {
-              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+              toolCall.extra_content = {
+                google: {
+                  thought_signature: p.toolUse.thoughtSignature,
+                },
+              };
             }
             return toolCall;
           }),

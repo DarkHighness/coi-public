@@ -789,7 +789,10 @@ function processZodToGeminiCompatible(
 
         for (const [key, value] of Object.entries(shape)) {
           const fieldTypeName = (value as ZodTypeAny)._def.typeName;
-          if (fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault") {
+          if (
+            fieldTypeName !== "ZodOptional" &&
+            fieldTypeName !== "ZodDefault"
+          ) {
             currentRequired.add(key);
           }
 
@@ -1207,7 +1210,10 @@ function processZodToClaudeCompatible(
 
         for (const [key, value] of Object.entries(shape)) {
           const fieldTypeName = (value as ZodTypeAny)._def.typeName;
-          if (fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault") {
+          if (
+            fieldTypeName !== "ZodOptional" &&
+            fieldTypeName !== "ZodDefault"
+          ) {
             currentRequired.add(key);
           }
 
@@ -1482,7 +1488,8 @@ export function isGeminiModel(modelId: string): boolean {
     lower.startsWith("google-") ||
     lower.includes("palm-") ||
     // Catch common patterns in proxies like OpenRouter
-    (lower.includes("flash") && (lower.includes("1.5") || lower.includes("2.0"))) ||
+    (lower.includes("flash") &&
+      (lower.includes("1.5") || lower.includes("2.0"))) ||
     (lower.includes("pro") && (lower.includes("1.5") || lower.includes("1.0")))
   );
 }

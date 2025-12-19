@@ -802,6 +802,7 @@ You are in AGENTIC MODE.
             id: fc.id || `call_${Math.random().toString(36).substr(2, 9)}`,
             name: fc.name,
             arguments: fc.args,
+            thoughtSignature: fc.thoughtSignature, // Include for Gemini 3 models
           })),
           text,
         ),

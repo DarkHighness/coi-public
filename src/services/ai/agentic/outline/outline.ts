@@ -455,6 +455,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
                 id: toolCall.id,
                 name: toolCall.name,
                 arguments: toolCall.args,
+                thoughtSignature: toolCall.thoughtSignature, // Include for Gemini 3 models
               },
             ],
             textContent,
