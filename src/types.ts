@@ -985,6 +985,7 @@ export interface ProviderInstance {
   geminiMessageFormat?: boolean; // 是否转换消息格式为 Gemini 原生格式 (当代理不自动转换时使用)
   claudeCompatibility?: boolean; // 是否开启 Claude 兼容模式 (OpenAI protocol only)
   claudeMessageFormat?: boolean; // 是否转换消息格式为 Claude 原生格式 (当代理不自动转换时使用)
+  compatibleImageGeneration?: boolean; // 是否开启兼容性图片生成 (当聊天模型为 gemini-3-pro-image 时拦截并生成图片)
   createdAt: number; // 创建时间
   lastModified: number; // 最后修改时间
   tokenStats?: TokenStats; // 历史 Token 统计

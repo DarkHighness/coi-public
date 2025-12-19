@@ -17,6 +17,7 @@ import type { TokenUsage, ModelInfo as BaseModelInfo } from "../../types";
 export interface GeminiConfig {
   apiKey: string;
   baseUrl?: string;
+  compatibleImageGeneration?: boolean;
 }
 
 /** OpenAI Provider 配置 */
@@ -28,6 +29,7 @@ export interface OpenAIConfig {
   geminiMessageFormat?: boolean; // 是否转换消息格式为 Gemini 原生格式
   claudeCompatibility?: boolean;
   claudeMessageFormat?: boolean; // 是否转换消息格式为 Claude 原生格式
+  compatibleImageGeneration?: boolean;
 }
 
 /** OpenRouter Provider 配置 */

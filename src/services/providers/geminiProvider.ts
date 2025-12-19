@@ -249,6 +249,39 @@ export async function generateContent(
       const { config: generationConfig, modifiedSystemInstruction } =
         buildGenerationConfig(systemInstruction, schema, options);
 
+      // 兼容性图片生成: 如果是图片模型（非 Imagen）且启用了兼容模式，转交给 generateImage
+      if (
+        config.compatibleImageGeneration &&
+        (model.toLowerCase().includes("image") ||
+          model.toLowerCase().includes("imagen")) &&
+        !model.toLowerCase().includes("imagen-3")
+      ) {
+        console.log(
+          `[Gemini] Routing generateContent to generateImage for compatible model: ${model}`,
+        );
+        const lastUserContent = contents
+          .filter((c) => c.role === "user")
+          .slice(-1)[0];
+        const prompt =
+          lastUserContent?.parts
+            ?.filter((p) => p.text)
+            .map((p) => p.text)
+            .join("\n") || "";
+
+        const imageRes = await generateImage(config, model, prompt);
+        if (imageRes.url) {
+          return {
+            result: { narrative: `![image](${imageRes.url})` },
+            usage: imageRes.usage || {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+            },
+            raw: imageRes.raw || {},
+          };
+        }
+      }
+
       let text = "";
       let functionCalls: ToolCallResult[] = [];
       let usageMetadata: {
@@ -632,6 +665,43 @@ export async function generateImage(
   resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
   const client = createGeminiClient(config);
+
+  // 兼容性模式: 使用对话 API 生成图片
+  if (config.compatibleImageGeneration) {
+    console.log(
+      `[Gemini] Using compatibility mode (Chat API) for image generation with model: ${model}`,
+    );
+    try {
+      const response = await client.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.TEXT, Modality.IMAGE],
+        },
+      });
+
+      const imagePart = response.candidates?.[0]?.content?.parts?.find(
+        (p) => p.inlineData,
+      );
+      if (imagePart?.inlineData) {
+        const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+        return {
+          url,
+          usage: {
+            promptTokens: response.usageMetadata?.promptTokenCount || 0,
+            completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
+            totalTokens: response.usageMetadata?.totalTokenCount || 0,
+          },
+          raw: response,
+        };
+      }
+      throw new Error("No image data found in chat response");
+    } catch (error) {
+      console.error("[Gemini] Compatible image generation failed:", error);
+      // Fallback to normal generation if it's not a chat-only error
+    }
+  }
+
   const aspectRatio = getAspectRatio(resolution);
 
   try {

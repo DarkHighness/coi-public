@@ -543,7 +543,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                     <input
                       type="range"
                       min="10"
-                      max="180"
+                      max="360"
                       step="10"
                       value={currentSettings.imageTimeout || 60}
                       onChange={(e) =>

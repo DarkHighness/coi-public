@@ -29,6 +29,7 @@ interface ProviderFormData {
   geminiMessageFormat?: boolean;
   claudeCompatibility?: boolean;
   claudeMessageFormat?: boolean;
+  compatibleImageGeneration?: boolean;
 }
 
 type ModalMode = "add" | "edit" | "template" | null;
@@ -60,6 +61,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     geminiMessageFormat: false,
     claudeCompatibility: false,
     claudeMessageFormat: false,
+    compatibleImageGeneration: false,
   });
   const [selectedTemplate, setSelectedTemplate] =
     useState<ProviderTemplateKey>("openai");
@@ -129,6 +131,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       geminiMessageFormat: false,
       claudeCompatibility: false,
       claudeMessageFormat: false,
+      compatibleImageGeneration: false,
     });
     setModalMode("add");
   };
@@ -154,6 +157,8 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       geminiMessageFormat: (instance as any).geminiMessageFormat || false,
       claudeCompatibility: (instance as any).claudeCompatibility || false,
       claudeMessageFormat: (instance as any).claudeMessageFormat || false,
+      compatibleImageGeneration:
+        (instance as any).compatibleImageGeneration || false,
     });
     setModalMode("edit");
   };
@@ -198,6 +203,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       geminiMessageFormat: formData.geminiMessageFormat,
       claudeCompatibility: formData.claudeCompatibility,
       claudeMessageFormat: formData.claudeMessageFormat,
+      compatibleImageGeneration: formData.compatibleImageGeneration,
       createdAt: Date.now(),
       lastModified: Date.now(),
     };
@@ -283,6 +289,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             geminiMessageFormat: formData.geminiMessageFormat,
             claudeCompatibility: formData.claudeCompatibility,
             claudeMessageFormat: formData.claudeMessageFormat,
+            compatibleImageGeneration: formData.compatibleImageGeneration,
             lastModified: Date.now(),
           }
         : inst,
@@ -973,6 +980,38 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                       </div>
                     </div>
                   )}
+
+                {/* Compatibility Image Generation (For Gemini or OpenAI protocol) */}
+                {(formData.protocol === "openai" ||
+                  formData.protocol === "gemini") && (
+                  <div className="flex items-start gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="compatibleImageGeneration"
+                      checked={formData.compatibleImageGeneration}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          compatibleImageGeneration: e.target.checked,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="compatibleImageGeneration"
+                        className="block text-sm font-medium text-theme-text"
+                      >
+                        {t("creds.compatibleImageGeneration") ||
+                          "Compatible Image Generation"}
+                      </label>
+                      <p className="text-xs text-theme-muted">
+                        {t("creds.compatibleImageGenerationHelp") ||
+                          "Use chat API for image generation (supports gemini-3-pro-image)"}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Enabled */}
                 <div>

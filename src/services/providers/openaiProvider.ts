@@ -315,6 +315,38 @@ export async function generateContent(
       // 检测是否为 OpenAI reasoning 模型
       const isReasoning = isReasoningModel(model);
 
+      // 兼容性图片生成: 如果是图片模型（非 DALL-E）且启用了兼容模式，转交给 generateImage
+      if (
+        config.compatibleImageGeneration &&
+        (model.toLowerCase().includes("image") ||
+          model.toLowerCase().includes("imagen")) &&
+        !model.toLowerCase().includes("dall-e")
+      ) {
+        console.log(
+          `[OpenAI] Routing generateContent to generateImage for compatible model: ${model}`,
+        );
+        const prompt =
+          contents
+            .filter((msg) => msg.role === "user")
+            .slice(-1)[0]
+            ?.content.filter((p) => p.type === "text")
+            .map((p) => (p as TextContentPart).text)
+            .join("\n") || "";
+
+        const imageRes = await generateImage(config, model, prompt);
+        if (imageRes.url) {
+          return {
+            result: { narrative: `![image](${imageRes.url})` },
+            usage: imageRes.usage || {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+            },
+            raw: imageRes.raw as any,
+          };
+        }
+      }
+
       // 转换消息格式
       // 注意: 始终使用标准 OpenAI 格式，因为 OpenAI SDK 无法产生 Claude/Gemini 原生格式
       // 消息格式转换应由代理服务（如 OpenRouter, LiteLLM）处理
@@ -1110,6 +1142,75 @@ export async function generateImage(
   resolution: string = "1024x1024",
 ): Promise<ImageGenerationResponse> {
   const client = createOpenAIClient(config);
+
+  // 兼容性模式: 使用对话 API 生成图片
+  if (config.compatibleImageGeneration) {
+    console.log(
+      `[OpenAI] Using compatibility mode (Chat API) for image generation with model: ${model}`,
+    );
+    try {
+      const response = await client.chat.completions.create({
+        model: model || "gemini-3-pro-image",
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+
+      // 1. 尝试从文本中提取 Markdown 图片链接
+      const markdownMatch = content.match(/!\[.*?\]\((.*?)\)/);
+      if (markdownMatch) {
+        return {
+          url: markdownMatch[1],
+          usage: {
+            promptTokens: response.usage?.prompt_tokens || 0,
+            completionTokens: response.usage?.completion_tokens || 0,
+            totalTokens: response.usage?.total_tokens || 0,
+          },
+          raw: response,
+        };
+      }
+
+      // 2. 尝试从文本中寻找 URL (针对某些直接返回 URL 的代理)
+      const urlMatch = content.match(/https?:\/\/[^\s)]+/);
+      if (urlMatch) {
+        return {
+          url: urlMatch[0],
+          usage: {
+            promptTokens: response.usage?.prompt_tokens || 0,
+            completionTokens: response.usage?.completion_tokens || 0,
+            totalTokens: response.usage?.total_tokens || 0,
+          },
+          raw: response,
+        };
+      }
+
+      // 3. 针对 Gemini via OpenAI 代理可能返回的 base64 (如果代理将其放入 content)
+      if (
+        content.length > 1000 &&
+        (content.startsWith("data:") || !content.includes(" "))
+      ) {
+        const url = content.startsWith("data:")
+          ? content
+          : `data:image/jpeg;base64,${content}`;
+        return {
+          url,
+          usage: {
+            promptTokens: response.usage?.prompt_tokens || 0,
+            completionTokens: response.usage?.completion_tokens || 0,
+            totalTokens: response.usage?.total_tokens || 0,
+          },
+          raw: response,
+        };
+      }
+
+      throw new Error(
+        `Failed to extract image from chat response: ${content.substring(0, 100)}...`,
+      );
+    } catch (error) {
+      console.error("[OpenAI] Compatible image generation failed:", error);
+      // 如果不是不支持的错误，可以继续尝试 DALL-E 路径或报错
+    }
+  }
 
   // 确定图片尺寸
   const size = determineImageSize(model, resolution);
