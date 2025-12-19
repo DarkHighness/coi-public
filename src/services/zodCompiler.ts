@@ -24,8 +24,12 @@ import {
   ZodBoolean,
   ZodLiteral,
   ZodUnion,
+  ZodIntersection,
   ZodEffects,
   ZodDiscriminatedUnion,
+  ZodNull,
+  ZodAny,
+  ZodUnknown,
 } from "zod";
 import type { ZodTypeAny } from "zod";
 import { Type } from "@google/genai";
@@ -764,17 +768,100 @@ function processZodToGeminiCompatible(
     return result;
   }
 
-  // Handle union - Gemini doesn't support generic unions well, try to flatten or warn
+  // Handle union - Gemini doesn't support generic unions well
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
-    console.warn(
-      "Gemini Compatible Schema: Union types are not fully supported. Using first option or merging.",
-    );
-    // Simple fallback: use the first option
     const options = (schema as ZodUnion<any>)._def.options;
+
+    // Try to merge if all options are objects
+    const allObjects = options.every(
+      (opt: any) =>
+        opt instanceof ZodObject || opt._def.typeName === "ZodObject",
+    );
+
+    if (allObjects && options.length > 0) {
+      const mergedProperties: Record<string, OpenAISchema> = {};
+      const requiredByAll = new Set<string>();
+      let first = true;
+
+      for (const opt of options) {
+        const shape = (opt as ZodObject<any>).shape;
+        const currentRequired = new Set<string>();
+
+        for (const [key, value] of Object.entries(shape)) {
+          const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+          if (fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault") {
+            currentRequired.add(key);
+          }
+
+          if (!mergedProperties[key]) {
+            mergedProperties[key] = processZodToGeminiCompatible(
+              value as ZodTypeAny,
+            );
+          }
+        }
+
+        if (first) {
+          currentRequired.forEach((k) => requiredByAll.add(k));
+          first = false;
+        } else {
+          for (const k of requiredByAll) {
+            if (!currentRequired.has(k)) requiredByAll.delete(k);
+          }
+        }
+      }
+
+      const result: OpenAISchema = {
+        type: "object",
+        properties: mergedProperties,
+      };
+      if (requiredByAll.size > 0) result.required = Array.from(requiredByAll);
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+
+    // Default fallback: first option
     if (options.length > 0) {
       return processZodToGeminiCompatible(options[0]);
     }
     return { type: "string" };
+  }
+
+  // Handle intersection
+  if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
+    const left = processZodToGeminiCompatible(
+      (schema as ZodIntersection<any, any>)._def.left,
+    );
+    const right = processZodToGeminiCompatible(
+      (schema as ZodIntersection<any, any>)._def.right,
+    );
+
+    if (left.type === "object" && right.type === "object") {
+      const result: OpenAISchema = {
+        type: "object",
+        properties: { ...left.properties, ...right.properties },
+        required: Array.from(
+          new Set([...(left.required || []), ...(right.required || [])]),
+        ),
+      };
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+    return left; // Fallback to left side if not objects
+  }
+
+  // Handle null
+  if (schema instanceof ZodNull || typeName === "ZodNull") {
+    return { type: "string", nullable: true, description: "null" };
+  }
+
+  // Handle any/unknown
+  if (
+    schema instanceof ZodAny ||
+    typeName === "ZodAny" ||
+    schema instanceof ZodUnknown ||
+    typeName === "ZodUnknown"
+  ) {
+    return { type: "object", description: schema.description || "Any value" };
   }
 
   // Handle discriminated union - Merge strategies similar to Native Gemini
@@ -1099,17 +1186,99 @@ function processZodToClaudeCompatible(
     return result;
   }
 
-  // Handle union - Claude doesn't support generic unions well, try to flatten or warn
+  // Handle union - Claude doesn't support generic unions well
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
-    console.warn(
-      "Claude Compatible Schema: Union types are not fully supported. Using first option or merging.",
-    );
-    // Simple fallback: use the first option
     const options = (schema as ZodUnion<any>)._def.options;
+
+    // Try to merge if all options are objects
+    const allObjects = options.every(
+      (opt: any) =>
+        opt instanceof ZodObject || opt._def.typeName === "ZodObject",
+    );
+
+    if (allObjects && options.length > 0) {
+      const mergedProperties: Record<string, OpenAISchema> = {};
+      const requiredByAll = new Set<string>();
+      let first = true;
+
+      for (const opt of options) {
+        const shape = (opt as ZodObject<any>).shape;
+        const currentRequired = new Set<string>();
+
+        for (const [key, value] of Object.entries(shape)) {
+          const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+          if (fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault") {
+            currentRequired.add(key);
+          }
+
+          if (!mergedProperties[key]) {
+            mergedProperties[key] = processZodToClaudeCompatible(
+              value as ZodTypeAny,
+            );
+          }
+        }
+
+        if (first) {
+          currentRequired.forEach((k) => requiredByAll.add(k));
+          first = false;
+        } else {
+          for (const k of requiredByAll) {
+            if (!currentRequired.has(k)) requiredByAll.delete(k);
+          }
+        }
+      }
+
+      const result: OpenAISchema = {
+        type: "object",
+        properties: mergedProperties,
+      };
+      if (requiredByAll.size > 0) result.required = Array.from(requiredByAll);
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+
     if (options.length > 0) {
       return processZodToClaudeCompatible(options[0]);
     }
     return { type: "string" };
+  }
+
+  // Handle intersection
+  if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
+    const left = processZodToClaudeCompatible(
+      (schema as ZodIntersection<any, any>)._def.left,
+    );
+    const right = processZodToClaudeCompatible(
+      (schema as ZodIntersection<any, any>)._def.right,
+    );
+
+    if (left.type === "object" && right.type === "object") {
+      const result: OpenAISchema = {
+        type: "object",
+        properties: { ...left.properties, ...right.properties },
+        required: Array.from(
+          new Set([...(left.required || []), ...(right.required || [])]),
+        ),
+      };
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+    return left;
+  }
+
+  // Handle null
+  if (schema instanceof ZodNull || typeName === "ZodNull") {
+    return { type: "string", nullable: true, description: "null" };
+  }
+
+  // Handle any/unknown
+  if (
+    schema instanceof ZodAny ||
+    typeName === "ZodAny" ||
+    schema instanceof ZodUnknown ||
+    typeName === "ZodUnknown"
+  ) {
+    return { type: "object", description: schema.description || "Any value" };
   }
 
   // Handle discriminated union - Merge strategies
@@ -1305,11 +1474,16 @@ export function createGeminiCompatibleTool(
  * 检测模型 ID 是否为 Gemini 模型
  */
 export function isGeminiModel(modelId: string): boolean {
-  const lowerModelId = modelId.toLowerCase();
+  const lower = modelId.toLowerCase();
   return (
-    lowerModelId.includes("gemini") ||
-    lowerModelId.includes("google/gemini") ||
-    lowerModelId.startsWith("gemini-")
+    lower.includes("gemini") ||
+    lower.includes("google/") ||
+    lower.includes("vertex/") ||
+    lower.startsWith("google-") ||
+    lower.includes("palm-") ||
+    // Catch common patterns in proxies like OpenRouter
+    (lower.includes("flash") && (lower.includes("1.5") || lower.includes("2.0"))) ||
+    (lower.includes("pro") && (lower.includes("1.5") || lower.includes("1.0")))
   );
 }
 
@@ -1317,8 +1491,15 @@ export function isGeminiModel(modelId: string): boolean {
  * 检测模型 ID 是否为 Claude 模型
  */
 export function isClaudeModel(modelId: string): boolean {
-  const lowerModelId = modelId.toLowerCase();
-  return lowerModelId.includes("claude") || lowerModelId.includes("anthropic");
+  const lower = modelId.toLowerCase();
+  return (
+    lower.includes("claude") ||
+    lower.includes("anthropic/") ||
+    lower.startsWith("anthropic-") ||
+    lower.includes("sonnet") ||
+    lower.includes("opus") ||
+    lower.includes("haiku")
+  );
 }
 
 // ============================================================================
