@@ -1095,12 +1095,17 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
       parts.push({ text: (part as TextContentPart).text });
     } else if (part.type === "tool_use") {
       const toolCall = part as ToolCallContentPart;
-      parts.push({
+      const functionCallPart: any = {
         functionCall: {
           name: toolCall.toolUse.name,
           args: toolCall.toolUse.args,
         },
-      });
+      };
+      // Include thoughtSignature if present (required for Gemini)
+      if (toolCall.toolUse.thoughtSignature) {
+        functionCallPart.thoughtSignature = toolCall.toolUse.thoughtSignature;
+      }
+      parts.push(functionCallPart);
     }
   }
 

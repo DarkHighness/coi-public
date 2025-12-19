@@ -547,13 +547,17 @@ export async function generateContent(
 
         // 处理工具调用
         if (message?.tool_calls) {
-          toolCalls = message.tool_calls.map((tc) => ({
-            id: tc.id,
-            name: tc.function.name,
-            args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-            // Extract thought_signature if present (Gemini compatibility)
-            thoughtSignature: (tc.function as any).thought_signature,
-          }));
+          toolCalls = message.tool_calls
+            .filter((tc): tc is typeof tc & { function: { name: string; arguments: string } } =>
+              'function' in tc && tc.function !== undefined
+            )
+            .map((tc) => ({
+              id: tc.id,
+              name: tc.function.name,
+              args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+              // Extract thought_signature if present (Gemini compatibility)
+              thoughtSignature: (tc.function as any).thought_signature,
+            }));
         }
 
         // 检查内容过滤
@@ -802,14 +806,21 @@ function convertToReasoningMessages(
         const assistantMsg: ChatCompletionAssistantMessageParam = {
           role: "assistant",
           content: textContent || null,
-          tool_calls: toolCallParts.map((p) => ({
-            id: p.toolUse.id,
-            type: "function" as const,
-            function: {
-              name: p.toolUse.name,
-              arguments: JSON.stringify(p.toolUse.args),
-            },
-          })),
+          tool_calls: toolCallParts.map((p) => {
+            const toolCall: any = {
+              id: p.toolUse.id,
+              type: "function" as const,
+              function: {
+                name: p.toolUse.name,
+                arguments: JSON.stringify(p.toolUse.args),
+              },
+            };
+            // Include thought_signature if present (Gemini compatibility)
+            if (p.toolUse.thoughtSignature) {
+              toolCall.function.thought_signature = p.toolUse.thoughtSignature;
+            }
+            return toolCall;
+          }),
         };
         result.push(assistantMsg);
 
@@ -1419,12 +1430,16 @@ export function extractToolCalls(response: ChatCompletion): Array<{
   const message = response.choices[0]?.message;
   if (!message?.tool_calls) return [];
 
-  return message.tool_calls.map((tc) => ({
-    id: tc.id,
-    name: tc.function.name,
-    args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-    thoughtSignature: (tc.function as any).thought_signature,
-  }));
+  return message.tool_calls
+    .filter((tc): tc is typeof tc & { function: { name: string; arguments: string } } =>
+      'function' in tc && tc.function !== undefined
+    )
+    .map((tc) => ({
+      id: tc.id,
+      name: tc.function.name,
+      args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+      thoughtSignature: (tc.function as any).thought_signature,
+    }));
 }
 
 /**
