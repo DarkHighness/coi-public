@@ -1108,6 +1108,7 @@
     "showSystemPrompt": "显示系统提示词",
     "chars": "字符",
     "toolCalls": "工具调用",
+    "toolName": "工具名称",
     "request": "请求",
     "response": "响应",
     "prompt": "提示词:",
@@ -1123,7 +1124,29 @@
     "conversationHistory": "对话历史",
     "rawResponse": "原始响应",
     "injectedRules": "注入规则",
-    "nsfwEnabled": "NSFW 模式已启用"
+    "nsfwEnabled": "NSFW 模式已启用",
+    "endpoint": {
+      "tool_execution": "工具执行",
+      "agentic_complete": "回合完成",
+      "generateImage": "图片生成",
+      "image": "图片生成",
+      "summary-query": "摘要 - 查询",
+      "summary-complete": "摘要 - 完成",
+      "summary-error": "摘要 - 错误",
+      "outline-phase1": "大纲 - 构建世界",
+      "outline-phase2": "大纲 - 创建角色",
+      "outline-phase3": "大纲 - 绘制地图",
+      "outline-phase4": "大纲 - 建立势力",
+      "outline-phase5": "大纲 - 人际关系",
+      "outline-phase6": "大纲 - 准备物品",
+      "outline-phase7": "大纲 - 编织任务",
+      "outline-phase8": "大纲 - 汇集知识",
+      "outline-phase9": "大纲 - 最终润色"
+    },
+    "newest": "最新",
+    "oldest": "最早",
+    "sortNewest": "显示最新优先",
+    "sortOldest": "显示最早优先"
   },
   "new-game": "旅程尚未开始...",
   "saveManager": {

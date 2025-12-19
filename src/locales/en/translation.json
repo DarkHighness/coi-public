@@ -1093,6 +1093,7 @@
     "showSystemPrompt": "Show System Prompt",
     "chars": "chars",
     "toolCalls": "Tool Calls",
+    "toolName": "Tool Name",
     "request": "Request",
     "response": "Response",
     "prompt": "Prompt:",
@@ -1108,7 +1109,29 @@
     "conversationHistory": "Conversation History",
     "rawResponse": "Raw Response",
     "injectedRules": "Injected Rules",
-    "nsfwEnabled": "NSFW Mode Enabled"
+    "nsfwEnabled": "NSFW Mode Enabled",
+    "endpoint": {
+      "tool_execution": "Tool Execution",
+      "agentic_complete": "Turn Complete",
+      "generateImage": "Image Generation",
+      "image": "Image Generation",
+      "summary-query": "Summary - Query",
+      "summary-complete": "Summary - Complete",
+      "summary-error": "Summary - Error",
+      "outline-phase1": "Outline - World Foundation",
+      "outline-phase2": "Outline - Character",
+      "outline-phase3": "Outline - Locations",
+      "outline-phase4": "Outline - Factions",
+      "outline-phase5": "Outline - Relationships",
+      "outline-phase6": "Outline - Inventory",
+      "outline-phase7": "Outline - Quests",
+      "outline-phase8": "Outline - Knowledge",
+      "outline-phase9": "Outline - Final Polish"
+    },
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "sortNewest": "Showing newest first",
+    "sortOldest": "Showing oldest first"
   },
   "new-game": "New Game",
   "saveManager": {

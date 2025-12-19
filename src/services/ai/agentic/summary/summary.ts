@@ -567,24 +567,24 @@ export const runSummaryAgenticLoop = async (
           };
 
           // Log with full input/output details
-          const log = createLogEntry(
-            protocol,
-            modelId,
-            "summary-complete",
-            {
+          const log = createLogEntry({
+            provider: protocol,
+            model: modelId,
+            endpoint: "summary-complete",
+            stage: "complete",
+            usage: totalUsage,
+            toolCalls: [...turnToolCalls, finishToolCall],
+            parsedResult: summary,
+            stageInput,
+            rawResponse,
+            request: {
               stage: currentStage,
               stageIterations,
               segmentCount: input.segmentsToSummarize.length,
               nodeRange: input.nodeRange,
             },
-            { toolCount: functionCalls.length, summary },
-            totalUsage,
-            [...turnToolCalls, finishToolCall],
-            undefined, // generationDetails
-            summary, // parsedResult
-            stageInput,
-            rawResponse,
-          );
+            response: { toolCount: functionCalls.length, summary },
+          });
           allLogs.push(log);
 
           return {
@@ -610,24 +610,26 @@ export const runSummaryAgenticLoop = async (
       conversationHistory.push(createToolResponseMessage(toolResponses));
 
       // Log this iteration with full input/output details
-      const log = createLogEntry(
-        protocol,
-        modelId,
-        `summary-${currentStage}`,
-        {
+      const log = createLogEntry({
+        provider: protocol,
+        model: modelId,
+        endpoint: `summary-${currentStage}`,
+        stage: currentStage,
+        usage: totalUsage,
+        toolCalls: turnToolCalls,
+        stageInput,
+        rawResponse,
+        request: {
           stage: currentStage,
           iteration: stageIterations + 1,
           segmentCount: input.segmentsToSummarize.length,
           nodeRange: input.nodeRange,
         },
-        { toolCount: turnToolCalls.length, toolResults: toolResponses },
-        totalUsage,
-        turnToolCalls,
-        undefined, // generationDetails
-        undefined, // parsedResult
-        stageInput,
-        rawResponse,
-      );
+        response: {
+          toolCount: turnToolCalls.length,
+          toolResults: toolResponses,
+        },
+      });
       allLogs.push(log);
 
       stageIterations++;

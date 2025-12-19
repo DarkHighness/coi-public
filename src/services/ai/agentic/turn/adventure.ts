@@ -908,13 +908,14 @@ You are in AGENTIC MODE.
 
         // Log tool usage
         allLogs.push(
-          createLogEntry(
-            protocol,
-            modelId,
-            "tool_execution",
-            { tool: call.name, args: call.args, output },
-            {},
-          ),
+          createLogEntry({
+            provider: protocol,
+            model: modelId,
+            endpoint: "tool_execution",
+            toolName: call.name,
+            toolInput: call.args,
+            toolOutput: output,
+          }),
         );
       }
 

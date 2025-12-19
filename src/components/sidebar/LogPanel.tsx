@@ -1,98 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
-import { LogEntry, ToolCallRecord } from "../../types";
+import React, { useState, useRef, useMemo } from "react";
+import { LogEntry } from "../../types";
 import { useTranslation } from "react-i18next";
+import { LogEntryCard } from "./log";
 
 interface LogPanelProps {
   logs: LogEntry[];
   onClose: () => void;
 }
 
-// Component to render a single tool call
-const ToolCallItem: React.FC<{ call: ToolCallRecord; index: number }> = ({
-  call,
-  index,
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const isQuery = call.name.startsWith("query_");
-  const isFinish = call.name === "finish_turn";
-  const { t } = useTranslation();
-
-  // Determine status color
-  const isSuccess = call.output?.success !== false;
-  const statusColor = isSuccess ? "text-theme-success" : "text-theme-error";
-  const bgColor = isFinish
-    ? "bg-theme-primary/10 border-theme-primary/30"
-    : isQuery
-      ? "bg-blue-900/10 border-blue-500/30"
-      : "bg-theme-surface-highlight/30 border-theme-border/50";
-
-  return (
-    <div className={`rounded border ${bgColor} overflow-hidden`}>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs text-theme-muted opacity-50">
-            #{index + 1}
-          </span>
-          <span
-            className={`text-sm font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}
-          >
-            {call.name}
-          </span>
-          <span className={`text-xs ${statusColor}`}>
-            {isSuccess ? "✓" : "✗"}
-          </span>
-        </div>
-        <svg
-          className={`w-3 h-3 text-theme-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-theme-border/20 pt-2">
-          <div>
-            <label className="text-xs uppercase tracking-widest text-green-500 font-bold block mb-1">
-              {/* @ts-ignore */}
-              {t("logPanel.input") || "Input"}
-            </label>
-            <pre className="text-xs text-theme-muted/80 bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words">
-              {JSON.stringify(call.input, null, 2)}
-            </pre>
-          </div>
-          <div>
-            <label
-              className={`text-xs uppercase tracking-widest font-bold block mb-1 ${isSuccess ? "text-theme-info" : "text-theme-error"}`}
-            >
-              {/* @ts-ignore */}
-              {t("logPanel.output") || "Output"}
-            </label>
-            <pre
-              className={`text-xs bg-black/10 rounded p-2 overflow-auto max-h-[150px] whitespace-pre-wrap wrap-break-words ${isSuccess ? "text-theme-muted/80" : "text-theme-error"}`}
-            >
-              {JSON.stringify(call.output, null, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+type SortOrder = "newest" | "oldest";
 
 export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
   const { t } = useTranslation();
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleLog = (logId: string) => {
@@ -106,6 +27,16 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
       return next;
     });
   };
+
+  // Sort logs by timestamp
+  const sortedLogs = useMemo(() => {
+    const sorted = [...logs].sort((a, b) => {
+      return sortOrder === "newest"
+        ? b.timestamp - a.timestamp
+        : a.timestamp - b.timestamp;
+    });
+    return sorted;
+  }, [logs, sortOrder]);
 
   // Calculate total stats
   const totalToolCalls = logs.reduce(
@@ -150,12 +81,45 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             </span>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="px-3 py-1.5 md:px-4 md:py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors uppercase text-xs font-bold tracking-widest"
-        >
-          {t("close") || "Close"}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Sort Order Toggle */}
+          <button
+            onClick={() =>
+              setSortOrder(sortOrder === "newest" ? "oldest" : "newest")
+            }
+            className="px-3 py-1.5 bg-theme-surface-highlight hover:bg-theme-primary/20 border border-theme-border rounded transition-colors text-xs font-bold tracking-wider flex items-center gap-2"
+            title={
+              sortOrder === "newest"
+                ? t("logPanel.sortNewest") || "Showing newest first"
+                : t("logPanel.sortOldest") || "Showing oldest first"
+            }
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${sortOrder === "oldest" ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+              />
+            </svg>
+            <span className="hidden md:inline">
+              {sortOrder === "newest"
+                ? t("logPanel.newest") || "Newest"
+                : t("logPanel.oldest") || "Oldest"}
+            </span>
+          </button>
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors uppercase text-xs font-bold tracking-widest"
+          >
+            {t("close") || "Close"}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -182,13 +146,9 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
           </div>
         )}
 
-        {logs.map((log, index) => {
-          const isError = !!log.response?.error || !!log.request?.error;
-          const isExpanded = expandedLogs.has(log.id);
-          const hasToolCalls = log.toolCalls && log.toolCalls.length > 0;
-          const isComplete = log.endpoint === "agentic_complete";
-          // Use content-visibility: auto for older items (not last 5) for native browser virtualization
-          const useContentVisibility = index < logs.length - 5;
+        {sortedLogs.map((log, index) => {
+          // Use content-visibility: auto for items not near viewport for performance
+          const useContentVisibility = index > 10;
 
           return (
             <div
@@ -199,373 +159,15 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   ? "auto 100px"
                   : "auto",
               }}
-              className={`border rounded-lg overflow-hidden shadow-sm transition-all ${
-                isError
-                  ? "border-theme-error/50 bg-theme-error/5"
-                  : isComplete
-                    ? "border-theme-primary/50 bg-theme-primary/5"
-                    : "border-theme-border bg-theme-surface"
-              }`}
             >
-              {/* Log Header */}
-              <button
-                onClick={() => toggleLog(log.id)}
-                className={`w-full px-4 py-3 flex flex-wrap justify-between items-center border-b text-left hover:bg-white/5 transition-colors ${
-                  isError
-                    ? "border-theme-error/30 bg-theme-error/20"
-                    : isComplete
-                      ? "border-theme-primary/30 bg-theme-primary/10"
-                      : "border-theme-border/50 bg-theme-surface-highlight/30"
-                }`}
-              >
-                <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
-                      isError
-                        ? "bg-theme-error text-white"
-                        : isComplete
-                          ? "bg-theme-primary text-theme-bg"
-                          : "bg-theme-surface-highlight text-theme-text"
-                    }`}
-                  >
-                    {log.provider}
-                  </span>
-                  <span className="text-sm md:text-base font-bold text-theme-text">
-                    {log.endpoint}
-                  </span>
-                  {hasToolCalls && (
-                    <span className="text-xs text-theme-primary bg-theme-primary/10 px-1.5 py-0.5 rounded">
-                      {log.toolCalls!.length} {t("logPanel.calls") || "calls"}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {log.usage && (
-                    <span className="text-xs text-theme-muted hidden md:inline">
-                      {log.usage.totalTokens} {t("logPanel.tokens") || "tokens"}
-                    </span>
-                  )}
-                  <span className="text-xs text-theme-muted">
-                    {new Date(log.timestamp).toLocaleTimeString()}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-theme-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-
-              {/* Log Body - Expanded */}
-              {isExpanded && (
-                <div className="p-4 space-y-4">
-                  {/* Generation Details Section */}
-                  {log.generationDetails && (
-                    <div className="space-y-4 border-b border-theme-border/30 pb-4">
-                      <label className="text-xs uppercase tracking-widest text-theme-primary font-bold block mb-2">
-                        {t("logPanel.generationContext") ||
-                          "Generation Context"}
-                      </label>
-
-                      {log.generationDetails.userPrompt && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-theme-muted uppercase font-bold">
-                            {t("logPanel.userAction") || "User Action"}
-                          </span>
-                          <div className="bg-black/10 rounded border border-theme-border/30 p-2">
-                            <pre className="text-xs text-theme-text whitespace-pre-wrap wrap-break-words">
-                              {log.generationDetails.userPrompt}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-
-                      {log.generationDetails.dynamicContext && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-theme-muted uppercase font-bold">
-                            {t("logPanel.dynamicStoryMemory") ||
-                              "Dynamic Story Memory"}
-                          </span>
-                          <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
-                            <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
-                              {log.generationDetails.dynamicContext}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-
-                      {log.generationDetails.ragContext && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-theme-muted uppercase font-bold">
-                            {t("logPanel.ragContext") || "RAG Context"}
-                          </span>
-                          <div className="bg-black/10 rounded border border-theme-border/30 p-2 max-h-[150px] overflow-auto">
-                            <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
-                              {log.generationDetails.ragContext}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Injected Rules */}
-                      {log.generationDetails.injectedRules &&
-                        log.generationDetails.injectedRules.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-purple-400 uppercase font-bold">
-                              {t("logPanel.injectedRules") || "Injected Rules"}{" "}
-                              ({log.generationDetails.injectedRules.length})
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                              {log.generationDetails.injectedRules.map(
-                                (rule, i) => (
-                                  <span
-                                    key={i}
-                                    className="text-xs bg-purple-900/20 border border-purple-500/30 px-2 py-1 rounded text-purple-300"
-                                  >
-                                    {rule}
-                                  </span>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* NSFW Mode */}
-                      {log.generationDetails.nsfwEnabled && (
-                        <div className="space-y-1">
-                          <span className="text-xs bg-red-500/20 border border-red-500/30 px-2 py-1 rounded text-red-400 font-bold uppercase">
-                            {t("logPanel.nsfwEnabled") || "NSFW Mode Enabled"}
-                          </span>
-                        </div>
-                      )}
-
-                      {log.generationDetails.systemPrompt && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-theme-muted uppercase font-bold">
-                            {t("logPanel.systemPrompt") || "System Prompt"}
-                          </span>
-                          <details className="group">
-                            <summary className="text-xs cursor-pointer hover:text-theme-primary transition-colors select-none">
-                              {t("logPanel.showSystemPrompt") ||
-                                "Show System Prompt"}{" "}
-                              ({log.generationDetails.systemPrompt.length}{" "}
-                              {t("logPanel.chars") || "chars"})
-                            </summary>
-                            <div className="bg-black/10 rounded border border-theme-border/30 p-2 mt-2 max-h-[200px] overflow-auto">
-                              <pre className="text-xs text-theme-muted/60 whitespace-pre-wrap wrap-break-words">
-                                {log.generationDetails.systemPrompt}
-                              </pre>
-                            </div>
-                          </details>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Tool Calls Section */}
-                  {hasToolCalls && (
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest text-theme-primary font-bold block">
-                        {t("logPanel.toolCalls") || "Tool Calls"} (
-                        {log.toolCalls!.length})
-                      </label>
-                      <div className="space-y-2">
-                        {log.toolCalls!.map((call, idx) => (
-                          <ToolCallItem key={idx} call={call} index={idx} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Stage Input Section - for debugging agentic loops */}
-                  {log.stageInput && (
-                    <div className="space-y-4 border-t border-theme-border/30 pt-4">
-                      <label className="text-xs uppercase tracking-widest text-yellow-500 font-bold block mb-2">
-                        {t("logPanel.stageDebug") || "Stage Debug Info"}
-                      </label>
-
-                      {log.stageInput.stageInstruction && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-theme-muted uppercase font-bold">
-                            {t("logPanel.stageInstruction") ||
-                              "Stage Instruction"}
-                          </span>
-                          <div className="bg-yellow-900/10 rounded border border-yellow-500/30 p-2 max-h-[100px] overflow-auto">
-                            <pre className="text-xs text-theme-text whitespace-pre-wrap wrap-break-words">
-                              {log.stageInput.stageInstruction}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-
-                      {log.stageInput.availableTools &&
-                        log.stageInput.availableTools.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-theme-muted uppercase font-bold">
-                              {t("logPanel.availableTools") ||
-                                "Available Tools"}
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                              {log.stageInput.availableTools.map((tool, i) => (
-                                <span
-                                  key={i}
-                                  className="text-xs bg-theme-surface-highlight border border-theme-border/50 px-2 py-0.5 rounded text-theme-muted font-mono"
-                                >
-                                  {tool}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                      {log.stageInput.conversationHistory && (
-                        <div className="space-y-1">
-                          <details className="group">
-                            <summary className="text-xs cursor-pointer hover:text-yellow-400 transition-colors select-none text-theme-muted uppercase font-bold">
-                              {t("logPanel.conversationHistory") ||
-                                "Conversation History"}{" "}
-                              ({log.stageInput.conversationHistory.length}{" "}
-                              {t("logPanel.chars") || "chars"})
-                            </summary>
-                            <div className="bg-black/10 rounded border border-theme-border/30 p-2 mt-2 max-h-[300px] overflow-auto">
-                              <pre className="text-xs text-theme-muted/60 whitespace-pre-wrap wrap-break-words">
-                                {log.stageInput.conversationHistory}
-                              </pre>
-                            </div>
-                          </details>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Raw Response Section - for debugging */}
-                  {log.rawResponse && (
-                    <div className="space-y-1 border-t border-theme-border/30 pt-4">
-                      <details className="group">
-                        <summary className="text-xs cursor-pointer hover:text-cyan-400 transition-colors select-none text-cyan-500 uppercase font-bold">
-                          {t("logPanel.rawResponse") || "Raw AI Response"} (
-                          {log.rawResponse.length}{" "}
-                          {t("logPanel.chars") || "chars"})
-                        </summary>
-                        <div className="bg-cyan-900/10 rounded border border-cyan-500/30 p-2 mt-2 max-h-[300px] overflow-auto">
-                          <pre className="text-xs text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
-                            {log.rawResponse}
-                          </pre>
-                        </div>
-                      </details>
-                    </div>
-                  )}
-
-                  {/* Legacy Request/Response for non-agentic logs */}
-                  {!hasToolCalls && (log.request || log.response) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {log.request && (
-                        <div className="space-y-2 min-w-0">
-                          <label className="text-xs uppercase tracking-widest text-green-500 font-bold block">
-                            {t("logPanel.request") || "Request"}
-                          </label>
-                          <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
-                            <pre className="text-sm text-theme-muted/80 whitespace-pre-wrap wrap-break-words">
-                              {typeof log.request === "string"
-                                ? log.request
-                                : JSON.stringify(log.request, null, 2)}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                      {log.response && (
-                        <div className="space-y-2 min-w-0">
-                          <label
-                            className={`text-xs uppercase tracking-widest font-bold block ${isError ? "text-theme-error" : "text-theme-info"}`}
-                          >
-                            {t("logPanel.response") || "Response"}
-                          </label>
-                          <div className="bg-black/10 rounded border border-theme-border/30 p-3 overflow-auto max-h-[200px]">
-                            <pre
-                              className={`text-sm whitespace-pre-wrap wrap-break-words ${isError ? "text-theme-error" : "text-theme-muted/80"}`}
-                            >
-                              {typeof log.response === "string"
-                                ? log.response
-                                : JSON.stringify(log.response, null, 2)}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                      {log.parsedResult && (
-                        <div className="space-y-2 min-w-0">
-                          <label className="text-xs uppercase tracking-widest font-bold block text-theme-success">
-                            {t("logPanel.parsedResult") || "Parsed Result"}
-                          </label>
-                          <div className="bg-black/10 rounded border border-theme-success/30 p-3 overflow-auto max-h-[300px]">
-                            <pre className="text-sm whitespace-pre-wrap wrap-break-words text-theme-muted/80">
-                              {typeof log.parsedResult === "string"
-                                ? log.parsedResult
-                                : JSON.stringify(log.parsedResult, null, 2)}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Token Usage Footer */}
-                  {log.usage && (
-                    <div className="pt-2 border-t border-theme-border/30 flex flex-wrap justify-end gap-4 text-sm text-theme-primary/80 items-center">
-                      <span>
-                        <strong className="text-theme-primary">
-                          {t("logPanel.prompt") || "Prompt:"}
-                        </strong>{" "}
-                        {log.usage.promptTokens}
-                      </span>
-                      <span>
-                        <strong className="text-theme-primary">
-                          {t("logPanel.completion") || "Completion:"}
-                        </strong>{" "}
-                        {log.usage.completionTokens}
-                      </span>
-                      {(log.usage.cacheRead || 0) > 0 && (
-                        <span>
-                          <strong className="text-theme-primary">
-                            {t("logPanel.cacheRead") || "Cache Read:"}
-                          </strong>{" "}
-                          {log.usage.cacheRead}
-                        </span>
-                      )}
-                      {(log.usage.cacheWrite || 0) > 0 && (
-                        <span>
-                          <strong className="text-theme-primary">
-                            {t("logPanel.cacheWrite") || "Cache Write:"}
-                          </strong>{" "}
-                          {log.usage.cacheWrite}
-                        </span>
-                      )}
-                      <span className="px-2 py-0.5 bg-theme-primary/10 border border-theme-primary/30 rounded">
-                        <strong className="text-theme-primary">
-                          {t("logPanel.total") || "Total:"}
-                        </strong>{" "}
-                        {log.usage.totalTokens}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              <LogEntryCard
+                log={log}
+                isExpanded={expandedLogs.has(log.id)}
+                onToggle={() => toggleLog(log.id)}
+              />
             </div>
           );
         })}
-
-        {logs.length === 0 && (
-          <div className="flex justify-center items-center h-full text-theme-muted">
-            <p>{t("logPanel.noLogsAlt") || "No logs to display."}</p>
-          </div>
-        )}
       </div>
     </div>
   );

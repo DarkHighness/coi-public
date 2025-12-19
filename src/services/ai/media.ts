@@ -67,7 +67,12 @@ export const generateSceneImage = async (
   if (!providerInfo || !providerInfo.enabled) {
     return {
       url: null,
-      log: createLogEntry("none", "none", "image", { disabled: true }, null),
+      log: createLogEntry({
+        provider: "none",
+        model: "none",
+        endpoint: "image",
+        request: { disabled: true },
+      }),
     };
   }
 
@@ -135,14 +140,15 @@ export const generateSceneImage = async (
     }
   }
 
-  const log = createLogEntry(
-    instance.protocol,
-    modelId,
-    "generateImage",
-    { prompt: styledPrompt, resolution },
-    raw,
+  const log = createLogEntry({
+    provider: instance.protocol,
+    model: modelId,
+    endpoint: "generateImage",
+    imagePrompt: styledPrompt,
+    imageResolution: resolution,
+    response: raw,
     usage,
-  );
+  });
   return { url, log, blob };
 };
 

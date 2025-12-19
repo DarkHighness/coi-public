@@ -172,43 +172,117 @@ export const getProviderConfig = (
 // Logging Helpers
 // ============================================================================
 
-export const createLogEntry = (
-  provider: string,
-  model: string,
-  endpoint: string,
-  req: Record<string, unknown>,
-  res: unknown,
-  usage?: TokenUsage,
-  toolCalls?: ToolCallRecord[],
-  generationDetails?: LogEntry["generationDetails"],
-  parsedResult?: unknown,
-  stageInput?: LogEntry["stageInput"],
-  rawResponse?: string,
-): LogEntry => {
+/** Parameters for creating a log entry */
+export interface CreateLogEntryParams {
+  provider: string;
+  model: string;
+  endpoint: string;
+
+  // Semantic fields
+  type?: LogEntry["type"];
+  toolName?: string;
+  toolInput?: Record<string, any>;
+  toolOutput?: any;
+  phase?: number;
+  stage?: string;
+  imagePrompt?: string;
+  imageResolution?: string;
+
+  // Common fields
+  usage?: TokenUsage;
+  toolCalls?: ToolCallRecord[];
+  generationDetails?: LogEntry["generationDetails"];
+  stageInput?: LogEntry["stageInput"];
+  rawResponse?: string;
+  parsedResult?: unknown;
+
+  // Legacy fields
+  request?: any;
+  response?: any;
+}
+
+/** Infer log type from endpoint string */
+function inferLogType(endpoint: string): LogEntry["type"] {
+  if (endpoint === "tool_execution") return "tool";
+  if (endpoint.startsWith("outline-")) return "outline";
+  if (endpoint.startsWith("summary-")) return "summary";
+  if (endpoint === "generateImage" || endpoint === "image") return "image";
+  if (endpoint.includes("error")) return "error";
+  if (endpoint === "agentic_complete") return "turn";
+  return "turn";
+}
+
+/** Extract phase number from outline endpoint */
+function extractPhase(endpoint: string): number | undefined {
+  const match = endpoint.match(/outline-phase(\d+)/);
+  return match ? parseInt(match[1], 10) : undefined;
+}
+
+/** Extract stage from summary endpoint */
+function extractStage(endpoint: string): string | undefined {
+  const match = endpoint.match(/summary-(.+)/);
+  return match ? match[1] : undefined;
+}
+
+export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
+  const {
+    provider,
+    model,
+    endpoint,
+    type,
+    toolName,
+    toolInput,
+    toolOutput,
+    phase,
+    stage,
+    imagePrompt,
+    imageResolution,
+    usage,
+    toolCalls,
+    generationDetails,
+    stageInput,
+    rawResponse,
+    parsedResult,
+    request,
+    response,
+  } = params;
+
+  // Auto-infer type and extract phase/stage if not provided
+  const inferredType = type ?? inferLogType(endpoint);
+  const inferredPhase = phase ?? extractPhase(endpoint);
+  const inferredStage = stage ?? extractStage(endpoint);
+
   const entry: LogEntry = {
     id: Date.now().toString() + Math.random().toString(36).substring(7),
     timestamp: Date.now(),
     provider,
     model,
     endpoint,
-    request: req,
-    response: res as Record<string, unknown>,
-    parsedResult: parsedResult as Record<string, unknown>,
+    type: inferredType,
+    toolName,
+    toolInput,
+    toolOutput,
+    phase: inferredPhase,
+    stage: inferredStage,
+    imagePrompt,
+    imageResolution,
     usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     toolCalls,
     generationDetails,
     stageInput,
     rawResponse,
+    parsedResult: parsedResult as Record<string, unknown>,
+    request,
+    response,
   };
+
   console.log(`[Log] ${provider}/${model} - ${endpoint}`, {
+    type: entry.type,
+    toolName: entry.toolName,
     usage: entry.usage,
-    hasRequest: !!req,
-    hasResponse: !!res,
-    hasParsedResult: !!parsedResult,
     toolCallCount: toolCalls?.length || 0,
-    requestData: req,
-    responseData: res,
   });
+
   return entry;
 };
 

@@ -366,19 +366,16 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
       },
     );
 
-    const logEntry = createLogEntry(
-      instance.protocol,
-      modelId,
-      `outline-phase${phaseNum}`,
-      { tool: phaseTool.name, retries: resp.retries },
-      resp.raw,
-      resp.usage,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+    const logEntry = createLogEntry({
+      provider: instance.protocol,
+      model: modelId,
+      endpoint: `outline-phase${phaseNum}`,
+      phase: phaseNum,
+      toolName: phaseTool.name,
+      response: resp.raw,
+      usage: resp.usage,
+      request: { retries: resp.retries },
+    });
 
     return { result: resp.result, log: logEntry };
   };
@@ -784,13 +781,13 @@ export const summarizeContext = async (
     return {
       summary: null,
       logs: [
-        createLogEntry(
-          providerInfo?.instance.protocol || "openai",
-          providerInfo?.modelId || "unknown",
-          "summary-error",
-          { error: error.message },
-          null,
-        ),
+        createLogEntry({
+          provider: providerInfo?.instance.protocol || "openai",
+          model: providerInfo?.modelId || "unknown",
+          endpoint: "summary-error",
+          stage: "error",
+          request: { error: error.message },
+        }),
       ],
       error: error.message,
     };

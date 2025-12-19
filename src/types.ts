@@ -498,12 +498,47 @@ export interface ToolCallRecord {
   timestamp: number;
 }
 
+/** Log entry types for display categorization */
+export type LogEntryType =
+  | "tool" // Single tool execution
+  | "turn" // Complete turn with multiple tools
+  | "outline" // Outline generation phase
+  | "summary" // Summary generation
+  | "image" // Image generation
+  | "error"; // Error log
+
 export interface LogEntry {
   id: string;
   timestamp: number;
   provider: string;
   model: string;
   endpoint: string;
+
+  /** Log type for UI categorization (auto-inferred if not provided) */
+  type?: LogEntryType;
+
+  // === Semantic fields for specific log types ===
+
+  /** Tool name (for type="tool") */
+  toolName?: string;
+  /** Tool input arguments (for type="tool") */
+  toolInput?: Record<string, any>;
+  /** Tool output (for type="tool") */
+  toolOutput?: any;
+
+  /** Outline phase number 1-9 (for type="outline") */
+  phase?: number;
+
+  /** Summary stage e.g. "query", "complete" (for type="summary") */
+  stage?: string;
+
+  /** Image prompt (for type="image") */
+  imagePrompt?: string;
+  /** Image resolution (for type="image") */
+  imageResolution?: string;
+
+  // === Common fields ===
+
   // For agentic mode: array of tool calls in this turn
   toolCalls?: ToolCallRecord[];
   // Legacy fields for non-agentic mode
