@@ -63,6 +63,13 @@ import {
   extractJson,
 } from "../../utils";
 
+import { ATMOSPHERE_DESCRIPTIONS } from "../../../../utils/constants/atmosphereDescriptions";
+import {
+  envThemeSchema,
+  ambienceSchema,
+  weatherEffectSchema,
+} from "../../../zodSchemas";
+
 import { buildCacheHint } from "../../provider/cacheHint";
 import { callWithAgenticRetry } from "../retry";
 
@@ -985,6 +992,12 @@ export function executeToolCall(
   }
   if (name === "query_recent_context") {
     return executeQueryRecentContext(args, gameState, settings);
+  }
+  if (name === "query_atmosphere_enums") {
+    return executeQueryAtmosphereEnums(args);
+  }
+  if (name === "query_atmosphere_enum_description") {
+    return executeQueryAtmosphereEnumDescription(args);
   }
 
   // ============================================================================
@@ -2228,5 +2241,66 @@ function executeQueryRecentContext(
       beyondContextCount > 0
         ? `Showing ${segments.length} segments (${beyondContextCount} beyond context + ${Math.min(segmentsInContext, segments.length)} already in context). Total segments: ${currentFork.length}.`
         : `All requested segments are in your context. The last ${segmentsInContext} segments are always in <recent_narrative>.`,
+  };
+}
+
+/**
+ * Executes query_atmosphere_enums tool
+ */
+function executeQueryAtmosphereEnums(args: Record<string, unknown>): unknown {
+  const categories = (args.categories as string[]) || [
+    "envTheme",
+    "ambience",
+    "weather",
+  ];
+  const result: Record<string, string[]> = {};
+
+  if (categories.includes("envTheme")) {
+    result.envTheme = envThemeSchema.options;
+  }
+  if (categories.includes("ambience")) {
+    result.ambience = ambienceSchema.options;
+  }
+  if (categories.includes("weather")) {
+    result.weather = weatherEffectSchema.options;
+  }
+
+  return {
+    success: true,
+    categories: Object.keys(result),
+    enums: result,
+    hint: "Use 'query_atmosphere_enum_description' to see what these values actually do.",
+  };
+}
+
+/**
+ * Executes query_atmosphere_enum_description tool
+ */
+function executeQueryAtmosphereEnumDescription(
+  args: Record<string, unknown>,
+): unknown {
+  const items = args.items as Array<{
+    category: "envTheme" | "ambience" | "weather";
+    value: string;
+  }>;
+
+  if (!items || !Array.isArray(items)) {
+    return { success: false, error: "Invalid items parameter" };
+  }
+
+  const results = items.map((item) => {
+    const categoryDesc = (ATMOSPHERE_DESCRIPTIONS as any)[item.category];
+    const description = categoryDesc ? categoryDesc[item.value] : undefined;
+
+    return {
+      category: item.category,
+      value: item.value,
+      description: description || "No description available for this value.",
+    };
+  });
+
+  return {
+    success: true,
+    results,
   };
 }

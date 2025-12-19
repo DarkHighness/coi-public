@@ -409,6 +409,42 @@ export const QUERY_GLOBAL_TOOL = defineTool({
   }),
 });
 
+/**
+ * Query available atmosphere enums.
+ * Use this when you need to know the valid values for envTheme, ambience, or weather.
+ */
+export const QUERY_ATMOSPHERE_ENUMS_TOOL = defineTool({
+  name: "query_atmosphere_enums",
+  description:
+    "Get available enums for atmosphere (envTheme, ambience, weather). Use this to see valid options before setting atmosphere.",
+  parameters: z.object({
+    categories: z
+      .array(z.enum(["envTheme", "ambience", "weather"]))
+      .optional()
+      .describe("Enum categories to query. Omit to query all."),
+  }),
+});
+
+/**
+ * Query descriptions for specific atmosphere enums.
+ * Use this to understand the visual or audio effect of specific options.
+ */
+export const QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL = defineTool({
+  name: "query_atmosphere_enum_description",
+  description:
+    "Get detailed descriptions for specific atmosphere values to help choose the best aesthetic or audio match.",
+  parameters: z.object({
+    items: z
+      .array(
+        z.object({
+          category: z.enum(["envTheme", "ambience", "weather"]),
+          value: z.string().describe("The specific enum value to describe."),
+        }),
+      )
+      .describe("List of items to query descriptions for."),
+  }),
+});
+
 // Character Query Tools
 export const QUERY_CHARACTER_PROFILE_TOOL = defineTool({
   name: "query_character_profile",
@@ -1536,6 +1572,10 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
     QUERY_RECENT_CONTEXT_TOOL,
   ],
   "query:rag": [RAG_SEARCH_TOOL],
+  "query:atmosphere": [
+    QUERY_ATMOSPHERE_ENUMS_TOOL,
+    QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL,
+  ],
 };
 
 /**
@@ -1594,6 +1634,8 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   QUERY_CAUSAL_CHAIN_TOOL,
   QUERY_FACTIONS_TOOL,
   QUERY_GLOBAL_TOOL,
+  QUERY_ATMOSPHERE_ENUMS_TOOL,
+  QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL,
   QUERY_CHARACTER_PROFILE_TOOL,
   QUERY_CHARACTER_ATTRIBUTES_TOOL,
   QUERY_CHARACTER_SKILLS_TOOL,
@@ -1906,6 +1948,12 @@ export type QuerySummaryParams = InferToolParams<typeof QUERY_SUMMARY_TOOL>;
 export type QueryRecentContextParams = InferToolParams<
   typeof QUERY_RECENT_CONTEXT_TOOL
 >;
+export type QueryAtmosphereEnumsParams = InferToolParams<
+  typeof QUERY_ATMOSPHERE_ENUMS_TOOL
+>;
+export type QueryAtmosphereEnumDescriptionParams = InferToolParams<
+  typeof QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL
+>;
 
 // Unlock Tool Types
 export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
@@ -1936,6 +1984,8 @@ export interface ToolParamsMap {
   query_turn: QueryTurnParams;
   query_summary: QuerySummaryParams;
   query_recent_context: QueryRecentContextParams;
+  query_atmosphere_enums: QueryAtmosphereEnumsParams;
+  query_atmosphere_enum_description: QueryAtmosphereEnumDescriptionParams;
 
   // Query tools
   query_inventory: QueryInventoryParams;

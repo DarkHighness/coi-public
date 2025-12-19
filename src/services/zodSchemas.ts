@@ -313,6 +313,13 @@ export const envThemeSchema = z.enum([
   "cyan",
   "silver",
   "obsidian",
+  "gothic",
+  "academy",
+  "apocalypse",
+  "steampunk",
+  "liminal",
+  "foundation",
+  "abyssal",
 ]);
 
 /** 音频氛围枚举 */
@@ -373,10 +380,10 @@ export const weatherEffectSchema = z.enum([
 /** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
 export const atmosphereSchema = z.object({
   envTheme: envThemeSchema.describe(
-    "The visual theme/color palette for UI rendering.",
+    "Visual theme (colors/fonts). If unsure about available values, use 'query_atmosphere_enums' and 'query_atmosphere_enum_description'.",
   ),
   ambience: ambienceSchema.describe(
-    "The audio ambience/environment for sound effects and music.",
+    "Audio background/environment. If unsure about available values, use 'query_atmosphere_enums' and 'query_atmosphere_enum_description'.",
   ),
   weather: weatherEffectSchema
     .nullish()
