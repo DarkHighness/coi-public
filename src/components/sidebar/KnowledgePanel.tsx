@@ -287,10 +287,16 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const safeKnowledge = Array.isArray(knowledge) ? knowledge : [];
-  const DISPLAY_LIMIT = 4; // Show limited number in sidebar
 
-  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
-    useListManagement(safeKnowledge, listState, onUpdateList, DISPLAY_LIMIT);
+  const {
+    visibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(safeKnowledge, listState, onUpdateList);
 
   const toggleKnowledge = (
     knowledgeId: string | number,
@@ -400,7 +406,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             )}
           </button>
 
-          {allItems.length > DISPLAY_LIMIT && (
+          {allItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -460,8 +466,6 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
                 isModal={false}
                 onToggle={toggleKnowledge}
                 t={t}
-                isPinned={isPinned(k.id)}
-                onPin={() => togglePin(k.id)}
                 onDragStart={
                   isEditMode ? (e) => handleDragStart(e, k.id) : undefined
                 }
@@ -486,6 +490,10 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
         themeFont={themeFont}
         enableEditMode={true}
         onReorderItem={reorderItem}
+        onTogglePin={togglePin}
+        isPinned={isPinned}
+        onToggleHide={toggleHide}
+        isHidden={isHidden}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
@@ -501,8 +509,6 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             isModal={true}
             onToggle={toggleKnowledge}
             t={t}
-            isPinned={isPinned(item.id)}
-            onPin={() => togglePin(item.id)}
             isEditMode={dragOptions?.isEditMode}
             isDragging={dragOptions?.isDragging}
             onDragStart={dragOptions?.onDragStart}

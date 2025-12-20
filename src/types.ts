@@ -594,6 +594,7 @@ export type CharacterCondition = Condition;
 export interface ListState {
   pinnedIds: string[];
   customOrder: string[];
+  hiddenIds?: string[]; // Items hidden from sidebar (user-controlled)
 }
 
 export interface UIState {

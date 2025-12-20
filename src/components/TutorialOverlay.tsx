@@ -72,9 +72,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-theme-border bg-gradient-to-r from-theme-surface-highlight/50 to-transparent">
           <div className="flex items-center justify-between">
-            <h2
-              className={`text-xl font-bold text-theme-primary ${themeFont}`}
-            >
+            <h2 className={`text-xl font-bold text-theme-primary ${themeFont}`}>
               {title}
             </h2>
             <button

@@ -66,7 +66,7 @@ export const useTutorialContext = () => {
   const context = useContext(TutorialContext);
   if (!context) {
     throw new Error(
-      "useTutorialContext must be used within a TutorialProvider"
+      "useTutorialContext must be used within a TutorialProvider",
     );
   }
   return context;
@@ -102,7 +102,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
   const hasValidProvider = () => {
     const providers = settings.providers?.instances || [];
     return providers.some(
-      (p) => p.enabled && p.apiKey && p.apiKey.trim() !== ""
+      (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
     );
   };
 
@@ -130,7 +130,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     },
-    [currentStep?.targetId]
+    [currentStep?.targetId],
   );
 
   const unregisterTarget = useCallback((id: string) => {
@@ -151,7 +151,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
       // Fallback: query DOM directly
       if (!element) {
         element = document.querySelector(
-          `[data-tutorial-id="${currentStep.targetId}"]`
+          `[data-tutorial-id="${currentStep.targetId}"]`,
         ) as HTMLElement | null;
       }
 
@@ -278,7 +278,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
         actionListeners.current.delete(callback);
       };
     },
-    []
+    [],
   );
 
   const value: TutorialContextType = {

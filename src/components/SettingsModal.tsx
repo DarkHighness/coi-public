@@ -41,7 +41,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Tutorial context
   const tutorial = useTutorialContextOptional();
-  const closeButtonRef = useTutorialTarget<HTMLButtonElement>("settings-close-button");
+  const closeButtonRef = useTutorialTarget<HTMLButtonElement>(
+    "settings-close-button",
+  );
 
   // Handle close with tutorial advancement
   const handleClose = () => {
@@ -87,7 +89,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1" data-tutorial-id="settings-modal-content">
+        <div
+          className="p-6 space-y-6 overflow-y-auto flex-1"
+          data-tutorial-id="settings-modal-content"
+        >
           {activeTab === "providers" && (
             <SettingsProviders showToast={showToast} />
           )}

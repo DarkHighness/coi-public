@@ -30,7 +30,7 @@ export const useTutorialTarget = <T extends HTMLElement>(targetId: string) => {
 export const useTutorialAction = (
   actionId: string,
   callback: () => void,
-  deps: React.DependencyList = []
+  deps: React.DependencyList = [],
 ) => {
   const tutorial = useTutorialContextOptional();
 

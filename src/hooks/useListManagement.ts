@@ -5,11 +5,14 @@ export function useListManagement<T extends { id: string | number }>(
   items: T[],
   listState: ListState,
   onUpdate: (newState: ListState) => void,
-  defaultLimit: number = 5,
 ) {
   // Fallback for initial load or missing state
-  const safeListState = listState || { pinnedIds: [], customOrder: [] };
-  const { pinnedIds, customOrder } = safeListState;
+  const safeListState = listState || {
+    pinnedIds: [],
+    customOrder: [],
+    hiddenIds: [],
+  };
+  const { pinnedIds, customOrder, hiddenIds = [] } = safeListState;
 
   const togglePin = useCallback(
     (id: string | number) => {
@@ -24,6 +27,21 @@ export function useListManagement<T extends { id: string | number }>(
       });
     },
     [pinnedIds, safeListState, onUpdate],
+  );
+
+  const toggleHide = useCallback(
+    (id: string | number) => {
+      const idStr = id.toString();
+      const newHiddenIds = hiddenIds.includes(idStr)
+        ? hiddenIds.filter((h) => h !== idStr)
+        : [...hiddenIds, idStr];
+
+      onUpdate({
+        ...safeListState,
+        hiddenIds: newHiddenIds,
+      });
+    },
+    [hiddenIds, safeListState, onUpdate],
   );
 
   const reorderItem = useCallback(
@@ -88,10 +106,10 @@ export function useListManagement<T extends { id: string | number }>(
     return 0;
   });
 
-  const pinnedItems = sortedItems.filter((i) => i.isPinned);
-
-  const effectiveLimit = Math.max(defaultLimit, pinnedItems.length);
-  const visibleItems = sortedItems.slice(0, effectiveLimit);
+  // Filter out hidden items for sidebar display
+  const visibleItems = sortedItems.filter(
+    (item) => !hiddenIds.includes(item.id.toString()),
+  );
   const allItems = sortedItems;
 
   const isPinned = useCallback(
@@ -99,11 +117,18 @@ export function useListManagement<T extends { id: string | number }>(
     [pinnedIds],
   );
 
+  const isHidden = useCallback(
+    (id: string | number) => hiddenIds.includes(id.toString()),
+    [hiddenIds],
+  );
+
   return {
     visibleItems,
     allItems,
     togglePin,
+    toggleHide,
     reorderItem,
     isPinned,
+    isHidden,
   };
 }

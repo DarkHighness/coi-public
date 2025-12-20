@@ -32,7 +32,7 @@ export const TutorialSpotlight: React.FC = () => {
   } = useTutorialContext();
 
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(
-    null
+    null,
   );
   const [tooltipPosition, setTooltipPosition] = useState<{
     top: number;
@@ -173,7 +173,9 @@ export const TutorialSpotlight: React.FC = () => {
                 <span className="text-2xl">{currentStep.icon}</span>
               )}
               <div>
-                <h3 className="font-bold text-theme-text">{currentStep.title}</h3>
+                <h3 className="font-bold text-theme-text">
+                  {currentStep.title}
+                </h3>
                 <div className="text-xs text-theme-muted">
                   {t("tutorial.step", "Step")} {currentStepIndex + 1} /{" "}
                   {currentFlow.steps.length}

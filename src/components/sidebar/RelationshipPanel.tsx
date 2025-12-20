@@ -29,8 +29,8 @@ interface RelationshipItemProps {
   onDragOver: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onDrop: (e: React.DragEvent, id: string | number) => void;
-  onTogglePin: (id: string | number) => void;
-  isPinned: (id: string | number) => boolean;
+  onTogglePin?: (id: string | number) => void;
+  isPinned?: (id: string | number) => boolean;
   getAffinityColor: (val: number) => string;
   t: TFunction;
 }
@@ -54,7 +54,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
   t,
 }) => {
   const isUnknown = rel.visible?.affinityKnown === false;
-  const pinned = isPinned(rel.id);
+  const pinned = isPinned?.(rel.id) ?? false;
   const isDragging = draggedId === rel.id;
   const isExpanded = expandedItems.has(rel.id);
   const [isHighlight, setIsHighlight] = useState(rel.highlight || false);
@@ -130,35 +130,6 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
             >
               {rel.visible?.relationshipType || "Unknown"}
             </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onTogglePin(rel.id);
-              }}
-              className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-                pinned
-                  ? "text-theme-primary"
-                  : "text-theme-muted hover:text-theme-text opacity-0 group-hover/item:opacity-100"
-              }`}
-              title={pinned ? "Unpin" : "Pin to top"}
-            >
-              <svg
-                className="w-4 h-4"
-                fill={pinned ? "currentColor" : "none"}
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                ></path>
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -478,7 +449,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none self-stretch flex items-center justify-center"
+          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
           draggable={true}
           onDragStart={(e) => onDragStart(e, rel.id)}
@@ -529,7 +500,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   };
 
   const safeRelationships = Array.isArray(relationships) ? relationships : [];
-  const DISPLAY_LIMIT = 5;
 
   // Map relationships to include ID for useListManagement
   const relationshipsWithId = useMemo(() => {
@@ -544,13 +514,15 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
 
-  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
-    useListManagement(
-      relationshipsWithId,
-      listState,
-      onUpdateList,
-      DISPLAY_LIMIT,
-    );
+  const {
+    visibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(relationshipsWithId, listState, onUpdateList);
 
   const getAffinityColor = (val: number) => {
     if (val >= 80) return "bg-green-500"; // Love/Loyal
@@ -666,7 +638,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > DISPLAY_LIMIT && (
+          {allItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -737,8 +709,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
                   onDrop={handleDrop}
-                  onTogglePin={togglePin}
-                  isPinned={isPinned}
                   getAffinityColor={getAffinityColor}
                   t={t}
                 />
@@ -755,6 +725,10 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
         themeFont={themeFont}
         enableEditMode={true}
         onReorderItem={reorderItem}
+        onTogglePin={togglePin}
+        isPinned={isPinned}
+        onToggleHide={toggleHide}
+        isHidden={isHidden}
         searchFilter={(item, query) =>
           (item.visible?.name || "")
             .toLowerCase()
@@ -778,8 +752,6 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
             onDragOver={dragOptions?.onDragOver || (() => {})}
             onDragEnd={dragOptions?.onDragEnd || (() => {})}
             onDrop={dragOptions?.onDrop || (() => {})}
-            onTogglePin={togglePin}
-            isPinned={isPinned}
             getAffinityColor={getAffinityColor}
             t={t}
           />

@@ -29,10 +29,16 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const safeInventory = Array.isArray(inventory) ? inventory : [];
-  const DISPLAY_LIMIT = 5;
 
-  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
-    useListManagement(safeInventory, listState, onUpdateList, DISPLAY_LIMIT);
+  const {
+    visibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(safeInventory, listState, onUpdateList);
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     const idStr = id.toString();
@@ -138,7 +144,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > DISPLAY_LIMIT && (
+          {allItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -196,8 +202,6 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 item={item}
                 language={LANG_MAP[i18n.language as "en" | "zh"]}
                 context={itemContext}
-                isPinned={isPinned(item.id)}
-                onPin={() => togglePin(item.id)}
                 onDragStart={
                   isEditMode ? (e) => handleDragStart(e, item.id) : undefined
                 }
@@ -222,6 +226,10 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
         themeFont={themeFont}
         enableEditMode={true}
         onReorderItem={reorderItem}
+        onTogglePin={togglePin}
+        isPinned={isPinned}
+        onToggleHide={toggleHide}
+        isHidden={isHidden}
         searchFilter={(item: any, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
@@ -234,8 +242,6 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             item={item}
             language={LANG_MAP[i18n.language as "en" | "zh"]}
             context={itemContext}
-            isPinned={isPinned(item.id)}
-            onPin={() => togglePin(item.id)}
             isEditMode={dragOptions?.isEditMode}
             isDragging={dragOptions?.isDragging}
             onDragStart={dragOptions?.onDragStart}

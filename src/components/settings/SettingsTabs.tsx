@@ -22,7 +22,11 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
 
   const handleTabClick = (tab: Tab) => {
     // If tutorial is on the "models-tab" step, advance it to model selection step
-    if (tutorial?.isActive && tutorial.currentStep?.id === "models-tab" && tab === "models") {
+    if (
+      tutorial?.isActive &&
+      tutorial.currentStep?.id === "models-tab" &&
+      tab === "models"
+    ) {
       tutorial.markStepActionComplete();
       tutorial.nextStep(); // Move to model selection step
     }

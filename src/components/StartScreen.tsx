@@ -113,14 +113,17 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const tutorial = useTutorialContextOptional();
 
   // Tutorial target refs
-  const settingsButtonRef = useTutorialTarget<HTMLButtonElement>("settings-button");
-  const startButtonRef = useTutorialTarget<HTMLButtonElement>("start-adventure-button");
+  const settingsButtonRef =
+    useTutorialTarget<HTMLButtonElement>("settings-button");
+  const startButtonRef = useTutorialTarget<HTMLButtonElement>(
+    "start-adventure-button",
+  );
 
   // Check if valid provider and model are configured
   const hasValidProvider = () => {
     const providers = settings.providers?.instances || [];
     return providers.some(
-      (p) => p.enabled && p.apiKey && p.apiKey.trim() !== ""
+      (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
     );
   };
 
@@ -225,7 +228,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             ref={settingsButtonRef}
             onClick={() => {
               // If this is the tutorial step for opening settings, advance the tutorial
-              if (tutorial?.isActive && tutorial.currentStep?.id === "open-settings") {
+              if (
+                tutorial?.isActive &&
+                tutorial.currentStep?.id === "open-settings"
+              ) {
                 tutorial.markStepActionComplete();
                 tutorial.nextStep();
               }

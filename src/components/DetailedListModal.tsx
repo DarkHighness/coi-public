@@ -24,6 +24,12 @@ interface DetailedListModalProps<T extends { id: string | number }> {
   // Optional: enable edit mode support
   enableEditMode?: boolean;
   onReorderItem?: (dragId: string, hoverId: string) => void;
+  // Pin support
+  onTogglePin?: (id: string | number) => void;
+  isPinned?: (id: string | number) => boolean;
+  // Visibility toggle support
+  onToggleHide?: (id: string | number) => void;
+  isHidden?: (id: string | number) => boolean;
 }
 
 export function DetailedListModal<T extends { id: string | number }>({
@@ -36,11 +42,16 @@ export function DetailedListModal<T extends { id: string | number }>({
   themeFont,
   enableEditMode = false,
   onReorderItem,
+  onTogglePin,
+  isPinned,
+  onToggleHide,
+  isHidden,
 }: DetailedListModalProps<T>) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | number | null>(null);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
@@ -74,6 +85,11 @@ export function DetailedListModal<T extends { id: string | number }>({
     setDraggedId(null);
   };
 
+  const handleItemClick = (id: string | number) => {
+    if (!isEditMode) return;
+    setSelectedId(selectedId === id ? null : id);
+  };
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -89,7 +105,10 @@ export function DetailedListModal<T extends { id: string | number }>({
           <div className="flex items-center gap-2">
             {enableEditMode && (
               <button
-                onClick={() => setIsEditMode(!isEditMode)}
+                onClick={() => {
+                  setIsEditMode(!isEditMode);
+                  setSelectedId(null);
+                }}
                 className={`p-2 rounded transition-colors ${
                   isEditMode
                     ? "bg-theme-primary text-theme-bg"
@@ -179,30 +198,176 @@ export function DetailedListModal<T extends { id: string | number }>({
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain">
           {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
-              <div key={item.id}>
-                {renderItem(
-                  item,
-                  enableEditMode
-                    ? {
-                        isEditMode,
-                        isDragging: draggedId === item.id.toString(),
-                        onDragStart: (e) => handleDragStart(e, item.id),
-                        onDragEnter: (e) => handleDragEnter(e, item.id),
-                        onDragOver: handleDragOver,
-                        onDrop: handleDrop,
-                        onDragEnd: handleDragEnd,
-                      }
-                    : undefined,
-                )}
-              </div>
-            ))
+            filteredItems.map((item) => {
+              const itemPinned = isPinned?.(item.id);
+              const itemHidden = isHidden?.(item.id);
+              const isSelected = selectedId === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`relative transition-all ${
+                    itemHidden ? "opacity-50" : ""
+                  } ${isEditMode ? "cursor-pointer" : ""} ${
+                    isSelected ? "ring-2 ring-theme-primary rounded-lg" : ""
+                  }`}
+                  onClick={() => handleItemClick(item.id)}
+                >
+                  {/* Status indicators */}
+                  {(itemPinned || itemHidden) && (
+                    <div className="absolute -top-1 -right-1 z-10 flex gap-1">
+                      {itemPinned && (
+                        <span className="w-5 h-5 bg-theme-primary text-theme-bg rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                        </span>
+                      )}
+                      {itemHidden && (
+                        <span className="w-5 h-5 bg-theme-muted text-theme-bg rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                            />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {renderItem(
+                    item,
+                    enableEditMode
+                      ? {
+                          isEditMode,
+                          isDragging: draggedId === item.id.toString(),
+                          onDragStart: (e) => handleDragStart(e, item.id),
+                          onDragEnter: (e) => handleDragEnter(e, item.id),
+                          onDragOver: handleDragOver,
+                          onDrop: handleDrop,
+                          onDragEnd: handleDragEnd,
+                        }
+                      : undefined,
+                  )}
+
+                  {/* Action bar when selected in edit mode */}
+                  {isEditMode && isSelected && (
+                    <div className="mt-2 p-2 bg-theme-surface-highlight rounded-lg border border-theme-border flex flex-wrap gap-2 justify-center animate-fade-in">
+                      {onTogglePin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTogglePin(item.id);
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                            itemPinned
+                              ? "bg-theme-primary text-theme-bg"
+                              : "bg-theme-surface border border-theme-border text-theme-text hover:border-theme-primary"
+                          }`}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill={itemPinned ? "currentColor" : "none"}
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                            />
+                          </svg>
+                          {itemPinned
+                            ? t("unpin") || "Unpin"
+                            : t("pinToTop") || "Pin"}
+                        </button>
+                      )}
+                      {onToggleHide && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleHide(item.id);
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                            itemHidden
+                              ? "bg-theme-muted text-theme-bg"
+                              : "bg-theme-surface border border-theme-border text-theme-text hover:border-theme-primary"
+                          }`}
+                        >
+                          {itemHidden ? (
+                            <>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                              {t("showInSidebar") || "Show"}
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                                />
+                              </svg>
+                              {t("hideFromSidebar") || "Hide"}
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <div className="text-center text-theme-muted py-8 italic">
               {t("noResults") || "No results found."}
             </div>
           )}
         </div>
+
+        {/* Edit mode hint for mobile */}
+        {isEditMode && (
+          <div className="sm:hidden px-4 py-2 bg-theme-surface-highlight/50 text-center text-xs text-theme-muted border-t border-theme-border">
+            {t("tapToSelect") || "Tap an item to edit"}
+          </div>
+        )}
 
         {/* Footer (Mobile only close button for easier reach) */}
         <div className="sm:hidden p-4 border-t border-theme-border bg-theme-surface">

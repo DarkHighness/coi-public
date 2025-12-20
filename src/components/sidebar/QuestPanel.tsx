@@ -33,10 +33,16 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     (q) => q.status === "active" && q.type !== "hidden",
   );
   const safeQuests = Array.isArray(activeQuests) ? activeQuests : [];
-  const DISPLAY_LIMIT = 3; // Lower limit for quests as they are large
 
-  const { visibleItems, allItems, togglePin, reorderItem, isPinned } =
-    useListManagement(safeQuests, listState, onUpdateList, DISPLAY_LIMIT);
+  const {
+    visibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(safeQuests, listState, onUpdateList);
 
   const toggleQuest = (questId: string | number, isModal: boolean = false) => {
     const idStr = questId.toString();
@@ -370,7 +376,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > DISPLAY_LIMIT && (
+          {allItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -428,8 +434,6 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             ) : (
               visibleItems.map((q) =>
                 renderQuest(q, expandedQuests, false, {
-                  isPinned: isPinned(q.id),
-                  onPin: () => togglePin(q.id),
                   onDragStart: isEditMode
                     ? (e) => handleDragStart(e, q.id)
                     : undefined,
@@ -454,6 +458,10 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         themeFont={themeFont}
         enableEditMode={true}
         onReorderItem={reorderItem}
+        onTogglePin={togglePin}
+        isPinned={isPinned}
+        onToggleHide={toggleHide}
+        isHidden={isHidden}
         searchFilter={(item, query) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
@@ -462,8 +470,6 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         }
         renderItem={(item, dragOptions) =>
           renderQuest(item, modalExpandedQuests, true, {
-            isPinned: isPinned(item.id),
-            onPin: () => togglePin(item.id),
             onDragStart: dragOptions?.onDragStart,
             onDragEnter: dragOptions?.onDragEnter,
             onDragOver: dragOptions?.onDragOver,

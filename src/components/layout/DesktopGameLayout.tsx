@@ -101,7 +101,10 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
 
   const getMainContentWidthClass = () => {
     // When one panel is expanded to 1/3, main content is 2/3
-    if ((sidebarCollapsed && !timelineCollapsed) || (!sidebarCollapsed && timelineCollapsed)) {
+    if (
+      (sidebarCollapsed && !timelineCollapsed) ||
+      (!sidebarCollapsed && timelineCollapsed)
+    ) {
       return "w-2/3";
     }
     return "flex-1"; // Default flexible width
@@ -192,7 +195,10 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className={`${getMainContentWidthClass()} flex flex-col relative h-full min-w-0`} data-tutorial-id="story-feed-area">
+      <div
+        className={`${getMainContentWidthClass()} flex flex-col relative h-full min-w-0`}
+        data-tutorial-id="story-feed-area"
+      >
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <StoryFeed
             ref={storyFeedRef}

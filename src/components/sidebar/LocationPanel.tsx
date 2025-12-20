@@ -4,6 +4,7 @@ import { Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { DetailedListModal } from "../DetailedListModal";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -29,8 +30,8 @@ interface LocationItemProps {
   onDragEnter: (e: React.DragEvent, id: string) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragEnd: () => void;
-  onTogglePin: (id: string) => void;
-  isPinned: (id: string) => boolean;
+  onTogglePin?: (id: string) => void;
+  isPinned?: (id: string) => boolean;
   t: any;
 }
 
@@ -51,7 +52,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
   const isExpanded = expandedLocations.has(item.name);
   const locationData = item.data;
   const isCurrent = item.isCurrent;
-  const pinned = isPinned(item.id);
+  const pinned = isPinned?.(item.id) ?? false;
   const isDragging = draggedId === item.id;
   const [isHighlight, setIsHighlight] = useState(
     locationData.highlight || false,
@@ -107,37 +108,6 @@ const LocationItem: React.FC<LocationItemProps> = ({
                 </svg>
               )}
             </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                onTogglePin(item.id);
-              }}
-              className={`p-1 rounded hover:bg-theme-bg transition-colors ${
-                pinned
-                  ? "text-theme-primary"
-                  : "text-theme-muted hover:text-theme-text opacity-0 group-hover:opacity-100"
-              }`}
-              title={
-                pinned ? t("unpin") || "Unpin" : t("pinToTop") || "Pin to top"
-              }
-            >
-              <svg
-                className="w-4 h-4"
-                fill={pinned ? "currentColor" : "none"}
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                ></path>
-              </svg>
-            </div>
           </div>
         </button>
 
@@ -476,10 +446,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border border-theme-border rounded touch-none shrink-0"
+          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
           draggable={true}
           onDragStart={(e) => onDragStart(e, item.id)}
+          onClick={(e) => e.stopPropagation()}
         >
           <svg
             className="w-4 h-4"
@@ -514,6 +485,10 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   );
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalExpandedLocations, setModalExpandedLocations] = useState<
+    Set<string>
+  >(new Set());
 
   // Filter known locations and map to objects with ID for list management
   const locationItems = useMemo(() => {
@@ -525,12 +500,15 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     }));
   }, [currentLocation, locations]);
 
-  const { visibleItems, togglePin, reorderItem, isPinned } = useListManagement(
-    locationItems,
-    listState,
-    onUpdateList,
-    5,
-  );
+  const {
+    visibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(locationItems, listState, onUpdateList);
 
   const handleLocationClick = (locationName: string) => {
     if (isEditMode) return;
@@ -640,6 +618,31 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             )}
           </button>
 
+          {allItems.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsModalOpen(true);
+              }}
+              className="text-theme-muted hover:text-theme-primary p-1"
+              title={t("viewAll")}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          )}
+
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-theme-muted hover:text-theme-primary p-1"
@@ -687,8 +690,6 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
                   onDragEnter={handleDragEnter}
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
-                  onTogglePin={togglePin}
-                  isPinned={isPinned}
                   t={t}
                 />
               ))
@@ -696,6 +697,51 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
           </div>
         </div>
       </div>
+
+      <DetailedListModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={t("location.title") || "Locations"}
+        items={allItems}
+        themeFont={themeFont}
+        enableEditMode={true}
+        onReorderItem={reorderItem}
+        onTogglePin={togglePin}
+        isPinned={isPinned}
+        onToggleHide={toggleHide}
+        isHidden={isHidden}
+        searchFilter={(item, query) =>
+          item.name.toLowerCase().includes(query.toLowerCase()) ||
+          (item.data.visible?.description || "")
+            .toLowerCase()
+            .includes(query.toLowerCase())
+        }
+        renderItem={(item, dragOptions) => (
+          <LocationItem
+            key={item.id}
+            item={item}
+            expandedLocations={modalExpandedLocations}
+            isEditMode={dragOptions?.isEditMode || false}
+            draggedId={dragOptions?.isDragging ? item.id : null}
+            onLocationClick={(name) => {
+              setModalExpandedLocations((prev) => {
+                const next = new Set(prev);
+                if (next.has(name)) {
+                  next.delete(name);
+                } else {
+                  next.add(name);
+                }
+                return next;
+              });
+            }}
+            onDragStart={(e, id) => dragOptions?.onDragStart?.(e)}
+            onDragEnter={(e, id) => dragOptions?.onDragEnter?.(e)}
+            onDragOver={dragOptions?.onDragOver || (() => {})}
+            onDragEnd={dragOptions?.onDragEnd || (() => {})}
+            t={t}
+          />
+        )}
+      />
     </div>
   );
 };
