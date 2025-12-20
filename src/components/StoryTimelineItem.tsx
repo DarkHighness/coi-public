@@ -145,11 +145,11 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
 
         {/* System Content - Inline compact style */}
         <div
-          className={`text-xs transition-colors relative -top-1 ${isHovered ? "text-theme-text" : "text-theme-muted"}`}
+          className={`text-xs transition-colors relative top-1 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-muted"}`}
         >
           {/* Compact Header */}
           <div
-            className={`flex items-center gap-1.5 mb-1 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-80"}`}
+            className={`flex items-center gap-1.5 mb-1 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-80"}`}
           >
             <svg
               className="w-3 h-3 text-theme-muted"
@@ -164,7 +164,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               ></path>
             </svg>
-            <span className="uppercase tracking-widest text-theme-muted font-medium">
+            <span className="uppercase tracking-widest text-theme-muted font-medium shrink-0">
               {t("timeline.stateChange") || "State Change"}
             </span>
             {segment.stateSnapshot?.time && (
@@ -272,13 +272,13 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
 
       {/* Content */}
       <div
-        className={`text-xs transition-colors relative -top-1 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
+        className={`text-xs transition-colors relative top-1 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
       >
         {/* Time and Location Metadata */}
         <div
-          className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}
+          className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}
         >
-          <span className="font-mono text-theme-primary/70">
+          <span className="font-mono text-theme-primary/70 shrink-0">
             {segment.stateSnapshot?.time ||
               t("timeline.unknown_time") ||
               "Unknown Time"}

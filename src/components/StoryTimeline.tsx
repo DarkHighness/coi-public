@@ -95,7 +95,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
   return (
     <>
-      <div className="h-full flex flex-col p-2 md:p-6 md:border-l border-theme-border bg-theme-surface/60 backdrop-blur-md w-full md:w-72 relative">
+      <div className="h-full flex flex-col p-2 md:p-6 bg-theme-surface/60 backdrop-blur-md w-full relative">
         <h2
           className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 mt-2 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2 relative group`}
         >

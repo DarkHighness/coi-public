@@ -85,6 +85,28 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
 
+  // Calculate dynamic widths based on collapse state
+  // When only one panel is collapsed, the other expands to 1/3 width
+  const getSidebarWidthClass = () => {
+    if (sidebarCollapsed) return "w-0";
+    if (timelineCollapsed) return "w-1/3"; // Expand when timeline is collapsed
+    return "w-80"; // Default fixed width
+  };
+
+  const getTimelineWidthClass = () => {
+    if (timelineCollapsed) return "w-0";
+    if (sidebarCollapsed) return "w-1/3"; // Expand when sidebar is collapsed
+    return "w-72"; // Default fixed width
+  };
+
+  const getMainContentWidthClass = () => {
+    // When one panel is expanded to 1/3, main content is 2/3
+    if ((sidebarCollapsed && !timelineCollapsed) || (!sidebarCollapsed && timelineCollapsed)) {
+      return "w-2/3";
+    }
+    return "flex-1"; // Default flexible width
+  };
+
   const handleGenerateImage = (nodeId: string) => {
     generateImageForNode(nodeId, undefined, true);
   };
@@ -125,9 +147,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Sidebar */}
       <div
         data-tutorial-id="left-sidebar"
-        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? "w-0" : "w-80"
-        }`}
+        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out ${getSidebarWidthClass()}`}
       >
         {/* Sidebar Content - hidden when collapsed */}
         <div className={`h-full ${sidebarCollapsed ? "hidden" : "block"}`}>
@@ -172,7 +192,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative h-full min-w-0" data-tutorial-id="story-feed-area">
+      <div className={`${getMainContentWidthClass()} flex flex-col relative h-full min-w-0`} data-tutorial-id="story-feed-area">
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <StoryFeed
             ref={storyFeedRef}
@@ -216,9 +236,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Timeline */}
       <div
         data-tutorial-id="right-timeline"
-        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out ${
-          timelineCollapsed ? "w-0" : "w-72"
-        }`}
+        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out ${getTimelineWidthClass()}`}
       >
         {/* Timeline Content - hidden when collapsed */}
         <div
