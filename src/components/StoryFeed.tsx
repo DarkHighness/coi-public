@@ -238,6 +238,19 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       }
     }, [currentHistory.length, gameState.activeNodeId, stackItemsPerPage]);
 
+    // Track if we should auto-scroll (sticky bottom behavior)
+    const shouldAutoScroll = useRef(true);
+
+    const handleScroll = () => {
+      if (layout === "scroll" && scrollContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          scrollContainerRef.current;
+        const dist = scrollHeight - scrollTop - clientHeight;
+        // User is "at bottom" if within 50px
+        shouldAutoScroll.current = dist < 50;
+      }
+    };
+
     // Auto-scroll for Scroll Layout
     useEffect(() => {
       if (
@@ -248,14 +261,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         const container = scrollContainerRef.current;
         const content = contentRef.current;
         const observer = new ResizeObserver(() => {
-          // Only scroll if we are already near bottom or if it's a new message
-          // Simple check: if scroll is somewhat near bottom
-          const isNearBottom =
-            container.scrollHeight -
-              container.scrollTop -
-              container.clientHeight <
-            500;
-          if (isNearBottom) {
+          // Only scroll if the user was already at the bottom (sticky)
+          if (shouldAutoScroll.current) {
             container.scrollTo({
               top: container.scrollHeight,
               behavior: "smooth",
@@ -426,6 +433,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
         <div
           ref={scrollContainerRef}
+          onScroll={handleScroll}
           className={`flex-1 overflow-y-auto scroll-smooth relative transition-all duration-300 ${containerPadding} ${textScaleClass}`}
         >
           <div ref={contentRef} className="flex flex-col min-h-full">

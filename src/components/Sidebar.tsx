@@ -240,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 p-6 border-t border-theme-border bg-theme-surface/30 hidden md:block">
+      <div className="shrink-0 px-6 pt-4 pb-2 border-t border-theme-border bg-theme-surface/30 hidden md:block">
         {/* Map and Viewer buttons row */}
         <div className="flex gap-2 mb-4">
           <button
