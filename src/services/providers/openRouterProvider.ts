@@ -284,13 +284,21 @@ export async function generateContent(
         toolChoice,
       };
 
-      // 添加 reasoning_effort 参数 (OpenAI reasoning 模型或兼容模式)
-      // OpenRouter 会自动将 reasoning_effort 转换为各 provider 的原生格式
-      if (options?.reasoningEffort || options?.thinkingLevel) {
-        const reasoningParam =
-          options?.reasoningEffort || options?.thinkingLevel;
-        if (reasoningParam) {
-          requestParams.reasoning_effort = reasoningParam;
+      // Unified Reasoning Parameters (OpenRouter)
+      // Reference: https://openrouter.ai/docs/guides/best-practices/reasoning-tokens
+      if (!options?.disableThinking) {
+        let reasoning: any = undefined;
+
+        if (options?.reasoningEffort) {
+          // OpenAI style effort
+          reasoning = { effort: options.reasoningEffort };
+        } else if (options?.thinkingLevel) {
+          // Map thinkingLevel directly to effort as "low"|"medium"|"high" are valid values
+          reasoning = { effort: options.thinkingLevel };
+        }
+
+        if (reasoning) {
+          requestParams.reasoning = reasoning;
         }
       }
 

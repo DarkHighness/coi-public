@@ -299,7 +299,8 @@ export async function generateContent(
 
       // 计算 thinking budget
       let thinking: { type: "enabled"; budget_tokens: number } | undefined;
-      if (options?.thinkingLevel) {
+      // Enable thinking if specified and not disabled
+      if (options?.thinkingLevel && !options?.disableThinking) {
         const budgetMap = {
           low: 2048,
           medium: 4096,

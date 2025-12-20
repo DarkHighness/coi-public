@@ -443,13 +443,17 @@ export async function generateContent(
         };
 
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
-      if (isReasoning && options?.reasoningEffort) {
+      if (isReasoning && options?.reasoningEffort && !options?.disableThinking) {
         (requestParams as any).reasoning_effort = options.reasoningEffort;
       }
 
       // 兼容模式下的 thinking 参数 (通过 OpenAI 接口调用 Claude/Gemini)
       // 代理服务会将这些参数转换为原生格式
-      if (useCompat && (options?.thinkingLevel || options?.reasoningEffort)) {
+      if (
+        useCompat &&
+        (options?.thinkingLevel || options?.reasoningEffort) &&
+        !options?.disableThinking
+      ) {
         const thinkingParam =
           options?.reasoningEffort || options?.thinkingLevel;
         if (thinkingParam) {

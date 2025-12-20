@@ -1457,6 +1457,9 @@
     "status": "状态"
   },
   "providers": {
+    "disableThinking": "禁用思考/推理",
+    "disableThinkingHelp": "禁用模型的思考/推理能力以节省成本并减少延迟",
+
     "configuration": "提供商配置",
     "addProvider": "添加提供商",
     "addFromTemplate": "从模板添加",

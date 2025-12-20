@@ -77,6 +77,8 @@ export interface ModelInfo extends BaseModelInfo {
 export interface GenerateContentOptions {
   /** Gemini Thinking 模式级别 */
   thinkingLevel?: "low" | "medium" | "high";
+  /** 是否禁用思考/推理能力 */
+  disableThinking?: boolean;
   /** OpenAI Reasoning 模式级别 (o1/o3 系列) */
   reasoningEffort?: "low" | "medium" | "high";
   /** 媒体分辨率 (Gemini Vision) */

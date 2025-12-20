@@ -31,6 +31,7 @@ interface ProviderFormData {
   claudeCompatibility?: boolean;
   claudeMessageFormat?: boolean;
   compatibleImageGeneration?: boolean;
+  disableThinking?: boolean;
 }
 
 type ModalMode = "add" | "edit" | "template" | null;
@@ -63,6 +64,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     claudeCompatibility: false,
     claudeMessageFormat: false,
     compatibleImageGeneration: false,
+    disableThinking: false,
   });
   const [selectedTemplate, setSelectedTemplate] =
     useState<ProviderTemplateKey>("openai");
@@ -172,6 +174,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       claudeMessageFormat: (instance as any).claudeMessageFormat || false,
       compatibleImageGeneration:
         (instance as any).compatibleImageGeneration || false,
+      disableThinking: instance.disableThinking || false,
     });
     setModalMode("edit");
   };
@@ -217,6 +220,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       claudeCompatibility: formData.claudeCompatibility,
       claudeMessageFormat: formData.claudeMessageFormat,
       compatibleImageGeneration: formData.compatibleImageGeneration,
+      disableThinking: formData.disableThinking,
       createdAt: Date.now(),
       lastModified: Date.now(),
     };
@@ -303,6 +307,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             claudeCompatibility: formData.claudeCompatibility,
             claudeMessageFormat: formData.claudeMessageFormat,
             compatibleImageGeneration: formData.compatibleImageGeneration,
+            disableThinking: formData.disableThinking,
             lastModified: Date.now(),
           }
         : inst,
@@ -1026,6 +1031,34 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Disable Thinking Option */}
+                <div className="flex items-start gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="disableThinking"
+                    checked={formData.disableThinking || false}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        disableThinking: e.target.checked,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <label
+                      htmlFor="disableThinking"
+                      className="block text-sm font-medium text-theme-text"
+                    >
+                      {t("providers.disableThinking") || "Disable Thinking"}
+                    </label>
+                    <p className="text-xs text-theme-muted">
+                      {t("providers.disableThinkingHelp") ||
+                        "Disable reasoning/thinking capabilities to save costs and reduce latency"}
+                    </p>
+                  </div>
+                </div>
 
                 {/* Enabled */}
                 <div>

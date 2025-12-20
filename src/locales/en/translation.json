@@ -1489,6 +1489,9 @@
     "status": "Status"
   },
   "providers": {
+    "disableThinking": "Disable Reasoning/Thinking",
+    "disableThinkingHelp": "Disable reasoning/thinking capabilities to save costs and reduce latency",
+
     "configuration": "Provider Configuration",
     "addProvider": "Add Provider",
     "addFromTemplate": "Add from Template",
