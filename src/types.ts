@@ -1122,6 +1122,9 @@ export interface AISettings {
     clearerSearchTool?: boolean; // Return detailed tool info (description, schema) in search results
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)
+    // Tutorial completion flags
+    tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
+    tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed
   };
 }
 

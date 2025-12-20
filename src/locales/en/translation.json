@@ -433,7 +433,75 @@
       "clearerSearchTool": "Clearer Search Tool",
       "clearerSearchToolHelp": "Return detailed tool metadata (description, schema) in search results to help AI discovery.",
       "maxErrorRetries": "Max Error Retries",
-      "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)"
+      "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)",
+      "resetTutorials": "Reset Tutorials",
+      "resetTutorialsHelp": "Show onboarding tutorials again on next visit",
+      "resetTutorialsButton": "Reset"
+    }
+  },
+  "tutorial": {
+    "skip": "Skip",
+    "next": "Next",
+    "previous": "Previous",
+    "done": "Got it!",
+    "step": "Step",
+    "startScreen": {
+      "title": "Welcome to Chronicles of Infinity",
+      "welcome": {
+        "title": "Welcome!",
+        "content": "Welcome to Chronicles of Infinity! This quick guide will help you set up AI providers and start your adventure."
+      },
+      "openSettings": {
+        "title": "Open Settings",
+        "content": "Click the settings icon to configure your AI provider."
+      },
+      "addProvider": {
+        "title": "Add AI Provider",
+        "content": "Click 'Add Provider' to open the setup dialog."
+      },
+      "completeProvider": {
+        "title": "Configure Provider",
+        "content": "Select a provider (e.g., Google Gemini), enter your API key, and click 'Add'. Then click Next."
+      },
+      "modelsTab": {
+        "title": "Select Models",
+        "content": "Click the 'Models' tab to configure your story model."
+      },
+      "selectModel": {
+        "title": "Choose Story Model",
+        "content": "Select a Story Model from the dropdown (e.g., gemini-2.0-flash). Then click Next."
+      },
+      "closeSettings": {
+        "title": "Setup Complete!",
+        "content": "Close settings to start your adventure!"
+      },
+      "chooseTheme": {
+        "title": "Start Your Adventure",
+        "content": "Choose a theme to begin your story! Each theme offers a unique world to explore."
+      }
+    },
+    "gamePage": {
+      "title": "Your Adventure Awaits",
+      "storyFeed": {
+        "title": "Story Feed",
+        "content": "Your narrative unfolds here. Each segment contains AI-generated story and choices."
+      },
+      "sidebar": {
+        "title": "Character & World",
+        "content": "The left sidebar shows your inventory, relationships, quests, and world knowledge."
+      },
+      "timeline": {
+        "title": "Timeline",
+        "content": "The right panel tracks your journey's history and important events."
+      },
+      "actionInput": {
+        "title": "Take Action",
+        "content": "Choose from suggested actions or type your own commands. Be creative!"
+      },
+      "menu": {
+        "title": "Game Menu",
+        "content": "Access settings, save management, and other options through the menu."
+      }
     }
   },
   "narrator": "Narrator",

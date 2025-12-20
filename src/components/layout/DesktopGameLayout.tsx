@@ -124,6 +124,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
     <div className="hidden md:flex flex-1 h-full overflow-hidden relative z-10">
       {/* Desktop Sidebar */}
       <div
+        data-tutorial-id="left-sidebar"
         className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? "w-0" : "w-80"
         }`}
@@ -171,7 +172,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative h-full min-w-0">
+      <div className="flex-1 flex flex-col relative h-full min-w-0" data-tutorial-id="story-feed-area">
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <StoryFeed
             ref={storyFeedRef}
@@ -194,7 +195,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           />
 
           {/* Action Panel */}
-          <div className="flex-none z-30">
+          <div className="flex-none z-30" data-tutorial-id="action-input-area">
             <ActionPanel
               onAction={onAction}
               onShowToast={onShowToast}
@@ -214,6 +215,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
 
       {/* Desktop Timeline */}
       <div
+        data-tutorial-id="right-timeline"
         className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out ${
           timelineCollapsed ? "w-0" : "w-72"
         }`}

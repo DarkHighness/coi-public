@@ -13,6 +13,7 @@ import {
   type ProviderTemplateKey,
 } from "../../utils/constants/providerTemplates";
 import { useSettings } from "../../hooks/useSettings";
+import { useTutorialContextOptional } from "../../contexts/TutorialContext";
 
 interface SettingsProvidersProps {
   showToast: (msg: string, type?: "info" | "error") => void;
@@ -73,6 +74,18 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [showModalApiKey, setShowModalApiKey] = useState(false);
   const [showTemplateApiKey, setShowTemplateApiKey] = useState(false);
+
+  // Tutorial context
+  const tutorial = useTutorialContextOptional();
+
+  // Handle Add Provider click - auto-advance to modal step so spotlight moves to modal
+  const handleAddProviderClick = () => {
+    if (tutorial?.isActive && tutorial.currentStep?.id === "add-provider") {
+      tutorial.markStepActionComplete();
+      tutorial.nextStep(); // Move to modal step
+    }
+    handleOpenTemplate(); // Use template modal as it's simpler
+  };
 
   // Helper: Mask API key for display
   const maskApiKey = (key: string): string => {
@@ -446,7 +459,8 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
         </h3>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={handleOpenAdd}
+            onClick={handleAddProviderClick}
+            data-tutorial-id="add-provider-button"
             className="px-4 py-2 bg-theme-primary text-theme-bg rounded border border-theme-primary hover:bg-theme-primary-hover transition-colors text-sm font-medium"
           >
             {t("providers.addProvider")}
@@ -1076,7 +1090,10 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       {/* Template Modal */}
       {modalMode === "template" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-theme-surface max-w-lg w-full rounded-lg border border-theme-border shadow-xl max-h-[90vh] overflow-y-auto">
+          <div
+            className="bg-theme-surface max-w-lg w-full rounded-lg border border-theme-border shadow-xl max-h-[90vh] overflow-y-auto"
+            data-tutorial-id="provider-template-modal"
+          >
             <div className="p-6">
               <h3 className="text-lg font-bold text-theme-text mb-4">
                 {t("providers.addFromTemplateTitle")}

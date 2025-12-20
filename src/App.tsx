@@ -35,6 +35,8 @@ import {
   ToastProvider,
   useToast,
 } from "./components/Toast";
+import { TutorialProvider } from "./contexts/TutorialContext";
+import { TutorialSpotlight } from "./components/tutorial";
 
 // Lazy Load Heavy Components for Code Splitting
 const SettingsModal = React.lazy(() =>
@@ -54,13 +56,16 @@ const EnvironmentalEffects = React.lazy(() =>
 );
 
 // Main App wrapper that provides all global contexts
-// Order: ToastProvider > RAGProvider > GameEngineProvider
+// Order: ToastProvider > RAGProvider > GameEngineProvider > TutorialProvider
 export default function App() {
   return (
     <ToastProvider>
       <RAGProvider>
         <GameEngineProvider>
-          <AppContent />
+          <TutorialProvider>
+            <AppContent />
+            <TutorialSpotlight />
+          </TutorialProvider>
         </GameEngineProvider>
       </RAGProvider>
     </ToastProvider>

@@ -22,6 +22,9 @@ import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { useToast } from "../Toast";
 import { useGameEngineContext } from "../../contexts/GameEngineContext";
+import { useSettings } from "../../hooks/useSettings";
+import { useTutorialContextOptional } from "../../contexts/TutorialContext";
+import { createGamePageTutorialFlow } from "../tutorial/tutorialFlows";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -152,6 +155,29 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [currentAmbience, setCurrentAmbience] = useState<string | undefined>(
     undefined,
   );
+
+  // Tutorial state - use TutorialContext
+  const { settings, updateSettings } = useSettings();
+  const tutorial = useTutorialContextOptional();
+
+  // Start tutorial after first turn is generated or when continuing a saved game
+  useEffect(() => {
+    // Only start tutorial if:
+    // 1. Tutorial context exists and is not active
+    // 2. Tutorial not already completed
+    // 3. There is at least one message (first turn generated or continuing a game)
+    const hasContent = currentHistory && currentHistory.length > 0;
+
+    if (
+      tutorial &&
+      !tutorial.isActive &&
+      settings.extra?.tutorialGamePageCompleted !== true &&
+      hasContent
+    ) {
+      const flow = createGamePageTutorialFlow(t);
+      tutorial.startTutorial(flow);
+    }
+  }, [tutorial, settings.extra?.tutorialGamePageCompleted, t, currentHistory]);
 
   // Conditional layout rendering
   const isMobile = useIsMobile();
@@ -616,6 +642,7 @@ export const GamePage: React.FC<GamePageProps> = ({
           />
         )}
       </Suspense>
+      {/* Tutorial is now handled by TutorialContext and TutorialSpotlight in App.tsx */}
     </div>
   );
 };

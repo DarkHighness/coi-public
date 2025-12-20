@@ -316,6 +316,36 @@ export const SettingsExtra: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Reset Tutorials */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.resetTutorials") || "Reset Tutorials"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.resetTutorialsHelp") ||
+                "Show onboarding tutorials again on next visit"}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              onUpdateSettings({
+                ...currentSettings,
+                extra: {
+                  ...extra,
+                  tutorialStartScreenCompleted: false,
+                  tutorialGamePageCompleted: false,
+                },
+              });
+              // Reload page to restart tutorial
+              window.location.reload();
+            }}
+            className="px-3 py-1.5 text-xs font-bold bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors"
+          >
+            {t("settings.extra.resetTutorialsButton") || "Reset"}
+          </button>
+        </div>
       </div>
     </div>
   );

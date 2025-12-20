@@ -1,4 +1,4 @@
-import React, { useState, useRef, lazy, Suspense } from "react";
+import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
@@ -11,6 +11,10 @@ import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useSettings } from "../hooks/useSettings";
+import { useTutorialContextOptional } from "../contexts/TutorialContext";
+import { useTutorialTarget } from "../hooks/useTutorial";
+import { createStartScreenTutorialFlow } from "./tutorial/tutorialFlows";
 
 // Lazy load PhotoGalleryModal for code splitting
 const PhotoGalleryModal = lazy(() =>
@@ -105,6 +109,45 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const { settings, updateSettings } = useSettings();
+  const tutorial = useTutorialContextOptional();
+
+  // Tutorial target refs
+  const settingsButtonRef = useTutorialTarget<HTMLButtonElement>("settings-button");
+  const startButtonRef = useTutorialTarget<HTMLButtonElement>("start-adventure-button");
+
+  // Check if valid provider and model are configured
+  const hasValidProvider = () => {
+    const providers = settings.providers?.instances || [];
+    return providers.some(
+      (p) => p.enabled && p.apiKey && p.apiKey.trim() !== ""
+    );
+  };
+
+  const hasValidModel = () => {
+    return (
+      settings.story?.modelId &&
+      settings.story.modelId.trim() !== "" &&
+      settings.story?.providerId &&
+      settings.story.providerId.trim() !== ""
+    );
+  };
+
+  // Start tutorial on mount if not completed
+  useEffect(() => {
+    if (
+      tutorial &&
+      !tutorial.isActive &&
+      settings.extra?.tutorialStartScreenCompleted !== true
+    ) {
+      const flow = createStartScreenTutorialFlow(t, {
+        openSettings: onSettings,
+        hasValidProvider,
+        hasValidModel,
+      });
+      tutorial.startTutorial(flow);
+    }
+  }, [tutorial, settings.extra?.tutorialStartScreenCompleted, t, onSettings]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,7 +222,16 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         {/* Top Bar */}
         <div className="relative z-10 flex justify-end items-center gap-4 p-6 lg:p-8">
           <button
-            onClick={onSettings}
+            ref={settingsButtonRef}
+            onClick={() => {
+              // If this is the tutorial step for opening settings, advance the tutorial
+              if (tutorial?.isActive && tutorial.currentStep?.id === "open-settings") {
+                tutorial.markStepActionComplete();
+                tutorial.nextStep();
+              }
+              onSettings();
+            }}
+            data-tutorial-id="settings-button"
             className="p-2 text-theme-muted hover:text-theme-primary transition-colors rounded-full hover:bg-theme-surface-highlight/50"
             title={t("settings.title")}
           >
@@ -241,7 +293,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               )}
 
               <button
+                ref={startButtonRef}
                 onClick={() => setMode("theme_select")}
+                data-tutorial-id="start-adventure-button"
                 className={`w-full py-4 border-2 border-theme-text/10 hover:border-theme-primary text-theme-text font-bold text-lg uppercase tracking-widest hover:bg-theme-surface-highlight transition-all rounded-sm flex items-center justify-center gap-3 group ${!latestSave ? "bg-theme-primary text-theme-bg border-theme-primary hover:bg-theme-primary-hover hover:border-theme-primary-hover" : ""}`}
               >
                 <span>{t("startTitle")}</span>
@@ -465,6 +519,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           />
         </Suspense>
       )}
+      {/* Tutorial is now handled by TutorialContext and TutorialSpotlight in App.tsx */}
     </div>
   );
 };

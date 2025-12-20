@@ -245,6 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex gap-2 mb-4">
           <button
             onClick={onOpenMap}
+            data-tutorial-id="game-menu-button"
             className="flex-1 py-2 text-sm bg-theme-surface-highlight/50 border border-theme-border hover:border-theme-primary text-theme-text rounded transition-colors flex items-center justify-center gap-1.5"
             title={t("tree.viewMap")}
           >

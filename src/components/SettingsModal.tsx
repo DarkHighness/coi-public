@@ -11,6 +11,8 @@ import { SettingsEmbedding } from "./settings/SettingsEmbedding";
 import { SettingsExtra } from "./settings/SettingsExtra";
 import { SettingsProviders } from "./settings/SettingsProviders";
 import { useToast } from "./Toast";
+import { useTutorialContextOptional } from "../contexts/TutorialContext";
+import { useTutorialTarget } from "../hooks/useTutorial";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -37,6 +39,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Use Toast Context
   const { showToast } = useToast();
 
+  // Tutorial context
+  const tutorial = useTutorialContextOptional();
+  const closeButtonRef = useTutorialTarget<HTMLButtonElement>("settings-close-button");
+
+  // Handle close with tutorial advancement
+  const handleClose = () => {
+    if (tutorial?.isActive && tutorial.currentStep?.id === "close-settings") {
+      tutorial.markStepActionComplete();
+      tutorial.nextStep();
+    }
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -47,7 +62,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {t("settings.title")}
           </h2>
           <button
-            onClick={onClose}
+            ref={closeButtonRef}
+            onClick={handleClose}
+            data-tutorial-id="settings-close-button"
             className="text-theme-muted hover:text-theme-text"
           >
             <svg
@@ -70,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1" data-tutorial-id="settings-modal-content">
           {activeTab === "providers" && (
             <SettingsProviders showToast={showToast} />
           )}
@@ -99,7 +116,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="p-4 border-t border-theme-border bg-theme-surface/50 flex justify-end items-center">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-6 py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors font-bold text-sm"
           >
             {t("close")}
