@@ -384,6 +384,11 @@ export interface GameState {
 
   // Custom Rules for per-save prompt customization
   customRules?: CustomRule[];
+
+  // Global Notes System - for AI-important information that doesn't fit specific entities
+  // Keys are note identifiers, values are note content
+  // Use for: cross-entity patterns, meta-plot tracking, orphaned information
+  notes?: Record<string, string>;
 }
 
 /** State for resuming outline generation after failure */

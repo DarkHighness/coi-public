@@ -889,13 +889,19 @@ You are in AGENTIC MODE.
               isError = true;
             } else {
               // Validate finish_turn args
-              const finishToolDef = ALL_DEFINED_TOOLS.find(t => t.name === call.name);
+              const finishToolDef = ALL_DEFINED_TOOLS.find(
+                (t) => t.name === call.name,
+              );
               if (finishToolDef) {
-                const validationResult = finishToolDef.parameters.safeParse(call.args);
+                const validationResult = finishToolDef.parameters.safeParse(
+                  call.args,
+                );
                 if (!validationResult.success) {
                   const zodErrors = validationResult.error.errors
-                    .map(e => `- ${e.path.join('.') || '(root)'}: ${e.message}`)
-                    .join('\n');
+                    .map(
+                      (e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`,
+                    )
+                    .join("\n");
                   output = {
                     success: false,
                     error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
@@ -927,14 +933,14 @@ You are in AGENTIC MODE.
           // STANDARD HANDLE: Validate then execute
           else {
             // Find tool definition for validation
-            const toolDef = ALL_DEFINED_TOOLS.find(t => t.name === call.name);
+            const toolDef = ALL_DEFINED_TOOLS.find((t) => t.name === call.name);
 
             if (toolDef) {
               const validationResult = toolDef.parameters.safeParse(call.args);
               if (!validationResult.success) {
                 const zodErrors = validationResult.error.errors
-                  .map(e => `- ${e.path.join('.') || '(root)'}: ${e.message}`)
-                  .join('\n');
+                  .map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`)
+                  .join("\n");
                 output = {
                   success: false,
                   error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
@@ -959,7 +965,12 @@ You are in AGENTIC MODE.
               );
 
               // Check if execution returned an error
-              if (output && typeof output === 'object' && 'success' in output && (output as any).success === false) {
+              if (
+                output &&
+                typeof output === "object" &&
+                "success" in output &&
+                (output as any).success === false
+              ) {
                 isError = true;
                 hasErrors = true;
                 failedTools.push(call.name);
@@ -1145,6 +1156,31 @@ export function executeToolCall(
   if (name === "rag_search") {
     const typedArgs = getTypedArgs("rag_search", args);
     return executeRagSearch(typedArgs, db);
+  }
+
+  // ============================================================================
+  // NOTES TOOLS (Global Notes System)
+  // ============================================================================
+  if (name === "query_notes") {
+    const typedArgs = getTypedArgs("query_notes", args);
+    return executeQueryNotes(typedArgs.keys, db);
+  }
+  if (name === "list_notes") {
+    const typedArgs = getTypedArgs("list_notes", args);
+    return executeListNotes(typedArgs.search, typedArgs.limit, db);
+  }
+  if (name === "update_notes") {
+    const typedArgs = getTypedArgs("update_notes", args);
+    return executeUpdateNotes(
+      typedArgs.key,
+      typedArgs.value,
+      typedArgs.diff,
+      db,
+    );
+  }
+  if (name === "remove_notes") {
+    const typedArgs = getTypedArgs("remove_notes", args);
+    return executeRemoveNotes(typedArgs.keys, db);
   }
 
   // ============================================================================
@@ -2380,5 +2416,206 @@ function executeQueryAtmosphereEnumDescription(
   return {
     success: true,
     results,
+  };
+}
+
+// ============================================================================
+// NOTES TOOL EXECUTION FUNCTIONS
+// ============================================================================
+
+const MAX_NOTES_QUERY = 5; // Maximum notes returned per query
+
+/**
+ * Apply git-style diff to original content
+ * Lines starting with '+' are added, lines starting with '-' are removed
+ * Lines starting with ' ' or empty are kept unchanged
+ */
+function applyNoteDiff(original: string, diff: string): string {
+  const originalLines = original.split("\n");
+  const diffLines = diff.split("\n");
+  const result: string[] = [];
+  let originalIndex = 0;
+
+  for (const diffLine of diffLines) {
+    if (diffLine.startsWith("+")) {
+      // Add new line (without the '+' prefix)
+      result.push(diffLine.slice(1));
+    } else if (diffLine.startsWith("-")) {
+      // Skip removed line
+      originalIndex++;
+    } else if (diffLine.startsWith(" ")) {
+      // Keep context line (without the ' ' prefix)
+      if (originalIndex < originalLines.length) {
+        result.push(originalLines[originalIndex++]);
+      }
+    } else if (diffLine === "") {
+      // Empty line - keep from original if available
+      if (originalIndex < originalLines.length) {
+        result.push(originalLines[originalIndex++]);
+      } else {
+        result.push("");
+      }
+    }
+  }
+
+  // Append remaining original lines (if any)
+  while (originalIndex < originalLines.length) {
+    result.push(originalLines[originalIndex++]);
+  }
+
+  return result.join("\n");
+}
+
+/**
+ * Execute query_notes tool - query global notes by key(s)
+ * Max 5 results per query
+ */
+function executeQueryNotes(keys: string[], db: GameDatabase): unknown {
+  const state = db.getState();
+  const notes = state.notes || {};
+
+  if (!keys || keys.length === 0) {
+    return {
+      success: false,
+      error: "No keys provided. Use list_notes to discover available keys.",
+    };
+  }
+
+  const requestedCount = keys.length;
+  const limitedKeys = keys.slice(0, MAX_NOTES_QUERY);
+  const results: Record<string, string | null> = {};
+
+  for (const key of limitedKeys) {
+    results[key] = notes[key] ?? null;
+  }
+
+  const foundCount = Object.values(results).filter((v) => v !== null).length;
+
+  return {
+    success: true,
+    results,
+    found: foundCount,
+    requested: requestedCount,
+    limitExceeded: requestedCount > MAX_NOTES_QUERY,
+    hint:
+      requestedCount > MAX_NOTES_QUERY
+        ? `Query limited to ${MAX_NOTES_QUERY} keys. ${requestedCount - MAX_NOTES_QUERY} keys were not queried.`
+        : undefined,
+  };
+}
+
+/**
+ * Execute list_notes tool - list all global note keys
+ */
+function executeListNotes(
+  search: string | undefined,
+  limit: number | undefined,
+  db: GameDatabase,
+): unknown {
+  const state = db.getState();
+  const notes = state.notes || {};
+  let keys = Object.keys(notes);
+
+  // Apply search filter if provided
+  if (search) {
+    try {
+      const regex = new RegExp(search, "i");
+      keys = keys.filter((k) => regex.test(k));
+    } catch (e) {
+      return {
+        success: false,
+        error: `Invalid regex pattern: ${search}`,
+      };
+    }
+  }
+
+  // Apply limit
+  const effectiveLimit = Math.min(limit || 20, 100);
+  const limitedKeys = keys.slice(0, effectiveLimit);
+
+  return {
+    success: true,
+    keys: limitedKeys,
+    total: keys.length,
+    limited: keys.length > effectiveLimit,
+    hint:
+      keys.length > effectiveLimit
+        ? `Showing ${effectiveLimit} of ${keys.length} keys. Use search to filter.`
+        : `Found ${keys.length} note keys.`,
+  };
+}
+
+/**
+ * Execute update_notes tool - create or update a global note
+ */
+function executeUpdateNotes(
+  key: string,
+  value: string,
+  diff: boolean | undefined,
+  db: GameDatabase,
+): unknown {
+  const state = db.getState();
+  if (!state.notes) {
+    state.notes = {};
+  }
+
+  const existingValue = state.notes[key];
+  let finalValue: string;
+
+  if (diff && existingValue) {
+    // Apply diff to existing value
+    finalValue = applyNoteDiff(existingValue, value);
+  } else {
+    // Direct replacement or new note
+    finalValue = value;
+  }
+
+  state.notes[key] = finalValue;
+
+  return {
+    success: true,
+    key,
+    action: existingValue ? "updated" : "created",
+    length: finalValue.length,
+    message: existingValue
+      ? `Note "${key}" updated (${finalValue.length} chars)`
+      : `Note "${key}" created (${finalValue.length} chars)`,
+  };
+}
+
+/**
+ * Execute remove_notes tool - remove one or more global notes
+ */
+function executeRemoveNotes(keys: string[], db: GameDatabase): unknown {
+  const state = db.getState();
+  if (!state.notes) {
+    return {
+      success: true,
+      removed: [],
+      notFound: keys,
+      message: "No notes exist.",
+    };
+  }
+
+  const removed: string[] = [];
+  const notFound: string[] = [];
+
+  for (const key of keys) {
+    if (state.notes[key] !== undefined) {
+      delete state.notes[key];
+      removed.push(key);
+    } else {
+      notFound.push(key);
+    }
+  }
+
+  return {
+    success: true,
+    removed,
+    notFound,
+    message:
+      removed.length > 0
+        ? `Removed ${removed.length} note(s): ${removed.join(", ")}`
+        : "No notes were removed.",
   };
 }

@@ -710,6 +710,17 @@ export class GameDatabase {
             },
           ];
           break;
+        case "notes":
+          const notes = this.state.notes || {};
+          items = Object.keys(notes).map((key) => ({
+            id: key,
+            name: key,
+            info:
+              notes[key].length > 50
+                ? notes[key].substring(0, 50) + "..."
+                : notes[key],
+          }));
+          break;
         default:
           return createError(
             `Unknown list target: ${target}`,

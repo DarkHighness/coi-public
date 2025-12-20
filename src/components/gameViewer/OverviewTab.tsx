@@ -1,0 +1,176 @@
+/**
+ * OverviewTab - Story overview and quick status
+ * Displays story basics, character summary, active quests, and atmosphere
+ */
+
+import React from "react";
+import { GameState } from "../../types";
+import { getValidIcon } from "../../utils/emojiValidator";
+import { MarkdownText } from "../render/MarkdownText";
+import { Section, InfoRow, SubsectionLabel, EmptyState } from "./helpers";
+
+interface OverviewTabProps {
+  gameState: GameState;
+  expandedSections: Set<string>;
+  toggleSection: (section: string) => void;
+  t: (key: string, options?: any) => string;
+}
+
+export const OverviewTab: React.FC<OverviewTabProps> = ({
+  gameState,
+  expandedSections,
+  toggleSection,
+  t,
+}) => {
+  const outline = gameState.outline;
+  const char = gameState.character;
+  const currentLoc = gameState.locations.find(
+    (loc) => loc.id === gameState.currentLocation,
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Story Title & Premise */}
+      <Section
+        id="basics"
+        title={t("gameViewer.storyBasics")}
+        icon="📖"
+        isExpanded={expandedSections.has("basics")}
+        onToggle={toggleSection}
+      >
+        <InfoRow
+          label={t("gameViewer.title")}
+          value={outline?.title || gameState.theme}
+        />
+        <InfoRow label={t("gameViewer.turn")} value={gameState.turnNumber} />
+        <InfoRow label={t("gameViewer.time")} value={gameState.time} />
+        <InfoRow
+          label={t("gameViewer.currentLocation")}
+          value={currentLoc?.name || gameState.currentLocation}
+        />
+        {outline?.premise && (
+          <InfoRow label={t("gameViewer.premise")} value={outline.premise} />
+        )}
+        {gameState.tokenUsage && (
+          <div className="mt-3 pt-3 border-t border-theme-border/30">
+            <SubsectionLabel>{t("token.tokens")}</SubsectionLabel>
+            <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg/30 p-2 rounded border border-theme-border/30">
+              <div>
+                {t("token.totalTokens")}:{" "}
+                {gameState.tokenUsage.totalTokens.toLocaleString()}
+              </div>
+              <div>
+                {t("token.promptTokens")}:{" "}
+                {gameState.tokenUsage.promptTokens.toLocaleString()}
+              </div>
+              <div>
+                {t("token.completionTokens")}:{" "}
+                {gameState.tokenUsage.completionTokens.toLocaleString()}
+              </div>
+              {gameState.tokenUsage.cacheWrite !== undefined && (
+                <div className="text-theme-success/80">
+                  {t("token.cacheWrite")}:{" "}
+                  {gameState.tokenUsage.cacheWrite.toLocaleString()}
+                </div>
+              )}
+              {gameState.tokenUsage.cacheRead !== undefined && (
+                <div className="text-theme-success/80">
+                  {t("token.cacheRead")}:{" "}
+                  {gameState.tokenUsage.cacheRead.toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Section>
+
+      {/* Character Quick View */}
+      <Section
+        id="charQuick"
+        title={t("gameViewer.protagonist")}
+        icon="👤"
+        isExpanded={expandedSections.has("charQuick")}
+        onToggle={toggleSection}
+      >
+        <InfoRow label={t("gameViewer.name")} value={char.name} />
+        <InfoRow label={t("gameViewer.titleLabel")} value={char.title} />
+        <InfoRow label={t("gameViewer.status")} value={char.status} />
+        {char.profession && (
+          <InfoRow label={t("gameViewer.profession")} value={char.profession} />
+        )}
+        {char.attributes.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-theme-border/30">
+            <SubsectionLabel>{t("gameViewer.attributes")}:</SubsectionLabel>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {char.attributes.map((attr, idx) => (
+                <div
+                  key={attr.label || idx}
+                  className="flex items-center justify-between p-2 bg-theme-bg/30 rounded border border-theme-border/30 text-sm"
+                >
+                  <span className="text-theme-muted">{attr.label}:</span>
+                  <span className="text-theme-text font-medium">
+                    {attr.value}/{attr.maxValue}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Section>
+
+      {/* Active Quests */}
+      <Section
+        id="activeQuests"
+        title={t("gameViewer.activeQuests")}
+        icon="📜"
+        isExpanded={expandedSections.has("activeQuests")}
+        onToggle={toggleSection}
+      >
+        {gameState.quests.filter((q) => q.status === "active").length === 0 ? (
+          <EmptyState message={t("gameViewer.noActiveQuests")} />
+        ) : (
+          <div className="space-y-3">
+            {gameState.quests
+              .filter((q) => q.status === "active")
+              .map((quest, idx) => (
+                <div
+                  key={quest.id || idx}
+                  className="p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                >
+                  <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-1">
+                    <span>{getValidIcon(quest.icon, "📜")}</span>
+                    {quest.title}
+                  </div>
+                  <div className="text-theme-text/90 text-sm pl-6 border-l-2 border-theme-border/50 ml-1">
+                    <MarkdownText content={quest.visible.description} />
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </Section>
+
+      {/* Atmosphere */}
+      <Section
+        id="atmosphere"
+        title={t("gameViewer.atmosphere")}
+        icon="🌤️"
+        isExpanded={expandedSections.has("atmosphere")}
+        onToggle={toggleSection}
+      >
+        <InfoRow
+          label={t("gameViewer.environment")}
+          value={gameState.atmosphere.envTheme}
+        />
+        {gameState.atmosphere.ambience && (
+          <InfoRow
+            label={t("gameViewer.ambience")}
+            value={t(`ambience.${gameState.atmosphere.ambience}`, {
+              defaultValue: gameState.atmosphere.ambience,
+            })}
+          />
+        )}
+      </Section>
+    </div>
+  );
+};

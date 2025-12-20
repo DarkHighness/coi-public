@@ -30,7 +30,8 @@ type EditableSection =
   | "timeline"
   | "causalChains"
   | "global"
-  | "segments";
+  | "segments"
+  | "notes";
 
 const SECTION_CONFIGS: Record<
   EditableSection,
@@ -86,6 +87,11 @@ const SECTION_CONFIGS: Record<
     icon: "📄",
     labelKey: "stateEditor.segmentsList",
     stateKey: "segments",
+  },
+  notes: {
+    icon: "📝",
+    labelKey: "stateEditor.notes",
+    stateKey: "notes",
   },
 };
 

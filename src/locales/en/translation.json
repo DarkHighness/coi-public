@@ -889,6 +889,8 @@
     "timeline": "Timeline",
     "causalChains": "Causal Chains",
     "global": "Global",
+    "segmentsList": "Segments",
+    "notes": "Notes",
     "lines": "lines",
     "unsaved": "Unsaved",
     "format": "Format",

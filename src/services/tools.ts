@@ -529,6 +529,72 @@ export const RAG_SEARCH_TOOL = defineTool({
 });
 
 // ============================================================================
+// NOTES TOOLS (Global Notes System)
+// ============================================================================
+
+/**
+ * Query global notes by key(s). Returns up to 5 notes per request.
+ * Use ONLY for cross-entity information with no suitable entity owner.
+ */
+export const QUERY_NOTES_TOOL = defineTool({
+  name: "query_notes",
+  description:
+    "Query global notes by key(s). Max 5 results per query. Use ONLY for cross-entity information with no suitable entity owner.",
+  parameters: z.object({
+    keys: z
+      .array(z.string())
+      .describe("Note keys to query. Max 5 keys per request."),
+  }),
+});
+
+/**
+ * List all available note keys (for discovery).
+ * Use to discover what notes exist before querying.
+ */
+export const LIST_NOTES_TOOL = defineTool({
+  name: "list_notes",
+  description:
+    "List all global note keys. Use to discover what notes exist before querying.",
+  parameters: z.object({
+    search: z
+      .string()
+      .optional()
+      .describe("Optional regex pattern to filter keys."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+  }),
+});
+
+/**
+ * Update or create a global note.
+ * For short notes: just provide full value (no diff)
+ * For long notes (>500 chars): use diff mode to minimize tokens
+ */
+export const UPDATE_NOTES_TOOL = defineTool({
+  name: "update_notes",
+  description:
+    "Create or update a global note. Short notes: provide full text. Long notes (>500 chars): use diff=true with git-style +/- lines.",
+  parameters: z.object({
+    key: z.string().describe("Note key."),
+    value: z.string().describe("Note value (full text, or diff if diff=true)."),
+    diff: z
+      .boolean()
+      .optional()
+      .describe("If true, value is git-style diff (lines starting with +/-)"),
+  }),
+});
+
+/**
+ * Remove global note(s) by key.
+ */
+export const REMOVE_NOTES_TOOL = defineTool({
+  name: "remove_notes",
+  description: "Remove one or more global notes by key.",
+  parameters: z.object({
+    keys: z.array(z.string()).describe("Note keys to remove."),
+  }),
+});
+
+// ============================================================================
 // ADD TOOLS (Stage 2)
 // ============================================================================
 
@@ -1634,6 +1700,12 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
     QUERY_ATMOSPHERE_ENUMS_TOOL,
     QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL,
   ],
+
+  // Notes (Global)
+  "query:notes": [QUERY_NOTES_TOOL],
+  "list:notes": [LIST_NOTES_TOOL],
+  "update:notes": [UPDATE_NOTES_TOOL],
+  "remove:notes": [REMOVE_NOTES_TOOL],
 };
 
 /**
@@ -1661,6 +1733,7 @@ export const LIST_TOOL = defineTool({
         "skill",
         "condition",
         "trait",
+        "notes",
       ])
       .describe("Entity type to list."),
     page: z
@@ -1742,6 +1815,11 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   UPDATE_CHARACTER_CONDITION_TOOL,
   UPDATE_CHARACTER_TRAIT_TOOL,
   UNLOCK_ENTITY_TOOL,
+  // Notes Tools
+  QUERY_NOTES_TOOL,
+  LIST_NOTES_TOOL,
+  UPDATE_NOTES_TOOL,
+  REMOVE_NOTES_TOOL,
 ];
 
 // Helper to find tools
@@ -2013,6 +2091,12 @@ export type QueryAtmosphereEnumDescriptionParams = InferToolParams<
   typeof QUERY_ATMOSPHERE_ENUM_DESCRIPTION_TOOL
 >;
 
+// Notes Types
+export type QueryNotesParams = InferToolParams<typeof QUERY_NOTES_TOOL>;
+export type ListNotesParams = InferToolParams<typeof LIST_NOTES_TOOL>;
+export type UpdateNotesParams = InferToolParams<typeof UPDATE_NOTES_TOOL>;
+export type RemoveNotesParams = InferToolParams<typeof REMOVE_NOTES_TOOL>;
+
 // Unlock Tool Types
 export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
 
@@ -2113,6 +2197,12 @@ export interface ToolParamsMap {
   // Control tools
   finish_turn: FinishTurnParams;
   complete_force_update: ForceUpdateParams;
+
+  // Notes tools
+  query_notes: QueryNotesParams;
+  list_notes: ListNotesParams;
+  update_notes: UpdateNotesParams;
+  remove_notes: RemoveNotesParams;
 }
 
 export type ToolName = keyof ToolParamsMap;

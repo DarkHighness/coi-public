@@ -574,7 +574,11 @@ export const runSummaryAgenticLoop = async (
               output: errorOutput,
               timestamp: Date.now(),
             });
-            toolResponses.push({ toolCallId: callId, name, content: errorOutput });
+            toolResponses.push({
+              toolCallId: callId,
+              name,
+              content: errorOutput,
+            });
             continue;
           }
 
@@ -656,11 +660,21 @@ export const runSummaryAgenticLoop = async (
         const output = executeSummaryToolCall(name, args, input, db);
 
         // Track errors from query tools
-        if (output && typeof output === 'object' && 'success' in output && (output as any).success === false) {
+        if (
+          output &&
+          typeof output === "object" &&
+          "success" in output &&
+          (output as any).success === false
+        ) {
           hasErrors = true;
           failedTools.push(name);
         }
-        if (output && typeof output === 'object' && 'error' in output && (output as any).error === 'REDUNDANT_QUERY') {
+        if (
+          output &&
+          typeof output === "object" &&
+          "error" in output &&
+          (output as any).error === "REDUNDANT_QUERY"
+        ) {
           // REDUNDANT_QUERY is not a blocking error, just a warning
           // Don't add to failedTools
         }

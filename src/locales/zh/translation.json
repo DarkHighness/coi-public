@@ -916,6 +916,7 @@
     "warning": "更改会立即生效，请谨慎操作！",
     "readOnly": "只读",
     "segmentsList": "历史片段",
+    "notes": "笔记",
     "segmentDetail": "片段详情"
   },
   "secretAgenda": "隐藏议程",

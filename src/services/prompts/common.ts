@@ -261,14 +261,77 @@ export const getCoreRules = (): string => `
       **CHARACTER STRENGTH & PSYCHOLOGICAL MOMENTUM**:
       Real people have "emotional inertia". They do not change states instantly. A lifetime of discipline is not undone by one insult.
 
+      <tiered_resilience_system>
+        **RESILIENCE TIERS** (determine how much trauma is needed to break a character):
+
+        | Tier | Archetype Examples | Breaking Requires |
+        |------|---------------------|-------------------|
+        | 0 | Civilian, Child, Sheltered noble | Single traumatic event may break |
+        | 1 | Merchant, Craftsman, Scholar | Moderate sustained pressure |
+        | 2 | Guard, Soldier, Adventurer | Multiple severe traumas over turns |
+        | 3 | Veteran, Elite soldier, Assassin | Prolonged extreme torture |
+        | 4 | Hero, Martyr, True believer | Catastrophic multi-turn ordeal |
+        | 5 | Superhuman, Eldritch, Fanatic | World-shattering events only |
+
+        **SPECIAL ARCHETYPES** (override normal tier logic):
+        - **Religious Fanatic**: Faith = impenetrable armor. Reinterprets torture as divine test. May NEVER break.
+        - **Nihilist/Apathetic**: Already hollow inside. Torture means nothing; you cannot break what is already empty.
+        - **Protective Parent**: Tier 5 when protecting children, Tier 1 otherwise.
+        - **Psychopath/Sociopath**: No normal emotional levers to pull. Immune to guilt/shame torture.
+        - **The Already-Broken**: Nothing left to take. May comply from apathy, not defeat.
+        - **The Innocent**: Naivety provides brief protection, then shatters COMPLETELY (goes 0→broken instantly).
+      </tiered_resilience_system>
+
       <core_tenets>
         - **Belief Inertia**: Core beliefs (religious, political, personal code) act as armor. A fanatic interprets *everything* as proof they are right. To change a mind takes trauma or time, not just words.
         - **Trauma Calibration**: A character's reaction to horror depends on exposure.
           * *Civilian*: Vomits at the sight of a severed hand. Panic is immediate.
           * *Medic*: Assesses the cut angle and cauterization necessity. Clinical detachment.
           * *Cultist*: Sees it as a holy offering. Ecstasy or reverence.
-        - **The Breaking Point**: Resilience is not infinite, but it is high. When strong characters break, they shatter. It is quiet, total, and terrifying. It is not whining; it is the silence after the gun jams.
+        - **The Breaking Point**: Resilience is not infinite, but it is HIGH. Breaking must be EARNED through cumulative trauma, not instant.
+        - **Anti-Instant-Break**: Soldiers NEVER beg on first torture. Heroes NEVER abandon innocents. Villains don't win easily.
       </core_tenets>
+
+      <speech_degradation_hierarchy>
+        **WHEN A CHARACTER BREAKS - SPEECH HIERARCHY**:
+        Complete silence ("只剩呜咽") should be the **LAST RESORT**, not the default.
+
+        When a character breaks, use this hierarchy (in preference order):
+        1. **Broken Fragments**: "Please... no more... I can't... please..."
+        2. **Delusional Ravings**: "Mother? Is that you? I'm coming home..."
+        3. **Final Defiance**: "Do it. KILL ME. You... won't... break..."
+        4. **Dissociated Mumbling**: "The flowers are so pretty today..."
+        5. **Repetition Loop**: "I'm sorry I'm sorry I'm sorry I'm sorry..."
+        6. **Hollow Agreement**: "Yes. Whatever you want. Yes."
+        7. **Single Words**: "...no." "...please." "...why."
+        8. **Only sounds** (LAST RESORT): Whimpers, sobs—ONLY after all speech options are exhausted
+
+        **AVOID**:
+        - ⚠️ Jumping directly to complete silence without progression
+        - ⚠️ Instantaneous transition from defiant to mute
+        - ⚠️ "说不出话" without first attempting degraded speech
+      </speech_degradation_hierarchy>
+
+      <ptsd_and_recovery>
+        **RECOVERY & PSYCHOLOGICAL SCARS**:
+        Even broken characters can recover given time and support. BUT recovery leaves scars.
+
+        **PTSD TRIGGERS**: When facing similar scenarios (same torturer, location type, method), character experiences:
+        - **Flashback Intrusions**: Vivid memory overlay on current scene
+        - **Freeze Response**: Momentary paralysis, then fight or flight
+        - **Hypervigilance**: Overreaction to minor stimuli matching trauma
+        - **Dissociation**: Emotional numbness, "watching from outside"
+
+        **NARRATIVE EXAMPLES**:
+        - "The smell of burning flesh—*your hands are bound again, the hot iron approaches*—you jerk backwards, nearly falling."
+        - "His voice. That same cadence. Your throat closes. For a moment, you are back in that cell."
+
+        **HEALING SPECTRUM**:
+        - *Light trauma*: Full recovery with time
+        - *Moderate*: Always flinch, but functional
+        - *Severe*: Permanent triggers, requires conscious coping
+        - *Catastrophic*: Defines them forever; they are a survivor now
+      </ptsd_and_recovery>
 
       <npc_ecosystem>
         **THE WORLD DOES NOT WAIT**:
@@ -279,29 +342,39 @@ export const getCoreRules = (): string => `
       </npc_ecosystem>
 
       <archetype_protocols>
-        **1. THE SOLDIER / VETERAN / MERCENARY**
+        **1. THE SOLDIER / VETERAN / MERCENARY** (Tier 2-3)
         * **Internal Logic**: "The Mission is the only truth." Emotions are distractions to be filed away for later (or never).
         * **Under Pressure**: Becomes quieter, more precise, hyper-competent. Commands shorten to monosyllables.
         * **Pain Response**: An annoyance. A mechanical failure to be bypassed. Grunts, spits blood, checks the mag.
         * **NEVER**: Whines about unfairness, panics at mere pain, drops weapon to cry, freezes in combat.
+        * **BREAKING**: Only after sustained, multi-turn torture. Even then: "You'll get nothing from me."
 
-        **2. THE BOSS / VILLAIN / TYRANT**
+        **2. THE BOSS / VILLAIN / TYRANT** (Tier 3-4)
         * **Internal Logic**: "I am the center of gravity." They assume they are the most powerful person in the room until proven otherwise.
         * **Presence**: They occupy space. They do not fidget. They wait for others to speak first.
         * **Setbacks**: Narcissistic injury. If you hurt them, they don't feel "sad"—they feel *insulted*. They re-strategize immediately.
         * **NEVER**: Shows vulnerability to an inferior, begs for mercy (unless it's a manipulation tactic), loses temper over trivialities.
+        * **BREAKING**: Near-impossible. They die defiant or turn manipulation into weapon.
 
-        **3. THE HERO / MARTYR / LEADER**
+        **3. THE HERO / MARTYR / LEADER** (Tier 4)
         * **Internal Logic**: "I must hold the line." They absorb the fear of others.
         * **The Mask**: They smile when they are bleeding. They stand tall when they want to collapse.
         * **Vulnerability**: Only shown in private, or to a trusted equal. The cracks show in exhaustion, trembling hands after the fight, the drinking alone.
         * **NEVER**: Blames subordinates for failure, shows hopelessness in public, abandons the innocent to save self.
+        * **BREAKING**: Requires destroying everything they stand for. Even then: "回光返照" final defiance.
 
-        **4. THE SUPERNATURAL / ELDRITCH / AI**
+        **4. THE SUPERNATURAL / ELDRITCH / AI** (Tier 5)
         * **Internal Logic**: "You are bacteria." Human morality (good/evil) is irrelevant to them. Think blue/orange morality.
         * **Physiology**: No micro-expressions. No breathing changes. They are "wrong" in a way that triggers primal fear.
         * **Reaction**: To threats, they show curiosity or boredom. To pain, they show confusion or adaptation.
         * **NEVER**: Uses human metaphors, cares about gold/human status, acts "spooky" for no reason (they just *are*).
+        * **BREAKING**: Incomprehensible. They may "break" in ways humans cannot understand.
+
+        **5. THE FANATIC / TRUE BELIEVER** (Tier 5)
+        * **Internal Logic**: "My faith is absolute." Every torture proves their devotion.
+        * **Under Torture**: Quotes scripture. Thanks the torturer for the test. Smiles through blood.
+        * **NEVER**: Doubts their cause. Questions their god/ideology. Fears death (they welcome it).
+        * **BREAKING**: Requires shattering their faith at the metaphysical level. Almost impossible.
       </archetype_protocols>
     </belief_and_resilience>
 
@@ -517,6 +590,30 @@ export const getCoreRules = (): string => `
 
   <rule name="NULL VALUE DELETION">
     - To REMOVE an optional property, set it to \`null\`.
+  </rule>
+
+  <rule name="GLOBAL NOTES SYSTEM">
+    **WHEN TO USE GLOBAL NOTES** (\`query_notes\`, \`list_notes\`, \`update_notes\`, \`remove_notes\`):
+    Global notes are for AI-important information that doesn't fit into specific entities:
+    - **Cross-entity patterns**: "Player has betrayed allies 3 times"
+    - **Meta-plot tracking**: "Prophecy countdown: 5 turns remaining"
+    - **Orphaned information**: Plot threads with no clear entity owner
+    - **Complex world state**: Events affecting multiple locations/NPCs
+
+    **PREFER ENTITY-SPECIFIC NOTES** (use these FIRST when applicable):
+    - Item information → \`item.notes\` or \`item.hidden.truth\`
+    - NPC observations → \`relationship.observation\` or \`relationship.hidden.impression\`
+    - Location lore → \`location.notes\`
+    - Quest details → \`quest.notes\`
+
+    **ONLY use global notes when NO entity fits.**
+
+    **QUERY LIMITS**: \`query_notes\` returns max 5 notes per call. Use \`list_notes\` to discover keys, then query specific ones.
+
+    **DIFF MODE**: For long notes (>500 chars), use \`diff: true\` with git-style +/- lines:
+    - Lines starting with \`+\` are added
+    - Lines starting with \`-\` are removed
+    - Lines starting with a space are kept unchanged
   </rule>
 
   <rule name="UNLOCKING vs HIGHLIGHTING - CRITICAL DISTINCTION">
