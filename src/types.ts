@@ -605,7 +605,9 @@ export interface UIState {
   quests: ListState; // UI state for quests panel
   showSystemFooter?: boolean; // Persisted state for system footer
   sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
+  sidebarWidth?: number; // Persisted width for left sidebar
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
+  timelineWidth?: number; // Persisted width for right timeline
   embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
   feedLayout?: FeedLayout; // Persisted layout preference (scroll/stack)
   viewedSegmentId?: string; // Last viewed segment ID for continue game

@@ -443,7 +443,11 @@ export async function generateContent(
         };
 
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
-      if (isReasoning && options?.reasoningEffort && !options?.disableThinking) {
+      if (
+        isReasoning &&
+        options?.reasoningEffort &&
+        !options?.disableThinking
+      ) {
         (requestParams as any).reasoning_effort = options.reasoningEffort;
       }
 

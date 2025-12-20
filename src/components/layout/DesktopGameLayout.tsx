@@ -85,30 +85,79 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
 
-  // Calculate dynamic widths based on collapse state
-  // When only one panel is collapsed, the other expands to 1/3 width
-  const getSidebarWidthClass = () => {
-    if (sidebarCollapsed) return "w-0";
-    if (timelineCollapsed) return "w-1/3"; // Expand when timeline is collapsed
-    return "w-80"; // Default fixed width
-  };
+  // State for widths - initialize from persisted state or defaults
+  const [sidebarWidth, setSidebarWidth] = React.useState(
+    gameState.uiState.sidebarWidth || 320,
+  );
+  const [timelineWidth, setTimelineWidth] = React.useState(
+    gameState.uiState.timelineWidth || 300,
+  );
 
-  const getTimelineWidthClass = () => {
-    if (timelineCollapsed) return "w-0";
-    if (sidebarCollapsed) return "w-1/3"; // Expand when sidebar is collapsed
-    return "w-72"; // Default fixed width
-  };
+  // Track active resize operation
+  const [isResizing, setIsResizing] = React.useState<
+    "sidebar" | "timeline" | null
+  >(null);
 
-  const getMainContentWidthClass = () => {
-    // When one panel is expanded to 1/3, main content is 2/3
-    if (
-      (sidebarCollapsed && !timelineCollapsed) ||
-      (!sidebarCollapsed && timelineCollapsed)
-    ) {
-      return "w-2/3";
-    }
-    return "flex-1"; // Default flexible width
-  };
+  // Refs for current values (to access in event listeners without checking stale state)
+  const sidebarWidthRef = useRef(sidebarWidth);
+  const timelineWidthRef = useRef(timelineWidth);
+
+  // Sync refs with state
+  React.useEffect(() => {
+    sidebarWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  React.useEffect(() => {
+    timelineWidthRef.current = timelineWidth;
+  }, [timelineWidth]);
+
+  // Global resize handlers
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+
+      if (isResizing === "sidebar") {
+        // Clamp width: Min 250px, Max 800px
+        const newWidth = Math.max(250, Math.min(e.clientX, 800));
+        setSidebarWidth(newWidth);
+      } else {
+        // Timeline resizes from right
+        const newWidth = Math.max(
+          250,
+          Math.min(window.innerWidth - e.clientX, 800),
+        );
+        setTimelineWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing === "sidebar") {
+        onUpdateUIState("sidebarWidth", sidebarWidthRef.current);
+      } else {
+        onUpdateUIState("timelineWidth", timelineWidthRef.current);
+      }
+      setIsResizing(null);
+      document.body.style.cursor = "";
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+    };
+  }, [isResizing, onUpdateUIState]);
+
+  const startResizing =
+    (panel: "sidebar" | "timeline") => (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizing(panel);
+    };
 
   const handleGenerateImage = (nodeId: string) => {
     generateImageForNode(nodeId, undefined, true);
@@ -150,10 +199,15 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Sidebar */}
       <div
         data-tutorial-id="left-sidebar"
-        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out ${getSidebarWidthClass()}`}
+        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out`}
+        style={{
+          width: sidebarCollapsed ? 0 : sidebarWidth,
+        }}
       >
         {/* Sidebar Content - hidden when collapsed */}
-        <div className={`h-full ${sidebarCollapsed ? "hidden" : "block"}`}>
+        <div
+          className={`h-full w-full ${sidebarCollapsed ? "hidden" : "block"}`}
+        >
           <Sidebar
             onCloseMobile={() => {}}
             onMagicMirror={onMagicMirror}
@@ -170,10 +224,18 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           />
         </div>
 
+        {/* Resize Handle */}
+        {!sidebarCollapsed && (
+          <div
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-theme-primary/50 transition-colors z-30"
+            onMouseDown={startResizing("sidebar")}
+          />
+        )}
+
         {/* Toggle Button */}
         <button
           onClick={() => onUpdateUIState("sidebarCollapsed", !sidebarCollapsed)}
-          className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 w-8 h-16 bg-theme-surface border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface hover:text-theme-muted hover:border-theme-surface transition-colors z-30 shadow-lg opacity-0 hover:opacity-100 cursor-pointer"
+          className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 w-8 h-16 bg-theme-surface border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface hover:text-theme-muted hover:border-theme-surface transition-colors z-40 shadow-lg opacity-0 hover:opacity-100 cursor-pointer"
           title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           <svg
@@ -196,7 +258,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
 
       {/* Main Content Area */}
       <div
-        className={`${getMainContentWidthClass()} flex flex-col relative h-full min-w-0`}
+        className={`flex-1 flex flex-col relative h-full min-w-0`}
         data-tutorial-id="story-feed-area"
       >
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -242,15 +304,26 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Timeline */}
       <div
         data-tutorial-id="right-timeline"
-        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out ${getTimelineWidthClass()}`}
+        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out`}
+        style={{
+          width: timelineCollapsed ? 0 : timelineWidth,
+        }}
       >
+        {/* Resize Handle */}
+        {!timelineCollapsed && (
+          <div
+            className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-theme-primary/50 transition-colors z-30"
+            onMouseDown={startResizing("timeline")}
+          />
+        )}
+
         {/* Timeline Content - hidden when collapsed */}
         <div
           className={`w-full h-full ${timelineCollapsed ? "hidden" : "block"}`}
         >
           <Suspense
             fallback={
-              <div className="w-72 bg-theme-surface/30 animate-pulse"></div>
+              <div className="w-full h-full bg-theme-surface/30 animate-pulse"></div>
             }
           >
             <StoryTimeline
@@ -267,7 +340,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           onClick={() =>
             onUpdateUIState("timelineCollapsed", !timelineCollapsed)
           }
-          className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 w-8 h-16 bg-theme-surface border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface hover:text-theme-text hover:border-theme-surface transition-all z-30 shadow-lg opacity-0 hover:opacity-100 cursor-pointer"
+          className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 w-8 h-16 bg-theme-surface border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface hover:text-theme-text hover:border-theme-surface transition-all z-40 shadow-lg opacity-0 hover:opacity-100 cursor-pointer"
           title={timelineCollapsed ? "Expand Timeline" : "Collapse Timeline"}
         >
           <svg
