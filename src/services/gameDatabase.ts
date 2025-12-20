@@ -413,26 +413,40 @@ export class GameDatabase {
     target: string,
     queryOrAspect?: string,
     extraQuery?: string,
+    options: { page?: number; limit?: number } = {},
   ): ToolCallResult<QueryResultMap[keyof QueryResultMap]> {
     const term = queryOrAspect?.toLowerCase();
+    const page = options.page || 1;
+    const limit = options.limit || 20;
+
+    // Helper for pagination
+    const paginateResults = <T>(items: T[]): T[] => {
+      const total = items.length;
+      const totalPages = Math.ceil(total / limit);
+      const safePage = Math.max(1, Math.min(page, totalPages || 1));
+      const start = (safePage - 1) * limit;
+      return items.slice(start, start + limit);
+    };
 
     try {
       switch (target) {
         case "inventory": {
           const results = this.filterEntities(this.state.inventory, term);
           this.updateLastAccess(results);
+          const paginated = paginateResults(results);
           return createSuccess<InventoryItem[]>(
-            results,
-            `Found ${results.length} items`,
+            paginated,
+            `Found ${results.length} items (showing page ${page})`,
           );
         }
 
         case "relationship": {
           const results = this.filterEntities(this.state.relationships, term);
           this.updateLastAccess(results);
+          const paginated = paginateResults(results);
           return createSuccess<Relationship[]>(
-            results,
-            `Found ${results.length} NPCs`,
+            paginated,
+            `Found ${results.length} NPCs (showing page ${page})`,
           );
         }
 
@@ -440,48 +454,56 @@ export class GameDatabase {
           if (term) {
             const results = this.filterEntities(this.state.locations, term);
             this.updateLastAccess(results);
+            const paginated = paginateResults(results);
             return createSuccess<Location[]>(
-              results,
-              `Found ${results.length} locations`,
+              paginated,
+              `Found ${results.length} locations (showing page ${page})`,
             );
           }
           // For listing, still update lastAccess for all
           this.updateLastAccess(this.state.locations);
-          return createSuccess<LocationListItem[]>(
-            this.state.locations.map((l) => ({
+          const locationList: LocationListItem[] = this.state.locations.map(
+            (l) => ({
               id: l.id,
               name: l.name,
               visited: l.isVisited,
               isCurrent:
                 matchesIdentifier(l.name, this.state.currentLocation) ||
                 matchesIdentifier(l.id, this.state.currentLocation),
-            })),
-            `Listed ${this.state.locations.length} locations`,
+            }),
+          );
+          const paginatedList = paginateResults(locationList);
+          return createSuccess<LocationListItem[]>(
+            paginatedList,
+            `Listed ${this.state.locations.length} locations (showing page ${page})`,
           );
 
         case "quest": {
           const results = this.filterEntities(this.state.quests, term);
           this.updateLastAccess(results);
+          const paginated = paginateResults(results);
           return createSuccess<Quest[]>(
-            results,
-            `Found ${results.length} quests`,
+            paginated,
+            `Found ${results.length} quests (showing page ${page})`,
           );
         }
 
         case "knowledge": {
           const results = this.filterEntities(this.state.knowledge || [], term);
           this.updateLastAccess(results);
+          const paginated = paginateResults(results);
           return createSuccess<KnowledgeEntry[]>(
-            results,
-            `Found ${results.length} knowledge entries`,
+            paginated,
+            `Found ${results.length} knowledge entries (showing page ${page})`,
           );
         }
 
         case "faction": {
           const results = this.filterEntities(this.state.factions || [], term);
+          const paginated = paginateResults(results);
           return createSuccess<Faction[]>(
-            results,
-            `Found ${results.length} factions`,
+            paginated,
+            `Found ${results.length} factions (showing page ${page})`,
           );
         }
 
@@ -520,19 +542,24 @@ export class GameDatabase {
                 `Found ${this.state.character.attributes.length} attributes`,
               );
             case "skills":
+              const skills = filterByTerm(this.state.character.skills);
               return createSuccess(
-                filterByTerm(this.state.character.skills),
-                `Found skills`,
+                paginateResults(skills),
+                `Found ${skills.length} skills (showing page ${page})`,
               );
             case "conditions":
+              const conditions = filterByTerm(this.state.character.conditions);
               return createSuccess(
-                filterByTerm(this.state.character.conditions),
-                `Found conditions`,
+                paginateResults(conditions),
+                `Found ${conditions.length} conditions (showing page ${page})`,
               );
             case "hiddenTraits":
+              const traits = filterByTerm(
+                this.state.character.hiddenTraits || [],
+              );
               return createSuccess(
-                filterByTerm(this.state.character.hiddenTraits || []),
-                `Found hidden traits`,
+                paginateResults(traits),
+                `Found ${traits.length} hidden traits (showing page ${page})`,
               );
             case "all":
             default:
@@ -544,9 +571,7 @@ export class GameDatabase {
         }
 
         case "timeline":
-          const timeline = this.state.timeline
-            ? this.state.timeline.slice(-20)
-            : [];
+          const timeline = this.state.timeline || [];
           if (term) {
             const filtered = timeline.filter(
               (e) =>
@@ -554,14 +579,16 @@ export class GameDatabase {
                 e.visible.description.toLowerCase().includes(term) ||
                 e.category.toLowerCase().includes(term),
             );
+            const paginated = paginateResults(filtered);
             return createSuccess(
-              filtered,
-              `Found ${filtered.length} timeline events`,
+              paginated,
+              `Found ${filtered.length} timeline events (showing page ${page})`,
             );
           }
+          const paginatedTimeline = paginateResults(timeline);
           return createSuccess(
-            timeline,
-            `Retrieved ${timeline.length} recent events`,
+            paginatedTimeline,
+            `Retrieved ${timeline.length} events (showing page ${page})`,
           );
 
         case "causal_chain":
@@ -570,14 +597,16 @@ export class GameDatabase {
             const filtered = chains.filter((c) =>
               c.chainId.toLowerCase().includes(term),
             );
+            const paginated = paginateResults(filtered);
             return createSuccess(
-              filtered,
-              `Found ${filtered.length} causal chains`,
+              paginated,
+              `Found ${filtered.length} causal chains (showing page ${page})`,
             );
           }
+          const paginatedChains = paginateResults(chains);
           return createSuccess(
-            chains,
-            `Retrieved ${chains.length} causal chains`,
+            paginatedChains,
+            `Retrieved ${chains.length} causal chains (showing page ${page})`,
           );
 
         case "global":
@@ -731,7 +760,7 @@ export class GameDatabase {
       const result = paginate(items);
       return createSuccess(
         result,
-        `Listed ${target} (Page ${result.page}/${result.totalPages})`,
+        `Listed ${target} (Page ${result.page}/${result.totalPages}, Total ${result.total})`,
       );
     } catch (error) {
       return createError(`List failed: ${error}`, "UNKNOWN");

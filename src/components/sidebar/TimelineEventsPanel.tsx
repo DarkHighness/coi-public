@@ -45,7 +45,9 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
             </span>
             {event.category && (
               <span className="text-[9px] uppercase tracking-wider text-theme-muted bg-theme-surface/50 px-1.5 py-0.5 rounded border border-theme-border/20">
-                {event.category.replace("_", " ")}
+                {t(`timeline.categories.${event.category}`, {
+                  defaultValue: event.category.replace("_", " "),
+                })}
               </span>
             )}
             {event.unlocked && (

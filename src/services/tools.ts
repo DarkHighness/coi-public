@@ -281,6 +281,7 @@ export const QUERY_RECENT_CONTEXT_TOOL = defineTool({
       .number()
       .optional()
       .describe("Number of segments. Default: 10, Max: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -299,6 +300,8 @@ export const QUERY_INVENTORY_TOOL = defineTool({
       .describe(
         "Name, ID (inv:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -312,6 +315,8 @@ export const QUERY_RELATIONSHIPS_TOOL = defineTool({
       .describe(
         "Name, ID (npc:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -325,6 +330,8 @@ export const QUERY_LOCATIONS_TOOL = defineTool({
       .describe(
         "Name, ID (loc:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -342,6 +349,8 @@ export const QUERY_QUESTS_TOOL = defineTool({
       .enum(["active", "completed", "failed", "all"])
       .nullish()
       .describe("Filter by status. Default: 'active'."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -356,6 +365,8 @@ export const QUERY_KNOWLEDGE_TOOL = defineTool({
         "Title, ID (know:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
     category: knowledgeCategorySchema.nullish().describe("Filter by category."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -369,6 +380,8 @@ export const QUERY_TIMELINE_TOOL = defineTool({
       .describe(
         "Regex, ID (evt:N), or category. NO 'x or y' patterns. Omit for recent events.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -382,6 +395,8 @@ export const QUERY_CAUSAL_CHAIN_TOOL = defineTool({
       .describe(
         "Regex or ID (chain:N). NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -395,6 +410,8 @@ export const QUERY_FACTIONS_TOOL = defineTool({
       .describe(
         "Name, ID (fac:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -457,6 +474,8 @@ export const QUERY_CHARACTER_ATTRIBUTES_TOOL = defineTool({
   description: "Query character's numeric attributes (Health, Mana, etc.).",
   parameters: z.object({
     name: z.string().nullish().describe("Attribute name. Omit to list all."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -470,6 +489,8 @@ export const QUERY_CHARACTER_SKILLS_TOOL = defineTool({
       .describe(
         "Skill name, ID (skill:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -483,6 +504,8 @@ export const QUERY_CHARACTER_CONDITIONS_TOOL = defineTool({
       .describe(
         "Condition name, ID (cond:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -496,6 +519,8 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
       .describe(
         "Trait name, ID (trait:N), or regex. NO 'x or y' patterns. Omit to list all.",
       ),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -544,6 +569,8 @@ export const QUERY_NOTES_TOOL = defineTool({
     keys: z
       .array(z.string())
       .describe("Note keys to query. Max 5 keys per request."),
+    limit: z.number().optional().describe("Max results. Default: 5."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
@@ -561,6 +588,7 @@ export const LIST_NOTES_TOOL = defineTool({
       .optional()
       .describe("Optional regex pattern to filter keys."),
     limit: z.number().optional().describe("Max results. Default: 20."),
+    page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 

@@ -42,6 +42,7 @@
   "copyImagePrompt": "Copy Image Prompt",
   "copied": "Copied!",
   "inventory": "Inventory",
+  "ambience": "Ambience",
   "environment": "Environment",
   "appearance": "Appearance",
   "profession": "Profession",
@@ -447,7 +448,7 @@
   },
   "search": "Search",
   "noResults": "No results found",
-  "environmentNames": {
+  "ambienceNames": {
     "cave": "Cave",
     "city": "City",
     "combat": "Combat",
@@ -464,16 +465,19 @@
     "snow": "Snow",
     "storm": "Storm",
     "tavern": "Tavern",
-    "beach": "Beach",
-    "castle": "Castle",
-    "village": "Village",
     "mountain": "Mountain",
-    "space": "Space",
-    "underwater": "Underwater",
+    "swamp": "Swamp",
+    "village": "Village",
     "temple": "Temple",
+    "castle": "Castle",
+    "ruins": "Ruins",
+    "underwater": "Underwater",
+    "space": "Space",
+    "beach": "Beach",
+    "palace": "Palace",
     "Unknown": "Unknown"
   },
-  "environmentThemeNames": {
+  "envThemeNames": {
     "fantasy": "Fantasy",
     "scifi": "Sci-Fi",
     "cyberpunk": "Cyberpunk",
@@ -511,7 +515,36 @@
     "interstellar": "Interstellar",
     "gothic": "Gothic",
     "academy": "Academy",
-    "apocalypse": "Apocalypse"
+    "apocalypse": "Apocalypse",
+    "steampunk": "Steampunk",
+    "liminal": "Liminal Space",
+    "foundation": "Foundation",
+    "abyssal": "Abyssal"
+  },
+  "weatherNames": {
+    "none": "None",
+    "rain": "Rain",
+    "snow": "Snow",
+    "fog": "Fog",
+    "embers": "Embers",
+    "flicker": "Flicker",
+    "sunny": "Sunny",
+    "clear": "Clear",
+    "partly_cloudy": "Partly Cloudy",
+    "cloudy": "Cloudy",
+    "overcast": "Overcast",
+    "drizzle": "Drizzle",
+    "heavy_rain": "Heavy Rain",
+    "thunderstorm": "Thunderstorm",
+    "light_snow": "Light Snow",
+    "heavy_snow": "Heavy Snow",
+    "blizzard": "Blizzard",
+    "mist": "Mist",
+    "haze": "Haze",
+    "windy": "Windy",
+    "gale": "Gale",
+    "dust_storm": "Dust Storm",
+    "sandstorm": "Sandstorm"
   },
   "hideSystem": "Hide System",
   "showSystem": "Show System",
@@ -1234,7 +1267,7 @@
       "tired": "Tired",
       "dead": "Dead"
     },
-    "ambience": {
+    "ambienceNames": {
       "forest": "Forest",
       "desert": "Desert",
       "ocean": "Ocean",
@@ -1260,7 +1293,7 @@
       "underwater": "Underwater",
       "space": "Space"
     },
-    "weather": {
+    "weatherNames": {
       "none": "None",
       "sunny": "Sunny",
       "clear": "Clear",

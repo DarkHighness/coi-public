@@ -46,23 +46,23 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   // Use currentAmbience (actual playing audio) if available, otherwise use atmosphere's ambience
   const displayAmbience = currentAmbience || ambience;
 
-  // Get translated names - use environmentThemeNames for envTheme, environmentNames for ambience
+  // Get translated names - use envThemeNames for envTheme, ambienceNames for ambience
   let ambienceName = displayAmbience
-    ? t("environmentNames." + displayAmbience)
+    ? t("ambienceNames." + displayAmbience)
     : null;
-  let envThemeName = envTheme ? t("environmentThemeNames." + envTheme) : null;
+  let envThemeName = envTheme ? t("envThemeNames." + envTheme) : null;
 
   // Fallback to raw names if translation missing
   if (
     displayAmbience &&
-    (!ambienceName || ambienceName === "environmentNames." + displayAmbience)
+    (!ambienceName || ambienceName === "ambienceNames." + displayAmbience)
   ) {
     ambienceName = displayAmbience;
   }
 
   if (
     envTheme &&
-    (!envThemeName || envThemeName === "environmentThemeNames." + envTheme)
+    (!envThemeName || envThemeName === "envThemeNames." + envTheme)
   ) {
     envThemeName = envTheme;
   }

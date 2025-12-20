@@ -242,7 +242,13 @@
     "playerAction": "你的行动",
     "command": "指令",
     "navigateHint": "双击跳转到对应段落（移动端长按）",
-    "unknown_time": "未知时间"
+    "exportButton": "导出",
+    "categories": {
+      "player_action": "玩家行动",
+      "npc_action": "角色行动",
+      "world_event": "世界事件",
+      "consequence": "因果连锁"
+    }
   },
   "timelineExport": {
     "title": "导出时间轴",
@@ -444,7 +450,7 @@
   },
   "search": "搜索",
   "noResults": "未找到结果",
-  "environmentNames": {
+  "ambienceNames": {
     "cave": "洞穴",
     "city": "城市",
     "combat": "战斗",
@@ -461,14 +467,17 @@
     "snow": "雪地",
     "storm": "暴风雨",
     "tavern": "酒馆",
-    "beach": "海滩",
-    "castle": "城堡",
-    "village": "村庄",
     "mountain": "山脉",
-    "space": "太空",
-    "underwater": "水下",
+    "swamp": "沼泽",
+    "village": "村庄",
     "temple": "神庙",
-    "Unknown": "未知"
+    "castle": "城堡",
+    "ruins": "遗迹",
+    "underwater": "水下",
+    "space": "太空",
+    "beach": "海滩",
+    "Unknown": "未知",
+    "palace": "宫殿"
   },
 
   "gameStateViewer": {
@@ -490,7 +499,7 @@
     "atmosphere": "氛围",
     "time": "时间"
   },
-  "environmentThemeNames": {
+  "envThemeNames": {
     "fantasy": "奇幻",
     "scifi": "科幻",
     "cyberpunk": "赛博朋克",
@@ -528,7 +537,36 @@
     "interstellar": "星际",
     "gothic": "哥特",
     "academy": "学院",
-    "apocalypse": "末日"
+    "apocalypse": "末日",
+    "steampunk": "蒸汽朋克",
+    "liminal": "阈限空间",
+    "foundation": "基金会",
+    "abyssal": "深渊"
+  },
+  "weatherNames": {
+    "none": "无",
+    "rain": "下雨",
+    "snow": "下雪",
+    "fog": "大雾",
+    "embers": "灰烬",
+    "flicker": "闪烁",
+    "sunny": "晴天",
+    "clear": "晴朗",
+    "partly_cloudy": "多云",
+    "cloudy": "阴天",
+    "overcast": "阴沈",
+    "drizzle": "小雨",
+    "heavy_rain": "大雨",
+    "thunderstorm": "雷阵雨",
+    "light_snow": "小雪",
+    "heavy_snow": "大雪",
+    "blizzard": "暴风雪",
+    "mist": "薄雾",
+    "haze": "霾",
+    "windy": "有风",
+    "gale": "大风",
+    "dust_storm": "扬尘",
+    "sandstorm": "沙尘暴"
   },
   "models": {
     "story": "故事生成",
@@ -1248,58 +1286,6 @@
       "unconscious": "昏迷",
       "tired": "疲劳",
       "dead": "死亡"
-    },
-    "ambience": {
-      "forest": "森林",
-      "desert": "沙漠",
-      "ocean": "海洋",
-      "snow": "雪地",
-      "rain": "雨天",
-      "storm": "风暴",
-      "cave": "洞穴",
-      "city": "城市",
-      "market": "市场",
-      "tavern": "酒馆",
-      "mystical": "神秘",
-      "horror": "恐怖",
-      "combat": "战斗",
-      "quiet": "宁静",
-      "scifi": "科幻",
-      "dungeon": "地牢",
-      "mountain": "山脉",
-      "swamp": "沼泽",
-      "village": "村庄",
-      "temple": "寺庙",
-      "castle": "城堡",
-      "ruins": "废墟",
-      "underwater": "水下",
-      "space": "太空"
-    },
-    "weather": {
-      "none": "无",
-      "sunny": "晴朗",
-      "clear": "晴朗",
-      "partly_cloudy": "多云",
-      "cloudy": "阴天",
-      "overcast": "阴霾",
-      "rain": "下雨",
-      "drizzle": "毛毛雨",
-      "heavy_rain": "大雨",
-      "storm": "风暴",
-      "thunderstorm": "雷暴",
-      "snow": "下雪",
-      "light_snow": "小雪",
-      "heavy_snow": "大雪",
-      "blizzard": "暴风雪",
-      "fog": "雾",
-      "mist": "薄雾",
-      "haze": "霾",
-      "windy": "多风",
-      "gale": "大风",
-      "dust_storm": "尘暴",
-      "sandstorm": "沙尘暴",
-      "embers": "余烬",
-      "flicker": "闪烁"
     }
   },
   "common": {

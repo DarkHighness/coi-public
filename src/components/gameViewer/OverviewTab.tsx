@@ -160,13 +160,23 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       >
         <InfoRow
           label={t("gameViewer.environment")}
-          value={gameState.atmosphere.envTheme}
+          value={t(`envThemeNames.${gameState.atmosphere.envTheme}`, {
+            defaultValue: gameState.atmosphere.envTheme,
+          })}
         />
         {gameState.atmosphere.ambience && (
           <InfoRow
             label={t("gameViewer.ambience")}
-            value={t(`ambience.${gameState.atmosphere.ambience}`, {
+            value={t(`ambienceNames.${gameState.atmosphere.ambience}`, {
               defaultValue: gameState.atmosphere.ambience,
+            })}
+          />
+        )}
+        {gameState.atmosphere.weather && (
+          <InfoRow
+            label={t("gameViewer.weather")}
+            value={t(`weatherNames.${gameState.atmosphere.weather}`, {
+              defaultValue: gameState.atmosphere.weather,
             })}
           />
         )}

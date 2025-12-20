@@ -117,7 +117,9 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                     </span>
                     <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted flex items-center gap-1 border border-theme-border/50 uppercase tracking-wider">
                       <span>{getValidIcon(event.icon, "⏳")}</span>
-                      {event.category}
+                      {t(`timeline.categories.${event.category}`, {
+                        defaultValue: event.category,
+                      })}
                     </span>
                   </div>
                   <div className="text-theme-text text-sm pl-2 border-l-2 border-theme-border/50">

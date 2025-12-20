@@ -190,7 +190,7 @@ export const getWorldConsistencyRule = (): string => `
   </rule>
 `;
 
-export const getCoreRules = (): string => `
+export const getCoreRules = (disableImagePrompt?: boolean): string => `
 <core_rules>
   ${getWorldConsistencyRule()}
 
@@ -677,6 +677,10 @@ export const getCoreRules = (): string => `
     - **Tension**: Always leave a loose thread or cliffhanger.
   </rule>
 
+    ${
+      disableImagePrompt
+        ? ""
+        : `
   <rule name="VISUALS">
     - **Type 1 (Bird's Eye)**: New location intro - wide establishing shot showing the full environment.
     - **Type 2 (Player Perspective)**: What player sees - over-the-shoulder or third-person cinematic.
@@ -705,6 +709,8 @@ export const getCoreRules = (): string => `
 
     **Example**: "Abandoned temple at dusk, golden sunset streaming through shattered stained glass windows. Marcus, an elderly warrior in silver armor, kneels on one knee before a damaged altar, hand resting on his sword. Behind him stands the blind priestess Mirella, hands raised in blessing. Blue-purple color palette with gold-orange accents. Solemn atmosphere, wide-angle shot from behind the altar."
   </rule>
+  `
+    }
 
   <rule name="ICONS">
     - **MANDATORY**: You MUST generate a single emoji \`icon\` for EVERY new or updated entity (Item, Location, Knowledge, Status, Skill, Relationship, Faction, TimelineEvent, Attribute, Quest).
@@ -1004,14 +1010,18 @@ export const getIdentityEnforcement = (
 /**
  * 精简版核心规则 - 极简版，仅保留必要规则
  */
-export const getCoreRulesLite = (): string => `
+export const getCoreRulesLite = (disableImagePrompt?: boolean): string => `
 <core_rules>
   <rule>WORLD CONSISTENCY: Adhere strictly to genre (realistic/fantasy/sci-fi). No crossover elements.</rule>
   <rule>CONSEQUENCES: Every action has reactions. The world never forgets.</rule>
   <rule>NPC: Use \`hidden\` for true motives, \`visible\` for public face. Track affinity/status changes.</rule>
   <rule>STATE: Output ONLY deltas. Update state IMMEDIATELY when events occur.</rule>
   <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = player knows. Reveal only through investigation.</rule>
-  <rule>VISUALS: Provide \`imagePrompt\` for key moments. Include protagonist, NPCs, lighting.</rule>
+  ${
+    disableImagePrompt
+      ? ""
+      : "<rule>VISUALS: Provide `imagePrompt` for key moments. Include protagonist, NPCs, lighting.</rule>"
+  }
   <rule>ICONS: Generate emoji \`icon\` for every entity.</rule>
 </core_rules>
 `;

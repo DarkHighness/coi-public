@@ -160,7 +160,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         {t("gameViewer.environment") || "Environment"}:
                       </span>{" "}
                       <span className="text-theme-muted">
-                        {loc.environment}
+                        {t(`ambienceNames.${loc.environment}`, {
+                          defaultValue: loc.environment,
+                        })}
                       </span>
                     </div>
                   )}
@@ -175,7 +177,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           <InfoRow
                             label={t("gameViewer.weather") || "Weather"}
                             value={t(
-                              `weather.${loc.visible.atmosphere.weather}`,
+                              `weatherNames.${loc.visible.atmosphere.weather}`,
                               {
                                 defaultValue: loc.visible.atmosphere.weather,
                               },
@@ -186,7 +188,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           <InfoRow
                             label={t("gameViewer.ambience") || "Ambience"}
                             value={t(
-                              `ambience.${loc.visible.atmosphere.ambience}`,
+                              `ambienceNames.${loc.visible.atmosphere.ambience}`,
                               {
                                 defaultValue: loc.visible.atmosphere.ambience,
                               },

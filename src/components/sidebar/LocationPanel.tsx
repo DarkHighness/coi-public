@@ -174,7 +174,12 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
                         <MarkdownText
-                          content={locationData.environment}
+                          content={t(
+                            `ambienceNames.${locationData.environment}`,
+                            {
+                              defaultValue: locationData.environment,
+                            },
+                          )}
                           indentSize={2}
                         />
                       </div>
@@ -190,7 +195,13 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             {t("sidebar.location.weather")}:
                           </span>
                           <span className="text-theme-text/90">
-                            {locationData.visible.atmosphere.weather}
+                            {t(
+                              `weatherNames.${locationData.visible.atmosphere.weather}`,
+                              {
+                                defaultValue:
+                                  locationData.visible.atmosphere.weather,
+                              },
+                            )}
                           </span>
                         </div>
                       )}
@@ -200,7 +211,13 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             {t("sidebar.location.ambience")}:
                           </span>
                           <span className="text-theme-text/90">
-                            {locationData.visible.atmosphere.ambience}
+                            {t(
+                              `ambienceNames.${locationData.visible.atmosphere.ambience}`,
+                              {
+                                defaultValue:
+                                  locationData.visible.atmosphere.ambience,
+                              },
+                            )}
                           </span>
                         </div>
                       )}

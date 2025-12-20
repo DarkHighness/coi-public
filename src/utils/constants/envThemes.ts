@@ -1212,4 +1212,30 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-sans",
   },
+  // Void / Obsidian
+  obsidian: {
+    vars: {
+      "--theme-bg": "#020617",
+      "--theme-surface": "#0f172a",
+      "--theme-surface-highlight": "#1e293b",
+      "--theme-border": "#1e293b",
+      "--theme-primary": "#94a3b8",
+      "--theme-primary-hover": "#64748b",
+      "--theme-text": "#f8fafc",
+      "--theme-muted": "#475569",
+      ...DEFAULT_STATE_VARS,
+    },
+    dayVars: {
+      "--theme-bg": "#f8fafc",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#f1f5f9",
+      "--theme-border": "#cbd5e1",
+      "--theme-primary": "#1e293b",
+      "--theme-primary-hover": "#0f172a",
+      "--theme-text": "#0f172a",
+      "--theme-muted": "#64748b",
+      ...DEFAULT_DAY_STATE_VARS,
+    },
+    fontClass: "font-serif",
+  },
 };

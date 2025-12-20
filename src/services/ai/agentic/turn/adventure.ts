@@ -1096,8 +1096,8 @@ export function executeToolCall(
     const typedArgs = getTypedArgs("list", args);
     return db.list(
       typedArgs.type,
-      typedArgs.page,
-      typedArgs.limit,
+      typedArgs.page || 1,
+      typedArgs.limit || 20,
       typedArgs.search,
     );
   }
@@ -1106,28 +1106,52 @@ export function executeToolCall(
   // ENTITY QUERY TOOLS
   // ============================================================================
   if (name === "query_inventory") {
-    return db.query("inventory", args.query as string);
+    return db.query("inventory", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_relationships") {
-    return db.query("relationship", args.query as string);
+    return db.query("relationship", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_locations") {
-    return db.query("location", args.query as string);
+    return db.query("location", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_quests") {
-    return db.query("quest", args.query as string);
+    return db.query("quest", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_knowledge") {
-    return db.query("knowledge", args.query as string);
+    return db.query("knowledge", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_timeline") {
-    return db.query("timeline", args.query as string);
+    return db.query("timeline", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_causal_chain") {
-    return db.query("causal_chain", args.query as string);
+    return db.query("causal_chain", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_factions") {
-    return db.query("faction", args.query as string);
+    return db.query("faction", args.query as string, undefined, {
+      page: args.page as number,
+      limit: args.limit as number,
+    });
   }
   if (name === "query_global") {
     return db.query("global");
@@ -1138,19 +1162,31 @@ export function executeToolCall(
   }
   if (name === "query_character_attributes") {
     const typedArgs = getTypedArgs("query_character_attributes", args);
-    return db.query("character", "attributes", typedArgs.name ?? undefined);
+    return db.query("character", "attributes", typedArgs.name ?? undefined, {
+      page: typedArgs.page,
+      limit: typedArgs.limit,
+    });
   }
   if (name === "query_character_skills") {
     const typedArgs = getTypedArgs("query_character_skills", args);
-    return db.query("character", "skills", typedArgs.query ?? undefined);
+    return db.query("character", "skills", typedArgs.query ?? undefined, {
+      page: typedArgs.page,
+      limit: typedArgs.limit,
+    });
   }
   if (name === "query_character_conditions") {
     const typedArgs = getTypedArgs("query_character_conditions", args);
-    return db.query("character", "conditions", typedArgs.query ?? undefined);
+    return db.query("character", "conditions", typedArgs.query ?? undefined, {
+      page: typedArgs.page,
+      limit: typedArgs.limit,
+    });
   }
   if (name === "query_character_traits") {
     const typedArgs = getTypedArgs("query_character_traits", args);
-    return db.query("character", "hiddenTraits", typedArgs.query ?? undefined);
+    return db.query("character", "hiddenTraits", typedArgs.query ?? undefined, {
+      page: typedArgs.page,
+      limit: typedArgs.limit,
+    });
   }
   // RAG search
   if (name === "rag_search") {
@@ -1167,7 +1203,12 @@ export function executeToolCall(
   }
   if (name === "list_notes") {
     const typedArgs = getTypedArgs("list_notes", args);
-    return executeListNotes(typedArgs.search, typedArgs.limit, db);
+    return executeListNotes(
+      typedArgs.search,
+      typedArgs.limit,
+      typedArgs.page,
+      db,
+    );
   }
   if (name === "update_notes") {
     const typedArgs = getTypedArgs("update_notes", args);
@@ -2139,11 +2180,13 @@ function executeQuerySummary(
     keyword,
     nodeRange,
     limit = 5,
+    page = 1,
     order = "desc",
   } = args as {
     keyword?: string;
     nodeRange?: { start?: number; end?: number };
     limit?: number;
+    page?: number;
     order?: "asc" | "desc";
   };
 
@@ -2214,8 +2257,15 @@ function executeQuerySummary(
     filteredSummaries.sort((a, b) => b.index - a.index);
   }
 
-  // Limit results
-  const limitedResults = filteredSummaries.slice(0, limit);
+  // Pagination
+  const totalResults = filteredSummaries.length;
+  const totalPages = Math.ceil(totalResults / limit);
+  const safePage = Math.max(1, Math.min(page, totalPages || 1));
+  const startIndex = (safePage - 1) * limit;
+  const limitedResults = filteredSummaries.slice(
+    startIndex,
+    startIndex + limit,
+  );
 
   // Format results with clear visible/hidden markers
   const results = limitedResults.map(({ summary, index }) => ({
@@ -2244,7 +2294,12 @@ function executeQuerySummary(
     hasSummary: true,
     totalSummaries: summaries.length,
     matchedCount: filteredSummaries.length,
-    query: { keyword, nodeRange, limit, order },
+    pagination: {
+      page: safePage,
+      totalPages,
+      totalResults,
+    },
+    query: { keyword, nodeRange, limit, page: safePage, order },
     results,
     /**
      * IMPORTANT: The 'visible' layer contains what the protagonist experienced.
@@ -2279,6 +2334,7 @@ function executeQueryRecentContext(
     Math.max((args.count as number) || 10, 1),
     40,
   );
+  const page = (args.page as number) || 1;
   const currentFork = gameState.currentFork || [];
 
   if (currentFork.length === 0) {
@@ -2320,8 +2376,15 @@ function executeQueryRecentContext(
   }
 
   // Get segments BEYOND what's in context
-  const startIndex = Math.max(0, currentFork.length - requestedCount);
-  const recentSegments = currentFork.slice(startIndex);
+  const totalResults = currentFork.length;
+  const startIndex = Math.max(0, totalResults - requestedCount);
+  const relevantSegments = currentFork.slice(startIndex);
+
+  // Apply pagination on top of requestedCount
+  const totalPages = Math.ceil(relevantSegments.length / 10); // Standard page size for segments
+  const safePage = Math.max(1, Math.min(page, totalPages || 1));
+  const pageStart = (safePage - 1) * 10;
+  const recentSegments = relevantSegments.slice(pageStart, pageStart + 10);
 
   // Format segments with clear markers
   const segments = recentSegments.map((segment) => ({
@@ -2510,6 +2573,7 @@ function executeQueryNotes(keys: string[], db: GameDatabase): unknown {
 function executeListNotes(
   search: string | undefined,
   limit: number | undefined,
+  page: number | undefined,
   db: GameDatabase,
 ): unknown {
   const state = db.getState();
@@ -2529,18 +2593,25 @@ function executeListNotes(
     }
   }
 
-  // Apply limit
+  // Apply limit and page
   const effectiveLimit = Math.min(limit || 20, 100);
-  const limitedKeys = keys.slice(0, effectiveLimit);
+  const effectivePage = page || 1;
+  const total = keys.length;
+  const totalPages = Math.ceil(total / effectiveLimit);
+  const safePage = Math.max(1, Math.min(effectivePage, totalPages || 1));
+  const start = (safePage - 1) * effectiveLimit;
+  const limitedKeys = keys.slice(start, start + effectiveLimit);
 
   return {
     success: true,
     keys: limitedKeys,
     total: keys.length,
+    page: safePage,
+    totalPages,
     limited: keys.length > effectiveLimit,
     hint:
       keys.length > effectiveLimit
-        ? `Showing ${effectiveLimit} of ${keys.length} keys. Use search to filter.`
+        ? `Showing page ${safePage} of ${totalPages} (${limitedKeys.length} of ${keys.length} keys). Use search to filter.`
         : `Found ${keys.length} note keys.`,
   };
 }
