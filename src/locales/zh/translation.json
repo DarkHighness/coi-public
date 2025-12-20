@@ -413,6 +413,8 @@
       "agenticLoopHelp": "配置 AI 代理循环执行的行为。",
       "maxAgenticRounds": "最大轮数",
       "maxAgenticRoundsHelp": "代理循环的最大轮数（默认：20）",
+      "clearerSearchTool": "清晰搜索工具",
+      "clearerSearchToolHelp": "在搜索结果中返回详细的工具元数据（描述、Schema），帮助 AI 发现可用工具。",
       "maxErrorRetries": "最大错误重试次数",
       "maxErrorRetriesHelp": "发生错误时的最大重试次数（默认：3）"
     }

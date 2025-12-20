@@ -18,6 +18,7 @@ import {
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
 import type { AtmosphereObject } from "../utils/constants/atmosphere";
 import { repairGameState, syncIdCounter } from "./stateRepair";
+import Fuse from "fuse.js";
 
 // --- Tool Call Result Types ---
 
@@ -809,6 +810,35 @@ export class GameDatabase {
     }
   }
 
+  // --- Fuzzy Matching Helpers ---
+
+  /**
+   * Suggest similar entities for NOT_FOUND errors
+   */
+  private suggestSimilar(identifier: string, collection: any[]): string {
+    if (!collection.length) return "";
+
+    const items = collection.map((item) => ({
+      id: item.id,
+      name: item.name || item.title || item.visible?.name || item.id,
+    }));
+
+    const fuse = new Fuse(items, {
+      keys: ["name", "id"],
+      threshold: 0.4,
+    });
+
+    const results = fuse.search(identifier);
+    if (!results.length) return "";
+
+    const suggestions = results
+      .slice(0, 3)
+      .map((r) => `"${r.item.name}" (ID: ${r.item.id})`)
+      .join(", ");
+
+    return ` Did you mean: ${suggestions}?`;
+  }
+
   // --- Specific Modifiers ---
 
   private modifyInventory(
@@ -842,12 +872,12 @@ export class GameDatabase {
       }
 
       // 2. Check Name Conflict (Keep strict to prevent logical duplicates)
-      const nameExists = this.state.inventory.some((i) =>
+      const existing = this.state.inventory.find((i) =>
         matchesIdentifier(i.name, data.name),
       );
-      if (nameExists) {
+      if (existing) {
         return createError(
-          `Item "${data.name}" already exists`,
+          `Item "${data.name}" already exists with ID "${existing.id}". Use action 'update' if you want to modify it.`,
           "ALREADY_EXISTS",
         );
       }
@@ -906,7 +936,14 @@ export class GameDatabase {
           matchesIdentifier(i.name, identifier),
       );
       if (index === -1) {
-        return createError(`Item "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.inventory,
+        );
+        return createError(
+          `Item "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       const removed = this.state.inventory.splice(index, 1)[0];
@@ -931,7 +968,14 @@ export class GameDatabase {
           matchesIdentifier(i.name, identifier),
       );
       if (!item) {
-        return createError(`Item "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.inventory,
+        );
+        return createError(
+          `Item "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       if (data.name && data.name !== identifier) item.name = data.name;
@@ -999,11 +1043,14 @@ export class GameDatabase {
       }
 
       // 2. Check Name Conflict
-      const nameExists = this.state.relationships.some((r) =>
+      const existing = this.state.relationships.find((r) =>
         matchesIdentifier(r.visible.name, name),
       );
-      if (nameExists) {
-        return createError(`NPC "${name}" already exists`, "ALREADY_EXISTS");
+      if (existing) {
+        return createError(
+          `NPC "${name}" already exists with ID "${existing.id}". Use action 'update' if you want to modify it.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       const newId = finalId || this.generateId("npc");
@@ -1074,7 +1121,14 @@ export class GameDatabase {
           matchesIdentifier(r.visible.name, identifier),
       );
       if (index === -1) {
-        return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.relationships,
+        );
+        return createError(
+          `NPC "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       const removed = this.state.relationships.splice(index, 1)[0];
@@ -1099,7 +1153,14 @@ export class GameDatabase {
           matchesIdentifier(r.visible.name, identifier),
       );
       if (!npc) {
-        return createError(`NPC "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.relationships,
+        );
+        return createError(
+          `NPC "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       if (data.visible) mergeWithNullDeletion(npc.visible, data.visible);
@@ -1170,12 +1231,12 @@ export class GameDatabase {
       }
 
       // 2. Check Name Conflict
-      const nameExists = this.state.locations.some((l) =>
+      const existing = this.state.locations.find((l) =>
         matchesIdentifier(l.name, data.name),
       );
-      if (nameExists) {
+      if (existing) {
         return createError(
-          `Location "${data.name}" already exists`,
+          `Location "${data.name}" already exists with ID "${existing.id}". Use action 'update' if you want to modify it.`,
           "ALREADY_EXISTS",
         );
       }
@@ -1239,7 +1300,14 @@ export class GameDatabase {
           matchesIdentifier(l.name, identifier),
       );
       if (index === -1) {
-        return createError(`Location "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.locations,
+        );
+        return createError(
+          `Location "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       const removed = this.state.locations[index];
@@ -1277,7 +1345,14 @@ export class GameDatabase {
           matchesIdentifier(l.id, identifier),
       );
       if (!loc) {
-        return createError(`Location "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.locations,
+        );
+        return createError(
+          `Location "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       if (data.visible) mergeWithNullDeletion(loc.visible, data.visible);
@@ -1340,12 +1415,12 @@ export class GameDatabase {
       }
 
       // 2. Check Title Conflict
-      const nameExists = this.state.quests.some((q) =>
+      const existing = this.state.quests.find((q) =>
         matchesIdentifier(q.title, data.title),
       );
-      if (nameExists) {
+      if (existing) {
         return createError(
-          `Quest "${data.title}" already exists`,
+          `Quest "${data.title}" already exists with ID "${existing.id}". Use action 'update' if you want to modify it.`,
           "ALREADY_EXISTS",
         );
       }
@@ -1406,7 +1481,11 @@ export class GameDatabase {
           matchesIdentifier(q.title, identifier),
       );
       if (index === -1) {
-        return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(identifier, this.state.quests);
+        return createError(
+          `Quest "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       const removed = this.state.quests.splice(index, 1)[0];
@@ -1428,7 +1507,11 @@ export class GameDatabase {
           matchesIdentifier(q.id, identifier),
       );
       if (!quest) {
-        return createError(`Quest "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(identifier, this.state.quests);
+        return createError(
+          `Quest "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       if (action === "complete") quest.status = "completed";
@@ -1490,12 +1573,12 @@ export class GameDatabase {
       }
 
       // 2. Check Title Conflict
-      const nameExists = this.state.knowledge.some((k) =>
+      const existing = this.state.knowledge.find((k) =>
         matchesIdentifier(k.title, data.title),
       );
-      if (nameExists) {
+      if (existing) {
         return createError(
-          `Knowledge "${data.title}" already exists`,
+          `Knowledge "${data.title}" already exists with ID "${existing.id}". Use action 'update' if you want to modify it.`,
           "ALREADY_EXISTS",
         );
       }
@@ -1557,7 +1640,14 @@ export class GameDatabase {
           matchesIdentifier(k.id, identifier),
       );
       if (!k) {
-        return createError(`Knowledge "${identifier}" not found`, "NOT_FOUND");
+        const suggestion = this.suggestSimilar(
+          identifier,
+          this.state.knowledge,
+        );
+        return createError(
+          `Knowledge "${identifier}" not found.${suggestion}`,
+          "NOT_FOUND",
+        );
       }
 
       if (data.visible) mergeWithNullDeletion(k.visible, data.visible);

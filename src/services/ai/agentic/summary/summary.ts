@@ -24,7 +24,7 @@ import {
   UnifiedMessage,
 } from "../../../../types";
 
-import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
+import { ToolCallResult } from "../../../providers/types";
 import { GameDatabase } from "../../../gameDatabase";
 import {
   getSummaryToolsForStage,
@@ -45,6 +45,13 @@ import {
   createLogEntry,
   createProviderConfig,
 } from "../../utils";
+import {
+  getToolInfo,
+  ZodToolDefinition,
+  formatZodError,
+} from "../../../providers/utils";
+
+import { ALL_DEFINED_TOOLS } from "../../../tools";
 
 import { sessionManager } from "../../sessionManager";
 import { callWithAgenticRetry } from "../retry";
@@ -527,6 +534,15 @@ export const runSummaryAgenticLoop = async (
     // Process tool calls
     const functionCalls = (result as { functionCalls?: ToolCallResult[] })
       .functionCalls;
+
+    // Ensure all tool calls have IDs (OpenAI requirement)
+    if (functionCalls) {
+      for (const fc of functionCalls) {
+        if (!fc.id) {
+          fc.id = `call_${Math.random().toString(36).slice(2, 11)}`;
+        }
+      }
+    }
     const textContent = (result as { content?: string }).content;
 
     if (functionCalls && functionCalls.length > 0) {
@@ -599,6 +615,35 @@ export const runSummaryAgenticLoop = async (
             timestamp: Date.now(),
           };
 
+          // Validation for finish_summary
+          const finishToolDef = ALL_DEFINED_TOOLS.find(
+            (t) => t.name === "finish_summary",
+          );
+          if (finishToolDef) {
+            const validationResult = finishToolDef.parameters.safeParse(args);
+            if (!validationResult.success) {
+              const errorOutput = {
+                success: false,
+                error: `[VALIDATION_ERROR] Invalid parameters for "finish_summary". Please refer to the schema and correct your arguments:\n\n${getToolInfo(finishToolDef as any)}\n\nErrors:\n${formatZodError(validationResult.error)}`,
+                code: "INVALID_PARAMS",
+              };
+              turnToolCalls.push({
+                name,
+                input: args,
+                output: errorOutput,
+                timestamp: Date.now(),
+              });
+              toolResponses.push({
+                toolCallId: callId,
+                name,
+                content: errorOutput,
+              });
+              hasErrors = true;
+              failedTools.push(name);
+              continue;
+            }
+          }
+
           // Log with full input/output details
           const log = createLogEntry({
             provider: protocol,
@@ -642,7 +687,18 @@ export const runSummaryAgenticLoop = async (
 
           const output = {
             success: true,
-            message: `Loaded ${addedTools.length} query tools: ${addedTools.join(", ") || "None (already active)"}`,
+            message: settings.extra?.clearerSearchTool
+              ? `Loaded ${addedTools.length} query tools:\n\n${
+                  addedTools
+                    .map((name) => {
+                      const tool = ALL_DEFINED_TOOLS.find(
+                        (t) => t.name === name,
+                      );
+                      return tool ? getToolInfo(tool as any) : name;
+                    })
+                    .join("\n\n") || "None (already active)"
+                }`
+              : `Loaded ${addedTools.length} query tools: ${addedTools.join(", ") || "None (already active)"}`,
             loadedTools: addedTools,
           };
 

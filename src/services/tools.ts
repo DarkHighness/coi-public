@@ -3,12 +3,6 @@
  * Tool Definitions - 分阶段工具定义
  * ============================================================================
  *
- * 工具按阶段组织：
- * 1. QUERY Stage: 查询工具 + RAG 搜索 + next_stage
- * 2. ADD Stage: 添加工具 + next_stage
- * 3. REMOVE Stage: 删除工具 + next_stage
- * 4. UPDATE Stage: 更新工具 + next_stage
- * 5. NARRATIVE Stage: finish_turn
  *
  * --- ID Format Documentation ---
  * All entities use standardized ID format: "{prefix}:{number}"

@@ -5,9 +5,15 @@ import {
   ChatGenerateRequest,
   ChatGenerateResponse,
 } from "../provider/interfaces";
-import { createUserMessage, createToolCallMessage } from "../../messageTypes";
+import {
+  createUserMessage,
+  createAssistantMessage,
+  createToolCallMessage,
+  createToolResponseMessage,
+} from "../../messageTypes";
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
+import { formatZodError, getToolInfo } from "../../providers/utils";
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -64,6 +70,13 @@ export async function callWithAgenticRetry(
     let result = response.result;
     let functionCalls =
       (result as { functionCalls?: ToolCallResult[] }).functionCalls || [];
+
+    // Ensure every tool call has an ID (OpenAI requires matching IDs for responses)
+    for (const fc of functionCalls) {
+      if (!fc.id) {
+        fc.id = `call_${Math.random().toString(36).slice(2, 11)}`;
+      }
+    }
     const textContent = (result as { content?: string }).content || "";
 
     let errorMessage: string | null = null;
@@ -159,14 +172,12 @@ export async function callWithAgenticRetry(
           (toolCall.name === requiredToolName ? rootSchema : null);
 
         if (schema) {
-          try {
-            schema.parse(toolCall.args);
-          } catch (e: any) {
-            const zodErrors =
-              e.errors
-                ?.map((err: any) => `- ${err.path.join(".")}: ${err.message}`)
-                .join("\n") || e.message;
-            errorMessage = `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\nValidation Errors:\n${zodErrors}\nPlease review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
+          const validationResult = schema.safeParse(toolCall.args);
+          if (!validationResult.success) {
+            const toolHint = toolDef
+              ? `\n\nSchema Hint:\n${getToolInfo(toolDef as any)}`
+              : "";
+            errorMessage = `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\n\nErrors:\n${formatZodError(validationResult.error)}${toolHint}\n\nPlease review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
             break;
           }
         }
@@ -196,18 +207,37 @@ export async function callWithAgenticRetry(
     if (onRetry) onRetry(errorMessage, attempt);
 
     // Add failure output to history for model feedback
-    history.push(
-      createToolCallMessage(
-        functionCalls.map((fc) => ({
-          id: fc.id,
-          name: fc.name,
-          arguments: fc.args,
-          thoughtSignature: fc.thoughtSignature, // Include for Gemini 3 models
-        })),
-        textContent,
-      ),
-    );
-    history.push(createUserMessage(errorMessage));
+    if (functionCalls.length > 0) {
+      // 1. Add the assistant message with the tool calls
+      history.push(
+        createToolCallMessage(
+          functionCalls.map((fc) => ({
+            id: fc.id,
+            name: fc.name,
+            arguments: fc.args,
+            thoughtSignature: fc.thoughtSignature,
+          })),
+          textContent,
+        ),
+      );
+
+      // 2. Add the tool response message (role: 'tool') for each call ID (OpenAI requirement)
+      history.push(
+        createToolResponseMessage(
+          functionCalls.map((fc) => ({
+            toolCallId: fc.id,
+            name: fc.name,
+            content: { success: false, error: errorMessage },
+          })),
+        ),
+      );
+    } else {
+      // If no tool calls were attempted, just add as a text message
+      if (textContent) {
+        history.push(createAssistantMessage(textContent));
+      }
+      history.push(createUserMessage(errorMessage));
+    }
   }
 
   throw new Error("Maximum retries exceeded");

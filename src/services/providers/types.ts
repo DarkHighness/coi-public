@@ -129,7 +129,7 @@ export type InferToolParams<T> =
 export interface ZodToolDefinition {
   name: string;
   description: string;
-  parameters: ZodTypeAny;
+  parameters: ZodObject<any>;
 }
 
 // ============================================================================

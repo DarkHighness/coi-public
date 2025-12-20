@@ -412,6 +412,14 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         result.functionCalls.length > 0
       ) {
         const toolCalls = result.functionCalls as ToolCallResult[];
+
+        // Ensure all tool calls have IDs (OpenAI requirement)
+        for (const tc of toolCalls) {
+          if (!tc.id) {
+            tc.id = `call_${Math.random().toString(36).slice(2, 11)}`;
+          }
+        }
+
         const textContent = (result as { content?: string }).content;
 
         const toolCall = toolCalls[0];

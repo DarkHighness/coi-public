@@ -430,6 +430,8 @@
       "agenticLoopHelp": "Configure the behavior of AI agentic loop execution.",
       "maxAgenticRounds": "Max Rounds",
       "maxAgenticRoundsHelp": "Maximum number of rounds for agentic loop (default: 20)",
+      "clearerSearchTool": "Clearer Search Tool",
+      "clearerSearchToolHelp": "Return detailed tool metadata (description, schema) in search results to help AI discovery.",
       "maxErrorRetries": "Max Error Retries",
       "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)"
     }

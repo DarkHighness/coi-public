@@ -20,7 +20,6 @@ import {
 import {
   ToolCallResult,
   MalformedToolCallError,
-  ZodToolDefinition,
 } from "../../../providers/types";
 
 import { GameDatabase } from "../../../gameDatabase";
@@ -63,6 +62,11 @@ import {
   resolveThemeConfig,
   extractJson,
 } from "../../utils";
+import {
+  getToolInfo,
+  formatZodError,
+  ZodToolDefinition,
+} from "../../../providers/utils";
 
 import { ATMOSPHERE_DESCRIPTIONS } from "../../../../utils/constants/atmosphereDescriptions";
 import {
@@ -802,12 +806,21 @@ You are in AGENTIC MODE.
       | ToolCallResult[]
       | undefined;
 
+    // Ensure all tool calls have IDs (OpenAI requirement)
+    if (functionCalls) {
+      for (const fc of functionCalls) {
+        if (!fc.id) {
+          fc.id = `call_${Math.random().toString(36).slice(2, 11)}`;
+        }
+      }
+    }
+
     // Record Assistant Message
     if (functionCalls && functionCalls.length > 0) {
       conversationHistory.push(
         createToolCallMessage(
           functionCalls.map((fc) => ({
-            id: fc.id || `call_${Math.random().toString(36).substr(2, 9)}`,
+            id: fc.id,
             name: fc.name,
             arguments: fc.args,
             thoughtSignature: fc.thoughtSignature, // Include for Gemini 3 models
@@ -871,7 +884,18 @@ You are in AGENTIC MODE.
               }
             }
 
-            output = `Found and activated tools: ${addedTools.join(", ") || "None (maybe already active?)"}`;
+            output = settings.extra?.clearerSearchTool
+              ? `Found and activated tools:\n\n${
+                  addedTools
+                    .map((name) => {
+                      const tool = ALL_DEFINED_TOOLS.find(
+                        (t) => t.name === name,
+                      );
+                      return tool ? getToolInfo(tool as any) : name;
+                    })
+                    .join("\n\n") || "None (maybe already active?)"
+                }`
+              : `Found and activated tools: ${addedTools.join(", ") || "None (maybe already active?)"}`;
           }
           // SPECIAL HANDLE: finish_turn or complete_force_update
           else if (
@@ -904,7 +928,7 @@ You are in AGENTIC MODE.
                     .join("\n");
                   output = {
                     success: false,
-                    error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
+                    error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}". Please refer to the schema and correct your arguments:\n\n${getToolInfo(finishToolDef as any)}\n\nErrors:\n${formatZodError(validationResult.error)}`,
                     code: "INVALID_PARAMS",
                   };
                   isError = true;
@@ -938,12 +962,9 @@ You are in AGENTIC MODE.
             if (toolDef) {
               const validationResult = toolDef.parameters.safeParse(call.args);
               if (!validationResult.success) {
-                const zodErrors = validationResult.error.errors
-                  .map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`)
-                  .join("\n");
                 output = {
                   success: false,
-                  error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}":\n${zodErrors}`,
+                  error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}". Please refer to the schema and correct your arguments:\n\n${getToolInfo(toolDef as any)}\n\nErrors:\n${formatZodError(validationResult.error)}`,
                   code: "INVALID_PARAMS",
                 };
                 isError = true;
@@ -989,7 +1010,7 @@ You are in AGENTIC MODE.
         }
 
         toolResponses.push({
-          toolCallId: call.id || "unknown",
+          toolCallId: call.id,
           name: call.name,
           content: output,
         });

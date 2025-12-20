@@ -1,5 +1,29 @@
-import { ZodTypeAny } from "zod";
+import {
+  ZodTypeAny,
+  ZodError,
+  ZodObject,
+  ZodOptional,
+  ZodArray,
+  ZodUnion,
+  ZodEnum,
+  ZodString,
+  ZodNumber,
+  ZodBoolean,
+  ZodNull,
+  ZodNullable,
+  ZodIntersection,
+  ZodRecord,
+} from "zod";
 import { AIProviderError } from "./types";
+
+/**
+ * Zod Tool Definition simplified interface for utility use
+ */
+export interface ZodToolDefinition {
+  name: string;
+  description: string;
+  parameters: ZodObject<any>;
+}
 
 /**
  * Schema Validation Error
@@ -143,4 +167,97 @@ export function cleanJsonContent(content: string): string {
   cleaned = cleaned.replace(/\r?\n?```\s*$/, "");
 
   return cleaned.trim();
+}
+
+/**
+ * Format Zod validation errors into a human-readable string for the AI
+ */
+export function formatZodError(error: ZodError): string {
+  const issues = error.errors
+    .map(
+      (e) => `  <issue>
+    <path>${e.path.join(".") || "(root)"}</path>
+    <message>${e.message}</message>
+  </issue>`,
+    )
+    .join("\n");
+  return `<validation_errors>\n${issues}\n</validation_errors>`;
+}
+
+/**
+ * Generate a simplified, JSON-like schema representation for the AI
+ */
+export function getToolSchemaHint(schema: ZodTypeAny): string {
+  if (schema instanceof ZodObject) {
+    const shape = schema.shape;
+    const parts = Object.entries(shape).map(([key, value]) => {
+      const isOptional = (value as ZodTypeAny) instanceof ZodOptional;
+      const description = (value as ZodTypeAny).description;
+      const typeHint = getGenericTypeHint(value as ZodTypeAny);
+      return `    <parameter>
+      <name>${key}</name>
+      <type>${typeHint}</type>
+      <required>${!isOptional}</required>${
+        description
+          ? `
+      <description>${description}</description>`
+          : ""
+      }
+    </parameter>`;
+    });
+    return parts.join("\n");
+  }
+  return `  <type>${getGenericTypeHint(schema)}</type>`;
+}
+
+/**
+ * Internal helper for type hints
+ */
+function getGenericTypeHint(schema: ZodTypeAny): string {
+  // Unwrap optional/nullable
+  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
+    return getGenericTypeHint(schema._def.innerType);
+  }
+
+  if (schema instanceof ZodString) return "string";
+  if (schema instanceof ZodNumber) return "number";
+  if (schema instanceof ZodBoolean) return "boolean";
+  if (schema instanceof ZodNull) return "null";
+  if (schema instanceof ZodEnum) {
+    return (schema as ZodEnum<any>)._def.values
+      .map((v) => `"${v}"`)
+      .join(" | ");
+  }
+  if (schema instanceof ZodArray) {
+    return `Array<${getGenericTypeHint(schema._def.type)}>`;
+  }
+  if (schema instanceof ZodObject) {
+    return "Object";
+  }
+  if (schema instanceof ZodUnion) {
+    return (schema as ZodUnion<any>)._def.options
+      .map((opt: ZodTypeAny) => getGenericTypeHint(opt))
+      .join(" | ");
+  }
+  if (schema instanceof ZodIntersection) {
+    return `${getGenericTypeHint(schema._def.left)} & ${getGenericTypeHint(schema._def.right)}`;
+  }
+  if (schema instanceof ZodRecord) {
+    return "Record<string, ...>";
+  }
+
+  return "any";
+}
+
+/**
+ * Get full tool information including name, description, and schema hint
+ */
+export function getToolInfo(tool: ZodToolDefinition): string {
+  return `<tool_info>
+  <name>${tool.name}</name>
+  <description>${tool.description}</description>
+  <parameters>
+${getToolSchemaHint(tool.parameters)}
+  </parameters>
+</tool_info>`;
 }
