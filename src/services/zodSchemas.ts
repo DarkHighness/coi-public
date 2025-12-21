@@ -101,7 +101,11 @@ export const inventoryItemHiddenSchema = z.object({
 
 /** 完整物品 Schema */
 export const inventoryItemSchema = z.object({
-  id: z.string().nullish().describe("Format: inv:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'rusty_sword', 'healing_potion_1', 'inv_5'.",
+    ),
   name: z.string().describe("Name of the item."),
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.nullish(),
@@ -234,7 +238,11 @@ export const relationshipHiddenSchema = z.object({
 
 /** 完整关系 Schema */
 export const relationshipSchema = z.object({
-  id: z.string().nullish().describe("Format: npc:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'village_elder', 'guard_thomas', 'npc_3'.",
+    ),
   known: z
     .boolean()
     .nullish()
@@ -439,7 +447,11 @@ export const locationHiddenSchema = z.object({
 
 /** 完整地点 Schema */
 export const locationSchema = z.object({
-  id: z.string().nullish().describe("Format: loc:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'dark_forest', 'tavern_crossroads', 'loc_10'.",
+    ),
   name: z.string().describe("Name of the location."),
   visible: locationVisibleSchema,
   hidden: locationHiddenSchema.nullish(),
@@ -521,7 +533,11 @@ export const questStatusSchema = z.enum(["active", "completed", "failed"]);
 
 /** 完整任务 Schema */
 export const questSchema = z.object({
-  id: z.string().nullish().describe("Format: quest:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'find_missing_heir', 'defeat_dragon', 'quest_7'.",
+    ),
   title: z.string().describe("Quest title."),
   type: questTypeSchema.describe("Quest type: main, side, or hidden."),
   status: questStatusSchema.nullish().default("active"),
@@ -582,7 +598,11 @@ export const skillHiddenSchema = z.object({
 
 /** 完整技能 Schema */
 export const skillSchema = z.object({
-  id: z.string().nullish().describe("Format: skill:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'master_swordplay', 'arcane_knowledge', 'skill_4'.",
+    ),
   name: z.string().describe("Skill name."),
   level: z.string().describe("Skill level (e.g. Novice, Master)."),
   visible: skillVisibleSchema,
@@ -661,7 +681,11 @@ export const conditionTypeSchema = z.enum([
 
 /** 完整条件 Schema */
 export const conditionSchema = z.object({
-  id: z.string().nullish().describe("Format: cond:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'poisoned', 'blessed_by_goddess', 'cond_2'.",
+    ),
   name: z.string().describe("Condition name."),
   type: conditionTypeSchema.describe(
     "Condition type (e.g. wound, poison, buff, debuff, etc.).",
@@ -729,7 +753,11 @@ export const knowledgeHiddenSchema = z.object({
 
 /** 完整知识条目 Schema */
 export const knowledgeEntrySchema = z.object({
-  id: z.string().nullish().describe("Format: know:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'ancient_prophecy', 'local_folklore', 'know_8'.",
+    ),
   title: z.string().describe("Title of the knowledge entry."),
   category: knowledgeCategorySchema.describe("Category for organization."),
   visible: knowledgeVisibleSchema,
@@ -962,7 +990,11 @@ export const factionHiddenSchema = z.object({
 
 /** 完整阵营 Schema */
 export const factionSchema = z.object({
-  id: z.string().nullish().describe("Format: fac:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'thieves_guild', 'royal_court', 'fac_3'.",
+    ),
   name: z.string().describe("Faction name."),
   visible: factionVisibleSchema,
   hidden: factionHiddenSchema,
@@ -1019,7 +1051,11 @@ export const characterAttributeSchema = z.object({
 
 /** 隐藏特质 */
 export const hiddenTraitSchema = z.object({
-  id: z.string().nullish().describe("Format: trait:N"),
+  id: z
+    .string()
+    .describe(
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'fear_of_darkness', 'hidden_nobility', 'trait_1'.",
+    ),
   name: z.string().describe("Trait name."),
   description: z.string().describe("Description of the trait."),
   effects: z.array(z.string()).describe("Effects when triggered."),
@@ -1409,7 +1445,12 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "remove", "update"]),
-        id: z.string().nullish(),
+        id: z
+          .string()
+          .nullish()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the item (CANNOT change existing ID).",
+          ),
         name: z.string(),
         visible: inventoryItemVisibleSchema.nullish(),
         hidden: inventoryItemHiddenSchema.nullish(),
@@ -1424,7 +1465,12 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update", "remove"]),
-        id: z.string().nullish(),
+        id: z
+          .string()
+          .nullish()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the NPC (CANNOT change existing ID).",
+          ),
         known: z.boolean().nullish(),
         visible: relationshipVisibleSchema.partial().nullish(),
         hidden: relationshipHiddenSchema.partial().nullish(),
@@ -1440,7 +1486,12 @@ export const gameResponseSchema = z.object({
       z.object({
         type: z.enum(["current", "known"]),
         action: z.enum(["update", "add", "remove"]),
-        id: z.string().nullish(),
+        id: z
+          .string()
+          .nullish()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the location (CANNOT change existing ID).",
+          ),
         name: z.string().nullish(),
         visible: locationVisibleSchema.partial().nullish(),
         hidden: locationHiddenSchema.partial().nullish(),
@@ -1457,7 +1508,11 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update", "remove", "complete", "fail"]),
-        id: z.string(),
+        id: z
+          .string()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For other actions: ID to identify the quest (CANNOT change existing ID).",
+          ),
         title: z.string().nullish(),
         type: questTypeSchema.nullish(),
         visible: questVisibleSchema.partial().nullish(),
@@ -1472,7 +1527,12 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update"]),
-        id: z.string().nullish(),
+        id: z
+          .string()
+          .nullish()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For 'update': ID to identify the knowledge (CANNOT change existing ID).",
+          ),
         title: z.string().nullish(),
         category: knowledgeCategorySchema.nullish(),
         visible: knowledgeVisibleSchema.partial().nullish(),
@@ -1489,7 +1549,11 @@ export const gameResponseSchema = z.object({
     .array(
       z.object({
         action: z.enum(["add", "update", "remove"]),
-        id: z.string(),
+        id: z
+          .string()
+          .describe(
+            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the faction (CANNOT change existing ID).",
+          ),
         name: z.string(),
         visible: z.string().nullish(),
         hidden: z.string().nullish(),
@@ -1528,7 +1592,12 @@ export const gameResponseSchema = z.object({
         .array(
           z.object({
             action: z.enum(["add", "update", "remove"]),
-            id: z.string().nullish(),
+            id: z
+              .string()
+              .nullish()
+              .describe(
+                "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify (CANNOT change).",
+              ),
             name: z.string(),
             type: conditionTypeSchema.nullish(),
             visible: conditionVisibleSchema.partial().nullish(),
@@ -1544,7 +1613,12 @@ export const gameResponseSchema = z.object({
         .array(
           z.object({
             action: z.enum(["add", "update", "remove"]),
-            id: z.string().nullish(),
+            id: z
+              .string()
+              .nullish()
+              .describe(
+                "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify (CANNOT change).",
+              ),
             name: z.string(),
             description: z.string().nullish(),
             effects: z.array(z.string()).nullish(),

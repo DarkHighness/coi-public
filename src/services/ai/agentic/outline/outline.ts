@@ -571,26 +571,10 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
 
-  // Track maximum IDs assigned to update nextIds
-  const maxIds: Record<string, number> = {
-    item: 0,
-    npc: 0,
-    location: 0,
-    knowledge: 0,
-    quest: 0,
-    faction: 0,
-    timeline: 0,
-    skill: 0,
-    condition: 0,
-    hiddenTrait: 0,
-  };
-
   // Helper to ensure all entities have IDs and set unlocked: false
-  // Also tracks the maximum ID number used for each type
   const prepareEntities = <T extends { id?: string; unlocked?: boolean }>(
     items: T[] | undefined | null,
     prefix: string,
-    nextIdKey: keyof typeof maxIds,
   ): T[] => {
     // Validate that items is actually an array
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -623,11 +607,6 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
         );
       }
 
-      // Track maximum ID for this type
-      if (idNumber > maxIds[nextIdKey]) {
-        maxIds[nextIdKey] = idNumber;
-      }
-
       counter = idNumber + 1;
       return { ...item, id: newId, unlocked: false };
     });
@@ -648,13 +627,13 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     character: {
       ...p2.character,
       skills: p2.character.skills
-        ? prepareEntities(p2.character.skills, "skill", "skill")
+        ? prepareEntities(p2.character.skills, "skill")
         : undefined,
       conditions: p2.character.conditions
-        ? prepareEntities(p2.character.conditions, "cond", "condition")
+        ? prepareEntities(p2.character.conditions, "cond")
         : undefined,
       hiddenTraits: p2.character.hiddenTraits
-        ? prepareEntities(p2.character.hiddenTraits, "trait", "hiddenTrait")
+        ? prepareEntities(p2.character.hiddenTraits, "trait")
         : undefined,
     } as StoryOutline["character"],
 
@@ -662,20 +641,17 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     locations: prepareEntities(
       p3.locations as StoryOutline["locations"],
       "loc",
-      "location",
     ) as StoryOutline["locations"],
 
     // Phase 4: Factions
     factions: prepareEntities(
       p4.factions as StoryOutline["factions"],
       "fac",
-      "faction",
     ) as StoryOutline["factions"],
 
     // Phase 5: Relationships
     relationships: prepareEntities(
       p5.relationships as StoryOutline["relationships"],
-      "npc",
       "npc",
     ) as StoryOutline["relationships"],
 
@@ -683,13 +659,11 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     inventory: prepareEntities(
       p6.inventory as StoryOutline["inventory"],
       "inv",
-      "item",
     ) as StoryOutline["inventory"],
 
     // Phase 7: Quests
     quests: prepareEntities(
       p7.quests as StoryOutline["quests"],
-      "quest",
       "quest",
     ) as StoryOutline["quests"],
 
@@ -697,33 +671,15 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     knowledge: prepareEntities(
       p8.knowledge as StoryOutline["knowledge"],
       "know",
-      "knowledge",
     ) as StoryOutline["knowledge"],
 
     // Phase 9: Timeline & Atmosphere
     timeline: prepareEntities(
       p9.timeline as StoryOutline["timeline"],
       "evt",
-      "timeline",
     ) as StoryOutline["timeline"],
     initialAtmosphere:
       p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
-  };
-
-  // Update nextIds to be one more than the maximum used ID for each type
-  // This will be set in GameState when the outline is applied
-  (outline as any).__nextIds = {
-    item: maxIds.item + 1,
-    npc: maxIds.npc + 1,
-    location: maxIds.location + 1,
-    knowledge: maxIds.knowledge + 1,
-    quest: maxIds.quest + 1,
-    faction: maxIds.faction + 1,
-    timeline: maxIds.timeline + 1,
-    causalChain: 1, // Not set in outline
-    skill: maxIds.skill + 1,
-    condition: maxIds.condition + 1,
-    hiddenTrait: maxIds.hiddenTrait + 1,
   };
 
   return outline;

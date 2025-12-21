@@ -1,162 +1,161 @@
 import { GameState } from "../types";
-import { generateEntityId, EntityType } from "./tools";
 
 /**
- * Repair state integrity on load:
- * 1. Syncs nextIds counters to be higher than any existing entity ID.
- * 2. Detects and fixes duplicate IDs (by assigning new ones).
- *
- * Safe to call on any loaded state before using it.
+ * Deduplication and ID assignment utilities for AI-generated IDs
+ * No more nextIds counters - AI generates all IDs
  */
-export const repairGameState = (state: GameState): GameState => {
-  // Ensure we are working with a deep copy if we want purity,
-  // but for performance we usually modify in-place if pre-clone.
-  // Assuming caller handles cloning if necessary.
 
-  const types: Array<{
-    type: EntityType;
-    list: any[];
-    idKey?: string; // default "id"
-  }> = [
-    { type: "inventory", list: state.inventory || [] },
-    { type: "npc", list: state.relationships || [] },
-    { type: "location", list: state.locations || [] },
-    { type: "quest", list: state.quests || [] },
-    { type: "knowledge", list: state.knowledge || [] },
-    { type: "faction", list: state.factions || [] },
-    { type: "timeline", list: state.timeline || [] },
-    { type: "causalChain", list: state.causalChains || [], idKey: "chainId" },
-    { type: "skill", list: state.character?.skills || [] },
-    { type: "condition", list: state.character?.conditions || [] },
-    { type: "hiddenTrait", list: state.character?.hiddenTraits || [] },
-  ];
+type EntityType =
+  | "inventory"
+  | "npc"
+  | "location"
+  | "quest"
+  | "knowledge"
+  | "faction"
+  | "timeline"
+  | "causalChain"
+  | "skill"
+  | "condition"
+  | "hiddenTrait";
 
-  // Initialize/Ensures nextIds object exists
-  if (!state.nextIds) {
-    state.nextIds = {
-      item: 1,
-      npc: 1,
-      location: 1,
-      knowledge: 1,
-      quest: 1,
-      faction: 1,
-      timeline: 1,
-      causalChain: 1,
-      skill: 1,
-      condition: 1,
-      hiddenTrait: 1,
-    };
+/**
+ * Deduplicate IDs within a list by appending suffixes
+ * Returns warning messages for duplicate IDs found
+ */
+const deduplicateIds = (list: any[], idKey: string = "id"): string[] => {
+  const warnings: string[] = [];
+  const seen = new Map<string, number>(); // ID -> occurrence count
+
+  for (const item of list) {
+    if (!item) continue;
+
+    let id = item[idKey];
+
+    // If ID is missing, generate a temporary one
+    if (!id) {
+      const tempId = `temp_${Math.random().toString(36).substring(7)}`;
+      item[idKey] = tempId;
+      warnings.push(`Missing ID auto-filled with temporary ID: ${tempId}`);
+      seen.set(tempId, 1);
+      continue;
+    }
+
+    // Check for duplicates
+    if (seen.has(id)) {
+      const count = seen.get(id)! + 1;
+      seen.set(id, count);
+      const newId = `${id}_${count}`;
+      item[idKey] = newId;
+      warnings.push(
+        `Duplicate ID detected: "${id}" renamed to "${newId}". AI should generate unique IDs.`,
+      );
+      seen.set(newId, 1);
+    } else {
+      seen.set(id, 1);
+    }
   }
 
-  // Pass 1: Find Max IDs to sync counters
-  types.forEach(({ type, list, idKey }) => {
-    const keyMap: Record<EntityType, keyof typeof state.nextIds> = {
-      inventory: "item",
-      npc: "npc",
-      location: "location",
-      quest: "quest",
-      knowledge: "knowledge",
-      faction: "faction",
-      timeline: "timeline",
-      causalChain: "causalChain",
-      skill: "skill",
-      condition: "condition",
-      hiddenTrait: "hiddenTrait",
-    };
-    const counterKey = keyMap[type];
-    let maxNum = state.nextIds[counterKey] || 1;
-
-    for (const item of list) {
-      if (!item) continue;
-      const id = item[idKey || "id"];
-      if (typeof id === "string") {
-        // Parse "prefix:number"
-        const match = id.match(/:(\d+)$/);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (!isNaN(num) && num >= maxNum) {
-            maxNum = num + 1;
-          }
-        }
-      }
-    }
-    state.nextIds[counterKey] = maxNum;
-  });
-
-  // Pass 2: Fix Duplicates
-  // We need a local generateId helper since we are static
-  const generateId = (type: EntityType): string => {
-    const keyMap: Record<EntityType, keyof typeof state.nextIds> = {
-      inventory: "item",
-      npc: "npc",
-      location: "location",
-      quest: "quest",
-      knowledge: "knowledge",
-      faction: "faction",
-      timeline: "timeline",
-      causalChain: "causalChain",
-      skill: "skill",
-      condition: "condition",
-      hiddenTrait: "hiddenTrait",
-    };
-    const key = keyMap[type];
-    const nextNum = state.nextIds[key] || 1;
-    state.nextIds[key] = nextNum + 1;
-    return generateEntityId(type, nextNum);
-  };
-
-  types.forEach(({ type, list, idKey }) => {
-    const seen = new Set<string>();
-    for (const item of list) {
-      if (!item) continue;
-      const key = idKey || "id";
-      const id = item[key];
-      if (!id || seen.has(id)) {
-        // Duplicate or missing ID!
-        const newId = generateId(type);
-        item[key] = newId;
-        seen.add(newId);
-        // console.warn(`Fixed duplicate/missing ID for ${type}: ${id} -> ${newId}`);
-      } else {
-        seen.add(id);
-      }
-    }
-  });
-
-  return state;
+  return warnings;
 };
 
 /**
- * Ensure the nextId counter is ahead of the provided manual ID.
- * Call this when a tool manually provides an ID (e.g. AI setting specific ID).
+ * Assign missing IDs for entities loaded from legacy saves
+ * Uses simple sequential numbering for migrated data
  */
-export const syncIdCounter = (
-  state: GameState,
-  type: EntityType,
-  manualId: string,
-): void => {
-  const match = manualId.match(/:(\d+)$/);
-  if (match) {
-    const num = parseInt(match[1], 10);
-    const keyMap: Record<EntityType, keyof typeof state.nextIds> = {
-      inventory: "item",
-      npc: "npc",
-      location: "location",
-      quest: "quest",
-      knowledge: "knowledge",
-      faction: "faction",
-      timeline: "timeline",
-      causalChain: "causalChain",
-      skill: "skill",
-      condition: "condition",
-      hiddenTrait: "hiddenTrait",
-    };
-    const key = keyMap[type];
-    // Ensure key exists
-    if (state.nextIds[key] === undefined) state.nextIds[key] = 1;
+const assignMissingIds = (
+  list: any[],
+  typePrefix: string,
+  idKey: string = "id",
+): { warnings: string[]; nextIndex: number } => {
+  const warnings: string[] = [];
+  let nextIndex = 1;
 
-    if (state.nextIds[key] <= num) {
-      state.nextIds[key] = num + 1;
+  // Find highest existing numeric ID
+  for (const item of list) {
+    if (!item) continue;
+    const id = item[idKey];
+    if (typeof id === "string") {
+      // Try to extract number from various formats
+      const match = id.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num >= nextIndex) {
+          nextIndex = num + 1;
+        }
+      }
     }
   }
+
+  // Assign IDs to entities without them
+  for (const item of list) {
+    if (!item) continue;
+    if (!item[idKey]) {
+      const newId = `${typePrefix}_${nextIndex}`;
+      item[idKey] = newId;
+      nextIndex++;
+      warnings.push(`Auto-assigned ID "${newId}" during migration.`);
+    }
+  }
+
+  return { warnings, nextIndex };
+};
+
+/**
+ * Repair state integrity on load:
+ * 1. Assigns IDs to any entities missing them (legacy migration)
+ * 2. Deduplicates any duplicate IDs
+ */
+export const repairGameState = (state: GameState): GameState => {
+  const allWarnings: string[] = [];
+
+  const types: Array<{
+    type: EntityType;
+    prefix: string;
+    list: any[];
+    idKey?: string;
+  }> = [
+    { type: "inventory", prefix: "inv", list: state.inventory || [] },
+    { type: "npc", prefix: "npc", list: state.relationships || [] },
+    { type: "location", prefix: "loc", list: state.locations || [] },
+    { type: "quest", prefix: "quest", list: state.quests || [] },
+    { type: "knowledge", prefix: "know", list: state.knowledge || [] },
+    { type: "faction", prefix: "fac", list: state.factions || [] },
+    { type: "timeline", prefix: "evt", list: state.timeline || [] },
+    {
+      type: "causalChain",
+      prefix: "chain",
+      list: state.causalChains || [],
+      idKey: "chainId",
+    },
+    { type: "skill", prefix: "skill", list: state.character?.skills || [] },
+    {
+      type: "condition",
+      prefix: "cond",
+      list: state.character?.conditions || [],
+    },
+    {
+      type: "hiddenTrait",
+      prefix: "trait",
+      list: state.character?.hiddenTraits || [],
+    },
+  ];
+
+  // Pass 1: Assign missing IDs (for legacy saves)
+  types.forEach(({ type, prefix, list, idKey }) => {
+    const { warnings } = assignMissingIds(list, prefix, idKey || "id");
+    allWarnings.push(...warnings);
+  });
+
+  // Pass 2: Deduplicate any duplicate IDs
+  types.forEach(({ list, idKey }) => {
+    const warnings = deduplicateIds(list, idKey || "id");
+    allWarnings.push(...warnings);
+  });
+
+  // Log warnings if any
+  if (allWarnings.length > 0) {
+    console.warn("[State Repair] Issues found and fixed:", allWarnings);
+  }
+
+  return state;
 };

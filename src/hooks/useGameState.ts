@@ -68,20 +68,6 @@ const INITIAL_STATE: GameState = {
   logs: [],
   time: "Day 1, 08:00",
 
-  // New World System Fields
-  nextIds: {
-    item: 1,
-    npc: 1,
-    location: 1,
-    knowledge: 1000,
-    quest: 1000,
-    faction: 1000,
-    timeline: 1,
-    causalChain: 1,
-    skill: 1,
-    condition: 1,
-    hiddenTrait: 1,
-  },
   timeline: [],
   causalChains: [],
 

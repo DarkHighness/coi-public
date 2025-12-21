@@ -334,22 +334,6 @@ export class MigrationManager {
       };
     }
 
-    if (!repairedState.nextIds || typeof repairedState.nextIds !== "object") {
-      repairedState.nextIds = {
-        item: 1,
-        npc: 1,
-        location: 1,
-        knowledge: 1,
-        quest: 1,
-        faction: 1,
-        timeline: 1,
-        causalChain: 1,
-        skill: 1,
-        condition: 1,
-        hiddenTrait: 1,
-      };
-    }
-
     if (
       !repairedState.tokenUsage ||
       typeof repairedState.tokenUsage !== "object"

@@ -961,13 +961,19 @@ You are in AGENTIC MODE.
                     // Categorize errors as missing vs extra fields
                     const errors = validationResult.error.errors;
                     const missingFields = errors
-                      .filter((e) => e.code === "invalid_type" && e.received === "undefined")
+                      .filter(
+                        (e) =>
+                          e.code === "invalid_type" &&
+                          e.received === "undefined",
+                      )
                       .map((e) => e.path.join(".") || "(root)");
                     const extraFields = errors
                       .filter((e) => e.code === "unrecognized_keys")
                       .flatMap((e: any) => e.keys || []);
                     const otherErrors = errors.filter(
-                      (e) => e.code !== "invalid_type" && e.code !== "unrecognized_keys"
+                      (e) =>
+                        e.code !== "invalid_type" &&
+                        e.code !== "unrecognized_keys",
                     );
 
                     let errorMsg = `[VALIDATION_ERROR] Invalid parameters for "${call.name}".\n\n`;
@@ -1025,13 +1031,17 @@ You are in AGENTIC MODE.
                 // Categorize errors as missing vs extra fields
                 const errors = validationResult.error.errors;
                 const missingFields = errors
-                  .filter((e) => e.code === "invalid_type" && e.received === "undefined")
+                  .filter(
+                    (e) =>
+                      e.code === "invalid_type" && e.received === "undefined",
+                  )
                   .map((e) => e.path.join(".") || "(root)");
                 const extraFields = errors
                   .filter((e) => e.code === "unrecognized_keys")
                   .flatMap((e: any) => e.keys || []);
                 const otherErrors = errors.filter(
-                  (e) => e.code !== "invalid_type" && e.code !== "unrecognized_keys"
+                  (e) =>
+                    e.code !== "invalid_type" && e.code !== "unrecognized_keys",
                 );
 
                 let errorMsg = `[VALIDATION_ERROR] Invalid parameters for "${call.name}".\n\n`;

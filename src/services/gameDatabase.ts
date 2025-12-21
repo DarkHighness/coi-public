@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { ID_PREFIXES, generateEntityId, EntityType } from "./tools";
 import type { AtmosphereObject } from "../utils/constants/atmosphere";
-import { repairGameState, syncIdCounter } from "./stateRepair";
+import { repairGameState } from "./stateRepair";
 import Fuse from "fuse.js";
 
 // --- Tool Call Result Types ---
@@ -192,7 +192,7 @@ export class GameDatabase {
     // Deep copy to ensure we don't mutate the original state reference until ready
     this.state = JSON.parse(JSON.stringify(initialState));
 
-    // Auto-repair on load: Fix duplicate IDs and sync nextId counters
+    // Auto-repair on load: Fix duplicate IDs and assign IDs to legacy entities
     repairGameState(this.state);
   }
 
@@ -333,30 +333,6 @@ export class GameDatabase {
         reason: "ready_for_ai_decision",
       },
     }));
-  }
-
-  // --- ID Generation ---
-
-  private generateId(type: EntityType): string {
-    const keyMap: Record<EntityType, keyof typeof this.state.nextIds> = {
-      inventory: "item",
-      npc: "npc",
-      location: "location",
-      quest: "quest",
-      knowledge: "knowledge",
-      faction: "faction",
-      timeline: "timeline",
-      causalChain: "causalChain",
-      skill: "skill",
-      condition: "condition",
-      hiddenTrait: "hiddenTrait",
-    };
-
-    const key = keyMap[type];
-    const nextNum = this.state.nextIds[key] || 1;
-    this.state.nextIds[key] = nextNum + 1;
-
-    return generateEntityId(type, nextNum);
   }
 
   // --- Query Methods ---
@@ -859,16 +835,21 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
-      if (
-        finalId &&
-        this.state.inventory.some((i) => matchesIdentifier(i.id, finalId))
-      ) {
-        const generatedId = this.generateId("inventory");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new items.",
+          "INVALID_DATA",
+        );
+      }
+
+      // 1. Check ID Conflict
+      if (this.state.inventory.some((i) => matchesIdentifier(i.id, finalId))) {
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       // 2. Check Name Conflict (Keep strict to prevent logical duplicates)
@@ -882,8 +863,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("inventory");
-      if (finalId) syncIdCounter(this.state, "inventory", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -917,7 +897,7 @@ export class GameDatabase {
       this.state.inventory.push(newItem);
       return createSuccess(
         { id: newItem.id, name: newItem.name },
-        `Added item: ${newItem.name} (${newItem.id})${conflictNote}`,
+        `Added item: ${newItem.name} (${newItem.id})`,
       );
     }
 
@@ -1030,16 +1010,23 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new NPCs.",
+          "INVALID_DATA",
+        );
+      }
+
+      // 1. Check ID Conflict
       if (
-        finalId &&
         this.state.relationships.some((r) => matchesIdentifier(r.id, finalId))
       ) {
-        const generatedId = this.generateId("npc");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       // 2. Check Name Conflict
@@ -1053,8 +1040,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("npc");
-      if (finalId) syncIdCounter(this.state, "npc", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1102,7 +1088,7 @@ export class GameDatabase {
       this.state.relationships.push(newNpc);
       return createSuccess(
         newNpc,
-        `Added NPC: ${newNpc.visible.name} (${newNpc.id})${conflictNote}`,
+        `Added NPC: ${newNpc.visible.name} (${newNpc.id})`,
       );
     }
 
@@ -1218,16 +1204,21 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
-      if (
-        finalId &&
-        this.state.locations.some((l) => matchesIdentifier(l.id, finalId))
-      ) {
-        const generatedId = this.generateId("location");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new locations.",
+          "INVALID_DATA",
+        );
+      }
+
+      // 1. Check ID Conflict
+      if (this.state.locations.some((l) => matchesIdentifier(l.id, finalId))) {
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       // 2. Check Name Conflict
@@ -1241,8 +1232,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("location");
-      if (finalId) syncIdCounter(this.state, "location", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1281,7 +1271,7 @@ export class GameDatabase {
 
       return createSuccess(
         { id: newLocation.id, name: newLocation.name },
-        `Added location: ${newLocation.name} (${newLocation.id})${conflictNote}`,
+        `Added location: ${newLocation.name} (${newLocation.id})`,
       );
     }
 
@@ -1402,19 +1392,24 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
-      if (
-        finalId &&
-        this.state.quests.some((q) => matchesIdentifier(q.id, finalId))
-      ) {
-        const generatedId = this.generateId("quest");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new quests.",
+          "INVALID_DATA",
+        );
       }
 
-      // 2. Check Title Conflict
+      // 1. Check ID Conflict
+      if (this.state.quests.some((q) => matchesIdentifier(q.id, finalId))) {
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
+      }
+
+      // 2. Check Name Conflict
       const existing = this.state.quests.find((q) =>
         matchesIdentifier(q.title, data.title),
       );
@@ -1425,8 +1420,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("quest");
-      if (finalId) syncIdCounter(this.state, "quest", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1462,7 +1456,7 @@ export class GameDatabase {
       this.state.quests.push(newQuest);
       return createSuccess(
         { id: newQuest.id, name: newQuest.title },
-        `Added quest: ${newQuest.title} (${newQuest.id})${conflictNote}`,
+        `Added quest: ${newQuest.title} (${newQuest.id})`,
       );
     }
 
@@ -1560,16 +1554,21 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
-      if (
-        finalId &&
-        this.state.knowledge.some((k) => matchesIdentifier(k.id, finalId))
-      ) {
-        const generatedId = this.generateId("knowledge");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new knowledge.",
+          "INVALID_DATA",
+        );
+      }
+
+      // 1. Check ID Conflict
+      if (this.state.knowledge.some((k) => matchesIdentifier(k.id, finalId))) {
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       // 2. Check Title Conflict
@@ -1583,8 +1582,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("knowledge");
-      if (finalId) syncIdCounter(this.state, "knowledge", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1621,7 +1619,7 @@ export class GameDatabase {
       this.state.knowledge.push(newKnowledge);
       return createSuccess(
         { id: newKnowledge.id, name: newKnowledge.title },
-        `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})${conflictNote}`,
+        `Added knowledge: ${newKnowledge.title} (${newKnowledge.id})`,
       );
     }
 
@@ -1701,16 +1699,21 @@ export class GameDatabase {
         );
       }
 
-      // 1. Resolve ID Conflict
-      let finalId = data.id;
-      let conflictNote = "";
-      if (
-        finalId &&
-        this.state.factions.some((f) => matchesIdentifier(f.id, finalId))
-      ) {
-        const generatedId = this.generateId("faction");
-        conflictNote = ` (Note: Requested ID "${finalId}" unavailable. Assigned "${generatedId}")`;
-        finalId = generatedId;
+      // Validate ID is provided by AI
+      const finalId = data.id;
+      if (!finalId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for new factions.",
+          "INVALID_DATA",
+        );
+      }
+
+      // 1. Check ID Conflict
+      if (this.state.factions.some((f) => matchesIdentifier(f.id, finalId))) {
+        return createError(
+          `ID "${finalId}" already exists. AI must generate a unique ID.`,
+          "ALREADY_EXISTS",
+        );
       }
 
       // 2. Check Name Conflict
@@ -1724,8 +1727,7 @@ export class GameDatabase {
         );
       }
 
-      const newId = finalId || this.generateId("faction");
-      if (finalId) syncIdCounter(this.state, "faction", finalId);
+      const newId = finalId;
       if (
         data.unlocked === true &&
         (!data.unlockReason ||
@@ -1749,7 +1751,7 @@ export class GameDatabase {
       this.state.factions.push(newFaction);
       return createSuccess(
         { id: newFaction.id, name: newFaction.name },
-        `Added faction: ${newFaction.name} (${newFaction.id})${conflictNote}`,
+        `Added faction: ${newFaction.name} (${newFaction.id})`,
       );
     }
 
@@ -1982,7 +1984,13 @@ export class GameDatabase {
             matchesIdentifier(s.name, skill.name),
           );
           if (!exists) {
-            const newId = skill.id || this.generateId("skill");
+            const newId = skill.id;
+            if (!newId) {
+              return createError(
+                "ID is required. AI must generate a unique ID for skills.",
+                "INVALID_DATA",
+              );
+            }
             this.state.character.skills.push({
               id: newId,
               name: skill.name,
@@ -2043,7 +2051,13 @@ export class GameDatabase {
             matchesIdentifier(c.name, cond.name),
           );
           if (!exists) {
-            const newId = cond.id || this.generateId("condition");
+            const newId = cond.id;
+            if (!newId) {
+              return createError(
+                "ID is required. AI must generate a unique ID for conditions.",
+                "INVALID_DATA",
+              );
+            }
             this.state.character.conditions.push({
               id: newId,
               name: cond.name,
@@ -2126,7 +2140,13 @@ export class GameDatabase {
             matchesIdentifier(t.name, trait.name),
           );
           if (!exists) {
-            const newId = trait.id || this.generateId("hiddenTrait");
+            const newId = trait.id;
+            if (!newId) {
+              return createError(
+                "ID is required. AI must generate a unique ID for hidden traits.",
+                "INVALID_DATA",
+              );
+            }
             this.state.character.hiddenTraits!.push({
               id: newId,
               name: trait.name,
@@ -2183,7 +2203,13 @@ export class GameDatabase {
     data: Partial<TimelineEvent> & { description?: string },
   ): ToolCallResult<TimelineEvent> {
     if (action === "add") {
-      const newId = data.id || this.generateId("timeline");
+      const newId = data.id;
+      if (!newId) {
+        return createError(
+          "ID is required. AI must generate a unique ID for timeline events.",
+          "INVALID_DATA",
+        );
+      }
       const newEvent: TimelineEvent = {
         id: newId,
         gameTime: data.gameTime || this.state.time,

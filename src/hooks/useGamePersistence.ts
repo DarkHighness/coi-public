@@ -21,21 +21,6 @@ import { getRAGService } from "../services/rag";
 import { sessionManager } from "../services/ai/sessionManager";
 import { useTranslation } from "react-i18next";
 
-// Default nextIds structure for recovery
-const DEFAULT_NEXT_IDS = {
-  item: 1,
-  npc: 1,
-  location: 1,
-  knowledge: 1,
-  quest: 1,
-  faction: 1,
-  timeline: 1,
-  causalChain: 1,
-  skill: 1,
-  condition: 1,
-  hiddenTrait: 1,
-};
-
 export const useGamePersistence = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
@@ -105,67 +90,7 @@ export const useGamePersistence = (
         repairLog.push("Repaired: time defaulted to Day 1");
       }
 
-      // === 2. Fix missing or corrupted nextIds ===
-      if (!parsed.nextIds || typeof parsed.nextIds !== "object") {
-        repairLog.push("Repaired: missing nextIds");
-        parsed.nextIds = { ...DEFAULT_NEXT_IDS };
-      } else {
-        // Ensure all fields exist
-        for (const [key, defaultVal] of Object.entries(DEFAULT_NEXT_IDS)) {
-          if (typeof parsed.nextIds[key] !== "number") {
-            repairLog.push(`Repaired: nextIds.${key} was invalid`);
-            parsed.nextIds[key] = defaultVal;
-          }
-        }
-      }
-
-      // === 3. Recalculate nextIds based on actual data to prevent ID collisions ===
-      const recalculateNextId = (
-        items: any[] | undefined,
-        prefix: string,
-        field: keyof typeof DEFAULT_NEXT_IDS,
-      ) => {
-        if (!items || !Array.isArray(items)) return;
-        let maxId = 0;
-        for (const item of items) {
-          if (
-            item.id &&
-            typeof item.id === "string" &&
-            item.id.startsWith(`${prefix}:`)
-          ) {
-            const num = parseInt(item.id.split(":")[1], 10);
-            if (!isNaN(num) && num > maxId) maxId = num;
-          }
-        }
-        if (maxId >= parsed.nextIds[field]) {
-          parsed.nextIds[field] = maxId + 1;
-          repairLog.push(
-            `Repaired: nextIds.${field} recalculated to ${maxId + 1}`,
-          );
-        }
-      };
-
-      recalculateNextId(parsed.inventory, "inv", "item");
-      recalculateNextId(parsed.relationships, "npc", "npc");
-      recalculateNextId(parsed.locations, "loc", "location");
-      recalculateNextId(parsed.knowledge, "know", "knowledge");
-      recalculateNextId(parsed.quests, "quest", "quest");
-      recalculateNextId(parsed.factions, "fac", "faction");
-      recalculateNextId(parsed.timeline, "evt", "timeline");
-      recalculateNextId(parsed.causalChains, "chain", "causalChain");
-
-      // Skills, conditions, and hiddenTraits are nested in character
-      if (parsed.character) {
-        recalculateNextId(parsed.character.skills, "skill", "skill");
-        recalculateNextId(parsed.character.conditions, "cond", "condition");
-        recalculateNextId(
-          parsed.character.hiddenTraits,
-          "trait",
-          "hiddenTrait",
-        );
-      }
-
-      // === 4. Fix dangling user node (crash during generation) ===
+      // === 2. Fix dangling user node (crash during generation) ===
       if (
         parsed.activeNodeId &&
         parsed.nodes &&

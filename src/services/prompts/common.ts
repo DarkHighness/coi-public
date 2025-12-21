@@ -595,6 +595,56 @@ export const getCoreRules = (disableImagePrompt?: boolean): string => `
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
   </rule>
 
+  <rule name="ID GENERATION - CRITICAL">
+    **YOU ARE RESPONSIBLE FOR GENERATING ALL ENTITY IDs**
+
+    Every entity you create MUST have a unique \`id\` field. The system will NOT generate IDs for you.
+
+    **MANDATORY REQUIREMENTS**:
+    - **IDs are REQUIRED**: All entities (items, NPCs, locations, quests, knowledge, factions, skills, conditions, traits, timeline events) MUST have an \`id\`.
+    - **YOU generate IDs**: The system will ERROR if you don't provide an ID. There is NO fallback.
+    - **Uniqueness is YOUR responsibility**: Each ID must be unique within its type.
+    - **IDs are IMMUTABLE**: Once an entity is created, its ID CANNOT be changed. When updating an entity, you must use its ORIGINAL ID to identify it.
+
+    **BEST PRACTICES**:
+    1. **Be Descriptive**: \`"sword_of_kings"\` is better than \`"item_42"\`
+    2. **Use Prefixes**: Start with entity type for clarity (\`inv_\`, \`npc_\`, \`loc_\`, etc.)
+    3. **Avoid Conflicts**: Don't reuse IDs. Keep a mental note of IDs you've created this session.
+    4. **Be Consistent**: If you start with \`"npc_marcus"\`, continue with \`"npc_sara"\`, not \`"sara"\`.
+
+    **ID IMMUTABILITY - CRITICAL**:
+    - When using \`action: "update"\`, the \`id\` field is for IDENTIFICATION ONLY
+    - You CANNOT change an entity's ID - sending a different ID will ERROR
+    - To "rename" an entity's ID, you must: remove the old entity, then add a new one with the new ID
+
+    **AUTOMATIC DEDUPLICATION**:
+    If you accidentally generate a duplicate ID, the system will:
+    1. Auto-fix it by appending \`_2\`, \`_3\`, etc.
+    2. WARN you that this happened
+    3. Continue working (but you should avoid duplicates)
+
+    **ERROR HANDLING**:
+    If you forget to provide an ID:
+    - The tool will return an error: "ID is required. AI must generate a unique ID."
+    - You MUST retry with a valid ID
+    - Do NOT proceed without fixing this error
+
+    **EXAMPLES**:
+    ✅ CORRECT:
+    \`\`\`
+    { "id": "healing_potion_minor", "name": "Minor Healing Potion", ... }
+    { "id": "npc_marcus", "visible": { "name": "Marcus" }, ... }
+    { "id": "loc_tavern_rusty_nail", "name": "The Rusty Nail Tavern", ... }
+    \`\`\`
+
+    ❌ INCORRECT (will cause errors):
+    \`\`\`
+    { "name": "Healing Potion", ... }  // Missing ID entirely
+    { "id": null, "name": "Marcus", ... }  // ID is null
+    { "id": "", "name": "Tavern", ... }  // ID is empty string
+    \`\`\`
+  </rule>
+
   <rule name="NULL VALUE DELETION">
     - To REMOVE an optional property, set it to \`null\`.
   </rule>

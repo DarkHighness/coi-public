@@ -531,19 +531,6 @@ export const useGameEngine = () => {
           ...e,
           category: e.category || "world_event", // Default to world_event if missing
         })),
-        nextIds: (outline as any).__nextIds || {
-          item: (outline.inventory?.length || 0) + 1,
-          npc: (outline.relationships?.length || 0) + 1,
-          location: (outline.locations?.length || 0) + 1,
-          knowledge: (outline.knowledge?.length || 0) + 1,
-          quest: (outline.quests?.length || 0) + 1,
-          faction: (outline.factions?.length || 0) + 1,
-          timeline: (outline.timeline?.length || 0) + 1,
-          causalChain: 1, // Causal chains start fresh
-          skill: (outline.character?.skills?.length || 0) + 1,
-          condition: (outline.character?.conditions?.length || 0) + 1,
-          hiddenTrait: (outline.character?.hiddenTraits?.length || 0) + 1,
-        },
         isProcessing: true, // Keep processing true while generating first turn
         logs: [...logs, ...prev.logs],
         tokenUsage: {
@@ -848,19 +835,6 @@ export const useGameEngine = () => {
           ...e,
           category: e.category || "world_event",
         })),
-        nextIds: (outline as any).__nextIds || {
-          item: (outline.inventory?.length || 0) + 1,
-          npc: (outline.relationships?.length || 0) + 1,
-          location: (outline.locations?.length || 0) + 1,
-          knowledge: (outline.knowledge?.length || 0) + 1,
-          quest: (outline.quests?.length || 0) + 1,
-          faction: (outline.factions?.length || 0) + 1,
-          timeline: (outline.timeline?.length || 0) + 1,
-          causalChain: 1,
-          skill: (outline.character?.skills?.length || 0) + 1,
-          condition: (outline.character?.conditions?.length || 0) + 1,
-          hiddenTrait: (outline.character?.hiddenTraits?.length || 0) + 1,
-        },
         isProcessing: true,
         logs: [...logs, ...gameStateRef.current.logs],
         tokenUsage: {

@@ -52,9 +52,6 @@ export function createStateSnapshot(
     currentLocation: gameState.currentLocation || metadata.currentLocation,
     factions: gameState.factions,
 
-    // ID Counters (Critical for forks)
-    nextIds: gameState.nextIds,
-
     // World State
     time: metadata.time,
     timeline: gameState.timeline,
@@ -98,7 +95,6 @@ export function restoreStateFromSnapshot(
     locations: snapshot.locations,
     currentLocation: snapshot.currentLocation,
     factions: snapshot.factions,
-    nextIds: snapshot.nextIds,
     time: snapshot.time,
     timeline: snapshot.timeline,
     causalChains: snapshot.causalChains,

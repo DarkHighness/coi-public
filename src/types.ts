@@ -349,20 +349,6 @@ export interface GameState {
   // Initial Prompt (for retry)
   initialPrompt?: string;
 
-  // New World System Fields
-  nextIds: {
-    item: number;
-    npc: number;
-    location: number;
-    knowledge: number;
-    quest: number;
-    faction: number;
-    timeline: number;
-    causalChain: number;
-    skill: number;
-    condition: number;
-    hiddenTrait: number;
-  };
   timeline: TimelineEvent[];
   causalChains: CausalChain[];
 
@@ -689,21 +675,6 @@ export interface GameStateSnapshot {
   locations: Location[];
   currentLocation: string;
   factions: Faction[]; // Added factions to snapshot
-
-  // ID Counters (Critical for forks)
-  nextIds: {
-    item: number;
-    npc: number;
-    location: number;
-    knowledge: number;
-    quest: number;
-    faction: number;
-    timeline: number;
-    causalChain: number;
-    skill: number;
-    condition: number;
-    hiddenTrait: number;
-  };
 
   // World State
   time: string;

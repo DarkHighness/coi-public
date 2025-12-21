@@ -514,7 +514,6 @@ export const useGameAction = ({
             knowledge: finalState.knowledge,
             factions: finalState.factions,
             time: finalState.time,
-            nextIds: finalState.nextIds,
             timeline: finalState.timeline,
             causalChains: finalState.causalChains,
             // History is now managed internally by session manager
