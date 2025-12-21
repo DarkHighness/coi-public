@@ -152,6 +152,8 @@ export interface PhasedOutlineOptions {
   /** Callback to save checkpoint after each phase */
   onSaveCheckpoint?: (state: OutlineConversationState) => void;
   settings: AISettings;
+  /** Unique ID for the save slot to isolate sessions */
+  slotId?: string;
 }
 
 /**
@@ -305,8 +307,9 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     }
   };
 
-  // Determine session ID
-  const outlineSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
+  // Determine session ID with slotId for isolation if provided
+  const baseSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
+  const outlineSessionId = options.slotId ? `${baseSessionId}-${options.slotId}` : baseSessionId;
 
   // If starting fresh, explicitly invalidate the "outline-new" session to clear any previous game's outline history
   if (!options.resumeFrom) {

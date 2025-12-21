@@ -180,11 +180,8 @@ export const useGameEngine = () => {
 
   // Ref to access latest state in async callbacks/closures
   const gameStateRef = useRef(gameState);
-  const processingRef = useRef(false); // Immediate lock to prevent race conditions
-
   useEffect(() => {
     gameStateRef.current = gameState;
-    processingRef.current = gameState.isProcessing;
   }, [gameState]);
 
   const [isTranslating, setIsTranslating] = useState(false);
@@ -282,7 +279,11 @@ export const useGameEngine = () => {
   // --- Core Game Loop ---
   // Note: generateImageForNode is defined later but we can reference it here
   // because hooks are called in order and we'll pass the actual function
-  const { handleAction, handleRebuildContext } = useGameAction({
+  const {
+    handleAction,
+    handleRebuildContext,
+    handleInvalidateSession,
+  } = useGameAction({
     gameState,
     setGameState,
     aiSettings,
@@ -357,6 +358,8 @@ export const useGameEngine = () => {
           resumeFrom: undefined,
           // Pass settings for the generation
           settings: aiSettings,
+          // Pass slotId for session isolation
+          slotId,
           // Save conversation state after each phase for fault recovery
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
@@ -493,50 +496,42 @@ export const useGameEngine = () => {
           conditions: (outline.character.conditions || []).map(
             (c: any, i: number) => ({
               ...c,
-              id: `cond:${i + 1}`,
             }),
           ),
           hiddenTraits: (outline.character.hiddenTraits || []).map(
             (t: any, i: number) => ({
               ...t,
-              id: `trait:${i + 1}`,
             }),
           ),
         },
         inventory: (outline.inventory || []).map(
           (item: any, index: number) => ({
             ...item,
-            id: `inv:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         relationships: (outline.relationships || []).map(
           (rel: any, index: number) => ({
             ...rel,
-            id: `npc:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
-          id: `quest:${index + 1}`,
           status: "active",
           createdAt: Date.now(),
         })),
         currentLocation: outline.locations?.[0]?.name || "Unknown",
         locations: (outline.locations || []).map((loc: any, index: number) => ({
           ...loc,
-          id: `loc:${index + 1}`,
           isVisited: index === 0,
           createdAt: Date.now(),
         })),
         knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
           ...k,
-          id: `know:${index + 1}`,
         })),
         factions: (outline.factions || []).map((f: any, index: number) => ({
           ...f,
-          id: `fac:${index + 1}`,
         })),
         timeline: (outline.timeline || []).map((e: any) => ({
           ...e,
@@ -572,7 +567,13 @@ export const useGameEngine = () => {
       // Use setTimeout to ensure the state update has propagated
       setTimeout(async () => {
         try {
-          await saveToSlot(slotId, gameStateRef.current);
+          // Construct the next state explicitly using ref as base to ensure we have the latest
+          const nextState = {
+            ...gameStateRef.current,
+            outline,
+            outlineConversation: undefined,
+          };
+          await saveToSlot(slotId, nextState);
           console.log("[StartNewGame] Outline checkpoint saved successfully");
         } catch (e) {
           console.error("[StartNewGame] Failed to save outline checkpoint", e);
@@ -756,6 +757,7 @@ export const useGameEngine = () => {
         t,
         {
           settings: aiSettings,
+          slotId: currentSlotId!,
           onPhaseProgress,
           resumeFrom: savedConversation,
           onSaveCheckpoint: async (
@@ -794,53 +796,47 @@ export const useGameEngine = () => {
         },
       );
 
-      setGameState((prev) => ({
-        ...prev,
+      const nextState = {
+        ...gameStateRef.current,
         outline,
         outlineConversation: undefined,
         character: {
           ...outline.character,
           conditions: (outline.character.conditions || []).map(
-            (c: any, i: number) => ({ ...c, id: `cond:${i + 1}` }),
+            (c: any, i: number) => ({ ...c }),
           ),
           hiddenTraits: (outline.character.hiddenTraits || []).map(
-            (t: any, i: number) => ({ ...t, id: `trait:${i + 1}` }),
+            (t: any, i: number) => ({ ...t }),
           ),
         },
         inventory: (outline.inventory || []).map(
           (item: any, index: number) => ({
             ...item,
-            id: `inv:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         relationships: (outline.relationships || []).map(
           (rel: any, index: number) => ({
             ...rel,
-            id: `npc:${index + 1}`,
             createdAt: Date.now(),
           }),
         ),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
-          id: `quest:${index + 1}`,
           status: "active",
           createdAt: Date.now(),
         })),
         currentLocation: outline.locations?.[0]?.name || "Unknown",
         locations: (outline.locations || []).map((loc: any, index: number) => ({
           ...loc,
-          id: `loc:${index + 1}`,
           isVisited: index === 0,
           createdAt: Date.now(),
         })),
         knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
           ...k,
-          id: `know:${index + 1}`,
         })),
         factions: (outline.factions || []).map((f: any, index: number) => ({
           ...f,
-          id: `fac:${index + 1}`,
         })),
         timeline: (outline.timeline || []).map((e: any) => ({
           ...e,
@@ -871,11 +867,13 @@ export const useGameEngine = () => {
         customContext: customContext, // Restore custom context from conversation state
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
         time: outline.initialTime || "Day 1",
-      }));
+      };
+
+      setGameState(nextState);
 
       // Save checkpoint
       setTimeout(async () => {
-        await saveToSlot(currentSlotId!, gameStateRef.current);
+        await saveToSlot(currentSlotId!, nextState);
         console.log("[ResumeOutline] Outline checkpoint saved");
       }, 50);
 
@@ -1236,9 +1234,8 @@ export const useGameEngine = () => {
    * Handle Force Update Command (/sudo)
    */
   const handleForceUpdate = async (prompt: string) => {
-    if (processingRef.current || gameStateRef.current.isProcessing) return;
+    if (gameStateRef.current.isProcessing) return;
 
-    processingRef.current = true;
     setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
     try {
@@ -1401,7 +1398,6 @@ export const useGameEngine = () => {
         };
       });
 
-      processingRef.current = false;
       triggerSave();
       return { success: true };
     } catch (error: unknown) {
@@ -1413,7 +1409,6 @@ export const useGameEngine = () => {
         isProcessing: false,
         error: errorMsg,
       }));
-      processingRef.current = false;
       return { success: false, error: errorMsg };
     }
   };
@@ -1422,9 +1417,8 @@ export const useGameEngine = () => {
    * Handle Entity Cleanup - trigger agentic loop to identify and merge duplicates
    */
   const handleCleanupEntities = async () => {
-    if (processingRef.current || gameStateRef.current.isProcessing) return;
+    if (gameStateRef.current.isProcessing) return;
 
-    processingRef.current = true;
     setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
     try {
@@ -1546,7 +1540,6 @@ export const useGameEngine = () => {
         ).catch((e) => console.error("[Cleanup] RAG update failed:", e));
       }
 
-      processingRef.current = false;
       triggerSave();
       return { success: true };
     } catch (error: unknown) {
@@ -1558,7 +1551,6 @@ export const useGameEngine = () => {
         isProcessing: false,
         error: errorMsg,
       }));
-      processingRef.current = false;
       return { success: false, error: errorMsg };
     }
   };
@@ -1573,6 +1565,7 @@ export const useGameEngine = () => {
     startNewGame,
     resumeOutlineGeneration,
     rebuildContext: handleRebuildContext,
+    invalidateSession: handleInvalidateSession,
     isAutoSaving,
     isMagicMirrorOpen,
     setIsMagicMirrorOpen,

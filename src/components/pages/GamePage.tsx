@@ -131,6 +131,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     triggerSave,
     handleForceUpdate,
     rebuildContext,
+    invalidateSession,
   } = engineActions;
 
   // Toast Context for toast notifications
@@ -377,7 +378,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     navigate("/");
   };
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
     const themeName = t(`${gameState.theme}.name`, { ns: "themes" });
     const prompt = t("initialPrompt.begin", { theme: themeName });
     const defaultInitialPrompt = gameState.initialPrompt || prompt;
@@ -399,6 +400,12 @@ export const GamePage: React.FC<GamePageProps> = ({
       handleAction(defaultInitialPrompt, true, undefined, undefined, true);
       return;
     }
+
+    // --- Rebuild Session on Retry ---
+    // If not first turn, we should invalidate the current provider session
+    // to ensure the next turn starts with a clean slate from the last valid summary.
+    console.log("[GamePage] Invalidating session before retry...");
+    await invalidateSession();
 
     // Find the last user segment to retry from
     const lastSegment = [...currentHistory]

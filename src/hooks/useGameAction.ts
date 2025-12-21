@@ -20,6 +20,7 @@ import {
   createModelNode,
   notifySessionSummaryCreated,
 } from "./gameActionHelpers";
+import { sessionManager } from "../services/ai/sessionManager";
 
 interface UseGameActionProps {
   gameState: GameState;
@@ -644,6 +645,17 @@ export const useGameAction = ({
     ],
   );
 
+  const handleInvalidateSession = useCallback(async () => {
+    const { story } = aiSettings;
+    if (!story || !currentSlotId) return;
+
+    const sessionId = `${currentSlotId}:${gameStateRef.current.forkId ?? 0}:${story.providerId}:${story.modelId}`;
+    console.log(
+      `[useGameAction] Manually invalidating session: ${sessionId}`,
+    );
+    await sessionManager.invalidate(sessionId, "manual_clear");
+  }, [aiSettings, currentSlotId]);
+
   const handleRebuildContext = useCallback(async () => {
     if (processingRef.current || gameStateRef.current.isProcessing) return;
 
@@ -789,5 +801,5 @@ export const useGameAction = ({
     triggerSave,
   ]);
 
-  return { handleAction, handleRebuildContext };
+  return { handleAction, handleRebuildContext, handleInvalidateSession };
 };

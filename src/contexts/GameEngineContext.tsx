@@ -141,8 +141,9 @@ export interface GameEngineActions {
   handleForceUpdate: (prompt: string) => void;
   /** Cleanup duplicate entities with AI */
   cleanupEntities: () => Promise<{ success: boolean; error?: string } | void>;
-  /** Rebuild story context/summaries manually */
   rebuildContext: () => Promise<void>;
+  /** Invalidate current AI session cache */
+  invalidateSession: () => Promise<void>;
   /** Set Magic Mirror modal state */
   setIsMagicMirrorOpen: (open: boolean) => void;
   /** Set Magic Mirror image */
@@ -249,6 +250,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         handleForceUpdate: engine.handleForceUpdate,
         cleanupEntities: engine.cleanupEntities,
         rebuildContext: engine.rebuildContext,
+        invalidateSession: engine.invalidateSession,
         setIsMagicMirrorOpen: engine.setIsMagicMirrorOpen,
         setMagicMirrorImage: engine.setMagicMirrorImage,
         setIsVeoScriptOpen: engine.setIsVeoScriptOpen,
