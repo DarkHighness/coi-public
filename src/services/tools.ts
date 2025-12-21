@@ -60,6 +60,7 @@ import {
   causalChainStatusSchema,
   finishTurnSchema,
   forceUpdateSchema,
+  overrideOutlineSchema,
 } from "./zodSchemas";
 
 // ============================================================================
@@ -1381,6 +1382,17 @@ export const COMPLETE_FORCE_UPDATE_TOOL = defineTool({
   parameters: forceUpdateSchema,
 });
 
+export const OVERRIDE_OUTLINE_TOOL = defineTool({
+  name: "override_outline",
+  description:
+    "Override outline fields during force update (SUDO MODE ONLY). Modify worldSetting or narrativeStyle to permanently change the game's world or writing style.",
+  parameters: overrideOutlineSchema,
+});
+
+export type OverrideOutlineToolParams = InferToolParams<
+  typeof OVERRIDE_OUTLINE_TOOL
+>;
+
 // ============================================================================
 // SUMMARY AGENTIC LOOP TOOLS (Preserved)
 // ============================================================================
@@ -1774,6 +1786,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   LIST_TOOL,
   FINISH_TURN_TOOL,
   COMPLETE_FORCE_UPDATE_TOOL,
+  OVERRIDE_OUTLINE_TOOL,
   QUERY_STORY_TOOL,
   QUERY_TURN_TOOL,
   QUERY_SUMMARY_TOOL,

@@ -27,6 +27,7 @@ import {
   SEARCH_TOOL,
   FINISH_TURN_TOOL,
   COMPLETE_FORCE_UPDATE_TOOL,
+  OVERRIDE_OUTLINE_TOOL,
   QUERY_STORY_TOOL,
   QUERY_TURN_TOOL,
   findTools,
@@ -659,6 +660,11 @@ export const runAgenticLoop = async (
     QUERY_TURN_TOOL, // Essential for context
   ];
 
+  // Add override_outline tool only in sudo mode
+  if (isSudoMode) {
+    activeTools.push(OVERRIDE_OUTLINE_TOOL);
+  }
+
   // If RAG enabled, add RAG tool? Or make it searchable?
   if (isRAGEnabled) {
     const ragTools = findTools("query", "rag_search");
@@ -698,8 +704,10 @@ export const runAgenticLoop = async (
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
 2. Use \`search_tool\` to load any tools you need for state changes.
-3. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
-4. Call \`complete_force_update\` with narrative describing the new reality and choices.
+3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn (e.g., update_inventory, update_relationship, override_outline all at once).
+4. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
+5. **FINISH LAST**: Call \`complete_force_update\` as your FINAL tool call with narrative describing the new reality and choices.
+   - ⚠️ CRITICAL: \`complete_force_update\` must be the LAST tool in your call sequence.
 `),
     );
   } else {
@@ -709,8 +717,10 @@ This is a **GM COMMAND**. You must:
 You are in AGENTIC MODE.
 1. You have limited tools initially: \`search_tool\` and \`${finishToolName}\`.
 2. **SEARCH FIRST**: If you need to ADD, UPDATE, REMOVE, QUERY, or UNLOCK specific entities, use \`search_tool\` to load them.
-3. **USE TOOLS**: Once loaded, use the tools to modify the game state.
-4. **FINISH**: When done, use \`${finishToolName}\` with narrative and choices.
+3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn to be efficient (e.g., query_inventory, update_relationship, add_quest all at once).
+4. **USE TOOLS**: Once loaded, use the tools to modify the game state in parallel when possible.
+5. **FINISH LAST**: When done, use \`${finishToolName}\` as your FINAL tool call with narrative and choices.
+   - ⚠️ CRITICAL: \`${finishToolName}\` must be the LAST tool in your call sequence.
 `),
     );
   }
@@ -871,11 +881,18 @@ You are in AGENTIC MODE.
           if (call.name === "search_tool") {
             const params = call.args as SearchToolParams;
             const addedTools: string[] = [];
+            const blockedTools: string[] = [];
 
             if (params.queries) {
               for (const q of params.queries) {
                 const found = findTools(q.operation, q.entity);
                 for (const tool of found) {
+                  // Block RAG tool if RAG is disabled
+                  if (tool.name === "rag_search" && !isRAGEnabled) {
+                    blockedTools.push(tool.name);
+                    continue;
+                  }
+
                   if (!activeTools.some((t) => t.name === tool.name)) {
                     activeTools.push(tool);
                     addedTools.push(tool.name);
@@ -884,7 +901,7 @@ You are in AGENTIC MODE.
               }
             }
 
-            output = settings.extra?.clearerSearchTool
+            let outputMsg = settings.extra?.clearerSearchTool
               ? `Found and activated tools:\n\n${
                   addedTools
                     .map((name) => {
@@ -896,6 +913,12 @@ You are in AGENTIC MODE.
                     .join("\n\n") || "None (maybe already active?)"
                 }`
               : `Found and activated tools: ${addedTools.join(", ") || "None (maybe already active?)"}`;
+
+            if (blockedTools.length > 0) {
+              outputMsg += `\n\n[WARNING] The following tools are not available because their features are disabled in settings:\n${blockedTools.map((name) => `- ${name} (RAG/embedding disabled)`).join("\n")}`;
+            }
+
+            output = outputMsg;
           }
           // SPECIAL HANDLE: finish_turn or complete_force_update
           else if (
@@ -917,21 +940,55 @@ You are in AGENTIC MODE.
                 (t) => t.name === call.name,
               );
               if (finishToolDef) {
-                const validationResult = finishToolDef.parameters.safeParse(
-                  call.args,
-                );
+                // Use strict validation to reject extra fields
+                const strictSchema = finishToolDef.parameters.strict();
+                const validationResult = strictSchema.safeParse(call.args);
+
                 if (!validationResult.success) {
-                  const zodErrors = validationResult.error.errors
-                    .map(
-                      (e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`,
-                    )
-                    .join("\n");
-                  output = {
-                    success: false,
-                    error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}". Please refer to the schema and correct your arguments:\n\n${getToolInfo(finishToolDef as any)}\n\nErrors:\n${formatZodError(validationResult.error)}`,
-                    code: "INVALID_PARAMS",
-                  };
-                  isError = true;
+                  // Check if imagePrompt is disabled and field is present
+                  if (
+                    settings.extra?.disableImagePrompt &&
+                    call.args &&
+                    "imagePrompt" in call.args
+                  ) {
+                    output = {
+                      success: false,
+                      error: `[VALIDATION_ERROR] The 'imagePrompt' field is disabled in settings and should not be present in "${call.name}". Please remove this field from your arguments.`,
+                      code: "DISABLED_FIELD",
+                    };
+                    isError = true;
+                  } else {
+                    // Categorize errors as missing vs extra fields
+                    const errors = validationResult.error.errors;
+                    const missingFields = errors
+                      .filter((e) => e.code === "invalid_type" && e.received === "undefined")
+                      .map((e) => e.path.join(".") || "(root)");
+                    const extraFields = errors
+                      .filter((e) => e.code === "unrecognized_keys")
+                      .flatMap((e: any) => e.keys || []);
+                    const otherErrors = errors.filter(
+                      (e) => e.code !== "invalid_type" && e.code !== "unrecognized_keys"
+                    );
+
+                    let errorMsg = `[VALIDATION_ERROR] Invalid parameters for "${call.name}".\n\n`;
+                    if (missingFields.length > 0) {
+                      errorMsg += `Missing required fields:\n${missingFields.map((f) => `- ${f}`).join("\n")}\n\n`;
+                    }
+                    if (extraFields.length > 0) {
+                      errorMsg += `Unexpected extra fields (not in schema):\n${extraFields.map((f) => `- ${f}`).join("\n")}\n\n`;
+                    }
+                    if (otherErrors.length > 0) {
+                      errorMsg += `Other validation errors:\n${otherErrors.map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`).join("\n")}\n\n`;
+                    }
+                    errorMsg += `Please refer to the schema:\n${getToolInfo(finishToolDef as any)}`;
+
+                    output = {
+                      success: false,
+                      error: errorMsg,
+                      code: "INVALID_PARAMS",
+                    };
+                    isError = true;
+                  }
                 }
               }
 
@@ -960,11 +1017,38 @@ You are in AGENTIC MODE.
             const toolDef = ALL_DEFINED_TOOLS.find((t) => t.name === call.name);
 
             if (toolDef) {
-              const validationResult = toolDef.parameters.safeParse(call.args);
+              // Use strict validation to reject extra fields
+              const strictSchema = toolDef.parameters.strict();
+              const validationResult = strictSchema.safeParse(call.args);
+
               if (!validationResult.success) {
+                // Categorize errors as missing vs extra fields
+                const errors = validationResult.error.errors;
+                const missingFields = errors
+                  .filter((e) => e.code === "invalid_type" && e.received === "undefined")
+                  .map((e) => e.path.join(".") || "(root)");
+                const extraFields = errors
+                  .filter((e) => e.code === "unrecognized_keys")
+                  .flatMap((e: any) => e.keys || []);
+                const otherErrors = errors.filter(
+                  (e) => e.code !== "invalid_type" && e.code !== "unrecognized_keys"
+                );
+
+                let errorMsg = `[VALIDATION_ERROR] Invalid parameters for "${call.name}".\n\n`;
+                if (missingFields.length > 0) {
+                  errorMsg += `Missing required fields:\n${missingFields.map((f) => `- ${f}`).join("\n")}\n\n`;
+                }
+                if (extraFields.length > 0) {
+                  errorMsg += `Unexpected extra fields (not in schema):\n${extraFields.map((f) => `- ${f}`).join("\n")}\n\n`;
+                }
+                if (otherErrors.length > 0) {
+                  errorMsg += `Other validation errors:\n${otherErrors.map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`).join("\n")}\n\n`;
+                }
+                errorMsg += `Please refer to the schema:\n${getToolInfo(toolDef as any)}`;
+
                 output = {
                   success: false,
-                  error: `[VALIDATION_ERROR] Invalid parameters for "${call.name}". Please refer to the schema and correct your arguments:\n\n${getToolInfo(toolDef as any)}\n\nErrors:\n${formatZodError(validationResult.error)}`,
+                  error: errorMsg,
                   code: "INVALID_PARAMS",
                 };
                 isError = true;
@@ -1108,6 +1192,68 @@ export function executeToolCall(
   }
   if (name === "query_atmosphere_enum_description") {
     return executeQueryAtmosphereEnumDescription(args);
+  }
+
+  // ============================================================================
+  // OVERRIDE OUTLINE TOOL (SUDO MODE ONLY)
+  // ============================================================================
+  if (name === "override_outline") {
+    // This tool should only be reachable in sudo mode
+    // The activeTools list should not include it unless isSudoMode is true
+    if (!gameState || !gameState.outline) {
+      return {
+        success: false,
+        error: "Cannot override outline: game state or outline not available.",
+        code: "NO_OUTLINE",
+      };
+    }
+
+    const overrideArgs = args as {
+      worldSetting?: Partial<{
+        visible?: Partial<{ description?: string; rules?: string }>;
+        hidden?: Partial<{ hiddenRules?: string; secrets?: string[] }>;
+        history?: string;
+      }>;
+      narrativeStyle?: string;
+    };
+
+    // Deep merge worldSetting changes
+    if (overrideArgs.worldSetting) {
+      if (!gameState.outline.worldSetting) {
+        gameState.outline.worldSetting = {
+          visible: { description: "", rules: "" },
+          hidden: { hiddenRules: "", secrets: [] },
+          history: "",
+        };
+      }
+
+      if (overrideArgs.worldSetting.visible) {
+        gameState.outline.worldSetting.visible = {
+          ...gameState.outline.worldSetting.visible,
+          ...overrideArgs.worldSetting.visible,
+        };
+      }
+      if (overrideArgs.worldSetting.hidden) {
+        gameState.outline.worldSetting.hidden = {
+          ...gameState.outline.worldSetting.hidden,
+          ...overrideArgs.worldSetting.hidden,
+        };
+      }
+      if (overrideArgs.worldSetting.history !== undefined) {
+        gameState.outline.worldSetting.history =
+          overrideArgs.worldSetting.history;
+      }
+    }
+
+    // Set narrativeStyle
+    if (overrideArgs.narrativeStyle !== undefined) {
+      (gameState.outline as any).narrativeStyle = overrideArgs.narrativeStyle;
+    }
+
+    return {
+      success: true,
+      message: "Outline fields updated successfully.",
+    };
   }
 
   // ============================================================================

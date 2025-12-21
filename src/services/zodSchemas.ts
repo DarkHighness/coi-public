@@ -1644,10 +1644,10 @@ export const gameResponseSchema = z.object({
 // ============================================================================
 
 /**
- * finish_turn 响应 Schema Builder
- * 根据isRAGEnabled参数动态构建schema，当RAG未启用时不包含RAG相关字段
+ * finish_turn 响应 Schema
+ * RAG queries and entity preloading are now handled via dedicated tools, not finish_turn
  */
-export function buildFinishTurnSchema(includeRAG: boolean = true) {
+export function buildFinishTurnSchema() {
   const baseFields = {
     narrative: z.string().describe(
       `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
@@ -1746,55 +1746,7 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
       .describe(
         "Narrative tone (e.g., 'suspenseful', 'cheerful', 'melancholy').",
       ),
-    aliveEntities: z
-      .object({
-        inventory: z
-          .array(z.string())
-          .nullish()
-          .describe("Item IDs (inv:N) relevant for next turn."),
-        relationships: z
-          .array(z.string())
-          .nullish()
-          .describe("NPC IDs (npc:N) relevant for next turn."),
-        locations: z
-          .array(z.string())
-          .nullish()
-          .describe("Location IDs (loc:N) relevant for next turn."),
-        quests: z
-          .array(z.string())
-          .nullish()
-          .describe("Quest IDs (quest:N) relevant for next turn."),
-        knowledge: z
-          .array(z.string())
-          .nullish()
-          .describe("Knowledge IDs (know:N) relevant for next turn."),
-        timeline: z
-          .array(z.string())
-          .nullish()
-          .describe("Event IDs (evt:N) relevant for next turn."),
-        skills: z
-          .array(z.string())
-          .nullish()
-          .describe("Character skill IDs relevant for next turn."),
-        conditions: z
-          .array(z.string())
-          .nullish()
-          .describe("Character condition IDs relevant for next turn."),
-        hiddenTraits: z
-          .array(z.string())
-          .nullish()
-          .describe("Character hidden trait IDs relevant for next turn."),
-        causalChains: z
-          .array(z.string())
-          .nullish()
-          .describe(
-            "CausalChain chainIds with pending consequences that may trigger soon.",
-          ),
-      })
-      .nullish()
-      .describe(
-        "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
-      ),
+
     ending: z
       .enum([
         "continue",
@@ -1827,57 +1779,21 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 - true: Game is OVER. Player cannot continue from this point.
 - false/omit: Player can choose to continue despite the ending.`,
       ),
-    nextInitialStage: z
-      .enum(["query", "add", "remove", "update", "narrative"])
-      .nullish()
-      .describe(
-        `Suggest the initial stage for the NEXT turn after player makes a choice.
-- "query": Start with queries (default, when uncertain about context)
-- "add": Skip to add stage (when you know new entities will be needed)
-- "remove": Skip to remove stage
-- "update": Skip to update stage (when context is well-established)
-- "narrative": Skip directly to narrative (only for very simple responses)
-
-This is a HINT for optimization. The system may still start from query if needed.`,
-      ),
   };
 
-  const ragFields = includeRAG
-    ? {
-        ragQueries: z
-          .array(z.string())
-          .nullish()
-          .describe(
-            `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
-          ),
-        ragCurrentForkOnly: z
-          .boolean()
-          .nullish()
-          .describe(
-            "If true, next turn's RAG queries will only search within the current timeline branch.",
-          ),
-        ragBeforeCurrentTurn: z
-          .boolean()
-          .nullish()
-          .describe(
-            "If true, next turn's RAG queries will only search content from before the current turn.",
-          ),
-      }
-    : {};
-
-  return z.object({ ...baseFields, ...ragFields });
+  return z.object(baseFields);
 }
 
 /**
- * Default finish_turn schema with RAG fields included (for backward compatibility)
+ * Default finish_turn schema
  */
-export const finishTurnSchema = buildFinishTurnSchema(true);
+export const finishTurnSchema = buildFinishTurnSchema();
 
 /**
- * force_update 响应 Schema Builder
- * 根据isRAGEnabled参数动态构建schema，当RAG未启用时不包含RAG相关字段
+ * force_update 响应 Schema
+ * RAG queries and entity preloading are now handled via dedicated tools, not force_update
  */
-export function buildForceUpdateSchema(includeRAG: boolean = true) {
+export function buildForceUpdateSchema() {
   const baseFields = {
     narrative: z.string()
       .describe(`The narrative description of the changes made to the world as **Markdown formatted text**. Write in a vivid, engaging style.
@@ -1960,100 +1876,42 @@ In settings with magic/superpowers where "incantations" or "calling out names" a
       .describe(
         "The tone of the narrative (e.g., 'suspenseful', 'cheerful', 'melancholy').",
       ),
-    aliveEntities: z
-      .object({
-        inventory: z
-          .array(z.string())
-          .nullish()
-          .describe("Item IDs (inv:N) relevant for next turn."),
-        relationships: z
-          .array(z.string())
-          .nullish()
-          .describe("NPC IDs (npc:N) relevant for next turn."),
-        locations: z
-          .array(z.string())
-          .nullish()
-          .describe("Location IDs (loc:N) relevant for next turn."),
-        quests: z
-          .array(z.string())
-          .nullish()
-          .describe("Quest IDs (quest:N) relevant for next turn."),
-        knowledge: z
-          .array(z.string())
-          .nullish()
-          .describe("Knowledge IDs (know:N) relevant for next turn."),
-        timeline: z
-          .array(z.string())
-          .nullish()
-          .describe("Event IDs (evt:N) relevant for next turn."),
-        skills: z
-          .array(z.string())
-          .nullish()
-          .describe("Character skill IDs relevant for next turn."),
-        conditions: z
-          .array(z.string())
-          .nullish()
-          .describe("Character condition IDs relevant for next turn."),
-        hiddenTraits: z
-          .array(z.string())
-          .nullish()
-          .describe("Character hidden trait IDs relevant for next turn."),
-        causalChains: z
-          .array(z.string())
-          .nullish()
-          .describe(
-            "CausalChain chainIds with pending consequences that may trigger soon.",
-          ),
-      })
-      .nullish()
-      .describe(
-        "IDs of entities that are DIRECTLY RELEVANT to the next turn and should be pre-loaded in context.",
-      ),
-    nextInitialStage: z
-      .enum(["query", "add", "remove", "update", "narrative"])
-      .nullish()
-      .describe(
-        `Suggest the initial stage for the NEXT turn after player makes a choice.
-- "query": Start with queries (default, when uncertain about context)
-- "add": Skip to add stage (when you know new entities will be needed)
-- "remove": Skip to remove stage
-- "update": Skip to update stage (when context is well-established)
-- "narrative": Skip directly to narrative (only for very simple responses)
-
-This is a HINT for optimization. The system may still start from query if needed.`,
-      ),
   };
 
-  const ragFields = includeRAG
-    ? {
-        ragQueries: z
-          .array(z.string())
-          .nullish()
-          .describe(
-            `Semantic search queries to pre-fetch relevant context for the NEXT turn.`,
-          ),
-        ragCurrentForkOnly: z
-          .boolean()
-          .nullish()
-          .describe(
-            "If true, next turn's RAG queries will only search within the current timeline branch.",
-          ),
-        ragBeforeCurrentTurn: z
-          .boolean()
-          .nullish()
-          .describe(
-            "If true, next turn's RAG queries will only search content from before the current turn.",
-          ),
-      }
-    : {};
-
-  return z.object({ ...baseFields, ...ragFields });
+  return z.object(baseFields);
 }
 
 /**
- * Default force_update schema with RAG fields included (for backward compatibility)
+ * Default force_update schema
  */
-export const forceUpdateSchema = buildForceUpdateSchema(true);
+export const forceUpdateSchema = buildForceUpdateSchema();
+
+// ============================================================================
+// Override Outline Schema (SUDO MODE ONLY)
+// ============================================================================
+
+/**
+ * override_outline tool schema - allows modifying outline fields during forceUpdate
+ * CRITICAL: This tool should ONLY be available when isSudoMode === true
+ */
+export const overrideOutlineSchema = z.object({
+  worldSetting: worldSettingSchema
+    .partial()
+    .nullish()
+    .describe(
+      "Override the world setting with new values. Can partially update visible, hidden, or history fields.",
+    ),
+  narrativeStyle: z
+    .string()
+    .nullish()
+    .describe(
+      "Override the narrative writing style. This replaces the theme's narrativeStyle with a custom style description.",
+    ),
+});
+
+export type OverrideOutlineParams = z.infer<typeof overrideOutlineSchema>;
+
+// ============================================================================\n// finish_turn / force_update Response Types\n// ============================================================================
 
 /** finish_turn 响应类型 */
 export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;
