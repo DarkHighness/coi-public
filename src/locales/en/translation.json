@@ -337,6 +337,7 @@
   "hideChoices": "Hide Choices",
   "retryGeneration": "Retry",
   "rebuildContext": "Rebuild Context",
+  "cleanupEntities": "Cleanup",
   "next": "Next",
   "latest": "Latest",
   "roll": "Roll (Risk)",
@@ -1187,7 +1188,8 @@
     "theme": "Theme",
     "location": "Location",
     "music": "Music",
-    "envThemeUnlocked": "Environment Theme Unlocked"
+    "envThemeUnlocked": "Environment Theme Unlocked",
+    "envThemeLocked": "Environment Theme Locked"
   },
 
   "logPanel": {
@@ -1226,6 +1228,7 @@
       "agentic_complete": "Turn Complete",
       "generateImage": "Image Generation",
       "image": "Image Generation",
+      "cleanup-complete": "Entity Cleanup",
       "summary-query": "Summary - Query",
       "summary-complete": "Summary - Complete",
       "summary-error": "Summary - Error",

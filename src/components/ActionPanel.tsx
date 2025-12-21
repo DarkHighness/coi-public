@@ -22,6 +22,7 @@ interface ActionPanelProps {
   onTriggerSave?: () => void;
   onRetry?: () => void;
   onRebuildContext?: () => void;
+  onCleanupEntities?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onJumpToSegment?: (segmentId: string) => void;
 }
@@ -46,6 +47,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onTriggerSave,
   onRetry,
   onRebuildContext,
+  onCleanupEntities,
   onForceUpdate,
   onJumpToSegment,
 }) => {
@@ -353,6 +355,33 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     </svg>
                     <span className="hidden sm:inline">
                       {t("rebuildContext") || "Rebuild Context"}
+                    </span>
+                  </button>
+                )}
+
+                {/* Cleanup Entities Button */}
+                {onCleanupEntities && (
+                  <button
+                    onClick={onCleanupEntities}
+                    disabled={isDisabled}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-info/50 rounded-full text-xs font-bold text-theme-info uppercase tracking-widest hover:bg-theme-info hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={t("cleanupEntities") || "Cleanup Entities"}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">
+                      {t("cleanupEntities") || "Cleanup"}
                     </span>
                   </button>
                 )}

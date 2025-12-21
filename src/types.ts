@@ -496,6 +496,7 @@ export type LogEntryType =
   | "outline" // Outline generation phase
   | "summary" // Summary generation
   | "image" // Image generation
+  | "cleanup" // Entity cleanup operation
   | "error"; // Error log
 
 export interface LogEntry {

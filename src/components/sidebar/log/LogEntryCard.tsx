@@ -8,6 +8,7 @@ import {
   OutlineLogEntry,
   SummaryLogEntry,
   ImageLogEntry,
+  CleanupLogEntry,
   GenericLogEntry,
 } from "./entries";
 
@@ -24,6 +25,8 @@ const getEntryComponent = (log: LogEntry): React.FC<{ log: LogEntry }> => {
       return SummaryLogEntry;
     case "image":
       return ImageLogEntry;
+    case "cleanup":
+      return CleanupLogEntry;
     default:
       return GenericLogEntry;
   }

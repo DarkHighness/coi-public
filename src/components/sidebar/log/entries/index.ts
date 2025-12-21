@@ -3,4 +3,5 @@ export { TurnLogEntry } from "./TurnLogEntry";
 export { OutlineLogEntry } from "./OutlineLogEntry";
 export { SummaryLogEntry } from "./SummaryLogEntry";
 export { ImageLogEntry } from "./ImageLogEntry";
+export { CleanupLogEntry } from "./CleanupLogEntry";
 export { GenericLogEntry } from "./GenericLogEntry";

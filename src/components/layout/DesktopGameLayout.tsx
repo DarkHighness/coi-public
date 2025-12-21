@@ -77,7 +77,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   // Get state and actions from context
   const { state, actions } = useGameEngineContext();
   const { gameState, aiSettings } = state;
-  const { generateImageForNode, triggerSave } = actions;
+  const { generateImageForNode, triggerSave, cleanupEntities } = actions;
 
   // Ref for StoryFeed to enable navigation
   const storyFeedRef = useRef<StoryFeedRef>(null);
@@ -294,6 +294,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onTriggerSave={triggerSave}
               onRetry={onRetry}
               onRebuildContext={onRebuildContext}
+              onCleanupEntities={cleanupEntities}
               onForceUpdate={onForceUpdate}
               onJumpToSegment={handleJumpToSegment}
             />

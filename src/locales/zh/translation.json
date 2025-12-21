@@ -279,6 +279,7 @@
   "hideChoices": "隐藏选项",
   "retryGeneration": "重新生成",
   "rebuildContext": "重建上下文",
+  "cleanupEntities": "整理实体",
   "skills": "技能",
   "emptySkills": "暂未习得技能。",
   "status": "状态",
@@ -1207,7 +1208,8 @@
     "theme": "主题",
     "location": "地点",
     "music": "音乐",
-    "envThemeUnlocked": "环境主题已解锁"
+    "envThemeUnlocked": "环境主题已解锁",
+    "envThemeLocked": "环境主题已锁定"
   },
   "logPanel": {
     "input": "输入",

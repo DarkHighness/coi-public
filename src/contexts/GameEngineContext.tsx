@@ -139,6 +139,8 @@ export interface GameEngineActions {
   triggerSave: () => void;
   /** Force update game state with AI */
   handleForceUpdate: (prompt: string) => void;
+  /** Cleanup duplicate entities with AI */
+  cleanupEntities: () => Promise<{ success: boolean; error?: string } | void>;
   /** Rebuild story context/summaries manually */
   rebuildContext: () => Promise<void>;
   /** Set Magic Mirror modal state */
@@ -177,15 +179,17 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
   const engine = useGameEngine();
 
   // Compute current theme configuration
-  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - If lockEnvTheme is enabled:
+  //   - If fixedEnvTheme is set, use that specific theme
+  //   - Otherwise, use the story's default envTheme
   // - Otherwise, derive from atmosphere dynamically
   const currentThemeConfig = useMemo(() => {
     const currentStoryTheme = THEMES[engine.gameState.theme] || THEMES.fantasy;
 
     let currentEnvThemeKey: string;
     if (engine.aiSettings.lockEnvTheme) {
-      // Locked: use story's fixed envTheme
-      currentEnvThemeKey = currentStoryTheme.envTheme;
+      // Locked: use fixedEnvTheme if set, otherwise story's default envTheme
+      currentEnvThemeKey = engine.aiSettings.fixedEnvTheme || currentStoryTheme.envTheme;
     } else {
       // Dynamic: derive from current atmosphere
       const currentAtmosphere =
@@ -198,6 +202,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
     engine.gameState.theme,
     engine.gameState.atmosphere,
     engine.aiSettings.lockEnvTheme,
+    engine.aiSettings.fixedEnvTheme,
   ]);
 
   // Organize into state and actions
@@ -242,6 +247,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         updateNodeAudio: engine.updateNodeAudio,
         triggerSave: engine.triggerSave,
         handleForceUpdate: engine.handleForceUpdate,
+        cleanupEntities: engine.cleanupEntities,
         rebuildContext: engine.rebuildContext,
         setIsMagicMirrorOpen: engine.setIsMagicMirrorOpen,
         setMagicMirrorImage: engine.setMagicMirrorImage,

@@ -87,18 +87,21 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   // Get state and actions from context
   const { state, actions } = useGameEngineContext();
   const { gameState, aiSettings } = state;
-  const { generateImageForNode, triggerSave } = actions;
+  const { generateImageForNode, triggerSave, cleanupEntities } = actions;
 
   // Ref for StoryFeed to enable navigation
   const storyFeedRef = useRef<StoryFeedRef>(null);
 
   // Compute current theme configuration
-  // - If lockEnvTheme is enabled, use the story's fixed envTheme
+  // - If lockEnvTheme is enabled:
+  //   - If fixedEnvTheme is set, use that specific theme
+  //   - Otherwise, use the story's default envTheme
   // - Otherwise, derive from atmosphere dynamically
   const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
   let currentEnvThemeKey: string;
   if (aiSettings.lockEnvTheme) {
-    currentEnvThemeKey = currentStoryTheme.envTheme;
+    // Locked: use fixedEnvTheme if set, otherwise story's default envTheme
+    currentEnvThemeKey = aiSettings.fixedEnvTheme || currentStoryTheme.envTheme;
   } else {
     const currentAtmosphere =
       gameState.atmosphere || currentStoryTheme.defaultAtmosphere;
@@ -182,6 +185,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onTriggerSave={triggerSave}
             onRetry={onRetry}
             onRebuildContext={onRebuildContext}
+            onCleanupEntities={cleanupEntities}
             onForceUpdate={onForceUpdate}
             onJumpToSegment={handleJumpToSegment}
           />

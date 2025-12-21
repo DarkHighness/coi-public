@@ -206,6 +206,7 @@ function inferLogType(endpoint: string): LogEntry["type"] {
   if (endpoint === "tool_execution") return "tool";
   if (endpoint.startsWith("outline-")) return "outline";
   if (endpoint.startsWith("summary-")) return "summary";
+  if (endpoint.startsWith("cleanup")) return "cleanup";
   if (endpoint === "generateImage" || endpoint === "image") return "image";
   if (endpoint.includes("error")) return "error";
   if (endpoint === "agentic_complete") return "turn";

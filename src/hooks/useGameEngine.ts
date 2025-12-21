@@ -20,6 +20,7 @@ import {
   generateStoryOutlinePhased,
   summarizeContext,
   generateForceUpdate,
+  generateEntityCleanup,
   type OutlinePhaseProgress,
 } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
@@ -1407,6 +1408,151 @@ export const useGameEngine = () => {
     }
   };
 
+  /**
+   * Handle Entity Cleanup - trigger agentic loop to identify and merge duplicates
+   */
+  const handleCleanupEntities = async () => {
+    if (processingRef.current || gameStateRef.current.isProcessing) return;
+
+    processingRef.current = true;
+    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+
+    try {
+      // Construct TurnContext
+      const fullHistory = deriveHistory(
+        gameStateRef.current.nodes,
+        gameStateRef.current.activeNodeId,
+        true,
+      );
+
+      const freshCount = aiSettings.freshSegmentCount ?? 4;
+      const lastSummarizedIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
+      const recentHistory = getSegmentsForAI(
+        fullHistory,
+        lastSummarizedIndex,
+        freshCount,
+      );
+
+      const context: TurnContext = {
+        recentHistory,
+        userAction: "[CLEANUP]",
+        language: LANG_MAP[language],
+        themeKey: gameStateRef.current.theme,
+        tFunc: t,
+        settings: aiSettings,
+        slotId: currentSlotId || "default",
+      };
+
+      const { response, logs, changedEntities } = await generateEntityCleanup(
+        gameStateRef.current,
+        context,
+      );
+
+      // Add cleanup logs to game state
+      if (logs && logs.length > 0) {
+        setGameState((prev) => ({
+          ...prev,
+          logs: [...logs, ...(prev.logs || [])].slice(0, 100),
+        }));
+      }
+
+      // Update changed entities in state
+      const finalState = (response as any).finalState || gameStateRef.current;
+
+      // Create a system node to record the cleanup result
+      const newSegmentId = Date.now().toString();
+      const cleanupNodeId = `cleanup-${newSegmentId}`;
+      const parentId = gameStateRef.current.activeNodeId;
+
+      const parentNode = gameStateRef.current.nodes[parentId];
+      const baseSummaries = parentNode?.summaries || [];
+      const baseIndex = parentNode?.summarizedIndex || 0;
+
+      const cleanupNode: StorySegment = {
+        segmentIdx: (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
+        id: cleanupNodeId,
+        parentId: parentId,
+        text: response.narrative || "Entity cleanup completed.",
+        choices: Array.isArray(response.choices) && response.choices.length > 0
+          ? response.choices.map((c: any) =>
+              typeof c === "string" ? c : { text: c.text || "Continue", consequence: c.consequence }
+            )
+          : [t("continue")],
+        imagePrompt: "",
+        role: "system",
+        timestamp: Date.now(),
+        atmosphere: gameStateRef.current.atmosphere,
+        ending: "continue",
+        summaries: baseSummaries,
+        summarizedIndex: baseIndex,
+        stateSnapshot: createStateSnapshot(finalState, {
+          summaries: baseSummaries,
+          lastSummarizedIndex: baseIndex,
+          currentLocation: finalState.currentLocation,
+          time: finalState.time,
+          atmosphere: gameStateRef.current.atmosphere,
+          veoScript: gameStateRef.current.veoScript,
+          uiState: gameStateRef.current.uiState,
+        }),
+      };
+
+      setGameState((prev) => {
+        const newNodes = {
+          ...prev.nodes,
+          [cleanupNodeId]: cleanupNode,
+        };
+
+        return {
+          ...prev,
+          nodes: newNodes,
+          activeNodeId: cleanupNodeId,
+          currentFork: deriveHistory(newNodes, cleanupNodeId),
+          inventory: finalState.inventory,
+          relationships: finalState.relationships,
+          quests: finalState.quests,
+          currentLocation: finalState.currentLocation,
+          locations: finalState.locations,
+          character: finalState.character,
+          knowledge: finalState.knowledge,
+          factions: finalState.factions,
+          time: finalState.time,
+          timeline: finalState.timeline,
+          causalChains: finalState.causalChains,
+          isProcessing: false,
+        };
+      });
+
+      // Update RAG for changed entities
+      if (changedEntities.length > 0 && aiSettings.embedding?.enabled) {
+        const stateWithSaveInfo = {
+          ...gameStateRef.current,
+          saveId: currentSlotId || "default",
+          forkId: gameStateRef.current.forkId,
+          turnNumber: gameStateRef.current.turnNumber,
+        };
+        updateRAGDocumentsBackground(
+          changedEntities,
+          stateWithSaveInfo,
+        ).catch((e) => console.error("[Cleanup] RAG update failed:", e));
+      }
+
+      processingRef.current = false;
+      triggerSave();
+      return { success: true };
+    } catch (error: unknown) {
+      console.error("Entity cleanup failed:", error);
+      const errorMsg =
+        error instanceof Error ? error.message : "Entity cleanup failed";
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+        error: errorMsg,
+      }));
+      processingRef.current = false;
+      return { success: false, error: errorMsg };
+    }
+  };
+
   return {
     language,
     setLanguage,
@@ -1423,6 +1569,7 @@ export const useGameEngine = () => {
     magicMirrorImage,
     setMagicMirrorImage,
     handleForceUpdate,
+    cleanupEntities: handleCleanupEntities,
     isVeoScriptOpen,
     setIsVeoScriptOpen,
     isSettingsOpen,
