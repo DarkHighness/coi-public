@@ -488,6 +488,8 @@
     }
   },
   "themeMode": "主题模式",
+  "galleryBackground": "照片背景",
+  "galleryBackgroundDesc": "在首页显示照片墙图片作为飘落背景",
   "hideSystem": "隐藏系统",
   "showSystem": "显示系统",
   "viewLogs": "日志",

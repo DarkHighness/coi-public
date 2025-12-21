@@ -404,6 +404,8 @@
     "ragDisabled": "RAG has been disabled"
   },
   "themeMode": "Theme Mode",
+  "galleryBackground": "Gallery Background",
+  "galleryBackgroundDesc": "Show photos from gallery as floating background on start screen",
   "settings": {
     "title": "Settings",
     "modelNotFound": "Model not found in list. Please select a valid model.",

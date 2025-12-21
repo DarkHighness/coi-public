@@ -1070,6 +1070,8 @@ export interface AISettings {
   fixedEnvTheme?: string; // If set, override with this specific envTheme key (e.g., "cyberpunk")
   /** 是否禁用环境视觉特效（如下雨、下雪等） */
   disableEnvironmentalEffects?: boolean;
+  /** 在首页显示照片墙图片作为飘落背景 */
+  galleryBackground?: boolean;
 
   // Typewriter Effect Settings
   typewriterSpeed: number; // Characters per interval (1-100, lower = faster)

@@ -7,14 +7,14 @@ import { useIsMobile } from "../hooks/useMediaQuery";
 interface ThemeSelectorProps {
   themes: Record<string, StoryThemeConfig>;
   onSelect: (theme: string) => void;
-  onHover: (theme: string) => void;
+  onPreviewTheme?: (theme: string | null) => void;
   onBack?: () => void;
 }
 
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   themes,
   onSelect,
-  onHover,
+  onPreviewTheme,
   onBack,
 }) => {
   const isMobile = useIsMobile();
@@ -24,7 +24,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       <ThemeSelectorDesktop
         themes={themes}
         onSelect={onSelect}
-        onHover={onHover}
+        onPreviewTheme={onPreviewTheme}
         onBack={onBack}
       />
     );
@@ -34,7 +34,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     <ThemeSelectorMobile
       themes={themes}
       onSelect={onSelect}
-      onHover={onHover}
+      onPreviewTheme={onPreviewTheme}
     />
   );
 };

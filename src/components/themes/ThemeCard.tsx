@@ -9,7 +9,6 @@ interface ThemeCardProps {
   themeKey: string;
   themeConfig: StoryThemeConfig;
   onPreview: (key: string) => void;
-  onHover: (key: string) => void;
   isDesktop: boolean;
 }
 
@@ -17,7 +16,6 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   themeKey,
   themeConfig,
   onPreview,
-  onHover,
   isDesktop,
 }) => {
   const { t } = useTranslation();
@@ -29,8 +27,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   return (
     <button
       onClick={() => onPreview(themeKey)}
-      onMouseEnter={() => onHover(themeKey)}
-      className="group relative w-full text-left transition-all duration-300 hover:scale-[1.01] theme-card"
+      className="group relative w-full h-full text-left transition-all duration-300 hover:scale-[1.01] theme-card"
       data-theme-key={themeKey}
     >
       {/* Card Background with Gradient Border */}
@@ -42,7 +39,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
       ></div>
 
       <div
-        className={`relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden ${isDesktop ? "min-h-[200px]" : "min-h-[50px]"}`}
+        className={`relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden ${isDesktop ? "h-[250px]" : "h-[80px]"}`}
         style={
           {
             "--theme-primary": primaryColor,
@@ -79,23 +76,6 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
               />
             </div>
           </div>
-
-          {/* Arrow Icon */}
-          {/* <div className="shrink-0 self-center opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-theme-primary">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              ></path>
-            </svg>
-          </div> */}
         </div>
       </div>
     </button>

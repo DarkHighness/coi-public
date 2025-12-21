@@ -480,7 +480,10 @@ function AppContent() {
   const rawThemeConfig = ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
   // Determine effective mode (debug override > state)
-  const effectiveMode = debugState.lockedMode || themeMode;
+  // Must resolve 'system' to actual light/dark mode
+  let effectiveMode: "light" | "dark" = debugState.lockedMode || (themeMode === "system"
+    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : themeMode === "day" ? "light" : "dark");
 
   // Select appropriate vars based on mode
   const activeVars =

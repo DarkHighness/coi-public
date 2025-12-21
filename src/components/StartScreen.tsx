@@ -2,7 +2,6 @@ import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
-import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomContextModal } from "./CustomContextModal";
 import { SaveSlot, ImportResult } from "../types";
@@ -101,11 +100,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   onRefreshSlots,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
-  const [hoveredTheme, setHoveredTheme] = useState<string>("fantasy");
   const [customContext, setCustomContext] = useState("");
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [originalTheme, setOriginalTheme] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -159,14 +158,18 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
   const [isZooming, setIsZooming] = useState(false);
 
-  // Notify parent of theme hover for global style preview
-  React.useEffect(() => {
-    if (onThemePreview && mode === "theme_select") {
-      onThemePreview(hoveredTheme);
-    } else if (onThemePreview) {
-      onThemePreview(null);
-    }
-  }, [hoveredTheme, mode, onThemePreview]);
+  // Enter theme selection mode - store original theme and set to fantasy
+  const enterThemeSelect = () => {
+    setOriginalTheme(null); // Will be captured by the current preview state in parent
+    setMode("theme_select");
+    onThemePreview?.("fantasy"); // Set to fantasy as default
+  };
+
+  // Exit theme selection mode without selecting - restore original theme
+  const exitThemeSelect = () => {
+    setMode("main");
+    onThemePreview?.(null); // Reset to original (null means no preview override)
+  };
 
   const handleStart = (theme: string, customContext?: string) => {
     setIsZooming(true);
@@ -175,12 +178,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     }, 1500); // Match animation duration
   };
 
-  // Dynamic background style based on hovered theme
-  // Get the theme's default atmosphere, then get the visual theme for that atmosphere
-  const defaultAtmosphere = THEMES[hoveredTheme]?.defaultAtmosphere || "quiet";
-  const themeKey = getThemeKeyForAtmosphere(defaultAtmosphere);
-  const activeThemeVar =
-    ENV_THEMES[themeKey]?.vars["--theme-primary"] || "#f59e0b";
+  // Dynamic background style
+  const activeThemeVar = ENV_THEMES["fantasy"]?.vars["--theme-primary"] || "#f59e0b";
 
   return (
     <div
@@ -265,7 +264,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Menu Content */}
-        <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full pb-12 overflow-hidden">
+        <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full overflow-hidden">
           {mode === "main" ? (
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full overflow-y-auto custom-scrollbar px-2">
               {latestSave && (
@@ -300,7 +299,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
               <button
                 ref={startButtonRef}
-                onClick={() => setMode("theme_select")}
+                onClick={enterThemeSelect}
                 data-tutorial-id="start-adventure-button"
                 className={`w-full py-4 border-2 border-theme-text/10 hover:border-theme-primary text-theme-text font-bold text-lg uppercase tracking-widest hover:bg-theme-surface-highlight transition-all rounded-sm flex items-center justify-center gap-3 group ${!latestSave ? "bg-theme-primary text-theme-bg border-theme-primary hover:bg-theme-primary-hover hover:border-theme-primary-hover" : ""}`}
               >
@@ -387,7 +386,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => setMode("main")}
+                    onClick={exitThemeSelect}
                     className="text-theme-muted hover:text-theme-text transition-colors"
                   >
                     <svg
@@ -439,8 +438,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   <ThemeSelector
                     themes={THEMES}
                     onSelect={(theme) => handleStart(theme, customContext)}
-                    onHover={setHoveredTheme}
-                    onBack={() => setMode("main")}
+                    onPreviewTheme={onThemePreview}
+                    onBack={exitThemeSelect}
                   />
                 )}
               </div>
@@ -460,8 +459,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <ThemeSelector
             themes={THEMES}
             onSelect={(theme) => handleStart(theme, customContext)}
-            onHover={setHoveredTheme}
-            onBack={() => setMode("main")}
+            onPreviewTheme={onThemePreview}
+            onBack={exitThemeSelect}
           />
         </div>
       )}

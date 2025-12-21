@@ -25,8 +25,8 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
     <div
       className={`sticky top-0 z-20 p-4 transition-all duration-300 ${
         isScrolled
-          ? `bg-theme-bg/100 backdrop-blur-xl border-b border-theme-border/50 ${!isDesktop ? "shadow-lg" : ""}`
-          : "bg-transparent"
+          ? `backdrop-blur-sm border-b border-theme-border ${!isDesktop ? "shadow-lg" : ""}`
+          : "backdrop-blur-sm"
       }`}
     >
       <div className="max-w-5xl mx-auto w-full flex flex-col gap-4">
@@ -52,11 +52,7 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("searchThemes") || "Search themes..."}
-            className={`block w-full pl-11 pr-10 py-3 border rounded-xl leading-5 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary sm:text-sm transition-all duration-300 ${
-              isScrolled
-                ? "bg-theme-surface-highlight/100 border-theme-border"
-                : "bg-theme-surface-highlight/20 border-theme-border/50"
-            }`}
+            className="block w-full pl-11 pr-10 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary sm:text-sm transition-all duration-300"
           />
           {searchQuery && (
             <button

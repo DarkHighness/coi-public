@@ -1,37 +1,39 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
 import { CategoryKey } from "../../utils/constants/themes";
-import { ENV_THEMES } from "../../utils/constants/envThemes";
 import { ThemeFilters } from "./ThemeFilters";
 import { ThemeCard } from "./ThemeCard";
-import { MarkdownText } from "../render/MarkdownText";
 import { ThemePreviewModal } from "./ThemePreviewModal";
+import { Pagination } from "./Pagination";
+
+const ITEMS_PER_PAGE = 10; // 10 items per page on mobile
 
 interface ThemeSelectorMobileProps {
   themes: Record<string, StoryThemeConfig>;
   onSelect: (theme: string) => void;
-  onHover: (theme: string) => void;
+  onPreviewTheme?: (theme: string | null) => void;
 }
 
 export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   themes,
   onSelect,
-  onHover,
+  onPreviewTheme,
 }) => {
   const { t } = useTranslation();
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("all");
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const handlePreview = (key: string) => {
     setPreviewTheme(key);
-    onHover(key); // Update global theme to match preview
+    onPreviewTheme?.(key); // Update global theme for preview
   };
 
   const closePreview = () => {
     setPreviewTheme(null);
+    onPreviewTheme?.(null); // Reset global theme preview
   };
 
   const filteredThemes = useMemo(() => {
@@ -59,66 +61,59 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
     return keys;
   }, [themes, searchQuery, selectedCategory, t]);
 
-  // Scroll Tracking for Mobile/Global Theme Update
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
-        if (visibleEntries.length > 0) {
-          // Sort by intersection ratio to find the most visible one
-          visibleEntries.sort(
-            (a, b) => b.intersectionRatio - a.intersectionRatio,
-          );
-          const mostVisible = visibleEntries[0];
-          const themeKey = mostVisible.target.getAttribute("data-theme-key");
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(0);
+  }, [searchQuery, selectedCategory]);
 
-          // Only update if we are not in preview mode (modal open)
-          if (themeKey && !previewTheme) {
-            onHover(themeKey);
-          }
-        }
-      },
-      {
-        threshold: 0.6, // Trigger when 60% visible
-        rootMargin: "-10% 0px -10% 0px", // Focus on center area
-      },
-    );
+  // Pagination calculations
+  // First page shows 9 items when random card is visible (total 10)
+  // Other pages show 10 items
+  const showRandomCard = selectedCategory === "all" && !searchQuery;
+  const firstPageCount = showRandomCard ? ITEMS_PER_PAGE - 1 : ITEMS_PER_PAGE;
 
-    const cards = document.querySelectorAll(".theme-card");
-    cards.forEach((card) => observer.observe(card));
+  const getItemsForPage = (page: number) => {
+    if (page === 0) {
+      return filteredThemes.slice(0, firstPageCount);
+    }
+    const offset = firstPageCount + (page - 1) * ITEMS_PER_PAGE;
+    return filteredThemes.slice(offset, offset + ITEMS_PER_PAGE);
+  };
 
-    return () => observer.disconnect();
-  }, [filteredThemes, previewTheme, onHover]);
+  const totalPages = Math.ceil(
+    (filteredThemes.length - firstPageCount) / ITEMS_PER_PAGE
+  ) + (filteredThemes.length > 0 ? 1 : 0);
+  const currentThemes = getItemsForPage(currentPage);
 
   const previewData = previewTheme ? themes[previewTheme] : null;
 
   return (
     <div className="w-full h-full relative flex flex-col">
       {/* Header Area */}
-      <div className="shrink-0 z-10 bg-theme-bg/80 backdrop-blur-md">
+      <div className="shrink-0 z-10 backdrop-blur-md">
         <ThemeFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
-          isScrolled={isScrolled}
+          isScrolled={false}
           isDesktop={false}
         />
       </div>
 
-      {/* Scrollable Content Area */}
-      <div
-        className="flex-1 overflow-y-auto custom-scrollbar relative"
-        onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 10)}
-      >
-        <div className="px-4 pb-[calc(8rem+env(safe-area-inset-bottom))]">
-          <div className="max-w-5xl mx-auto w-full flex flex-col gap-3">
-            {/* Random Option */}
-            {selectedCategory === "all" && !searchQuery && (
+      {/* Content Area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
+          <div
+            key={`page-${currentPage}`}
+            className="max-w-5xl mx-auto w-full flex flex-col gap-3 animate-fade-in"
+          >
+            {/* Random Option - only on first page */}
+            {selectedCategory === "all" && !searchQuery && currentPage === 0 && (
               <button
                 onClick={() => onSelect("")}
-                onMouseEnter={() => onHover("fantasy")}
-                className="relative w-full p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.2)] flex items-center gap-4"
+                className="relative w-full h-[80px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.2)] flex items-center gap-4 animate-slide-in"
+                style={{ animationDelay: "0ms" }}
               >
                 <div className="w-12 h-12 rounded-full bg-theme-primary/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">
                   🎲
@@ -137,17 +132,30 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               </button>
             )}
 
-            {filteredThemes.map((key) => (
-              <ThemeCard
+            {currentThemes.map((key, index) => (
+              <div
                 key={key}
-                themeKey={key}
-                themeConfig={themes[key]}
-                onPreview={handlePreview}
-                onHover={onHover}
-                isDesktop={false}
-              />
+                className="animate-slide-in"
+                style={{ animationDelay: `${index * 30}ms` }}
+              >
+                <ThemeCard
+                  themeKey={key}
+                  themeConfig={themes[key]}
+                  onPreview={handlePreview}
+                  isDesktop={false}
+                />
+              </div>
             ))}
           </div>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="shrink-0 px-4 py-2 backdrop-blur-sm border-t border-theme-border pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
 

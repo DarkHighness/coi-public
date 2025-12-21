@@ -360,3 +360,14 @@ body {
 .animate-slide-in-right {
   animation: slideInFromRight 0.3s ease-out forwards;
 }
+
+/* Virtual scrolling optimization for theme cards */
+.theme-card-virtual {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px; /* Desktop: approximate card height */
+}
+
+.theme-card-virtual-mobile {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px; /* Mobile: smaller card height */
+}
