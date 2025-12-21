@@ -215,7 +215,17 @@ export const useGameEngine = () => {
   useEffect(() => {
     const root = document.documentElement;
     const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
-    const envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere);
+
+    // Determine the envTheme key based on lockEnvTheme setting
+    let envThemeKey: string;
+    if (aiSettings.lockEnvTheme) {
+      // Locked: use fixedEnvTheme if set, otherwise story's default envTheme
+      envThemeKey = aiSettings.fixedEnvTheme || storyTheme.envTheme;
+    } else {
+      // Dynamic: derive from current atmosphere
+      envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere);
+    }
+
     const themeConfig = ENV_THEMES[envThemeKey] || ENV_THEMES.fantasy;
 
     // Determine active mode
@@ -251,7 +261,7 @@ export const useGameEngine = () => {
 
     // Clean up alpha override (we don't use it anymore since we have proper palettes)
     root.style.removeProperty("--theme-alpha-override");
-  }, [gameState.theme, themeMode]);
+  }, [gameState.theme, gameState.atmosphere, themeMode, aiSettings.lockEnvTheme, aiSettings.fixedEnvTheme]);
 
   // Dynamic Title Update
   useEffect(() => {

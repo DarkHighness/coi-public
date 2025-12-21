@@ -280,6 +280,7 @@
   "retryGeneration": "重新生成",
   "rebuildContext": "重建上下文",
   "cleanupEntities": "整理实体",
+  "systemMessage": "系统提示",
   "skills": "技能",
   "emptySkills": "暂未习得技能。",
   "status": "状态",

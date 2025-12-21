@@ -88,6 +88,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const playedAnimations = useRef<Set<string>>(new Set());
     const isInitialMount = useRef(true);
 
+    // Disable content-visibility during initial load for accurate scrollHeight
+    const [disableVirtualization, setDisableVirtualization] = useState(true);
+
     const { t } = useTranslation();
 
     // Scroll to specific segment (for timeline navigation)
@@ -100,7 +103,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               `[data-segment-id="${segmentId}"]`,
             );
             if (element) {
-              element.scrollIntoView({ behavior: "smooth", block: "center" });
+              element.scrollIntoView({ behavior: "smooth", block: "start" });
             } else {
               // Fallback: estimate scroll position
               const targetIndex = currentHistory.findIndex(
@@ -177,7 +180,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     );
 
     // Mark all existing segments as played on initial load (prevent re-typing on game load/restore)
-    // But only do this ONCE on mount, not on every re-render
+    // This effect watches for when currentHistory first becomes available (after async load)
     useEffect(() => {
       if (isInitialMount.current && currentHistory.length > 0) {
         currentHistory.forEach((segment) => {
@@ -187,46 +190,59 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
         // Scroll to last viewed segment or bottom on initial mount (continue game scenario)
         const viewedSegmentId = gameState.uiState.viewedSegmentId;
+        const lastSegmentId = currentHistory[currentHistory.length - 1]?.id;
 
-        setTimeout(() => {
-          if (viewedSegmentId) {
-            // Try to scroll to the last viewed segment
-            const segmentExists = currentHistory.some(
-              (s) => s.id === viewedSegmentId,
-            );
-            if (segmentExists) {
-              if (layout === "scroll" && scrollContainerRef.current) {
+        // Determine target: use viewedSegmentId if valid, otherwise use lastSegmentId
+        let targetId = viewedSegmentId;
+        if (!targetId || !currentHistory.some((s) => s.id === targetId)) {
+          targetId = lastSegmentId;
+        }
+
+        if (layout === "scroll" && scrollContainerRef.current) {
+          const container = scrollContainerRef.current;
+
+          // Use requestAnimationFrame for reliable DOM-based scrolling
+          const scrollToEnd = () => {
+            requestAnimationFrame(() => {
+              // First, scroll to very bottom to force content rendering
+              container.scrollTop = container.scrollHeight;
+
+              // After a frame, try to find the target element
+              requestAnimationFrame(() => {
                 const element = document.querySelector(
-                  `[data-segment-id="${viewedSegmentId}"]`,
+                  `[data-segment-id="${targetId}"]`,
                 );
                 if (element) {
-                  element.scrollIntoView({ behavior: "auto", block: "center" });
-                  return;
+                  element.scrollIntoView({ behavior: "auto", block: "start" });
+                } else {
+                  // Element still not found, force scroll to absolute bottom
+                  container.scrollTop = container.scrollHeight;
                 }
-              } else if (layout === "stack") {
-                const index = currentHistory.findIndex(
-                  (s) => s.id === viewedSegmentId,
-                );
-                if (index !== -1) {
-                  setActiveIndex(index);
-                  const page = Math.floor(index / stackItemsPerPage);
-                  setCurrentPage(page);
-                  return;
-                }
-              }
-            }
-          }
-
-          // Fallback: scroll to bottom if no viewed segment or segment not found
-          if (layout === "scroll" && scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTo({
-              top: scrollContainerRef.current.scrollHeight,
-              behavior: "auto", // Use "auto" for instant scroll on load
+              });
             });
+          };
+
+          // Start scroll with a short delay to ensure React has rendered
+          setTimeout(() => {
+            scrollToEnd();
+            // Re-enable virtualization after scroll is complete
+            setTimeout(() => setDisableVirtualization(false), 500);
+          }, 50);
+        } else if (layout === "stack") {
+          // Stack mode: jump to the target page
+          const index = currentHistory.findIndex((s) => s.id === targetId);
+          if (index !== -1) {
+            setActiveIndex(index);
+            const page = Math.floor(index / stackItemsPerPage);
+            setCurrentPage(page);
+          } else {
+            const totalPages = Math.ceil(currentHistory.length / stackItemsPerPage);
+            setCurrentPage(totalPages - 1);
+            setActiveIndex(currentHistory.length - 1);
           }
-        }, 150); // Slightly longer delay to ensure all content is rendered
+        }
       }
-    }, []); // Empty deps - run only once on mount
+    }, [currentHistory.length]); // Watch for when history becomes available
 
     // Auto-jump to latest when history grows (new turn generated)
     useEffect(() => {
@@ -517,14 +533,15 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                         style={{
                           // CSS content-visibility for native browser virtualization
                           // Browser will skip rendering off-screen content but maintain layout
+                          // Disable content-visibility during initial load or for last 10 segments
                           contentVisibility:
-                            index < currentHistory.length - 3
-                              ? "auto"
-                              : "visible",
-                          containIntrinsicSize:
-                            index < currentHistory.length - 3
-                              ? "auto 400px"
+                            disableVirtualization || index >= currentHistory.length - 10
+                              ? "visible"
                               : "auto",
+                          containIntrinsicSize:
+                            disableVirtualization || index >= currentHistory.length - 10
+                              ? "auto"
+                              : "auto 400px",
                         }}
                       >
                         {/* Fork Button visible on hover for past segments - Fixed Accessibility */}

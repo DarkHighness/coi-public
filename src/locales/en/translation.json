@@ -338,6 +338,7 @@
   "retryGeneration": "Retry",
   "rebuildContext": "Rebuild Context",
   "cleanupEntities": "Cleanup",
+  "systemMessage": "System",
   "next": "Next",
   "latest": "Latest",
   "roll": "Roll (Risk)",
