@@ -299,16 +299,20 @@ export async function generateContent(
 
       // 计算 thinking budget
       let thinking: { type: "enabled"; budget_tokens: number } | undefined;
-      // Enable thinking if specified and not disabled
-      if (options?.thinkingLevel && !options?.disableThinking) {
+      // Enable thinking if specified and not "none"
+      const effort = options?.thinkingEffort;
+      if (effort && effort !== "none") {
         const budgetMap = {
+          minimal: 1024,
           low: 2048,
           medium: 4096,
           high: 8192,
+          xhigh: 16384,
         };
+        // @ts-ignore
         thinking = {
           type: "enabled",
-          budget_tokens: budgetMap[options.thinkingLevel] || 2048,
+          budget_tokens: (budgetMap as any)[effort] || 2048,
         };
       }
 

@@ -386,12 +386,12 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
           },
         ],
         toolChoice: effectiveToolChoice,
-        thinkingLevel: settings.story?.thinkingLevel,
         mediaResolution: settings.story?.mediaResolution,
         temperature: settings.story?.temperature,
         topP: settings.story?.topP,
         topK: settings.story?.topK,
         minP: settings.story?.minP,
+        thinkingEffort: settings.story?.thinkingEffort,
       },
       conversationHistory,
       {

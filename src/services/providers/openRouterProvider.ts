@@ -296,16 +296,13 @@ export async function generateContent(
       // Reference: https://openrouter.ai/docs/guides/best-practices/reasoning-tokens
       let reasoning: any = undefined;
 
-      if (options?.disableThinking) {
+      const effort = options?.thinkingEffort;
+
+      if (effort === "none") {
         reasoning = { effort: "none", exclude: true };
-      } else {
-        if (options?.reasoningEffort) {
-          // OpenAI style effort
-          reasoning = { effort: options.reasoningEffort };
-        } else if (options?.thinkingLevel) {
-          // Map thinkingLevel directly to effort as "low"|"medium"|"high" are valid values
-          reasoning = { effort: options.thinkingLevel };
-        }
+      } else if (effort) {
+        // xhigh, high, medium, low, minimal are all passed to OpenRouter
+        reasoning = { effort: effort };
       }
 
       if (reasoning) {

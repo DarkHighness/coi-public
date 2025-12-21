@@ -691,8 +691,16 @@
     "topKHelp": "限制词汇表为前 K 个 token",
     "minP": "Min P",
     "minPHelp": "最小概率阈值",
-    "disableThinking": "禁用思考/推理",
-    "disableThinkingHelp": "禁用模型的思考/推理能力以节省成本并减少延迟",
+    "thinkingEffort": "思考强度",
+    "thinkingEffortHelp": "调整模型的推理/思考强度",
+    "efforts": {
+      "none": "无",
+      "minimal": "极简",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "xhigh": "极高"
+    },
     "disableFilter": "禁用模型筛选",
     "disableFilterHelp": "显示所有模型，忽略能力检测。请谨慎使用。",
     "disableFilterWarning": "⚠️ 警告 ⚠️\n\n禁用模型筛选将显示所有模型，无论其能力如何。\n\n选择不兼容的模型可能导致生成失败。\n\n确定要继续吗？"

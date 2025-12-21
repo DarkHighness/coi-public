@@ -595,6 +595,22 @@ function buildGenerationConfig(
     config.systemInstruction = modifiedSystemInstruction;
   }
 
+  // 思考模式配置
+  const effort = options?.thinkingEffort;
+  if (effort && effort !== "none") {
+    const budgetMap = {
+      minimal: 1024,
+      low: 2048,
+      medium: 4096,
+      high: 8192,
+      xhigh: 16384,
+    };
+    (config as any).thinkingConfig = {
+      includeThoughts: true,
+      includeThoughtsTokenLimit: (budgetMap as any)[effort] || 2048,
+    };
+  }
+
   // 温度等参数 (非 thinking 模式)
   if (options?.temperature !== undefined) {
     config.temperature = options.temperature;

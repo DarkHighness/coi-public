@@ -770,12 +770,12 @@ You are in AGENTIC MODE.
           schema: effectiveSchema,
           tools: toolConfig,
           toolChoice: effectiveToolChoice,
-          thinkingLevel: storyCfg?.thinkingLevel,
           mediaResolution: storyCfg?.mediaResolution,
           temperature: storyCfg?.temperature,
           topP: storyCfg?.topP,
           topK: storyCfg?.topK,
           minP: storyCfg?.minP,
+          thinkingEffort: storyCfg?.thinkingEffort,
         },
         conversationHistory,
         {
