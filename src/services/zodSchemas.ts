@@ -1254,6 +1254,29 @@ export const storyOutlineSchema = z.object({
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience.",
   ),
+  // Phase 10: Opening Narrative
+  openingNarrative: z
+    .object({
+      narrative: z.string().describe("The opening story text."),
+      choices: z
+        .array(
+          z.object({
+            text: z.string().describe("Choice text."),
+            consequence: z
+              .string()
+              .nullish()
+              .describe("Brief consequence hint."),
+          }),
+        )
+        .describe("Initial choices for the player."),
+      imagePrompt: z
+        .string()
+        .nullish()
+        .describe("Visual scene prompt for the opening."),
+      atmosphere: atmosphereSchema.nullish().describe("Override atmosphere."),
+    })
+    .nullish()
+    .describe("Opening narrative generated in Phase 10."),
   // Unlocked flags - set by AI when player discovers hidden info
   worldSettingUnlocked: z
     .boolean()
@@ -1384,6 +1407,42 @@ export const outlinePhase9Schema = z.object({
   ),
 });
 
+/**
+ * Phase 10: Opening Narrative
+ * The initial story segment that establishes the scene
+ */
+export const outlinePhase10Schema = z.object({
+  openingNarrative: z.object({
+    narrative: z
+      .string()
+      .describe(
+        "The opening story text (2-4 paragraphs). Establish the scene vividly. Use second person perspective.",
+      ),
+    choices: z
+      .array(
+        z.object({
+          text: z.string().describe("Choice text for this action option."),
+          consequence: z
+            .string()
+            .nullish()
+            .describe("Brief hint about likely consequence. Can be omitted."),
+        }),
+      )
+      .min(2)
+      .max(4)
+      .describe("2-4 initial choices for the player's first action."),
+    imagePrompt: z
+      .string()
+      .nullish()
+      .describe(
+        "Visual scene prompt for the opening scene in TARGET LANGUAGE. Include time/lighting, location, protagonist, atmosphere.",
+      ),
+    atmosphere: atmosphereSchema
+      .nullish()
+      .describe("Override initial atmosphere if the opening scene differs."),
+  }),
+});
+
 /** 分阶段 Schema 类型定义 */
 export type OutlinePhase1 = z.infer<typeof outlinePhase1Schema>;
 export type OutlinePhase2 = z.infer<typeof outlinePhase2Schema>;
@@ -1394,6 +1453,7 @@ export type OutlinePhase6 = z.infer<typeof outlinePhase6Schema>;
 export type OutlinePhase7 = z.infer<typeof outlinePhase7Schema>;
 export type OutlinePhase8 = z.infer<typeof outlinePhase8Schema>;
 export type OutlinePhase9 = z.infer<typeof outlinePhase9Schema>;
+export type OutlinePhase10 = z.infer<typeof outlinePhase10Schema>;
 
 // Note: PartialStoryOutline is now defined in types.ts to support GameState integration
 // The phase types above are re-exported for type-safe phase result handling

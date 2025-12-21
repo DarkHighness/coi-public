@@ -131,6 +131,10 @@
         "9": {
           "name": "Finalizing Atmosphere",
           "desc": "Setting timeline and mood"
+        },
+        "10": {
+          "name": "Opening Scene",
+          "desc": "Generating the opening narrative"
         }
       }
     },
@@ -197,6 +201,13 @@
         "Creating the atmosphere...",
         "Finalizing the world state...",
         "Preparing for the adventure..."
+      ],
+      "10": [
+        "Crafting the opening...",
+        "Setting the initial scene...",
+        "Awakening the protagonist...",
+        "The wheels of fate begin to turn...",
+        "Your story is about to begin..."
       ]
     },
     "errors": {
@@ -1261,7 +1272,8 @@
       "outline-phase6": "Outline - Inventory",
       "outline-phase7": "Outline - Quests",
       "outline-phase8": "Outline - Knowledge",
-      "outline-phase9": "Outline - Final Polish"
+      "outline-phase9": "Outline - Final Polish",
+      "outline-phase10": "Outline - Opening Scene"
     },
     "newest": "Newest",
     "oldest": "Oldest",

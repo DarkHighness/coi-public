@@ -586,72 +586,118 @@ export const useGameEngine = () => {
       // Navigate to game immediately after outline is ready
       navigate("/game");
 
-      // Generate first turn in the game view
+      // Generate first turn from Phase 10 openingNarrative
       setTimeout(async () => {
         try {
           // RAG initialization is now handled automatically by the SharedWorker
           // when documents are added. No manual initialization needed.
           // The RAG service should already be initialized via App.tsx
 
+          // Use Phase 10 openingNarrative directly instead of calling handleAction
+          const openingNarrative = outline.openingNarrative;
+          if (!openingNarrative) {
+            throw new Error("Missing opening narrative from Phase 10");
+          }
+
+          // Create the first segment directly from openingNarrative
+          const firstNodeId = `model-opening-${Date.now()}`;
+
+          // Determine atmosphere - use openingNarrative.atmosphere if provided, otherwise use initialAtmosphere
+          const openingAtmosphere = openingNarrative.atmosphere
+            ? normalizeAtmosphere(openingNarrative.atmosphere)
+            : normalizeAtmosphere(outline.initialAtmosphere);
+
+          // Create state snapshot for the first segment
+          const stateSnapshot = createStateSnapshot(gameStateRef.current, {
+            summaries: [],
+            lastSummarizedIndex: 0,
+            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            time: outline.initialTime || "Day 1",
+            atmosphere: openingAtmosphere,
+            veoScript: undefined,
+            uiState: gameStateRef.current.uiState,
+          });
+
+          const firstNode: StorySegment = {
+            id: firstNodeId,
+            parentId: null,
+            text: openingNarrative.narrative,
+            choices: openingNarrative.choices.map((c) => ({
+              text: c.text,
+              consequence: c.consequence || undefined,
+            })),
+            imagePrompt: openingNarrative.imagePrompt || "",
+            role: "model",
+            timestamp: Date.now(),
+            segmentIdx: 0,
+            summaries: [],
+            summarizedIndex: 0,
+            atmosphere: openingAtmosphere,
+            ending: "continue",
+            stateSnapshot,
+          };
+
+          // Store initial prompt for potential retry (backward compatibility)
           const themeName = t(`${selectedTheme}.name`, { ns: "themes" });
-          const prompt = t("initialPrompt.begin", { theme: themeName });
+          const fallbackPrompt = t("initialPrompt.begin", { theme: themeName });
 
-          // Store initial prompt for retry
-          setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
+          setGameState((prev) => ({
+            ...prev,
+            nodes: { [firstNodeId]: firstNode },
+            activeNodeId: firstNodeId,
+            rootNodeId: firstNodeId,
+            currentFork: [firstNode],
+            isProcessing: false,
+            initialPrompt: fallbackPrompt, // Keep for backward compatibility with retry
+            turnNumber: 1,
+            atmosphere: openingAtmosphere,
+          }));
 
-          const result = await handleAction(prompt, true, selectedTheme);
+          console.log(
+            "[StartNewGame] First segment created from Phase 10 openingNarrative",
+          );
 
-          // handleAction returns:
-          // - { success: true, stateChanges } on success
-          // - { success: false, error } on failure
-          // If first turn fails, stay in game and allow retry via retry button
-          // Don't delete the save since outline generation succeeded
-          if (result && !result.success) {
-            console.warn(
-              "First turn generation failed, but outline is valid - player can retry",
-            );
-            // Error state is already set by handleAction, player can use retry button
-          } else if (result && result.success) {
-            console.log("[StartNewGame] First turn generated successfully");
+          // Trigger image generation for the first node if enabled
+          if (openingNarrative.imagePrompt && !aiSettings.manualImageGen) {
+            generateImageForNode(firstNodeId, firstNode);
+          }
 
-            // === Auto-save after first turn completes ===
-            // This ensures the initial game state with first node is persisted
-            // Use setTimeout to ensure state updates from handleAction have propagated
-            setTimeout(async () => {
-              try {
-                await saveToSlot(slotId, gameStateRef.current);
-                console.log(
-                  "[StartNewGame] First turn auto-saved successfully",
-                );
-              } catch (saveError) {
-                console.error(
-                  "[StartNewGame] Failed to auto-save after first turn:",
-                  saveError,
-                );
-                // Non-critical error - game can still continue
-              }
-            }, 100);
-
-            // On success, index initial entities in background (non-blocking)
-            if (aiSettings.embedding?.enabled) {
-              indexInitialEntities(gameStateRef.current, slotId).catch(
-                (error) => {
-                  console.error(
-                    "[RAG Init] Failed to index initial entities:",
-                    error,
-                  );
-                },
+          // === Auto-save after first segment is created ===
+          setTimeout(async () => {
+            try {
+              await saveToSlot(slotId, gameStateRef.current);
+              console.log(
+                "[StartNewGame] First segment auto-saved successfully",
+              );
+            } catch (saveError) {
+              console.error(
+                "[StartNewGame] Failed to auto-save after first segment:",
+                saveError,
               );
             }
+          }, 100);
+
+          // Index initial entities in background (non-blocking)
+          if (aiSettings.embedding?.enabled) {
+            indexInitialEntities(gameStateRef.current, slotId).catch(
+              (error) => {
+                console.error(
+                  "[RAG Init] Failed to index initial entities:",
+                  error,
+                );
+              },
+            );
           }
-          // On success, we're already in /game with content showing
         } catch (error) {
-          // Unexpected error during first turn
-          console.error("Unexpected error during first turn", error);
+          // Unexpected error during first segment creation
+          console.error(
+            "Unexpected error during first segment creation",
+            error,
+          );
           const errorMsg =
             error instanceof Error
               ? error.message
-              : "Unknown error during first turn";
+              : "Unknown error during first segment";
           showToast(errorMsg, "error", 5000);
 
           // Don't delete save or navigate away - outline is still valid
@@ -882,25 +928,85 @@ export const useGameEngine = () => {
 
       navigate("/game");
 
-      // Generate first turn
+      // Generate first turn from Phase 10 openingNarrative
       setTimeout(async () => {
         try {
           // RAG is now managed by the SharedWorker - no manual initialization needed
 
+          // Use Phase 10 openingNarrative directly instead of calling handleAction
+          const openingNarrative = outline.openingNarrative;
+          if (!openingNarrative) {
+            throw new Error("Missing opening narrative from Phase 10");
+          }
+
+          // Create the first segment directly from openingNarrative
+          const firstNodeId = `model-opening-${Date.now()}`;
+
+          // Determine atmosphere
+          const openingAtmosphere = openingNarrative.atmosphere
+            ? normalizeAtmosphere(openingNarrative.atmosphere)
+            : normalizeAtmosphere(outline.initialAtmosphere);
+
+          // Create state snapshot for the first segment
+          const stateSnapshot = createStateSnapshot(gameStateRef.current, {
+            summaries: [],
+            lastSummarizedIndex: 0,
+            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            time: outline.initialTime || "Day 1",
+            atmosphere: openingAtmosphere,
+            veoScript: undefined,
+            uiState: gameStateRef.current.uiState,
+          });
+
+          const firstNode: StorySegment = {
+            id: firstNodeId,
+            parentId: null,
+            text: openingNarrative.narrative,
+            choices: openingNarrative.choices.map((c) => ({
+              text: c.text,
+              consequence: c.consequence || undefined,
+            })),
+            imagePrompt: openingNarrative.imagePrompt || "",
+            role: "model",
+            timestamp: Date.now(),
+            segmentIdx: 0,
+            summaries: [],
+            summarizedIndex: 0,
+            atmosphere: openingAtmosphere,
+            ending: "continue",
+            stateSnapshot,
+          };
+
+          // Store initial prompt for potential retry (backward compatibility)
           const themeName = t(`${theme}.name`, { ns: "themes" });
-          const prompt =
+          const fallbackPrompt =
             t("initialPrompt.begin", { theme: themeName }) +
             (customContext
               ? ` ${t("initialPrompt.context")}: ${customContext}`
               : "");
-          setGameState((prev) => ({ ...prev, initialPrompt: prompt }));
 
-          const result = await handleAction(prompt, true, theme);
-          if (result && !result.success) {
-            console.warn("First turn failed after resume, player can retry");
+          setGameState((prev) => ({
+            ...prev,
+            nodes: { [firstNodeId]: firstNode },
+            activeNodeId: firstNodeId,
+            rootNodeId: firstNodeId,
+            currentFork: [firstNode],
+            isProcessing: false,
+            initialPrompt: fallbackPrompt,
+            turnNumber: 1,
+            atmosphere: openingAtmosphere,
+          }));
+
+          console.log(
+            "[ResumeOutline] First segment created from Phase 10 openingNarrative",
+          );
+
+          // Trigger image generation for the first node if enabled
+          if (openingNarrative.imagePrompt && !aiSettings.manualImageGen) {
+            generateImageForNode(firstNodeId, firstNode);
           }
         } catch (error) {
-          console.error("First turn error after resume", error);
+          console.error("First segment creation error after resume", error);
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,

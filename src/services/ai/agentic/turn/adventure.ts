@@ -231,7 +231,11 @@ export const buildTurnMessages = (
   dynamicContext: string;
 } => {
   const baseMessages = buildInitialContext(layers, ragContext);
-  const userMessages = [createUserMessage(userAction)];
+  // Wrap user action with [PLAYER_ACTION] marker to distinguish from system messages
+  const markedAction = userAction.startsWith("[SUDO]")
+    ? userAction // SUDO commands already have their own marker
+    : `[PLAYER_ACTION] ${userAction}`;
+  const userMessages = [createUserMessage(markedAction)];
 
   return {
     messages: [...baseMessages, ...userMessages],
@@ -486,10 +490,13 @@ export const generateAdventureTurn = async (
       // Compare content text
       const lastUserText =
         lastUserMsg.content.find((p) => p.type === "text")?.text || "";
-      // Handle SUDO prefix in comparison if present in history or current action?
-      // Usually currentAction has SUDO. History message should match.
+      // Handle PLAYER_ACTION prefix in comparison
+      // History has [PLAYER_ACTION] prefix, but context.userAction doesn't
+      const expectedMarkedAction = context.userAction.startsWith("[SUDO]")
+        ? context.userAction
+        : `[PLAYER_ACTION] ${context.userAction}`;
 
-      if (lastUserText === context.userAction) {
+      if (lastUserText === expectedMarkedAction) {
         console.log(
           `[Adventure] proper Retry detected! Rolling back to last checkpoint.`,
         );

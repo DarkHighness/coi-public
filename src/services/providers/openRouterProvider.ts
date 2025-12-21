@@ -287,7 +287,7 @@ export async function generateContent(
         require_parameters: true,
         sort: "price",
         // OpenRouter plugins
-        plugins: [{ id: "response-healing" }],
+        // plugins: [{ id: "response-healing" }],
       };
 
       // Unified Reasoning Parameters (OpenRouter)

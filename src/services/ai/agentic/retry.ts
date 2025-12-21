@@ -79,6 +79,29 @@ export async function callWithAgenticRetry(
     }
     const textContent = (result as { content?: string }).content || "";
 
+    // Extract reasoning/thinking content from providers
+    // OpenAI o1/o3 and OpenRouter use _reasoning, Claude uses _thinking
+    const reasoningContent =
+      (result as { _reasoning?: string })._reasoning ||
+      (result as { _thinking?: string })._thinking ||
+      "";
+
+    // --- 0. Silent Retry for Empty Responses ---
+    // If AI returns completely empty (no content AND no tool calls), just retry silently
+    // without adding any messages to history - this is likely a transient API issue
+    if (!textContent && functionCalls.length === 0) {
+      attempt++;
+      console.warn(
+        `[AgenticRetry] Empty response (no content, no tool calls). Silent retry ${attempt}/${maxRetries}`,
+      );
+      if (attempt > maxRetries) {
+        throw new Error(
+          "[ERROR: EMPTY_RESPONSE] AI returned no content and no tool calls after all retries.",
+        );
+      }
+      continue; // Skip to next iteration without modifying history
+    }
+
     let errorMessage: string | null = null;
 
     // --- 1. Automatic JSON Fallback ---
@@ -208,7 +231,7 @@ export async function callWithAgenticRetry(
 
     // Add failure output to history for model feedback
     if (functionCalls.length > 0) {
-      // 1. Add the assistant message with the tool calls
+      // 1. Add the assistant message with the tool calls (including reasoning if present)
       history.push(
         createToolCallMessage(
           functionCalls.map((fc) => ({
@@ -218,6 +241,7 @@ export async function callWithAgenticRetry(
             thoughtSignature: fc.thoughtSignature,
           })),
           textContent,
+          reasoningContent, // Preserve reasoning/thinking content
         ),
       );
 
@@ -232,10 +256,15 @@ export async function callWithAgenticRetry(
         ),
       );
     } else {
-      // If no tool calls were attempted, just add as a text message
-      if (textContent) {
-        history.push(createAssistantMessage(textContent));
-      }
+      // If no tool calls were attempted, add the AI's response (or placeholder) before error
+      // CRITICAL: Must always add assistant message to maintain proper role alternation
+      // (assistant -> user -> assistant -> user, never user -> user)
+      history.push(
+        createAssistantMessage(
+          textContent ||
+            "[No response generated - validation failed before tool call]",
+        ),
+      );
       history.push(createUserMessage(errorMessage));
     }
   }

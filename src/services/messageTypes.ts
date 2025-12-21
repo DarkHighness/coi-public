@@ -48,12 +48,18 @@ export interface ToolResponsePart {
   };
 }
 
+export interface ReasoningPart {
+  type: "reasoning";
+  reasoning: string;
+}
+
 export type MessagePart =
   | TextPart
   | ImagePart
   | AudioPart
   | ToolCallPart
-  | ToolResponsePart;
+  | ToolResponsePart
+  | ReasoningPart;
 
 // --- Message Types ---
 
@@ -89,8 +95,14 @@ export const createToolCallMessage = (
     thoughtSignature?: string; // Required for Gemini 3 models
   }>,
   textContent?: string,
+  reasoningContent?: string, // Reasoning/thinking content from providers
 ): UnifiedMessage => {
   const content: MessagePart[] = [];
+
+  // Add reasoning content if present (from OpenAI o1/o3, Claude Extended Thinking, etc.)
+  if (reasoningContent) {
+    content.push({ type: "reasoning", reasoning: reasoningContent });
+  }
 
   // Add text content if present (important for Claude and other models that return text with tool calls)
   if (textContent) {

@@ -18,6 +18,7 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
     7: t("initializing.outline.phase.7.name", "Quests"),
     8: t("initializing.outline.phase.8.name", "Knowledge"),
     9: t("initializing.outline.phase.9.name", "Final Polish"),
+    10: t("initializing.outline.phase.10.name", "Opening Scene"),
   };
 
   return (
@@ -27,7 +28,7 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-widest text-theme-primary font-bold">
-              Phase {phase}/9
+              Phase {phase}/10
             </span>
             <span className="text-sm font-bold text-theme-text">
               {phaseNames[phase] || `Phase ${phase}`}
@@ -37,7 +38,7 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
           <div className="w-full bg-theme-surface-highlight rounded-full h-2">
             <div
               className="bg-theme-primary h-2 rounded-full transition-all"
-              style={{ width: `${(phase / 9) * 100}%` }}
+              style={{ width: `${(phase / 10) * 100}%` }}
             />
           </div>
         </div>

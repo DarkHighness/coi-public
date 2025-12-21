@@ -29,6 +29,7 @@ import {
   OutlinePhase7,
   OutlinePhase8,
   OutlinePhase9,
+  OutlinePhase10,
   outlinePhase1Schema,
   outlinePhase2Schema,
   outlinePhase3Schema,
@@ -38,6 +39,7 @@ import {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
+  outlinePhase10Schema,
 } from "../../../schemas";
 
 import {
@@ -51,6 +53,7 @@ import {
   getOutlinePhase7Prompt,
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
+  getOutlinePhase10Prompt,
 } from "../../../prompts/index";
 
 import { THEMES } from "../../../../utils/constants";
@@ -127,6 +130,11 @@ const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
     name: "submit_phase9_timeline",
     description: "Submit Phase 9: Timeline events and initial atmosphere",
     parameters: outlinePhase9Schema,
+  },
+  {
+    name: "submit_phase10_opening_narrative",
+    description: "Submit Phase 10: Opening narrative that starts the story",
+    parameters: outlinePhase10Schema,
   },
 ];
 
@@ -258,7 +266,7 @@ export const generateStoryOutlinePhased = async (
     // Add initial task instruction
     conversationHistory.push(
       createUserMessage(`[OUTLINE GENERATION TASK]
-Generate a story outline in 9 phases. Each phase builds upon the previous ones.
+Generate a story outline in 10 phases. Each phase builds upon the previous ones.
 
 Theme: ${theme}
 Language: ${language}
@@ -298,7 +306,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     if (options?.onPhaseProgress) {
       options.onPhaseProgress({
         phase,
-        totalPhases: 9,
+        totalPhases: 10,
         phaseName: `initializing.outline.phase.${phase}.name`,
         status,
         partialOutline: partial,
@@ -425,7 +433,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
   };
 
   // Agentic loop for each phase
-  while (currentPhase <= 9) {
+  while (currentPhase <= 10) {
     const phaseNum = currentPhase;
     const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum - 1];
 
@@ -517,7 +525,7 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
             {
               toolCallId: toolCall.id,
               name: toolCall.name,
-              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 9 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
+              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 10 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
             },
           ]),
         );
@@ -580,6 +588,8 @@ function getPhasePrompt(
       return getOutlinePhase8Prompt();
     case 9:
       return getOutlinePhase9Prompt();
+    case 10:
+      return getOutlinePhase10Prompt();
     default:
       return null;
   }
@@ -599,7 +609,8 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     !partial.phase6 ||
     !partial.phase7 ||
     !partial.phase8 ||
-    !partial.phase9
+    !partial.phase9 ||
+    !partial.phase10
   ) {
     throw new Error("Cannot merge incomplete outline phases");
   }
@@ -614,6 +625,7 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p7 = partial.phase7 as OutlinePhase7;
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
+  const p10 = partial.phase10 as OutlinePhase10;
 
   // Helper to ensure all entities have IDs and set unlocked: false
   const prepareEntities = <T extends { id?: string; unlocked?: boolean }>(
@@ -717,13 +729,15 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
       "know",
     ) as StoryOutline["knowledge"],
 
-    // Phase 9: Timeline & Atmosphere
     timeline: prepareEntities(
       p9.timeline as StoryOutline["timeline"],
       "evt",
     ) as StoryOutline["timeline"],
     initialAtmosphere:
       p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
+
+    // Phase 10: Opening Narrative
+    openingNarrative: p10.openingNarrative as StoryOutline["openingNarrative"],
   };
 
   return outline;

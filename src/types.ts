@@ -384,7 +384,7 @@ export interface OutlineConversationState {
   customContext?: string;
   conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
-  currentPhase: number; // 1-9, indicates which phase to resume from
+  currentPhase: number; // 1-10, indicates which phase to resume from
   /** Model ID used for this outline generation (for mismatch detection) */
   modelId?: string;
   /** Provider ID used for this outline generation (for mismatch detection) */
@@ -402,6 +402,7 @@ export interface PartialStoryOutline {
   phase7?: object;
   phase8?: object;
   phase9?: object;
+  phase10?: object; // Opening Narrative
 }
 
 // --- World System Interfaces ---
@@ -1262,7 +1263,7 @@ export interface ImageGenerationContext {
 export interface UnifiedMessage {
   role: "user" | "model" | "system" | "assistant" | "tool";
   content: Array<{
-    type: "text" | "image" | "audio" | "tool_use" | "tool_result";
+    type: "text" | "image" | "audio" | "tool_use" | "tool_result" | "reasoning";
     text?: string;
     image?: { url: string };
     audio?: { url: string };
@@ -1276,6 +1277,7 @@ export interface UnifiedMessage {
       content: unknown;
       isError?: boolean;
     };
+    reasoning?: string;
   }>;
 }
 

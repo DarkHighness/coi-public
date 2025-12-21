@@ -36,6 +36,7 @@ export {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
+  outlinePhase10Schema,
 } from "./zodSchemas";
 
 // ============================================================================
@@ -84,6 +85,7 @@ export type {
   OutlinePhase7,
   OutlinePhase8,
   OutlinePhase9,
+  OutlinePhase10,
 } from "./zodSchemas";
 
 // PartialStoryOutline is now defined in types.ts for GameState integration
