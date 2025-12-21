@@ -154,15 +154,34 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 </div>
                 {/* Visible Details */}
                 <div className="mt-2 space-y-2 text-sm">
-                  {loc.environment && (
+                  {/* Textual descriptions */}
+                  {loc.visible?.environment && (
                     <div className="text-xs">
                       <span className="uppercase tracking-wider text-theme-primary/80">
                         {t("gameViewer.environment") || "Environment"}:
                       </span>{" "}
-                      <span className="text-theme-muted">
-                        {t(`ambienceNames.${loc.environment}`, {
-                          defaultValue: loc.environment,
-                        })}
+                      <span className="text-theme-text/90">
+                        {loc.visible.environment}
+                      </span>
+                    </div>
+                  )}
+                  {loc.visible?.ambience && (
+                    <div className="text-xs">
+                      <span className="uppercase tracking-wider text-theme-primary/80">
+                        {t("gameViewer.ambience") || "Ambience"}:
+                      </span>{" "}
+                      <span className="text-theme-text/90">
+                        {loc.visible.ambience}
+                      </span>
+                    </div>
+                  )}
+                  {loc.visible?.weather && (
+                    <div className="text-xs">
+                      <span className="uppercase tracking-wider text-theme-primary/80">
+                        {t("gameViewer.weather") || "Weather"}:
+                      </span>{" "}
+                      <span className="text-theme-text/90">
+                        {loc.visible.weather}
                       </span>
                     </div>
                   )}

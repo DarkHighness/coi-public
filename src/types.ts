@@ -789,6 +789,9 @@ export interface LocationAction {
 
   visible?: {
     description?: string;
+    environment?: string;
+    ambience?: string;
+    weather?: string;
     knownFeatures?: string[];
     resources?: string[];
     atmosphere?: Atmosphere;
@@ -808,7 +811,6 @@ export interface LocationAction {
   };
 
   lore?: string;
-  environment?: string;
   notes?: string;
   unlocked?: boolean; // Set when hidden secrets are discovered
 }

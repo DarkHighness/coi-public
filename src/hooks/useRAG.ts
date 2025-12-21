@@ -919,15 +919,21 @@ function extractLocationContent(location: Location): string {
         `    <features>${location.visible.knownFeatures.join("; ")}</features>`,
       );
     }
-    if (location.visible.resources?.length)
+    if (location.visible?.resources?.length)
       parts.push(
         `    <resources>${location.visible.resources.join("; ")}</resources>`,
       );
+    if (location.visible?.environment)
+      parts.push(
+        `    <environment>${location.visible.environment}</environment>`,
+      );
+    if (location.visible?.ambience)
+      parts.push(`    <ambience>${location.visible.ambience}</ambience>`);
+    if (location.visible?.weather)
+      parts.push(`    <weather>${location.visible.weather}</weather>`);
     parts.push("  </visible>");
   }
 
-  if (location.environment)
-    parts.push(`  <environment>${location.environment}</environment>`);
   if (location.lore) parts.push(`  <lore>${location.lore}</lore>`);
 
   // Hidden info (Always visible to AI/GM)

@@ -410,6 +410,24 @@ export const atmosphereSchema = z.object({
 /** 地点可见层 */
 export const locationVisibleSchema = z.object({
   description: z.string().describe("Visual description of the location."),
+  environment: z
+    .string()
+    .nullish()
+    .describe(
+      "Natural language description of the general environment/atmosphere (e.g., 'A dense, foggy forest with towering obsidian trees').",
+    ),
+  ambience: z
+    .string()
+    .nullish()
+    .describe(
+      "Natural language description of the audio background and mood (e.g., 'The constant drip of water and distant, echoing whispers').",
+    ),
+  weather: z
+    .string()
+    .nullish()
+    .describe(
+      "Natural language description of current weather conditions (e.g., 'A light, shimmering rain that glows in the dark').",
+    ),
   knownFeatures: z
     .array(z.string())
     .describe("Known features of the location."),
@@ -419,7 +437,9 @@ export const locationVisibleSchema = z.object({
     .describe("Gatherable resources or items."),
   atmosphere: atmosphereSchema
     .nullish()
-    .describe("Location-specific atmosphere override."),
+    .describe(
+      "System UI atmosphere override (Enums only). AI: MUST ensure consistency with environment/ambience/weather descriptions.",
+    ),
   sensory: z
     .object({
       smell: z.string().nullish(),
@@ -450,22 +470,13 @@ export const locationSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'dark_forest', 'tavern_crossroads', 'loc_10'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'loc:cave', 'loc:123', 'royal_palace'.",
     ),
-  name: z.string().describe("Name of the location."),
+  name: z.string().describe("Location name."),
   visible: locationVisibleSchema,
   hidden: locationHiddenSchema.nullish(),
-  environment: z
-    .string()
-    .nullish()
-    .describe(
-      "A descriptive sentence about the location's atmosphere/environment in the target language (e.g., '阴森的古老地牢，空气中弥漫着腐烂的气味'). NOT just a tag.",
-    ),
   lore: z.string().nullish().describe("Location history or lore."),
-  isVisited: z
-    .boolean()
-    .nullish()
-    .describe("Whether the location has been visited."),
+  isVisited: z.boolean().nullish().describe("INVISIBLE to AI."),
   unlocked: z
     .boolean()
     .nullish()
@@ -1496,7 +1507,6 @@ export const gameResponseSchema = z.object({
         visible: locationVisibleSchema.partial().nullish(),
         hidden: locationHiddenSchema.partial().nullish(),
         lore: z.string().nullish(),
-        environment: z.string().nullish(),
         notes: z.string().nullish(),
         unlocked: z.boolean().nullish(),
         unlockReason: z.string().nullish(),

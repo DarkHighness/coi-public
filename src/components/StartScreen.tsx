@@ -179,7 +179,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   // Dynamic background style
-  const activeThemeVar = ENV_THEMES["fantasy"]?.vars["--theme-primary"] || "#f59e0b";
+  const activeThemeVar =
+    ENV_THEMES["fantasy"]?.vars["--theme-primary"] || "#f59e0b";
 
   return (
     <div

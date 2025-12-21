@@ -137,19 +137,43 @@ const LocationItem: React.FC<LocationItemProps> = ({
                     </div>
                   </div>
 
-                  {locationData.environment && (
+                  {/* Textual descriptions */}
+                  {locationData.visible?.environment && (
                     <div className="mt-2">
                       <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("sidebar.location.environment") || "Environment"}:
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
                         <MarkdownText
-                          content={t(
-                            `ambienceNames.${locationData.environment}`,
-                            {
-                              defaultValue: locationData.environment,
-                            },
-                          )}
+                          content={locationData.visible.environment}
+                          indentSize={2}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {locationData.visible?.ambience && (
+                    <div className="mt-2">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("sidebar.location.ambience") || "Ambience"}:
+                      </span>
+                      <div className="text-theme-text leading-relaxed pl-1">
+                        <MarkdownText
+                          content={locationData.visible.ambience}
+                          indentSize={2}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {locationData.visible?.weather && (
+                    <div className="mt-2">
+                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        {t("sidebar.location.weather") || "Weather"}:
+                      </span>
+                      <div className="text-theme-text leading-relaxed pl-1">
+                        <MarkdownText
+                          content={locationData.visible.weather}
                           indentSize={2}
                         />
                       </div>

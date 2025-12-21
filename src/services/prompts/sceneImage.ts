@@ -318,8 +318,8 @@ export const getSceneImagePrompt = (
       // Full location details from Location object
       xmlPrompt += `    <location>\n`;
       xmlPrompt += `      <name>${currentLocation.name || currentLocationName}</name>\n`;
-      if (currentLocation.environment) {
-        xmlPrompt += `      <type>${currentLocation.environment}</type>\n`;
+      if (currentLocation.visible?.environment) {
+        xmlPrompt += `      <type>${currentLocation.visible.environment}</type>\n`;
       }
       if (currentLocation.visible?.description) {
         xmlPrompt += `      <description>${currentLocation.visible.description}</description>\n`;
@@ -536,7 +536,7 @@ export const createImageGenerationContext = (
       l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
   );
   const locationStr = currentLoc
-    ? `${currentLoc.name} (${currentLoc.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`
+    ? `${currentLoc.name} (${currentLoc.visible?.environment || "Unknown"}) - ${currentLoc.visible?.description || ""}`
     : `${stateSnapshot.currentLocation} (Unknown Environment)`;
 
   // Resolve atmosphere details

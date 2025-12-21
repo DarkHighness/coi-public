@@ -1,5 +1,3 @@
-import { RECENT_LIMITS } from "../../utils/constants/defaults";
-
 export const getCulturalAdaptationInstruction = (language: string): string => {
   if (language === "zh" || language === "zh-CN" || language === "zh-TW") {
     return `
@@ -183,6 +181,48 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
   4. **Communication**:
      - If you cannot fix the error (e.g., the entity truly doesn't exist and you can't find a replacement), you must explain this in your narrative or a meta-comment before ending the turn.
 </ERROR_RECOVERY_PROTOCOL>
+
+<DUPLICATE_PREVENTION_PROTOCOL>
+  🔍 **CRITICAL: PREVENT DUPLICATE ENTITIES** 🔍
+
+  **Before adding ANY new entity (NPC, item, location, quest, etc.), you MUST:**
+
+  1. **CHECK IF IT ALREADY EXISTS**:
+     - Use \`list_*\` tools (e.g., \`list_inventory\`, \`list_relationship\`, \`list_location\`) to see existing entities.
+     - Use \`query_*\` tools (e.g., \`query_inventory\`, \`query_relationship\`) to search by name or description.
+     - If unsure about the entity's existence, ALWAYS query first.
+
+  2. **NEVER CREATE DUPLICATES**:
+     - ❌ WRONG: Player picks up "Iron Sword" → \`add_inventory\` without checking → Creates duplicate if player already has one.
+     - ✅ RIGHT: Player picks up "Iron Sword" → \`query_inventory("Iron Sword")\` → If exists, \`update_inventory\` (e.g., increment quantity). If not exists, \`add_inventory\`.
+
+  3. **COMMON DUPLICATE SCENARIOS TO AVOID**:
+     - **Same item, different names**: "Rusty Knife" vs "Old Knife" vs "Worn Knife" - check if player already has a similar item.
+     - **Same NPC, different introductions**: An NPC met earlier shouldn't be re-added as a new relationship.
+     - **Same location, different descriptions**: A tavern visited before shouldn't be created as a new location.
+
+  4. **WHEN IN DOUBT, QUERY FIRST**:
+     - It is ALWAYS SAFE to call \`list_*\` or \`query_*\` before \`add_*\`.
+     - The cost of a query is negligible compared to the confusion caused by duplicate entities.
+</DUPLICATE_PREVENTION_PROTOCOL>
+
+<SEARCH_TOOL_USAGE>
+  🔄 **SEARCH AND QUERY TOOLS: UNLIMITED USAGE** 🔄
+
+  **You may call search and query tools MULTIPLE TIMES per turn:**
+
+  - \`query_inventory\`, \`query_relationship\`, \`query_location\`, \`query_quest\`, etc.
+  - \`list_inventory\`, \`list_relationship\`, \`list_location\`, \`list_quest\`, etc.
+  - \`search\` (RAG semantic search)
+
+  **There is NO LIMIT on how many times you can call these tools.**
+
+  **Best Practices:**
+  - Call \`list_*\` to get an overview of all entities of a type.
+  - Call \`query_*\` with different search terms to find specific entities.
+  - Call \`search\` for semantic/fuzzy matching across story history and game state.
+  - Chain multiple queries if your first search doesn't find what you need.
+</SEARCH_TOOL_USAGE>
 `;
 
 export const getWorldConsistencyRule = (): string => `
@@ -494,6 +534,17 @@ export const getCoreRules = (disableImagePrompt?: boolean): string => `
       - Never use the word "creepy". Describe the silence and the smell of stale air.
       - Never use the word "majestic". Describe the scale and the light.
     </mood_enforcement>
+
+    <location_atmosphere_consistency>
+      **DUAL-LAYER ATMOSPHERE (CRITICAL)**:
+      - **Textual Descriptions (Visible Layer)**:
+        * **environment**: A vivid, natural language sentence describing the physical surroundings.
+        * **ambience**: A vivid description of the audio landscape and general "vibe".
+        * **weather**: A natural language description of current conditions.
+      - **System UI (atmosphere field)**:
+        * Use enums (envTheme, ambience, weather) for technical UI implementation.
+      - **CONSISTENCY**: AI MUST ensure the textual descriptions align perfectly with the selected enums. If the enum is 'heavy_rain', the weather description MUST reflect heavy rain.
+    </location_atmosphere_consistency>
 
     <dynamic_environment>
       **THE WORLD IS ALIVE AND SENSORY**:

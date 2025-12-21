@@ -79,7 +79,7 @@ export const getVeoScriptPrompt = (
     <location>
       <name>${currentLocationName}</name>
       <description>${locationObj?.visible?.description || "Unknown location"}</description>
-      <environment>${locationObj?.environment || "N/A"}</environment>
+      <environment>${locationObj?.visible?.environment || "N/A"}</environment>
       <notes>${locationObj?.notes || ""}</notes>
       <sensory>${locationObj?.visible?.sensory ? `smell: ${locationObj.visible.sensory.smell || ""}, sound: ${locationObj.visible.sensory.sound || ""}, lighting: ${locationObj.visible.sensory.lighting || ""}, temperature: ${locationObj.visible.sensory.temperature || ""}` : ""}</sensory>
     </location>

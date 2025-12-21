@@ -1251,6 +1251,9 @@ export class GameDatabase {
         visible: {
           description: data.visible?.description || "A new place.",
           knownFeatures: data.visible?.knownFeatures || [],
+          environment: data.visible?.environment,
+          ambience: data.visible?.ambience,
+          weather: data.visible?.weather,
         },
         hidden: {
           fullDescription: data.hidden?.fullDescription || "",
@@ -1258,7 +1261,6 @@ export class GameDatabase {
           secrets: data.hidden?.secrets || [],
         },
         isVisited: data.isVisited || true,
-        environment: data.environment || "Unknown",
         createdAt: Date.now(),
         unlocked: data.unlocked ?? false,
         highlight: true,
@@ -1347,13 +1349,6 @@ export class GameDatabase {
 
       if (data.visible) mergeWithNullDeletion(loc.visible, data.visible);
       if (data.hidden) mergeWithNullDeletion(loc.hidden, data.hidden);
-      if (data.environment !== undefined) {
-        if (data.environment === null) {
-          delete loc.environment;
-        } else {
-          loc.environment = data.environment;
-        }
-      }
       if (data.isVisited !== undefined) loc.isVisited = data.isVisited;
       if (data.unlocked !== undefined) {
         if (data.unlocked === true) {
