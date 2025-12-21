@@ -1116,6 +1116,7 @@ export const UPDATE_FACTION_TOOL = defineTool({
           .nullish()
           .describe("Secret members."),
         influence: z.string().nullish().describe("True influence."),
+        internalConflict: z.string().nullish().describe("Schisms/rivalries."),
         relations: z
           .array(factionRelationSchema)
           .nullish()
@@ -1207,6 +1208,13 @@ export const UPDATE_CHARACTER_PROFILE_TOOL = defineTool({
     profession: z.string().nullish().describe("Profession."),
     background: z.string().nullish().describe("Background."),
     race: z.string().nullish().describe("Race."),
+    psychology: z
+      .object({
+        coreTrauma: z.string().nullish(),
+        copingMechanism: z.string().nullish(),
+        internalContradiction: z.string().nullish(),
+      })
+      .nullish(),
   }),
 });
 

@@ -940,6 +940,57 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               </div>
             </details>
           )}
+
+          {/* Psychology (Collapsible) - Always visible as it's a top-level field */}
+          {character.psychology && (
+            <details className="group text-xs mt-4">
+              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
+                <span className="uppercase tracking-wider text-xs font-bold">
+                  🧠 {t("gameViewer.psychology") || "Psychology"}
+                </span>
+                <svg
+                  className="w-4 h-4 transition-transform group-open:rotate-90"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </summary>
+              <div className="mt-3 space-y-2 pl-3 border-l-2 border-theme-border">
+                {character.psychology.coreTrauma && (
+                  <div className="text-xs text-theme-text">
+                    <span className="font-semibold text-theme-primary">
+                      {t("gameViewer.coreTrauma") || "Core Trauma"}:
+                    </span>{" "}
+                    {character.psychology.coreTrauma}
+                  </div>
+                )}
+                {character.psychology.copingMechanism && (
+                  <div className="text-xs text-theme-text">
+                    <span className="font-semibold text-theme-primary">
+                      {t("gameViewer.copingMechanism") || "Coping"}:
+                    </span>{" "}
+                    {character.psychology.copingMechanism}
+                  </div>
+                )}
+                {character.psychology.internalContradiction && (
+                  <div className="text-xs text-theme-text">
+                    <span className="font-semibold text-amber-500">
+                      {t("gameViewer.internalContradiction") || "Contradiction"}
+                      :
+                    </span>{" "}
+                    {character.psychology.internalContradiction}
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
         </div>
       )}
     </div>

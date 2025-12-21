@@ -56,7 +56,14 @@ export interface ProviderConfigResult {
   modelId: string;
   enabled: boolean;
   resolution?: string;
-  thinkingLevel?: "low" | "medium" | "high";
+  thinkingEffort?:
+    | "xhigh"
+    | "high"
+    | "medium"
+    | "low"
+    | "minimal"
+    | "none"
+    | (string & {});
   mediaResolution?: "low" | "medium" | "high";
   temperature?: number;
   topP?: number;
@@ -134,7 +141,7 @@ export function getProviderConfig(
     modelId: funcConfig.modelId,
     enabled: funcConfig.enabled !== false,
     resolution: funcConfig.resolution,
-    thinkingLevel: funcConfig.thinkingLevel,
+    thinkingEffort: funcConfig.thinkingEffort,
     mediaResolution: funcConfig.mediaResolution,
     temperature: funcConfig.temperature,
     topP: funcConfig.topP,

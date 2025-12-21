@@ -205,6 +205,17 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                 </div>
               )}
 
+              {item.emotionalWeight && (
+                <div className="mt-2">
+                  <div className="text-[10px] uppercase tracking-wider text-amber-500/70 mb-1">
+                    ✨ {t("emotionalWeight") || "Significance"}
+                  </div>
+                  <div className="text-xs text-theme-muted pl-2 border-l-2 border-amber-500/30">
+                    <MarkdownText content={item.emotionalWeight} />
+                  </div>
+                </div>
+              )}
+
               {/* Unlocked Hidden Truth - Outer Layer */}
               {item.unlocked &&
                 (item.hidden?.truth ||

@@ -110,6 +110,12 @@ export const inventoryItemSchema = z.object({
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.nullish(),
   lore: z.string().nullish().describe("Brief lore or history of the item."),
+  emotionalWeight: z
+    .string()
+    .nullish()
+    .describe(
+      "Sentimental significance: Why does this item matter emotionally? A burden, a memory, a gift?",
+    ),
   icon: z.string().nullish().describe("A single emoji representing this item."),
   unlocked: z
     .boolean()
@@ -233,6 +239,18 @@ export const relationshipHiddenSchema = z.object({
     .string()
     .describe(
       "What the NPC is ACTUALLY doing right now (e.g. 'plotting revenge', 'secretly meeting with assassins', 'injured and hiding', 'traveling to the capital', 'dead'). This is the GM's truth, not what the player perceives. Must be in target language.",
+    ),
+  ambivalence: z
+    .string()
+    .nullish()
+    .describe(
+      "Subjective complexity: Why they might hate AND love the player.",
+    ),
+  transactionalBenefit: z
+    .string()
+    .nullish()
+    .describe(
+      "Objective complexity: What do they get out of the relationship?",
     ),
 });
 
@@ -534,6 +552,12 @@ export const questHiddenSchema = z.object({
     .string()
     .nullish()
     .describe("Secret outcome if quest is completed."),
+  twist: z
+    .string()
+    .nullish()
+    .describe(
+      "Hidden complication or moral dilemma. The quest is never what it seems.",
+    ),
 });
 
 /** 任务类型 */
@@ -993,6 +1017,12 @@ export const factionHiddenSchema = z.object({
     .nullish()
     .describe("Secret members/leaders."),
   influence: z.string().nullish().describe("True influence description."),
+  internalConflict: z
+    .string()
+    .nullish()
+    .describe(
+      "Schisms, rivalries, or rotting foundations within the faction. No group is monolithic.",
+    ),
   relations: z
     .array(factionRelationSchema)
     .nullish()
@@ -1115,6 +1145,14 @@ export const characterStatusSchema = z.object({
   race: z
     .string()
     .describe("The character's race (e.g. Human, Elf, Dwarf, etc.)."),
+  psychology: z
+    .object({
+      coreTrauma: z.string().describe("Past failure/trauma driving them."),
+      copingMechanism: z.string().describe("How they deal with pain."),
+      internalContradiction: z.string().describe("Want vs Need conflict."),
+    })
+    .nullish()
+    .describe("Psychological depth profile."),
   currentLocation: z
     .string()
     .describe("The protagonist's current location name."),

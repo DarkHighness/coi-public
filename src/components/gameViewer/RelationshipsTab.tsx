@@ -237,6 +237,28 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                               <MarkdownText content={rel.hidden.routine} />
                             </div>
                           )}
+                          {rel.hidden.ambivalence && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
+                                💔{" "}
+                                {t("gameViewer.ambivalence") || "Ambivalence"}:
+                              </span>
+                              <MarkdownText content={rel.hidden.ambivalence} />
+                            </div>
+                          )}
+                          {rel.hidden.transactionalBenefit && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
+                                🤝{" "}
+                                {t("gameViewer.transactionalBenefit") ||
+                                  "Transactional Benefit"}
+                                :
+                              </span>
+                              <MarkdownText
+                                content={rel.hidden.transactionalBenefit}
+                              />
+                            </div>
+                          )}
                         </div>
                       }
                     />

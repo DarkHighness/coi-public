@@ -400,6 +400,37 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       </div>
                     )}
 
+                    {rel.hidden?.ambivalence && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-amber-500/80 block mb-0.5">
+                          💔 {t("gameViewer.ambivalence") || "Ambivalence"}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText
+                            content={rel.hidden.ambivalence}
+                            indentSize={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.transactionalBenefit && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-amber-500/80 block mb-0.5">
+                          🤝{" "}
+                          {t("gameViewer.transactionalBenefit") ||
+                            "Transactional Benefit"}
+                          :
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText
+                            content={rel.hidden.transactionalBenefit}
+                            indentSize={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {rel.hidden?.inventory &&
                       rel.hidden.inventory.length > 0 && (
                         <div className="mt-2">

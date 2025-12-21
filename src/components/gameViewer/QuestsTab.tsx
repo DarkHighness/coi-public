@@ -78,6 +78,14 @@ const QuestCard: React.FC<{
                 <MarkdownText content={quest.hidden.secretOutcome} />
               </div>
             )}
+            {quest.hidden.twist && (
+              <div>
+                <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
+                  ⚠️ {t("gameViewer.twist") || "Twist"}:
+                </span>
+                <MarkdownText content={quest.hidden.twist} />
+              </div>
+            )}
           </div>
         }
       />

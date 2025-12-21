@@ -275,9 +275,6 @@ export const generateAdventureTurn = async (
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
 
-  // Check if provider is Gemini
-  const isGemini = instance.protocol === "gemini";
-
   // ===== NEW: Build system instruction using getCoreSystemInstruction =====
   let systemInstruction = getCoreSystemInstruction(
     context.language,
@@ -285,7 +282,6 @@ export const generateAdventureTurn = async (
     isRestricted,
     settings.extra?.detailedDescription,
     isRAGEnabled,
-    isGemini,
     gameState,
     gameState.character.name,
     gameState.character.title,

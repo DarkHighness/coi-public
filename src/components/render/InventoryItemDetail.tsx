@@ -6,6 +6,7 @@ interface ItemDetails {
   description: string;
   usage?: string;
   lore: string;
+  emotionalWeight?: string;
   unlocked?: boolean;
   hiddenTruth?: string;
   hiddenSecrets?: string[];
@@ -72,6 +73,15 @@ export const InventoryItemDetail: React.FC<InventoryItemDetailProps> = ({
             {t("usage") || "Usage"}
           </span>
           <p className="leading-relaxed pl-1">{details.usage}</p>
+        </div>
+      )}
+
+      {details.emotionalWeight && (
+        <div className="text-xs text-theme-muted/90 italic">
+          <span className="text-[10px] uppercase tracking-wider text-amber-500 font-bold block mb-1">
+            ✨ {t("emotionalWeight") || "Significance"}
+          </span>
+          <p className="leading-relaxed pl-1">{details.emotionalWeight}</p>
         </div>
       )}
 

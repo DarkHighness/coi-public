@@ -49,6 +49,36 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
         {char.appearance && (
           <InfoRow label={t("gameViewer.appearance")} value={char.appearance} />
         )}
+        {/* Psychology - top-level, always visible */}
+        {char.psychology && (
+          <div className="mt-3 pt-3 border-t border-theme-border/30">
+            <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-2">
+              🧠 {t("gameViewer.psychology") || "Psychology"}
+            </span>
+            <div className="space-y-1 pl-2 border-l-2 border-theme-border/30 text-sm">
+              {char.psychology.coreTrauma && (
+                <InfoRow
+                  label={t("gameViewer.coreTrauma") || "Core Trauma"}
+                  value={char.psychology.coreTrauma}
+                />
+              )}
+              {char.psychology.copingMechanism && (
+                <InfoRow
+                  label={t("gameViewer.copingMechanism") || "Coping"}
+                  value={char.psychology.copingMechanism}
+                />
+              )}
+              {char.psychology.internalContradiction && (
+                <InfoRow
+                  label={
+                    t("gameViewer.internalContradiction") || "Contradiction"
+                  }
+                  value={char.psychology.internalContradiction}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Attributes */}

@@ -303,6 +303,18 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Twist - Hidden Complication */}
+                  {q.hidden.twist && (
+                    <div className="pl-1">
+                      <span className="text-[10px] uppercase tracking-wider text-amber-500/80 font-bold block mb-0.5">
+                        ⚠️ {t("gameViewer.twist") || "Twist"}
+                      </span>
+                      <div className="text-amber-400/80 not-italic pl-1">
+                        <MarkdownText content={q.hidden.twist} indentSize={2} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

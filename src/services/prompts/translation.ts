@@ -17,7 +17,11 @@ ${text}
 </input_text>
 
 <output_format>
-Return ONLY the translated text. No explanations, no quotes around the output.
+Return ONLY the translated text.
+    **CRITICAL Rules**:
+    1. Do NOT wrap the output in markdown code blocks (No \`\`\` or \`\`\`text).
+    2. Do NOT include any explanations or extra text.
+    3. Do NOT include quotes around the output unless they are part of the translation.
 </output_format>
 `;
 };

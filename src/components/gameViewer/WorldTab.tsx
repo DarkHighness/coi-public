@@ -422,6 +422,19 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               />
                             </div>
                           )}
+                          {faction.hidden.internalConflict && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
+                                ⚠️{" "}
+                                {t("gameViewer.internalConflict") ||
+                                  "Internal Conflict"}
+                                :
+                              </span>
+                              <MarkdownText
+                                content={faction.hidden.internalConflict}
+                              />
+                            </div>
+                          )}
                         </div>
                       }
                     />
