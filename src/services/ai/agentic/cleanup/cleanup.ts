@@ -30,7 +30,9 @@ function buildEntityXml(state: GameState): string {
 
   // Inventory
   if (state.inventory && state.inventory.length > 0) {
-    const items = state.inventory.map((i) => `    <item id="${i.id}">${i.name}</item>`).join("\n");
+    const items = state.inventory
+      .map((i) => `    <item id="${i.id}">${i.name}</item>`)
+      .join("\n");
     sections.push(`<inventory count="${state.inventory.length}" query="query_inventory" update="update_inventory" remove="remove_inventory">
 ${items}
   </inventory>`);
@@ -38,7 +40,9 @@ ${items}
 
   // Relationships (NPCs)
   if (state.relationships && state.relationships.length > 0) {
-    const npcs = state.relationships.map((r) => `    <npc id="${r.id}">${r.visible?.name || 'Unknown'}</npc>`).join("\n");
+    const npcs = state.relationships
+      .map((r) => `    <npc id="${r.id}">${r.visible?.name || "Unknown"}</npc>`)
+      .join("\n");
     sections.push(`<relationships count="${state.relationships.length}" query="query_relationship" update="update_relationship" remove="remove_relationship">
 ${npcs}
   </relationships>`);
@@ -46,7 +50,9 @@ ${npcs}
 
   // Locations
   if (state.locations && state.locations.length > 0) {
-    const locs = state.locations.map((l) => `    <location id="${l.id}">${l.name}</location>`).join("\n");
+    const locs = state.locations
+      .map((l) => `    <location id="${l.id}">${l.name}</location>`)
+      .join("\n");
     sections.push(`<locations count="${state.locations.length}" query="query_location" update="update_location" remove="remove_location">
 ${locs}
   </locations>`);
@@ -54,7 +60,12 @@ ${locs}
 
   // Quests
   if (state.quests && state.quests.length > 0) {
-    const quests = state.quests.map((q) => `    <quest id="${q.id}" status="${q.status}">${q.title}</quest>`).join("\n");
+    const quests = state.quests
+      .map(
+        (q) =>
+          `    <quest id="${q.id}" status="${q.status}">${q.title}</quest>`,
+      )
+      .join("\n");
     sections.push(`<quests count="${state.quests.length}" query="query_quest" update="update_quest" remove="remove_quest">
 ${quests}
   </quests>`);
@@ -62,7 +73,9 @@ ${quests}
 
   // Knowledge
   if (state.knowledge && state.knowledge.length > 0) {
-    const knows = state.knowledge.map((k) => `    <entry id="${k.id}">${k.title}</entry>`).join("\n");
+    const knows = state.knowledge
+      .map((k) => `    <entry id="${k.id}">${k.title}</entry>`)
+      .join("\n");
     sections.push(`<knowledge count="${state.knowledge.length}" query="query_knowledge" update="update_knowledge" remove="remove_knowledge">
 ${knows}
   </knowledge>`);
@@ -70,7 +83,9 @@ ${knows}
 
   // Character Skills
   if (state.character?.skills && state.character.skills.length > 0) {
-    const skills = state.character.skills.map((s: any) => `    <skill id="${s.id || s.name}">${s.name}</skill>`).join("\n");
+    const skills = state.character.skills
+      .map((s: any) => `    <skill id="${s.id || s.name}">${s.name}</skill>`)
+      .join("\n");
     sections.push(`<character_skills count="${state.character.skills.length}" update="update_character" note="Use update_character with skills array">
 ${skills}
   </character_skills>`);
@@ -78,15 +93,25 @@ ${skills}
 
   // Character Conditions
   if (state.character?.conditions && state.character.conditions.length > 0) {
-    const conds = state.character.conditions.map((c: any) => `    <condition id="${c.id || c.name}">${c.name}</condition>`).join("\n");
+    const conds = state.character.conditions
+      .map(
+        (c: any) =>
+          `    <condition id="${c.id || c.name}">${c.name}</condition>`,
+      )
+      .join("\n");
     sections.push(`<character_conditions count="${state.character.conditions.length}" update="update_character" note="Use update_character with conditions array">
 ${conds}
   </character_conditions>`);
   }
 
   // Character Hidden Traits
-  if (state.character?.hiddenTraits && state.character.hiddenTraits.length > 0) {
-    const traits = state.character.hiddenTraits.map((t: any) => `    <trait id="${t.id || t.name}">${t.name}</trait>`).join("\n");
+  if (
+    state.character?.hiddenTraits &&
+    state.character.hiddenTraits.length > 0
+  ) {
+    const traits = state.character.hiddenTraits
+      .map((t: any) => `    <trait id="${t.id || t.name}">${t.name}</trait>`)
+      .join("\n");
     sections.push(`<hidden_traits count="${state.character.hiddenTraits.length}" update="update_character" note="Use update_character with hiddenTraits array">
 ${traits}
   </hidden_traits>`);
@@ -94,7 +119,9 @@ ${traits}
 
   // Factions
   if (state.factions && state.factions.length > 0) {
-    const facs = state.factions.map((f: any) => `    <faction id="${f.id}">${f.name}</faction>`).join("\n");
+    const facs = state.factions
+      .map((f: any) => `    <faction id="${f.id}">${f.name}</faction>`)
+      .join("\n");
     sections.push(`<factions count="${state.factions.length}" update="update_faction" remove="remove_faction">
 ${facs}
   </factions>`);
@@ -102,7 +129,12 @@ ${facs}
 
   // Timeline Events
   if (state.timeline && state.timeline.length > 0) {
-    const events = state.timeline.map((e: any) => `    <event id="${e.id || 'no-id'}" time="${e.time || ''}">${e.event || e.description || ''}</event>`).join("\n");
+    const events = state.timeline
+      .map(
+        (e: any) =>
+          `    <event id="${e.id || "no-id"}" time="${e.time || ""}">${e.event || e.description || ""}</event>`,
+      )
+      .join("\n");
     sections.push(`<timeline count="${state.timeline.length}" update="update_timeline" remove="remove_timeline">
 ${events}
   </timeline>`);
@@ -110,13 +142,20 @@ ${events}
 
   // Causal Chains
   if (state.causalChains && state.causalChains.length > 0) {
-    const chains = state.causalChains.map((c: any) => `    <chain id="${c.id || 'no-id'}" cause="${c.cause || ''}" effect="${c.effect || ''}"/>`).join("\n");
+    const chains = state.causalChains
+      .map(
+        (c: any) =>
+          `    <chain id="${c.id || "no-id"}" cause="${c.cause || ""}" effect="${c.effect || ""}"/>`,
+      )
+      .join("\n");
     sections.push(`<causal_chains count="${state.causalChains.length}" update="update_causal_chain" remove="remove_causal_chain">
 ${chains}
   </causal_chains>`);
   }
 
-  return sections.length > 0 ? sections.join("\n\n  ") : "<empty>No entities found.</empty>";
+  return sections.length > 0
+    ? sections.join("\n\n  ")
+    : "<empty>No entities found.</empty>";
 }
 
 /**

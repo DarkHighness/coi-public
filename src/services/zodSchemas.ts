@@ -1194,9 +1194,7 @@ export const storyOutlineSchema = z.object({
     .array(questSchema)
     .describe("Initial quests (at least one main quest is required)."),
   worldSetting: worldSettingSchema.describe("Dual-layer world setting."),
-  factions: z
-    .array(factionSchema)
-    .describe("Major power groups or factions."),
+  factions: z.array(factionSchema).describe("Major power groups or factions."),
   locations: z
     .array(locationSchema.omit({ isVisited: true, createdAt: true }))
     .describe("Initial locations with full details."),
@@ -1270,7 +1268,9 @@ export const outlinePhase2Schema = z.object({
 export const outlinePhase3Schema = z.object({
   locations: z
     .array(locationSchema.omit({ isVisited: true, createdAt: true }))
-    .describe("1-2 initial locations with detailed visible and hidden layers. Each MUST have a unique 'id' field."),
+    .describe(
+      "1-2 initial locations with detailed visible and hidden layers. Each MUST have a unique 'id' field.",
+    ),
 });
 
 /**
@@ -1280,7 +1280,9 @@ export const outlinePhase3Schema = z.object({
 export const outlinePhase4Schema = z.object({
   factions: z
     .array(factionSchema)
-    .describe("2-3 major power groups with visible and hidden agendas. Each MUST have a unique 'id' field."),
+    .describe(
+      "2-3 major power groups with visible and hidden agendas. Each MUST have a unique 'id' field.",
+    ),
 });
 
 /**
@@ -1302,7 +1304,9 @@ export const outlinePhase5Schema = z.object({
 export const outlinePhase6Schema = z.object({
   inventory: z
     .array(inventoryItemSchema)
-    .describe("1-3 starting items with detailed lore and hidden properties. Each MUST have a unique 'id' field."),
+    .describe(
+      "1-3 starting items with detailed lore and hidden properties. Each MUST have a unique 'id' field.",
+    ),
 });
 
 /**
@@ -1324,7 +1328,9 @@ export const outlinePhase7Schema = z.object({
 export const outlinePhase8Schema = z.object({
   knowledge: z
     .array(knowledgeEntrySchema)
-    .describe("2-3 initial knowledge entries about the world. Each MUST have a unique 'id' field."),
+    .describe(
+      "2-3 initial knowledge entries about the world. Each MUST have a unique 'id' field.",
+    ),
 });
 
 /**

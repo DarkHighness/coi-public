@@ -33,7 +33,14 @@ export interface ChatGenerateRequest {
   topP?: number;
   topK?: number;
   minP?: number;
-  thinkingEffort?: "xhigh" | "high" | "medium" | "low" | "minimal" | "none" | (string & {});
+  thinkingEffort?:
+    | "xhigh"
+    | "high"
+    | "medium"
+    | "low"
+    | "minimal"
+    | "none"
+    | (string & {});
   mediaResolution?: "low" | "medium" | "high";
 }
 

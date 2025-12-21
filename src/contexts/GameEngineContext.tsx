@@ -190,7 +190,8 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
     let currentEnvThemeKey: string;
     if (engine.aiSettings.lockEnvTheme) {
       // Locked: use fixedEnvTheme if set, otherwise story's default envTheme
-      currentEnvThemeKey = engine.aiSettings.fixedEnvTheme || currentStoryTheme.envTheme;
+      currentEnvThemeKey =
+        engine.aiSettings.fixedEnvTheme || currentStoryTheme.envTheme;
     } else {
       // Dynamic: derive from current atmosphere
       const currentAtmosphere =

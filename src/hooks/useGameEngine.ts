@@ -258,7 +258,13 @@ export const useGameEngine = () => {
 
     // Clean up alpha override (we don't use it anymore since we have proper palettes)
     root.style.removeProperty("--theme-alpha-override");
-  }, [gameState.theme, gameState.atmosphere, themeMode, aiSettings.lockEnvTheme, aiSettings.fixedEnvTheme]);
+  }, [
+    gameState.theme,
+    gameState.atmosphere,
+    themeMode,
+    aiSettings.lockEnvTheme,
+    aiSettings.fixedEnvTheme,
+  ]);
 
   // Dynamic Title Update
   useEffect(() => {
@@ -279,27 +285,24 @@ export const useGameEngine = () => {
   // --- Core Game Loop ---
   // Note: generateImageForNode is defined later but we can reference it here
   // because hooks are called in order and we'll pass the actual function
-  const {
-    handleAction,
-    handleRebuildContext,
-    handleInvalidateSession,
-  } = useGameAction({
-    gameState,
-    setGameState,
-    aiSettings,
-    handleSaveSettings,
-    language,
-    isTranslating,
-    currentSlotId,
-    generateImageForNode: async (
-      nodeId: string,
-      nodeOverride?: StorySegment,
-    ) => {
-      // Forward to the actual implementation defined below
-      await generateImageForNode(nodeId, nodeOverride);
-    },
-    triggerSave,
-  });
+  const { handleAction, handleRebuildContext, handleInvalidateSession } =
+    useGameAction({
+      gameState,
+      setGameState,
+      aiSettings,
+      handleSaveSettings,
+      language,
+      isTranslating,
+      currentSlotId,
+      generateImageForNode: async (
+        nodeId: string,
+        nodeOverride?: StorySegment,
+      ) => {
+        // Forward to the actual implementation defined below
+        await generateImageForNode(nodeId, nodeOverride);
+      },
+      triggerSave,
+    });
 
   const startNewGame = async (
     initialTheme?: string,
@@ -1473,15 +1476,19 @@ export const useGameEngine = () => {
       const baseIndex = parentNode?.summarizedIndex || 0;
 
       const cleanupNode: StorySegment = {
-        segmentIdx: (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
+        segmentIdx:
+          (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
         id: cleanupNodeId,
         parentId: parentId,
         text: response.narrative || "Entity cleanup completed.",
-        choices: Array.isArray(response.choices) && response.choices.length > 0
-          ? response.choices.map((c: any) =>
-              typeof c === "string" ? c : { text: c.text || "Continue", consequence: c.consequence }
-            )
-          : [t("continue")],
+        choices:
+          Array.isArray(response.choices) && response.choices.length > 0
+            ? response.choices.map((c: any) =>
+                typeof c === "string"
+                  ? c
+                  : { text: c.text || "Continue", consequence: c.consequence },
+              )
+            : [t("continue")],
         imagePrompt: "",
         role: "system",
         timestamp: Date.now(),
@@ -1534,10 +1541,9 @@ export const useGameEngine = () => {
           forkId: gameStateRef.current.forkId,
           turnNumber: gameStateRef.current.turnNumber,
         };
-        updateRAGDocumentsBackground(
-          changedEntities,
-          stateWithSaveInfo,
-        ).catch((e) => console.error("[Cleanup] RAG update failed:", e));
+        updateRAGDocumentsBackground(changedEntities, stateWithSaveInfo).catch(
+          (e) => console.error("[Cleanup] RAG update failed:", e),
+        );
       }
 
       triggerSave();

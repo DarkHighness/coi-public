@@ -76,7 +76,14 @@ export interface ModelInfo extends BaseModelInfo {
 /** 内容生成选项 */
 export interface GenerateContentOptions {
   /** 思考强度 (none 代表关闭) */
-  thinkingEffort?: "xhigh" | "high" | "medium" | "low" | "minimal" | "none" | (string & {});
+  thinkingEffort?:
+    | "xhigh"
+    | "high"
+    | "medium"
+    | "low"
+    | "minimal"
+    | "none"
+    | (string & {});
   /** OpenAI Reasoning 模式级别 (o1/o3 系列) - 可选，优先使用 thinkingEffort */
   reasoningEffort?: "low" | "medium" | "high";
   /** 媒体分辨率 (Gemini Vision) */

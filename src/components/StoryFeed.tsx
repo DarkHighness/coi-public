@@ -236,7 +236,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
             const page = Math.floor(index / stackItemsPerPage);
             setCurrentPage(page);
           } else {
-            const totalPages = Math.ceil(currentHistory.length / stackItemsPerPage);
+            const totalPages = Math.ceil(
+              currentHistory.length / stackItemsPerPage,
+            );
             setCurrentPage(totalPages - 1);
             setActiveIndex(currentHistory.length - 1);
           }
@@ -535,11 +537,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           // Browser will skip rendering off-screen content but maintain layout
                           // Disable content-visibility during initial load or for last 10 segments
                           contentVisibility:
-                            disableVirtualization || index >= currentHistory.length - 10
+                            disableVirtualization ||
+                            index >= currentHistory.length - 10
                               ? "visible"
                               : "auto",
                           containIntrinsicSize:
-                            disableVirtualization || index >= currentHistory.length - 10
+                            disableVirtualization ||
+                            index >= currentHistory.length - 10
                               ? "auto"
                               : "auto 400px",
                         }}

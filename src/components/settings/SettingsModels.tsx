@@ -760,22 +760,40 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                             }
                             className="bg-theme-bg border border-theme-border rounded px-2 py-1 text-xs text-theme-text focus:border-theme-primary outline-none min-w-[100px] appearance-none"
                           >
-                            <option value="none" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="none"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.none") || "None"}
                             </option>
-                            <option value="minimal" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="minimal"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.minimal") || "Minimal"}
                             </option>
-                            <option value="low" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="low"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.low") || "Low"}
                             </option>
-                            <option value="medium" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="medium"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.medium") || "Medium"}
                             </option>
-                            <option value="high" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="high"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.high") || "High"}
                             </option>
-                            <option value="xhigh" className="bg-theme-bg text-theme-text">
+                            <option
+                              value="xhigh"
+                              className="bg-theme-bg text-theme-text"
+                            >
                               {t("models.efforts.xhigh") || "X-High"}
                             </option>
                           </select>

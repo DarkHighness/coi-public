@@ -650,9 +650,7 @@ export const useGameAction = ({
     if (!story || !currentSlotId) return;
 
     const sessionId = `${currentSlotId}:${gameStateRef.current.forkId ?? 0}:${story.providerId}:${story.modelId}`;
-    console.log(
-      `[useGameAction] Manually invalidating session: ${sessionId}`,
-    );
+    console.log(`[useGameAction] Manually invalidating session: ${sessionId}`);
     await sessionManager.invalidate(sessionId, "manual_clear");
   }, [aiSettings, currentSlotId]);
 

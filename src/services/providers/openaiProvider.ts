@@ -445,25 +445,19 @@ export async function generateContent(
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
       const effort = options?.thinkingEffort;
 
-      if (
-        isReasoning &&
-        effort &&
-        effort !== "none"
-      ) {
+      if (isReasoning && effort && effort !== "none") {
         // OpenAI only supports "low", "medium", "high"
-        const openAIEffort = (["low", "medium", "high"].includes(effort))
+        const openAIEffort = ["low", "medium", "high"].includes(effort)
           ? effort
-          : (effort === "xhigh" ? "high" : "low"); // Map minimal to low, xhigh to high
+          : effort === "xhigh"
+            ? "high"
+            : "low"; // Map minimal to low, xhigh to high
         (requestParams as any).reasoning_effort = openAIEffort;
       }
 
       // 兼容模式下的 thinking 参数 (通过 OpenAI 接口调用 Claude/Gemini)
       // 代理服务会将这些参数转换为原生格式
-      if (
-        useCompat &&
-        effort &&
-        effort !== "none"
-      ) {
+      if (useCompat && effort && effort !== "none") {
         (requestParams as any).reasoning_effort = effort;
       }
 

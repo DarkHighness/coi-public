@@ -1026,7 +1026,14 @@ export interface FunctionConfig {
   modelId: string;
   enabled?: boolean;
   resolution?: string; // e.g. "512x512", "1024x1024"
-  thinkingEffort?: "xhigh" | "high" | "medium" | "low" | "minimal" | "none" | (string & {}); // Unified reasoning effort
+  thinkingEffort?:
+    | "xhigh"
+    | "high"
+    | "medium"
+    | "low"
+    | "minimal"
+    | "none"
+    | (string & {}); // Unified reasoning effort
   mediaResolution?: "low" | "medium" | "high"; // For Gemini Vision
 
   gender?: "male" | "female"; // For TTS voice selection (Legacy)

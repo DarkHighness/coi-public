@@ -190,7 +190,9 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
             <span className="text-theme-accent select-none shrink-0">
               $ /sudo
             </span>
-            <span className="break-words whitespace-pre-wrap">{segment.text}</span>
+            <span className="break-words whitespace-pre-wrap">
+              {segment.text}
+            </span>
             <span className="w-2 h-4 bg-theme-primary/50 animate-pulse inline-block ml-1 shrink-0" />
           </div>
         </div>
@@ -200,11 +202,23 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
 
   if (segment.role === "system") {
     return (
-      <div className={`flex justify-center my-8 animate-fade-in ${maxWidthClass} mx-auto px-4`}>
+      <div
+        className={`flex justify-center my-8 animate-fade-in ${maxWidthClass} mx-auto px-4`}
+      >
         <div className="w-full text-center text-theme-muted text-sm italic border border-theme-border/30 rounded-lg py-4 px-6 bg-theme-surface/30 backdrop-blur-sm shadow-sm">
           <div className="flex items-center justify-center gap-2 mb-2 text-xs uppercase tracking-widest text-theme-primary/70 font-semibold">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>{t("systemMessage", "System")}</span>
           </div>

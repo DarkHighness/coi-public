@@ -309,11 +309,15 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
 
   // Determine session ID with slotId for isolation if provided
   const baseSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
-  const outlineSessionId = options.slotId ? `${baseSessionId}-${options.slotId}` : baseSessionId;
+  const outlineSessionId = options.slotId
+    ? `${baseSessionId}-${options.slotId}`
+    : baseSessionId;
 
   // If starting fresh, explicitly invalidate the "outline-new" session to clear any previous game's outline history
   if (!options.resumeFrom) {
-    console.log(`[OutlineAgentic] Starting fresh: invalidating old "${outlineSessionId}" session if exists`);
+    console.log(
+      `[OutlineAgentic] Starting fresh: invalidating old "${outlineSessionId}" session if exists`,
+    );
     // Note: We use manual_clear reason. Invalidation clears in-memory and storage history.
     try {
       // We first try to get the existing session to check if it's current
@@ -330,7 +334,10 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
         // BUT "outline-new" is a STATIC ID. If we don't clear it, it loads old data.
       }
     } catch (e) {
-      console.warn(`[OutlineAgentic] Failed to invalidate old outline session:`, e);
+      console.warn(
+        `[OutlineAgentic] Failed to invalidate old outline session:`,
+        e,
+      );
     }
   }
 
@@ -346,7 +353,9 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
 
   // If it's a new session but for some reason still has history (e.g. static ID reuse), clear it
   if (!options.resumeFrom && !sessionManager.isEmpty(outlineSession.id)) {
-    console.log(`[OutlineAgentic] Static ID "outline-new" has stale history, clearing...`);
+    console.log(
+      `[OutlineAgentic] Static ID "outline-new" has stale history, clearing...`,
+    );
     sessionManager.setHistory(outlineSession.id, []);
   }
 
