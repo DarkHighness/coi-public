@@ -674,6 +674,8 @@
     "topKHelp": "Limits vocabulary to top K tokens",
     "minP": "Min P",
     "minPHelp": "Minimum probability threshold",
+    "disableThinking": "Disable Thinking",
+    "disableThinkingHelp": "Disable reasoning/thinking capabilities to save costs and reduce latency",
     "disableFilter": "Disable Model Filter",
     "disableFilterHelp": "Show all models regardless of capability detection. Use with caution.",
     "disableFilterWarning": "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?"
@@ -1495,9 +1497,6 @@
     "status": "Status"
   },
   "providers": {
-    "disableThinking": "Disable Reasoning/Thinking",
-    "disableThinkingHelp": "Disable reasoning/thinking capabilities to save costs and reduce latency",
-
     "configuration": "Provider Configuration",
     "addProvider": "Add Provider",
     "addFromTemplate": "Add from Template",

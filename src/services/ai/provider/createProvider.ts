@@ -80,7 +80,7 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         topK: request.topK,
         minP: request.minP,
         thinkingLevel: request.thinkingLevel,
-        disableThinking: instance.disableThinking,
+        disableThinking: request.disableThinking,
         mediaResolution: request.mediaResolution,
         // streaming ignored by design
       };

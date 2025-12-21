@@ -1195,13 +1195,13 @@ export const storyOutlineSchema = z.object({
     .describe("Initial quests (at least one main quest is required)."),
   worldSetting: worldSettingSchema.describe("Dual-layer world setting."),
   factions: z
-    .array(factionSchema.omit({ id: true }))
+    .array(factionSchema)
     .describe("Major power groups or factions."),
   locations: z
-    .array(locationSchema.omit({ id: true, isVisited: true, createdAt: true }))
+    .array(locationSchema.omit({ isVisited: true, createdAt: true }))
     .describe("Initial locations with full details."),
   knowledge: z
-    .array(knowledgeEntrySchema.omit({ id: true }))
+    .array(knowledgeEntrySchema)
     .describe("Initial knowledge entries about the world."),
   timeline: z
     .array(timelineEventSchema)
@@ -1210,10 +1210,10 @@ export const storyOutlineSchema = z.object({
     "The initialized character profile.",
   ),
   inventory: z
-    .array(inventoryItemSchema.omit({ id: true }))
+    .array(inventoryItemSchema)
     .describe("Initial items in the inventory (1-3 items)."),
   relationships: z
-    .array(relationshipSchema.omit({ id: true }))
+    .array(relationshipSchema)
     .describe("Initial relationships (1-2 NPCs)."),
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience.",
@@ -1269,8 +1269,8 @@ export const outlinePhase2Schema = z.object({
  */
 export const outlinePhase3Schema = z.object({
   locations: z
-    .array(locationSchema.omit({ id: true, isVisited: true, createdAt: true }))
-    .describe("1-2 initial locations with detailed visible and hidden layers."),
+    .array(locationSchema.omit({ isVisited: true, createdAt: true }))
+    .describe("1-2 initial locations with detailed visible and hidden layers. Each MUST have a unique 'id' field."),
 });
 
 /**
@@ -1279,8 +1279,8 @@ export const outlinePhase3Schema = z.object({
  */
 export const outlinePhase4Schema = z.object({
   factions: z
-    .array(factionSchema.omit({ id: true }))
-    .describe("2-3 major power groups with visible and hidden agendas."),
+    .array(factionSchema)
+    .describe("2-3 major power groups with visible and hidden agendas. Each MUST have a unique 'id' field."),
 });
 
 /**
@@ -1289,9 +1289,9 @@ export const outlinePhase4Schema = z.object({
  */
 export const outlinePhase5Schema = z.object({
   relationships: z
-    .array(relationshipSchema.omit({ id: true }))
+    .array(relationshipSchema)
     .describe(
-      "1-2 initial NPCs with full visible and hidden relationship details.",
+      "1-2 initial NPCs with full visible and hidden relationship details. Each MUST have a unique 'id' field.",
     ),
 });
 
@@ -1301,8 +1301,8 @@ export const outlinePhase5Schema = z.object({
  */
 export const outlinePhase6Schema = z.object({
   inventory: z
-    .array(inventoryItemSchema.omit({ id: true }))
-    .describe("1-3 starting items with detailed lore and hidden properties."),
+    .array(inventoryItemSchema)
+    .describe("1-3 starting items with detailed lore and hidden properties. Each MUST have a unique 'id' field."),
 });
 
 /**
@@ -1323,8 +1323,8 @@ export const outlinePhase7Schema = z.object({
  */
 export const outlinePhase8Schema = z.object({
   knowledge: z
-    .array(knowledgeEntrySchema.omit({ id: true }))
-    .describe("2-3 initial knowledge entries about the world."),
+    .array(knowledgeEntrySchema)
+    .describe("2-3 initial knowledge entries about the world. Each MUST have a unique 'id' field."),
 });
 
 /**

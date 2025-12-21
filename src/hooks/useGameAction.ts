@@ -350,6 +350,7 @@ export const useGameAction = ({
           tFunc: t,
           settings: aiSettings,
           slotId: currentSlotId || "default",
+          isInit: isInit,
         });
 
         // ===== STATE UPDATE =====

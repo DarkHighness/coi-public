@@ -736,6 +736,41 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                             "Minimum probability threshold"}
                         </p>
                       </div>
+
+                      {/* Disable Thinking */}
+                      <div className="space-y-1 col-span-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                              {t("models.disableThinking") || "Disable Thinking"}
+                            </label>
+                            <p className="text-[9px] text-theme-muted/70 italic mt-0.5">
+                              {t("models.disableThinkingHelp") ||
+                                "Disable reasoning/thinking capabilities to save costs and reduce latency"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() =>
+                              updateFunction(
+                                sectionKey,
+                                "disableThinking",
+                                !config.disableThinking,
+                              )
+                            }
+                            className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${
+                              config.disableThinking
+                                ? "bg-green-500"
+                                : "bg-theme-border"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
+                                config.disableThinking ? "translate-x-4" : ""
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </details>
                 </div>

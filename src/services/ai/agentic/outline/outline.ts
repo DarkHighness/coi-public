@@ -305,15 +305,47 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     }
   };
 
+  // Determine session ID
+  const outlineSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
+
+  // If starting fresh, explicitly invalidate the "outline-new" session to clear any previous game's outline history
+  if (!options.resumeFrom) {
+    console.log(`[OutlineAgentic] Starting fresh: invalidating old "${outlineSessionId}" session if exists`);
+    // Note: We use manual_clear reason. Invalidation clears in-memory and storage history.
+    try {
+      // We first try to get the existing session to check if it's current
+      const existing = sessionManager.getCurrentSession();
+      if (existing && existing.id === outlineSessionId) {
+        await sessionManager.invalidate(outlineSessionId, "manual_clear");
+      } else {
+        // Even if not current, we want to make sure the storage is clean for this ID
+        // The sessionManager.getOrCreateSession below will handle loading/creating,
+        // but to be absolutely sure no old messages bleed in, we can delete it from storage.
+        // However, invalidate(id) only works if it's the current session in the current manager implementation.
+        // So we just ensure that when we create it, we start with empty history if it's new.
+        // Actually, sessionManager internally should handle ID changes.
+        // BUT "outline-new" is a STATIC ID. If we don't clear it, it loads old data.
+      }
+    } catch (e) {
+      console.warn(`[OutlineAgentic] Failed to invalidate old outline session:`, e);
+    }
+  }
+
   // Create a session for outline generation (for capability tracking)
   // Use a special forkId=-1 to indicate outline phase
   const outlineSession = await sessionManager.getOrCreateSession({
-    slotId: options.resumeFrom ? "outline-resume" : "outline-new",
+    slotId: outlineSessionId,
     forkId: -1,
     providerId: instance.id,
     modelId,
     protocol: instance.protocol,
   });
+
+  // If it's a new session but for some reason still has history (e.g. static ID reuse), clear it
+  if (!options.resumeFrom && !sessionManager.isEmpty(outlineSession.id)) {
+    console.log(`[OutlineAgentic] Static ID "outline-new" has stale history, clearing...`);
+    sessionManager.setHistory(outlineSession.id, []);
+  }
 
   // Cache hint (provider-specific) - based on the initial prefix messages
   // Outline 的静态前缀包括初始 system prompt 与首批 user 指令。

@@ -664,6 +664,8 @@ export interface TurnContext {
   settings: AISettings;
   /** Slot ID for session management - required for internal history tracking */
   slotId: string;
+  /** Whether this is the initial turn of a new game */
+  isInit?: boolean;
 }
 
 export interface GameStateSnapshot {
@@ -1003,7 +1005,6 @@ export interface ProviderInstance {
   claudeCompatibility?: boolean; // 是否开启 Claude 兼容模式 (OpenAI protocol only)
   claudeMessageFormat?: boolean; // 是否转换消息格式为 Claude 原生格式 (当代理不自动转换时使用)
   compatibleImageGeneration?: boolean; // 是否开启兼容性图片生成 (当聊天模型为 gemini-3-pro-image 时拦截并生成图片)
-  disableThinking?: boolean; // 是否禁用思考/推理能力
   createdAt: number; // 创建时间
   lastModified: number; // 最后修改时间
   tokenStats?: TokenStats; // 历史 Token 统计
@@ -1038,6 +1039,7 @@ export interface FunctionConfig {
   topP?: number;
   topK?: number;
   minP?: number;
+  disableThinking?: boolean; // 是否禁用思考/推理能力 (per-function level)
 }
 
 export interface AISettings {

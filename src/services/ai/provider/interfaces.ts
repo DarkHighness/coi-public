@@ -34,6 +34,7 @@ export interface ChatGenerateRequest {
   topK?: number;
   minP?: number;
   thinkingLevel?: "low" | "medium" | "high";
+  disableThinking?: boolean;
   mediaResolution?: "low" | "medium" | "high";
 }
 

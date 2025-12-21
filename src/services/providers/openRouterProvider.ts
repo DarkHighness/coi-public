@@ -282,13 +282,23 @@ export async function generateContent(
         stream: !!options?.onChunk,
         tools,
         toolChoice,
+        // Openrouter specific parameters
+        allow_fallbacks: true,
+        require_parameters: true,
+        sort: "price",
+        // OpenRouter plugins
+        plugins: [
+          { id: 'response-healing' }
+        ]
       };
 
       // Unified Reasoning Parameters (OpenRouter)
       // Reference: https://openrouter.ai/docs/guides/best-practices/reasoning-tokens
-      if (!options?.disableThinking) {
-        let reasoning: any = undefined;
+      let reasoning: any = undefined;
 
+      if (options?.disableThinking) {
+        reasoning = { effort: "none", exclude: true };
+      } else {
         if (options?.reasoningEffort) {
           // OpenAI style effort
           reasoning = { effort: options.reasoningEffort };
@@ -296,10 +306,10 @@ export async function generateContent(
           // Map thinkingLevel directly to effort as "low"|"medium"|"high" are valid values
           reasoning = { effort: options.thinkingLevel };
         }
+      }
 
-        if (reasoning) {
-          requestParams.reasoning = reasoning;
-        }
+      if (reasoning) {
+        requestParams.reasoning = reasoning;
       }
 
       // Add schema for structured output (only when no tools are present)

@@ -378,6 +378,15 @@ export const generateAdventureTurn = async (
   // Get or create session (async - may load from IndexedDB)
   const session = await sessionManager.getOrCreateSession(sessionConfig);
 
+  // If this is the initial turn of a new game (isInit), ensure history is clean
+  // This prevents issues when starting a new game in the same slotId as a previous deleted game
+  if (context.isInit && !sessionManager.isEmpty(session.id)) {
+    console.log(
+      `[Adventure] Initial turn in slot ${context.slotId} with existing history. Clearing...`,
+    );
+    sessionManager.setHistory(session.id, []);
+  }
+
   // Cache hint (provider-specific) - derived from system + static prefix
   // If static prefix changes, hint changes as well.
   const cacheHint = buildCacheHint(
