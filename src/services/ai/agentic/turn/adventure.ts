@@ -84,6 +84,7 @@ import {
   generateBudgetPrompt,
   checkBudgetExhaustion,
   incrementToolCalls,
+  incrementRetries,
   incrementIterations,
   getBudgetSummary,
 } from "../budgetUtils";
@@ -811,6 +812,21 @@ You are in AGENTIC MODE.
           onRetry: (err, count) => {
             console.warn(
               `[Agentic Loop] Retry ${count}/${budgetState.retriesMax} due to: ${err}`,
+            );
+            // 1. Increment retries in budget state
+            incrementRetries(budgetState);
+
+            // 2. Generate updated budget prompt
+            const retryBudgetPrompt = generateBudgetPrompt(
+              budgetState,
+              finishToolName,
+            );
+
+            // 3. Inject into history so the model sees it BEFORE the next attempt
+            conversationHistory.push(
+              createUserMessage(
+                `[SYSTEM: BUDGET UPDATE]\n${retryBudgetPrompt}`,
+              ),
             );
           },
         },

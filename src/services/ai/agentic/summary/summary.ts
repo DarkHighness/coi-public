@@ -51,6 +51,8 @@ import {
   formatZodError,
 } from "../../../providers/utils";
 
+import { getLanguageEnforcement } from "../../../prompts";
+
 import { ALL_DEFINED_TOOLS } from "../../../tools";
 
 import { sessionManager } from "../../sessionManager";
@@ -61,6 +63,7 @@ import {
   generateBudgetPrompt,
   checkBudgetExhaustion,
   incrementToolCalls,
+  incrementRetries,
   incrementIterations,
   getBudgetSummary,
 } from "../budgetUtils";
@@ -131,7 +134,7 @@ You are the GM - you know everything. Your job is to:
 - Capture world state changes
 </critical_rules>
 
-<output_language>${language}</output_language>`;
+${getLanguageEnforcement(language)}`;
 
 // ============================================================================
 // Stage Instructions
@@ -543,6 +546,16 @@ export const runSummaryAgenticLoop = async (
         onRetry: (msg, count) => {
           console.warn(
             `[Summary Loop] Retry ${count}/${budgetState.retriesMax} due to: ${msg}`,
+          );
+          // 1. Increment retries in budget state
+          incrementRetries(budgetState);
+
+          // 2. Generate updated budget prompt
+          const retryBudgetPrompt = generateBudgetPrompt(budgetState);
+
+          // 3. Inject into history so the model sees it BEFORE the next attempt
+          conversationHistory.push(
+            createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryBudgetPrompt}`),
           );
         },
       },

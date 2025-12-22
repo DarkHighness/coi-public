@@ -227,7 +227,6 @@ export async function callWithAgenticRetry(
     }
 
     console.warn(`[AgenticRetry] Attempt ${attempt} failed: ${errorMessage}`);
-    if (onRetry) onRetry(errorMessage, attempt);
 
     // Add failure output to history for model feedback
     if (functionCalls.length > 0) {
@@ -267,6 +266,10 @@ export async function callWithAgenticRetry(
       );
       history.push(createUserMessage(errorMessage));
     }
+
+    // Execute onRetry callback AFTER error messages are in history
+    // This allows the callback to inject new prompts (e.g. Budget Status) that appear AFTER the error
+    if (onRetry) onRetry(errorMessage, attempt);
   }
 
   throw new Error("Maximum retries exceeded");

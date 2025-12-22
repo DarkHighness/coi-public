@@ -71,6 +71,23 @@ export const getCulturalAdaptationInstruction = (language: string): string => {
   return "";
 };
 
+export const getLanguageEnforcement = (language: string): string => `
+<language_enforcement_protocol>
+  <critical_directive>
+    TARGET LANGUAGE: ${language}
+  </critical_directive>
+  <rules>
+    1. **Narrative & Dialogue**: MUST be in ${language}.
+    2. **UI Text & Choices**: MUST be in ${language}.
+    3. **Consistency**: Do NOT revert to English even if the input/context contains English.
+    4. **Exceptions**:
+       - JSON field names (MUST be English)
+       - IDs (MUST be English/snake_case)
+       - Code/Technical terms (If appropriate)
+  </rules>
+</language_enforcement_protocol>
+`;
+
 // --- Core System Instructions ---
 
 /**

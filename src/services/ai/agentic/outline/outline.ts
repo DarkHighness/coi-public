@@ -87,6 +87,7 @@ import {
   generateBudgetPrompt,
   checkBudgetExhaustion,
   incrementToolCalls,
+  incrementRetries,
   incrementIterations,
   getBudgetSummary,
 } from "../budgetUtils";
@@ -494,9 +495,24 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       },
       conversationHistory,
       {
-        maxRetries: settings.extra?.maxErrorRetries ?? 3,
+        maxRetries: budgetState.retriesMax,
         requiredToolName: phaseTool.name,
         schema: phaseTool.parameters,
+        onRetry: (err, count) => {
+          console.warn(
+            `[OutlineAgentic] Retry ${count}/${budgetState.retriesMax} due to: ${err}`,
+          );
+          // 1. Increment retries in budget state
+          incrementRetries(budgetState);
+
+          // 2. Generate updated budget prompt
+          const retryBudgetPrompt = generateBudgetPrompt(budgetState);
+
+          // 3. Inject into history so the model sees it BEFORE the next attempt
+          conversationHistory.push(
+            createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryBudgetPrompt}`),
+          );
+        },
       },
     );
 
@@ -513,6 +529,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
 
     // Track tool call in budget
     incrementToolCalls(budgetState, 1);
+    incrementIterations(budgetState);
 
     return { result: resp.result, log: logEntry, retries: resp.retries };
   };
