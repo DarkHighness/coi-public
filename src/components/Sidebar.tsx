@@ -208,6 +208,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             themeFont={currentThemeConfig.fontClass}
           />
         </div>
+
+        {/* Token Usage Panel - Mobile Only */}
+        <div className="md:hidden bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold uppercase tracking-widest text-theme-muted">
+              {t("sidebar.tokens")}
+            </span>
+            <span className="text-xs font-mono text-theme-text">
+              {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
+              {gameState.tokenUsage && (
+                <span className="opacity-70 ml-1">
+                  ({gameState.tokenUsage.promptTokens.toLocaleString()} +{" "}
+                  {gameState.tokenUsage.completionTokens.toLocaleString()})
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Status Bar */}

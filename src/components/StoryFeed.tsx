@@ -101,17 +101,27 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           setTimeout(() => {
             const element = document.querySelector(
               `[data-segment-id="${segmentId}"]`,
-            );
-            if (element) {
-              element.scrollIntoView({ behavior: "smooth", block: "start" });
-            } else {
+            ) as HTMLElement | null;
+            const container = scrollContainerRef.current;
+            if (element && container) {
+              // Calculate the element's position relative to the scroll container
+              const containerRect = container.getBoundingClientRect();
+              const elementRect = element.getBoundingClientRect();
+              const relativeTop =
+                elementRect.top - containerRect.top + container.scrollTop;
+
+              container.scrollTo({
+                top: relativeTop,
+                behavior: "smooth",
+              });
+            } else if (container) {
               // Fallback: estimate scroll position
               const targetIndex = currentHistory.findIndex(
                 (s) => s.id === segmentId,
               );
               if (targetIndex !== -1) {
                 const estimatedPosition = targetIndex * 300;
-                scrollContainerRef.current?.scrollTo({
+                container.scrollTo({
                   top: estimatedPosition,
                   behavior: "smooth",
                 });
@@ -211,9 +221,18 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               requestAnimationFrame(() => {
                 const element = document.querySelector(
                   `[data-segment-id="${targetId}"]`,
-                );
-                if (element) {
-                  element.scrollIntoView({ behavior: "auto", block: "start" });
+                ) as HTMLElement | null;
+                if (element && container) {
+                  // Calculate the element's position relative to the scroll container
+                  const containerRect = container.getBoundingClientRect();
+                  const elementRect = element.getBoundingClientRect();
+                  const relativeTop =
+                    elementRect.top - containerRect.top + container.scrollTop;
+
+                  container.scrollTo({
+                    top: relativeTop,
+                    behavior: "auto",
+                  });
                 } else {
                   // Element still not found, force scroll to absolute bottom
                   container.scrollTop = container.scrollHeight;

@@ -153,7 +153,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
       {/* 1. Story Feed View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 transition-opacity duration-300 ${mobileTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`flex flex-col w-full absolute inset-0 overflow-hidden transition-opacity duration-300 ${mobileTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <StoryFeed
           ref={storyFeedRef}
@@ -224,10 +224,10 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onVeoScript={onVeoScript}
         />
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
-        <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
+        <div className="flex-none"></div>
       </div>
 
-      {/* 3. Menu Grid View */}
+      {/* 4. Menu Grid View */}
       <div
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
       >

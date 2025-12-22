@@ -68,7 +68,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   }
 
   return (
-    <div className="flex-none p-2 flex justify-between items-center border-b border-theme-border bg-theme-surface/50 backdrop-blur-sm z-10">
+    <div className="flex-none p-2 flex justify-between items-center border-b border-theme-border bg-theme-surface/50 backdrop-blur-sm z-30">
       <div className="flex items-center space-x-2 md:space-x-4 text-xs font-bold uppercase tracking-widest flex-1 min-w-0 overflow-hidden">
         <div className="flex items-center space-x-2 shrink-0">
           <span className="text-theme-muted hidden sm:inline">

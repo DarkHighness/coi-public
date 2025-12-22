@@ -26,16 +26,16 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="shrink-0 p-4 border-t border-theme-border bg-theme-surface/30 space-y-4 mt-auto">
+    <div className="shrink-0 px-4 pt-4 border-t border-theme-border bg-theme-surface/30 space-y-4 mt-auto">
       {/* Tools Panel */}
       <div>
-        <div className="flex rounded-md overflow-hidden border border-theme-border hover:border-theme-primary transition-colors group">
+        <div className="flex gap-2">
           <button
             onClick={() => {
               onMagicMirror();
               onCloseMobile();
             }}
-            className="flex-1 py-2 px-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative border-r border-theme-border"
+            className="flex-1 py-2 px-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text border border-theme-border rounded-md hover:border-theme-primary group"
             title={t("magicMirror.title")}
           >
             <svg
@@ -60,7 +60,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               onVeoScript();
               onCloseMobile();
             }}
-            className="w-12 py-2 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text relative"
+            className="w-12 py-2 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text border border-theme-border rounded-md hover:border-theme-primary"
             title={t("veoScript.title")}
           >
             <svg

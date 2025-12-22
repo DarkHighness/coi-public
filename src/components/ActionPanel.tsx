@@ -298,8 +298,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Gradient fade to blend with content */}
       <div className="h-8 bg-linear-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
-      <div className="bg-theme-bg/80 backdrop-blur-md p-4 pb-6 md:px-8">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="bg-theme-bg/80 backdrop-blur-md p-4 md:px-8">
+        <div className="max-w-4xl mx-auto space-y-2 md:space-y-4">
           {/* Action Controls - Always show retry/jump buttons when not processing */}
           {!gameState.isProcessing && !isTranslating && (
             <div className="animate-fade-in-up">
@@ -486,7 +486,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {availableChoices.length > 0 && (
                   <button
                     onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                    className="md:hidden flex items-center gap-2 px-4 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
+                    className="md:hidden flex items-center gap-2 px-4 py-1 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
                   >
                     {isChoicesExpanded ? (
                       <>
