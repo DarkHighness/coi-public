@@ -86,7 +86,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
     // Track played animations to prevent re-typing
     const playedAnimations = useRef<Set<string>>(new Set());
-    const isInitialMount = useRef(true);
+    // Track which segment IDs existed when component first mounted with content
+    // This allows new segments (like openingNarrative) to animate even if they arrive after mount
+    const mountedSegmentIds = useRef<Set<string> | null>(null);
 
     // Disable content-visibility during initial load for accurate scrollHeight
     const [disableVirtualization, setDisableVirtualization] = useState(true);
@@ -189,14 +191,15 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       [scrollToSegment, scrollToBottom, jumpToPage],
     );
 
-    // Mark all existing segments as played on initial load (prevent re-typing on game load/restore)
-    // This effect watches for when currentHistory first becomes available (after async load)
     useEffect(() => {
-      if (isInitialMount.current && currentHistory.length > 0) {
+      // Only capture mounted IDs once - when we first see segments
+      if (mountedSegmentIds.current === null && currentHistory.length > 0) {
+        // Capture all segment IDs that existed at this moment
+        mountedSegmentIds.current = new Set(currentHistory.map((s) => s.id));
+        // Mark all these as already played (no animation for pre-existing content)
         currentHistory.forEach((segment) => {
           playedAnimations.current.add(segment.id);
         });
-        isInitialMount.current = false;
 
         // Scroll to last viewed segment or bottom on initial mount (continue game scenario)
         const viewedSegmentId = gameState.uiState.viewedSegmentId;

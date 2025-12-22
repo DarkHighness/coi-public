@@ -198,7 +198,11 @@ export const generateStoryOutlinePhased = async (
   customContext?: string,
   tFunc?: (key: string, options?: Record<string, unknown>) => string,
   options?: PhasedOutlineOptions,
-): Promise<{ outline: StoryOutline; logs: LogEntry[]; themeConfig: ResolvedThemeConfig }> => {
+): Promise<{
+  outline: StoryOutline;
+  logs: LogEntry[];
+  themeConfig: ResolvedThemeConfig;
+}> => {
   if (!options?.settings) {
     throw new Error("settings is required in options");
   }
@@ -530,7 +534,9 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
     // Tool index: Phase 0 -> index 0, Phase 1 -> index 1, etc.
     const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum];
 
-    console.log(`[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`);
+    console.log(
+      `[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`,
+    );
     reportProgress(phaseNum, "starting");
 
     // Inject budget status into conversation

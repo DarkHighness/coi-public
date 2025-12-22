@@ -740,6 +740,8 @@ You are in AGENTIC MODE.
 4. **USE TOOLS**: Once loaded, use the tools to modify the game state in parallel when possible.
 5. **FINISH LAST**: When done, use \`${finishToolName}\` as your FINAL tool call with narrative and choices.
    - ⚠️ CRITICAL: \`${finishToolName}\` must be the LAST tool in your call sequence.
+6. **NO DUPLICATES**: Before adding new entities, check if similar ones exist. UPDATE existing entities instead of creating duplicates.
+7. **CAUSAL CHAINS**: If PENDING CONSEQUENCES are shown, use \`search_tool\` for 'update:causal_chain' to trigger them when conditions are met.
 `),
     );
   }
@@ -753,7 +755,7 @@ You are in AGENTIC MODE.
     }
 
     // Inject budget management prompt at each iteration
-    const budgetPrompt = generateBudgetPrompt(budgetState);
+    const budgetPrompt = generateBudgetPrompt(budgetState, finishToolName);
     conversationHistory.push(
       createUserMessage(`[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`),
     );
@@ -807,7 +809,9 @@ You are in AGENTIC MODE.
         {
           maxRetries: budgetState.retriesMax,
           onRetry: (err, count) => {
-            console.warn(`[Agentic Loop] Retry ${count}/${budgetState.retriesMax} due to: ${err}`);
+            console.warn(
+              `[Agentic Loop] Retry ${count}/${budgetState.retriesMax} due to: ${err}`,
+            );
           },
         },
       );

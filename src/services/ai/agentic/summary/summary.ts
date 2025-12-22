@@ -541,7 +541,9 @@ export const runSummaryAgenticLoop = async (
       {
         maxRetries: budgetState.retriesMax,
         onRetry: (msg, count) => {
-          console.warn(`[Summary Loop] Retry ${count}/${budgetState.retriesMax} due to: ${msg}`);
+          console.warn(
+            `[Summary Loop] Retry ${count}/${budgetState.retriesMax} due to: ${msg}`,
+          );
         },
       },
     );

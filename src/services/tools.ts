@@ -1330,14 +1330,31 @@ export type ToolOperation =
   | "remove"
   | "query"
   | "narrative"
-  | "unlock";
+  | "unlock"
+  | "trigger"
+  | "resolve"
+  | "interrupt"
+  | "complete"
+  | "fail";
 
 export const searchToolSchema = z.object({
   queries: z
     .array(
       z.object({
         operation: z
-          .enum(["add", "update", "remove", "query", "unlock", "list"])
+          .enum([
+            "add",
+            "update",
+            "remove",
+            "query",
+            "unlock",
+            "list",
+            "trigger",
+            "resolve",
+            "interrupt",
+            "complete",
+            "fail",
+          ])
           .describe("Action type."),
         entity: z
           .enum([
@@ -1662,6 +1679,8 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   // Quest
   "add:quest": [ADD_QUEST_TOOL],
   "update:quest": [UPDATE_QUEST_TOOL, COMPLETE_QUEST_TOOL, FAIL_QUEST_TOOL],
+  "complete:quest": [COMPLETE_QUEST_TOOL],
+  "fail:quest": [FAIL_QUEST_TOOL],
   "remove:quest": [REMOVE_QUEST_TOOL],
   "query:quest": [QUERY_QUESTS_TOOL],
   "unlock:quest": [UNLOCK_ENTITY_TOOL],
@@ -1693,6 +1712,9 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
     RESOLVE_CAUSAL_CHAIN_TOOL,
     INTERRUPT_CAUSAL_CHAIN_TOOL,
   ],
+  "trigger:causal_chain": [TRIGGER_CAUSAL_CHAIN_TOOL],
+  "resolve:causal_chain": [RESOLVE_CAUSAL_CHAIN_TOOL],
+  "interrupt:causal_chain": [INTERRUPT_CAUSAL_CHAIN_TOOL],
   "query:causal_chain": [QUERY_CAUSAL_CHAIN_TOOL],
 
   // Character Attributes

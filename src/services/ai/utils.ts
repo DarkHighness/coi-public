@@ -520,9 +520,14 @@ export const getThemeName = (
   defaultValue?: string,
 ): string => {
   if (!themeKey || themeKey === IMAGE_BASED_THEME) {
-    return tFunc("imageBased.name", { defaultValue: defaultValue || "Image Based" });
+    return tFunc("imageBased.name", {
+      defaultValue: defaultValue || "Image Based",
+    });
   }
-  return tFunc(`${themeKey}.name`, { ns: "themes", defaultValue: defaultValue || themeKey });
+  return tFunc(`${themeKey}.name`, {
+    ns: "themes",
+    defaultValue: defaultValue || themeKey,
+  });
 };
 
 /**
@@ -583,7 +588,11 @@ export const resolveThemeConfig = (
 
   if (tFunc) {
     narrativeStyle = getThemeTranslation(themeKey, "narrativeStyle", tFunc);
-    backgroundTemplate = getThemeTranslation(themeKey, "backgroundTemplate", tFunc);
+    backgroundTemplate = getThemeTranslation(
+      themeKey,
+      "backgroundTemplate",
+      tFunc,
+    );
     example = getThemeTranslation(themeKey, "example", tFunc);
     worldSetting = getThemeTranslation(themeKey, "worldSetting", tFunc);
   } else {
@@ -638,7 +647,11 @@ export const createThemeConfig = (
     name: tFunc(`${themeKey}.name`, { ns: "themes", defaultValue: themeKey }),
     narrativeStyle: getThemeTranslation(themeKey, "narrativeStyle", tFunc),
     worldSetting: getThemeTranslation(themeKey, "worldSetting", tFunc),
-    backgroundTemplate: getThemeTranslation(themeKey, "backgroundTemplate", tFunc),
+    backgroundTemplate: getThemeTranslation(
+      themeKey,
+      "backgroundTemplate",
+      tFunc,
+    ),
     example: getThemeTranslation(themeKey, "example", tFunc),
     isRestricted,
   };
