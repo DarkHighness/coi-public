@@ -63,6 +63,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     message: string;
     action: CommandAction;
   } | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "retry" | "rebuild" | "cleanup" | null
+  >(null);
   const { t } = useTranslation();
 
   const lastSegment = currentHistory
@@ -295,6 +298,38 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </div>
       )}
 
+      {/* Action Confirmation Modal */}
+      {pendingAction && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
+            <div className="text-theme-text text-sm mb-6">
+              {pendingAction === "retry" && t("confirmRetry")}
+              {pendingAction === "rebuild" && t("confirmRebuildContext")}
+              {pendingAction === "cleanup" && t("confirmCleanupEntities")}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingAction(null)}
+                className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+              >
+                {t("cancel") || "Cancel"}
+              </button>
+              <button
+                onClick={() => {
+                  if (pendingAction === "retry") onRetry?.();
+                  else if (pendingAction === "rebuild") onRebuildContext?.();
+                  else if (pendingAction === "cleanup") onCleanupEntities?.();
+                  setPendingAction(null);
+                }}
+                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors"
+              >
+                {t("confirm") || "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gradient fade to blend with content */}
       <div className="h-8 bg-linear-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
@@ -308,7 +343,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {/* Retry Button - Always show */}
                 {onRetry && (
                   <button
-                    onClick={onRetry}
+                    onClick={() => setPendingAction("retry")}
                     disabled={isDisabled}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("retryGeneration")}
@@ -335,7 +370,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {/* Rebuild Context Button */}
                 {onRebuildContext && (
                   <button
-                    onClick={onRebuildContext}
+                    onClick={() => setPendingAction("rebuild")}
                     disabled={isDisabled}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-warning/50 rounded-full text-xs font-bold text-theme-warning uppercase tracking-widest hover:bg-theme-warning hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("rebuildContext") || "Rebuild Context"}
@@ -362,7 +397,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {/* Cleanup Entities Button */}
                 {onCleanupEntities && (
                   <button
-                    onClick={onCleanupEntities}
+                    onClick={() => setPendingAction("cleanup")}
                     disabled={isDisabled}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-info/50 rounded-full text-xs font-bold text-theme-info uppercase tracking-widest hover:bg-theme-info hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("cleanupEntities") || "Cleanup Entities"}

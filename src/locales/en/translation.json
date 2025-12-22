@@ -231,6 +231,8 @@
   "missingApiKey": "Missing API Key. Please configure settings.",
   "confirmNewGame": "Are you sure you want to start a new game? All progress will be lost.",
   "confirmRebuildContext": "Are you sure you want to rebuild the story context? This will summarize the current history and clear the AI's memory cache. Use this if the story becomes slow or the AI gets confused.",
+  "confirmRetry": "Are you sure you want to retry? This will regenerate the current turn's content.",
+  "confirmCleanupEntities": "Are you sure you want to cleanup entities? This will clean up invalid or duplicate entities (characters, items, locations) from the game state.",
   "loadError": "Invalid save file.",
   "menu": "Menu",
   "mainMenu": "Main Menu",

@@ -200,6 +200,8 @@
   "missingApiKey": "缺少 API Key，请在设置中配置。",
   "confirmNewGame": "确定要开始新游戏吗？所有当前进度将会丢失。",
   "confirmRebuildContext": "确定要重建故事上下文吗？这将总结当前历史并清理 AI 的内存缓存。如果故事响应变慢或 AI 变得混乱，请使用此功能。",
+  "confirmRetry": "确定要重新生成吗？这将重新生成当前回合的内容。",
+  "confirmCleanupEntities": "确定要整理实体吗？这将清理游戏状态中已失效或重复的实体（如角色、物品、地点）。",
   "loadError": "存档文件无效。",
   "menu": "菜单",
   "mainMenu": "主菜单",
