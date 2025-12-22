@@ -187,36 +187,64 @@ export function formatZodError(error: ZodError): string {
 /**
  * Generate a simplified, JSON-like schema representation for the AI
  */
-export function getToolSchemaHint(schema: ZodTypeAny): string {
+export function getToolSchemaHint(
+  schema: ZodTypeAny,
+  indent: string = ""
+): string {
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
-    const parts = Object.entries(shape).map(([key, value]) => {
-      const isOptional = (value as ZodTypeAny) instanceof ZodOptional;
-      const description = (value as ZodTypeAny).description;
-      const typeHint = getGenericTypeHint(value as ZodTypeAny);
-      return `    <parameter>
-      <name>${key}</name>
-      <type>${typeHint}</type>
-      <required>${!isOptional}</required>${
-        description
-          ? `
-      <description>${description}</description>`
-          : ""
+    const lines = Object.entries(shape).map(([key, value]) => {
+      let fieldSchema = value as ZodTypeAny;
+      let isOptional = fieldSchema instanceof ZodOptional;
+      let description = fieldSchema.description;
+
+      // Unwrap optional/nullable for type handling
+      let innerSchema = fieldSchema;
+      while (
+        innerSchema instanceof ZodOptional ||
+        innerSchema instanceof ZodNullable
+      ) {
+        if (innerSchema instanceof ZodOptional) isOptional = true;
+        innerSchema = innerSchema._def.innerType;
       }
-    </parameter>`;
+
+      // Use innerSchema for description if main schema has none
+      if (!description) description = innerSchema.description;
+
+      let typeStr = "";
+      if (innerSchema instanceof ZodObject) {
+        typeStr = getToolSchemaHint(innerSchema, indent + "  ");
+      } else if (
+        innerSchema instanceof ZodArray &&
+        innerSchema._def.type instanceof ZodObject
+      ) {
+        typeStr = `Array<${getToolSchemaHint(
+          innerSchema._def.type,
+          indent + "  "
+        )}>`;
+      } else if (innerSchema instanceof ZodArray) {
+          typeStr = getGenericTypeHint(innerSchema, indent);
+      } else {
+        typeStr = getGenericTypeHint(innerSchema, indent);
+      }
+
+      const descComment = description ? ` // ${description}` : "";
+      return `${indent}  ${key}${isOptional ? "?" : ""}: ${typeStr};${descComment}`;
     });
-    return parts.join("\n");
+
+    return `{\n${lines.join("\n")}\n${indent}}`;
   }
-  return `  <type>${getGenericTypeHint(schema)}</type>`;
+
+  return getGenericTypeHint(schema, indent);
 }
 
 /**
  * Internal helper for type hints
  */
-function getGenericTypeHint(schema: ZodTypeAny): string {
+function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
   // Unwrap optional/nullable
   if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return getGenericTypeHint(schema._def.innerType);
+    return getGenericTypeHint(schema._def.innerType, indent);
   }
 
   if (schema instanceof ZodString) return "string";
@@ -229,21 +257,27 @@ function getGenericTypeHint(schema: ZodTypeAny): string {
       .join(" | ");
   }
   if (schema instanceof ZodArray) {
-    return `Array<${getGenericTypeHint(schema._def.type)}>`;
+    const inner = schema._def.type;
+     if (inner instanceof ZodObject) {
+        return `Array<${getToolSchemaHint(inner, indent + "  ")}>`;
+     }
+    return `Array<${getGenericTypeHint(inner, indent)}>`;
   }
   if (schema instanceof ZodObject) {
-    return "Object";
+    return getToolSchemaHint(schema, indent);
   }
   if (schema instanceof ZodUnion) {
     return (schema as ZodUnion<any>)._def.options
-      .map((opt: ZodTypeAny) => getGenericTypeHint(opt))
+      .map((opt: ZodTypeAny) => getGenericTypeHint(opt, indent))
       .join(" | ");
   }
   if (schema instanceof ZodIntersection) {
-    return `${getGenericTypeHint(schema._def.left)} & ${getGenericTypeHint(schema._def.right)}`;
+    return `${getGenericTypeHint(schema._def.left, indent)} & ${getGenericTypeHint(
+      schema._def.right, indent
+    )}`;
   }
   if (schema instanceof ZodRecord) {
-    return "Record<string, ...>";
+    return "Record<string, any>";
   }
 
   return "any";
