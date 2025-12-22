@@ -20,6 +20,7 @@ import { deleteImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "../services/rag";
 import { sessionManager } from "../services/ai/sessionManager";
 import { useTranslation } from "react-i18next";
+import { createThemeConfig } from "../services/ai/utils";
 
 export const useGamePersistence = (
   gameState: GameState,
@@ -32,8 +33,6 @@ export const useGamePersistence = (
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
   // Track if we should skip the next auto-save (e.g., during error recovery)
   const [skipNextSave, setSkipNextSave] = useState(false);
-  // Refs for debounce and throttle
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
   const lastSavedNodeIdRef = useRef<string | null>(null);
 
@@ -272,6 +271,14 @@ export const useGamePersistence = (
       // Fix language if missing (for old saves)
       if (!parsed.language) {
         parsed.language = "zh"; // Default to Chinese for legacy saves
+      }
+
+      // === MIGRATION: Apply themeConfig from i18n for legacy saves ===
+      if (!parsed.themeConfig && parsed.theme && t) {
+        parsed.themeConfig = createThemeConfig(parsed.theme, t);
+        repairLog.push(
+          `Migrated: themeConfig resolved from i18n for theme ${parsed.theme}`,
+        );
       }
 
       // Fix tokenUsage

@@ -31,6 +31,7 @@ import {
   ToolCallResult,
   UnifiedMessage,
   TextContentPart,
+  ImageContentPart,
   ToolCallContentPart,
   ToolResponseContentPart,
   SafetyFilterError,
@@ -648,10 +649,42 @@ function convertToOpenAIMessages(
         continue;
       }
     }
-    const textContent = msg.content
-      .filter((p): p is TextContentPart => p.type === "text")
-      .map((p) => p.text)
-      .join("\n");
+    // Handle user messages with potential image content
+    const textParts = msg.content.filter(
+      (p): p is TextContentPart => p.type === "text",
+    );
+    const imageParts = msg.content.filter(
+      (p): p is ImageContentPart => p.type === "image",
+    );
+
+    // If there are images, use multipart content format
+    if (imageParts.length > 0 && msg.role === "user") {
+      const contentArray: any[] = [];
+
+      // Add text content first
+      const textContent = textParts.map((p) => p.text).join("\n");
+      if (textContent) {
+        contentArray.push({ type: "text", text: textContent });
+      }
+
+      // Add image content - OpenRouter SDK uses camelCase
+      for (const ip of imageParts) {
+        const dataUrl = `data:${ip.mimeType};base64,${ip.data}`;
+        contentArray.push({
+          type: "image_url",
+          imageUrl: { url: dataUrl },
+        });
+      }
+
+      result.push({
+        role: "user",
+        content: contentArray,
+      });
+      continue;
+    }
+
+    // Handle plain text messages
+    const textContent = textParts.map((p) => p.text).join("\n");
     result.push({
       role: msg.role,
       content: textContent,

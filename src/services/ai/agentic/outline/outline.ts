@@ -11,6 +11,7 @@ import {
   ProviderInstance,
   UnifiedMessage,
   OutlineConversationState,
+  ResolvedThemeConfig,
 } from "../../../../types";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
@@ -66,6 +67,8 @@ import {
   createLogEntry,
   createProviderConfig,
   extractJson,
+  createThemeConfig,
+  IMAGE_BASED_THEME,
 } from "../../utils";
 
 import {
@@ -78,6 +81,15 @@ import { sessionManager } from "../../sessionManager";
 
 import { buildCacheHint } from "../../provider/cacheHint";
 import { callWithAgenticRetry } from "../retry";
+import {
+  BudgetState,
+  createBudgetState,
+  generateBudgetPrompt,
+  checkBudgetExhaustion,
+  incrementToolCalls,
+  incrementIterations,
+  getBudgetSummary,
+} from "../budgetUtils";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
@@ -186,7 +198,7 @@ export const generateStoryOutlinePhased = async (
   customContext?: string,
   tFunc?: (key: string, options?: Record<string, unknown>) => string,
   options?: PhasedOutlineOptions,
-): Promise<{ outline: StoryOutline; logs: LogEntry[] }> => {
+): Promise<{ outline: StoryOutline; logs: LogEntry[]; themeConfig: ResolvedThemeConfig }> => {
   if (!options?.settings) {
     throw new Error("settings is required in options");
   }
@@ -495,18 +507,37 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       request: { retries: resp.retries },
     });
 
-    return { result: resp.result, log: logEntry };
+    // Track tool call in budget
+    incrementToolCalls(budgetState, 1);
+
+    return { result: resp.result, log: logEntry, retries: resp.retries };
   };
+
+  // Initialize budget tracking
+  const budgetState: BudgetState = createBudgetState(settings);
 
   // Agentic loop for each phase
   // Phase 0 is at index 0, Phase 1 at index 1, etc.
   while (currentPhase <= 10) {
+    // Check budget exhaustion
+    const budgetCheck = checkBudgetExhaustion(budgetState);
+    if (budgetCheck.exhausted) {
+      console.warn(`[OutlineAgentic] ${budgetCheck.message}`);
+      throw new Error(budgetCheck.message);
+    }
+
     const phaseNum = currentPhase;
     // Tool index: Phase 0 -> index 0, Phase 1 -> index 1, etc.
     const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum];
 
-    console.log(`[OutlineAgentic] Starting Phase ${phaseNum}`);
+    console.log(`[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`);
     reportProgress(phaseNum, "starting");
+
+    // Inject budget status into conversation
+    const budgetPrompt = generateBudgetPrompt(budgetState);
+    conversationHistory.push(
+      createUserMessage(`[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`),
+    );
 
     // Add phase-specific prompt
     let phasePrompt = getPhasePrompt(
@@ -631,7 +662,38 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
   console.log("[OutlineAgentic] All phases completed, merging outline");
   const outline = mergeOutlinePhases(partial);
 
-  return { outline, logs };
+  // Build themeConfig for storage in GameState
+  // For imageBased: use Phase 0 generated data; for normal themes: use i18n
+  let resolvedThemeConfig: ResolvedThemeConfig;
+  const isImageStart = !theme || theme === IMAGE_BASED_THEME;
+  const phase0Data = partial.phase0 as OutlinePhase0 | undefined;
+
+  if (isImageStart && phase0Data && tFunc) {
+    // imageBased: use Phase 0 generated context
+    resolvedThemeConfig = {
+      name: tFunc("imageBased.name", { defaultValue: "Image Based" }),
+      narrativeStyle: phase0Data.narrativeStyle || "",
+      worldSetting: phase0Data.worldSetting || "",
+      backgroundTemplate: phase0Data.backgroundTemplate || "", // Use Phase 0 generated template
+      example: "", // imageBased doesn't have preset examples
+      isRestricted: false,
+    };
+  } else if (tFunc) {
+    // Normal themes: resolve from i18n at generation time
+    resolvedThemeConfig = createThemeConfig(theme, tFunc);
+  } else {
+    // Fallback (shouldn't happen)
+    resolvedThemeConfig = {
+      name: theme || "Unknown",
+      narrativeStyle: "",
+      worldSetting: "",
+      backgroundTemplate: "",
+      example: "",
+      isRestricted: false,
+    };
+  }
+
+  return { outline, logs, themeConfig: resolvedThemeConfig };
 };
 
 /**

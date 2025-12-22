@@ -503,6 +503,48 @@ export const filterModels = (
 
 import { THEMES } from "../../utils/constants";
 
+/** Special theme key that uses main translation namespace instead of themes namespace */
+export const IMAGE_BASED_THEME = "imageBased";
+
+/**
+ * Get translated theme name with proper namespace handling
+ * imageBased theme uses main translation namespace, all others use themes namespace
+ *
+ * @param themeKey Theme key
+ * @param tFunc Translation function
+ * @param defaultValue Optional default value if translation fails
+ */
+export const getThemeName = (
+  themeKey: string | undefined | null,
+  tFunc: (key: string, options?: Record<string, unknown>) => string,
+  defaultValue?: string,
+): string => {
+  if (!themeKey || themeKey === IMAGE_BASED_THEME) {
+    return tFunc("imageBased.name", { defaultValue: defaultValue || "Image Based" });
+  }
+  return tFunc(`${themeKey}.name`, { ns: "themes", defaultValue: defaultValue || themeKey });
+};
+
+/**
+ * Get any theme translation field with proper namespace handling
+ * imageBased theme doesn't have these fields (it's generated from image), returns empty string
+ *
+ * @param themeKey Theme key
+ * @param field Field name (narrativeStyle, worldSetting, example, backgroundTemplate)
+ * @param tFunc Translation function
+ */
+export const getThemeTranslation = (
+  themeKey: string,
+  field: "narrativeStyle" | "worldSetting" | "example" | "backgroundTemplate",
+  tFunc: (key: string, options?: Record<string, unknown>) => string,
+): string => {
+  // imageBased theme doesn't have predefined translations (content is generated from image)
+  if (themeKey === IMAGE_BASED_THEME) {
+    return "";
+  }
+  return tFunc(`${themeKey}.${field}`, { ns: "themes" });
+};
+
 /**
  * 解析主题配置
  * @param themeKey 主题键
@@ -520,6 +562,17 @@ export const resolveThemeConfig = (
   worldSetting: string;
   isRestricted: boolean;
 } => {
+  // imageBased theme doesn't have config or translations - content is generated from image
+  if (themeKey === IMAGE_BASED_THEME) {
+    return {
+      narrativeStyle: "",
+      backgroundTemplate: "",
+      example: "",
+      worldSetting: "",
+      isRestricted: false,
+    };
+  }
+
   const themeConfig = THEMES[themeKey] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
@@ -529,12 +582,10 @@ export const resolveThemeConfig = (
   let worldSetting = "";
 
   if (tFunc) {
-    narrativeStyle = tFunc(`${themeKey}.narrativeStyle`, { ns: "themes" });
-    backgroundTemplate = tFunc(`${themeKey}.backgroundTemplate`, {
-      ns: "themes",
-    });
-    example = tFunc(`${themeKey}.example`, { ns: "themes" });
-    worldSetting = tFunc(`${themeKey}.worldSetting`, { ns: "themes" });
+    narrativeStyle = getThemeTranslation(themeKey, "narrativeStyle", tFunc);
+    backgroundTemplate = getThemeTranslation(themeKey, "backgroundTemplate", tFunc);
+    example = getThemeTranslation(themeKey, "example", tFunc);
+    worldSetting = getThemeTranslation(themeKey, "worldSetting", tFunc);
   } else {
     // Fallback if tFunc not available (shouldn't happen in normal flow)
     narrativeStyle = "Standard narrative style.";
@@ -548,6 +599,47 @@ export const resolveThemeConfig = (
     backgroundTemplate,
     example,
     worldSetting,
+    isRestricted,
+  };
+};
+
+import type { ResolvedThemeConfig } from "../../types";
+
+/**
+ * Create ThemeConfig for storage in GameState
+ * For normal themes: resolves from i18n
+ * For imageBased: returns empty config (will be populated from Phase 0)
+ *
+ * @param themeKey Theme key
+ * @param tFunc Translation function
+ * @returns ThemeConfig ready for storage
+ */
+export const createThemeConfig = (
+  themeKey: string | undefined | null,
+  tFunc: (key: string, options?: Record<string, unknown>) => string,
+): ResolvedThemeConfig => {
+  // imageBased theme returns empty config - will be populated from Phase 0
+  if (!themeKey || themeKey === IMAGE_BASED_THEME) {
+    return {
+      name: tFunc("imageBased.name", { defaultValue: "Image Based" }),
+      narrativeStyle: "",
+      worldSetting: "",
+      backgroundTemplate: "",
+      example: "",
+      isRestricted: false,
+    };
+  }
+
+  // Normal themes: resolve from i18n
+  const themeConfig = THEMES[themeKey] || THEMES["fantasy"];
+  const isRestricted = themeConfig?.restricted || false;
+
+  return {
+    name: tFunc(`${themeKey}.name`, { ns: "themes", defaultValue: themeKey }),
+    narrativeStyle: getThemeTranslation(themeKey, "narrativeStyle", tFunc),
+    worldSetting: getThemeTranslation(themeKey, "worldSetting", tFunc),
+    backgroundTemplate: getThemeTranslation(themeKey, "backgroundTemplate", tFunc),
+    example: getThemeTranslation(themeKey, "example", tFunc),
     isRestricted,
   };
 };

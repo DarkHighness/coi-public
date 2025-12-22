@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
 import { ExportOptionsModal } from "./ExportOptionsModal";
 import { ImportSaveModal } from "./ImportSaveModal";
+import { getThemeName } from "../services/ai/utils";
 
 interface SaveManagerProps {
   slots: SaveSlot[];
@@ -150,7 +151,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                             )}
                           </h3>
                           <p className="text-xs text-theme-muted/80 mt-0.5">
-                            {t(`${slot.theme}.name`, { ns: "themes" })}
+                            {getThemeName(slot.theme, t)}
                           </p>
                           <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
                             <MarkdownText

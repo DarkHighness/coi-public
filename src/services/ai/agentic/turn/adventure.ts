@@ -78,6 +78,15 @@ import {
 
 import { buildCacheHint } from "../../provider/cacheHint";
 import { callWithAgenticRetry } from "../retry";
+import {
+  BudgetState,
+  createBudgetState,
+  generateBudgetPrompt,
+  checkBudgetExhaustion,
+  incrementToolCalls,
+  incrementIterations,
+  getBudgetSummary,
+} from "../budgetUtils";
 
 // Import Session Manager for internal history tracking
 import { sessionManager, SessionConfig } from "../../sessionManager";
@@ -625,10 +634,8 @@ export const runAgenticLoop = async (
     : createProvider(instance);
   let conversationHistory: UnifiedMessage[] = [...initialContents];
 
-  // Token/Turn limits - use settings or defaults
-  let loopIterations = 0;
-  const maxLoopIterations = settings.extra?.maxAgenticRounds ?? 20; // Configurable, default 20
-  const maxErrorRetries = settings.extra?.maxErrorRetries ?? 3; // Configurable, default 3
+  // Initialize Triple Budget System
+  const budgetState: BudgetState = createBudgetState(settings);
 
   const allLogs: LogEntry[] = [];
 
@@ -737,12 +744,25 @@ You are in AGENTIC MODE.
     );
   }
 
-  while (loopIterations < maxLoopIterations) {
+  while (budgetState.loopIterationsUsed < budgetState.loopIterationsMax) {
+    // Check if tool call budget is exhausted
+    const budgetCheck = checkBudgetExhaustion(budgetState);
+    if (budgetCheck.exhausted) {
+      console.warn(`[Agentic Loop] ${budgetCheck.message}`);
+      throw new Error(budgetCheck.message);
+    }
+
+    // Inject budget management prompt at each iteration
+    const budgetPrompt = generateBudgetPrompt(budgetState);
+    conversationHistory.push(
+      createUserMessage(`[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`),
+    );
+
     // Generate unique turnId for this iteration to group related logs
-    const turnId = `turn_${Date.now()}_${loopIterations}`;
+    const turnId = `turn_${Date.now()}_${budgetState.loopIterationsUsed}`;
 
     console.log(
-      `[Agentic Loop] Iteration: ${loopIterations + 1}, Active Tools: ${activeTools.length}`,
+      `[Agentic Loop] Iteration: ${budgetState.loopIterationsUsed + 1}/${budgetState.loopIterationsMax}, Budget: ${getBudgetSummary(budgetState)}`,
     );
 
     const toolConfig = activeTools.map((t) => ({
@@ -785,9 +805,9 @@ You are in AGENTIC MODE.
         },
         conversationHistory,
         {
-          maxRetries: maxErrorRetries,
+          maxRetries: budgetState.retriesMax,
           onRetry: (err, count) => {
-            console.warn(`[Agentic Loop] Retry ${count} due to: ${err}`);
+            console.warn(`[Agentic Loop] Retry ${count}/${budgetState.retriesMax} due to: ${err}`);
           },
         },
       );
@@ -795,7 +815,7 @@ You are in AGENTIC MODE.
       result = resp.result;
       usage = resp.usage;
       console.log(
-        `[Agentic Loop] Iteration ${loopIterations} response after ${resp.retries} retries.`,
+        `[Agentic Loop] Iteration ${budgetState.loopIterationsUsed} completed after ${resp.retries} retries.`,
       );
     } catch (e) {
       const error = e instanceof Error ? e : new Error(String(e));
@@ -868,7 +888,7 @@ You are in AGENTIC MODE.
             `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one tool to progress. Use \`search_tool\` to load more state or \`${finishToolName}\` to finalize the narrative. Bare text is not allowed.`,
           ),
         );
-        loopIterations++;
+        incrementIterations(budgetState);
         continue;
       }
     }
@@ -877,6 +897,12 @@ You are in AGENTIC MODE.
     let turnFinished = false;
 
     if (functionCalls) {
+      // Track tool calls in budget
+      incrementToolCalls(budgetState, functionCalls.length);
+      console.log(
+        `[Agentic Loop] Processing ${functionCalls.length} tool calls. Budget: ${getBudgetSummary(budgetState)}`,
+      );
+
       const toolResponses: {
         toolCallId: string;
         name: string;
@@ -1147,7 +1173,8 @@ You are in AGENTIC MODE.
       break;
     }
 
-    loopIterations++;
+    // Increment loop iterations and track tool calls
+    incrementIterations(budgetState);
   }
 
   // After loop - return the FULL conversation history for session manager

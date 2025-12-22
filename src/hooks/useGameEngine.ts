@@ -40,6 +40,7 @@ import { extractDocumentsFromState } from "./useRAG";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import { useGameAction } from "./useGameAction";
 import { saveImage } from "../utils/imageStorage";
+import { getThemeName } from "../services/ai/utils";
 
 import { preloadAudio } from "../utils/audioLoader";
 import { useToast } from "../contexts/ToastContext";
@@ -337,7 +338,7 @@ export const useGameEngine = () => {
     }
 
     // For slot/UI operations, use a fallback theme; but keep selectedTheme for generation
-    const displayTheme = selectedTheme || "image_based";
+    const displayTheme = selectedTheme || "ImageBased";
 
     const slotId = existingSlotId || createSaveSlot(displayTheme);
     setCurrentSlotId(slotId);
@@ -361,10 +362,7 @@ export const useGameEngine = () => {
           saveId: slotId,
           forkId: 0,
           turnIdx: 0, // Use 0 to indicate seed/starting image
-          storyTitle: t(`${selectedTheme}.name`, {
-            ns: "themes",
-            defaultValue: selectedTheme,
-          }),
+          storyTitle: getThemeName(selectedTheme, t, selectedTheme),
         });
         console.log("[StartNewGame] Saved seed image with ID:", seedImageId);
       } catch (e) {
@@ -376,6 +374,7 @@ export const useGameEngine = () => {
     // Step 1: Generate outline (with separate error handling)
     let outline;
     let logs;
+    let themeConfig;
     try {
       // NOTE: startNewGame creates a completely NEW game, so we don't resume from
       // any previous conversation state. resumeOutlineGeneration should be used
@@ -435,6 +434,7 @@ export const useGameEngine = () => {
 
       outline = result.outline;
       logs = result.logs;
+      themeConfig = result.themeConfig;
       console.log("[StartNewGame] Outline generated (phased)", outline);
     } catch (outlineError) {
       // Outline generation failed - prompt user to retry
@@ -543,6 +543,7 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         outline,
+        themeConfig, // Store resolved theme config from outline generation
         // Clear conversation state after successful generation
         outlineConversation: undefined,
         character: {
@@ -626,6 +627,7 @@ export const useGameEngine = () => {
           const nextState = {
             ...gameStateRef.current,
             outline,
+            themeConfig, // Include resolved theme config
             outlineConversation: undefined,
           };
           await saveToSlot(slotId, nextState);
@@ -692,7 +694,7 @@ export const useGameEngine = () => {
           };
 
           // Store initial prompt for potential retry (backward compatibility)
-          const themeName = t(`${selectedTheme}.name`, { ns: "themes" });
+          const themeName = getThemeName(selectedTheme, t);
           const fallbackPrompt = t("initialPrompt.begin", { theme: themeName });
 
           setGameState((prev) => ({
@@ -857,7 +859,7 @@ export const useGameEngine = () => {
     navigate("/initializing");
 
     try {
-      const { outline, logs } = await generateStoryOutlinePhased(
+      const { outline, logs, themeConfig } = await generateStoryOutlinePhased(
         theme,
         savedConversation.language,
         customContext,
@@ -906,6 +908,7 @@ export const useGameEngine = () => {
       const nextState = {
         ...gameStateRef.current,
         outline,
+        themeConfig, // Store resolved theme config
         outlineConversation: undefined,
         character: {
           ...outline.character,
@@ -1036,7 +1039,7 @@ export const useGameEngine = () => {
           };
 
           // Store initial prompt for potential retry (backward compatibility)
-          const themeName = t(`${theme}.name`, { ns: "themes" });
+          const themeName = getThemeName(theme, t);
           const fallbackPrompt =
             t("initialPrompt.begin", { theme: themeName }) +
             (customContext

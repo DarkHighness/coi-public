@@ -92,7 +92,7 @@
     "error": "生成脚本失败，请重试。",
     "copied": "已复制到剪贴板！"
   },
-  "image_based": {
+  "imageBased": {
     "name": "以图启程"
   },
   "initializing": {
@@ -451,6 +451,8 @@
       "clearerSearchToolHelp": "在搜索结果中返回详细的工具元数据（描述、Schema），帮助 AI 发现可用工具。",
       "maxErrorRetries": "最大错误重试次数",
       "maxErrorRetriesHelp": "发生错误时的最大重试次数（默认：3）",
+      "maxToolCalls": "最大工具调用次数",
+      "maxToolCallsHelp": "每个代理循环的最大工具调用总数（默认：50）",
       "resetTutorials": "重置新手教程",
       "resetTutorialsHelp": "下次访问时重新显示新手引导",
       "resetTutorialsButton": "重置"

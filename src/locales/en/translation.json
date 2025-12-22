@@ -91,7 +91,7 @@
     "error": "Failed to generate script. Please try again.",
     "copied": "Copied to clipboard!"
   },
-  "image_based": {
+  "imageBased": {
     "name": "Image Based"
   },
   "initializing": {
@@ -476,6 +476,8 @@
       "clearerSearchToolHelp": "Return detailed tool metadata (description, schema) in search results to help AI discovery.",
       "maxErrorRetries": "Max Error Retries",
       "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)",
+      "maxToolCalls": "Max Tool Calls",
+      "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
       "resetTutorials": "Reset Tutorials",
       "resetTutorialsHelp": "Show onboarding tutorials again on next visit",
       "resetTutorialsButton": "Reset"

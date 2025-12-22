@@ -55,6 +55,15 @@ import { ALL_DEFINED_TOOLS } from "../../../tools";
 
 import { sessionManager } from "../../sessionManager";
 import { callWithAgenticRetry } from "../retry";
+import {
+  BudgetState,
+  createBudgetState,
+  generateBudgetPrompt,
+  checkBudgetExhaustion,
+  incrementToolCalls,
+  incrementIterations,
+  getBudgetSummary,
+} from "../budgetUtils";
 
 // ============================================================================
 // Types
@@ -458,9 +467,11 @@ export const runSummaryAgenticLoop = async (
 
   // Stage tracking
   let currentStage: SummaryStage = "query";
-  let stageIterations = 0;
-  const maxIterations = 10; // Safety limit
+  let stageIterationsInCurrentStage = 0;
   const maxIterationsPerStage = 5;
+
+  // Initialize budget tracking
+  const budgetState: BudgetState = createBudgetState(settings);
 
   // Dynamic tool tracking - start with base stage tools
   let activeTools: ZodToolDefinition[] = [...getSummaryToolsForStage("query")];
@@ -470,9 +481,22 @@ export const runSummaryAgenticLoop = async (
     createUserMessage(getSummaryStageInstruction(currentStage)),
   );
 
-  while (stageIterations < maxIterations) {
+  while (budgetState.loopIterationsUsed < budgetState.loopIterationsMax) {
+    // Check budget exhaustion
+    const budgetCheck = checkBudgetExhaustion(budgetState);
+    if (budgetCheck.exhausted) {
+      console.warn(`[Summary Loop] ${budgetCheck.message}`);
+      break;
+    }
+
+    // Inject budget status
+    const budgetPrompt = generateBudgetPrompt(budgetState);
+    conversationHistory.push(
+      createUserMessage(`[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`),
+    );
+
     console.log(
-      `[Summary Loop] Stage: ${currentStage}, Iteration: ${stageIterations + 1}, Active Tools: ${activeTools.length}`,
+      `[Summary Loop] Stage: ${currentStage}, Iteration: ${budgetState.loopIterationsUsed + 1}/${budgetState.loopIterationsMax}, Budget: ${getBudgetSummary(budgetState)}`,
     );
 
     // Use active tools (includes dynamically loaded query tools)
@@ -485,11 +509,12 @@ export const runSummaryAgenticLoop = async (
     // Prepare stage input for logging
     const stageInput = {
       stage: currentStage,
-      iteration: stageIterations + 1,
+      iteration: budgetState.loopIterationsUsed + 1,
       conversationHistory: JSON.stringify(conversationHistory, null, 2),
       availableTools: toolConfig.map((t) => t.name),
       segmentCount: input.segmentsToSummarize.length,
       nodeRange: input.nodeRange,
+      budget: getBudgetSummary(budgetState),
     };
 
     // Generate response with retry
@@ -514,9 +539,9 @@ export const runSummaryAgenticLoop = async (
       },
       conversationHistory,
       {
-        maxRetries: settings.extra?.maxErrorRetries ?? 3,
+        maxRetries: budgetState.retriesMax,
         onRetry: (msg, count) => {
-          console.warn(`[Summary Loop] Retry ${count} due to: ${msg}`);
+          console.warn(`[Summary Loop] Retry ${count}/${budgetState.retriesMax} due to: ${msg}`);
         },
       },
     );
@@ -546,6 +571,12 @@ export const runSummaryAgenticLoop = async (
     const textContent = (result as { content?: string }).content;
 
     if (functionCalls && functionCalls.length > 0) {
+      // Track tool calls in budget
+      incrementToolCalls(budgetState, functionCalls.length);
+      console.log(
+        `[Summary Loop] Processing ${functionCalls.length} tool calls. Budget: ${getBudgetSummary(budgetState)}`,
+      );
+
       const turnToolCalls: ToolCallRecord[] = [];
 
       conversationHistory.push(
@@ -657,7 +688,7 @@ export const runSummaryAgenticLoop = async (
             rawResponse,
             request: {
               stage: currentStage,
-              stageIterations,
+              loopIteration: budgetState.loopIterationsUsed,
               segmentCount: input.segmentsToSummarize.length,
               nodeRange: input.nodeRange,
             },
@@ -759,9 +790,10 @@ export const runSummaryAgenticLoop = async (
         rawResponse,
         request: {
           stage: currentStage,
-          iteration: stageIterations + 1,
+          iteration: budgetState.loopIterationsUsed + 1,
           segmentCount: input.segmentsToSummarize.length,
           nodeRange: input.nodeRange,
+          budget: getBudgetSummary(budgetState),
         },
         response: {
           toolCount: turnToolCalls.length,
@@ -770,15 +802,17 @@ export const runSummaryAgenticLoop = async (
       });
       allLogs.push(log);
 
-      stageIterations++;
+      incrementIterations(budgetState);
+      stageIterationsInCurrentStage++;
 
       // Check stage iteration limit
       if (
-        stageIterations >= maxIterationsPerStage &&
+        stageIterationsInCurrentStage >= maxIterationsPerStage &&
         currentStage === "query"
       ) {
         // Force advance to finish stage
         currentStage = "finish";
+        stageIterationsInCurrentStage = 0;
         conversationHistory.push(
           createUserMessage(getSummaryStageInstruction(currentStage)),
         );
@@ -792,7 +826,7 @@ export const runSummaryAgenticLoop = async (
       conversationHistory.push(
         createUserMessage(getSummaryStageInstruction(currentStage)),
       );
-      stageIterations++;
+      incrementIterations(budgetState);
     }
   }
 

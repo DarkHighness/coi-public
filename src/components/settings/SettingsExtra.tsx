@@ -315,6 +315,32 @@ export const SettingsExtra: React.FC = () => {
               className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
             />
           </div>
+
+          {/* Max Tool Calls */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.maxToolCalls") || "Max Tool Calls"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.maxToolCallsHelp") ||
+                  "Maximum total tool calls per agentic loop (default: 50)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={5}
+              max={200}
+              value={extra.maxToolCalls ?? 50}
+              onChange={(e) =>
+                updateExtra(
+                  "maxToolCalls",
+                  Math.max(5, Math.min(200, parseInt(e.target.value) || 50)),
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
         </div>
 
         {/* Reset Tutorials */}

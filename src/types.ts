@@ -300,6 +300,25 @@ export type ActionResult =
   | { success: true; stateChanges: StateChanges }
   | { success: false; error: string };
 
+/**
+ * Resolved theme configuration from i18n at outline generation time.
+ * Stored in GameState to avoid runtime i18n lookups and support imageBased themes.
+ */
+export interface ResolvedThemeConfig {
+  /** Translated theme display name */
+  name: string;
+  /** Writing style guidance for AI generations */
+  narrativeStyle: string;
+  /** One-paragraph world description (from i18n themes.json) */
+  worldSetting: string;
+  /** Background context template */
+  backgroundTemplate: string;
+  /** Example narrative snippet */
+  example: string;
+  /** Whether this is a restricted (IP) theme */
+  isRestricted: boolean;
+}
+
 export interface GameState {
   // Tree Structure: ID -> Segment
   nodes: Record<string, StorySegment>;
@@ -339,6 +358,9 @@ export interface GameState {
   language: string; // Language code used for this game (e.g. "en", "zh")
   customContext?: string; // User-provided custom context for story generation
   seedImageId?: string; // ID of user-uploaded starting image (stored in IndexedDB)
+
+  // Theme configuration (resolved at outline generation, avoids i18n lookups)
+  themeConfig?: ResolvedThemeConfig;
 
   // Stats & Logs
   tokenUsage: TokenUsage;
@@ -394,6 +416,7 @@ export interface OutlineConversationState {
 
 /** Partial results from phased outline generation */
 export interface PartialStoryOutline {
+  phase0?: object; // Image interpretation (imageBased only)
   phase1?: object;
   phase2?: object;
   phase3?: object;
@@ -1119,6 +1142,7 @@ export interface AISettings {
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
     clearerSearchTool?: boolean; // Return detailed tool info (description, schema) in search results
+    maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)
     // Tutorial completion flags
