@@ -154,6 +154,9 @@ function AppContent() {
   const [phaseProgress, setPhaseProgress] =
     useState<OutlinePhaseProgress | null>(null);
 
+  // Seed image URL for InitializingPage background (when starting from image)
+  const [seedImageUrl, setSeedImageUrl] = useState<string | null>(null);
+
   // Global Error Handling (PWA/Chunk/Network errors)
   const [appError, setAppError] = useState<string | null>(null);
 
@@ -710,15 +713,30 @@ function AppContent() {
     return true;
   };
 
-  const handleStartGame = async (theme: string, customContext?: string) => {
+  const handleStartGame = async (
+    theme: string,
+    customContext?: string,
+    seedImage?: Blob,
+  ) => {
     if (await performValidation()) {
       setStreamedText("");
       setPhaseProgress(null);
+
+      // Create URL from seedImage blob if provided
+      if (seedImage) {
+        const url = URL.createObjectURL(seedImage);
+        setSeedImageUrl(url);
+      } else {
+        setSeedImageUrl(null);
+      }
+
       startNewGame(
         theme,
         customContext,
         (text) => setStreamedText((prev) => prev + text),
         (progress) => setPhaseProgress(progress),
+        undefined, // existingSlotId - not resuming
+        seedImage, // Pass seedImage blob for IndexedDB storage
       );
     }
   };
@@ -974,6 +992,7 @@ function AppContent() {
                   isProcessing={gameState.isProcessing}
                   streamedText={streamedText}
                   phaseProgress={phaseProgress}
+                  seedImageUrl={seedImageUrl}
                 />
               </SectionErrorBoundary>
             }

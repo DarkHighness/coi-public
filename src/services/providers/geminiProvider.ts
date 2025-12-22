@@ -37,6 +37,7 @@ import {
   ToolCallResult,
   UnifiedMessage,
   TextContentPart,
+  ImageContentPart,
   ToolCallContentPart,
   ToolResponseContentPart,
   SafetyFilterError,
@@ -1195,6 +1196,57 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
   for (const part of contentArray) {
     if (part.type === "text") {
       parts.push({ text: (part as TextContentPart).text });
+    } else if (part.type === "image") {
+      // Handle image content - convert to Gemini inlineData format
+      // The ImageContentPart type uses mimeType/data, but outline.ts uses legacy { image: { url } } format
+      const legacyPart = part as unknown as {
+        type: "image";
+        image?: { url: string };
+        mimeType?: string;
+        data?: string;
+      };
+
+      // Try new format first (mimeType/data directly on part)
+      if (legacyPart.mimeType && legacyPart.data) {
+        parts.push({
+          inlineData: {
+            mimeType: legacyPart.mimeType,
+            data: legacyPart.data,
+          },
+        } as Part);
+      } else if (legacyPart.image?.url) {
+        // Legacy format: data URL in image.url (used by outline.ts)
+        const imageUrl = legacyPart.image.url;
+        if (imageUrl.startsWith("data:")) {
+          // Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
+          const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (matches) {
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            parts.push({
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            } as Part);
+          } else {
+            console.warn(
+              "[Gemini] Invalid data URL format for image:",
+              imageUrl.substring(0, 50),
+            );
+          }
+        } else {
+          console.warn(
+            "[Gemini] Non-base64 image URL not yet supported:",
+            imageUrl.substring(0, 50),
+          );
+        }
+      } else {
+        console.warn(
+          "[Gemini] Image part has unrecognized format:",
+          Object.keys(part),
+        );
+      }
     } else if (part.type === "tool_use") {
       const toolCall = part as ToolCallContentPart;
       const functionCallPart: any = {

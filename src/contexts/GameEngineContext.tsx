@@ -97,6 +97,8 @@ export interface GameEngineActions {
     customContext?: string,
     onStream?: (text: string) => void,
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
+    existingSlotId?: string,
+    seedImage?: Blob,
   ) => Promise<void>;
   /** Resume outline generation from saved state */
   resumeOutlineGeneration: (

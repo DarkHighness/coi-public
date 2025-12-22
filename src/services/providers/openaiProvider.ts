@@ -35,6 +35,7 @@ import {
   ToolCallResult,
   UnifiedMessage,
   TextContentPart,
+  ImageContentPart,
   ToolCallContentPart,
   ToolResponseContentPart,
   ReasoningContentPart,
@@ -1638,11 +1639,45 @@ export function fromUnifiedMessage(
     }
   }
 
+  // Check for image content - convert to OpenAI vision format
+  const imageParts = message.content.filter(
+    (p): p is ImageContentPart =>
+      p.type === "image" && !!p.mimeType && !!p.data,
+  );
+  const textParts = message.content.filter(
+    (p): p is TextContentPart => p.type === "text",
+  );
+
+  if (imageParts.length > 0 && message.role === "user") {
+    // OpenAI vision format: array of content parts with image_url
+    const contentArray: Array<{
+      type: string;
+      text?: string;
+      image_url?: { url: string };
+    }> = [];
+
+    // Add text parts
+    for (const tp of textParts) {
+      contentArray.push({ type: "text", text: tp.text });
+    }
+
+    // Add image parts with data URL
+    for (const ip of imageParts) {
+      const dataUrl = `data:${ip.mimeType};base64,${ip.data}`;
+      contentArray.push({
+        type: "image_url",
+        image_url: { url: dataUrl },
+      });
+    }
+
+    return {
+      role: "user",
+      content: contentArray as any,
+    };
+  }
+
   // 处理普通文本消息
-  const textContent = message.content
-    .filter((p): p is TextContentPart => p.type === "text")
-    .map((p) => p.text)
-    .join("\n");
+  const textContent = textParts.map((p) => p.text).join("\n");
 
   if (message.role === "system") {
     return buildSystemMessage(textContent);

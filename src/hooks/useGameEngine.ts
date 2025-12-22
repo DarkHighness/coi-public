@@ -310,12 +310,21 @@ export const useGameEngine = () => {
     onStream?: (text: string) => void,
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
     existingSlotId?: string,
+    seedImage?: Blob,
   ) => {
-    let selectedTheme =
-      initialTheme ||
-      Object.keys(THEMES)[
-        Math.floor(Math.random() * Object.keys(THEMES).length)
-      ];
+    // For image-based starts (seedImage provided with no theme), keep theme empty
+    // so outline.ts can detect isImageBasedStart and let Phase 0 generate context
+    let selectedTheme: string;
+    if (seedImage && !initialTheme) {
+      // Image-based start: keep theme empty for Phase 0 to handle
+      selectedTheme = "";
+    } else {
+      selectedTheme =
+        initialTheme ||
+        Object.keys(THEMES)[
+          Math.floor(Math.random() * Object.keys(THEMES).length)
+        ];
+    }
 
     // Preload audio in background if not muted (Mobile optimization: trigger on user click)
     if (
@@ -327,19 +336,42 @@ export const useGameEngine = () => {
       );
     }
 
-    const slotId = existingSlotId || createSaveSlot(selectedTheme);
+    // For slot/UI operations, use a fallback theme; but keep selectedTheme for generation
+    const displayTheme = selectedTheme || "image_based";
+
+    const slotId = existingSlotId || createSaveSlot(displayTheme);
     setCurrentSlotId(slotId);
 
     // Note: RAG context switching is now handled automatically by the SharedWorker
     // when switching saves. No manual reset needed here.
 
-    // Strict Reset
-    resetState(selectedTheme);
+    // Strict Reset - use displayTheme to avoid empty string issues
+    resetState(displayTheme);
 
     // Set processing state BEFORE navigation so InitializingPage sees it
     setGameState((prev) => ({ ...prev, isProcessing: true }));
 
     navigate("/initializing");
+
+    // Save seed image to IndexedDB if provided
+    let seedImageId: string | undefined;
+    if (seedImage) {
+      try {
+        seedImageId = await saveImage(seedImage, {
+          saveId: slotId,
+          forkId: 0,
+          turnIdx: 0, // Use 0 to indicate seed/starting image
+          storyTitle: t(`${selectedTheme}.name`, {
+            ns: "themes",
+            defaultValue: selectedTheme,
+          }),
+        });
+        console.log("[StartNewGame] Saved seed image with ID:", seedImageId);
+      } catch (e) {
+        console.error("[StartNewGame] Failed to save seed image:", e);
+        // Continue without seed image - not a critical failure
+      }
+    }
 
     // Step 1: Generate outline (with separate error handling)
     let outline;
@@ -348,6 +380,23 @@ export const useGameEngine = () => {
       // NOTE: startNewGame creates a completely NEW game, so we don't resume from
       // any previous conversation state. resumeOutlineGeneration should be used
       // to resume from a saved conversation state.
+
+      // Convert seedImage blob to base64 data URL if provided
+      let seedImageBase64: string | undefined;
+      if (seedImage) {
+        try {
+          const reader = new FileReader();
+          seedImageBase64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(seedImage);
+          });
+          console.log("[StartNewGame] Converted seed image to base64");
+        } catch (e) {
+          console.error("[StartNewGame] Failed to convert seed image:", e);
+          // Continue without image - not a critical failure
+        }
+      }
 
       // Use phased generation to avoid "schema produces a constraint that has too many states" errors
       const result = await generateStoryOutlinePhased(
@@ -363,6 +412,8 @@ export const useGameEngine = () => {
           settings: aiSettings,
           // Pass slotId for session isolation
           slotId,
+          // Pass seed image for Phase 0 vision analysis
+          seedImageBase64,
           // Save conversation state after each phase for fault recovery
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
@@ -563,6 +614,7 @@ export const useGameEngine = () => {
         customContext: customContext, // Save custom context to game state
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere), // Initial atmosphere
         time: outline.initialTime || "Day 1",
+        seedImageId, // Store seed image ID for persistence
       }));
 
       // === IMPORTANT: Save outline immediately after generation ===
@@ -627,6 +679,8 @@ export const useGameEngine = () => {
               consequence: c.consequence || undefined,
             })),
             imagePrompt: openingNarrative.imagePrompt || "",
+            // Use seed image if available, otherwise leave undefined for generation
+            imageId: seedImageId || undefined,
             role: "model",
             timestamp: Date.now(),
             segmentIdx: 0,
@@ -657,8 +711,12 @@ export const useGameEngine = () => {
             "[StartNewGame] First segment created from Phase 10 openingNarrative",
           );
 
-          // Trigger image generation for the first node if enabled
-          if (openingNarrative.imagePrompt && !aiSettings.manualImageGen) {
+          // Trigger image generation for the first node if enabled AND no seed image
+          if (
+            openingNarrative.imagePrompt &&
+            !aiSettings.manualImageGen &&
+            !seedImageId
+          ) {
             generateImageForNode(firstNodeId, firstNode);
           }
 

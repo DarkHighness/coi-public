@@ -338,6 +338,7 @@ export interface GameState {
   // Game Context (for save/load and continuity)
   language: string; // Language code used for this game (e.g. "en", "zh")
   customContext?: string; // User-provided custom context for story generation
+  seedImageId?: string; // ID of user-uploaded starting image (stored in IndexedDB)
 
   // Stats & Logs
   tokenUsage: TokenUsage;
@@ -521,6 +522,15 @@ export interface LogEntry {
 
   /** Outline phase number 1-9 (for type="outline") */
   phase?: number;
+
+  /** Turn ID for grouping logs from same agentic loop iteration */
+  turnId?: string;
+
+  /** Fork ID from GameState for grouping logs by fork */
+  forkId?: number;
+
+  /** Turn number from GameState for grouping logs by game turn */
+  turnNumber?: number;
 
   /** Summary stage e.g. "query", "complete" (for type="summary") */
   stage?: string;
@@ -1265,8 +1275,9 @@ export interface UnifiedMessage {
   content: Array<{
     type: "text" | "image" | "audio" | "tool_use" | "tool_result" | "reasoning";
     text?: string;
-    image?: { url: string };
-    audio?: { url: string };
+    // Image content - mimeType and base64 data (without data URL prefix)
+    mimeType?: string; // e.g., "image/jpeg", "image/png", "audio/wav"
+    data?: string; // base64 encoded data
     toolUse?: {
       id: string;
       name: string;

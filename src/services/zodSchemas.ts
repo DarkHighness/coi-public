@@ -1293,6 +1293,133 @@ export const storyOutlineSchema = z.object({
 // ============================================================================
 
 /**
+ * Phase 0: 图片解析 (仅当用户上传图片时使用)
+ * 分析用户上传的图片，生成与主题结构一致的世界背景数据
+ * 输出将用于增强 Phase 1 的世界观构建
+ */
+export const outlinePhase0Schema = z.object({
+  // 核心世界观描述 - 与 themes.json 的 worldSetting 对应
+  worldSetting: z
+    .string()
+    .describe(
+      "A rich description of the world suggested by the image (3-5 sentences). Include: geography, era/technology level, social structure, and any magical/supernatural elements. This should read like a theme's worldSetting.",
+    ),
+
+  // 叙事风格 - 与 themes.json 的 narrativeStyle 对应
+  narrativeStyle: z
+    .string()
+    .describe(
+      "The narrative tone and style suggested by the image (2-3 sentences). Example: 'Dark and atmospheric. Focus on cosmic horror and the insignificance of humanity. Describe environments with oppressive detail.'",
+    ),
+
+  // 背景模板 - 与 themes.json 的 backgroundTemplate 对应
+  backgroundTemplate: z
+    .string()
+    .describe(
+      "A story background template with [placeholders] inspired by the image (2-3 sentences). Example: 'In the ruins of [Ancient Kingdom], you are a [Role] seeking [Goal]. The [Threat] looms on the horizon.'",
+    ),
+
+  // 建议的故事标题
+  suggestedTitle: z
+    .string()
+    .describe(
+      "A creative, evocative title for the adventure inspired by the image. Should hint at the themes and atmosphere.",
+    ),
+
+  // 开场场景描述 - 将作为 Phase 10 的参考
+  openingSceneDescription: z
+    .string()
+    .describe(
+      "A vivid description of the opening scene based on the image (2-3 sentences). This will inform the opening narrative in Phase 10.",
+    ),
+
+  // 主要视觉元素
+  visualElements: z
+    .array(z.string())
+    .describe(
+      "Key visual elements from the image that should appear in the story (e.g., 'crumbling Gothic cathedral', 'blood-red moon', 'figure in tattered robes').",
+    ),
+
+  // 建议的环境主题
+  suggestedEnvTheme: z
+    .enum([
+      "fantasy",
+      "scifi",
+      "cyberpunk",
+      "horror",
+      "mystery",
+      "romance",
+      "royal",
+      "wuxia",
+      "demonic",
+      "ethereal",
+      "modern",
+      "gold",
+      "villain",
+      "sepia",
+      "rose",
+      "war",
+      "sunset",
+      "cold",
+      "violet",
+      "nature",
+      "artdeco",
+      "intrigue",
+      "wasteland",
+      "patriotic",
+      "cyan",
+      "silver",
+      "obsidian",
+    ])
+    .describe("The visual theme most appropriate for the image."),
+
+  // 建议的音频氛围
+  suggestedAmbience: z
+    .enum([
+      "cave",
+      "city",
+      "combat",
+      "desert",
+      "dungeon",
+      "forest",
+      "horror",
+      "market",
+      "mystical",
+      "ocean",
+      "quiet",
+      "rain",
+      "scifi",
+      "snow",
+      "storm",
+      "tavern",
+      "mountain",
+      "night",
+      "temple",
+      "festival",
+      "space",
+      "river",
+      "hell",
+    ])
+    .describe("The audio ambience most appropriate for the image."),
+
+  // 主角在场景中的角色提示
+  protagonistHint: z
+    .string()
+    .nullish()
+    .describe(
+      "If a character is visible in the image, describe their apparent role, situation, or state. This will inform Phase 2.",
+    ),
+
+  // 时间设定提示
+  timePeriodHint: z
+    .string()
+    .nullish()
+    .describe(
+      "The time period or era suggested by the image (e.g., 'Ancient medieval', 'Post-apocalyptic future', 'Year 3024').",
+    ),
+});
+
+/**
  * Phase 1: 世界基础设定
  * 包含故事的基本框架：标题、前提、世界观、时间、主要目标
  */
@@ -1444,6 +1571,7 @@ export const outlinePhase10Schema = z.object({
 });
 
 /** 分阶段 Schema 类型定义 */
+export type OutlinePhase0 = z.infer<typeof outlinePhase0Schema>;
 export type OutlinePhase1 = z.infer<typeof outlinePhase1Schema>;
 export type OutlinePhase2 = z.infer<typeof outlinePhase2Schema>;
 export type OutlinePhase3 = z.infer<typeof outlinePhase3Schema>;

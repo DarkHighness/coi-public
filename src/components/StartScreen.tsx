@@ -4,6 +4,7 @@ import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomContextModal } from "./CustomContextModal";
+import { ImageUploadModal } from "./ImageUploadModal";
 import { SaveSlot, ImportResult } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
@@ -71,7 +72,7 @@ const SaveManager = lazy(() =>
 );
 
 interface StartScreenProps {
-  onStart: (theme: string, customContext?: string) => void;
+  onStart: (theme: string, customContext?: string, seedImage?: Blob) => void;
   onContinue: () => void;
   onLoad: (file: File) => void;
   onOpenSaves: () => void;
@@ -102,6 +103,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [customContext, setCustomContext] = useState("");
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+  const [seedImage, setSeedImage] = useState<Blob | null>(null);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [originalTheme, setOriginalTheme] = useState<string | null>(null);
@@ -174,8 +177,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const handleStart = (theme: string, customContext?: string) => {
     setIsZooming(true);
     setTimeout(() => {
-      onStart(theme, customContext);
+      onStart(theme, customContext, seedImage || undefined);
     }, 1500); // Match animation duration
+  };
+
+  // Handle image upload confirmation - start game directly (image IS the theme)
+  const handleImageConfirm = (imageBlob: Blob) => {
+    setSeedImage(imageBlob);
+    setIsImageUploadOpen(false);
+    // When starting from image, we bypass theme selection entirely
+    // The image itself provides all the context via Phase 0
+    setIsZooming(true);
+    setTimeout(() => {
+      onStart("", undefined, imageBlob); // Empty theme - Phase 0 will generate world from image
+    }, 1500);
   };
 
   // Dynamic background style
@@ -318,6 +333,27 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     d="M14 5l7 7m0 0l-7 7m7-7H3"
                   ></path>
                 </svg>
+              </button>
+
+              {/* Start from Image Button */}
+              <button
+                onClick={() => setIsImageUploadOpen(true)}
+                className="w-full py-3 border border-theme-border hover:border-theme-primary/50 text-theme-muted hover:text-theme-text font-medium text-sm uppercase tracking-wider hover:bg-theme-surface-highlight/50 transition-all rounded-sm flex items-center justify-center gap-2 group"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span>{t("startFromImage")}</span>
               </button>
 
               <div className="pt-6 flex justify-center gap-6">
@@ -480,6 +516,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         onClose={() => setIsCustomModalOpen(false)}
         customContext={customContext}
         setCustomContext={setCustomContext}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isImageUploadOpen}
+        onClose={() => setIsImageUploadOpen(false)}
+        onConfirm={handleImageConfirm}
       />
 
       {/* Save Manager Modal */}

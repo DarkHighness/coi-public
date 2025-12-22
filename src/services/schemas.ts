@@ -27,6 +27,7 @@ export {
   buildFinishTurnSchema,
   buildForceUpdateSchema,
   // 分阶段 Outline Schemas
+  outlinePhase0Schema,
   outlinePhase1Schema,
   outlinePhase2Schema,
   outlinePhase3Schema,
@@ -76,6 +77,7 @@ export type {
   FinishTurnResponse,
   ForceUpdateResponse,
   // 分阶段 Outline 类型
+  OutlinePhase0,
   OutlinePhase1,
   OutlinePhase2,
   OutlinePhase3,

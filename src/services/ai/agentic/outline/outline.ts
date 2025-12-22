@@ -20,6 +20,7 @@ import {
 } from "../../contextCompressor";
 
 import {
+  OutlinePhase0,
   OutlinePhase1,
   OutlinePhase2,
   OutlinePhase3,
@@ -30,6 +31,7 @@ import {
   OutlinePhase8,
   OutlinePhase9,
   OutlinePhase10,
+  outlinePhase0Schema,
   outlinePhase1Schema,
   outlinePhase2Schema,
   outlinePhase3Schema,
@@ -44,6 +46,7 @@ import {
 
 import {
   getOutlineSystemInstruction,
+  getOutlinePhase0Prompt,
   getOutlinePhase1Prompt,
   getOutlinePhase2Prompt,
   getOutlinePhase3Prompt,
@@ -83,8 +86,14 @@ import promptInjectionData from "@/prompt/prompt.toml";
 // Tool Definitions for Outline Generation
 // ============================================================================
 
-// Define tools for each phase
+// Define tools for each phase (Phase 0 is conditional, only for image-based generation)
 const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
+  {
+    name: "submit_phase0_image_interpretation",
+    description:
+      "Submit Phase 0: Image interpretation with visual elements and suggested world context",
+    parameters: outlinePhase0Schema,
+  },
   {
     name: "submit_phase1_world_foundation",
     description:
@@ -162,6 +171,8 @@ export interface PhasedOutlineOptions {
   settings: AISettings;
   /** Unique ID for the save slot to isolate sessions */
   slotId?: string;
+  /** Base64 encoded image data URL for image-based story start (triggers Phase 0) */
+  seedImageBase64?: string;
 }
 
 /**
@@ -189,8 +200,13 @@ export const generateStoryOutlinePhased = async (
   const { instance, modelId } = providerInfo;
   const logs: LogEntry[] = [];
 
-  // Get theme data
-  const themeConfig = THEMES[theme] || THEMES["fantasy"];
+  // Check if this is an image-based start (no theme selected)
+  const isImageBasedStart = !!options?.seedImageBase64 && !theme;
+
+  // Get theme data (skip if image-based start - Phase 0 will generate context)
+  const themeConfig = isImageBasedStart
+    ? null
+    : THEMES[theme] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
   let themeDataWorldSetting: string | undefined;
@@ -198,19 +214,22 @@ export const generateStoryOutlinePhased = async (
   let themeDataExample: string | undefined;
   let themeDataNarrativeStyle: string | undefined;
 
-  if (tFunc) {
-    themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
-    themeDataBackgroundTemplate =
-      tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
-      tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
-    themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
-    themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, {
-      ns: "themes",
-    });
-  } else {
-    const themeData = THEMES[theme] || THEMES["fantasy"];
-    themeDataBackgroundTemplate = themeData.backgroundTemplate;
-    themeDataExample = themeData.example;
+  // Only load theme data if not image-based start
+  if (!isImageBasedStart) {
+    if (tFunc) {
+      themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
+      themeDataBackgroundTemplate =
+        tFunc(`${theme}.backgroundTemplate`, { ns: "themes" }) ||
+        tFunc(`fantasy.backgroundTemplate`, { ns: "themes" });
+      themeDataExample = tFunc(`${theme}.example`, { ns: "themes" });
+      themeDataNarrativeStyle = tFunc(`${theme}.narrativeStyle`, {
+        ns: "themes",
+      });
+    } else {
+      const themeData = THEMES[theme] || THEMES["fantasy"];
+      themeDataBackgroundTemplate = themeData.backgroundTemplate;
+      themeDataExample = themeData.example;
+    }
   }
 
   // Build system instruction
@@ -261,24 +280,69 @@ export const generateStoryOutlinePhased = async (
     // Start fresh
     conversationHistory = [];
     partial = {};
-    currentPhase = 1;
 
-    // Add initial task instruction
-    conversationHistory.push(
-      createUserMessage(`[OUTLINE GENERATION TASK]
-Generate a story outline in 10 phases. Each phase builds upon the previous ones.
+    // If seedImage provided, start at Phase 0 (image interpretation)
+    // Otherwise start at Phase 1 (normal flow)
+    const hasImage = !!options.seedImageBase64;
+    currentPhase = hasImage ? 0 : 1;
+
+    // Build initial task message
+    const totalPhases = hasImage ? 11 : 10; // Phase 0 + 1-10 or just 1-10
+    const phaseRange = hasImage ? "0-10" : "1-10";
+
+    // Create the initial task instruction
+    const taskText = `[OUTLINE GENERATION TASK]
+Generate a story outline in ${totalPhases} phases (Phases ${phaseRange}). Each phase builds upon the previous ones.
 
 Theme: ${theme}
 Language: ${language}
 ${customContext ? `Custom Context: ${customContext}` : ""}
+${hasImage ? `\n**An image has been provided by the user.** This image should inspire the story world and atmosphere. Start with Phase 0 to analyze the image.` : ""}
 
 **PROCESS:**
 - You will receive one phase instruction at a time
 - For each phase, you MUST call the provided tool to submit your data
 - **CRITICAL**: You must invoke the tool function directly. Do NOT return the schema as a JSON text block.
 - After submitting, wait for the next phase instruction
-`),
-    );
+`;
+
+    // If we have an image, create a message with both image and text
+    if (hasImage && options.seedImageBase64) {
+      // Parse the data URL to extract mimeType and base64 data
+      // Format: data:image/jpeg;base64,/9j/4AAQ...
+      const dataUrlMatch = options.seedImageBase64.match(
+        /^data:([^;]+);base64,(.+)$/,
+      );
+      if (dataUrlMatch) {
+        const mimeType = dataUrlMatch[1];
+        const base64Data = dataUrlMatch[2];
+        conversationHistory.push({
+          role: "user",
+          content: [
+            { type: "image" as const, mimeType, data: base64Data },
+            { type: "text" as const, text: taskText },
+          ],
+        });
+      } else {
+        // Fallback: assume it's just base64 without data URL prefix
+        console.warn(
+          "[OutlineAgentic] seedImageBase64 is not a data URL, assuming JPEG",
+        );
+        conversationHistory.push({
+          role: "user",
+          content: [
+            {
+              type: "image" as const,
+              mimeType: "image/jpeg",
+              data: options.seedImageBase64,
+            },
+            { type: "text" as const, text: taskText },
+          ],
+        });
+      }
+    } else {
+      conversationHistory.push(createUserMessage(taskText));
+    }
   }
 
   // Helper to save checkpoint
@@ -304,9 +368,11 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
     error?: string,
   ) => {
     if (options?.onPhaseProgress) {
+      const hasImage = !!options.seedImageBase64;
+      const totalPhases = hasImage ? 11 : 10;
       options.onPhaseProgress({
         phase,
-        totalPhases: 10,
+        totalPhases,
         phaseName: `initializing.outline.phase.${phase}.name`,
         status,
         partialOutline: partial,
@@ -433,15 +499,23 @@ ${customContext ? `Custom Context: ${customContext}` : ""}
   };
 
   // Agentic loop for each phase
+  // Phase 0 is at index 0, Phase 1 at index 1, etc.
   while (currentPhase <= 10) {
     const phaseNum = currentPhase;
-    const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum - 1];
+    // Tool index: Phase 0 -> index 0, Phase 1 -> index 1, etc.
+    const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum];
 
     console.log(`[OutlineAgentic] Starting Phase ${phaseNum}`);
     reportProgress(phaseNum, "starting");
 
     // Add phase-specific prompt
-    let phasePrompt = getPhasePrompt(phaseNum, theme, language, customContext);
+    let phasePrompt = getPhasePrompt(
+      phaseNum,
+      theme,
+      language,
+      customContext,
+      !!options.seedImageBase64,
+    );
     if (phasePrompt) {
       // Dynamically append tool usage emphasis
       phasePrompt += `\n\nUse tool \`${phaseTool.name}\` to submit.`;
@@ -568,10 +642,18 @@ function getPhasePrompt(
   theme: string,
   language: string,
   customContext?: string,
+  hasImageContext?: boolean,
 ): string | null {
   switch (phase) {
+    case 0:
+      return getOutlinePhase0Prompt(language);
     case 1:
-      return getOutlinePhase1Prompt(theme, language, customContext);
+      return getOutlinePhase1Prompt(
+        theme,
+        language,
+        customContext,
+        hasImageContext,
+      );
     case 2:
       return getOutlinePhase2Prompt();
     case 3:
@@ -589,7 +671,7 @@ function getPhasePrompt(
     case 9:
       return getOutlinePhase9Prompt();
     case 10:
-      return getOutlinePhase10Prompt();
+      return getOutlinePhase10Prompt(hasImageContext);
     default:
       return null;
   }

@@ -5,6 +5,7 @@ import { preloadAudio } from "../../utils/audioLoader";
 
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
+import { InitializingButterflies } from "../effects/InitializingButterflies";
 import type { OutlinePhaseProgress } from "../../services/aiService";
 
 // Phase descriptions for animated display
@@ -79,6 +80,7 @@ interface InitializingPageProps {
   isProcessing?: boolean;
   streamedText?: string;
   phaseProgress?: OutlinePhaseProgress | null;
+  seedImageUrl?: string | null;
 }
 
 export const InitializingPage: React.FC<InitializingPageProps> = ({
@@ -86,6 +88,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   isProcessing = false,
   streamedText = "",
   phaseProgress = null,
+  seedImageUrl = null,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -96,6 +99,8 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   const [displayedText, setDisplayedText] = useState("");
   const [textIndex, setTextIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
+  const [zoomScale, setZoomScale] = useState(1); // For finale zoom effect
+  const [isFinaleActive, setIsFinaleActive] = useState(false);
 
   // Wake Lock
   useWakeLock(isProcessing);
@@ -182,19 +187,81 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   // Combine streamed text with phase description animation
   const animatedText = streamedText || displayedText;
 
-  // Calculate progress percentage
+  // Calculate progress percentage with fractional progress within each phase
+  // Each phase contributes: starting = +0.3, generating = +0.6, completed = +1.0
   const progressPercent = phaseProgress
-    ? ((phaseProgress.status === "completed"
-        ? phaseProgress.phase
-        : phaseProgress.phase - 1) /
-        phaseProgress.totalPhases) *
-      100
+    ? (() => {
+        const baseProgress = phaseProgress.phase; // completed phases
+        let phaseContribution = 0;
+        if (phaseProgress.status === "starting") {
+          phaseContribution = 0.3;
+        } else if (phaseProgress.status === "generating") {
+          phaseContribution = 0.6;
+        } else if (phaseProgress.status === "completed") {
+          phaseContribution = 1.0;
+        }
+        // For non-completed phases, add partial progress
+        const effectiveProgress =
+          phaseProgress.status === "completed"
+            ? baseProgress
+            : baseProgress - 1 + phaseContribution;
+        return (
+          (Math.max(0, effectiveProgress) / phaseProgress.totalPhases) * 100
+        );
+      })()
     : 0;
 
+  // Calculate blur amount for seed image background
+  // Start at 32px blur, decrease to 4px as progress increases
+  const blurAmount = useMemo(() => {
+    const maxBlur = 32;
+    const minBlur = 4;
+    const progress = progressPercent / 100;
+    return maxBlur - (maxBlur - minBlur) * progress;
+  }, [progressPercent]);
+
+  // Trigger finale zoom effect when all phases complete (100%)
+  useEffect(() => {
+    if (progressPercent >= 100 && !isFinaleActive) {
+      setIsFinaleActive(true);
+      // Zoom out briefly then zoom in
+      setZoomScale(0.9); // Zoom out
+      setTimeout(() => {
+        setZoomScale(1.1); // Zoom in
+      }, 400);
+      setTimeout(() => {
+        setZoomScale(1); // Return to normal
+      }, 800);
+    }
+  }, [progressPercent, isFinaleActive]);
+
   return (
-    <div className="h-dvh w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden">
-      {/* Animated Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-theme-bg via-theme-surface to-theme-bg opacity-80 z-0" />
+    <div
+      className="h-dvh w-full flex flex-col items-center justify-center bg-theme-bg text-theme-primary relative overflow-hidden"
+      style={{
+        transform: `scale(${zoomScale})`,
+        transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+    >
+      {/* Seed Image Background with Dynamic Blur */}
+      {seedImageUrl && (
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-1000 ease-out"
+          style={{
+            backgroundImage: `url(${seedImageUrl})`,
+            filter: `blur(${blurAmount}px)`,
+            transform: "scale(1.1)", // Slightly larger to avoid blur edge artifacts
+          }}
+        />
+      )}
+
+      {/* Dark overlay for seed image to ensure text readability */}
+      {seedImageUrl && <div className="absolute inset-0 z-0 bg-black/40" />}
+
+      {/* Animated Gradient Background - reduced opacity when seed image present */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br from-theme-bg via-theme-surface to-theme-bg z-0 ${seedImageUrl ? "opacity-30" : "opacity-80"}`}
+      />
 
       {/* Animated Mesh Gradient Overlay */}
       <div className="absolute inset-0 opacity-30 z-0">
@@ -212,9 +279,16 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
         />
       </div>
 
+      {/* Butterflies - increase with phase progress */}
+      <InitializingButterflies
+        currentPhase={phaseProgress?.phase ?? 1}
+        totalPhases={phaseProgress?.totalPhases ?? 10}
+        isComplete={progressPercent >= 100}
+      />
+
       {/* Particle Effect */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-theme-primary/40 rounded-full"
@@ -329,7 +403,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                   <span className="text-theme-primary font-bold">
                     {phaseProgress.status === "completed"
                       ? phaseProgress.phase
-                      : phaseProgress.phase - 1}
+                      : Math.max(0, phaseProgress.phase - 1)}
                   </span>
                   <span className="text-theme-muted/60">/</span>
                   <span className="text-theme-muted">

@@ -20,7 +20,8 @@ export interface TextPart {
 
 export interface ImagePart {
   type: "image";
-  image: { url: string };
+  mimeType: string; // e.g., "image/jpeg", "image/png"
+  data: string; // base64 encoded image data (without data URL prefix)
 }
 
 export interface AudioPart {
@@ -224,18 +225,31 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         .filter((p): p is TextPart => p.type === "text")
         .map((p) => ({ text: p.text }));
 
-      // Validate that we have at least one text part
-      if (textParts.length === 0) {
+      // Handle image parts for vision API - now using standard mimeType/data format
+      const imageParts = msg.content
+        .filter((p): p is ImagePart => p.type === "image")
+        .map((p) => ({
+          inlineData: {
+            mimeType: p.mimeType,
+            data: p.data,
+          },
+        }))
+        .filter((p) => p.inlineData.data); // Filter out empty data
+
+      const allParts = [...imageParts, ...textParts];
+
+      // Validate that we have at least one part
+      if (allParts.length === 0) {
         console.warn(
-          "[toGeminiFormat] Message with no text parts, adding empty text to prevent API error:",
+          "[toGeminiFormat] Message with no parts, adding empty text to prevent API error:",
           msg,
         );
-        textParts.push({ text: "" });
+        allParts.push({ text: "" });
       }
 
       return {
         role: msg.role === "assistant" ? "model" : msg.role,
-        parts: textParts,
+        parts: allParts,
       };
     })
     .filter((msg) => msg.parts && msg.parts.length > 0); // Filter out messages with empty parts
@@ -307,16 +321,44 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
       continue;
     }
 
-    // Handle regular text messages
-    const textContent = msg.content
-      .filter((p): p is TextPart => p.type === "text")
-      .map((p) => p.text)
-      .join("\n");
+    // Handle regular messages (text and/or images)
+    const textParts = msg.content.filter(
+      (p): p is TextPart => p.type === "text",
+    );
+    const imageParts = msg.content.filter(
+      (p): p is ImagePart => p.type === "image",
+    );
 
-    result.push({
-      role: msg.role,
-      content: textContent,
-    });
+    // If we have images, use vision content format (array)
+    if (imageParts.length > 0) {
+      const contentArray: any[] = [];
+
+      // Add text content first
+      for (const tp of textParts) {
+        contentArray.push({ type: "text", text: tp.text });
+      }
+
+      // Add image content - construct data URL from mimeType/data
+      for (const ip of imageParts) {
+        const dataUrl = `data:${ip.mimeType};base64,${ip.data}`;
+        contentArray.push({
+          type: "image_url",
+          image_url: { url: dataUrl },
+        });
+      }
+
+      result.push({
+        role: msg.role,
+        content: contentArray,
+      });
+    } else {
+      // Text only - use simple string content
+      const textContent = textParts.map((p) => p.text).join("\n");
+      result.push({
+        role: msg.role,
+        content: textContent,
+      });
+    }
   }
 
   return result;

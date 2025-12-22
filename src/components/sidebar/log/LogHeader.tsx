@@ -62,7 +62,8 @@ export const LogHeader: React.FC<LogHeaderProps> = ({
           </span>
         )}
         <span className="text-xs text-theme-muted">
-          {new Date(log.timestamp).toLocaleTimeString()}
+          {new Date(log.timestamp).toLocaleTimeString()}.
+          {String(log.timestamp % 1000).padStart(3, "0")}
         </span>
         <svg
           className={`w-4 h-4 text-theme-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}

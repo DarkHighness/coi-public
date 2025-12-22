@@ -150,6 +150,26 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
           // Use content-visibility: auto for items not near viewport for performance
           const useContentVisibility = index > 10;
 
+          // Determine if we need a phase separator for outline logs
+          // Show separator when phase number changes between consecutive outline logs
+          const prevLog = index > 0 ? sortedLogs[index - 1] : null;
+          const showPhaseSeparator =
+            log.type === "outline" &&
+            log.phase !== undefined &&
+            prevLog?.type === "outline" &&
+            prevLog?.phase !== undefined &&
+            log.phase !== prevLog.phase;
+
+          // Determine if we need a turn separator for tool logs
+          // Show separator when turnNumber or forkId changes between consecutive tool logs
+          const showTurnSeparator =
+            log.type === "tool" &&
+            log.turnNumber !== undefined &&
+            prevLog?.type === "tool" &&
+            prevLog?.turnNumber !== undefined &&
+            (log.turnNumber !== prevLog.turnNumber ||
+              log.forkId !== prevLog.forkId);
+
           return (
             <div
               key={log.id}
@@ -160,6 +180,30 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   : "auto",
               }}
             >
+              {/* Phase separator for outline logs */}
+              {showPhaseSeparator && (
+                <div className="flex items-center gap-3 py-4 text-theme-muted">
+                  <div className="flex-1 h-px bg-theme-primary/30" />
+                  <span className="text-xs uppercase tracking-widest font-bold text-theme-primary/60">
+                    {t("logPanel.phase", { defaultValue: "Phase" })}{" "}
+                    {sortOrder === "newest" ? prevLog?.phase : log.phase}
+                  </span>
+                  <div className="flex-1 h-px bg-theme-primary/30" />
+                </div>
+              )}
+              {/* Turn separator for tool logs */}
+              {showTurnSeparator && (
+                <div className="flex items-center gap-3 py-3 text-theme-muted">
+                  <div className="flex-1 h-px bg-theme-secondary/30" />
+                  <span className="text-xs uppercase tracking-widest font-bold text-theme-secondary/60">
+                    {t("logPanel.turn", { defaultValue: "Turn" })}{" "}
+                    {sortOrder === "newest"
+                      ? prevLog?.turnNumber
+                      : log.turnNumber}
+                  </span>
+                  <div className="flex-1 h-px bg-theme-secondary/30" />
+                </div>
+              )}
               <LogEntryCard
                 log={log}
                 isExpanded={expandedLogs.has(log.id)}

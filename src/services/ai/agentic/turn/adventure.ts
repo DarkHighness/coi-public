@@ -738,6 +738,9 @@ You are in AGENTIC MODE.
   }
 
   while (loopIterations < maxLoopIterations) {
+    // Generate unique turnId for this iteration to group related logs
+    const turnId = `turn_${Date.now()}_${loopIterations}`;
+
     console.log(
       `[Agentic Loop] Iteration: ${loopIterations + 1}, Active Tools: ${activeTools.length}`,
     );
@@ -1130,6 +1133,9 @@ You are in AGENTIC MODE.
             toolName: call.name,
             toolInput: call.args,
             toolOutput: output,
+            turnId,
+            forkId: inputState.forkId,
+            turnNumber: inputState.turnNumber,
           }),
         );
       }

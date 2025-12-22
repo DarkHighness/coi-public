@@ -91,11 +91,18 @@
     "error": "Failed to generate script. Please try again.",
     "copied": "Copied to clipboard!"
   },
+  "image_based": {
+    "name": "Image Based"
+  },
   "initializing": {
     "audioPreload": "Audio Preload",
     "timeElapsed": "Time Elapsed",
     "outline": {
       "phase": {
+        "0": {
+          "name": "Interpreting Image",
+          "desc": "Analyzing the uploaded image to inspire the story world"
+        },
         "1": {
           "name": "Creating World",
           "desc": "Establishing world foundation and setting"
@@ -139,6 +146,13 @@
       }
     },
     "phaseDescriptions": {
+      "0": [
+        "Peering into the image's depths...",
+        "Extracting colors and atmosphere...",
+        "Translating visual elements into narrative...",
+        "Discovering the world hidden in pixels...",
+        "Letting the image speak its story..."
+      ],
       "1": [
         "Weaving the fabric of reality...",
         "Establishing the laws of magic and nature...",
@@ -259,6 +273,16 @@
   "validate-connection": "Validating connections...",
   "customContext": "Custom Story Background (Optional)",
   "customContextPlaceholder": "E.g., 'I am a detective in 1920s Shanghai' or 'A dragon reborn as a human'.",
+  "imageUpload": {
+    "title": "Start from Image",
+    "subtitle": "Upload an image to inspire your story world",
+    "dropHere": "Drop your image here",
+    "orClick": "or click to select",
+    "clickToChange": "Click to change image",
+    "tips": "The AI will analyze your image to generate a unique world setting, characters, and story premise. High-quality, atmospheric images work best.",
+    "confirm": "Use This Image"
+  },
+  "startFromImage": "Start from Image",
   "randomTheme": "Random",
   "randomThemeDesc": "Let fate decide your adventure",
   "startGame": "Start Adventure",
@@ -1227,6 +1251,8 @@
   },
 
   "logPanel": {
+    "phase": "Phase",
+    "turn": "Turn",
     "input": "Input",
     "output": "Output",
     "tokens": "tokens",
@@ -1266,6 +1292,7 @@
       "summary-query": "Summary - Query",
       "summary-complete": "Summary - Complete",
       "summary-error": "Summary - Error",
+      "outline-phase0": "Outline - Image Based",
       "outline-phase1": "Outline - World Foundation",
       "outline-phase2": "Outline - Character",
       "outline-phase3": "Outline - Locations",

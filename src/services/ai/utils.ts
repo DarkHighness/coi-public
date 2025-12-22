@@ -191,6 +191,9 @@ export interface CreateLogEntryParams {
   toolInput?: Record<string, any>;
   toolOutput?: any;
   phase?: number;
+  turnId?: string;
+  forkId?: number;
+  turnNumber?: number;
   stage?: string;
   imagePrompt?: string;
   imageResolution?: string;
@@ -271,6 +274,9 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
     toolInput,
     toolOutput,
     phase: inferredPhase,
+    turnId: params.turnId,
+    forkId: params.forkId,
+    turnNumber: params.turnNumber,
     stage: inferredStage,
     imagePrompt,
     imageResolution,
