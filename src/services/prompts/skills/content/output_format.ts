@@ -25,6 +25,18 @@ export function getOutputFormatContent(ctx: SkillContext): string {
     **Simply invoke the tool.** The system handles the JSON formatting.
   </native_tool_calling>
 
+  <parallel_tool_execution>
+    **MAXIMUM DENSITY PRINCIPLE**:
+    - **One Turn, Many Actions**: Do NOT spread logical steps across multiple "user-visible" turns.
+    - **Parallelism**: You can and SHOULD call multiple tools in the same turn.
+    - **Bundling**: If a player buys a sword, you should:
+      1. Call \`add_inventory\` (add sword)
+      2. Call \`remove_inventory\` (pay coin)
+      3. Call \`update_npc\` (merchant inventory change)
+      4. Call \`finish_turn\` (narrate the exchange)
+    - **ALL IN ONE RESPONSE**: Do not stop after the first tool. Keep going until the logical transaction is complete.
+  </parallel_tool_execution>
+
   <when_to_call_finish_turn>
     **SEQUENCE - Follow this order EVERY turn**:
 

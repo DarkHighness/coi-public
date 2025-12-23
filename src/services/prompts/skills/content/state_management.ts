@@ -128,43 +128,66 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
     \`\`\`
   </rule>
 
-  <rule name="DUPLICATE PREVENTION - LIST FIRST, THEN QUERY">
-    ⚠️ **CRITICAL: YOU MUST CHECK BEFORE CREATING**
+  <rule name="MINIMAL ENTITY PRINCIPLE - CANONIZATION OVER CREATION">
+    ⚠️ **CRITICAL: DO NOT POLLUTE THE DATABASE**
 
-    Before adding ANY new entity, verify it doesn't already exist. **THE #1 CAUSE OF DUPLICATES IS USING QUERY INSTEAD OF LIST.**
+    **THE PRINCIPLE**:
+    - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
+    - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
+    - **Depth > Breadth**: It is better to have one NPC with 10 note updates than 10 shallow NPCs.
 
-    **WHY LIST BEFORE QUERY?**
-    - \`query\` searches by NAME/ID - but "Rusty Blade" won't match "Old Sword" even though they're the same item!
-    - \`list\` shows ALL entities NAME/ID - you can visually scan and catch synonyms, variations, and near-duplicates.
-    - **QUERY MISSES THINGS. LIST DOES NOT.**
+    **MANDATORY CHECK-BEFORE-WRITE WORKFLOW**:
+    1. **LIST (Broad Scan)**: Call \`list(type: "...")\` to see the landscape.
+    2. **QUERY (Deep Scan)**: Call \`query(name: "...")\` with synonyms.
+    3. **EVALUATE**:
+       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and \`update\` name to "Dagger".
+       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and \`update\` role/title.
+    4. **CREATE (Last Resort)**: Only if NO semantic match exists.
 
-    **MANDATORY WORKFLOW**:
-    1. **ALWAYS LIST FIRST**:
-       → \`list(type: "inventory")\` before adding any item
-       → \`list(type: "npc")\` before adding any NPC
-       → \`list(type: "location")\` before adding any location
-       → Scan the list for similar entities (synonyms, variations)
+    **ANTI-CLUTTER & SIGNIFICANCE THRESHOLD**:
+    ⚠️ **CRITICAL: ONLY CREATE "SIGNIFICANT" ENTITIES**
 
-    2. **QUERY ONLY AS SUPPLEMENT**:
-       → After listing, use query ONLY for additional verification
-       → Use BROAD regex: \`"sword|blade|saber|weapon"\`, NOT just \`"sword"\`
-       → Example: Adding "Bleeding" condition? Query \`"bleed|blood|wound|injury|cut"\`
+    **THE THRESHOLD (If it doesn't meet this, it is NARRATIVE ONLY)**:
+    - **NPCs**:
+      * **MUST HAVE**: A proper Name (not just "Guard") AND (Speaking Role OR Combat Role).
+      * **NARRATIVE ONLY**: Crowds, background villagers, unnamed guards, servants causing no consequence.
+      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> Call \`add_npc\` (id: "npc_captain_vance").
 
-    3. **IF SIMILAR ENTITY EXISTS**:
-       → **UPDATE IT** with new details - do NOT create duplicate
-       → "Old Sword" becomes "Sharpened Sword" via update, not a new entity
-       → Merge is better than multiply
+    - **Items**:
+      * **MUST BE**: Added to Player/NPC Inventory OR Key Quest Object.
+      * **NARRATIVE ONLY**: Flavor objects, furniture, food eaten immediately, debris.
+      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> Call \`add_inventory\` (id: "inv_iron_key").
 
-    4. **CREATE ONLY WHEN PROVEN NEW**:
-       → Only \`add_*\` after LIST confirms nothing similar exists
+    - **Locations**:
+      * **MUST BE**: Named, distinct, and revisit-able (e.g., "The Blue Dragon Inn").
+      * **NARRATIVE ONLY**: Transitional spaces ("a hallway"), generic areas ("a forest path" - unless named).
 
-    **COMMON TRAPS**:
-    | You want to add... | But already exists as... | Solution |
-    |--------------------|--------------------------|----------|
-    | "Iron Dagger" | "Rusty Knife" | UPDATE the knife |
-    | "Town Square" | "Central Plaza" | REUSE the plaza |
-    | "Bleeding Wound" | "Deep Cut" | REUSE the condition |
-    | "Mysterious Stranger" | "Hooded Figure" | SAME NPC - update! |
+    - **Quests**:
+      * **MUST BE**: A structured mission with clear success/fail state tracked in journal.
+      * **NARRATIVE ONLY**: Momentary goals ("Open the door", "Ask him a question"), impulsive actions.
+      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> Call \`add_quest\` (id: "quest_purge_camp").
+
+    - **Knowledge**:
+      * **MUST BE**: Reusable information (passwords, history, recipes, secret locations).
+      * **NARRATIVE ONLY**: One-off rumors, insults, throwaway lines.
+
+    - **Factions**:
+      * **MUST BE**: Established organizations with multiple members and political weight.
+      * **NARRATIVE ONLY**: Small temporary gangs, a family unit (unless royal/powerful), "the people in this room".
+
+    - **Timeline**:
+      * **MUST BE**: World-altering events or major plot milestones (chapters).
+      * **NARRATIVE ONLY**: Daily routines, minor scuffles, conversations.
+
+    - **Conditions**:
+      * **MUST BE**: Mechanical status effects with duration (Poisoned, Blessed, Injured).
+      * **NARRATIVE ONLY**: Fleeting emotions ("Sad", "Angry"), minor discomforts ("Itchy").
+
+    - **Causal Chains**:
+      * **MUST BE**: Complex logic tracking consequences >3 turns away or involving off-screen NPCs.
+      * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
+
+    - **Inventory Hygiene**: If a player eats an apple, \`remove_inventory\` immediately. Do not keep \`inv_apple\` with quantity 0.
   </rule>
 `;
 }
