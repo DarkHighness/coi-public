@@ -196,9 +196,17 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       if (mountedSegmentIds.current === null && currentHistory.length > 0) {
         // Capture all segment IDs that existed at this moment
         mountedSegmentIds.current = new Set(currentHistory.map((s) => s.id));
-        // Mark all these as already played (no animation for pre-existing content)
+
+        // Only mark as played if there's more than one segment,
+        // or if we're not at the very beginning of turn 1.
+        // This allows the very first opening narrative to animate.
+        const isInitialFirstTurn = currentHistory.length === 1 && gameState.turnNumber === 1;
+
+        // Mark pre-existing content as already played
         currentHistory.forEach((segment) => {
-          playedAnimations.current.add(segment.id);
+          if (!isInitialFirstTurn) {
+            playedAnimations.current.add(segment.id);
+          }
         });
 
         // Scroll to last viewed segment or bottom on initial mount (continue game scenario)

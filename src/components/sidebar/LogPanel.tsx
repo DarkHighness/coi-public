@@ -161,14 +161,22 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
             log.phase !== prevLog.phase;
 
           // Determine if we need a turn separator for tool logs
-          // Show separator when turnNumber or forkId changes between consecutive tool logs
+          // Show separator when turnNumber or forkId changes between consecutive logs
+          // Handle Phase 10 outline as Turn 1 for consistent separation
+          const getLogTurn = (l: typeof log | null) => {
+            if (!l) return undefined;
+            if (l.type === "tool") return l.turnNumber;
+            if (l.type === "outline" && l.phase === 10) return 1;
+            return undefined;
+          };
+
+          const logTurn = getLogTurn(log);
+          const prevLogTurn = getLogTurn(prevLog);
+
           const showTurnSeparator =
-            log.type === "tool" &&
-            log.turnNumber !== undefined &&
-            prevLog?.type === "tool" &&
-            prevLog?.turnNumber !== undefined &&
-            (log.turnNumber !== prevLog.turnNumber ||
-              log.forkId !== prevLog.forkId);
+            logTurn !== undefined &&
+            prevLogTurn !== undefined &&
+            (logTurn !== prevLogTurn || log.forkId !== prevLog.forkId);
 
           return (
             <div
@@ -197,9 +205,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
                   <div className="flex-1 h-px bg-theme-secondary/30" />
                   <span className="text-xs uppercase tracking-widest font-bold text-theme-secondary/60">
                     {t("logPanel.turn", { defaultValue: "Turn" })}{" "}
-                    {sortOrder === "newest"
-                      ? prevLog?.turnNumber
-                      : log.turnNumber}
+                    {sortOrder === "newest" ? prevLogTurn : logTurn}
                   </span>
                   <div className="flex-1 h-px bg-theme-secondary/30" />
                 </div>
