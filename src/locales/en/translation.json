@@ -456,6 +456,13 @@
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
+      "genderPreference": "Gender Preference",
+      "genderPreferenceHelp": "Force the protagonist's gender when generating stories.",
+      "genderPreferences": {
+        "male": "Male",
+        "female": "Female",
+        "none": "No Preference"
+      },
       "promptInjection": "Prompt Injection",
       "promptInjectionHelp": "Inject jailbreak prompts based on model keywords.",
       "disableImagePrompt": "Disable Image Prompt",

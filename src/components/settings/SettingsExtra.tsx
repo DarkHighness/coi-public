@@ -84,6 +84,39 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Gender Preference */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.genderPreference") || "Gender Preference"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.genderPreferenceHelp") ||
+                "Force the protagonist's gender when generating stories."}
+            </div>
+          </div>
+          <select
+            value={extra.genderPreference || "none"}
+            onChange={(e) =>
+              updateExtra(
+                "genderPreference",
+                e.target.value as "male" | "female" | "none",
+              )
+            }
+            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+          >
+            <option value="none">
+              {t("settings.extra.genderPreferences.none") || "No Preference"}
+            </option>
+            <option value="male">
+              {t("settings.extra.genderPreferences.male") || "Male"}
+            </option>
+            <option value="female">
+              {t("settings.extra.genderPreferences.female") || "Female"}
+            </option>
+          </select>
+        </div>
+
         {/* Disable Image Prompt Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>

@@ -185,6 +185,17 @@ export function formatZodError(error: ZodError): string {
 }
 
 /**
+ * Internal fields that should not be exposed to AI
+ */
+const INTERNAL_FIELDS = new Set([
+  "id",
+  "createdAt",
+  "updatedAt",
+  "modifiedAt",
+  "lastAccess",
+]);
+
+/**
  * Generate a simplified, JSON-like schema representation for the AI
  */
 export function getToolSchemaHint(
@@ -193,44 +204,56 @@ export function getToolSchemaHint(
 ): string {
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
-    const lines = Object.entries(shape).map(([key, value]) => {
-      let fieldSchema = value as ZodTypeAny;
-      let isOptional = fieldSchema instanceof ZodOptional;
-      let description = fieldSchema.description;
+    const lines = Object.entries(shape)
+      .filter(([key, value]) => {
+        // Filter out internal system fields
+        if (INTERNAL_FIELDS.has(key)) return false;
 
-      // Unwrap optional/nullable for type handling
-      let innerSchema = fieldSchema;
-      while (
-        innerSchema instanceof ZodOptional ||
-        innerSchema instanceof ZodNullable
-      ) {
-        if (innerSchema instanceof ZodOptional) isOptional = true;
-        innerSchema = innerSchema._def.innerType;
-      }
+        // Filter out fields marked as INVISIBLE
+        const fieldSchema = value as ZodTypeAny;
+        const description = fieldSchema.description;
+        if (description && description.includes("INVISIBLE")) return false;
 
-      // Use innerSchema for description if main schema has none
-      if (!description) description = innerSchema.description;
+        return true;
+      })
+      .map(([key, value]) => {
+        let fieldSchema = value as ZodTypeAny;
+        let isOptional = fieldSchema instanceof ZodOptional;
+        let description = fieldSchema.description;
 
-      let typeStr = "";
-      if (innerSchema instanceof ZodObject) {
-        typeStr = getToolSchemaHint(innerSchema, indent + "  ");
-      } else if (
-        innerSchema instanceof ZodArray &&
-        innerSchema._def.type instanceof ZodObject
-      ) {
-        typeStr = `Array<${getToolSchemaHint(
-          innerSchema._def.type,
-          indent + "  ",
-        )}>`;
-      } else if (innerSchema instanceof ZodArray) {
-        typeStr = getGenericTypeHint(innerSchema, indent);
-      } else {
-        typeStr = getGenericTypeHint(innerSchema, indent);
-      }
+        // Unwrap optional/nullable for type handling
+        let innerSchema = fieldSchema;
+        while (
+          innerSchema instanceof ZodOptional ||
+          innerSchema instanceof ZodNullable
+        ) {
+          if (innerSchema instanceof ZodOptional) isOptional = true;
+          innerSchema = innerSchema._def.innerType;
+        }
 
-      const descComment = description ? ` // ${description}` : "";
-      return `${indent}  ${key}${isOptional ? "?" : ""}: ${typeStr};${descComment}`;
-    });
+        // Use innerSchema for description if main schema has none
+        if (!description) description = innerSchema.description;
+
+        let typeStr = "";
+        if (innerSchema instanceof ZodObject) {
+          typeStr = getToolSchemaHint(innerSchema, indent + "  ");
+        } else if (
+          innerSchema instanceof ZodArray &&
+          innerSchema._def.type instanceof ZodObject
+        ) {
+          typeStr = `Array<${getToolSchemaHint(
+            innerSchema._def.type,
+            indent + "  ",
+          )}>`;
+        } else if (innerSchema instanceof ZodArray) {
+          typeStr = getGenericTypeHint(innerSchema, indent);
+        } else {
+          typeStr = getGenericTypeHint(innerSchema, indent);
+        }
+
+        const descComment = description ? ` // ${description}` : "";
+        return `${indent}  ${key}${isOptional ? "?" : ""}: ${typeStr};${descComment}`;
+      });
 
     return `{\n${lines.join("\n")}\n${indent}}`;
   }

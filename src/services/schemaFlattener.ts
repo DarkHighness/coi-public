@@ -168,7 +168,6 @@ function collectFields(
         "updatedAt",
         "modifiedAt",
         "lastAccess",
-        "highlight",
       ]);
 
       const fieldZod = fieldSchema as ZodTypeAny;

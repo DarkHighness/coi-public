@@ -260,6 +260,7 @@ export const generateStoryOutlinePhased = async (
     settings.extra?.liteMode,
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
+    settings.extra?.genderPreference,
   );
 
   // Inject custom prompts if needed
@@ -612,6 +613,118 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
         // Validate the tool call arguments against the schema
         try {
           const validatedData = phaseTool.parameters.parse(toolCall.args);
+
+          // Phase 2: Additional gender validation
+          if (phaseNum === 2 && settings.extra?.genderPreference) {
+            const genderPref = settings.extra.genderPreference;
+            if (genderPref !== "none") {
+              const phase2Data = validatedData as {
+                character: { race?: string; title?: string };
+              };
+              const race = phase2Data.character?.race?.toLowerCase() || "";
+              const title = phase2Data.character?.title?.toLowerCase() || "";
+
+              // Check for gender keywords in the race field
+              const maleKeywords = [
+                "male",
+                "男",
+                "man",
+                "boy",
+                "他",
+                "先生",
+                "公子",
+                "少爷",
+                "王子",
+                "皇子",
+                "lord",
+                "prince",
+                "master",
+                "king",
+                "emperor",
+                "duke",
+                "sir",
+                "gentleman",
+              ];
+              const femaleKeywords = [
+                "female",
+                "女",
+                "woman",
+                "girl",
+                "她",
+                "小姐",
+                "夫人",
+                "姑娘",
+                "公主",
+                "皇后",
+                "lady",
+                "princess",
+                "queen",
+                "empress",
+                "duchess",
+                "miss",
+                "madam",
+                "mistress",
+              ];
+
+              // Check race field
+              const raceHasMale = maleKeywords.some((kw) => race.includes(kw));
+              const raceHasFemale = femaleKeywords.some((kw) =>
+                race.includes(kw),
+              );
+
+              // Check title field
+              const titleHasMale = maleKeywords.some((kw) =>
+                title.includes(kw),
+              );
+              const titleHasFemale = femaleKeywords.some((kw) =>
+                title.includes(kw),
+              );
+
+              const expectedGender = genderPref;
+              const raceGender = raceHasFemale
+                ? "female"
+                : raceHasMale
+                  ? "male"
+                  : null;
+              const titleGender = titleHasFemale
+                ? "female"
+                : titleHasMale
+                  ? "male"
+                  : null;
+
+              // Validate race field gender
+              if (raceGender !== null && raceGender !== expectedGender) {
+                console.warn(
+                  `[OutlineAgentic] Race gender mismatch: expected ${expectedGender}, got ${raceGender} (race: "${phase2Data.character?.race}")`,
+                );
+                throw new Error(
+                  `Phase 2: Gender mismatch in race - protagonist must be ${expectedGender === "male" ? "male (男性)" : "female (女性)"}, but race is "${phase2Data.character?.race}". Please regenerate with correct gender.`,
+                );
+              }
+
+              // Validate title field gender (e.g., 小姐 vs 少爷)
+              if (titleGender !== null && titleGender !== expectedGender) {
+                console.warn(
+                  `[OutlineAgentic] Title gender mismatch: expected ${expectedGender}, got ${titleGender} (title: "${phase2Data.character?.title}")`,
+                );
+                throw new Error(
+                  `Phase 2: Gender mismatch in title - protagonist title "${phase2Data.character?.title}" conflicts with required gender ${expectedGender === "male" ? "male (男性)" : "female (女性)"}. Please regenerate with correct gender-appropriate title.`,
+                );
+              }
+
+              // If neither race nor title indicates gender, warn but continue
+              if (raceGender === null) {
+                console.warn(
+                  `[OutlineAgentic] Race field "${phase2Data.character?.race}" does not contain clear gender indicator, but continuing...`,
+                );
+              }
+
+              console.log(
+                `[OutlineAgentic] Gender validated: ${expectedGender} matches race "${phase2Data.character?.race}" and title "${phase2Data.character?.title}"`,
+              );
+            }
+          }
+
           // Store validated phase data
           const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
           (partial as any)[phaseKey] = validatedData;

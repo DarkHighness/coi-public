@@ -431,6 +431,13 @@
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
+      "genderPreference": "性别偏好",
+      "genderPreferenceHelp": "在生成故事时强制要求主角的性别。",
+      "genderPreferences": {
+        "male": "男",
+        "female": "女",
+        "none": "无偏好"
+      },
       "promptInjection": "提示词注入",
       "promptInjectionHelp": "基于模型关键词注入越狱提示词",
       "disableImagePrompt": "禁用图片提示",
