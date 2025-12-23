@@ -202,9 +202,7 @@ type WithRequiredTimestamps<T> = T & {
 export type InventoryItem = WithRequiredId<
   WithVersionedTimestamps<ZodInventoryItem>
 >;
-export type NPC = WithRequiredId<
-  WithVersionedTimestamps<ZodNPC>
->;
+export type NPC = WithRequiredId<WithVersionedTimestamps<ZodNPC>>;
 export type Location = WithRequiredId<ZodLocation> & {
   isVisited: boolean;
   createdAt: number;
@@ -810,7 +808,6 @@ export interface QuestAction {
 }
 
 // NPCAction definition was moved up to follow export type CharacterCondition = Condition;
-
 
 export interface LocationAction {
   type: "current" | "known";

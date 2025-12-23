@@ -31,9 +31,8 @@ export const NPCsTab: React.FC<RelationshipsTabProps> = ({
         isExpanded={expandedSections.has("npcs")}
         onToggle={toggleSection}
       >
-        {gameState.npcs.filter(
-          (r) => gameState.unlockMode || r.known !== false,
-        ).length === 0 ? (
+        {gameState.npcs.filter((r) => gameState.unlockMode || r.known !== false)
+          .length === 0 ? (
           <EmptyState message={t("gameViewer.noNpcs")} />
         ) : (
           <div className="space-y-3">
@@ -197,7 +196,9 @@ export const NPCsTab: React.FC<RelationshipsTabProps> = ({
                           {rel.hidden.trueAffinity !== undefined && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueAffinity") || "True Affinity"}:
+                                {t("gameViewer.trueAffinity") ||
+                                  "True Affinity"}
+                                :
                               </span>
                               <p className="pl-2">
                                 {rel.hidden.trueAffinity > 0 ? "+" : ""}
@@ -206,10 +207,10 @@ export const NPCsTab: React.FC<RelationshipsTabProps> = ({
                             </div>
                           )}
                           {rel.hidden.realAge && (
-                             <InfoRow
-                               label={t("gameViewer.realAge") || "Real Age"}
-                               value={rel.hidden.realAge}
-                             />
+                            <InfoRow
+                              label={t("gameViewer.realAge") || "Real Age"}
+                              value={rel.hidden.realAge}
+                            />
                           )}
                           {rel.hidden.npcType && (
                             <div>
@@ -219,10 +220,13 @@ export const NPCsTab: React.FC<RelationshipsTabProps> = ({
                               <MarkdownText content={rel.hidden.npcType} />
                             </div>
                           )}
-                          {rel.hidden.inventory && rel.hidden.inventory.length > 0 && (
+                          {rel.hidden.inventory &&
+                            rel.hidden.inventory.length > 0 && (
                               <div>
                                 <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                  {t("gameViewer.hiddenInventory") || "Possessions"}:
+                                  {t("gameViewer.hiddenInventory") ||
+                                    "Possessions"}
+                                  :
                                 </span>
                                 <ul className="list-disc list-inside pl-2">
                                   {rel.hidden.inventory.map((item, i) => (
@@ -232,7 +236,7 @@ export const NPCsTab: React.FC<RelationshipsTabProps> = ({
                                   ))}
                                 </ul>
                               </div>
-                          )}
+                            )}
                           {rel.hidden.status && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">

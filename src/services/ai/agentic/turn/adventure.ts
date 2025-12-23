@@ -1487,8 +1487,7 @@ export function executeToolCall(
     const typedArgs = getTypedArgs("add_npc", args);
     const result = db.modify("npc", "add", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.npcActions)
-        accumulatedResponse.npcActions = [];
+      if (!accumulatedResponse.npcActions) accumulatedResponse.npcActions = [];
       accumulatedResponse.npcActions.push({
         action: "add",
         ...typedArgs,
@@ -1658,8 +1657,7 @@ export function executeToolCall(
     const typedArgs = getTypedArgs("remove_npc", args);
     const result = db.modify("npc", "remove", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.npcActions)
-        accumulatedResponse.npcActions = [];
+      if (!accumulatedResponse.npcActions) accumulatedResponse.npcActions = [];
       accumulatedResponse.npcActions.push({
         action: "remove",
         ...typedArgs,
@@ -1802,8 +1800,7 @@ export function executeToolCall(
     const typedArgs = getTypedArgs("update_npc", args);
     const result = db.modify("npc", "update", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.npcActions)
-        accumulatedResponse.npcActions = [];
+      if (!accumulatedResponse.npcActions) accumulatedResponse.npcActions = [];
       accumulatedResponse.npcActions.push({
         action: "update",
         ...typedArgs,

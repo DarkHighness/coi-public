@@ -90,10 +90,7 @@ export type QueryResultMap = {
 // Modify target to result type mapping
 export type ModifyResultMap = {
   inventory: InventoryItem | { id: string; name: string } | { removed: string };
-  npc:
-    | NPC
-    | { id: string; name: string }
-    | { removed: string };
+  npc: NPC | { id: string; name: string } | { removed: string };
   location: Location | { id: string; name: string } | { removed: string };
   quest: Quest | { id: string; name: string } | { removed: string };
   knowledge: KnowledgeEntry | { id: string; name: string };
@@ -996,9 +993,7 @@ export class GameDatabase {
       hidden?: any;
       unlockReason?: string;
     },
-  ): ToolCallResult<
-    NPC | { id: string; name: string } | { removed: string }
-  > {
+  ): ToolCallResult<NPC | { id: string; name: string } | { removed: string }> {
     const getName = () => data.visible?.name || data.name;
 
     if (action === "add") {
@@ -1020,9 +1015,7 @@ export class GameDatabase {
       }
 
       // 1. Check ID Conflict
-      if (
-        this.state.npcs.some((r) => matchesIdentifier(r.id, finalId))
-      ) {
+      if (this.state.npcs.some((r) => matchesIdentifier(r.id, finalId))) {
         return createError(
           `ID "${finalId}" already exists. AI must generate a unique ID.`,
           "ALREADY_EXISTS",
@@ -1107,10 +1100,7 @@ export class GameDatabase {
           matchesIdentifier(r.visible.name, identifier),
       );
       if (index === -1) {
-        const suggestion = this.suggestSimilar(
-          identifier,
-          this.state.npcs,
-        );
+        const suggestion = this.suggestSimilar(identifier, this.state.npcs);
         return createError(
           `NPC "${identifier}" not found.${suggestion}`,
           "NOT_FOUND",
@@ -1139,10 +1129,7 @@ export class GameDatabase {
           matchesIdentifier(r.visible.name, identifier),
       );
       if (!npc) {
-        const suggestion = this.suggestSimilar(
-          identifier,
-          this.state.npcs,
-        );
+        const suggestion = this.suggestSimilar(identifier, this.state.npcs);
         return createError(
           `NPC "${identifier}" not found.${suggestion}`,
           "NOT_FOUND",

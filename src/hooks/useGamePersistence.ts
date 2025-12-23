@@ -47,8 +47,6 @@ export const useGamePersistence = (
 
   const { t } = useTranslation();
 
-
-
   /**
    * Manually save the current state to a slot.
    * Use this for explicit save points (e.g., after outline generation).
@@ -120,10 +118,13 @@ export const useGamePersistence = (
               // Centered migration and repair
               const migrationManager = getMigrationManager();
               const migrated = await migrationManager.migrate(data, lastSlotId);
-              const sanitized = migrationManager.repairState(migrated) as GameState;
+              const sanitized = migrationManager.repairState(
+                migrated,
+              ) as GameState;
 
               // Extract embedding index
-              const embeddingIndex = (migrated as VersionedGameState)._embeddingIndex;
+              const embeddingIndex = (migrated as VersionedGameState)
+                ._embeddingIndex;
 
               // Ensure themeConfig is updated with the latest translations
               if (sanitized.theme && t) {

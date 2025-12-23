@@ -323,8 +323,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       {rel.hidden.currentThought && (
                         <div className="mb-2 border-l-2 border-theme-primary/30 pl-2">
                           <div className="text-[10px] uppercase tracking-wider text-theme-primary/50 mb-0.5 flex items-center gap-1">
-                            <span>💭</span>{" "}
-                            {t("sidebar.npc.currentThought")}
+                            <span>💭</span> {t("sidebar.npc.currentThought")}
                           </div>
                           <div className="italic text-theme-primary/70 text-xs">
                             "{rel.hidden.currentThought}"

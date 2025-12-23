@@ -58,9 +58,12 @@ const migrations: Migration[] = [
   // Version 2: Relationship -> NPC terminology rename + Consolidate ad-hoc migrations
   {
     version: 2,
-    description: "Renamed relationships to npcs and consolidated legacy migrations",
+    description:
+      "Renamed relationships to npcs and consolidated legacy migrations",
     migrate: async (state: any, context: MigrationContext) => {
-      context.logs.push("Applied v2 migration: Terminology rename and state cleanup");
+      context.logs.push(
+        "Applied v2 migration: Terminology rename and state cleanup",
+      );
 
       // 1. Terminology Rename: relationship -> npc
       if (state.relationships && !state.npcs) {
@@ -76,7 +79,9 @@ const migrations: Migration[] = [
       if (state.aliveEntities?.relationships && !state.aliveEntities.npcs) {
         state.aliveEntities.npcs = state.aliveEntities.relationships;
         delete state.aliveEntities.relationships;
-        context.logs.push("Migrated 'aliveEntities.relationships' to 'aliveEntities.npcs'");
+        context.logs.push(
+          "Migrated 'aliveEntities.relationships' to 'aliveEntities.npcs'",
+        );
       }
 
       // (a) Base64 images to IndexedDB
@@ -84,32 +89,38 @@ const migrations: Migration[] = [
       const saveId = state._saveId || context.saveId; // We might need the saveId
       if (saveId) {
         let migrationCount = 0;
-        const migrationPromises = Object.values(nodes).map(async (node: any) => {
-          if (
-            node.imageUrl &&
-            node.imageUrl.startsWith("data:image") &&
-            !node.imageId
-          ) {
-            try {
-              const response = await fetch(node.imageUrl);
-              const blob = await response.blob();
-              const imageId = await saveImage(blob, {
-                saveId,
-                forkId: state.forkId || 0,
-                turnIdx: node.segmentIdx || 0,
-                imagePrompt: node.imagePrompt || "",
-              });
-              node.imageId = imageId;
-              delete node.imageUrl;
-              migrationCount++;
-            } catch (err) {
-              context.logs.push(`Failed to migrate image for node ${node.id}: ${err}`);
+        const migrationPromises = Object.values(nodes).map(
+          async (node: any) => {
+            if (
+              node.imageUrl &&
+              node.imageUrl.startsWith("data:image") &&
+              !node.imageId
+            ) {
+              try {
+                const response = await fetch(node.imageUrl);
+                const blob = await response.blob();
+                const imageId = await saveImage(blob, {
+                  saveId,
+                  forkId: state.forkId || 0,
+                  turnIdx: node.segmentIdx || 0,
+                  imagePrompt: node.imagePrompt || "",
+                });
+                node.imageId = imageId;
+                delete node.imageUrl;
+                migrationCount++;
+              } catch (err) {
+                context.logs.push(
+                  `Failed to migrate image for node ${node.id}: ${err}`,
+                );
+              }
             }
-          }
-        });
+          },
+        );
         await Promise.all(migrationPromises);
         if (migrationCount > 0) {
-          context.logs.push(`Migrated ${migrationCount} legacy images to IndexedDB`);
+          context.logs.push(
+            `Migrated ${migrationCount} legacy images to IndexedDB`,
+          );
         }
       }
 
@@ -122,16 +133,18 @@ const migrations: Migration[] = [
 
       // (c) tokenUsage normalization
       if (state.tokenUsage && typeof state.tokenUsage === "object") {
-         if (state.tokenUsage.cacheRead === undefined) state.tokenUsage.cacheRead = 0;
-         if (state.tokenUsage.cacheWrite === undefined) state.tokenUsage.cacheWrite = 0;
+        if (state.tokenUsage.cacheRead === undefined)
+          state.tokenUsage.cacheRead = 0;
+        if (state.tokenUsage.cacheWrite === undefined)
+          state.tokenUsage.cacheWrite = 0;
       }
 
       // (d) atmosphere and time defaults
       if (!state.atmosphere) {
-         state.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
+        state.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
       }
       if (!state.time) {
-         state.time = "Day 1";
+        state.time = "Day 1";
       }
 
       return state;
@@ -287,9 +300,7 @@ export class MigrationManager {
       warnings.push("Missing 'inventory' array - will be initialized as empty");
     }
     if (!Array.isArray(state.npcs) && !Array.isArray(state.relationships)) {
-      warnings.push(
-        "Missing 'npcs' array - will be initialized as empty",
-      );
+      warnings.push("Missing 'npcs' array - will be initialized as empty");
     }
     if (!Array.isArray(state.quests)) {
       warnings.push("Missing 'quests' array - will be initialized as empty");
@@ -459,7 +470,8 @@ export class MigrationManager {
     } else {
       // Repair sub-fields of aliveEntities
       if (!repairedState.aliveEntities.npcs) {
-        repairedState.aliveEntities.npcs = repairedState.aliveEntities.relationships || [];
+        repairedState.aliveEntities.npcs =
+          repairedState.aliveEntities.relationships || [];
       }
       delete repairedState.aliveEntities.relationships;
     }

@@ -847,9 +847,7 @@ function extractNPCContent(npc: NPC): string {
     if (npc.visible.appearance)
       parts.push(`    <appearance>${npc.visible.appearance}</appearance>`);
     if (npc.visible.npcType)
-      parts.push(
-        `    <npc_type>${npc.visible.npcType}</npc_type>`,
-      );
+      parts.push(`    <npc_type>${npc.visible.npcType}</npc_type>`);
     if (npc.visible.personality)
       parts.push(`    <personality>${npc.visible.personality}</personality>`);
     if (npc.visible.dialogueStyle)

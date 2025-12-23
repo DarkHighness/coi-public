@@ -643,16 +643,14 @@ export const ADD_INVENTORY_TOOL = defineTool({
 
 export const ADD_NPC_TOOL = defineTool({
   name: "add_npc",
-  description: "Add NPC. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
+  description:
+    "Add NPC. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (npc:N)."),
     name: z.string().describe("NPC name."),
     currentLocation: z.string().optional().describe("Location ID (loc:N)."),
     known: z.boolean().optional().describe("Player knows NPC? Default: true."),
-    visible: npcVisibleSchema
-      .partial()
-      .optional()
-      .describe("Visible props."),
+    visible: npcVisibleSchema.partial().optional().describe("Visible props."),
     hidden: npcHiddenSchema
       .partial()
       .optional()
@@ -990,20 +988,15 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
 
 export const UPDATE_NPC_TOOL = defineTool({
   name: "update_npc",
-  description: "Update NPC. Omit to keep, null to delete. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
+  description:
+    "Update NPC. Omit to keep, null to delete. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
     id: z.string().describe("ID (npc:N)."),
     name: z.string().nullish().describe("New name."),
     currentLocation: z.string().nullish().describe("Location ID."),
     known: z.boolean().nullish().describe("Known?"),
-    visible: npcVisibleSchema
-      .partial()
-      .nullish()
-      .describe("Visible props."),
-    hidden: npcHiddenSchema
-      .partial()
-      .nullish()
-      .describe("Hidden props."),
+    visible: npcVisibleSchema.partial().nullish().describe("Visible props."),
+    hidden: npcHiddenSchema.partial().nullish().describe("Hidden props."),
     notes: z.string().nullish().describe("Notes."),
     observation: z.string().nullish().describe("Observation."),
     icon: z.string().nullish().describe("Emoji."),
@@ -2081,15 +2074,9 @@ export type RemoveInventoryParams = InferToolParams<
   typeof REMOVE_INVENTORY_TOOL
 >;
 
-export type AddNPCParams = InferToolParams<
-  typeof ADD_NPC_TOOL
->;
-export type UpdateNPCParams = InferToolParams<
-  typeof UPDATE_NPC_TOOL
->;
-export type RemoveNPCParams = InferToolParams<
-  typeof REMOVE_NPC_TOOL
->;
+export type AddNPCParams = InferToolParams<typeof ADD_NPC_TOOL>;
+export type UpdateNPCParams = InferToolParams<typeof UPDATE_NPC_TOOL>;
+export type RemoveNPCParams = InferToolParams<typeof REMOVE_NPC_TOOL>;
 
 export type AddLocationParams = InferToolParams<typeof ADD_LOCATION_TOOL>;
 export type UpdateLocationParams = InferToolParams<typeof UPDATE_LOCATION_TOOL>;

@@ -200,7 +200,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         // Only mark as played if there's more than one segment,
         // or if we're not at the very beginning of turn 1.
         // This allows the very first opening narrative to animate.
-        const isInitialFirstTurn = currentHistory.length === 1 && gameState.turnNumber === 1;
+        const isInitialFirstTurn =
+          currentHistory.length === 1 && gameState.turnNumber === 1;
 
         // Mark pre-existing content as already played
         currentHistory.forEach((segment) => {

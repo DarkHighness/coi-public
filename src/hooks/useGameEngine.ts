@@ -565,12 +565,10 @@ export const useGameEngine = () => {
             createdAt: Date.now(),
           }),
         ),
-        npcs: (outline.npcs || []).map(
-          (rel: any, index: number) => ({
-            ...rel,
-            createdAt: Date.now(),
-          }),
-        ),
+        npcs: (outline.npcs || []).map((rel: any, index: number) => ({
+          ...rel,
+          createdAt: Date.now(),
+        })),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           status: "active",
@@ -925,12 +923,10 @@ export const useGameEngine = () => {
             createdAt: Date.now(),
           }),
         ),
-        npcs: (outline.npcs || []).map(
-          (rel: any, index: number) => ({
-            ...rel,
-            createdAt: Date.now(),
-          }),
-        ),
+        npcs: (outline.npcs || []).map((rel: any, index: number) => ({
+          ...rel,
+          createdAt: Date.now(),
+        })),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           status: "active",

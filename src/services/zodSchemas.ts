@@ -1250,9 +1250,7 @@ export const storyOutlineSchema = z.object({
   inventory: z
     .array(inventoryItemSchema)
     .describe("Initial items in the inventory (1-3 items)."),
-  npcs: z
-    .array(npcSchema)
-    .describe("Initial NPCs (1-2 NPCs)."),
+  npcs: z.array(npcSchema).describe("Initial NPCs (1-2 NPCs)."),
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience.",
   ),
