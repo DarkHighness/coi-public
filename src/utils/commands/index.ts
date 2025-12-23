@@ -254,8 +254,8 @@ export function executeCommandAction(
           highlight: true,
         }));
 
-        // Unlock relationships
-        newState.relationships = prev.relationships.map((rel) => ({
+        // Unlock npcs
+        newState.npcs = prev.npcs.map((rel) => ({
           ...rel,
           unlocked: true,
           highlight: true,

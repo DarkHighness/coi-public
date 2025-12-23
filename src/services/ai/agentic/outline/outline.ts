@@ -129,8 +129,8 @@ const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
     parameters: outlinePhase4Schema,
   },
   {
-    name: "submit_phase5_relationships",
-    description: "Submit Phase 5: NPCs and relationships",
+    name: "submit_phase5_npcs",
+    description: "Submit Phase 5: NPCs",
     parameters: outlinePhase5Schema,
   },
   {

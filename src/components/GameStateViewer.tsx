@@ -71,7 +71,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         return <WorldTab {...commonProps} />;
       case "character":
         return <CharacterTab {...commonProps} />;
-      case "relationships":
+      case "npcs":
         return <NPCsTab {...commonProps} />;
       case "quests":
         return <QuestsTab {...commonProps} />;

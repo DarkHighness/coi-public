@@ -1548,7 +1548,7 @@ export const useGameEngine = () => {
           currentFork: deriveHistory(newNodes, resultNodeId),
           // Update state
           inventory: finalState.inventory,
-          relationships: finalState.relationships,
+          npcs: finalState.npcs,
           quests: finalState.quests,
           currentLocation: finalState.currentLocation,
           locations: finalState.locations,
@@ -1682,7 +1682,7 @@ export const useGameEngine = () => {
           activeNodeId: cleanupNodeId,
           currentFork: deriveHistory(newNodes, cleanupNodeId),
           inventory: finalState.inventory,
-          relationships: finalState.relationships,
+          npcs: finalState.npcs,
           quests: finalState.quests,
           currentLocation: finalState.currentLocation,
           locations: finalState.locations,

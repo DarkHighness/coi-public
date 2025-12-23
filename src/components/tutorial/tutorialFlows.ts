@@ -157,7 +157,7 @@ export const createGamePageTutorialFlow = (t: TFunction): TutorialFlow => ({
       title: t("tutorial.gamePage.sidebar.title", "Character & World"),
       content: t(
         "tutorial.gamePage.sidebar.content",
-        "The left sidebar shows your inventory, relationships, quests, and world knowledge.",
+        "The left sidebar shows your inventory, npcs, quests, and world knowledge.",
       ),
       icon: "🌍",
       canSkip: true,

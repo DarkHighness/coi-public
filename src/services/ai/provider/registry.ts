@@ -46,7 +46,6 @@ export type FunctionType =
   | "image"
   | "video"
   | "audio"
-  | "translation"
   | "lore"
   | "script";
 

@@ -599,11 +599,6 @@ function AppContent() {
         enabled: aiSettings.embedding.enabled,
       },
       {
-        name: "translation",
-        providerId: aiSettings.translation.providerId,
-        enabled: aiSettings.translation.enabled,
-      },
-      {
         name: "script",
         providerId: aiSettings.script.providerId,
         enabled: aiSettings.script.enabled,
@@ -678,11 +673,6 @@ function AppContent() {
         name: "Video",
         providerId: aiSettings.video.providerId,
         enabled: aiSettings.video.enabled !== false,
-      },
-      {
-        name: "Translation",
-        providerId: aiSettings.translation.providerId,
-        enabled: aiSettings.translation.enabled !== false,
       },
       {
         name: "Script",

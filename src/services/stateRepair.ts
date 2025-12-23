@@ -115,7 +115,7 @@ export const repairGameState = (state: GameState): GameState => {
     idKey?: string;
   }> = [
     { type: "inventory", prefix: "inv", list: state.inventory || [] },
-    { type: "npc", prefix: "npc", list: state.relationships || [] },
+    { type: "npc", prefix: "npc", list: state.npcs || [] },
     { type: "location", prefix: "loc", list: state.locations || [] },
     { type: "quest", prefix: "quest", list: state.quests || [] },
     { type: "knowledge", prefix: "know", list: state.knowledge || [] },

@@ -487,8 +487,8 @@ export class GameDatabase {
             if (!searchTerm) return list;
             return list.filter(
               (item) =>
-                (item.name && item.name.toLowerCase().includes(searchTerm)) ||
-                (item.id && String(item.id).toLowerCase().includes(searchTerm)),
+                this.matchesTerm(item.name, searchTerm) ||
+                this.matchesTerm(String(item.id || ""), searchTerm),
             );
           };
 
@@ -545,9 +545,9 @@ export class GameDatabase {
           if (term) {
             const filtered = timeline.filter(
               (e) =>
-                e.id?.toLowerCase().includes(term) ||
-                e.visible.description.toLowerCase().includes(term) ||
-                e.category.toLowerCase().includes(term),
+                this.matchesTerm(e.id, term) ||
+                this.matchesTerm(e.visible.description, term) ||
+                this.matchesTerm(e.category, term),
             );
             const paginated = paginateResults(filtered);
             return createSuccess(
@@ -565,7 +565,7 @@ export class GameDatabase {
           const chains = this.state.causalChains || [];
           if (term) {
             const filtered = chains.filter((c) =>
-              c.chainId.toLowerCase().includes(term),
+              this.matchesTerm(c.chainId, term),
             );
             const paginated = paginateResults(filtered);
             return createSuccess(
@@ -2448,7 +2448,7 @@ export class GameDatabase {
       }
       default:
         return createError(
-          `Unknown category: ${category}. Valid categories: inventory, relationship, location, quest, knowledge, timeline, faction, skill, condition, hidden_trait`,
+          `Unknown category: ${category}. Valid categories: inventory, npc, location, quest, knowledge, timeline, faction, skill, condition, hidden_trait`,
           "INVALID_DATA",
         );
     }

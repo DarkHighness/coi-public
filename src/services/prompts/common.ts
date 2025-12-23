@@ -228,7 +228,7 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
      - **DO NOT CALL \`finish_turn\` while unhandled errors exist.** If you do, you will be blocked and forced to regenerate.
      - **Self-Correction**: Immediately retry the tool with corrected arguments in the same turn if possible.
-     - **Cross-Checking**: If you get a NOT_FOUND error, use \`list_*\` or \`query_*\` tools (e.g., \`list_inventory\`, \`query_npc\`) to find the correct identifier before retrying.
+     - **Cross-Checking**: If you get a NOT_FOUND error, use \`list_*\` or \`query_*\` tools (e.g., \`list_inventory\`, \`query_npcs\`) to find the correct identifier before retrying.
 
   4. **Communication**:
      - If you cannot fix the error (e.g., the entity truly doesn't exist and you can't find a replacement), you must explain this in your narrative or a meta-comment before ending the turn.
@@ -269,7 +269,7 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
 
   1. **CHECK IF IT ALREADY EXISTS**:
      - Use \`list_*\` tools (e.g., \`list_inventory\`, \`list_npc\`, \`list_location\`) to see existing entities.
-     - Use \`query_*\` tools (e.g., \`query_inventory\`, \`query_npc\`) to search by name or description.
+     - Use \`query_*\` tools (e.g., \`query_inventory\`, \`query_npcs\`) to search by name or description.
      - If unsure about the entity's existence, ALWAYS query first.
 
   2. **NEVER CREATE DUPLICATES**:
@@ -291,7 +291,7 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
 
   **You may call search and query tools MULTIPLE TIMES per turn:**
 
-  - \`query_inventory\`, \`query_npc\`, \`query_location\`, \`query_quest\`, etc.
+  - \`query_inventory\`, \`query_npcs\`, \`query_locations\`, \`query_quests\`, etc.
   - \`list_inventory\`, \`list_npc\`, \`list_location\`, \`list_quest\`, etc.
   - \`search\` (RAG semantic search)
 
@@ -856,7 +856,7 @@ export const getCoreRules = (disableImagePrompt?: boolean): string => `
     - **UPDATE PRIORITY** (when multiple changes occur):
       1. Life-threatening changes (death, severe injury)
       2. Location changes (who is where)
-      3. Relationship changes (affinity, status)
+      3. Npc Relationship changes (affinity, status)
       4. Inventory changes
       5. Knowledge updates
       6. Time and atmosphere
@@ -1064,7 +1064,7 @@ export const getCoreRules = (disableImagePrompt?: boolean): string => `
     }
 
   <rule name="ICONS">
-    - **MANDATORY**: You MUST generate a single emoji \`icon\` for EVERY new or updated entity (Item, Location, Knowledge, Status, Skill, Relationship, Faction, TimelineEvent, Attribute, Quest).
+    - **MANDATORY**: You MUST generate a single emoji \`icon\` for EVERY new or updated entity (Item, Location, Knowledge, Status, Skill, Npc, Faction, TimelineEvent, Attribute, Quest).
     - **Relevance**: The emoji must be visually relevant to the entity's name or nature (e.g., "Sword" -> ⚔️, "Forest" -> 🌲, "Secret" -> 🤫).
     - **Consistency**: Try to keep icons consistent for similar types of entities.
   </rule>

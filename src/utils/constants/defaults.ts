@@ -110,11 +110,6 @@ export const DEFAULTS: AISettings = {
     ttsVolume: 1.0,
     ttsMuted: false,
   },
-  translation: {
-    providerId: "provider-1",
-    modelId: "gemini-2.5-flash",
-    enabled: true,
-  },
   lore: {
     providerId: "provider-1",
     modelId: "gemini-2.5-flash",

@@ -22,7 +22,7 @@ interface StateEditorProps {
 type EditableSection =
   | "character"
   | "inventory"
-  | "relationships"
+  | "npcs"
   | "locations"
   | "quests"
   | "knowledge"
@@ -51,10 +51,10 @@ const SECTION_CONFIGS: Record<
     labelKey: "stateEditor.inventory",
     stateKey: "inventory",
   },
-  relationships: {
+  npcs: {
     icon: "👥",
-    labelKey: "stateEditor.relationships",
-    stateKey: "relationships",
+    labelKey: "stateEditor.npcs",
+    stateKey: "npcs",
   },
   locations: {
     icon: "📍",

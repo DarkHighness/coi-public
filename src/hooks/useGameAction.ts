@@ -377,7 +377,7 @@ export const useGameAction = ({
             });
           });
 
-        // Check relationship unlocks
+        // Check npc unlocks
         response.npcActions
           ?.filter((a) => a.unlocked === true && a.unlockReason)
           .forEach((a) => {
@@ -657,7 +657,7 @@ export const useGameAction = ({
   const handleRebuildContext = useCallback(async () => {
     if (processingRef.current || gameStateRef.current.isProcessing) return;
 
-    if (!window.confirm(t("confirmRebuildContext"))) return;
+    // Confirmation is handled by ActionPanel modal
 
     processingRef.current = true;
     setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));

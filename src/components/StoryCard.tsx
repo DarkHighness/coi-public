@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   StorySegment,
   AISettings,
-  Relationship,
+  NPC,
   Location as GameLocation,
   GameState,
 } from "../types";

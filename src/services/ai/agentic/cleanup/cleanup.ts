@@ -39,13 +39,13 @@ ${items}
   }
 
   // Relationships (NPCs)
-  if (state.relationships && state.relationships.length > 0) {
-    const npcs = state.relationships
+  if (state.npcs && state.npcs.length > 0) {
+    const npcs = state.npcs
       .map((r) => `    <npc id="${r.id}">${r.visible?.name || "Unknown"}</npc>`)
       .join("\n");
-    sections.push(`<relationships count="${state.relationships.length}" query="query_relationship" update="update_relationship" remove="remove_relationship">
+    sections.push(`<npcs count="${state.npcs.length}" query="query_npcs" update="update_npcs" remove="remove_npcs">
 ${npcs}
-  </relationships>`);
+  </npcs>`);
   }
 
   // Locations
@@ -176,47 +176,50 @@ Identify and merge duplicate or redundant entities. For each entity type, the XM
 
 <deduplication_examples>
   <example type="inventory">
-    <duplicates>inv:3 "Iron Sword" and inv:7 "Rusty Iron Sword"</duplicates>
+    <duplicates>"iron_sword" "Iron Sword" and "rusty_sword" "Rusty Iron Sword"</duplicates>
     <action>
-      1. query_inventory(id: "inv:3") and query_inventory(id: "inv:7") to compare details
-      2. update_inventory(id: "inv:3", visible: {description: "A well-used iron sword, showing signs of rust"}) to merge info
-      3. remove_inventory(id: "inv:7") to delete the duplicate
+      1. query_inventory(query: "sword") to list all swords and identify potential duplicates
+      2. query_inventory(id: "iron_sword") and query_inventory(id: "rusty_sword") to compare details
+      3. update_inventory(id: "iron_sword", visible: {description: "A well-used iron sword, showing signs of rust"}) to merge info
+      4. remove_inventory(id: "rusty_sword") to delete the duplicate
     </action>
   </example>
 
-  <example type="relationship">
-    <duplicates>npc:2 "Town Guard" and npc:5 "Guard at Gate"</duplicates>
+  <example type="npc">
+    <duplicates>"guard_town" "Town Guard" and "guard_gate" "Guard at Gate"</duplicates>
     <action>
-      1. query_relationship(id: "npc:2") and query_relationship(id: "npc:5") to compare
-      2. update_relationship(id: "npc:2", notes: "Also guards the main gate") to add info
-      3. remove_relationship(id: "npc:5") to delete duplicate
+      1. query_npcs(query: "guard") to find all guard-related NPCs
+      2. query_npcs(id: "guard_town") and query_npcs(id: "guard_gate") to compare
+      3. update_npc(id: "guard_town", notes: "Also guards the main gate") to add info
+      4. remove_npcs(id: "guard_gate") to delete duplicate
     </action>
   </example>
 
   <example type="location">
-    <duplicates>loc:1 "Market Square" and loc:4 "The Market"</duplicates>
+    <duplicates>"market_square" "Market Square" and "the_market" "The Market"</duplicates>
     <action>
-      1. query_location(id: "loc:1") and query_location(id: "loc:4") to compare
-      2. update_location(id: "loc:1", visible: {description: "The central market square..."}) to merge
-      3. remove_location(id: "loc:4") to delete duplicate
+      1. query_location(query: "market") to see similarly named locations
+      2. query_location(id: "market_square") and query_location(id: "the_market") to compare
+      3. update_location(id: "market_square", visible: {description: "The central market square..."}) to merge
+      4. remove_location(id: "the_market") to delete duplicate
     </action>
   </example>
 
   <example type="quest">
-    <duplicates>quest:1 "Find the Merchant" and quest:3 "Locate Missing Trader"</duplicates>
+    <duplicates>"quest_merchant" "Find the Merchant" and "quest_trader" "Locate Missing Trader"</duplicates>
     <action>
-      1. query_quest(id: "quest:1") and query_quest(id: "quest:3") to compare
-      2. update_quest(id: "quest:1", description: "Find the missing merchant/trader...") to merge
-      3. remove_quest(id: "quest:3") to delete duplicate
+      1. query_quest(id: "quest_merchant") and query_quest(id: "quest_trader") to compare
+      2. update_quest(id: "quest_merchant", description: "Find the missing merchant/trader...") to merge
+      3. remove_quest(id: "quest_trader") to delete duplicate
     </action>
   </example>
 
   <example type="knowledge">
-    <duplicates>know:2 "History of the Kingdom" and know:5 "Kingdom's Past"</duplicates>
+    <duplicates>"history_kingdom" "History of the Kingdom" and "past_kingdom" "Kingdom's Past"</duplicates>
     <action>
-      1. query_knowledge(id: "know:2") and query_knowledge(id: "know:5") to compare
-      2. update_knowledge(id: "know:2", content: "Combined history...") to merge
-      3. remove_knowledge(id: "know:5") to delete duplicate
+      1. query_knowledge(id: "history_kingdom") and query_knowledge(id: "past_kingdom") to compare
+      2. update_knowledge(id: "history_kingdom", content: "Combined history...") to merge
+      3. remove_knowledge(id: "past_kingdom") to delete duplicate
     </action>
   </example>
 
@@ -229,11 +232,11 @@ Identify and merge duplicate or redundant entities. For each entity type, the XM
   </example>
 
   <example type="faction">
-    <duplicates>fac:1 "Merchants Guild" and fac:3 "Trader's Guild"</duplicates>
+    <duplicates>"guild_merchants" "Merchants Guild" and "guild_traders" "Trader's Guild"</duplicates>
     <action>
       1. Compare faction details
-      2. update_faction(id: "fac:1", description: "Combined info...") to merge
-      3. remove_faction(id: "fac:3") to delete duplicate
+      2. update_faction(id: "guild_merchants", description: "Combined info...") to merge
+      3. remove_faction(id: "guild_traders") to delete duplicate
     </action>
   </example>
 

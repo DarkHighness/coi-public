@@ -9,7 +9,7 @@ export type ViewTab =
   | "overview"
   | "world"
   | "character"
-  | "relationships"
+  | "npcs"
   | "quests"
   | "lore"
   | "embedding";
@@ -23,7 +23,7 @@ export const TAB_CONFIGS: Record<ViewTab, TabConfig> = {
   overview: { icon: "📖", labelKey: "gameViewer.overview" },
   world: { icon: "🌍", labelKey: "gameViewer.world" },
   character: { icon: "👤", labelKey: "gameViewer.character" },
-  relationships: { icon: "👥", labelKey: "gameViewer.relationships" },
+  npcs: { icon: "👥", labelKey: "gameViewer.npcs" },
   quests: { icon: "📜", labelKey: "gameViewer.quests" },
   lore: { icon: "📚", labelKey: "gameViewer.lore" },
   embedding: { icon: "🧠", labelKey: "gameViewer.embedding" },

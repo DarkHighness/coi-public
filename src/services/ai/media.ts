@@ -34,13 +34,7 @@ import {
 
 import { generateSpeech as generateClaudeSpeech } from "../providers/claudeProvider";
 
-import { translationSchema } from "../schemas";
-
-import {
-  getSceneImagePrompt,
-  getTranslationPrompt,
-  getVeoScriptPrompt,
-} from "../prompts/index";
+import { getSceneImagePrompt, getVeoScriptPrompt } from "../prompts/index";
 
 import { createProvider } from "./provider/createProvider";
 
@@ -150,119 +144,6 @@ export const generateSceneImage = async (
     usage,
   });
   return { url, log, blob };
-};
-
-/**
- * 翻译游戏内容
- * @param settings 设置对象
- * @param segments 故事片段
- * @param inventory 物品清单
- * @param character 角色状态
- * @param npcs 关系列表
- * @param targetLanguage 目标语言
- */
-export const translateGameContent = async (
-  settings: AISettings,
-  segments: StorySegment[],
-  inventory: string[],
-  character: CharacterStatus,
-  npcs: NPC[],
-  targetLanguage: string,
-): Promise<{
-  segments: StorySegment[];
-  inventory: string[];
-  character: CharacterStatus;
-  npcs: NPC[];
-}> => {
-  const providerInfo = getProviderConfig(settings, "translation");
-  if (!providerInfo) {
-    throw new Error("Translation provider not configured");
-  }
-  const {
-    instance,
-    modelId,
-    thinkingEffort,
-    mediaResolution,
-    temperature,
-    topP,
-    topK,
-    minP,
-  } = providerInfo;
-
-  // 提取需要翻译的文本字段
-  const segmentsToTranslate = segments.map((s) => ({
-    id: s.id,
-    text: s.text,
-    choices: s.choices,
-  }));
-
-  const payload = {
-    segments: segmentsToTranslate,
-    inventory,
-    character,
-    npcs,
-  };
-
-  const prompt = getTranslationPrompt(targetLanguage, JSON.stringify(payload));
-  const sys =
-    "Professional translator. Translate all text fields while preserving JSON structure and IDs. Maintain tone and style appropriate to the content. Output valid JSON.";
-  const contents: unknown[] =
-    instance.protocol === "gemini"
-      ? ([{ role: "user", parts: [{ text: prompt }] }] as unknown[])
-      : ([
-          {
-            role: "user",
-            content: [{ type: "text", text: prompt }],
-          },
-        ] as unknown[]);
-
-  try {
-    const provider = createProvider(instance);
-    const { result } = await provider.generateChat({
-      modelId,
-      systemInstruction: sys,
-      messages: contents,
-      schema: translationSchema,
-      thinkingEffort,
-      mediaResolution,
-      temperature,
-      topP,
-      topK,
-      minP,
-    });
-
-    // 合并翻译结果和原始 segments
-    const translatedPayload = result as {
-      segments: Array<{ id: string; text: string; choices: string[] }>;
-      inventory: string[];
-      character: CharacterStatus;
-      npcs: NPC[];
-    };
-
-    const mergedSegments = segments.map((originalSeg) => {
-      const translated = translatedPayload.segments.find(
-        (t) => t.id === originalSeg.id,
-      );
-      if (translated) {
-        return {
-          ...originalSeg,
-          text: translated.text,
-          choices: translated.choices,
-        };
-      }
-      return originalSeg;
-    });
-
-    return {
-      segments: mergedSegments,
-      inventory: translatedPayload.inventory,
-      character: translatedPayload.character,
-      npcs: translatedPayload.npcs,
-    };
-  } catch (error) {
-    // Fallback: return original
-    return { segments, inventory, character, npcs };
-  }
 };
 
 /**

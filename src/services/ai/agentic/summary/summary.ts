@@ -116,7 +116,7 @@ You are the GM - you know everything. Your job is to:
 - Accurately capture what happened
 - Preserve the visible/hidden separation
 - Track cause-and-effect relationships
-- Note changes in quests, relationships, inventory, character status
+- Note changes in quests, npcs, inventory, character status
 </role>
 
 <process>
@@ -146,10 +146,10 @@ const getSummaryStageInstruction = (stage: SummaryStage): string => {
 Review the context provided. You have these tools available:
 
 1. \`summary_query_segments\` - Examine specific turns in detail (use sparingly, segments already provided in context)
-2. \`summary_query_state\` - Check current entity states (inventory, relationships, etc.)
+2. \`summary_query_state\` - Check current entity states (inventory, npcs, etc.)
 3. \`summary_load_query\` - Load additional query tools for specific entities:
-   - entities: ["inventory", "relationships", "locations", "quests", "knowledge", "factions", "timeline", "character"]
-   - Once loaded, use the new tools (e.g., query_inventory, query_relationships) for detailed queries
+   - entities: ["inventory", "npcs", "locations", "quests", "knowledge", "factions", "timeline", "character"]
+   - Once loaded, use the new tools (e.g., query_inventory, query_npcs) for detailed queries
 
 When you have enough information, call \`finish_summary\` to complete the summary.
 
@@ -247,7 +247,7 @@ ${seg.text || "(empty)"}
 <important_notice>
 ⚠️ ALL ${segmentCount} segments are listed below in FULL. You already have complete context.
 DO NOT use summary_query_segments to query these turns - they are already provided!
-Only use summary_query_state if you need current entity states (inventory, relationships, etc.)
+Only use summary_query_state if you need current entity states (inventory, npcs, etc.)
 </important_notice>
 
 <segment_list>
@@ -376,8 +376,8 @@ const executeSummaryToolCall = (
         case "inventory":
           result.inventory = db.query("inventory");
           break;
-        case "relationships":
-          result.relationships = db.query("relationship");
+        case "npcs":
+          result.npcs = db.query("npc");
           break;
         case "locations":
           result.locations = db.query("location");

@@ -44,7 +44,7 @@ export function createStateSnapshot(
   return {
     // Entity State (Dual-layer)
     inventory: gameState.inventory,
-    relationships: gameState.relationships,
+    npcs: gameState.npcs,
     quests: gameState.quests,
     character: gameState.character,
     knowledge: gameState.knowledge,
@@ -88,7 +88,7 @@ export function restoreStateFromSnapshot(
   return {
     ...currentState,
     inventory: snapshot.inventory,
-    relationships: snapshot.relationships,
+    npcs: snapshot.npcs,
     quests: snapshot.quests,
     character: snapshot.character,
     knowledge: snapshot.knowledge,

@@ -2,7 +2,7 @@ import {
   GameState,
   GameStateSnapshot,
   ImageGenerationContext,
-  Relationship,
+  NPC,
   Location as GameLocation,
 } from "../../types";
 
@@ -69,7 +69,7 @@ const extractContextFromGameState = (
   // Build a map of all known NPCs for reference lookup
   // The AI's imagePrompt will specify which NPCs appear in the scene
   const knownNPCs = new Map<string, NPCInfo>();
-  (stateSnapshot.relationships || []).forEach((r: Relationship) => {
+  (stateSnapshot.npcs || []).forEach((r: NPC) => {
     const name = r.visible?.name || "";
     if (name) {
       knownNPCs.set(name.toLowerCase(), {

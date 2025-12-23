@@ -104,7 +104,7 @@ export const inventoryItemSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'rusty_sword', 'healing_potion_1', 'inv_5'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'rusty_sword', 'healing_potion_1'.",
     ),
   name: z.string().describe("Name of the item."),
   visible: inventoryItemVisibleSchema,
@@ -259,7 +259,7 @@ export const npcSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'village_elder', 'guard_thomas', 'npc_3'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'village_elder', 'guard_thomas'.",
     ),
   known: z
     .boolean()
@@ -488,7 +488,7 @@ export const locationSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'loc:cave', 'loc:123', 'royal_palace'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'cave_entrance', 'royal_palace'.",
     ),
   name: z.string().describe("Location name."),
   visible: locationVisibleSchema,
@@ -571,7 +571,7 @@ export const questSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'find_missing_heir', 'defeat_dragon', 'quest_7'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'find_missing_heir', 'defeat_dragon'.",
     ),
   title: z.string().describe("Quest title."),
   type: questTypeSchema.describe("Quest type: main, side, or hidden."),
@@ -636,7 +636,7 @@ export const skillSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'master_swordplay', 'arcane_knowledge', 'skill_4'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'master_swordplay', 'arcane_knowledge'.",
     ),
   name: z.string().describe("Skill name."),
   level: z.string().describe("Skill level (e.g. Novice, Master)."),
@@ -719,7 +719,7 @@ export const conditionSchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'poisoned', 'blessed_by_goddess', 'cond_2'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'poisoned', 'blessed_by_goddess'.",
     ),
   name: z.string().describe("Condition name."),
   type: conditionTypeSchema.describe(
@@ -791,7 +791,7 @@ export const knowledgeEntrySchema = z.object({
   id: z
     .string()
     .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'ancient_prophecy', 'local_folklore', 'know_8'.",
+      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'ancient_prophecy', 'local_folklore'.",
     ),
   title: z.string().describe("Title of the knowledge entry."),
   category: knowledgeCategorySchema.describe("Category for organization."),
@@ -943,7 +943,9 @@ export const pendingConsequenceSchema = z.object({
     .number()
     .int()
     .nullish()
-    .describe("Turn number when triggered (for logging, not for triggering logic)."),
+    .describe(
+      "Turn number when triggered (for logging, not for triggering logic).",
+    ),
   known: z
     .boolean()
     .nullish()
@@ -995,7 +997,7 @@ export const factionMemberSchema = z.object({
 /** 阵营关系 */
 export const factionRelationSchema = z.object({
   target: z.string().describe("Target faction name."),
-  status: z.string().describe("Relationship status."),
+  status: z.string().describe("NPC status."),
 });
 
 /** 阵营可见层 */
@@ -2237,40 +2239,6 @@ export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;
 export type ForceUpdateResponse = z.infer<typeof forceUpdateSchema>;
 
 // ============================================================================
-// 翻译 Schema
-// ============================================================================
-
-export const translationSchema = z.object({
-  segments: z.array(
-    z.object({
-      id: z.string(),
-      text: z.string(),
-      choices: z.array(z.string()),
-    }),
-  ),
-  inventory: z.array(z.string()).nullish(),
-  character: z
-    .object({
-      name: z.string().nullish(),
-      title: z.string().nullish(),
-      appearance: z.string().nullish(),
-      profession: z.string().nullish(),
-      background: z.string().nullish(),
-      race: z.string().nullish(),
-    })
-    .nullish(),
-  npcs: z
-    .array(
-      z.object({
-        name: z.string().nullish(),
-        description: z.string().nullish(),
-        npcType: z.string().nullish(),
-      }),
-    )
-    .nullish(),
-});
-
-// ============================================================================
 // 类型导出
 // ============================================================================
 
@@ -2293,70 +2261,6 @@ export type GameResponse = z.infer<typeof gameResponseSchema>;
 export type Atmosphere = z.infer<typeof atmosphereSchema>;
 export type EnvTheme = z.infer<typeof envThemeSchema>;
 export type Ambience = z.infer<typeof ambienceSchema>;
-
-// ============================================================================
-// Provider Schema 编译器
-// ============================================================================
-
-/** 预编译的 Gemini Schemas */
-export const GEMINI_SCHEMAS = {
-  storyOutline: zodToGemini(storyOutlineSchema),
-  storySummary: zodToGemini(storySummarySchema),
-  gameResponse: zodToGemini(gameResponseSchema),
-  translation: zodToGemini(translationSchema),
-  finishTurn: zodToGemini(finishTurnSchema),
-  // 分阶段 Outline Schemas
-  outlinePhase1: zodToGemini(outlinePhase1Schema),
-  outlinePhase2: zodToGemini(outlinePhase2Schema),
-  outlinePhase3: zodToGemini(outlinePhase3Schema),
-  outlinePhase4: zodToGemini(outlinePhase4Schema),
-  outlinePhase5: zodToGemini(outlinePhase5Schema),
-} as const;
-
-/** 预编译的 OpenAI Response Formats */
-export const OPENAI_RESPONSE_FORMATS = {
-  storyOutline: zodToOpenAIResponseFormat(storyOutlineSchema, "story_outline"),
-  storySummary: zodToOpenAIResponseFormat(storySummarySchema, "story_summary"),
-  gameResponse: zodToOpenAIResponseFormat(gameResponseSchema, "game_response"),
-  translation: zodToOpenAIResponseFormat(translationSchema, "translation"),
-  finishTurn: zodToOpenAIResponseFormat(finishTurnSchema, "finish_turn"),
-  // 分阶段 Outline Response Formats
-  outlinePhase1: zodToOpenAIResponseFormat(
-    outlinePhase1Schema,
-    "outline_phase1",
-  ),
-  outlinePhase2: zodToOpenAIResponseFormat(
-    outlinePhase2Schema,
-    "outline_phase2",
-  ),
-  outlinePhase3: zodToOpenAIResponseFormat(
-    outlinePhase3Schema,
-    "outline_phase3",
-  ),
-  outlinePhase4: zodToOpenAIResponseFormat(
-    outlinePhase4Schema,
-    "outline_phase4",
-  ),
-  outlinePhase5: zodToOpenAIResponseFormat(
-    outlinePhase5Schema,
-    "outline_phase5",
-  ),
-} as const;
-
-/** 预编译的 OpenAI Schema 对象 (用于工具参数等) */
-export const OPENAI_SCHEMAS = {
-  storyOutline: zodToOpenAISchema(storyOutlineSchema),
-  storySummary: zodToOpenAISchema(storySummarySchema),
-  gameResponse: zodToOpenAISchema(gameResponseSchema),
-  translation: zodToOpenAISchema(translationSchema),
-  finishTurn: zodToOpenAISchema(finishTurnSchema),
-  // 分阶段 Outline Schemas
-  outlinePhase1: zodToOpenAISchema(outlinePhase1Schema),
-  outlinePhase2: zodToOpenAISchema(outlinePhase2Schema),
-  outlinePhase3: zodToOpenAISchema(outlinePhase3Schema),
-  outlinePhase4: zodToOpenAISchema(outlinePhase4Schema),
-  outlinePhase5: zodToOpenAISchema(outlinePhase5Schema),
-} as const;
 
 // ============================================================================
 // 重新导出编译器函数

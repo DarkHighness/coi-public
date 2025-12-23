@@ -7,7 +7,7 @@ import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 
-interface RelationshipPanelProps {
+interface NpcPanelProps {
   npcs: NPC[];
   locations?: Location[];
   themeFont: string;
@@ -16,8 +16,8 @@ interface RelationshipPanelProps {
   unlockMode?: boolean;
 }
 
-interface RelationshipItemProps {
-  rel: Omit<NPC, "id"> & { id: string | number };
+interface NpcItemProps {
+  npc: Omit<NPC, "id"> & { id: string | number };
   locations?: Location[];
   enableDrag: boolean;
   expandedItems: Set<string | number>;
@@ -35,8 +35,8 @@ interface RelationshipItemProps {
   t: TFunction;
 }
 
-const RelationshipItem: React.FC<RelationshipItemProps> = ({
-  rel,
+const NpcItem: React.FC<NpcItemProps> = ({
+  npc: rel,
   locations,
   enableDrag,
   expandedItems,
@@ -504,7 +504,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
   );
 };
 
-export const NPCPanel: React.FC<RelationshipPanelProps> = ({
+export const NPCPanel: React.FC<NpcPanelProps> = ({
   npcs = [],
   locations = [],
   themeFont,
@@ -725,9 +725,9 @@ export const NPCPanel: React.FC<RelationshipPanelProps> = ({
               </div>
             ) : (
               visibleItems.map((rel, idx) => (
-                <RelationshipItem
+                <NpcItem
                   key={rel.id}
-                  rel={rel}
+                  npc={rel}
                   locations={locations}
                   enableDrag={true}
                   expandedItems={expandedItems}
@@ -768,9 +768,9 @@ export const NPCPanel: React.FC<RelationshipPanelProps> = ({
             .includes(query.toLowerCase())
         }
         renderItem={(item, dragOptions) => (
-          <RelationshipItem
+          <NpcItem
             key={item.id}
-            rel={item}
+            npc={item}
             locations={locations}
             enableDrag={dragOptions?.isEditMode || false}
             expandedItems={expandedItems}

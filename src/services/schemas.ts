@@ -17,7 +17,6 @@ export {
   storyOutlineSchema,
   storySummarySchema,
   gameResponseSchema,
-  translationSchema,
   atmosphereSchema,
   envThemeSchema,
   ambienceSchema,
@@ -41,22 +40,12 @@ export {
 } from "./zodSchemas";
 
 // ============================================================================
-// 导出预编译的 Provider Schemas
-// ============================================================================
-
-export {
-  GEMINI_SCHEMAS,
-  OPENAI_RESPONSE_FORMATS,
-  OPENAI_SCHEMAS,
-} from "./zodSchemas";
-
-// ============================================================================
 // 从 zodSchemas.ts 重新导出类型 (向后兼容)
 // ============================================================================
 
 export type {
   InventoryItem,
-  Relationship,
+  NPC,
   Location,
   Quest,
   Skill,

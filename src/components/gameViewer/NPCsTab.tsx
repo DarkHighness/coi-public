@@ -1,5 +1,5 @@
 /**
- * RelationshipsTab - Known characters and NPCs display
+ * NpcTab - Known characters and NPCs display
  * Shows npcs with affinity, impressions, and hidden info
  */
 
@@ -9,14 +9,14 @@ import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { Section, InfoRow, EmptyState, HiddenContent } from "./helpers";
 
-interface RelationshipsTabProps {
+interface NpcsTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
   t: (key: string, options?: any) => string;
 }
 
-export const NPCsTab: React.FC<RelationshipsTabProps> = ({
+export const NPCsTab: React.FC<NpcsTabProps> = ({
   gameState,
   expandedSections,
   toggleSection,

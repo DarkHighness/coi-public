@@ -30,10 +30,13 @@ import {
   OVERRIDE_OUTLINE_TOOL,
   QUERY_STORY_TOOL,
   QUERY_TURN_TOOL,
+  ACTIVATE_SKILL_TOOL,
+  LIST_TOOL,
   findTools,
   getTypedArgs,
   RagSearchParams,
   SearchToolParams,
+  ActivateSkillToolParams,
   ALL_DEFINED_TOOLS,
   // Payload types for GameDatabase
   CharacterAttributePayload,
@@ -42,8 +45,13 @@ import {
   CharacterTraitPayload,
   CharacterProfilePayload,
 } from "../../../tools";
-import { getCoreSystemInstruction } from "../../../prompts/index";
+import { buildCoreSystemInstructionWithSkills } from "../../../prompts/skills";
 import { buildLayeredContext } from "../../../prompts/contextBuilder";
+import { getSkillRegistry } from "../../../prompts/skills/registry";
+import { registerAllSkills } from "../../../prompts/skills/definitions";
+
+// Explicitly register skills to ensure they are available
+registerAllSkills();
 
 import {
   createUserMessage,
@@ -289,24 +297,30 @@ export const generateAdventureTurn = async (
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
 
-  // ===== NEW: Build system instruction using getCoreSystemInstruction =====
-  let systemInstruction = getCoreSystemInstruction(
-    context.language,
-    narrativeStyle,
+  // ===== Build system instruction using Skills System =====
+  let systemInstruction = buildCoreSystemInstructionWithSkills({
+    language: context.language,
+    themeStyle: narrativeStyle,
     isRestricted,
-    settings.extra?.detailedDescription,
-    isRAGEnabled,
+    isDetailedDescription: settings.extra?.detailedDescription,
+    ragEnabled: isRAGEnabled,
     gameState,
-    gameState.character.name,
-    gameState.character.title,
-    gameState.character.currentLocation || "Unknown Location",
     backgroundTemplate,
     example,
     worldSetting,
-    settings.extra?.disableImagePrompt,
-    gameState.customRules,
-    settings.extra?.nsfw,
-    settings.extra?.liteMode,
+    disableImagePrompt: settings.extra?.disableImagePrompt,
+    customRules: gameState.customRules,
+    isNSFW: settings.extra?.nsfw,
+    isLiteMode: settings.extra?.liteMode,
+    godMode: gameState.godMode,
+    protagonistName: gameState.character.name,
+    protagonistRole: gameState.character.title,
+    protagonistLocation:
+      gameState.character.currentLocation || "Unknown Location",
+  });
+
+  console.log(
+    `[Adventure] Built system instruction with skills. Length: ${systemInstruction.length} chars`,
   );
 
   // Handle prompt injection if enabled
@@ -436,9 +450,24 @@ export const generateAdventureTurn = async (
           role = "user";
         }
 
+        // Determine prefix based on original segment role
+        let prefix = "";
+        if (seg.role === "user") {
+          prefix = seg.text.startsWith("[PLAYER_ACTION]")
+            ? ""
+            : "[PLAYER_ACTION] ";
+        } else if (seg.role === "command") {
+          prefix = seg.text.startsWith("[SUDO]") ? "" : "[SUDO] ";
+        }
+
         return {
           role: role as "user" | "assistant" | "system",
-          content: [{ type: "text" as const, text: seg.text }],
+          content: [
+            {
+              type: "text" as const,
+              text: `${prefix}${seg.text}`,
+            },
+          ],
         };
       });
       initialHistory = [...initialHistory, ...hydratedMessages];
@@ -675,6 +704,8 @@ export const runAgenticLoop = async (
   // Initial Tools Set - use complete_force_update for SUDO mode, finish_turn otherwise
   let activeTools: ZodToolDefinition[] = [
     SEARCH_TOOL,
+    LIST_TOOL,
+    ACTIVATE_SKILL_TOOL,
     isSudoMode ? COMPLETE_FORCE_UPDATE_TOOL : FINISH_TURN_TOOL,
     QUERY_STORY_TOOL,
     QUERY_TURN_TOOL, // Essential for context
@@ -980,6 +1011,83 @@ You are in AGENTIC MODE.
             }
 
             output = outputMsg;
+          }
+          // SPECIAL HANDLE: activate_skill (dynamic skill loading)
+          else if (call.name === "activate_skill") {
+            const params = call.args as ActivateSkillToolParams;
+            const loadedSkills: string[] = [];
+            const alreadyLoaded: string[] = [];
+            const notFound: string[] = [];
+
+            // Ensure skills are registered
+            registerAllSkills();
+            const registry = getSkillRegistry();
+
+            // Set session if available
+            if (_sessionId) {
+              registry.setSession(_sessionId);
+            }
+
+            // Build a minimal context for skill loading
+            const skillCtx = {
+              language: inputState?.language || "en",
+              gameState: inputState,
+            };
+
+            for (const skillId of params.skillIds) {
+              const skill = registry.get(skillId);
+              if (!skill) {
+                notFound.push(skillId);
+                continue;
+              }
+
+              if (registry.isLoaded(skillId)) {
+                alreadyLoaded.push(skillId);
+                continue;
+              }
+
+              // Load the skill
+              registry.loadSkill(skillId, skillCtx);
+              loadedSkills.push(skillId);
+            }
+
+            // Build response message
+            let responseMsg = "";
+            if (loadedSkills.length > 0) {
+              responseMsg += `✓ Activated skills: ${loadedSkills.join(", ")}\n`;
+              responseMsg += `\nSkill content has been injected into your context. You now have enhanced capabilities for:\n`;
+              for (const id of loadedSkills) {
+                const skill = registry.get(id);
+                if (skill) {
+                  responseMsg += `- [${id}] ${skill.name}: ${skill.description}\n`;
+                }
+              }
+
+              // CRITICAL: Compose ONLY the newly loaded skills and inject as a separate message
+              // This is separate from the tool response - it's a system message with the actual content
+              const newSkillContents: string[] = [];
+              for (const id of loadedSkills) {
+                const content = registry.getLoadedContent(id);
+                if (content) {
+                  newSkillContents.push(content);
+                }
+              }
+              if (newSkillContents.length > 0) {
+                conversationHistory.push(
+                  createUserMessage(
+                    `[SYSTEM: ACTIVATED SKILL CONTENT]\n${newSkillContents.join("\n\n")}`,
+                  ),
+                );
+              }
+            }
+            if (alreadyLoaded.length > 0) {
+              responseMsg += `\n○ Already active: ${alreadyLoaded.join(", ")}`;
+            }
+            if (notFound.length > 0) {
+              responseMsg += `\n✗ Not found: ${notFound.join(", ")}. Check skill_manifest for available skill IDs.`;
+            }
+
+            output = responseMsg.trim() || "No changes made.";
           }
           // SPECIAL HANDLE: finish_turn or complete_force_update
           else if (
@@ -1353,8 +1461,8 @@ export function executeToolCall(
       limit: args.limit as number,
     });
   }
-  if (name === "query_relationships") {
-    return db.query("relationship", args.query as string, undefined, {
+  if (name === "query_npcs") {
+    return db.query("npc", args.query as string, undefined, {
       page: args.page as number,
       limit: args.limit as number,
     });

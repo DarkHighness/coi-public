@@ -13,7 +13,7 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
     2: t("initializing.outline.phase.2.name", "Character"),
     3: t("initializing.outline.phase.3.name", "Locations"),
     4: t("initializing.outline.phase.4.name", "Factions"),
-    5: t("initializing.outline.phase.5.name", "Relationships"),
+    5: t("initializing.outline.phase.5.name", "Npcs"),
     6: t("initializing.outline.phase.6.name", "Inventory"),
     7: t("initializing.outline.phase.7.name", "Quests"),
     8: t("initializing.outline.phase.8.name", "Knowledge"),

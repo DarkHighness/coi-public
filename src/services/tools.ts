@@ -4,20 +4,6 @@
  * ============================================================================
  *
  *
- * --- ID Format Documentation ---
- * All entities use standardized ID format: "{prefix}:{number}"
- * - Inventory Items: "inv:{N}"
- * - NPCs/Relationships: "npc:{N}"
- * - Locations: "loc:{N}"
- * - Quests: "quest:{N}"
- * - Knowledge Entries: "know:{N}"
- * - Factions: "fac:{N}"
- * - Timeline Events: "evt:{N}"
- * - Causal Chains: "chain:{N}"
- * - Character Skills: "skill:{N}"
- * - Character Conditions: "cond:{N}"
- * - Hidden Traits: "trait:{N}"
- *
  * --- Field Semantics ---
  *
  * ## QUERY: null/undefined = query all
@@ -292,24 +278,20 @@ export const QUERY_INVENTORY_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Name, ID (inv:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Name, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
   }),
 });
 
-export const QUERY_NPC_TOOL = defineTool({
-  name: "query_npc",
+export const QUERY_NPCS_TOOL = defineTool({
+  name: "query_npcs",
   description: "Recall details about NPCs the player has met.",
   parameters: z.object({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Name, ID (npc:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Name, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
   }),
@@ -322,9 +304,7 @@ export const QUERY_LOCATIONS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Name, ID (loc:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Name, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
   }),
@@ -337,9 +317,7 @@ export const QUERY_QUESTS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Title, ID (quest:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Title, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     status: z
       .enum(["active", "completed", "failed", "all"])
       .nullish()
@@ -356,9 +334,7 @@ export const QUERY_KNOWLEDGE_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Title, ID (know:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Title, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     category: knowledgeCategorySchema.nullish().describe("Filter by category."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
@@ -373,7 +349,7 @@ export const QUERY_TIMELINE_TOOL = defineTool({
       .string()
       .nullish()
       .describe(
-        "Regex, ID (evt:N), or category. NO 'x or y' patterns. Omit for recent events.",
+        "Regex, ID, or category. NO 'x or y' patterns. Omit for recent events.",
       ),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
@@ -387,9 +363,7 @@ export const QUERY_CAUSAL_CHAIN_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Regex or ID (chain:N). NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Regex or ID. NO 'x or y' patterns. Omit to list all."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
   }),
@@ -402,9 +376,7 @@ export const QUERY_FACTIONS_TOOL = defineTool({
     query: z
       .string()
       .nullish()
-      .describe(
-        "Name, ID (fac:N), or regex. NO 'x or y' patterns. Omit to list all.",
-      ),
+      .describe("Name, ID, or regex. NO 'x or y' patterns. Omit to list all."),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
   }),
@@ -482,7 +454,7 @@ export const QUERY_CHARACTER_SKILLS_TOOL = defineTool({
       .string()
       .nullish()
       .describe(
-        "Skill name, ID (skill:N), or regex. NO 'x or y' patterns. Omit to list all.",
+        "Skill name, ID, or regex. NO 'x or y' patterns. Omit to list all.",
       ),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
@@ -497,7 +469,7 @@ export const QUERY_CHARACTER_CONDITIONS_TOOL = defineTool({
       .string()
       .nullish()
       .describe(
-        "Condition name, ID (cond:N), or regex. NO 'x or y' patterns. Omit to list all.",
+        "Condition name, ID, or regex. NO 'x or y' patterns. Omit to list all.",
       ),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
@@ -512,7 +484,7 @@ export const QUERY_CHARACTER_TRAITS_TOOL = defineTool({
       .string()
       .nullish()
       .describe(
-        "Trait name, ID (trait:N), or regex. NO 'x or y' patterns. Omit to list all.",
+        "Trait name, ID, or regex. NO 'x or y' patterns. Omit to list all.",
       ),
     limit: z.number().optional().describe("Max results. Default: 20."),
     page: z.number().optional().describe("Page number (1-indexed)."),
@@ -625,7 +597,7 @@ export const ADD_INVENTORY_TOOL = defineTool({
   name: "add_inventory",
   description: "Add inventory item.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: inv:N (e.g., inv:1, inv:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Item name."),
     visible: inventoryItemVisibleSchema
       .partial()
@@ -646,9 +618,9 @@ export const ADD_NPC_TOOL = defineTool({
   description:
     "Add NPC. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: npc:N (e.g., npc:1, npc:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("NPC name."),
-    currentLocation: z.string().optional().describe("Location ID (loc:N)."),
+    currentLocation: z.string().optional().describe("Location ID."),
     known: z.boolean().optional().describe("Player knows NPC? Default: true."),
     visible: npcVisibleSchema.partial().optional().describe("Visible props."),
     hidden: npcHiddenSchema
@@ -665,7 +637,7 @@ export const ADD_LOCATION_TOOL = defineTool({
   name: "add_location",
   description: "Add location.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: loc:N (e.g., loc:1, loc:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Location name."),
     visible: locationVisibleSchema
       .partial()
@@ -691,7 +663,7 @@ export const ADD_QUEST_TOOL = defineTool({
   name: "add_quest",
   description: "Add quest.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: quest:N (e.g., quest:1, quest:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     title: z.string().describe("Quest title."),
     type: questTypeSchema.optional().describe("Quest type."),
     visible: questVisibleSchema.partial().optional().describe("Visible props."),
@@ -708,7 +680,7 @@ export const ADD_KNOWLEDGE_TOOL = defineTool({
   name: "add_knowledge",
   description: "Add knowledge/lore.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: know:N (e.g., know:1, know:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     title: z.string().describe("Title."),
     category: knowledgeCategorySchema.optional().describe("Category."),
     visible: knowledgeVisibleSchema
@@ -730,7 +702,7 @@ export const ADD_TIMELINE_TOOL = defineTool({
   name: "add_timeline",
   description: "Add timeline event.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: evt:N (e.g., evt:1, evt:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     gameTime: z.string().optional().describe("Time."),
     category: timelineEventCategorySchema.optional().describe("Category."),
     visible: timelineEventVisibleSchema.optional().describe("Visible info."),
@@ -738,7 +710,7 @@ export const ADD_TIMELINE_TOOL = defineTool({
       .optional()
       .describe("Hidden info (AI/GM)."),
     involvedEntities: z.array(z.string()).optional().describe("Involved IDs."),
-    chainId: z.string().optional().describe("CausalChain link (chain:N)."),
+    chainId: z.string().optional().describe("CausalChain link ID."),
     known: z.boolean().optional().describe("Player knows? Default: true."),
     icon: z.string().optional().describe("Emoji."),
     notes: z.string().optional().describe("Notes."),
@@ -749,7 +721,7 @@ export const ADD_FACTION_TOOL = defineTool({
   name: "add_faction",
   description: "Add faction.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: fac:N (e.g., fac:1, fac:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Name."),
     visible: z
       .object({
@@ -787,7 +759,7 @@ export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
   name: "add_causal_chain",
   description: "Create causal chain.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N)."),
+    chainId: z.string().describe("Chain ID."),
     rootCause: z
       .object({
         eventId: z.string().describe("Event ID."),
@@ -816,7 +788,9 @@ export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
         }),
       )
       .optional()
-      .describe("Pending consequences. AI decides when to trigger based on story."),
+      .describe(
+        "Pending consequences. AI decides when to trigger based on story.",
+      ),
   }),
 });
 
@@ -838,7 +812,7 @@ export const ADD_CHARACTER_SKILL_TOOL = defineTool({
   description:
     "Add skill to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: skill:N (e.g., skill:1, skill:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Skill name."),
     level: z.string().optional().describe("Level."),
     visible: skillVisibleSchema.partial().optional().describe("Visible props."),
@@ -854,7 +828,7 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
   description:
     "Add condition (buff/debuff) to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: cond:N (e.g., cond:1, cond:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Condition name."),
     type: conditionTypeSchema.optional().describe("Type."),
     visible: conditionVisibleSchema
@@ -882,7 +856,7 @@ export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
   description:
     "Add hidden trait to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().describe("REQUIRED. ID format: trait:N (e.g., trait:1, trait:2)."),
+    id: z.string().describe("REQUIRED. Unique ID generated by AI."),
     name: z.string().describe("Trait name."),
     description: z.string().optional().describe("Description."),
     effects: z.array(z.string()).optional().describe("Effects."),
@@ -901,7 +875,7 @@ export const REMOVE_INVENTORY_TOOL = defineTool({
   name: "remove_inventory",
   description: "Remove inventory item.",
   parameters: z.object({
-    id: z.string().describe("ID (inv:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -909,7 +883,7 @@ export const REMOVE_NPC_TOOL = defineTool({
   name: "remove_npc",
   description: "Remove NPC.",
   parameters: z.object({
-    id: z.string().describe("ID (npc:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -917,7 +891,7 @@ export const REMOVE_LOCATION_TOOL = defineTool({
   name: "remove_location",
   description: "Remove location.",
   parameters: z.object({
-    id: z.string().describe("ID (loc:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -925,7 +899,7 @@ export const REMOVE_QUEST_TOOL = defineTool({
   name: "remove_quest",
   description: "Remove quest.",
   parameters: z.object({
-    id: z.string().describe("ID (quest:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -933,7 +907,7 @@ export const REMOVE_FACTION_TOOL = defineTool({
   name: "remove_faction",
   description: "Remove faction.",
   parameters: z.object({
-    id: z.string().describe("ID (fac:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -949,7 +923,7 @@ export const REMOVE_CHARACTER_SKILL_TOOL = defineTool({
   name: "remove_character_skill",
   description: "Remove skill.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (skill:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
   }),
 });
@@ -958,7 +932,7 @@ export const REMOVE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "remove_character_condition",
   description: "Remove condition.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (cond:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
   }),
 });
@@ -967,7 +941,7 @@ export const REMOVE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "remove_character_trait",
   description: "Remove hidden trait.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (trait:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
   }),
 });
@@ -980,7 +954,7 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
   name: "update_inventory",
   description: "Update inventory. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (inv:N)."),
+    id: z.string().describe("ID."),
     name: z.string().nullish().describe("New name."),
     visible: inventoryItemVisibleSchema
       .partial()
@@ -1001,7 +975,7 @@ export const UPDATE_NPC_TOOL = defineTool({
   description:
     "Update NPC. Omit to keep, null to delete. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
-    id: z.string().describe("ID (npc:N)."),
+    id: z.string().describe("ID."),
     name: z.string().nullish().describe("New name."),
     currentLocation: z.string().nullish().describe("Location ID."),
     known: z.boolean().nullish().describe("Known?"),
@@ -1017,7 +991,7 @@ export const UPDATE_LOCATION_TOOL = defineTool({
   name: "update_location",
   description: "Update location. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (loc:N)."),
+    id: z.string().describe("ID."),
     name: z.string().nullish().describe("New name."),
     visible: locationVisibleSchema
       .partial()
@@ -1035,7 +1009,7 @@ export const UPDATE_QUEST_TOOL = defineTool({
   name: "update_quest",
   description: "Update quest. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (quest:N)."),
+    id: z.string().describe("ID."),
     title: z.string().nullish().describe("New title."),
     type: questTypeSchema.nullish().describe("Type."),
     visible: questVisibleSchema.partial().nullish().describe("Visible props."),
@@ -1049,7 +1023,7 @@ export const COMPLETE_QUEST_TOOL = defineTool({
   name: "complete_quest",
   description: "Complete quest.",
   parameters: z.object({
-    id: z.string().describe("ID (quest:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -1057,7 +1031,7 @@ export const FAIL_QUEST_TOOL = defineTool({
   name: "fail_quest",
   description: "Fail quest.",
   parameters: z.object({
-    id: z.string().describe("ID (quest:N)."),
+    id: z.string().describe("ID."),
   }),
 });
 
@@ -1065,7 +1039,7 @@ export const UPDATE_KNOWLEDGE_TOOL = defineTool({
   name: "update_knowledge",
   description: "Update knowledge. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (know:N)."),
+    id: z.string().describe("ID."),
     title: z.string().nullish().describe("New title."),
     category: knowledgeCategorySchema.nullish().describe("Category."),
     visible: knowledgeVisibleSchema
@@ -1084,7 +1058,7 @@ export const UPDATE_TIMELINE_TOOL = defineTool({
   name: "update_timeline",
   description: "Update timeline event. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (evt:N)."),
+    id: z.string().describe("ID."),
     gameTime: z.string().nullish().describe("Time."),
     category: timelineEventCategorySchema.nullish().describe("Category."),
     visible: timelineEventVisibleSchema.nullish().describe("Visible info."),
@@ -1101,7 +1075,7 @@ export const UPDATE_FACTION_TOOL = defineTool({
   name: "update_faction",
   description: "Update faction. Omit to keep, null to delete.",
   parameters: z.object({
-    id: z.string().describe("ID (fac:N)."),
+    id: z.string().describe("ID."),
     name: z.string().nullish().describe("New name."),
     visible: z
       .object({
@@ -1140,7 +1114,7 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "update_causal_chain",
   description: "Update causal chain. Omit to keep, null to delete.",
   parameters: z.object({
-    chainId: z.string().describe("ID (chain:N)."),
+    chainId: z.string().describe("ID."),
     status: causalChainStatusSchema.nullish().describe("Status."),
     pendingConsequences: z
       .array(
@@ -1163,7 +1137,9 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
         }),
       )
       .nullish()
-      .describe("Pending consequences. AI decides when to trigger based on story."),
+      .describe(
+        "Pending consequences. AI decides when to trigger based on story.",
+      ),
   }),
 });
 
@@ -1171,7 +1147,7 @@ export const TRIGGER_CAUSAL_CHAIN_TOOL = defineTool({
   name: "trigger_causal_chain",
   description: "Trigger consequence NOW. Narrate result.",
   parameters: z.object({
-    chainId: z.string().describe("Chain ID (chain:N)."),
+    chainId: z.string().describe("Chain ID."),
     consequenceId: z.string().describe("Consequence ID."),
   }),
 });
@@ -1180,7 +1156,7 @@ export const RESOLVE_CAUSAL_CHAIN_TOOL = defineTool({
   name: "resolve_causal_chain",
   description: "Resolve causal chain (arc complete).",
   parameters: z.object({
-    chainId: z.string().describe("ID (chain:N)."),
+    chainId: z.string().describe("ID."),
   }),
 });
 
@@ -1188,7 +1164,7 @@ export const INTERRUPT_CAUSAL_CHAIN_TOOL = defineTool({
   name: "interrupt_causal_chain",
   description: "Interrupt causal chain.",
   parameters: z.object({
-    chainId: z.string().describe("ID (chain:N)."),
+    chainId: z.string().describe("ID."),
   }),
 });
 
@@ -1253,7 +1229,7 @@ export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
   description:
     "Update the PROTAGONIST's skill. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (skill:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
     level: z.string().nullish().describe("Level."),
     visible: skillVisibleSchema.partial().nullish().describe("Visible props."),
@@ -1269,7 +1245,7 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
   description:
     "Update the PROTAGONIST's condition. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (cond:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
     type: conditionTypeSchema.nullish().describe("Type."),
     visible: conditionVisibleSchema
@@ -1294,7 +1270,7 @@ export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
   description:
     "Update the PROTAGONIST's hidden trait. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
-    id: z.string().optional().describe("ID (trait:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
     description: z.string().nullish().describe("Description."),
     effects: z.array(z.string()).nullish().describe("Effects."),
@@ -1314,7 +1290,7 @@ export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
  */
 export const unlockEntityCategorySchema = z.enum([
   "inventory",
-  "relationship",
+  "npc",
   "location",
   "quest",
   "knowledge",
@@ -1331,7 +1307,7 @@ export const UNLOCK_ENTITY_TOOL = defineTool({
     "Unlock entity hidden info. Requires PROOF and COMPLETE revelation.",
   parameters: z.object({
     category: unlockEntityCategorySchema.describe("Category."),
-    id: z.string().optional().describe("ID (inv:N)."),
+    id: z.string().optional().describe("ID."),
     name: z.string().optional().describe("Name."),
     reason: z.string().describe("Justification describing evidence."),
   }),
@@ -1380,7 +1356,7 @@ export const searchToolSchema = z.object({
         entity: z
           .enum([
             "inventory",
-            "relationship",
+            "npc",
             "location",
             "quest",
             "knowledge",
@@ -1411,6 +1387,33 @@ export const SEARCH_TOOL = defineTool({
 });
 
 export type SearchToolParams = InferToolParams<typeof SEARCH_TOOL>;
+
+// ============================================================================
+// ACTIVATE SKILL TOOL (Dynamic Skill Loading)
+// ============================================================================
+
+/**
+ * Activate additional skill modules to enhance AI capabilities.
+ * Skills provide specialized knowledge and rules for specific scenarios.
+ */
+export const activateSkillSchema = z.object({
+  skillIds: z
+    .array(z.string())
+    .describe(
+      "Skill IDs to activate. Check skill_manifest for available skills and their whenToLoad hints.",
+    ),
+});
+
+export const ACTIVATE_SKILL_TOOL = defineTool({
+  name: "activate_skill",
+  description:
+    "Load additional skill modules to enhance your capabilities. Use this when you need specialized rules for combat, NPC psychology, mystery, etc. Check the skill_manifest section for available skills and when to load them.",
+  parameters: activateSkillSchema,
+});
+
+export type ActivateSkillToolParams = InferToolParams<
+  typeof ACTIVATE_SKILL_TOOL
+>;
 
 // ============================================================================
 // CONTROL TOOLS
@@ -1605,6 +1608,11 @@ Once loaded, the tools will be available in subsequent turns.`,
 });
 
 /**
+ * Activate/Load specific skills for the current session.
+ * Use this when you need specialized knowledge or capabilities not currently loaded.
+ */
+
+/**
  * Find query tools for given entity types
  */
 export function findQueryToolsForEntities(
@@ -1683,12 +1691,12 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "query:inventory": [QUERY_INVENTORY_TOOL],
   "unlock:inventory": [UNLOCK_ENTITY_TOOL], // Unlock is often generic but let's map it
 
-  // Relationship / NPC
+  // NPC
   "add:npc": [ADD_NPC_TOOL],
   "update:npc": [UPDATE_NPC_TOOL],
   "remove:npc": [REMOVE_NPC_TOOL],
-  "query:npc": [QUERY_NPC_TOOL],
-  "unlock:relationship": [UNLOCK_ENTITY_TOOL],
+  "query:npc": [QUERY_NPCS_TOOL],
+  "unlock:npc": [UNLOCK_ENTITY_TOOL],
 
   // Location
   "add:location": [ADD_LOCATION_TOOL],
@@ -1805,7 +1813,7 @@ export const LIST_TOOL = defineTool({
     type: z
       .enum([
         "inventory",
-        "relationship",
+        "npc",
         "location",
         "quest",
         "knowledge",
@@ -1843,7 +1851,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   QUERY_SUMMARY_TOOL,
   QUERY_RECENT_CONTEXT_TOOL,
   QUERY_INVENTORY_TOOL,
-  QUERY_NPC_TOOL,
+  QUERY_NPCS_TOOL,
   QUERY_LOCATIONS_TOOL,
   QUERY_QUESTS_TOOL,
   QUERY_KNOWLEDGE_TOOL,
@@ -2000,10 +2008,6 @@ export function findTools(
     if (tools.length > 0) return tools;
   }
 
-  // 7. Wildcard / "Generic" Search
-  // If user asks for "inventory" without operation, or "add" without entity (less common)
-  // We can try to match segments of the key
-
   return [];
 }
 
@@ -2143,7 +2147,7 @@ export type UpdateWorldInfoParams = InferToolParams<
 
 // Query Types
 export type QueryInventoryParams = InferToolParams<typeof QUERY_INVENTORY_TOOL>;
-export type QueryNPCParams = InferToolParams<typeof QUERY_NPC_TOOL>;
+export type QueryNPCParams = InferToolParams<typeof QUERY_NPCS_TOOL>;
 export type QueryLocationsParams = InferToolParams<typeof QUERY_LOCATIONS_TOOL>;
 export type QueryQuestsParams = InferToolParams<typeof QUERY_QUESTS_TOOL>;
 export type QueryKnowledgeParams = InferToolParams<typeof QUERY_KNOWLEDGE_TOOL>;

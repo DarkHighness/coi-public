@@ -426,7 +426,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
         }
 
         gameState.inventory?.forEach((item) => entityIds.push(item.id));
-        gameState.relationships?.forEach((npc) => entityIds.push(npc.id));
+        gameState.npcs?.forEach((npc) => entityIds.push(npc.id));
         gameState.locations?.forEach((loc) => entityIds.push(loc.id));
         gameState.quests?.forEach((quest) => entityIds.push(quest.id));
         gameState.knowledge?.forEach((know) => entityIds.push(know.id));
