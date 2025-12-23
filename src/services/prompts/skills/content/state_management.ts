@@ -64,8 +64,35 @@ export function getStateManagementContent(_ctx: SkillContext): string {
 
 export function getIdGenerationContent(_ctx: SkillContext): string {
   return `
-  <rule name="ID GENERATION - CRITICAL">
-    **YOU ARE RESPONSIBLE FOR GENERATING ALL ENTITY IDs**
+  <rule name="ID FIELD USAGE - CRITICAL">
+    **ID FIELDS ARE FOR TOOL CALLS ONLY**
+
+    ⚠️ **THE MOST IMPORTANT RULE ABOUT IDs**:
+    - The \`id\` field exists ONLY for **tool call operations** (add/update/remove/query).
+    - **NEVER** include IDs in ANY narrative or descriptive content.
+    - IDs are **backend identifiers**, NOT player-facing information.
+
+    **WHERE IDs BELONG (ONLY THESE PLACES)**:
+    ✅ Tool call arguments: \`add_inventory({ id: "sword_of_kings", ... })\`
+    ✅ Tool call arguments: \`update_npc({ id: "npc_marcus", ... })\`
+    ✅ Tool call arguments: \`query_inventory({ id: "healing_potion" })\`
+    ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
+
+    **WHERE IDs MUST NEVER APPEAR**:
+    ❌ \`narrative\` field: "You see npc_marcus approaching..." → WRONG!
+    ❌ \`visible.description\`: "The sword_of_kings glows..." → WRONG!
+    ❌ \`hidden.secrets\`: ["loc_cellar contains treasure"] → WRONG!
+    ❌ \`choices[].text\`: "Talk to npc_captain" → WRONG!
+    ❌ Any player-facing text whatsoever
+
+    **CORRECT EXAMPLES**:
+    ✅ narrative: "You see **Marcus** approaching..." (use visible.name)
+    ✅ visible.description: "The legendary **Sword of Kings** glows..." (use item name)
+    ✅ choices: [{ text: "Talk to the captain" }] (use role/title/description)
+  </rule>
+
+  <rule name="ID GENERATION - REQUIRED">
+    **YOU MUST GENERATE IDs FOR ALL ENTITIES**
 
     Every entity you create MUST have a unique \`id\` field. The system will NOT generate IDs for you.
 
@@ -73,69 +100,71 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
     - **IDs are REQUIRED**: All entities (items, NPCs, locations, quests, knowledge, factions, skills, conditions, traits, timeline events) MUST have an \`id\`.
     - **YOU generate IDs**: The system will ERROR if you don't provide an ID. There is NO fallback.
     - **Uniqueness is YOUR responsibility**: Each ID must be unique within its type.
-    - **IDs are IMMUTABLE**: Once an entity is created, its ID CANNOT be changed. When updating an entity, you must use its ORIGINAL ID to identify it.
+    - **IDs are IMMUTABLE**: Once created, the ID CANNOT change. Use the ORIGINAL ID when updating.
 
     **BEST PRACTICES**:
     1. **Be Descriptive**: \`"sword_of_kings"\` is better than \`"item_42"\`
-    2. **Use Prefixes**: Start with entity type for clarity (\`inv_\`, \`npc_\`, \`loc_\`, etc.)
-    3. **Avoid Conflicts**: Don't reuse IDs. Keep a mental note of IDs you've created this session.
-    4. **Be Consistent**: If you start with \`"npc_marcus"\`, continue with \`"npc_sara"\`, not \`"sara"\`.
+    2. **Use Prefixes**: Start with entity type (\`inv_\`, \`npc_\`, \`loc_\`, \`quest_\`, etc.)
+    3. **Use snake_case**: \`"ancient_temple"\` not \`"AncientTemple"\`
+    4. **Be Consistent**: If you use \`"npc_marcus"\`, continue with \`"npc_sara"\`, not \`"sara"\`
 
-    **ID IMMUTABILITY - CRITICAL**:
-    - When using \`action: "update"\`, the \`id\` field is for IDENTIFICATION ONLY
-    - You CANNOT change an entity's ID - sending a different ID will ERROR
-    - To "rename" an entity's ID, you must: remove the old entity, then add a new one with the new ID
-
-    **AUTOMATIC DEDUPLICATION**:
-    If you accidentally generate a duplicate ID, the system will:
-    1. Auto-fix it by appending \`_2\`, \`_3\`, etc.
-    2. WARN you that this happened
-    3. Continue working (but you should avoid duplicates)
-
-    **ERROR HANDLING**:
-    If you forget to provide an ID:
-    - The tool will return an error: "ID is required. AI must generate a unique ID."
-    - You MUST retry with a valid ID
-    - Do NOT proceed without fixing this error
+    **ID IMMUTABILITY**:
+    - \`action: "update"\` uses \`id\` for IDENTIFICATION ONLY
+    - You CANNOT change an entity's ID - it will ERROR
+    - To "rename" an ID: remove old entity, add new one with new ID
 
     **EXAMPLES**:
     ✅ CORRECT:
-    \`\`\`
-    { "id": "healing_potion_minor", "name": "Minor Healing Potion", ... }
-    { "id": "npc_marcus", "visible": { "name": "Marcus" }, ... }
-    { "id": "loc_tavern_rusty_nail", "name": "The Rusty Nail Tavern", ... }
+    \`\`\`json
+    { "id": "inv_healing_potion", "name": "Minor Healing Potion", "visible": { "description": "A small vial of red liquid." } }
+    { "id": "npc_marcus", "visible": { "name": "Marcus", "description": "A grizzled veteran with a scar across his left eye." } }
     \`\`\`
 
-    ❌ INCORRECT (will cause errors):
-    \`\`\`
-    { "name": "Healing Potion", ... }  // Missing ID entirely
-    { "id": null, "name": "Marcus", ... }  // ID is null
-    { "id": "", "name": "Tavern", ... }  // ID is empty string
+    ❌ INCORRECT:
+    \`\`\`json
+    { "name": "Healing Potion", ... }  // Missing ID
+    { "id": null, "name": "Marcus" }   // ID is null
+    { "visible": { "description": "npc_marcus is a grizzled veteran..." } }  // ID in description!
     \`\`\`
   </rule>
 
-  <rule name="DUPLICATE PREVENTION - CHECK BEFORE CREATE">
-    **MANDATORY PRE-CHECK**:
-    Before adding ANY new entity (Item, NPC, Location, Condition, Faction, etc.), you MUST verify it doesn't already exist.
+  <rule name="DUPLICATE PREVENTION - LIST FIRST, THEN QUERY">
+    ⚠️ **CRITICAL: YOU MUST CHECK BEFORE CREATING**
 
-    **THE SYNONYM TRAP**: "Rusty Blade" and "Old Sword" are the same thing. If you only query "Blade", you will duplicate the "Sword".
+    Before adding ANY new entity, verify it doesn't already exist. **THE #1 CAUSE OF DUPLICATES IS USING QUERY INSTEAD OF LIST.**
 
-    1. **PRIORITIZE LISTING**: Use the generic \`list\` tool to scan what already exists.
-       - *Example*: Call \`list(type: "inventory")\` to see all items.
-       - *Example*: Call \`list(type: "location")\` to see all locations.
-       - This effectively reveals items with unexpected names.
+    **WHY LIST BEFORE QUERY?**
+    - \`query\` searches by NAME/ID - but "Rusty Blade" won't match "Old Sword" even though they're the same item!
+    - \`list\` shows ALL entities NAME/ID - you can visually scan and catch synonyms, variations, and near-duplicates.
+    - **QUERY MISSES THINGS. LIST DOES NOT.**
 
-    2. **BROAD QUERY**: If you must use query, use BROAD keywords or REGEX covering synonyms.
-       - *Example*: Adding "Iron Sword"? Query \`"sword|blade|weapon"\`, NOT just \`"iron"\`.
-       - *Example*: Adding "Bleeding"? Query \`"bleed|blood|wound|injury"\`.
+    **MANDATORY WORKFLOW**:
+    1. **ALWAYS LIST FIRST**:
+       → \`list(type: "inventory")\` before adding any item
+       → \`list(type: "npc")\` before adding any NPC
+       → \`list(type: "location")\` before adding any location
+       → Scan the list for similar entities (synonyms, variations)
 
-    3. **REUSE or UPDATE**:
-       - If a similar entity exists, **USE IT** instead of creating a new one.
-       - If it lacks details, **UPDATE IT** (\`update_*\`) rather than adding a duplicate.
-       - **Merging**: If you find "Old Sword" but want "Sharp Sword", UPDATE the "Old Sword" to be Sharp. Do not create a second sword.
+    2. **QUERY ONLY AS SUPPLEMENT**:
+       → After listing, use query ONLY for additional verification
+       → Use BROAD regex: \`"sword|blade|saber|weapon"\`, NOT just \`"sword"\`
+       → Example: Adding "Bleeding" condition? Query \`"bleed|blood|wound|injury|cut"\`
 
-    4. **CREATE ONLY IF NEW**:
-       - Only call \`add_*\` if you have proven (via list/broad query) that NO similar entity exists.
+    3. **IF SIMILAR ENTITY EXISTS**:
+       → **UPDATE IT** with new details - do NOT create duplicate
+       → "Old Sword" becomes "Sharpened Sword" via update, not a new entity
+       → Merge is better than multiply
+
+    4. **CREATE ONLY WHEN PROVEN NEW**:
+       → Only \`add_*\` after LIST confirms nothing similar exists
+
+    **COMMON TRAPS**:
+    | You want to add... | But already exists as... | Solution |
+    |--------------------|--------------------------|----------|
+    | "Iron Dagger" | "Rusty Knife" | UPDATE the knife |
+    | "Town Square" | "Central Plaza" | REUSE the plaza |
+    | "Bleeding Wound" | "Deep Cut" | REUSE the condition |
+    | "Mysterious Stranger" | "Hooded Figure" | SAME NPC - update! |
   </rule>
 `;
 }

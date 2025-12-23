@@ -225,8 +225,8 @@ export class GameDatabase {
     consequence: {
       id: string;
       description: string;
-      conditions?: string[];
-      timing?: string;
+      triggerCondition?: string;
+      severity?: string;
       known?: boolean;
     };
   }> {
@@ -236,8 +236,8 @@ export class GameDatabase {
       consequence: {
         id: string;
         description: string;
-        conditions?: string[];
-        timing?: string;
+        triggerCondition?: string;
+        severity?: string;
         known?: boolean;
       };
     }> = [];
@@ -256,8 +256,8 @@ export class GameDatabase {
           consequence: {
             id: conseq.id,
             description: conseq.description,
-            conditions: conseq.conditions,
-            timing: conseq.timing,
+            triggerCondition: conseq.triggerCondition,
+            severity: conseq.severity,
             known: conseq.known,
           },
         });

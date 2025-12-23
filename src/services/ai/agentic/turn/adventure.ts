@@ -731,8 +731,8 @@ export const runAgenticLoop = async (
       .map(
         (rc) =>
           `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${
-            rc.consequence.conditions?.length
-              ? ` (conditions: ${rc.consequence.conditions.join(", ")})`
+            rc.consequence.triggerCondition
+              ? ` (trigger: ${rc.consequence.triggerCondition})`
               : ""
           }${rc.consequence.known ? " [player will know]" : " [hidden]"}`,
       )

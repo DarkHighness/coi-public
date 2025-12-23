@@ -11,8 +11,6 @@ export type MessageRole = "system" | "user" | "assistant" | "tool";
 
 // --- Content Part Types ---
 
-// --- Content Part Types ---
-
 export interface TextPart {
   type: "text";
   text: string;

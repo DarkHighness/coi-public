@@ -923,17 +923,17 @@ export const timelineEventSchema = z.object({
 export const pendingConsequenceSchema = z.object({
   id: z.string().describe("Unique ID for tracking."),
   description: z.string().describe("What could happen if triggered."),
-  timing: z
+  triggerCondition: z
     .string()
     .nullish()
     .describe(
-      "Narrative timing hint (e.g., 'after nightfall', 'when alone', 'next encounter'). AI decides when to trigger based on story conditions.",
+      "WHEN to trigger this consequence. Use narrative conditions (e.g., 'when the player is alone at night', 'during the next combat', 'when player returns to the tavern', 'after player learns the secret'). AI judges when condition is met and fires the consequence. NOT a turn counter.",
     ),
-  conditions: z
-    .array(z.string())
+  severity: z
+    .string()
     .nullish()
     .describe(
-      "Narrative conditions that must be met for AI to trigger this consequence (e.g., 'player is alone', 'during combat').",
+      "How severe/urgent is this consequence? Options: 'imminent' (trigger ASAP when condition met), 'delayed' (can wait for dramatic moment), 'background' (ambient pressure, no rush).",
     ),
   triggered: z
     .boolean()

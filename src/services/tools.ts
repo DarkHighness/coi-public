@@ -772,17 +772,17 @@ export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
         z.object({
           id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          timing: z
+          triggerCondition: z
             .string()
             .optional()
             .describe(
-              "Narrative timing hint (e.g., 'after nightfall', 'when alone', 'next encounter'). AI decides when to trigger.",
+              "WHEN to trigger (e.g., 'when player is alone at night', 'during next combat'). AI judges when condition is met.",
             ),
-          conditions: z
-            .array(z.string())
+          severity: z
+            .string()
             .optional()
             .describe(
-              "Narrative conditions that must be met for AI to trigger this consequence.",
+              "Urgency: 'imminent' (ASAP), 'delayed' (wait for drama), 'background' (no rush).",
             ),
           known: z.boolean().optional().describe("Known?"),
         }),
@@ -1121,17 +1121,17 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
         z.object({
           id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          timing: z
+          triggerCondition: z
             .string()
             .optional()
             .describe(
-              "Narrative timing hint (e.g., 'after nightfall', 'when alone', 'next encounter'). AI decides when to trigger.",
+              "WHEN to trigger (e.g., 'when player is alone at night', 'during next combat'). AI judges when condition is met.",
             ),
-          conditions: z
-            .array(z.string())
+          severity: z
+            .string()
             .optional()
             .describe(
-              "Narrative conditions that must be met for AI to trigger this consequence.",
+              "Urgency: 'imminent' (ASAP), 'delayed' (wait for drama), 'background' (no rush).",
             ),
           known: z.boolean().optional().describe("Known?"),
         }),

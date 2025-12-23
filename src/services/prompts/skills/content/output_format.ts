@@ -339,9 +339,9 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
   - **MAXIMIZE TOOL USE**: Use as many tools as possible in a single turn to minimize round trips.
   - **PARALLEL CALLS**: Supported. Order matters (causal).
   - **BATCH UPDATES**: Modify multiple fields in ONE call. Do not call update twice for the same entity.
-  - **NO DUPLICATES**: Before adding a new entity (Item, NPC, Location, Condition, etc.), **ALWAYS** use the generic \`list(type: ...)\` or broad \`query_*\` tools to verify it doesn't already exist. Beware of synonyms (Blade vs Sword). If ANY similar entity exists, **UPDATE IT**.
+  - **LIST FIRST, THEN ADD**: ⚠️ Before adding ANY entity, call \`list(type: "...")\` FIRST to see ALL existing entities. Query searches by name and MISSES synonyms ("Blade" won't find "Sword"). List catches everything.
   - **NO REDUNDANT QUERIES**: Do not query if IDs are known from previous context/hints.
-  - **FINISH_TURN**: Must be the LAST tool call. When ready to end, call it DIRECTLY.
+  - **FINISH_TURN LAST**: Must be the LAST tool call. When ready to end, call it DIRECTLY.
 </guidelines>
 `;
 }
