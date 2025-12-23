@@ -69,10 +69,6 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
     },
     typewriterSpeed: parsed.typewriterSpeed ?? DEFAULTS.typewriterSpeed,
     stackItemsPerPage: parsed.stackItemsPerPage ?? DEFAULTS.stackItemsPerPage,
-    translation: {
-      ...DEFAULTS.translation,
-      ...(parsed.translation || {}),
-    },
     lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
     embedding: {
       ...DEFAULTS.embedding,
@@ -181,15 +177,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!isProviderAvailable(settings.script.providerId)) {
       newSettings.script = {
         ...settings.script,
-        providerId: getFirstAvailableProvider(),
-      };
-      needsUpdate = true;
-    }
-
-    // Check and replace translation provider
-    if (!isProviderAvailable(settings.translation.providerId)) {
-      newSettings.translation = {
-        ...settings.translation,
         providerId: getFirstAvailableProvider(),
       };
       needsUpdate = true;
