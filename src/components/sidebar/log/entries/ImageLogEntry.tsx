@@ -26,7 +26,7 @@ export const ImageLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
       {log.imageResolution && (
         <div className="flex items-center gap-2">
           <span className="text-xs text-theme-muted uppercase">
-            Resolution:
+            {t("logPanel.resolution")}
           </span>
           <span className="text-sm font-mono text-theme-text px-2 py-0.5 bg-theme-surface-highlight rounded">
             {log.imageResolution}

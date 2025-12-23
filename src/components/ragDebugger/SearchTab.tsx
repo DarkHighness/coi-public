@@ -213,10 +213,16 @@ export const SearchTab: React.FC<SearchTabProps> = ({
             </div>
             {result.metadata && (
               <div className="flex gap-4 text-xs text-theme-muted">
-                <span>Fork: {result.metadata.forkId as number}</span>
-                <span>Turn: {result.metadata.turnNumber as number}</span>
                 <span>
-                  Importance:{" "}
+                  {t("ragDebugger.labels.fork")}{" "}
+                  {result.metadata.forkId as number}
+                </span>
+                <span>
+                  {t("ragDebugger.labels.turn")}{" "}
+                  {result.metadata.turnNumber as number}
+                </span>
+                <span>
+                  {t("ragDebugger.labels.importance")}{" "}
                   {((result.metadata.importance as number) * 100).toFixed(0)}%
                 </span>
               </div>

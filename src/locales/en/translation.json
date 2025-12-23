@@ -327,7 +327,9 @@
     "outputImages": "Output Images",
     "previewNote": "Exporting segments #{{start}} to #{{end}} will generate {{images}} image(s)",
     "exporting": "Exporting...",
-    "exportButton": "Export"
+    "exportButton": "Export",
+    "minSegmentsLabel": "1 ({{label}})",
+    "maxSegmentsLabel": "20 ({{label}})"
   },
   "character": {
     "title": "Character Status",
@@ -947,6 +949,11 @@
     "lastPage": "Last Page",
     "itemsPerPage": "Items per page"
   },
+  "pagination": {
+    "previous": "Previous page",
+    "next": "Next page",
+    "last": "Go to last page"
+  },
   "fast": "Fast",
   "slow": "Slow",
   "layoutPreferences": "Layout Preferences (Desktop)",
@@ -1049,7 +1056,7 @@
     "subtitle": "Direct editing of game state (Developer Tool)",
     "character": "Character",
     "inventory": "Inventory",
-    "relationships": "Relationships",
+    "npcs": "NPCs",
     "locations": "Locations",
     "quests": "Quests",
     "knowledge": "Knowledge",
@@ -1068,7 +1075,8 @@
     "applyFailed": "Failed to apply changes",
     "invalidJson": "Invalid JSON syntax",
     "fixErrors": "Fix JSON errors before applying",
-    "warning": "Changes are applied immediately. Be careful!"
+    "warning": "Changes are applied immediately. Be careful!",
+    "current": "CURRENT"
   },
   "knowledge": {
     "category": {
@@ -1090,7 +1098,7 @@
     "overview": "Overview",
     "world": "World",
     "character": "Character",
-    "relationships": "Relationships",
+    "npcs": "NPCs",
     "quests": "Quests",
     "lore": "Lore",
     "storyBasics": "Story",
@@ -1219,7 +1227,8 @@
     "causedBy": "Caused by",
     "noEvents": "No recent events recorded.",
     "hiddenTruth": "Hidden Truth",
-    "secretObjective": "Secret Objective"
+    "secretObjective": "Secret Objective",
+    "conditions": "Conditions:"
   },
   "confirm": "Confirm",
   "faction": {
@@ -1319,7 +1328,9 @@
     "newest": "Newest",
     "oldest": "Oldest",
     "sortNewest": "Showing newest first",
-    "sortOldest": "Showing oldest first"
+    "sortOldest": "Showing oldest first",
+    "toolLabel": "Tool:",
+    "resolution": "Resolution:"
   },
   "new-game": "New Game",
   "saveManager": {
@@ -1487,7 +1498,12 @@
     "yes": "Yes",
     "no": "No",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "theme": "Theme:",
+    "sudo": "$ /sudo",
+    "preview": "Preview",
+    "branch": "Branch",
+    "ms": "ms"
   },
   "app": {
     "errors": {
@@ -1554,7 +1570,30 @@
     "editDocument": "Edit Document",
     "confirmDelete": "Are you sure you want to delete this document?",
     "updateFailed": "Failed to update document",
-    "deleteFailed": "Failed to delete document"
+    "deleteFailed": "Failed to delete document",
+    "columns": {
+      "type": "Type",
+      "entityId": "Entity ID",
+      "content": "Content",
+      "version": "Ver",
+      "actions": "Actions",
+      "importance": "Importance",
+      "importanceScale": "Importance (0-1)"
+    },
+    "labels": {
+      "fork": "Fork:",
+      "turn": "Turn:",
+      "importance": "Importance:"
+    },
+    "filters": {
+      "story": "Story",
+      "npc": "NPC",
+      "location": "Location",
+      "item": "Item",
+      "knowledge": "Knowledge",
+      "quest": "Quest",
+      "event": "Event"
+    }
   },
   "rag": {
     "title": "RAG System",

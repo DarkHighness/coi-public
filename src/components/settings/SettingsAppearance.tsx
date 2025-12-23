@@ -230,7 +230,8 @@ export const SettingsAppearance: React.FC = () => {
                 </div>
               </div>
               <span className="text-sm font-mono text-theme-primary bg-theme-primary/10 px-2 py-1 rounded">
-                {currentSettings.typewriterSpeed}ms
+                {currentSettings.typewriterSpeed}
+                {t("common.ms")}
               </span>
             </div>
             <div className="flex items-center gap-3">

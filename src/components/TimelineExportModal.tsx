@@ -611,8 +611,16 @@ export const TimelineExportModal: React.FC<TimelineExportModalProps> = ({
                 className="w-full h-2 bg-theme-bg rounded-lg appearance-none cursor-pointer accent-theme-primary"
               />
               <div className="flex justify-between text-[10px] text-theme-muted">
-                <span>1 ({t("timelineExport.detailed")})</span>
-                <span>20 ({t("timelineExport.compact")})</span>
+                <span>
+                  {t("timelineExport.minSegmentsLabel", {
+                    label: t("timelineExport.detailed"),
+                  })}
+                </span>
+                <span>
+                  {t("timelineExport.maxSegmentsLabel", {
+                    label: t("timelineExport.compact"),
+                  })}
+                </span>
               </div>
             </div>
 

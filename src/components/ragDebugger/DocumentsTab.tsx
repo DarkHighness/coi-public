@@ -196,19 +196,19 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
           <thead className="bg-theme-surface-highlight/50 sticky top-0 z-10">
             <tr>
               <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
-                Type
+                {t("ragDebugger.columns.type")}
               </th>
               <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
-                Entity ID
+                {t("ragDebugger.columns.entityId")}
               </th>
               <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider w-1/2">
-                Content
+                {t("ragDebugger.columns.content")}
               </th>
               <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider">
-                Ver
+                {t("ragDebugger.columns.version")}
               </th>
               <th className="p-3 border-b border-theme-border font-medium text-theme-muted uppercase text-xs tracking-wider text-right">
-                Actions
+                {t("ragDebugger.columns.actions")}
               </th>
             </tr>
           </thead>
@@ -233,7 +233,8 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                   <td className="p-3 align-top font-mono text-xs text-theme-text/80">
                     {doc.entityId}
                     <div className="text-[10px] text-theme-muted mt-1">
-                      Fork: {doc.metadata?.forkId as number}
+                      {t("ragDebugger.labels.fork")}{" "}
+                      {doc.metadata?.forkId as number}
                     </div>
                   </td>
                   <td className="p-3 align-top">
@@ -314,7 +315,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
             <div className="p-4 flex-1 overflow-y-auto space-y-4">
               <div>
                 <label className="block text-xs font-bold text-theme-muted uppercase mb-1">
-                  Content
+                  {t("ragDebugger.columns.content")}
                 </label>
                 <textarea
                   className="w-full h-64 bg-theme-bg border border-theme-border rounded p-3 text-sm font-mono focus:border-theme-primary focus:outline-none"
@@ -324,7 +325,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-bold text-theme-muted uppercase mb-1">
-                  Importance (0-1)
+                  {t("ragDebugger.columns.importanceScale")}
                 </label>
                 <input
                   type="number"

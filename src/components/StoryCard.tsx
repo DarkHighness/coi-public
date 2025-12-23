@@ -188,7 +188,7 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
           </div>
           <div className="p-4 font-mono text-sm text-theme-primary flex items-start gap-2">
             <span className="text-theme-accent select-none shrink-0">
-              $ /sudo
+              {t("common.sudo")}
             </span>
             <span className="break-words whitespace-pre-wrap">
               {segment.text}

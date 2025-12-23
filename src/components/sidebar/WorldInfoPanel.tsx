@@ -211,7 +211,9 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 )}
                 {outline.mainGoal.hidden?.trueConditions && (
                   <div className="mt-2 text-xs text-theme-danger/70 border-t border-theme-danger/10 pt-2">
-                    <span className="font-bold">📝 Conditions:</span>{" "}
+                    <span className="font-bold">
+                      📝 {t("worldInfo.conditions")}
+                    </span>{" "}
                     <MarkdownText
                       content={outline.mainGoal.hidden.trueConditions}
                       indentSize={2}

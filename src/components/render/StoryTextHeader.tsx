@@ -59,7 +59,9 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
                 d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
               ></path>
             </svg>
-            <span className="uppercase tracking-widest text-[9px]">Branch</span>
+            <span className="uppercase tracking-widest text-[9px]">
+              {t("common.branch")}
+            </span>
           </button>
         )}
       </div>

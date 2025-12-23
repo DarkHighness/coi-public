@@ -395,7 +395,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                             </span>
                             {isCurrent && (
                               <span className="px-1.5 py-0.5 bg-theme-success/20 text-theme-success rounded-full text-[10px]">
-                                CURRENT
+                                {t("stateEditor.current")}
                               </span>
                             )}
                           </div>

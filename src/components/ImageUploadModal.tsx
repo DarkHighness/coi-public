@@ -140,7 +140,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               <>
                 <img
                   src={previewUrl}
-                  alt="Preview"
+                  alt={t("common.preview")}
                   className="absolute inset-0 w-full h-full object-contain rounded-xl"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">

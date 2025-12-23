@@ -28,7 +28,7 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-widest text-theme-primary font-bold">
-              Phase {phase}/10
+              {t("logPanel.phase")} {phase}/10
             </span>
             <span className="text-sm font-bold text-theme-text">
               {phaseNames[phase] || `Phase ${phase}`}
@@ -47,7 +47,9 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
       {/* Tool Name */}
       {log.toolName && (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-theme-muted uppercase">Tool:</span>
+          <span className="text-xs text-theme-muted uppercase">
+            {t("logPanel.toolLabel")}
+          </span>
           <span className="text-sm font-mono text-theme-text">
             {log.toolName}
           </span>

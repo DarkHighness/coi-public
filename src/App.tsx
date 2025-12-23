@@ -1090,7 +1090,7 @@ function AppContent() {
               {effectiveMode === "light" ? "☀️" : "🌙"}
             </button>
             <div className="text-lg font-bold font-mono text-white">
-              Theme:{" "}
+              {t("common.theme")}{" "}
               <span className="text-theme-primary">{currentEnvThemeKey}</span>
             </div>
             <button
@@ -1098,7 +1098,7 @@ function AppContent() {
                 setDebugState((prev) => ({ ...prev, showSlideshow: false }))
               }
               className="text-white/50 hover:text-white px-2"
-              title="Close Debugger (Esc)"
+              title={t("debug.close")}
             >
               ✕
             </button>

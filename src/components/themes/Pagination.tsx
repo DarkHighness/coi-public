@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface PaginationProps {
   currentPage: number;
@@ -11,6 +12,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   onPageChange,
 }) => {
+  const { t } = useTranslation();
+
   if (totalPages <= 1) return null;
 
   // Generate page numbers to display
@@ -74,7 +77,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 0}
         className="p-2 rounded-lg bg-theme-surface border border-theme-border text-theme-text hover:bg-theme-surface-highlight disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        aria-label="Previous page"
+        aria-label={t("pagination.previous")}
       >
         <svg
           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -122,7 +125,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages - 1}
         className="p-2 rounded-lg bg-theme-surface border border-theme-border text-theme-text hover:bg-theme-surface-highlight disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        aria-label="Next page"
+        aria-label={t("pagination.next")}
       >
         <svg
           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -144,7 +147,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(totalPages - 1)}
           className="p-2 rounded-lg bg-theme-surface border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-colors"
-          aria-label="Go to last page"
+          aria-label={t("pagination.last")}
         >
           <svg
             className="w-4 h-4 sm:w-5 sm:h-5"
