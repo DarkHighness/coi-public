@@ -52,6 +52,7 @@ export function getStateManagementContent(_ctx: SkillContext): string {
     - **Enums**:
       * **Weather**: Use \`atmosphere.weather\` (none, rain, snow, fog, embers, flicker, sunny).
       * **Conditions**: Use \`condition.type\` (normal, wound, poison, buff, debuff, mental, curse, stun, unconscious, tired, dead).
+        - **IMPORTANT**: Use \`mental\` type for significant psychological states ("Shaken", "Terrified", "Grief-stricken") that should persist and affect narrative.
     - **CONFLICT RESOLUTION** (when updates might contradict):
       * **Latest Action Wins**: If player action contradicts earlier tool calls in same turn, the player's intent takes priority.
       * **Physical Reality Check**: Physics cannot be violated. If player says "I fly" but character has no flight ability, the action fails.

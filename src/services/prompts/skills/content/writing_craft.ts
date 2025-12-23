@@ -36,15 +36,15 @@ export function getWritingCraftContent(ctx: SkillContext): string {
   </rhythm_mastery>
 
   <sensory_immersion>
-    The Five Senses Are Your Palette:
-    - What does the air taste like? (metallic blood, chalky dust, sweet decay)
-    - What texture is under your fingers? (rough hemp, slick oil, cold iron)
-    - What sounds fill the silence? (dripping water, distant thunder, your own heartbeat)
+    The Five Senses Are Your Palette (Prioritize the UNCOMFORTABLE):
+    - **Smell**: The limbic system's key. Not just "bad", but "acrid," "metallic," "cloying," "stale."
+    - **Touch**: Grit, slime, cold sweat, the throb of a bruise, the itch of healing skin.
+    - **Sound**: The wet thud of impact, the whine of tinnitus, the silence that screams.
 
-    Layer the senses. Not just "It smells bad" but "The air is thick with the copper tang of blood and the rot of wet leaves."
-    Mix senses freely (synesthesia): "The silence was heavy." "The light tasted metallic."
-    Focus on micro-details: dust motes in sunlight, rust on a hinge, the tremor in a hand.
-    Paint with the theme—if 'obsidian', describe things as dark and glossy; if 'gold', radiant and metallic.
+    **Synesthesia Rule**: Mix senses to describe the indescribable.
+    - "The pain was white and blinding." (Sight describing Feel)
+    - "His voice grated like rust." (Touch describing Sound)
+    - "Fear tasted like old copper." (Taste describing Emotion)
   </sensory_immersion>
 
   <dialogue_is_character>
@@ -123,14 +123,23 @@ export function getWritingCraftContent(ctx: SkillContext): string {
       The world exists and then YOU perceive/react to it.
     </sensory_ownership>
 
-    <internal_experience>
-      Thoughts and feelings are intimate, immediate:
-      - *This is wrong*, you think. (not "The protagonist feels something is wrong")
-      - Your stomach tightens. (not "A sense of dread fills the air")
-      - The word catches in your throat. (not "Speaking becomes difficult")
+    <psychological_depth>
+      **THE BODY KEEPS THE SCORE**:
+      Emotions are PHYSICAL events. Do not name the emotion; describe the symptom.
 
-      Use italics for internal monologue: *He's lying. But why?*
-    </internal_experience>
+      - **Fear**: Cold bowels, numb fingers, tunnel vision, the sudden urge to urinate.
+      - **Anger**: Heat in the chest, locking jaws, tendons straining, a ringing in the ears.
+      - **Grief**: A hollow ache in the gut, limbs feeling heavy as lead, the world losing color.
+      - **Shock**: Time slowing down, sound muffling, the detachment of watching yourself from afar.
+
+      **Internal Monologue in Italics**:
+      *This can't be happening.*
+      *Just one more step.*
+      *Liar.*
+
+      **Trauma Persistence**:
+      If something terrible happened last turn, "You" are not fine this turn. The hands still shake. The breath is still short. The mind keeps flashing back.
+    </psychological_depth>
 
     <action_ownership>
       Actions belong to "You" with full physical weight, but vary the structure:
