@@ -31,7 +31,10 @@ function buildEntityXml(state: GameState): string {
   // Inventory
   if (state.inventory && state.inventory.length > 0) {
     const items = state.inventory
-      .map((i) => `    <item id="${i.id}">${i.name}</item>`)
+      .map(
+        (i) =>
+          `    <item id="${i.id}" unlocked="${!!i.unlocked}">${i.name}</item>`,
+      )
       .join("\n");
     sections.push(`<inventory count="${state.inventory.length}" query="query_inventory" update="update_inventory" remove="remove_inventory">
 ${items}
@@ -41,7 +44,10 @@ ${items}
   // Relationships (NPCs)
   if (state.npcs && state.npcs.length > 0) {
     const npcs = state.npcs
-      .map((r) => `    <npc id="${r.id}">${r.visible?.name || "Unknown"}</npc>`)
+      .map(
+        (r) =>
+          `    <npc id="${r.id}" unlocked="${!!r.unlocked}">${r.visible?.name || "Unknown"}</npc>`,
+      )
       .join("\n");
     sections.push(`<npcs count="${state.npcs.length}" query="query_npcs" update="update_npcs" remove="remove_npcs">
 ${npcs}
@@ -51,7 +57,10 @@ ${npcs}
   // Locations
   if (state.locations && state.locations.length > 0) {
     const locs = state.locations
-      .map((l) => `    <location id="${l.id}">${l.name}</location>`)
+      .map(
+        (l) =>
+          `    <location id="${l.id}" unlocked="${!!l.unlocked}">${l.name}</location>`,
+      )
       .join("\n");
     sections.push(`<locations count="${state.locations.length}" query="query_location" update="update_location" remove="remove_location">
 ${locs}
@@ -63,7 +72,7 @@ ${locs}
     const quests = state.quests
       .map(
         (q) =>
-          `    <quest id="${q.id}" status="${q.status}">${q.title}</quest>`,
+          `    <quest id="${q.id}" status="${q.status}" unlocked="${!!q.unlocked}">${q.title}</quest>`,
       )
       .join("\n");
     sections.push(`<quests count="${state.quests.length}" query="query_quest" update="update_quest" remove="remove_quest">
@@ -74,19 +83,33 @@ ${quests}
   // Knowledge
   if (state.knowledge && state.knowledge.length > 0) {
     const knows = state.knowledge
-      .map((k) => `    <entry id="${k.id}">${k.title}</entry>`)
+      .map(
+        (k) =>
+          `    <entry id="${k.id}" unlocked="${!!k.unlocked}">${k.title}</entry>`,
+      )
       .join("\n");
     sections.push(`<knowledge count="${state.knowledge.length}" query="query_knowledge" update="update_knowledge" remove="remove_knowledge">
 ${knows}
   </knowledge>`);
   }
-
+  // Character Attributes
+  if (state.character?.attributes && state.character.attributes.length > 0) {
+    const attrs = state.character.attributes
+      .map(
+        (a: any) =>
+          `    <attribute id="${a.id || a.name}" value="${a.value}">${a.name}</attribute>`,
+      )
+      .join("\n");
+    sections.push(`<character_attributes count="${state.character.attributes.length}" update="update_character_attribute" remove="remove_character_attribute">
+${attrs}
+  </character_attributes>`);
+  }
   // Character Skills
   if (state.character?.skills && state.character.skills.length > 0) {
     const skills = state.character.skills
       .map((s: any) => `    <skill id="${s.id || s.name}">${s.name}</skill>`)
       .join("\n");
-    sections.push(`<character_skills count="${state.character.skills.length}" update="update_character" note="Use update_character with skills array">
+    sections.push(`<character_skills count="${state.character.skills.length}" update="update_character_skill" remove="remove_character_skill">
 ${skills}
   </character_skills>`);
   }
@@ -99,7 +122,7 @@ ${skills}
           `    <condition id="${c.id || c.name}">${c.name}</condition>`,
       )
       .join("\n");
-    sections.push(`<character_conditions count="${state.character.conditions.length}" update="update_character" note="Use update_character with conditions array">
+    sections.push(`<character_conditions count="${state.character.conditions.length}" update="update_character_condition" remove="remove_character_condition">
 ${conds}
   </character_conditions>`);
   }
@@ -112,7 +135,7 @@ ${conds}
     const traits = state.character.hiddenTraits
       .map((t: any) => `    <trait id="${t.id || t.name}">${t.name}</trait>`)
       .join("\n");
-    sections.push(`<hidden_traits count="${state.character.hiddenTraits.length}" update="update_character" note="Use update_character with hiddenTraits array">
+    sections.push(`<hidden_traits count="${state.character.hiddenTraits.length}" update="update_character_trait" remove="remove_character_trait">
 ${traits}
   </hidden_traits>`);
   }
@@ -120,7 +143,10 @@ ${traits}
   // Factions
   if (state.factions && state.factions.length > 0) {
     const facs = state.factions
-      .map((f: any) => `    <faction id="${f.id}">${f.name}</faction>`)
+      .map(
+        (f: any) =>
+          `    <faction id="${f.id}" unlocked="${!!f.unlocked}">${f.name}</faction>`,
+      )
       .join("\n");
     sections.push(`<factions count="${state.factions.length}" update="update_faction" remove="remove_faction">
 ${facs}
@@ -226,8 +252,8 @@ Identify and merge duplicate or redundant entities. For each entity type, the XM
   <example type="character_skills">
     <duplicates>"Swordsmanship" and "Sword Fighting"</duplicates>
     <action>
-      1. Use update_character with skills array containing only unique skills
-      2. Remove the duplicate skill from the array
+      1. update_character_skill(name: "Swordsmanship", visible: {level: "Master"}) to merge info
+      2. remove_character_skill(name: "Sword Fighting") to remove duplicate
     </action>
   </example>
 
@@ -247,17 +273,40 @@ Identify and merge duplicate or redundant entities. For each entity type, the XM
       2. remove_timeline(id: "duplicate_event_id") to delete the redundant one
     </action>
   </example>
+
+  <example type="dual_layer_merge">
+    <duplicates>1. "old_man" (Unlocked: true, Visible: "Just an old man") AND 2. "gandalf" (Unlocked: false, Hidden: "Powerful Wizard")</duplicates>
+    <action>
+      1. PREFER keeping "gandalf" (The Truth).
+      2. update_npc(id: "gandalf", visible: { name: "Old Man", description: "Just an old man (actually Gandalf)" }, unlocked: true) to merge visible info and unlock.
+      3. remove_npcs(id: "old_man") to remove the fragment.
+    </action>
+  </example>
 </deduplication_examples>
 
 <rules>
 - Be CONSERVATIVE: only merge if you're CONFIDENT they represent the SAME entity
 - PRESERVE all important information when merging (combine descriptions, notes)
 - ALWAYS use update_* to add merged details BEFORE using remove_*
+- **DUAL LAYER RULE**: If merging duplicates where one is Unlocked (known) and one is Locked (hidden):
+    1. PREFER keeping the Locked entity (it often contains full GM truth).
+    2. MUST merge the Unlocked entity's visible info into the Kept entity's separate 'visible' layer.
+    3. MUST set the Kept entity to 'unlocked: true' if the player knew the removed one.
+    4. NEVER lose player knowledge (unlocked status) during a merge.
 - If no duplicates found, call finish_turn with narrative "No duplicates found"
 </rules>
 
 <output>
-After cleanup, call finish_turn with:
+After cleanup, call finish_turn.
+**CRITICAL NARRATIVE PRIVACY RULE**:
+- The 'narrative' MUST be a purely OBJECTIVE, META-LEVEL summary of your actions.
+- **ABSOLUTELY FORBIDDEN**: Do NOT mention names of hidden entities, secret identities, or specific plot details in the narrative.
+- **FORBIDDEN**: "Merged Old Man with Gandalf the Wizard."
+- **ALLOWED**: "Merged 1 duplicate NPC and updated character skills."
+- **ALLOWED**: "Consolidated 2 inventory items and optimized quest log."
+- The narrative is for the player's UI log, so it must not spoil hidden truths you just organized.
+
+Required fields:
 - narrative: Summary of cleanup actions (e.g., "Merged 2 duplicate items, consolidated 1 NPC")
 - choices: ["Continue your adventure"]
 </output>`;

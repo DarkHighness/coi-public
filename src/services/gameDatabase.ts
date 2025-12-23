@@ -122,13 +122,16 @@ export interface PaginatedListResult {
   totalPages: number;
 }
 
-const createSuccess = <T>(data: T, message: string): ToolCallSuccess<T> => ({
+export const createSuccess = <T>(
+  data: T,
+  message: string,
+): ToolCallSuccess<T> => ({
   success: true,
   data,
   message,
 });
 
-const createError = (
+export const createError = (
   error: string,
   code: ToolCallError["code"] = "UNKNOWN",
 ): ToolCallError => ({
@@ -203,7 +206,7 @@ export class GameDatabase {
    * 创建当前版本化时间戳
    * 用于记录实体修改时间，支持分叉比较
    */
-  private createCurrentTimestamp(): VersionedTimestamp {
+  public createCurrentTimestamp(): VersionedTimestamp {
     return createVersionedTimestamp({
       forkId: this.state.forkId || 0,
       turnNumber: this.state.turnNumber || 0,
@@ -2468,5 +2471,551 @@ export class GameDatabase {
       { category, identifier: entityIdentifier, unlocked: true },
       `Unlocked ${category}: ${entityIdentifier} - ${reason}`,
     );
+  }
+
+  // ============================================================================
+  // LOW-LEVEL STORAGE API
+  // These methods provide pure CRUD operations for tool handlers.
+  // Business logic (validation, conflict checks) is handled by the handlers.
+  // ============================================================================
+
+  // --- Inventory ---
+  public getInventoryById(id: string): InventoryItem | undefined {
+    return this.state.inventory.find((i) => matchesIdentifier(i.id, id));
+  }
+
+  public getInventoryByName(name: string): InventoryItem | undefined {
+    return this.state.inventory.find((i) => matchesIdentifier(i.name, name));
+  }
+
+  public addInventoryItem(item: InventoryItem): void {
+    this.state.inventory.push(item);
+  }
+
+  public updateInventoryItem(
+    id: string,
+    updates: Partial<InventoryItem>,
+  ): boolean {
+    const item = this.getInventoryById(id);
+    if (!item) return false;
+    if (updates.name !== undefined) item.name = updates.name;
+    if (updates.visible) mergeWithNullDeletion(item.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(item.hidden, updates.hidden);
+    if (updates.lore !== undefined) item.lore = updates.lore;
+    if (updates.unlocked !== undefined) item.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      item.unlockReason = updates.unlockReason;
+    item.highlight = true;
+    item.modifiedAt = this.createCurrentTimestamp();
+    item.lastModified = Date.now();
+    return true;
+  }
+
+  public removeInventoryItem(id: string): InventoryItem | undefined {
+    const index = this.state.inventory.findIndex((i) =>
+      matchesIdentifier(i.id, id),
+    );
+    if (index === -1) return undefined;
+    return this.state.inventory.splice(index, 1)[0];
+  }
+
+  // --- NPC ---
+  public getNpcById(id: string): NPC | undefined {
+    return this.state.npcs.find((n) => matchesIdentifier(n.id, id));
+  }
+
+  public getNpcByName(name: string): NPC | undefined {
+    return this.state.npcs.find((n) => matchesIdentifier(n.visible.name, name));
+  }
+
+  public addNpc(npc: NPC): void {
+    this.state.npcs.push(npc);
+  }
+
+  public updateNpc(
+    id: string,
+    updates: Partial<NPC> & { visible?: any; hidden?: any },
+  ): boolean {
+    const npc = this.getNpcById(id);
+    if (!npc) return false;
+    if (updates.visible) mergeWithNullDeletion(npc.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(npc.hidden, updates.hidden);
+    if (updates.currentLocation !== undefined)
+      npc.currentLocation = updates.currentLocation;
+    if (updates.known !== undefined) npc.known = updates.known;
+    if (updates.notes !== undefined) {
+      if (updates.notes === null) delete npc.notes;
+      else npc.notes = updates.notes;
+    }
+    if (updates.unlocked !== undefined) npc.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      npc.unlockReason = updates.unlockReason;
+    npc.highlight = true;
+    npc.modifiedAt = this.createCurrentTimestamp();
+    npc.lastModified = Date.now();
+    return true;
+  }
+
+  public removeNpc(id: string): NPC | undefined {
+    const index = this.state.npcs.findIndex((n) => matchesIdentifier(n.id, id));
+    if (index === -1) return undefined;
+    return this.state.npcs.splice(index, 1)[0];
+  }
+
+  // --- Location ---
+  public getLocationById(id: string): Location | undefined {
+    return this.state.locations.find((l) => matchesIdentifier(l.id, id));
+  }
+
+  public getLocationByName(name: string): Location | undefined {
+    return this.state.locations.find((l) => matchesIdentifier(l.name, name));
+  }
+
+  public addLocation(location: Location): void {
+    this.state.locations.push(location);
+  }
+
+  public updateLocation(id: string, updates: Partial<Location>): boolean {
+    const loc = this.getLocationById(id);
+    if (!loc) return false;
+    if (updates.name !== undefined) loc.name = updates.name;
+    if (updates.visible) mergeWithNullDeletion(loc.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(loc.hidden, updates.hidden);
+    if (updates.isVisited !== undefined) loc.isVisited = updates.isVisited;
+    if (updates.unlocked !== undefined) loc.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      loc.unlockReason = updates.unlockReason;
+    loc.highlight = true;
+    return true;
+  }
+
+  public removeLocation(id: string): Location | undefined {
+    const index = this.state.locations.findIndex((l) =>
+      matchesIdentifier(l.id, id),
+    );
+    if (index === -1) return undefined;
+    return this.state.locations.splice(index, 1)[0];
+  }
+
+  public setCurrentLocation(name: string): void {
+    this.state.currentLocation = name;
+    if (this.state.character) {
+      this.state.character.currentLocation = name;
+    }
+  }
+
+  // --- Quest ---
+  public getQuestById(id: string): Quest | undefined {
+    return this.state.quests.find((q) => matchesIdentifier(q.id, id));
+  }
+
+  public addQuest(quest: Quest): void {
+    this.state.quests.push(quest);
+  }
+
+  public updateQuest(id: string, updates: Partial<Quest>): boolean {
+    const quest = this.getQuestById(id);
+    if (!quest) return false;
+    if (updates.title !== undefined) (quest as any).title = updates.title;
+    if (updates.visible) mergeWithNullDeletion(quest.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(quest.hidden, updates.hidden);
+    if (updates.unlocked !== undefined) quest.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      quest.unlockReason = updates.unlockReason;
+    quest.highlight = true;
+    quest.modifiedAt = this.createCurrentTimestamp();
+    return true;
+  }
+
+  public removeQuest(id: string): Quest | undefined {
+    const index = this.state.quests.findIndex((q) =>
+      matchesIdentifier(q.id, id),
+    );
+    if (index === -1) return undefined;
+    return this.state.quests.splice(index, 1)[0];
+  }
+
+  // --- Knowledge ---
+  public getKnowledgeById(id: string): KnowledgeEntry | undefined {
+    return this.state.knowledge.find((k) => matchesIdentifier(k.id, id));
+  }
+
+  public addKnowledge(entry: KnowledgeEntry): void {
+    this.state.knowledge.push(entry);
+  }
+
+  public updateKnowledge(
+    id: string,
+    updates: Partial<KnowledgeEntry>,
+  ): boolean {
+    const entry = this.getKnowledgeById(id);
+    if (!entry) return false;
+    if (updates.visible) mergeWithNullDeletion(entry.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(entry.hidden, updates.hidden);
+    if (updates.category !== undefined) entry.category = updates.category;
+    if (updates.unlocked !== undefined) entry.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      entry.unlockReason = updates.unlockReason;
+    entry.highlight = true;
+    entry.modifiedAt = this.createCurrentTimestamp();
+    return true;
+  }
+
+  // --- Timeline ---
+  public getTimelineEventById(id: string): TimelineEvent | undefined {
+    return this.state.timeline.find((t) => matchesIdentifier(t.id, id));
+  }
+
+  public addTimelineEvent(event: TimelineEvent): void {
+    this.state.timeline.push(event);
+  }
+
+  public updateTimelineEvent(
+    id: string,
+    updates: Partial<TimelineEvent>,
+  ): boolean {
+    const event = this.getTimelineEventById(id);
+    if (!event) return false;
+    if (updates.visible) mergeWithNullDeletion(event.visible, updates.visible);
+    if (updates.hidden) mergeWithNullDeletion(event.hidden, updates.hidden);
+    if (updates.category !== undefined) event.category = updates.category;
+    if (updates.known !== undefined) event.known = updates.known;
+    return true;
+  }
+
+  // --- Faction ---
+  public getFactionById(id: string): Faction | undefined {
+    return this.state.factions.find((f) => matchesIdentifier(f.id, id));
+  }
+
+  public getFactionByName(name: string): Faction | undefined {
+    return this.state.factions.find((f) => matchesIdentifier(f.name, name));
+  }
+
+  public addFaction(faction: Faction): void {
+    this.state.factions.push(faction);
+  }
+
+  public updateFaction(id: string, updates: Partial<Faction>): boolean {
+    const faction = this.getFactionById(id);
+    if (!faction) return false;
+    if (updates.name !== undefined) faction.name = updates.name;
+    if (updates.visible)
+      mergeWithNullDeletion(faction.visible as any, updates.visible as any);
+    if (updates.hidden)
+      mergeWithNullDeletion(faction.hidden as any, updates.hidden as any);
+    if (updates.unlocked !== undefined) faction.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      faction.unlockReason = updates.unlockReason;
+    faction.highlight = true;
+    return true;
+  }
+
+  public removeFaction(id: string): Faction | undefined {
+    const index = this.state.factions.findIndex((f) =>
+      matchesIdentifier(f.id, id),
+    );
+    if (index === -1) return undefined;
+    return this.state.factions.splice(index, 1)[0];
+  }
+
+  // --- Causal Chain ---
+  public getCausalChainById(chainId: string): CausalChain | undefined {
+    return this.state.causalChains.find((c) =>
+      matchesIdentifier(c.chainId, chainId),
+    );
+  }
+
+  public addCausalChain(chain: CausalChain): void {
+    this.state.causalChains.push(chain);
+  }
+
+  public updateCausalChain(
+    chainId: string,
+    updates: Partial<CausalChain>,
+  ): boolean {
+    const chain = this.getCausalChainById(chainId);
+    if (!chain) return false;
+    if (updates.status !== undefined) chain.status = updates.status;
+    if (updates.pendingConsequences !== undefined) {
+      chain.pendingConsequences = updates.pendingConsequences;
+    }
+    if (updates.events !== undefined) {
+      chain.events = updates.events;
+    }
+    return true;
+  }
+
+  // --- Character ---
+  public getCharacter(): CharacterStatus {
+    return this.state.character;
+  }
+
+  public updateCharacterProfile(updates: Partial<CharacterProfile>): void {
+    if (updates.name !== undefined) this.state.character.name = updates.name;
+    if (updates.title !== undefined) this.state.character.title = updates.title;
+    if (updates.appearance !== undefined)
+      this.state.character.appearance = updates.appearance;
+    if (updates.background !== undefined)
+      this.state.character.background = updates.background;
+    if (updates.profession !== undefined)
+      this.state.character.profession = updates.profession;
+    if (updates.status !== undefined)
+      this.state.character.status = updates.status;
+    if (updates.race !== undefined) this.state.character.race = updates.race;
+  }
+
+  public getCharacterAttributeByLabel(
+    label: string,
+  ): CharacterAttribute | undefined {
+    return this.state.character.attributes.find((a) =>
+      matchesIdentifier(a.label, label),
+    );
+  }
+
+  public addCharacterAttribute(attr: CharacterAttribute): void {
+    this.state.character.attributes.push(attr);
+  }
+
+  public updateCharacterAttribute(
+    label: string,
+    updates: Partial<CharacterAttribute>,
+  ): boolean {
+    const attr = this.getCharacterAttributeByLabel(label);
+    if (!attr) return false;
+    if (updates.value !== undefined) attr.value = updates.value;
+    if (updates.maxValue !== undefined) attr.maxValue = updates.maxValue;
+    if (updates.color !== undefined) attr.color = updates.color;
+    if (updates.icon !== undefined) attr.icon = updates.icon;
+    if (updates.label !== undefined) attr.label = updates.label;
+    return true;
+  }
+
+  public removeCharacterAttribute(label: string): boolean {
+    const index = this.state.character.attributes.findIndex((a) =>
+      matchesIdentifier(a.label, label),
+    );
+    if (index === -1) return false;
+    this.state.character.attributes.splice(index, 1);
+    return true;
+  }
+
+  public getCharacterSkillById(
+    id: string,
+  ): CharacterStatus["skills"][number] | undefined {
+    return this.state.character.skills.find((s) => matchesIdentifier(s.id, id));
+  }
+
+  public addCharacterSkill(skill: CharacterStatus["skills"][number]): void {
+    this.state.character.skills.push(skill);
+  }
+
+  public updateCharacterSkill(
+    id: string,
+    updates: Partial<CharacterStatus["skills"][number]>,
+  ): boolean {
+    const skill = this.getCharacterSkillById(id);
+    if (!skill) return false;
+    if (updates.name !== undefined) skill.name = updates.name;
+    if (updates.visible)
+      mergeWithNullDeletion(skill.visible as any, updates.visible as any);
+    if (updates.hidden)
+      mergeWithNullDeletion(skill.hidden as any, updates.hidden as any);
+    return true;
+  }
+
+  public removeCharacterSkill(id: string): boolean {
+    const index = this.state.character.skills.findIndex((s) =>
+      matchesIdentifier(s.id, id),
+    );
+    if (index === -1) return false;
+    this.state.character.skills.splice(index, 1);
+    return true;
+  }
+
+  public getCharacterConditionById(
+    id: string,
+  ): CharacterStatus["conditions"][number] | undefined {
+    return this.state.character.conditions.find((c) =>
+      matchesIdentifier(c.id, id),
+    );
+  }
+
+  public addCharacterCondition(
+    condition: CharacterStatus["conditions"][number],
+  ): void {
+    this.state.character.conditions.push(condition);
+  }
+
+  public updateCharacterCondition(
+    id: string,
+    updates: Partial<CharacterStatus["conditions"][number]>,
+  ): boolean {
+    const condition = this.getCharacterConditionById(id);
+    if (!condition) return false;
+    if (updates.name !== undefined) condition.name = updates.name;
+    if (updates.visible)
+      mergeWithNullDeletion(condition.visible as any, updates.visible as any);
+    if (updates.hidden)
+      mergeWithNullDeletion(condition.hidden as any, updates.hidden as any);
+    return true;
+  }
+
+  public removeCharacterCondition(id: string): boolean {
+    const index = this.state.character.conditions.findIndex((c) =>
+      matchesIdentifier(c.id, id),
+    );
+    if (index === -1) return false;
+    this.state.character.conditions.splice(index, 1);
+    return true;
+  }
+
+  public getCharacterTraitById(
+    id: string,
+  ): CharacterStatus["hiddenTraits"][number] | undefined {
+    return (this.state.character.hiddenTraits || []).find((t) =>
+      matchesIdentifier(t.id, id),
+    );
+  }
+
+  public addCharacterTrait(
+    trait: CharacterStatus["hiddenTraits"][number],
+  ): void {
+    if (!this.state.character.hiddenTraits)
+      this.state.character.hiddenTraits = [];
+    this.state.character.hiddenTraits.push(trait);
+  }
+
+  public updateCharacterTrait(
+    id: string,
+    updates: Partial<CharacterStatus["hiddenTraits"][number]>,
+  ): boolean {
+    const trait = this.getCharacterTraitById(id);
+    if (!trait) return false;
+    if (updates.name !== undefined) trait.name = updates.name;
+    if (updates.description !== undefined)
+      trait.description = updates.description;
+    if (updates.effects !== undefined) trait.effects = updates.effects;
+    if (updates.triggerConditions !== undefined)
+      trait.triggerConditions = updates.triggerConditions;
+    if (updates.unlocked !== undefined) trait.unlocked = updates.unlocked;
+    if (updates.unlockReason !== undefined)
+      trait.unlockReason = updates.unlockReason;
+    if (updates.icon !== undefined) trait.icon = updates.icon;
+    if (updates.highlight !== undefined) trait.highlight = updates.highlight;
+    return true;
+  }
+
+  public removeCharacterTrait(id: string): boolean {
+    if (!this.state.character.hiddenTraits) return false;
+    const index = this.state.character.hiddenTraits.findIndex((t) =>
+      matchesIdentifier(t.id, id),
+    );
+    if (index === -1) return false;
+    this.state.character.hiddenTraits.splice(index, 1);
+    return true;
+  }
+
+  // --- Global State ---
+  public getGlobalState(): GlobalStateInfo {
+    return {
+      time: this.state.time,
+      atmosphere: this.state.atmosphere,
+      theme: this.state.theme,
+      currentLocation: this.state.currentLocation,
+    };
+  }
+
+  public updateGlobalState(updates: Partial<GlobalStateInfo>): void {
+    if (updates.time !== undefined) this.state.time = updates.time;
+    if (updates.atmosphere !== undefined)
+      this.state.atmosphere = updates.atmosphere;
+    if (updates.theme !== undefined) this.state.theme = updates.theme;
+    if (updates.currentLocation !== undefined)
+      this.state.currentLocation = updates.currentLocation;
+  }
+
+  // --- Notes ---
+  public getNote(key: string): string | undefined {
+    return this.state.notes?.[key];
+  }
+
+  public setNote(key: string, value: string): void {
+    if (!this.state.notes) this.state.notes = {};
+    this.state.notes[key] = value;
+  }
+
+  public removeNote(key: string): boolean {
+    if (!this.state.notes || !(key in this.state.notes)) return false;
+    delete this.state.notes[key];
+    return true;
+  }
+
+  public getAllNoteKeys(): string[] {
+    return Object.keys(this.state.notes || {});
+  }
+
+  public removeKnowledge(id: string): boolean {
+    const index = this.state.knowledge.findIndex((k) =>
+      matchesIdentifier(k.id, id),
+    );
+    if (index === -1) return false;
+    this.state.knowledge.splice(index, 1);
+    return true;
+  }
+
+  public removeTimelineEvent(id: string): boolean {
+    const index = this.state.timeline.findIndex((t) =>
+      matchesIdentifier(t.id, id),
+    );
+    if (index === -1) return false;
+    this.state.timeline.splice(index, 1);
+    return true;
+  }
+
+  public removeCausalChain(chainId: string): boolean {
+    const index = this.state.causalChains.findIndex((c) =>
+      matchesIdentifier(c.chainId, chainId),
+    );
+    if (index === -1) return false;
+    this.state.causalChains.splice(index, 1);
+    return true;
+  }
+
+  // --- Helpers exposed for handlers ---
+  public getSuggestSimilar(identifier: string, collection: any[]): string {
+    return this.suggestSimilar(identifier, collection);
+  }
+
+  public getInventoryList(): InventoryItem[] {
+    return this.state.inventory;
+  }
+
+  public getNpcList(): NPC[] {
+    return this.state.npcs;
+  }
+
+  public getLocationList(): Location[] {
+    return this.state.locations;
+  }
+
+  public getQuestList(): Quest[] {
+    return this.state.quests;
+  }
+
+  public getKnowledgeList(): KnowledgeEntry[] {
+    return this.state.knowledge;
+  }
+
+  public getFactionList(): Faction[] {
+    return this.state.factions;
+  }
+
+  public getTimelineList(): TimelineEvent[] {
+    return this.state.timeline;
+  }
+
+  public getCausalChainList(): CausalChain[] {
+    return this.state.causalChains;
   }
 }

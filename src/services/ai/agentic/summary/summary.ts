@@ -33,6 +33,11 @@ import {
   SUMMARY_STAGE_ORDER,
   findQueryToolsForEntities,
 } from "../../../tools";
+import {
+  hasHandler,
+  dispatchToolCall,
+  type ToolContext,
+} from "../../../tools/toolHandlerRegistry";
 
 import {
   createUserMessage,
@@ -399,6 +404,16 @@ const executeSummaryToolCall = (
     }
 
     return result;
+  }
+
+  // Delegate to tool handler registry for dynamically loaded query/list tools
+  // (e.g., query_inventory, list, query_npcs loaded via summary_load_query)
+  if (hasHandler(name)) {
+    const toolContext: ToolContext = {
+      db,
+      gameState: input.gameState,
+    };
+    return dispatchToolCall(name, args, toolContext);
   }
 
   return { success: false, error: `Unknown tool: ${name}` };

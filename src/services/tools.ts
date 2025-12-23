@@ -903,11 +903,35 @@ export const REMOVE_QUEST_TOOL = defineTool({
   }),
 });
 
+export const REMOVE_KNOWLEDGE_TOOL = defineTool({
+  name: "remove_knowledge",
+  description: "Remove knowledge.",
+  parameters: z.object({
+    id: z.string().describe("ID."),
+  }),
+});
+
+export const REMOVE_TIMELINE_TOOL = defineTool({
+  name: "remove_timeline",
+  description: "Remove timeline event.",
+  parameters: z.object({
+    id: z.string().describe("ID."),
+  }),
+});
+
 export const REMOVE_FACTION_TOOL = defineTool({
   name: "remove_faction",
   description: "Remove faction.",
   parameters: z.object({
     id: z.string().describe("ID."),
+  }),
+});
+
+export const REMOVE_CAUSAL_CHAIN_TOOL = defineTool({
+  name: "remove_causal_chain",
+  description: "Remove causal chain.",
+  parameters: z.object({
+    chainId: z.string().describe("ID."),
   }),
 });
 
@@ -1717,12 +1741,14 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   // Knowledge
   "add:knowledge": [ADD_KNOWLEDGE_TOOL],
   "update:knowledge": [UPDATE_KNOWLEDGE_TOOL],
+  "remove:knowledge": [REMOVE_KNOWLEDGE_TOOL],
   "query:knowledge": [QUERY_KNOWLEDGE_TOOL],
   "unlock:knowledge": [UNLOCK_ENTITY_TOOL],
 
   // Timeline
   "add:timeline": [ADD_TIMELINE_TOOL],
   "update:timeline": [UPDATE_TIMELINE_TOOL],
+  "remove:timeline": [REMOVE_TIMELINE_TOOL],
   "query:timeline": [QUERY_TIMELINE_TOOL],
   "unlock:timeline": [UNLOCK_ENTITY_TOOL],
 
@@ -1744,6 +1770,7 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "trigger:causal_chain": [TRIGGER_CAUSAL_CHAIN_TOOL],
   "resolve:causal_chain": [RESOLVE_CAUSAL_CHAIN_TOOL],
   "interrupt:causal_chain": [INTERRUPT_CAUSAL_CHAIN_TOOL],
+  "remove:causal_chain": [REMOVE_CAUSAL_CHAIN_TOOL],
   "query:causal_chain": [QUERY_CAUSAL_CHAIN_TOOL],
 
   // Character Attributes
@@ -1888,6 +1915,9 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   REMOVE_CHARACTER_SKILL_TOOL,
   REMOVE_CHARACTER_CONDITION_TOOL,
   REMOVE_CHARACTER_TRAIT_TOOL,
+  REMOVE_KNOWLEDGE_TOOL,
+  REMOVE_TIMELINE_TOOL,
+  REMOVE_CAUSAL_CHAIN_TOOL,
   UPDATE_INVENTORY_TOOL,
   UPDATE_NPC_TOOL,
   UPDATE_LOCATION_TOOL,
@@ -2115,9 +2145,13 @@ export type AddKnowledgeParams = InferToolParams<typeof ADD_KNOWLEDGE_TOOL>;
 export type UpdateKnowledgeParams = InferToolParams<
   typeof UPDATE_KNOWLEDGE_TOOL
 >;
+export type RemoveKnowledgeParams = InferToolParams<
+  typeof REMOVE_KNOWLEDGE_TOOL
+>;
 
 export type AddTimelineParams = InferToolParams<typeof ADD_TIMELINE_TOOL>;
 export type UpdateTimelineParams = InferToolParams<typeof UPDATE_TIMELINE_TOOL>;
+export type RemoveTimelineParams = InferToolParams<typeof REMOVE_TIMELINE_TOOL>;
 
 export type AddFactionParams = InferToolParams<typeof ADD_FACTION_TOOL>;
 export type UpdateFactionParams = InferToolParams<typeof UPDATE_FACTION_TOOL>;
@@ -2137,6 +2171,9 @@ export type ResolveCausalChainParams = InferToolParams<
 >;
 export type InterruptCausalChainParams = InferToolParams<
   typeof INTERRUPT_CAUSAL_CHAIN_TOOL
+>;
+export type RemoveCausalChainParams = InferToolParams<
+  typeof REMOVE_CAUSAL_CHAIN_TOOL
 >;
 
 // Global and World Info Types
@@ -2252,6 +2289,9 @@ export interface ToolParamsMap {
   remove_character_skill: RemoveCharacterSkillParams;
   remove_character_condition: RemoveCharacterConditionParams;
   remove_character_trait: RemoveCharacterTraitParams;
+  remove_knowledge: RemoveKnowledgeParams;
+  remove_timeline: RemoveTimelineParams;
+  remove_causal_chain: RemoveCausalChainParams;
 
   // Update tools
   update_inventory: UpdateInventoryParams;

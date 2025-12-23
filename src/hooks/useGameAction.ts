@@ -732,12 +732,15 @@ export const useGameAction = ({
 
           // If no active node, just update global state
           if (!activeNodeId || !prev.nodes[activeNodeId]) {
-            return {
+            const newState = {
               ...prev,
               summaries: effectiveSummaries,
               lastSummarizedIndex: lastIndex,
               isProcessing: false,
             };
+            // CRITICAL: Update ref immediately for subsequent handleAction calls
+            gameStateRef.current = newState;
+            return newState;
           }
 
           // Update the active node with new summarization metadata
@@ -750,7 +753,7 @@ export const useGameAction = ({
             summarySnapshot: summarySnapshot, // Attach the summary to this node
           };
 
-          return {
+          const newState = {
             ...prev,
             nodes: {
               ...prev.nodes,
@@ -760,6 +763,9 @@ export const useGameAction = ({
             lastSummarizedIndex: lastIndex,
             isProcessing: false,
           };
+          // CRITICAL: Update ref immediately for subsequent handleAction calls
+          gameStateRef.current = newState;
+          return newState;
         });
 
         // Clear history cache in session manager

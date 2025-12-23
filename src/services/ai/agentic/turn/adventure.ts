@@ -97,6 +97,13 @@ import {
   getBudgetSummary,
 } from "../budgetUtils";
 
+// Import tool handlers - this registers all handlers
+import {
+  dispatchToolCall,
+  hasHandler,
+  ToolContext,
+} from "../../../tools/handlers";
+
 // Import Session Manager for internal history tracking
 import { sessionManager, SessionConfig } from "../../sessionManager";
 
@@ -1356,7 +1363,21 @@ export function executeToolCall(
   settings?: AISettings,
 ): unknown {
   // ============================================================================
-  // STORY MEMORY QUERY TOOLS
+  // TRY DISPATCH TO REGISTERED HANDLERS FIRST
+  // ============================================================================
+  if (hasHandler(name)) {
+    const context: ToolContext = {
+      db,
+      accumulatedResponse,
+      changedEntities,
+      gameState,
+      settings,
+    };
+    return dispatchToolCall(name, args, context);
+  }
+
+  // ============================================================================
+  // STORY MEMORY QUERY TOOLS (special handling - not in registry)
   // ============================================================================
   if (name === "query_story") {
     return executeQueryStory(args, gameState);
