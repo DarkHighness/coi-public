@@ -213,11 +213,11 @@ export class GameDatabase {
   // --- Pending Consequences Query ---
 
   /**
-   * Get all pending consequences that are READY to potentially trigger.
-   * Returns consequences where readyAfterTurn < currentTurn and not yet triggered.
+   * Get all pending consequences that are available for the AI to potentially trigger.
+   * Returns all untriggered consequences from active chains.
    *
    * NOTE: This does NOT auto-trigger anything. It provides context for AI to decide.
-   * The AI calls update_causal_chain with action='trigger' when it decides a consequence should happen.
+   * The AI calls trigger_causal_chain when it decides a consequence should happen based on narrative.
    */
   public getReadyConsequences(): Array<{
     chainId: string;
@@ -226,11 +226,10 @@ export class GameDatabase {
       id: string;
       description: string;
       conditions?: string[];
-      readyAfterTurn: number;
+      timing?: string;
       known?: boolean;
     };
   }> {
-    const currentTurn = this.state.turnNumber || 0;
     const results: Array<{
       chainId: string;
       chainDescription: string;
@@ -238,7 +237,7 @@ export class GameDatabase {
         id: string;
         description: string;
         conditions?: string[];
-        readyAfterTurn: number;
+        timing?: string;
         known?: boolean;
       };
     }> = [];
@@ -250,10 +249,7 @@ export class GameDatabase {
         // Skip already triggered consequences
         if (conseq.triggered) continue;
 
-        // Check if ready (current turn is AFTER readyAfterTurn)
-        if (currentTurn <= conseq.readyAfterTurn) continue;
-
-        // This consequence is READY for AI to potentially trigger
+        // Return all untriggered consequences - AI decides when to trigger based on narrative
         results.push({
           chainId: chain.chainId,
           chainDescription: chain.rootCause.description,
@@ -261,7 +257,7 @@ export class GameDatabase {
             id: conseq.id,
             description: conseq.description,
             conditions: conseq.conditions,
-            readyAfterTurn: conseq.readyAfterTurn,
+            timing: conseq.timing,
             known: conseq.known,
           },
         });
@@ -2329,12 +2325,10 @@ export class GameDatabase {
       else if (data.status) chain.status = data.status;
 
       if (data.pendingConsequences) {
-        // Auto-set createdAtTurn for new pending consequences
-        const currentTurn = this.state.turnNumber || 0;
+        // Map pending consequences with defaults
         chain.pendingConsequences = data.pendingConsequences.map((c, idx) => ({
           ...c,
           id: c.id || `conseq:${chain.chainId}:${idx}`,
-          createdAtTurn: c.createdAtTurn ?? currentTurn,
           triggered: c.triggered ?? false,
         }));
       }

@@ -625,7 +625,7 @@ export const ADD_INVENTORY_TOOL = defineTool({
   name: "add_inventory",
   description: "Add inventory item.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (inv:N)."),
+    id: z.string().describe("REQUIRED. ID format: inv:N (e.g., inv:1, inv:2)."),
     name: z.string().describe("Item name."),
     visible: inventoryItemVisibleSchema
       .partial()
@@ -646,7 +646,7 @@ export const ADD_NPC_TOOL = defineTool({
   description:
     "Add NPC. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (npc:N)."),
+    id: z.string().describe("REQUIRED. ID format: npc:N (e.g., npc:1, npc:2)."),
     name: z.string().describe("NPC name."),
     currentLocation: z.string().optional().describe("Location ID (loc:N)."),
     known: z.boolean().optional().describe("Player knows NPC? Default: true."),
@@ -665,7 +665,7 @@ export const ADD_LOCATION_TOOL = defineTool({
   name: "add_location",
   description: "Add location.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (loc:N)."),
+    id: z.string().describe("REQUIRED. ID format: loc:N (e.g., loc:1, loc:2)."),
     name: z.string().describe("Location name."),
     visible: locationVisibleSchema
       .partial()
@@ -691,7 +691,7 @@ export const ADD_QUEST_TOOL = defineTool({
   name: "add_quest",
   description: "Add quest.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (quest:N)."),
+    id: z.string().describe("REQUIRED. ID format: quest:N (e.g., quest:1, quest:2)."),
     title: z.string().describe("Quest title."),
     type: questTypeSchema.optional().describe("Quest type."),
     visible: questVisibleSchema.partial().optional().describe("Visible props."),
@@ -708,7 +708,7 @@ export const ADD_KNOWLEDGE_TOOL = defineTool({
   name: "add_knowledge",
   description: "Add knowledge/lore.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (know:N)."),
+    id: z.string().describe("REQUIRED. ID format: know:N (e.g., know:1, know:2)."),
     title: z.string().describe("Title."),
     category: knowledgeCategorySchema.optional().describe("Category."),
     visible: knowledgeVisibleSchema
@@ -730,7 +730,7 @@ export const ADD_TIMELINE_TOOL = defineTool({
   name: "add_timeline",
   description: "Add timeline event.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (evt:N)."),
+    id: z.string().describe("REQUIRED. ID format: evt:N (e.g., evt:1, evt:2)."),
     gameTime: z.string().optional().describe("Time."),
     category: timelineEventCategorySchema.optional().describe("Category."),
     visible: timelineEventVisibleSchema.optional().describe("Visible info."),
@@ -749,7 +749,7 @@ export const ADD_FACTION_TOOL = defineTool({
   name: "add_faction",
   description: "Add faction.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (fac:N)."),
+    id: z.string().describe("REQUIRED. ID format: fac:N (e.g., fac:1, fac:2)."),
     name: z.string().describe("Name."),
     visible: z
       .object({
@@ -800,13 +800,23 @@ export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
         z.object({
           id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          readyAfterTurn: z.number().int().describe("Trigger turn."),
-          conditions: z.array(z.string()).optional().describe("Conditions."),
+          timing: z
+            .string()
+            .optional()
+            .describe(
+              "Narrative timing hint (e.g., 'after nightfall', 'when alone', 'next encounter'). AI decides when to trigger.",
+            ),
+          conditions: z
+            .array(z.string())
+            .optional()
+            .describe(
+              "Narrative conditions that must be met for AI to trigger this consequence.",
+            ),
           known: z.boolean().optional().describe("Known?"),
         }),
       )
       .optional()
-      .describe("Consequences."),
+      .describe("Pending consequences. AI decides when to trigger based on story."),
   }),
 });
 
@@ -828,7 +838,7 @@ export const ADD_CHARACTER_SKILL_TOOL = defineTool({
   description:
     "Add skill to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (skill:N)."),
+    id: z.string().describe("REQUIRED. ID format: skill:N (e.g., skill:1, skill:2)."),
     name: z.string().describe("Skill name."),
     level: z.string().optional().describe("Level."),
     visible: skillVisibleSchema.partial().optional().describe("Visible props."),
@@ -844,7 +854,7 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
   description:
     "Add condition (buff/debuff) to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (cond:N)."),
+    id: z.string().describe("REQUIRED. ID format: cond:N (e.g., cond:1, cond:2)."),
     name: z.string().describe("Condition name."),
     type: conditionTypeSchema.optional().describe("Type."),
     visible: conditionVisibleSchema
@@ -862,7 +872,7 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
       })
       .optional()
       .describe("Effects."),
-    duration: z.number().int().optional().describe("Duration (turns)."),
+
     icon: z.string().optional().describe("Emoji."),
   }),
 });
@@ -872,7 +882,7 @@ export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
   description:
     "Add hidden trait to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
-    id: z.string().optional().describe("Optional ID (trait:N)."),
+    id: z.string().describe("REQUIRED. ID format: trait:N (e.g., trait:1, trait:2)."),
     name: z.string().describe("Trait name."),
     description: z.string().optional().describe("Description."),
     effects: z.array(z.string()).optional().describe("Effects."),
@@ -1137,13 +1147,23 @@ export const UPDATE_CAUSAL_CHAIN_TOOL = defineTool({
         z.object({
           id: z.string().describe("Consequence ID."),
           description: z.string().describe("What could happen."),
-          readyAfterTurn: z.number().int().describe("Trigger turn."),
-          conditions: z.array(z.string()).optional().describe("Conditions."),
+          timing: z
+            .string()
+            .optional()
+            .describe(
+              "Narrative timing hint (e.g., 'after nightfall', 'when alone', 'next encounter'). AI decides when to trigger.",
+            ),
+          conditions: z
+            .array(z.string())
+            .optional()
+            .describe(
+              "Narrative conditions that must be met for AI to trigger this consequence.",
+            ),
           known: z.boolean().optional().describe("Known?"),
         }),
       )
       .nullish()
-      .describe("Consequences."),
+      .describe("Pending consequences. AI decides when to trigger based on story."),
   }),
 });
 
@@ -1264,7 +1284,6 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
       })
       .nullish()
       .describe("Effects."),
-    duration: z.number().int().nullish().describe("Duration."),
     icon: z.string().nullish().describe("Emoji."),
     notes: z.string().nullish().describe("Notes."),
   }),
