@@ -1,6 +1,6 @@
 /**
  * RelationshipsTab - Known characters and NPCs display
- * Shows relationships with affinity, impressions, and hidden info
+ * Shows npcs with affinity, impressions, and hidden info
  */
 
 import React from "react";
@@ -16,7 +16,7 @@ interface RelationshipsTabProps {
   t: (key: string, options?: any) => string;
 }
 
-export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
+export const NPCsTab: React.FC<RelationshipsTabProps> = ({
   gameState,
   expandedSections,
   toggleSection,
@@ -25,19 +25,19 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   return (
     <div className="space-y-4">
       <Section
-        id="relationships"
+        id="npcs"
         title={t("gameViewer.knownCharacters")}
         icon="👥"
-        isExpanded={expandedSections.has("relationships")}
+        isExpanded={expandedSections.has("npcs")}
         onToggle={toggleSection}
       >
-        {gameState.relationships.filter(
+        {gameState.npcs.filter(
           (r) => gameState.unlockMode || r.known !== false,
         ).length === 0 ? (
-          <EmptyState message={t("gameViewer.noRelationships")} />
+          <EmptyState message={t("gameViewer.noNpcs")} />
         ) : (
           <div className="space-y-3">
-            {gameState.relationships
+            {gameState.npcs
               .filter((r) => gameState.unlockMode || r.known !== false)
               .map((rel, idx) => (
                 <div
@@ -138,6 +138,12 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                         value={rel.visible.mood}
                       />
                     )}
+                    {rel.visible.age && (
+                      <InfoRow
+                        label={t("gameViewer.age") || "Apparent Age"}
+                        value={rel.visible.age}
+                      />
+                    )}
                   </div>
                   {(rel.unlocked || gameState.unlockMode) && rel.hidden && (
                     <HiddenContent
@@ -191,7 +197,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                           {rel.hidden.trueAffinity !== undefined && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueAffinity")}:
+                                {t("gameViewer.trueAffinity") || "True Affinity"}:
                               </span>
                               <p className="pl-2">
                                 {rel.hidden.trueAffinity > 0 ? "+" : ""}
@@ -199,17 +205,33 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                               </p>
                             </div>
                           )}
-                          {rel.hidden.relationshipType && (
+                          {rel.hidden.realAge && (
+                             <InfoRow
+                               label={t("gameViewer.realAge") || "Real Age"}
+                               value={rel.hidden.realAge}
+                             />
+                          )}
+                          {rel.hidden.npcType && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueRelationship") ||
-                                  "True Relationship"}
-                                :
+                                {t("gameViewer.trueNpcType") || "True Role"}:
                               </span>
-                              <MarkdownText
-                                content={rel.hidden.relationshipType}
-                              />
+                              <MarkdownText content={rel.hidden.npcType} />
                             </div>
+                          )}
+                          {rel.hidden.inventory && rel.hidden.inventory.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.hiddenInventory") || "Possessions"}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {rel.hidden.inventory.map((item, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={item} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                           )}
                           {rel.hidden.status && (
                             <div>
@@ -265,7 +287,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                   )}
                   <div className="flex flex-wrap gap-2 mt-3 text-xs pt-2 border-t border-theme-border/30">
                     <span className="text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
-                      {rel.visible.relationshipType}
+                      {rel.visible.npcType}
                     </span>
                     {rel.currentLocation &&
                       rel.currentLocation !== "unknown" && (

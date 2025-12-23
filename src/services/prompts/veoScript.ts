@@ -49,8 +49,8 @@ export const getVeoScriptPrompt = (
 
   // Key NPCs with details (no truncation)
   const npcXml =
-    gameState.relationships && gameState.relationships.length > 0
-      ? gameState.relationships
+    gameState.npcs && gameState.npcs.length > 0
+      ? gameState.npcs
           .slice(0, 5) // Top 5 most relevant NPCs
           .map(
             (r) =>
@@ -59,9 +59,9 @@ export const getVeoScriptPrompt = (
                 <true_name>${r.hidden.trueName}</true_name>
                 <description>${r.visible.description}</description>
                 <appearance>${r.visible.appearance || "Unknown appearance"}</appearance>
-                <status>${r.visible.relationshipType}</status>
+                <status>${r.visible.npcType}</status>
                 <notes>${r.notes || ""}</notes>
-                <hidden_truth>Real Personality: ${r.hidden.realPersonality}; True Motives: ${r.hidden.realMotives}; True Status: ${r.hidden.relationshipType}</hidden_truth>
+                <hidden_truth>Real Personality: ${r.hidden.realPersonality}; True Motives: ${r.hidden.realMotives}; True Status: ${r.hidden.npcType}</hidden_truth>
               </npc>`,
           )
           .join("\n")

@@ -21,6 +21,8 @@ import { getRAGService } from "../services/rag";
 import { sessionManager } from "../services/ai/sessionManager";
 import { useTranslation } from "react-i18next";
 import { createThemeConfig } from "../services/ai/utils";
+import { getMigrationManager } from "../services/migrationManager";
+import { CURRENT_SAVE_VERSION } from "../types";
 
 export const useGamePersistence = (
   gameState: GameState,
@@ -45,257 +47,7 @@ export const useGamePersistence = (
 
   const { t } = useTranslation();
 
-  /**
-   * Comprehensive state sanitization and repair.
-   * Called when loading a save to fix any corrupted or incomplete state.
-   */
-  const sanitizeState = useCallback(
-    (parsed: Record<string, any>): GameState => {
-      const repairLog: string[] = [];
 
-      // === 1. Reset transient processing states ===
-      parsed.isProcessing = false;
-      parsed.isImageGenerating = false;
-      parsed.generatingNodeId = null;
-      parsed.error = null;
-
-      // === 1b. Fix atmosphere and time if missing ===
-      // These are essential for consistent visual theming
-      if (!parsed.atmosphere || typeof parsed.atmosphere !== "object") {
-        // Try to extract from the latest node's stateSnapshot or atmosphere field
-        let foundAtmosphere: { envTheme?: string; ambience?: string } | null =
-          null;
-        if (parsed.activeNodeId && parsed.nodes?.[parsed.activeNodeId]) {
-          const activeNode = parsed.nodes[parsed.activeNodeId];
-          foundAtmosphere =
-            activeNode.atmosphere ||
-            activeNode.stateSnapshot?.atmosphere ||
-            null;
-        }
-        if (foundAtmosphere && typeof foundAtmosphere === "object") {
-          parsed.atmosphere = foundAtmosphere;
-          repairLog.push(
-            `Repaired: atmosphere extracted from active node: ${JSON.stringify(foundAtmosphere)}`,
-          );
-        } else {
-          parsed.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
-          repairLog.push(
-            "Repaired: atmosphere defaulted to { envTheme: fantasy, ambience: quiet }",
-          );
-        }
-      }
-      if (!parsed.time || typeof parsed.time !== "string") {
-        parsed.time = "Day 1";
-        repairLog.push("Repaired: time defaulted to Day 1");
-      }
-
-      // === 2. Fix dangling user node (crash during generation) ===
-      if (
-        parsed.activeNodeId &&
-        parsed.nodes &&
-        parsed.nodes[parsed.activeNodeId]
-      ) {
-        const lastNode = parsed.nodes[parsed.activeNodeId];
-        if (lastNode.role === "user") {
-          repairLog.push("Repaired: removed dangling user node");
-          if (lastNode.parentId && parsed.nodes[lastNode.parentId]) {
-            // Remove the dangling user node and revert to parent
-            delete parsed.nodes[parsed.activeNodeId];
-            parsed.activeNodeId = lastNode.parentId;
-          }
-        }
-      }
-
-      // === 5. Ensure essential arrays exist ===
-      const ensureArray = (field: string) => {
-        if (!Array.isArray(parsed[field])) {
-          repairLog.push(`Repaired: ${field} was not an array`);
-          parsed[field] = [];
-        }
-      };
-
-      ensureArray("inventory");
-      ensureArray("relationships");
-      ensureArray("quests");
-      ensureArray("locations");
-      ensureArray("knowledge");
-      ensureArray("factions");
-      ensureArray("timeline");
-      ensureArray("causalChains");
-      ensureArray("summaries");
-      ensureArray("logs");
-
-      // === 6. Ensure nodes object exists ===
-      if (!parsed.nodes || typeof parsed.nodes !== "object") {
-        repairLog.push("Repaired: nodes was invalid");
-        parsed.nodes = {};
-      }
-
-      // === 7. Fix character structure ===
-      if (!parsed.character || typeof parsed.character !== "object") {
-        repairLog.push("Repaired: character was invalid");
-        parsed.character = {
-          name: "Unknown",
-          background: "",
-          motivation: "",
-          skills: [],
-          conditions: [],
-          hiddenTraits: [],
-        };
-      } else {
-        // Ensure character sub-arrays exist
-        if (!Array.isArray(parsed.character.skills))
-          parsed.character.skills = [];
-        if (!Array.isArray(parsed.character.conditions))
-          parsed.character.conditions = [];
-        if (!Array.isArray(parsed.character.hiddenTraits))
-          parsed.character.hiddenTraits = [];
-      }
-
-      // === 8. Validate activeNodeId points to an existing node ===
-      if (parsed.activeNodeId && !parsed.nodes[parsed.activeNodeId]) {
-        repairLog.push("Repaired: activeNodeId pointed to non-existent node");
-        // Try to find any valid node
-        const nodeIds = Object.keys(parsed.nodes);
-        if (nodeIds.length > 0) {
-          // Find the most recent node
-          const sortedNodes = nodeIds
-            .map((id) => parsed.nodes[id])
-            .filter((n) => n && n.timestamp)
-            .sort((a, b) => b.timestamp - a.timestamp);
-          if (sortedNodes.length > 0) {
-            parsed.activeNodeId = sortedNodes[0].id;
-          } else {
-            parsed.activeNodeId = nodeIds[0];
-          }
-        } else {
-          parsed.activeNodeId = null;
-        }
-      }
-
-      // === 9. Fix rootNodeId ===
-      if (parsed.rootNodeId && !parsed.nodes[parsed.rootNodeId]) {
-        repairLog.push("Repaired: rootNodeId pointed to non-existent node");
-        // Find a node with no parent
-        const rootCandidates = Object.values(parsed.nodes).filter(
-          (n: any) => !n.parentId,
-        );
-        if (rootCandidates.length > 0) {
-          parsed.rootNodeId = (rootCandidates[0] as any).id;
-        } else {
-          parsed.rootNodeId = null;
-        }
-      }
-
-      // === 10. Fix segmentIdx and currentFork ===
-      if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
-        parsed.currentFork = [];
-      }
-
-      // Helper to get depth (memoized)
-      const depthCache: Record<string, number> = {};
-      const getDepth = (nodeId: string, nodes: Record<string, any>): number => {
-        if (depthCache[nodeId] !== undefined) return depthCache[nodeId];
-        const node = nodes[nodeId];
-        if (!node) return 0;
-        if (!node.parentId) {
-          depthCache[nodeId] = 0;
-          return 0;
-        }
-        // Prevent infinite loops in circular references (shouldn't happen but safety first)
-        if (depthCache[nodeId] === -1) return 0;
-        depthCache[nodeId] = -1; // Mark as visiting
-
-        const d = getDepth(node.parentId, nodes) + 1;
-        depthCache[nodeId] = d;
-        return d;
-      };
-
-      // === 10. Fix segmentIdx and currentFork ===
-      if (!parsed.currentFork || !Array.isArray(parsed.currentFork)) {
-        parsed.currentFork = [];
-      }
-
-      // === 11. Fix tokenUsage ===
-      if (!parsed.tokenUsage) {
-        parsed.tokenUsage = {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: parsed.totalTokens || 0,
-        };
-      }
-
-      // Repair segmentIdx if missing (legacy saves)
-      // We need to traverse from root to leaves or just iterate all nodes and fix chains
-      // Since we can't easily traverse full tree here without recursion, let's do a best-effort fix
-      // by sorting keys or just relying on the fact that we will fix it on load if needed.
-      // Actually, let's just ensure every node has a segmentIdx.
-      Object.values(parsed.nodes).forEach((node: any) => {
-        if (typeof node.segmentIdx !== "number") {
-          node.segmentIdx = 0; // Default to 0, will be fixed by deriveHistory if needed
-        }
-      });
-
-      // Reconstruct currentFork if empty but we have an active node
-      if (parsed.currentFork.length === 0 && parsed.activeNodeId) {
-        // We need a simple deriveHistory here.
-        // Since we can't import deriveHistory from useGameEngine (circular dependency risk or just unavailable),
-        // we implement a simple version here.
-        const history: any[] = [];
-        let curr = parsed.activeNodeId;
-        while (curr && parsed.nodes[curr]) {
-          history.unshift(parsed.nodes[curr]);
-          curr = parsed.nodes[curr].parentId;
-        }
-        // Fix segmentIdx in the chain
-        history.forEach((node, idx) => {
-          node.segmentIdx = idx;
-        });
-        parsed.currentFork = history;
-      }
-
-      // Fix initial prompt if missing
-      if (typeof parsed.initialPrompt !== "string") {
-        const theme = parsed.theme;
-        const customContext = parsed?.customContext;
-
-        const themeName = t(`${theme}.name`, { ns: "themes" });
-        const prompt =
-          t("initialPrompt.begin", { theme: themeName }) +
-          (customContext
-            ? ` ${t("initialPrompt.context")}: ${customContext}`
-            : "");
-        parsed.initialPrompt = prompt;
-      }
-
-      // Fix language if missing (for old saves)
-      if (!parsed.language) {
-        parsed.language = "zh"; // Default to Chinese for legacy saves
-      }
-
-      // === MIGRATION: Apply themeConfig from i18n for legacy saves ===
-      if (!parsed.themeConfig && parsed.theme && t) {
-        parsed.themeConfig = createThemeConfig(parsed.theme, t);
-        repairLog.push(
-          `Migrated: themeConfig resolved from i18n for theme ${parsed.theme}`,
-        );
-      }
-
-      // Fix tokenUsage
-      if (!parsed.tokenUsage) {
-        parsed.tokenUsage = {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: parsed.totalTokens || 0,
-          cacheRead: 0,
-          cacheWrite: 0,
-        };
-      }
-
-      return parsed as GameState;
-    },
-    [],
-  );
 
   /**
    * Manually save the current state to a slot.
@@ -309,7 +61,7 @@ export const useGamePersistence = (
       const stateToSave: VersionedGameState = {
         ...state,
         _saveVersion: {
-          version: 1,
+          version: CURRENT_SAVE_VERSION,
           createdAt: Date.now(),
         },
       };
@@ -365,70 +117,18 @@ export const useGamePersistence = (
               lastSlotId,
             )) as VersionedGameState | null;
             if (data) {
-              // Extract embedding index before sanitizing
-              const embeddingIndex = data._embeddingIndex;
+              // Centered migration and repair
+              const migrationManager = getMigrationManager();
+              const migrated = await migrationManager.migrate(data, lastSlotId);
+              const sanitized = migrationManager.repairState(migrated) as GameState;
 
-              const sanitized = sanitizeState(data);
+              // Extract embedding index
+              const embeddingIndex = (migrated as VersionedGameState)._embeddingIndex;
 
-              // === MIGRATION: Legacy Base64 Images to IndexedDB ===
-              let migrationCount = 0;
-              const nodes = sanitized.nodes || {};
-
-              // We need to import saveImage dynamically or assume it's available
-              // Since we can't easily dynamic import in this context without async complexity,
-              // we'll rely on the imported saveImage from utils/imageStorage
-              // Note: We need to make sure saveImage is imported at the top of the file
-
-              const migrationPromises = Object.values(nodes).map(
-                async (node: any) => {
-                  if (
-                    node.imageUrl &&
-                    node.imageUrl.startsWith("data:image") &&
-                    !node.imageId
-                  ) {
-                    try {
-                      // Convert base64 to blob
-                      const response = await fetch(node.imageUrl);
-                      const blob = await response.blob();
-
-                      // Save to IDB
-                      const imageId = await saveImage(blob, {
-                        saveId: lastSlotId,
-                        forkId: sanitized.forkId || 0,
-                        turnIdx: node.segmentIdx || 0,
-                        imagePrompt: node.imagePrompt || "",
-                      });
-
-                      // Update node
-                      node.imageId = imageId;
-                      delete node.imageUrl; // Remove legacy base64
-                      migrationCount++;
-                    } catch (err) {
-                      console.error(
-                        "Failed to migrate image for node",
-                        node.id,
-                        err,
-                      );
-                    }
-                  }
-                },
-              );
-
-              if (migrationPromises.length > 0) {
-                await Promise.all(migrationPromises);
-                if (migrationCount > 0) {
-                  console.log(
-                    `[Persistence] Migrated ${migrationCount} legacy images to IndexedDB`,
-                  );
-                  // Save the migrated state back to DB immediately
-                  await saveGameState(lastSlotId, sanitized);
-                }
+              // Ensure themeConfig is updated with the latest translations
+              if (sanitized.theme && t) {
+                sanitized.themeConfig = createThemeConfig(sanitized.theme, t);
               }
-              // === END MIGRATION ===
-
-              // === END MIGRATION ===
-
-              // === END MIGRATION ===
 
               // Repair state using cleanup utility (fixes duplicate IDs and syncs nextId)
               const repairedState = repairGameState(sanitized);
@@ -559,7 +259,7 @@ export const useGamePersistence = (
         const stateToSave: VersionedGameState = {
           ...gameState,
           _saveVersion: {
-            version: 1,
+            version: CURRENT_SAVE_VERSION,
             createdAt: Date.now(),
           },
         };
@@ -706,17 +406,21 @@ export const useGamePersistence = (
           console.log(`[Persistence] RAG service available for save ${id}`);
         }
 
-        // Extract embedding index before sanitizing (it will be stripped)
-        // Note: This is for backward compatibility - new saves won't have this
-        const embeddingIndex = data._embeddingIndex;
+        const migrationManager = getMigrationManager();
+        const migrated = await migrationManager.migrate(data, id);
+        const sanitized = migrationManager.repairState(migrated) as GameState;
 
-        const sanitized = sanitizeState(data);
+        // Extract embedding index
+        const embeddingIndex = (migrated as VersionedGameState)._embeddingIndex;
+
+        // Ensure themeConfig is updated with the latest translations
+        if (sanitized.theme && t) {
+          sanitized.themeConfig = createThemeConfig(sanitized.theme, t);
+        }
 
         // Set skip flag BEFORE updating state to prevent race condition
         skipSaveOnLoadRef.current = true;
         lastSavedActiveNodeRef.current = sanitized.activeNodeId;
-        lastSavedNodeIdRef.current = sanitized.activeNodeId;
-
         lastSavedNodeIdRef.current = sanitized.activeNodeId;
 
         // Repair state using cleanup utility (fixes duplicate IDs and syncs nextId)

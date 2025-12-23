@@ -378,7 +378,7 @@ export const useGameAction = ({
           });
 
         // Check relationship unlocks
-        response.relationshipActions
+        response.npcActions
           ?.filter((a) => a.unlocked === true && a.unlockReason)
           .forEach((a) => {
             unlockEvents.push({
@@ -441,7 +441,7 @@ export const useGameAction = ({
               ?.filter((a) => a.action === "remove")
               .map((a) => ({ name: a.name || "Unknown Item" })) || [],
           npcsAdded:
-            response.relationshipActions
+            response.npcActions
               ?.filter((a) => a.action === "add")
               .map((a) => ({ name: a.visible?.name || "Unknown NPC" })) || [],
           questsAdded:
@@ -508,7 +508,7 @@ export const useGameAction = ({
 
             // Apply the full new state from the database
             inventory: finalState.inventory,
-            relationships: finalState.relationships,
+            npcs: finalState.npcs,
             quests: finalState.quests,
             currentLocation: finalState.currentLocation,
             locations: finalState.locations,

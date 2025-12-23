@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import { Relationship, ListState, Location } from "../../types";
+import { NPC, ListState, Location } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 
 interface RelationshipPanelProps {
-  relationships: Relationship[];
+  npcs: NPC[];
   locations?: Location[];
   themeFont: string;
   listState: ListState;
@@ -17,7 +17,7 @@ interface RelationshipPanelProps {
 }
 
 interface RelationshipItemProps {
-  rel: Omit<Relationship, "id"> & { id: string | number };
+  rel: Omit<NPC, "id"> & { id: string | number };
   locations?: Location[];
   enableDrag: boolean;
   expandedItems: Set<string | number>;
@@ -126,9 +126,9 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
             </span>
             <span
               className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-[120px] truncate cursor-help"
-              title={rel.visible?.relationshipType || "Unknown"}
+              title={rel.visible?.npcType || "Unknown"}
             >
-              {rel.visible?.relationshipType || "Unknown"}
+              {rel.visible?.npcType || "Unknown"}
             </span>
           </div>
         </div>
@@ -182,7 +182,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 {rel.visible?.dialogueStyle && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.relationship.dialogueStyle")}
+                      {t("sidebar.npc.dialogueStyle")}
                     </span>
                     <span className="text-theme-muted/80 text-xs">
                       {rel.visible.dialogueStyle}
@@ -192,7 +192,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 {rel.visible.voice && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.relationship.voice")}
+                      {t("sidebar.npc.voice")}
                     </span>
                     <span className="text-theme-muted/80 text-xs">
                       {rel.visible.voice}
@@ -202,7 +202,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 {rel.visible.mannerism && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.relationship.mannerism")}
+                      {t("sidebar.npc.mannerism")}
                     </span>
                     <span className="text-theme-muted/80 text-xs">
                       {rel.visible.mannerism}
@@ -212,7 +212,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                 {rel.visible.mood && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.relationship.mood")}
+                      {t("sidebar.npc.mood")}
                     </span>
                     <span className="text-theme-muted/80 text-xs">
                       {rel.visible.mood}
@@ -324,7 +324,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                         <div className="mb-2 border-l-2 border-theme-primary/30 pl-2">
                           <div className="text-[10px] uppercase tracking-wider text-theme-primary/50 mb-0.5 flex items-center gap-1">
                             <span>💭</span>{" "}
-                            {t("sidebar.relationship.currentThought")}
+                            {t("sidebar.npc.currentThought")}
                           </div>
                           <div className="italic text-theme-primary/70 text-xs">
                             "{rel.hidden.currentThought}"
@@ -334,7 +334,7 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
                       {rel.hidden.trueName && (
                         <div className="flex items-center gap-2 text-xs text-theme-unlocked">
                           <span className="uppercase tracking-wider text-[10px] opacity-70">
-                            {t("sidebar.relationship.trueName")}:
+                            {t("sidebar.npc.trueName")}:
                           </span>
                           <span>{rel.hidden.trueName}</span>
                         </div>
@@ -505,8 +505,8 @@ const RelationshipItem: React.FC<RelationshipItemProps> = ({
   );
 };
 
-export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
-  relationships = [],
+export const NPCPanel: React.FC<RelationshipPanelProps> = ({
+  npcs = [],
   locations = [],
   themeFont,
   listState,
@@ -530,17 +530,17 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     setExpandedItems(newSet);
   };
 
-  const safeRelationships = Array.isArray(relationships) ? relationships : [];
+  const safeNpcs = Array.isArray(npcs) ? npcs : [];
 
-  // Map relationships to include ID for useListManagement
-  const relationshipsWithId = useMemo(() => {
-    return safeRelationships
+  // Map NPCs to include ID for useListManagement
+  const npcsWithId = useMemo(() => {
+    return safeNpcs
       .filter((r) => unlockMode || r.known !== false) // Show all if unlockMode is true
       .map((r, idx) => ({
         ...r,
         id: r.id || r.visible?.name || `unknown-${idx}`,
       }));
-  }, [safeRelationships, unlockMode]);
+  }, [safeNpcs, unlockMode]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
@@ -553,7 +553,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(relationshipsWithId, listState, onUpdateList);
+  } = useListManagement(npcsWithId, listState, onUpdateList);
 
   const getAffinityColor = (val: number) => {
     if (val >= 80) return "bg-green-500"; // Love/Loyal
@@ -618,9 +618,9 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               ></path>
             </svg>
-            {t("relationships") || "Relationships"}
+            {t("npcs") || "NPCs"}
             <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-              {relationships.length}
+              {npcs.length}
             </span>
           </span>
         </div>
@@ -722,7 +722,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
           <div className="space-y-4 pt-1">
             {visibleItems.length === 0 ? (
               <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
-                {t("emptyRelationships")}
+                {t("emptyNpcs")}
               </div>
             ) : (
               visibleItems.map((rel, idx) => (
@@ -751,7 +751,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
       <DetailedListModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={t("relationships")}
+        title={t("npcs")}
         items={allItems}
         themeFont={themeFont}
         enableEditMode={true}

@@ -143,7 +143,7 @@ export function migrateFromLegacyTimestamp(
 
 import type {
   InventoryItem as ZodInventoryItem,
-  Relationship as ZodRelationship,
+  NPC as ZodNPC,
   Location as ZodLocation,
   Quest as ZodQuest,
   KnowledgeEntry as ZodKnowledgeEntry,
@@ -202,8 +202,8 @@ type WithRequiredTimestamps<T> = T & {
 export type InventoryItem = WithRequiredId<
   WithVersionedTimestamps<ZodInventoryItem>
 >;
-export type Relationship = WithRequiredId<
-  WithVersionedTimestamps<ZodRelationship>
+export type NPC = WithRequiredId<
+  WithVersionedTimestamps<ZodNPC>
 >;
 export type Location = WithRequiredId<ZodLocation> & {
   isVisited: boolean;
@@ -240,7 +240,7 @@ export type {
 // 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
 export type {
   ZodInventoryItem,
-  ZodRelationship,
+  ZodNPC,
   ZodLocation,
   ZodQuest,
   ZodKnowledgeEntry,
@@ -327,7 +327,7 @@ export interface GameState {
   currentFork: StorySegment[]; // The full segment list of the current fork
 
   inventory: InventoryItem[];
-  relationships: Relationship[];
+  npcs: NPC[];
   quests: Quest[];
   character: CharacterStatus;
   knowledge: KnowledgeEntry[]; // Player's accumulated knowledge about the world
@@ -612,6 +612,34 @@ export interface SaveSlot {
 export type CharacterSkill = Skill;
 export type CharacterCondition = Condition;
 
+export interface NPCAction {
+  action: "add" | "update" | "remove";
+  id?: string;
+  known?: boolean; // Update known status
+  currentLocation?: string; // Update NPC's current location
+
+  visible?: {
+    name?: string; // Update visible name
+    description?: string;
+    appearance?: string;
+    npcType?: string;
+    impression?: string; // Protagonist's impression of this NPC
+    status?: string; // What protagonist BELIEVES NPC is doing
+    personality?: string;
+    dialogueStyle?: string;
+    affinity?: number;
+    affinityKnown?: boolean;
+    isDead?: boolean;
+  };
+  hidden?: {
+    realPersonality?: string;
+    realMotives?: string;
+    npcType?: string;
+    secrets?: string[];
+  };
+  highlight?: boolean;
+  unlocked?: boolean;
+}
 export interface ListState {
   pinnedIds: string[];
   customOrder: string[];
@@ -621,7 +649,7 @@ export interface ListState {
 export interface UIState {
   inventory: ListState;
   locations: ListState;
-  relationships: ListState;
+  npcs: ListState;
   knowledge: ListState; // UI state for knowledge panel
   quests: ListState; // UI state for quests panel
   showSystemFooter?: boolean; // Persisted state for system footer
@@ -705,7 +733,7 @@ export interface TurnContext {
 export interface GameStateSnapshot {
   // Entity State (Dual-layer)
   inventory: InventoryItem[];
-  relationships: Relationship[];
+  npcs: NPC[];
   quests: Quest[];
   character: CharacterStatus;
   knowledge: KnowledgeEntry[];
@@ -781,42 +809,8 @@ export interface QuestAction {
   unlocked?: boolean; // Set when true objectives should be revealed
 }
 
-export interface RelationshipAction {
-  action: "add" | "update" | "remove";
-  id?: string;
-  known?: boolean; // Update known status
-  currentLocation?: string; // Update NPC's current location
+// NPCAction definition was moved up to follow export type CharacterCondition = Condition;
 
-  visible?: {
-    name?: string; // Update visible name
-    description?: string;
-    appearance?: string;
-    relationshipType?: string;
-    impression?: string; // Protagonist's impression of this NPC
-    status?: string; // What protagonist BELIEVES NPC is doing
-    personality?: string;
-    dialogueStyle?: string;
-    affinity?: number;
-    affinityKnown?: boolean;
-    voice?: string;
-    mannerism?: string;
-    mood?: string;
-  };
-  hidden?: {
-    realPersonality?: string;
-    realMotives?: string;
-    routine?: string;
-    secrets?: string[];
-    trueAffinity?: number;
-    relationshipType?: string;
-    impression?: string; // NPC's impression of the protagonist
-    status?: string; // What NPC is ACTUALLY doing
-    currentThought?: string;
-  };
-
-  notes?: string;
-  unlocked?: boolean; // Set when mind-reading/telepathy reveals hidden personality
-}
 
 export interface LocationAction {
   type: "current" | "known";
@@ -1234,7 +1228,7 @@ export interface EmbeddingIndex {
 // Save Version Management Types
 // ============================================================================
 
-export const CURRENT_SAVE_VERSION = 1;
+export const CURRENT_SAVE_VERSION = 2;
 
 export interface SaveVersionInfo {
   version: number;

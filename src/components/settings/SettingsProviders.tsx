@@ -84,7 +84,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       tutorial.markStepActionComplete();
       tutorial.nextStep(); // Move to modal step
     }
-    handleOpenTemplate(); // Use template modal as it's simpler
+    handleOpenAdd(); // Open the manual provider add form
   };
 
   // Helper: Mask API key for display

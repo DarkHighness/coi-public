@@ -22,7 +22,7 @@ const INITIAL_STATE: GameState = {
   rootNodeId: null,
   currentFork: [],
   inventory: [],
-  relationships: [],
+  npcs: [],
   quests: [],
   factions: [], // Added factions
   character: DEFAULT_CHARACTER,
@@ -35,7 +35,7 @@ const INITIAL_STATE: GameState = {
   uiState: {
     inventory: { pinnedIds: [], customOrder: [] },
     locations: { pinnedIds: [], customOrder: [] },
-    relationships: { pinnedIds: [], customOrder: [] },
+    npcs: { pinnedIds: [], customOrder: [] },
     knowledge: { pinnedIds: [], customOrder: [] },
     quests: { pinnedIds: [], customOrder: [] },
     sidebarCollapsed: false,

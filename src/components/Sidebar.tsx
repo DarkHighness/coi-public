@@ -5,7 +5,7 @@ import { LanguageSelector } from "./LanguageSelector";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
 import { QuestPanel } from "./sidebar/QuestPanel";
 import { InventoryPanel } from "./sidebar/InventoryPanel";
-import { RelationshipPanel } from "./sidebar/RelationshipPanel";
+import { NPCPanel } from "./sidebar/NPCPanel";
 import { LocationPanel } from "./sidebar/LocationPanel";
 import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { SystemFooter } from "./sidebar/SystemFooter";
@@ -160,14 +160,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </div>
         <div className="bg-theme-surface/20 border border-theme-border/40 rounded-lg px-3 py-2 shadow-sm">
-          <RelationshipPanel
-            relationships={gameState.relationships || []}
+          <NPCPanel
+            npcs={gameState.npcs || []}
             locations={gameState.locations || []}
             themeFont={currentThemeConfig.fontClass}
-            listState={gameState.uiState?.relationships}
-            onUpdateList={(newState) =>
-              onUpdateUIState("relationships", newState)
-            }
+            listState={gameState.uiState?.npcs}
+            onUpdateList={(newState) => onUpdateUIState("npcs", newState)}
             unlockMode={gameState.unlockMode}
           />
         </div>

@@ -1,7 +1,7 @@
 import {
   GameState,
   InventoryItem,
-  Relationship,
+  NPC,
   Quest,
   Location,
   KnowledgeEntry,
@@ -70,7 +70,7 @@ export interface GlobalStateInfo {
 // Query target to result type mapping
 export type QueryResultMap = {
   inventory: InventoryItem[];
-  relationship: Relationship[];
+  npc: NPC[];
   location: Location[] | LocationListItem[];
   quest: Quest[];
   knowledge: KnowledgeEntry[];
@@ -90,8 +90,8 @@ export type QueryResultMap = {
 // Modify target to result type mapping
 export type ModifyResultMap = {
   inventory: InventoryItem | { id: string; name: string } | { removed: string };
-  relationship:
-    | Relationship
+  npc:
+    | NPC
     | { id: string; name: string }
     | { removed: string };
   location: Location | { id: string; name: string } | { removed: string };
@@ -417,11 +417,11 @@ export class GameDatabase {
           );
         }
 
-        case "relationship": {
-          const results = this.filterEntities(this.state.relationships, term);
+        case "npc": {
+          const results = this.filterEntities(this.state.npcs, term);
           this.updateLastAccess(results);
           const paginated = paginateResults(results);
-          return createSuccess<Relationship[]>(
+          return createSuccess<NPC[]>(
             paginated,
             `Found ${results.length} NPCs (showing page ${page})`,
           );
@@ -653,11 +653,11 @@ export class GameDatabase {
             info: (i.visible as any)?.description?.substring(0, 50) + "...",
           }));
           break;
-        case "relationship":
-          items = this.state.relationships.map((r) => ({
+        case "npc":
+          items = this.state.npcs.map((r) => ({
             id: r.id,
             name: (r.visible as any)?.name || "Unknown",
-            info: `Relationship: ${(r.visible as any)?.relationshipType || "Unknown"}`,
+            info: `NPC Role: ${(r.visible as any)?.npcType || "Unknown"}`,
           }));
           break;
         case "location":
@@ -755,8 +755,8 @@ export class GameDatabase {
       switch (target) {
         case "inventory":
           return this.modifyInventory(action, data as any);
-        case "relationship":
-          return this.modifyRelationship(action, data as any);
+        case "npc":
+          return this.modifyNpc(action, data as any);
         case "location":
           return this.modifyLocation(action, data as any);
         case "quest":
@@ -987,9 +987,9 @@ export class GameDatabase {
     return createError(`Invalid action: ${action}`, "INVALID_ACTION");
   }
 
-  private modifyRelationship(
+  private modifyNpc(
     action: string,
-    data: Partial<Relationship> & {
+    data: Partial<NPC> & {
       id?: string;
       name?: string;
       visible?: any;
@@ -997,7 +997,7 @@ export class GameDatabase {
       unlockReason?: string;
     },
   ): ToolCallResult<
-    Relationship | { id: string; name: string } | { removed: string }
+    NPC | { id: string; name: string } | { removed: string }
   > {
     const getName = () => data.visible?.name || data.name;
 
@@ -1021,7 +1021,7 @@ export class GameDatabase {
 
       // 1. Check ID Conflict
       if (
-        this.state.relationships.some((r) => matchesIdentifier(r.id, finalId))
+        this.state.npcs.some((r) => matchesIdentifier(r.id, finalId))
       ) {
         return createError(
           `ID "${finalId}" already exists. AI must generate a unique ID.`,
@@ -1030,7 +1030,7 @@ export class GameDatabase {
       }
 
       // 2. Check Name Conflict
-      const existing = this.state.relationships.find((r) =>
+      const existing = this.state.npcs.find((r) =>
         matchesIdentifier(r.visible.name, name),
       );
       if (existing) {
@@ -1053,12 +1053,12 @@ export class GameDatabase {
         );
       }
 
-      const newNpc: Relationship = {
+      const newNpc: NPC = {
         id: newId,
         currentLocation: data.currentLocation || "Unknown",
         visible: {
           name: name,
-          relationshipType: data.visible?.relationshipType || "Stranger",
+          npcType: data.visible?.npcType || "Stranger",
           affinity: data.visible?.affinity ?? 50,
           affinityKnown: data.visible?.affinityKnown ?? false,
           description: data.visible?.description || "A stranger.",
@@ -1069,7 +1069,7 @@ export class GameDatabase {
         },
         hidden: {
           trueName: data.hidden?.trueName,
-          relationshipType: data.hidden?.relationshipType || "Stranger",
+          npcType: data.hidden?.npcType || "Stranger",
           realPersonality: data.hidden?.realPersonality || "Unknown",
           realMotives: data.hidden?.realMotives || "Unknown",
           status: data.hidden?.status || "Unknown", // What NPC is actually doing
@@ -1085,7 +1085,7 @@ export class GameDatabase {
         unlocked: data.unlocked ?? false,
         highlight: true,
       };
-      this.state.relationships.push(newNpc);
+      this.state.npcs.push(newNpc);
       return createSuccess(
         newNpc,
         `Added NPC: ${newNpc.visible.name} (${newNpc.id})`,
@@ -1101,7 +1101,7 @@ export class GameDatabase {
         );
       }
 
-      const index = this.state.relationships.findIndex(
+      const index = this.state.npcs.findIndex(
         (r) =>
           matchesIdentifier(r.id, identifier) ||
           matchesIdentifier(r.visible.name, identifier),
@@ -1109,7 +1109,7 @@ export class GameDatabase {
       if (index === -1) {
         const suggestion = this.suggestSimilar(
           identifier,
-          this.state.relationships,
+          this.state.npcs,
         );
         return createError(
           `NPC "${identifier}" not found.${suggestion}`,
@@ -1117,7 +1117,7 @@ export class GameDatabase {
         );
       }
 
-      const removed = this.state.relationships.splice(index, 1)[0];
+      const removed = this.state.npcs.splice(index, 1)[0];
       return createSuccess(
         { removed: removed.id },
         `Removed NPC: ${removed.visible.name}`,
@@ -1133,7 +1133,7 @@ export class GameDatabase {
         );
       }
 
-      const npc = this.state.relationships.find(
+      const npc = this.state.npcs.find(
         (r) =>
           matchesIdentifier(r.id, identifier) ||
           matchesIdentifier(r.visible.name, identifier),
@@ -1141,7 +1141,7 @@ export class GameDatabase {
       if (!npc) {
         const suggestion = this.suggestSimilar(
           identifier,
-          this.state.relationships,
+          this.state.npcs,
         );
         return createError(
           `NPC "${identifier}" not found.${suggestion}`,
@@ -2258,7 +2258,7 @@ export class GameDatabase {
 
   private modifyCausalChain(
     action: string,
-    data: Partial<CausalChain> & { triggerConsequenceId?: string },
+    data: Partial<CausalChain> & { consequenceId?: string },
   ): ToolCallResult<CausalChain | { triggered: boolean; description: string }> {
     if (action === "add") {
       if (!data.chainId) {
@@ -2312,14 +2312,14 @@ export class GameDatabase {
           "INVALID_DATA",
         );
       }
-      if (!data.triggerConsequenceId) {
+      if (!data.consequenceId) {
         return createError(
-          "triggerConsequenceId is required for 'trigger' action",
+          "consequenceId is required for 'trigger' action",
           "INVALID_DATA",
         );
       }
 
-      return this.triggerConsequence(data.chainId, data.triggerConsequenceId);
+      return this.triggerConsequence(data.chainId, data.consequenceId);
     }
 
     if (action === "update" || action === "resolve" || action === "interrupt") {
@@ -2429,8 +2429,8 @@ export class GameDatabase {
         entity = findEntity(this.state.inventory);
         break;
       }
-      case "relationship": {
-        entity = findEntity(this.state.relationships);
+      case "npc": {
+        entity = findEntity(this.state.npcs);
         break;
       }
       case "location": {

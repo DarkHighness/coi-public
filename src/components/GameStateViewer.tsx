@@ -19,7 +19,7 @@ import {
   OverviewTab,
   WorldTab,
   CharacterTab,
-  RelationshipsTab,
+  NPCsTab,
   QuestsTab,
   LoreTab,
   EmbeddingTab,
@@ -72,7 +72,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
       case "character":
         return <CharacterTab {...commonProps} />;
       case "relationships":
-        return <RelationshipsTab {...commonProps} />;
+        return <NPCsTab {...commonProps} />;
       case "quests":
         return <QuestsTab {...commonProps} />;
       case "lore":

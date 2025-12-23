@@ -872,11 +872,11 @@ function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
       "fac",
     ) as StoryOutline["factions"],
 
-    // Phase 5: Relationships
-    relationships: prepareEntities(
-      p5.relationships as StoryOutline["relationships"],
+    // Phase 5: NPCs
+    npcs: prepareEntities(
+      p5.npcs as StoryOutline["npcs"],
       "npc",
-    ) as StoryOutline["relationships"],
+    ) as StoryOutline["npcs"],
 
     // Phase 6: Inventory
     inventory: prepareEntities(

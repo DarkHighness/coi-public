@@ -653,7 +653,7 @@ export const runAgenticLoop = async (
     narrative: "",
     choices: [],
     inventoryActions: [],
-    relationshipActions: [],
+    npcActions: [],
     locationActions: [],
     questActions: [],
     knowledgeActions: [],
@@ -724,7 +724,7 @@ export const runAgenticLoop = async (
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
 2. Use \`search_tool\` to load any tools you need for state changes.
-3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn (e.g., update_inventory, update_relationship, override_outline all at once).
+3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn (e.g., update_inventory, update_npc, override_outline all at once).
 4. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
 5. **FINISH LAST**: Call \`complete_force_update\` as your FINAL tool call with narrative describing the new reality and choices.
    - ⚠️ CRITICAL: \`complete_force_update\` must be the LAST tool in your call sequence.
@@ -737,7 +737,7 @@ This is a **GM COMMAND**. You must:
 You are in AGENTIC MODE.
 1. You have limited tools initially: \`search_tool\` and \`${finishToolName}\`.
 2. **SEARCH FIRST**: If you need to ADD, UPDATE, REMOVE, QUERY, or UNLOCK specific entities, use \`search_tool\` to load them.
-3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn to be efficient (e.g., query_inventory, update_relationship, add_quest all at once).
+3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn to be efficient (e.g., query_inventory, update_npc, add_quest all at once).
 4. **USE TOOLS**: Once loaded, use the tools to modify the game state in parallel when possible.
 5. **FINISH LAST**: When done, use \`${finishToolName}\` as your FINAL tool call with narrative and choices.
    - ⚠️ CRITICAL: \`${finishToolName}\` must be the LAST tool in your call sequence.
@@ -1483,16 +1483,16 @@ export function executeToolCall(
     }
     return result;
   }
-  if (name === "add_relationship") {
-    const typedArgs = getTypedArgs("add_relationship", args);
-    const result = db.modify("relationship", "add", typedArgs);
+  if (name === "add_npc") {
+    const typedArgs = getTypedArgs("add_npc", args);
+    const result = db.modify("npc", "add", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.relationshipActions)
-        accumulatedResponse.relationshipActions = [];
-      accumulatedResponse.relationshipActions.push({
+      if (!accumulatedResponse.npcActions)
+        accumulatedResponse.npcActions = [];
+      accumulatedResponse.npcActions.push({
         action: "add",
         ...typedArgs,
-      } as GameResponse["relationshipActions"][number]);
+      } as GameResponse["npcActions"][number]);
       trackChangedEntity(changedEntities, result, "npc");
     }
     return result;
@@ -1654,16 +1654,16 @@ export function executeToolCall(
     }
     return result;
   }
-  if (name === "remove_relationship") {
-    const typedArgs = getTypedArgs("remove_relationship", args);
-    const result = db.modify("relationship", "remove", typedArgs);
+  if (name === "remove_npc") {
+    const typedArgs = getTypedArgs("remove_npc", args);
+    const result = db.modify("npc", "remove", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.relationshipActions)
-        accumulatedResponse.relationshipActions = [];
-      accumulatedResponse.relationshipActions.push({
+      if (!accumulatedResponse.npcActions)
+        accumulatedResponse.npcActions = [];
+      accumulatedResponse.npcActions.push({
         action: "remove",
         ...typedArgs,
-      } as GameResponse["relationshipActions"][number]);
+      } as GameResponse["npcActions"][number]);
     }
     return result;
   }
@@ -1798,16 +1798,16 @@ export function executeToolCall(
     }
     return result;
   }
-  if (name === "update_relationship") {
-    const typedArgs = getTypedArgs("update_relationship", args);
-    const result = db.modify("relationship", "update", typedArgs);
+  if (name === "update_npc") {
+    const typedArgs = getTypedArgs("update_npc", args);
+    const result = db.modify("npc", "update", typedArgs);
     if (result.success) {
-      if (!accumulatedResponse.relationshipActions)
-        accumulatedResponse.relationshipActions = [];
-      accumulatedResponse.relationshipActions.push({
+      if (!accumulatedResponse.npcActions)
+        accumulatedResponse.npcActions = [];
+      accumulatedResponse.npcActions.push({
         action: "update",
         ...typedArgs,
-      } as GameResponse["relationshipActions"][number]);
+      } as GameResponse["npcActions"][number]);
       trackChangedEntity(changedEntities, result, "npc");
     }
     return result;

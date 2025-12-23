@@ -28,7 +28,7 @@ export { TAB_CONFIGS } from "./types";
 export { OverviewTab } from "./OverviewTab";
 export { WorldTab } from "./WorldTab";
 export { CharacterTab } from "./CharacterTab";
-export { RelationshipsTab } from "./RelationshipsTab";
+export { NPCsTab } from "./NPCsTab";
 export { QuestsTab } from "./QuestsTab";
 export { LoreTab } from "./LoreTab";
 export { EmbeddingTab } from "./EmbeddingTab";

@@ -4,7 +4,7 @@ import {
   TokenUsage,
   StorySegment,
   CharacterStatus,
-  Relationship,
+  NPC,
   GameState,
   GameStateSnapshot,
 } from "../../types";
@@ -158,7 +158,7 @@ export const generateSceneImage = async (
  * @param segments 故事片段
  * @param inventory 物品清单
  * @param character 角色状态
- * @param relationships 关系列表
+ * @param npcs 关系列表
  * @param targetLanguage 目标语言
  */
 export const translateGameContent = async (
@@ -166,13 +166,13 @@ export const translateGameContent = async (
   segments: StorySegment[],
   inventory: string[],
   character: CharacterStatus,
-  relationships: Relationship[],
+  npcs: NPC[],
   targetLanguage: string,
 ): Promise<{
   segments: StorySegment[];
   inventory: string[];
   character: CharacterStatus;
-  relationships: Relationship[];
+  npcs: NPC[];
 }> => {
   const providerInfo = getProviderConfig(settings, "translation");
   if (!providerInfo) {
@@ -200,7 +200,7 @@ export const translateGameContent = async (
     segments: segmentsToTranslate,
     inventory,
     character,
-    relationships,
+    npcs,
   };
 
   const prompt = getTranslationPrompt(targetLanguage, JSON.stringify(payload));
@@ -236,7 +236,7 @@ export const translateGameContent = async (
       segments: Array<{ id: string; text: string; choices: string[] }>;
       inventory: string[];
       character: CharacterStatus;
-      relationships: Relationship[];
+      npcs: NPC[];
     };
 
     const mergedSegments = segments.map((originalSeg) => {
@@ -257,11 +257,11 @@ export const translateGameContent = async (
       segments: mergedSegments,
       inventory: translatedPayload.inventory,
       character: translatedPayload.character,
-      relationships: translatedPayload.relationships,
+      npcs: translatedPayload.npcs,
     };
   } catch (error) {
     // Fallback: return original
-    return { segments, inventory, character, relationships };
+    return { segments, inventory, character, npcs };
   }
 };
 

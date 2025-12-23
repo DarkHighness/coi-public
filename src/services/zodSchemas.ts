@@ -158,17 +158,17 @@ export const inventoryItemSchema = z.object({
 // ============================================================================
 
 /** 关系可见层 */
-export const relationshipVisibleSchema = z.object({
+export const npcVisibleSchema = z.object({
   name: z.string().describe("Name/Title the player knows them by."),
   description: z
     .string()
     .describe("Public perception - how others view this NPC."),
   age: z.string().nullish().describe("Apparent age."),
   appearance: z.string().nullish().describe("Physical appearance details."),
-  relationshipType: z
+  npcType: z
     .string()
     .describe(
-      "Relationship status from player's perspective (e.g. Friend, Rival, Enemy, Mentor, Lover). Must be in target language.",
+      "The role or nature of the NPC in relation to the protagonist (e.g. Friend, Rival, Enemy, Mentor, Lover). Must be in target language.",
     ),
   impression: z
     .string()
@@ -206,7 +206,7 @@ export const relationshipVisibleSchema = z.object({
 });
 
 /** 关系隐藏层 */
-export const relationshipHiddenSchema = z.object({
+export const npcHiddenSchema = z.object({
   trueName: z
     .string()
     .nullish()
@@ -223,10 +223,10 @@ export const relationshipHiddenSchema = z.object({
     .nullish()
     .describe("Character's inventory items."),
   trueAffinity: z.number().int().nullish().describe("True affinity score."),
-  relationshipType: z
+  npcType: z
     .string()
     .describe(
-      "Relationship status from NPC's perspective (e.g. Tool, Prey, Master, Secret Lover). Must be in target language.",
+      "The role or nature of the NPC from their own perspective (e.g. Tool, Prey, Master, Secret Lover). Must be in target language.",
     ),
   impression: z
     .string()
@@ -250,12 +250,12 @@ export const relationshipHiddenSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Objective complexity: What do they get out of the relationship?",
+      "Objective complexity: What do they get out of their interaction with the protagonist?",
     ),
 });
 
 /** 完整关系 Schema */
-export const relationshipSchema = z.object({
+export const npcSchema = z.object({
   id: z
     .string()
     .describe(
@@ -268,8 +268,8 @@ export const relationshipSchema = z.object({
   currentLocation: z
     .string()
     .describe("The NPC's current location ID (e.g., 'loc:1')."),
-  visible: relationshipVisibleSchema,
-  hidden: relationshipHiddenSchema,
+  visible: npcVisibleSchema,
+  hidden: npcHiddenSchema,
   observation: z
     .string()
     .nullish()
@@ -1144,7 +1144,9 @@ export const characterStatusSchema = z.object({
   background: z.string().describe("Brief life story and background."),
   race: z
     .string()
-    .describe("The character's race (e.g. Human, Elf, Dwarf, etc.)."),
+    .describe(
+      "The character's race AND gender combined (e.g. 'Human Male', 'Female Elf', 'Male Dwarf', 'Female Orc'). CRITICAL: Include gender to ensure consistent pronoun usage throughout the narrative.",
+    ),
   psychology: z
     .object({
       coreTrauma: z.string().describe("Past failure/trauma driving them."),
@@ -1248,9 +1250,9 @@ export const storyOutlineSchema = z.object({
   inventory: z
     .array(inventoryItemSchema)
     .describe("Initial items in the inventory (1-3 items)."),
-  relationships: z
-    .array(relationshipSchema)
-    .describe("Initial relationships (1-2 NPCs)."),
+  npcs: z
+    .array(npcSchema)
+    .describe("Initial NPCs (1-2 NPCs)."),
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere settings with visual theme and audio ambience.",
   ),
@@ -1478,10 +1480,10 @@ export const outlinePhase4Schema = z.object({
  * NPC关系
  */
 export const outlinePhase5Schema = z.object({
-  relationships: z
-    .array(relationshipSchema)
+  npcs: z
+    .array(npcSchema)
     .describe(
-      "1-2 initial NPCs with full visible and hidden relationship details. Each MUST have a unique 'id' field.",
+      "1-2 initial NPCs with full visible and hidden details. Each MUST have a unique 'id' field.",
     ),
 });
 
@@ -1704,7 +1706,7 @@ export const gameResponseSchema = z.object({
     )
     .nullish()
     .describe("Updates to inventory."),
-  relationshipActions: z
+  npcActions: z
     .array(
       z.object({
         action: z.enum(["add", "update", "remove"]),
@@ -1715,15 +1717,15 @@ export const gameResponseSchema = z.object({
             "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the NPC (CANNOT change existing ID).",
           ),
         known: z.boolean().nullish(),
-        visible: relationshipVisibleSchema.partial().nullish(),
-        hidden: relationshipHiddenSchema.partial().nullish(),
+        visible: npcVisibleSchema.partial().nullish(),
+        hidden: npcHiddenSchema.partial().nullish(),
         notes: z.string().nullish(),
         unlocked: z.boolean().nullish(),
         unlockReason: z.string().nullish(),
       }),
     )
     .nullish()
-    .describe("Updates to relationships."),
+    .describe("Updates to NPCs."),
   locationActions: z
     .array(
       z.object({
@@ -2256,12 +2258,12 @@ export const translationSchema = z.object({
       race: z.string().nullish(),
     })
     .nullish(),
-  relationships: z
+  npcs: z
     .array(
       z.object({
         name: z.string().nullish(),
         description: z.string().nullish(),
-        relationshipType: z.string().nullish(),
+        npcType: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -2272,7 +2274,7 @@ export const translationSchema = z.object({
 // ============================================================================
 
 export type InventoryItem = z.infer<typeof inventoryItemSchema>;
-export type Relationship = z.infer<typeof relationshipSchema>;
+export type NPC = z.infer<typeof npcSchema>;
 export type Location = z.infer<typeof locationSchema>;
 export type Quest = z.infer<typeof questSchema>;
 export type Skill = z.infer<typeof skillSchema>;

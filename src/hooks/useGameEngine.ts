@@ -6,7 +6,7 @@ import {
   StorySegment,
   LanguageCode,
   StorySummary,
-  Relationship,
+  NPC,
   Location as GameLocation,
   OutlineConversationState,
   TurnContext,
@@ -118,7 +118,7 @@ async function indexInitialEntities(state: any, saveId: string): Promise<void> {
     }
 
     state.inventory?.forEach((item: any) => initialEntityIds.push(item.id));
-    state.relationships?.forEach((npc: any) => initialEntityIds.push(npc.id));
+    state.npcs?.forEach((npc: any) => initialEntityIds.push(npc.id));
     state.locations?.forEach((loc: any) => initialEntityIds.push(loc.id));
     state.quests?.forEach((quest: any) => initialEntityIds.push(quest.id));
     state.knowledge?.forEach((know: any) => initialEntityIds.push(know.id));
@@ -565,7 +565,7 @@ export const useGameEngine = () => {
             createdAt: Date.now(),
           }),
         ),
-        relationships: (outline.relationships || []).map(
+        npcs: (outline.npcs || []).map(
           (rel: any, index: number) => ({
             ...rel,
             createdAt: Date.now(),
@@ -925,7 +925,7 @@ export const useGameEngine = () => {
             createdAt: Date.now(),
           }),
         ),
-        relationships: (outline.relationships || []).map(
+        npcs: (outline.npcs || []).map(
           (rel: any, index: number) => ({
             ...rel,
             createdAt: Date.now(),

@@ -21,7 +21,7 @@ import type {
   KnowledgeEntry,
   Quest,
   TimelineEvent,
-  Relationship,
+  NPC,
   StoryOutline,
   Skill,
   Condition,
@@ -615,7 +615,7 @@ export function extractDocumentsFromState(
       }
 
       case "npc": {
-        const npc = state.relationships?.find((n) => n.id === entityId);
+        const npc = state.npcs?.find((n) => n.id === entityId);
         if (npc) {
           documents.push({
             entityId,
@@ -831,7 +831,7 @@ function extractStoryContent(node: StorySegment): string {
   return parts.join("\n");
 }
 
-function extractNPCContent(npc: Relationship): string {
+function extractNPCContent(npc: NPC): string {
   const parts: string[] = [];
   parts.push(`<npc id="${npc.id}">`);
 
@@ -846,9 +846,9 @@ function extractNPCContent(npc: Relationship): string {
       parts.push(`    <description>${npc.visible.description}</description>`);
     if (npc.visible.appearance)
       parts.push(`    <appearance>${npc.visible.appearance}</appearance>`);
-    if (npc.visible.relationshipType)
+    if (npc.visible.npcType)
       parts.push(
-        `    <relation_type>${npc.visible.relationshipType}</relation_type>`,
+        `    <npc_type>${npc.visible.npcType}</npc_type>`,
       );
     if (npc.visible.personality)
       parts.push(`    <personality>${npc.visible.personality}</personality>`);

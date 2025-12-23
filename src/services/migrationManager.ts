@@ -3,8 +3,15 @@
  * Handles migration of save data between versions
  */
 
-import type { GameState, SaveVersionInfo, VersionedGameState } from "../types";
+import type {
+  GameState,
+  SaveVersionInfo,
+  VersionedGameState,
+  StorySegment,
+} from "../types";
 import { CURRENT_SAVE_VERSION } from "../types";
+import { saveImage } from "../utils/imageStorage";
+import { createThemeConfig } from "./ai/utils";
 
 // ============================================================================
 // Migration Types
@@ -14,6 +21,7 @@ export interface MigrationContext {
   fromVersion: number;
   toVersion: number;
   logs: string[];
+  saveId?: string;
 }
 
 export type MigrationFunction = (
@@ -47,16 +55,88 @@ const migrations: Migration[] = [
     },
   },
 
-  // Future migrations will be added here:
-  // {
-  //   version: 2,
-  //   description: "Added new field XYZ",
-  //   migrate: async (state: any, context: MigrationContext) => {
-  //     state.newField = defaultValue;
-  //     context.logs.push("Applied v2 migration: Added newField");
-  //     return state;
-  //   },
-  // },
+  // Version 2: Relationship -> NPC terminology rename + Consolidate ad-hoc migrations
+  {
+    version: 2,
+    description: "Renamed relationships to npcs and consolidated legacy migrations",
+    migrate: async (state: any, context: MigrationContext) => {
+      context.logs.push("Applied v2 migration: Terminology rename and state cleanup");
+
+      // 1. Terminology Rename: relationship -> npc
+      if (state.relationships && !state.npcs) {
+        state.npcs = state.relationships;
+        delete state.relationships;
+        context.logs.push("Migrated 'relationships' to 'npcs'");
+      }
+      if (state.uiState?.relationships && !state.uiState.npcs) {
+        state.uiState.npcs = state.uiState.relationships;
+        delete state.uiState.relationships;
+        context.logs.push("Migrated 'uiState.relationships' to 'uiState.npcs'");
+      }
+      if (state.aliveEntities?.relationships && !state.aliveEntities.npcs) {
+        state.aliveEntities.npcs = state.aliveEntities.relationships;
+        delete state.aliveEntities.relationships;
+        context.logs.push("Migrated 'aliveEntities.relationships' to 'aliveEntities.npcs'");
+      }
+
+      // (a) Base64 images to IndexedDB
+      const nodes = state.nodes || {};
+      const saveId = state._saveId || context.saveId; // We might need the saveId
+      if (saveId) {
+        let migrationCount = 0;
+        const migrationPromises = Object.values(nodes).map(async (node: any) => {
+          if (
+            node.imageUrl &&
+            node.imageUrl.startsWith("data:image") &&
+            !node.imageId
+          ) {
+            try {
+              const response = await fetch(node.imageUrl);
+              const blob = await response.blob();
+              const imageId = await saveImage(blob, {
+                saveId,
+                forkId: state.forkId || 0,
+                turnIdx: node.segmentIdx || 0,
+                imagePrompt: node.imagePrompt || "",
+              });
+              node.imageId = imageId;
+              delete node.imageUrl;
+              migrationCount++;
+            } catch (err) {
+              context.logs.push(`Failed to migrate image for node ${node.id}: ${err}`);
+            }
+          }
+        });
+        await Promise.all(migrationPromises);
+        if (migrationCount > 0) {
+          context.logs.push(`Migrated ${migrationCount} legacy images to IndexedDB`);
+        }
+      }
+
+      // (b) themeConfig initialization - handled in repairState if missing
+      if (!state.themeConfig && state.theme) {
+        // We'll leave the actual themeConfig creation to the repairState or a utility
+        // because we don't have 't' (translation) here easily.
+        // Actually, we can just ensure it exists in repairState.
+      }
+
+      // (c) tokenUsage normalization
+      if (state.tokenUsage && typeof state.tokenUsage === "object") {
+         if (state.tokenUsage.cacheRead === undefined) state.tokenUsage.cacheRead = 0;
+         if (state.tokenUsage.cacheWrite === undefined) state.tokenUsage.cacheWrite = 0;
+      }
+
+      // (d) atmosphere and time defaults
+      if (!state.atmosphere) {
+         state.atmosphere = { envTheme: "fantasy", ambience: "quiet" };
+      }
+      if (!state.time) {
+         state.time = "Day 1";
+      }
+
+      return state;
+    },
+  },
 ];
 
 // ============================================================================
@@ -105,7 +185,7 @@ export class MigrationManager {
   /**
    * Migrate a save state to the current version
    */
-  async migrate(state: any): Promise<VersionedGameState> {
+  async migrate(state: any, saveId?: string): Promise<VersionedGameState> {
     const fromVersion = this.getSaveVersion(state);
     const toVersion = CURRENT_SAVE_VERSION;
 
@@ -122,6 +202,7 @@ export class MigrationManager {
       fromVersion,
       toVersion,
       logs: [],
+      saveId,
     };
 
     let migratedState = { ...state };
@@ -205,9 +286,9 @@ export class MigrationManager {
     if (!Array.isArray(state.inventory)) {
       warnings.push("Missing 'inventory' array - will be initialized as empty");
     }
-    if (!Array.isArray(state.relationships)) {
+    if (!Array.isArray(state.npcs) && !Array.isArray(state.relationships)) {
       warnings.push(
-        "Missing 'relationships' array - will be initialized as empty",
+        "Missing 'npcs' array - will be initialized as empty",
       );
     }
     if (!Array.isArray(state.quests)) {
@@ -260,9 +341,12 @@ export class MigrationManager {
     if (!Array.isArray(repairedState.inventory)) {
       repairedState.inventory = [];
     }
-    if (!Array.isArray(repairedState.relationships)) {
-      repairedState.relationships = [];
+    // Handle both legacy and new field name
+    if (!Array.isArray(repairedState.npcs)) {
+      repairedState.npcs = repairedState.relationships || [];
     }
+    delete repairedState.relationships;
+
     if (!Array.isArray(repairedState.quests)) {
       repairedState.quests = [];
     }
@@ -329,9 +413,18 @@ export class MigrationManager {
       repairedState.uiState = {
         inventory: { pinnedIds: [], customOrder: [] },
         locations: { pinnedIds: [], customOrder: [] },
-        relationships: { pinnedIds: [], customOrder: [] },
+        npcs: { pinnedIds: [], customOrder: [] },
         knowledge: { pinnedIds: [], customOrder: [] },
       };
+    } else {
+      // Repair sub-fields of uiState
+      if (!repairedState.uiState.npcs) {
+        repairedState.uiState.npcs = repairedState.uiState.relationships || {
+          pinnedIds: [],
+          customOrder: [],
+        };
+      }
+      delete repairedState.uiState.relationships;
     }
 
     if (
@@ -353,7 +446,7 @@ export class MigrationManager {
     ) {
       repairedState.aliveEntities = {
         inventory: [],
-        relationships: [],
+        npcs: [],
         locations: [],
         quests: [],
         knowledge: [],
@@ -363,6 +456,12 @@ export class MigrationManager {
         hiddenTraits: [],
         causalChains: [],
       };
+    } else {
+      // Repair sub-fields of aliveEntities
+      if (!repairedState.aliveEntities.npcs) {
+        repairedState.aliveEntities.npcs = repairedState.aliveEntities.relationships || [];
+      }
+      delete repairedState.aliveEntities.relationships;
     }
 
     if (
@@ -393,12 +492,50 @@ export class MigrationManager {
     if (!repairedState.currentLocation) {
       repairedState.currentLocation = "Unknown";
     }
+    if (!repairedState.language) {
+      repairedState.language = "zh";
+    }
+
+    // Repair segmentIdx if missing
+    Object.values(repairedState.nodes).forEach((node: any) => {
+      if (typeof node.segmentIdx !== "number") {
+        node.segmentIdx = 0;
+      }
+    });
+
+    // Reconstruct currentFork if empty but we have an active node
+    if (
+      (!repairedState.currentFork || repairedState.currentFork.length === 0) &&
+      repairedState.activeNodeId
+    ) {
+      const history: any[] = [];
+      let curr = repairedState.activeNodeId;
+      while (curr && repairedState.nodes[curr]) {
+        history.unshift(repairedState.nodes[curr]);
+        curr = repairedState.nodes[curr].parentId;
+      }
+      // Fix segmentIdx in the chain
+      history.forEach((node, idx) => {
+        node.segmentIdx = idx;
+      });
+      repairedState.currentFork = history;
+    }
 
     // Reset transient state
     repairedState.isProcessing = false;
     repairedState.isImageGenerating = false;
     repairedState.generatingNodeId = null;
     repairedState.error = null;
+
+    // Repair themeConfig if missing
+    if (!repairedState.themeConfig && repairedState.theme) {
+      // Use a basic themeConfig if we don't have a translator
+      // In useGamePersistence, we can call it again with 't' if needed
+      repairedState.themeConfig = createThemeConfig(
+        repairedState.theme,
+        (key: string, options?: any) => options?.defaultValue || key,
+      );
+    }
 
     return repairedState;
   }

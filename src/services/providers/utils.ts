@@ -189,7 +189,7 @@ export function formatZodError(error: ZodError): string {
  */
 export function getToolSchemaHint(
   schema: ZodTypeAny,
-  indent: string = ""
+  indent: string = "",
 ): string {
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
@@ -220,10 +220,10 @@ export function getToolSchemaHint(
       ) {
         typeStr = `Array<${getToolSchemaHint(
           innerSchema._def.type,
-          indent + "  "
+          indent + "  ",
         )}>`;
       } else if (innerSchema instanceof ZodArray) {
-          typeStr = getGenericTypeHint(innerSchema, indent);
+        typeStr = getGenericTypeHint(innerSchema, indent);
       } else {
         typeStr = getGenericTypeHint(innerSchema, indent);
       }
@@ -258,9 +258,9 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
   }
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;
-     if (inner instanceof ZodObject) {
-        return `Array<${getToolSchemaHint(inner, indent + "  ")}>`;
-     }
+    if (inner instanceof ZodObject) {
+      return `Array<${getToolSchemaHint(inner, indent + "  ")}>`;
+    }
     return `Array<${getGenericTypeHint(inner, indent)}>`;
   }
   if (schema instanceof ZodObject) {
@@ -273,7 +273,8 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
   }
   if (schema instanceof ZodIntersection) {
     return `${getGenericTypeHint(schema._def.left, indent)} & ${getGenericTypeHint(
-      schema._def.right, indent
+      schema._def.right,
+      indent,
     )}`;
   }
   if (schema instanceof ZodRecord) {

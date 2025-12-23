@@ -36,8 +36,8 @@ import {
   atmosphereSchema,
   inventoryItemVisibleSchema,
   inventoryItemHiddenSchema,
-  relationshipVisibleSchema,
-  relationshipHiddenSchema,
+  npcVisibleSchema,
+  npcHiddenSchema,
   locationVisibleSchema,
   locationHiddenSchema,
   questVisibleSchema,
@@ -300,8 +300,8 @@ export const QUERY_INVENTORY_TOOL = defineTool({
   }),
 });
 
-export const QUERY_RELATIONSHIPS_TOOL = defineTool({
-  name: "query_relationships",
+export const QUERY_NPC_TOOL = defineTool({
+  name: "query_npc",
   description: "Recall details about NPCs the player has met.",
   parameters: z.object({
     query: z
@@ -641,19 +641,19 @@ export const ADD_INVENTORY_TOOL = defineTool({
   }),
 });
 
-export const ADD_RELATIONSHIP_TOOL = defineTool({
-  name: "add_relationship",
-  description: "Add NPC.",
+export const ADD_NPC_TOOL = defineTool({
+  name: "add_npc",
+  description: "Add NPC. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (npc:N)."),
     name: z.string().describe("NPC name."),
     currentLocation: z.string().optional().describe("Location ID (loc:N)."),
     known: z.boolean().optional().describe("Player knows NPC? Default: true."),
-    visible: relationshipVisibleSchema
+    visible: npcVisibleSchema
       .partial()
       .optional()
       .describe("Visible props."),
-    hidden: relationshipHiddenSchema
+    hidden: npcHiddenSchema
       .partial()
       .optional()
       .describe("Hidden props (AI/GM)."),
@@ -815,7 +815,8 @@ export const ADD_CAUSAL_CHAIN_TOOL = defineTool({
 // Character Add Tools
 export const ADD_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "add_character_attribute",
-  description: "Add numeric attribute.",
+  description:
+    "Add numeric attribute to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
     name: z.string().describe("Attribute name."),
     value: z.number().int().describe("Value."),
@@ -826,7 +827,8 @@ export const ADD_CHARACTER_ATTRIBUTE_TOOL = defineTool({
 
 export const ADD_CHARACTER_SKILL_TOOL = defineTool({
   name: "add_character_skill",
-  description: "Add skill.",
+  description:
+    "Add skill to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (skill:N)."),
     name: z.string().describe("Skill name."),
@@ -841,7 +843,8 @@ export const ADD_CHARACTER_SKILL_TOOL = defineTool({
 
 export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
   name: "add_character_condition",
-  description: "Add condition (buff/debuff).",
+  description:
+    "Add condition (buff/debuff) to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (cond:N)."),
     name: z.string().describe("Condition name."),
@@ -868,7 +871,8 @@ export const ADD_CHARACTER_CONDITION_TOOL = defineTool({
 
 export const ADD_CHARACTER_TRAIT_TOOL = defineTool({
   name: "add_character_trait",
-  description: "Add hidden trait.",
+  description:
+    "Add hidden trait to the PROTAGONIST. Character tools are for protagonist only; use npc tools for NPCs.",
   parameters: z.object({
     id: z.string().optional().describe("Optional ID (trait:N)."),
     name: z.string().describe("Trait name."),
@@ -893,8 +897,8 @@ export const REMOVE_INVENTORY_TOOL = defineTool({
   }),
 });
 
-export const REMOVE_RELATIONSHIP_TOOL = defineTool({
-  name: "remove_relationship",
+export const REMOVE_NPC_TOOL = defineTool({
+  name: "remove_npc",
   description: "Remove NPC.",
   parameters: z.object({
     id: z.string().describe("ID (npc:N)."),
@@ -984,19 +988,19 @@ export const UPDATE_INVENTORY_TOOL = defineTool({
   }),
 });
 
-export const UPDATE_RELATIONSHIP_TOOL = defineTool({
-  name: "update_relationship",
-  description: "Update NPC. Omit to keep, null to delete.",
+export const UPDATE_NPC_TOOL = defineTool({
+  name: "update_npc",
+  description: "Update NPC. Omit to keep, null to delete. PROTAGONIST-ONLY clarification: These tools are for NPCs, use character tools for the protagonist.",
   parameters: z.object({
     id: z.string().describe("ID (npc:N)."),
     name: z.string().nullish().describe("New name."),
     currentLocation: z.string().nullish().describe("Location ID."),
     known: z.boolean().nullish().describe("Known?"),
-    visible: relationshipVisibleSchema
+    visible: npcVisibleSchema
       .partial()
       .nullish()
       .describe("Visible props."),
-    hidden: relationshipHiddenSchema
+    hidden: npcHiddenSchema
       .partial()
       .nullish()
       .describe("Hidden props."),
@@ -1197,7 +1201,8 @@ export const UPDATE_GLOBAL_TOOL = defineTool({
 // Character Update Tools
 export const UPDATE_CHARACTER_PROFILE_TOOL = defineTool({
   name: "update_character_profile",
-  description: "Update character profile. Omit to keep, null to clear.",
+  description:
+    "Update the PROTAGONIST's profile. For NPC updates, use update_npc instead. Omit to keep, null to clear.",
   parameters: z.object({
     name: z.string().nullish().describe("Name."),
     title: z.string().nullish().describe("Title/Class."),
@@ -1220,7 +1225,8 @@ export const UPDATE_CHARACTER_PROFILE_TOOL = defineTool({
 
 export const UPDATE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
   name: "update_character_attribute",
-  description: "Update attribute. Omit to keep, null to remove.",
+  description:
+    "Update the PROTAGONIST's attribute. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
     name: z.string().describe("Name."),
     value: z.number().int().nullish().describe("New value."),
@@ -1231,7 +1237,8 @@ export const UPDATE_CHARACTER_ATTRIBUTE_TOOL = defineTool({
 
 export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
   name: "update_character_skill",
-  description: "Update skill. Omit to keep, null to remove.",
+  description:
+    "Update the PROTAGONIST's skill. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
     id: z.string().optional().describe("ID (skill:N)."),
     name: z.string().optional().describe("Name."),
@@ -1246,7 +1253,8 @@ export const UPDATE_CHARACTER_SKILL_TOOL = defineTool({
 
 export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
   name: "update_character_condition",
-  description: "Update condition. Omit to keep, null to remove.",
+  description:
+    "Update the PROTAGONIST's condition. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
     id: z.string().optional().describe("ID (cond:N)."),
     name: z.string().optional().describe("Name."),
@@ -1271,7 +1279,8 @@ export const UPDATE_CHARACTER_CONDITION_TOOL = defineTool({
 
 export const UPDATE_CHARACTER_TRAIT_TOOL = defineTool({
   name: "update_character_trait",
-  description: "Update hidden trait. Omit to keep, null to remove.",
+  description:
+    "Update the PROTAGONIST's hidden trait. Character tools are for protagonist only; use npc tools for NPCs. Omit to keep, null to remove.",
   parameters: z.object({
     id: z.string().optional().describe("ID (trait:N)."),
     name: z.string().optional().describe("Name."),
@@ -1460,7 +1469,7 @@ export const SUMMARY_QUERY_SEGMENTS_TOOL = defineTool({
 });
 
 /**
- * Query the current game state (inventory, relationships, etc.)
+ * Query the current game state (inventory, npcs, etc.)
  * Use this when the summary needs to reference entity states.
  */
 export const SUMMARY_QUERY_STATE_TOOL = defineTool({
@@ -1480,7 +1489,7 @@ export const SUMMARY_QUERY_STATE_TOOL = defineTool({
       .array(
         z.enum([
           "inventory",
-          "relationships",
+          "npcs",
           "locations",
           "quests",
           "knowledge",
@@ -1556,7 +1565,7 @@ export const SUMMARY_LOAD_QUERY_TOOL = defineTool({
 
 Use this to request access to specific entity query tools:
 - inventory: Query player's items
-- relationships: Query NPC relationships
+- npcs: Query NPC npcs
 - locations: Query known locations
 - quests: Query quest status
 - knowledge: Query player knowledge
@@ -1570,7 +1579,7 @@ Once loaded, the tools will be available in subsequent turns.`,
       .array(
         z.enum([
           "inventory",
-          "relationships",
+          "npcs",
           "locations",
           "quests",
           "knowledge",
@@ -1663,10 +1672,10 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "unlock:inventory": [UNLOCK_ENTITY_TOOL], // Unlock is often generic but let's map it
 
   // Relationship / NPC
-  "add:relationship": [ADD_RELATIONSHIP_TOOL],
-  "update:relationship": [UPDATE_RELATIONSHIP_TOOL],
-  "remove:relationship": [REMOVE_RELATIONSHIP_TOOL],
-  "query:relationship": [QUERY_RELATIONSHIPS_TOOL],
+  "add:npc": [ADD_NPC_TOOL],
+  "update:npc": [UPDATE_NPC_TOOL],
+  "remove:npc": [REMOVE_NPC_TOOL],
+  "query:npc": [QUERY_NPC_TOOL],
   "unlock:relationship": [UNLOCK_ENTITY_TOOL],
 
   // Location
@@ -1822,7 +1831,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   QUERY_SUMMARY_TOOL,
   QUERY_RECENT_CONTEXT_TOOL,
   QUERY_INVENTORY_TOOL,
-  QUERY_RELATIONSHIPS_TOOL,
+  QUERY_NPC_TOOL,
   QUERY_LOCATIONS_TOOL,
   QUERY_QUESTS_TOOL,
   QUERY_KNOWLEDGE_TOOL,
@@ -1839,7 +1848,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   QUERY_CHARACTER_TRAITS_TOOL,
   RAG_SEARCH_TOOL,
   ADD_INVENTORY_TOOL,
-  ADD_RELATIONSHIP_TOOL,
+  ADD_NPC_TOOL,
   ADD_LOCATION_TOOL,
   ADD_QUEST_TOOL,
   ADD_KNOWLEDGE_TOOL,
@@ -1851,7 +1860,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   ADD_CHARACTER_CONDITION_TOOL,
   ADD_CHARACTER_TRAIT_TOOL,
   REMOVE_INVENTORY_TOOL,
-  REMOVE_RELATIONSHIP_TOOL,
+  REMOVE_NPC_TOOL,
   REMOVE_LOCATION_TOOL,
   REMOVE_QUEST_TOOL,
   REMOVE_FACTION_TOOL,
@@ -1860,7 +1869,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   REMOVE_CHARACTER_CONDITION_TOOL,
   REMOVE_CHARACTER_TRAIT_TOOL,
   UPDATE_INVENTORY_TOOL,
-  UPDATE_RELATIONSHIP_TOOL,
+  UPDATE_NPC_TOOL,
   UPDATE_LOCATION_TOOL,
   UPDATE_QUEST_TOOL,
   COMPLETE_QUEST_TOOL,
@@ -2072,14 +2081,14 @@ export type RemoveInventoryParams = InferToolParams<
   typeof REMOVE_INVENTORY_TOOL
 >;
 
-export type AddRelationshipParams = InferToolParams<
-  typeof ADD_RELATIONSHIP_TOOL
+export type AddNPCParams = InferToolParams<
+  typeof ADD_NPC_TOOL
 >;
-export type UpdateRelationshipParams = InferToolParams<
-  typeof UPDATE_RELATIONSHIP_TOOL
+export type UpdateNPCParams = InferToolParams<
+  typeof UPDATE_NPC_TOOL
 >;
-export type RemoveRelationshipParams = InferToolParams<
-  typeof REMOVE_RELATIONSHIP_TOOL
+export type RemoveNPCParams = InferToolParams<
+  typeof REMOVE_NPC_TOOL
 >;
 
 export type AddLocationParams = InferToolParams<typeof ADD_LOCATION_TOOL>;
@@ -2128,9 +2137,7 @@ export type UpdateWorldInfoParams = InferToolParams<
 
 // Query Types
 export type QueryInventoryParams = InferToolParams<typeof QUERY_INVENTORY_TOOL>;
-export type QueryRelationshipsParams = InferToolParams<
-  typeof QUERY_RELATIONSHIPS_TOOL
->;
+export type QueryNPCParams = InferToolParams<typeof QUERY_NPC_TOOL>;
 export type QueryLocationsParams = InferToolParams<typeof QUERY_LOCATIONS_TOOL>;
 export type QueryQuestsParams = InferToolParams<typeof QUERY_QUESTS_TOOL>;
 export type QueryKnowledgeParams = InferToolParams<typeof QUERY_KNOWLEDGE_TOOL>;
@@ -2196,7 +2203,7 @@ export interface ToolParamsMap {
 
   // Query tools
   query_inventory: QueryInventoryParams;
-  query_relationships: QueryRelationshipsParams;
+  query_npc: QueryNPCParams;
   query_locations: QueryLocationsParams;
   query_quests: QueryQuestsParams;
   query_knowledge: QueryKnowledgeParams;
@@ -2213,7 +2220,7 @@ export interface ToolParamsMap {
 
   // Add tools
   add_inventory: AddInventoryParams;
-  add_relationship: AddRelationshipParams;
+  add_npc: AddNPCParams;
   add_location: AddLocationParams;
   add_quest: AddQuestParams;
   add_knowledge: AddKnowledgeParams;
@@ -2227,7 +2234,7 @@ export interface ToolParamsMap {
 
   // Remove tools
   remove_inventory: RemoveInventoryParams;
-  remove_relationship: RemoveRelationshipParams;
+  remove_npc: RemoveNPCParams;
   remove_location: RemoveLocationParams;
   remove_quest: RemoveQuestParams;
   remove_faction: RemoveFactionParams;
@@ -2238,7 +2245,7 @@ export interface ToolParamsMap {
 
   // Update tools
   update_inventory: UpdateInventoryParams;
-  update_relationship: UpdateRelationshipParams;
+  update_npc: UpdateNPCParams;
   update_location: UpdateLocationParams;
   update_quest: UpdateQuestParams;
   complete_quest: CompleteQuestParams;
