@@ -219,6 +219,79 @@ export function getNpcLogicContent(_ctx: SkillContext): string {
       - **Evolution & Decay**: NPCs don't just "level up". They can stagnate, rot from neglect, or warp into toxic dependency. Distance cools passion. Trauma bonds strangers.
       - **The Burden of Connection**: Love comes with weight. Parents have expectations. Partners have needs. Friends have debts. Being "loved" isn't always easy; sometimes it's a cage.
       - **Conditional vs Unconditional**: True unconditional love is rare. Most affection is transactional or conditional on behavior. Know the difference.
+
+      <love_languages>
+        **HOW CHARACTERS EXPRESS DEEP AFFECTION**:
+        Not everyone says "I love you." Most people never do. They SHOW it in different ways:
+
+        **THE PROTECTOR**:
+        - Always walks on the street side of the sidewalk
+        - Checks the room before letting them enter
+        - Takes the hit meant for them without thinking
+        - "Don't worry about it" when asked how they got that bruise
+
+        **THE PROVIDER**:
+        - The meal left at the door when you forgot to eat
+        - Money slipped into your pocket without a word
+        - Working double shifts so you don't have to
+        - "I wasn't using it anyway" about the last blanket
+
+        **THE SILENT COMPANION**:
+        - Just... being there. Saying nothing. Needing nothing.
+        - Sitting in the hospital waiting room all night
+        - Holding the hand without squeezing
+        - The presence that doesn't ask "Are you okay?" but just stays
+
+        **THE REMEMBERER**:
+        - Knows you can't eat shellfish from a meal five years ago
+        - Remembers your mother's birthday better than you do
+        - Notices when you're lying before you finish the sentence
+        - "I got this for you"—and it's exactly what you needed but never asked for
+
+        **THE TRUTH-TELLER**:
+        - Tells you what you need to hear, not what you want
+        - "You're wrong, and here's why"—because they respect you
+        - Refuses to enable your self-destruction
+        - The cruelty of care: "I won't watch you die."
+      </love_languages>
+
+      <the_efficiency_of_old_bonds>
+        **LONG RELATIONSHIPS HAVE SHORTHAND**:
+        - A look that says "We need to leave. Now."—and the other understands
+        - Half-sentences: "Remember when—" "Yeah." "So." "Right."
+        - The argument they've had a hundred times, reduced to sighs
+        - The comfort that doesn't need words: just the hand on the shoulder
+
+        **ACCUMULATED HISTORY**:
+        - Inside jokes that make no sense to outsiders
+        - Shared trauma that doesn't need naming
+        - The weight of "I know what you did that summer"—and the forgiveness already given
+        - The shorthand of survivors: "Like last time?" "Worse."
+
+        **THE COMFORT OF ROUTINE**:
+        - He makes the coffee. She opens the curtains. They don't discuss it.
+        - The seat that's "yours" even when you're not there
+        - The silence that's not empty, just... home
+      </the_efficiency_of_old_bonds>
+
+      <protective_instincts>
+        **LOVE THAT SHIELDS**:
+        - The parent who lies to spare the child the truth
+        - The friend who takes the blame so you don't have to
+        - The mentor who is cruel to make you strong
+        - The lover who pushes you away to keep you safe
+
+        **THE COST OF PROTECTION**:
+        - They carry scars you'll never know about
+        - The money they don't have because they gave it to you
+        - The enemies they've made on your behalf
+        - The loneliness of being the wall between you and the world
+
+        **PROTECTION THAT HURTS**:
+        - "I can't tell you." (Because telling would destroy you.)
+        - "Leave." (Because staying means dying together.)
+        - "I never loved you." (The lie that saves your life.)
+      </protective_instincts>
     </complex_intimacy>
 
     <daily_existence>

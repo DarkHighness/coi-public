@@ -222,6 +222,224 @@ export function getWritingCraftContent(ctx: SkillContext): string {
     - **The Unpleasant is Real**: Pleasant sensations are rare. Unpleasant ones are constant. Use them to ground the player.
   </sensory_grit>
 
+  <emotional_resonance>
+    **WHAT MAKES A MOMENT TRULY TOUCHING**
+
+    The difference between "sad" and "heartbreaking" is RESTRAINT.
+    People don't cry at speeches. They cry at the silence after.
+
+    <silent_love>
+      **ACTIONS LOUDER THAN WORDS**:
+      - The father who walks ahead to clear the path, never mentioning the thorns in his hands
+      - The lover who stays up all night, pretending to read, just to be there when the nightmares come
+      - The friend who takes the blame without explanation
+      - The stranger who gives their last coin and walks away before you can thank them
+
+      **SHOW THE COST, NOT THE SACRIFICE**:
+      ❌ "He sacrificed everything for her."
+      ✅ "His hands shook as he signed the papers. The shop—forty years of his life—gone. He smiled at her graduation photo and said nothing."
+
+      **THE UNSPOKEN**:
+      - Love that never declares itself: the way he always saves the last piece for you
+      - Protection that never explains: "Don't go that way" without saying why he knows
+      - Grief that has no words: sitting in her empty room, holding a sock that still smells like her
+    </silent_love>
+
+    <vulnerability_of_strength>
+      **WHEN THE STRONG CRACK OPEN**:
+      The warrior who never cried—watching him wipe his eyes when he thinks no one sees.
+      The mother who held it together—finding her sobbing in the kitchen at 3 AM.
+      The stoic mentor—his voice breaking on the last word of goodbye.
+
+      **ARMOR THAT SLIPS**:
+      - The hand that almost reaches out, then pulls back
+      - The word that almost escapes, swallowed at the last moment
+      - The tear that is brushed away too quickly
+
+      **THE WEIGHT OF COMPOSURE**:
+      Describe the EFFORT of not breaking. The clenched jaw. The fixed stare. The fingernails digging into palms.
+    </vulnerability_of_strength>
+
+    <contrast_creates_impact>
+      **LIGHT NEEDS DARKNESS**:
+      - Kindness hits hardest when everyone else is cold
+      - Hope matters most at the edge of despair
+      - A single candle means nothing at noon; in a storm, it is everything
+
+      **THE STRANGER'S HAND**:
+      When you have been kicked and ignored, and suddenly—someone helps without asking for anything.
+      This is more powerful than any grand gesture from a loved one.
+
+      **BUILD THE COLD FIRST**:
+      Before the warmth can touch, the reader must feel the frost.
+      Before hope can land, they must know the weight of hopelessness.
+    </contrast_creates_impact>
+
+    <the_body_remembers_love>
+      **EMOTION IS PHYSICAL**:
+      Don't say "He loved her." Show:
+      - The way he always stands between her and the street
+      - The automatic hand on her back in a crowd
+      - How he remembers she can't eat cilantro, from a meal three years ago
+
+      **ACCUMULATED GESTURES**:
+      Love is not the grand declaration. It is:
+      - 10,000 cups of tea made exactly right
+      - The door held open without thinking
+      - The blanket placed over her when she falls asleep reading
+
+      **THE TRAGEDY OF THE UNSAID**:
+      - He never told her. Now she's gone.
+      - She realized too late what his silence meant.
+      - The letter in the drawer, never sent.
+    </the_body_remembers_love>
+  </emotional_resonance>
+
+  <moment_crystallization>
+    **CREATING SCENES THAT SEAR INTO MEMORY**
+
+    Memory doesn't store stories. It stores MOMENTS.
+    One image. One sound. One feeling. That's what remains.
+
+    <threshold_moments>
+      **LIFE'S DIVIDING LINES**:
+      Recognize when a moment is a "before and after":
+      - Crossing the bridge (you can't go back)
+      - Closing the door (something ends)
+      - The last look back (goodbye made physical)
+      - Saying the word that cannot be unsaid
+
+      **SLOW DOWN AT THE THRESHOLD**:
+      When the protagonist reaches a point of no return, LINGER.
+      Describe the hand on the doorknob. The breath before the step.
+      Make the reader feel the weight of what is about to change.
+    </threshold_moments>
+
+    <time_dilation>
+      **THE WORLD SLOWS DOWN**:
+      At critical moments, time stretches:
+      - The bullet leaving the gun: you see the spin, the glint of brass
+      - The moment before the kiss: the world narrows to two pairs of lips
+      - The fall from the cliff: every heartbeat is an eternity
+
+      **TECHNIQUE**:
+      - Sentence fragments. Short. Sharp.
+      - Hyper-focus on single sensory details
+      - Internal monologue in italics: *This is the moment. There is no going back.*
+      - The pause before impact: "For a heartbeat, nothing moved."
+    </time_dilation>
+
+    <sensory_anchors>
+      **ONE DETAIL CAPTURES EVERYTHING**:
+      The reader will forget the plot. They will remember:
+      - The smell of his tobacco on the day you said goodbye
+      - The sound of rain on the window when you got the phone call
+      - The warmth of the coin he pressed into your palm
+
+      **SYNESTHETIC MEMORY**:
+      Link emotion to sensation:
+      - "Every time I smell lilacs, I am back at her funeral."
+      - "That song. I can't hear it without seeing his face."
+      - "The taste of copper. That's what I remember from the fight."
+
+      **RECURRING ANCHORS**:
+      Introduce a sensory detail early. Bring it back later with changed meaning.
+      - The red scarf she wore when you met. The same scarf, faded, on her grave.
+      - The song that played at the wedding. The same song at the morgue.
+    </sensory_anchors>
+
+    <the_callback>
+      **DETAILS THAT RETURN**:
+      Early in the story, plant small details. Later, let them bloom:
+      - The joke he made in chapter 1 → her repeating it at his funeral
+      - The food they shared → that dish, now uneaten, on the table for one
+      - The promise "I'll always come back" → the empty chair, year after year
+
+      **MEANING TRANSFORMS**:
+      The same object, different weight:
+      - *Before*: "She gave me this ring. It's pretty."
+      - *After*: "This ring. Her last touch. I'll never take it off."
+    </the_callback>
+
+    <the_art_of_withholding>
+      **WHAT YOU DON'T SAY**:
+      - The sentence that trails off: "I wish I had told him that I—"
+      - The letter never opened
+      - The last words, lost to the noise of the crowd
+
+      **UNFINISHED GESTURES**:
+      - The hand that reached out but never touched
+      - The word formed but never spoken
+      - The step toward, then the turn away
+
+      **ENDINGS THAT DON'T RESOLVE**:
+      Sometimes the most powerful ending is not knowing.
+      Did he make it? Is she alive? The question, unanswered, haunts.
+    </the_art_of_withholding>
+  </moment_crystallization>
+
+  <world_texture>
+    **THE IMPERFECTION THAT PROVES EXISTENCE**
+
+    A perfect world is a fake world.
+    Reality is the chip on the cup, the stain that won't wash out, the groove worn by decades of feet.
+
+    <wear_is_history>
+      **OBJECTS REMEMBER**:
+      - The sword: the nick from the duel he almost lost
+      - The chair: the armrest worn smooth by her hand, year after year
+      - The doorframe: the marks measuring a child's height, stopping abruptly at age 12
+      - The photograph: creased where it was folded and unfolded a thousand times
+
+      **DESCRIBE THE DAMAGE, IMPLY THE STORY**:
+      ❌ "An old sword."
+      ✅ "The blade had a notch near the hilt—a poor parry, years ago. He never fixed it. It reminded him of the lesson."
+    </wear_is_history>
+
+    <imperfection_is_truth>
+      **TOO PERFECT IS FALSE**:
+      - The tavern should have a wobbly table, a stain on the ceiling
+      - The noble's hall should have a draft, a faded tapestry
+      - The hero should have a crooked tooth, a scar that itches in winter
+
+      **MUNDANE INCONVENIENCE**:
+      - Keys that jam, doors that stick
+      - The boot with the worn sole that lets in water
+      - The cold that makes joints ache every morning
+    </imperfection_is_truth>
+
+    <objects_that_speak>
+      **ENVIRONMENTAL STORYTELLING**:
+      The scene should tell a story without dialogue:
+      - Two place settings, but only one chair pushed back
+      - A child's toy next to an adult skeleton
+      - Fresh flowers on an ancient grave
+      - The hook on the wall, now empty, where a coat used to hang
+
+      **ABSENCE AS PRESENCE**:
+      - The dent in the pillow where she used to sleep
+      - The coffee cup, still on the sink, unwashed since he left
+      - The leash still hanging by the door
+    </objects_that_speak>
+
+    <the_world_beyond_the_frame>
+      **IMPLY WHAT ISN'T SHOWN**:
+      - The conversation at the next table, half-heard
+      - The letter crumpled in the trash, contents unseen
+      - The scar she won't explain
+
+      **OTHER LIVES, HALF-GLIMPSED**:
+      - The bartender who works double shifts—you never learn why
+      - The old man who always sits in the corner—what is he waiting for?
+      - The siblings arguing in the street—their history, not your concern
+
+      **THE WORLD WAS HERE BEFORE YOU**:
+      - Graffiti that predates your arrival
+      - Jokes you don't understand, referencing events before your time
+      - Feuds older than anyone remembers the cause of
+    </the_world_beyond_the_frame>
+  </world_texture>
+
   <scene_endings>
     End scenes mid-breath. No summaries like "With the battle over, you prepare for the next challenge."
     Just stop. Leave the moment hanging.
