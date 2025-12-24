@@ -142,6 +142,59 @@ export const ENV_THEMES: Record<string, ThemeConfig> = {
     },
     fontClass: "font-cyberpunk",
   },
+  // Ocean / Sea
+  ocean: {
+    vars: {
+      "--theme-bg": "#082f49",
+      "--theme-surface": "#0c4a6e",
+      "--theme-surface-highlight": "#075985",
+      "--theme-border": "#0369a1",
+      "--theme-primary": "#38bdf8",
+      "--theme-primary-hover": "#0ea5e9",
+      "--theme-text": "#f0f9ff",
+      "--theme-muted": "#bae6fd",
+      ...DEFAULT_STATE_VARS,
+    },
+    dayVars: {
+      "--theme-bg": "#f0f9ff",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#bae6fd",
+      "--theme-border": "#7dd3fc",
+      "--theme-primary": "#0284c7",
+      "--theme-primary-hover": "#0369a1",
+      "--theme-text": "#0c4a6e",
+      "--theme-muted": "#0ea5e9",
+      ...DEFAULT_DAY_STATE_VARS,
+    },
+    fontClass: "font-sans",
+  },
+  // Combat / War - Intense Red/Orange
+  combat: {
+    vars: {
+      "--theme-bg": "#2a0a0a", // Dark red/brown
+      "--theme-surface": "#450a0a",
+      "--theme-surface-highlight": "#7f1d1d",
+      "--theme-border": "#991b1b",
+      "--theme-primary": "#fca5a5",
+      "--theme-primary-hover": "#f87171",
+      "--theme-text": "#fef2f2",
+      "--theme-muted": "#fca5a5",
+      ...DEFAULT_STATE_VARS,
+      "--theme-danger": "#ff0000", // Bright red for danger
+    },
+    dayVars: {
+      "--theme-bg": "#fef2f2",
+      "--theme-surface": "#ffffff",
+      "--theme-surface-highlight": "#fee2e2",
+      "--theme-border": "#fca5a5",
+      "--theme-primary": "#dc2626",
+      "--theme-primary-hover": "#b91c1c",
+      "--theme-text": "#450a0a",
+      "--theme-muted": "#991b1b",
+      ...DEFAULT_DAY_STATE_VARS,
+    },
+    fontClass: "font-sans",
+  },
   // Horror / Dark
   horror: {
     vars: {

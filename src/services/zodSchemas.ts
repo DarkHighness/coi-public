@@ -341,6 +341,8 @@ export const envThemeSchema = z.enum([
   "obsidian",
   "obsessive",
   "emerald",
+  "ocean",
+  "combat",
   "danger",
   "glamour",
   "rgb",
@@ -383,6 +385,7 @@ export const ambienceSchema = z.enum([
   "underwater",
   "space",
   "beach",
+  "school",
 ]);
 
 /** 天气特效枚举 */
