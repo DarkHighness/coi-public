@@ -196,12 +196,31 @@ export function getWritingCraftContent(ctx: SkillContext): string {
   </perspective_anchor>
 
   <physicality>
-    Bodies have weight. Armor drags. Running burns lungs.
-    Fighting leaves you trembling, ears ringing, vision narrowed.
-
-    The world resists. Doors stick. Floors creak. Rain soaks through to the bone.
-    Make the reader feel the friction of existence.
+    **THE WORLD RESISTS YOU**:
+    - **Inertia**: Stopping is hard. Starting is hard. Changing direction on mud is a dexterity save.
+    - **Friction**: Doors stick. Keys jam. Ropes burn hands. Nothing works perfectly the first time.
+    - **Weight**: Armor is heavy. Backpacks straps dig into shoulders. The sheer *effort* of existence should be felt.
   </physicality>
+
+  <unapologetic_reality>
+    **THE WORLD DOES NOT CARE**:
+    - **Weather is not mood lighting**: Rain makes mud. Mud slows travel. Mud infects wounds. It's not just "sad atmosphere", it's a mechanical problem.
+    - **Inconvenience**: Heroes get diarrhea. Heroes lose boots in bogs. Heroes get colds.
+    - **Ugliness**: The battlefield smells of bowels, not just "iron". The tavern floor is sticky. The beautiful princess has bad breath in the morning.
+    - **No "Video Game Logic"**:
+      * You cannot "wait" for 8 hours standing still in a hallway. Your legs will cramp. Guards will arrest you.
+      * You cannot carry 20 swords. You just can't.
+  </unapologetic_reality>
+
+  <sensory_grit>
+    **TEXTURE IS EVERYTHING**:
+    - **Don't just see, FEEL**:
+      * The itch of a healing scab.
+      * The grit of sand in your food.
+      * The damp cold seeping through thin boots.
+      * The greasy film on the unwashed table.
+    - **The Unpleasant is Real**: Pleasant sensations are rare. Unpleasant ones are constant. Use them to ground the player.
+  </sensory_grit>
 
   <scene_endings>
     End scenes mid-breath. No summaries like "With the battle over, you prepare for the next challenge."
@@ -245,6 +264,16 @@ export function getWritingCraftContent(ctx: SkillContext): string {
     - Sometimes the door opens and nothing's there. The tension was the point.
     - Subverted expectations keep readers off-balance. Use sparingly, powerfully.
   </dramatic_pacing>
+
+  <crisis_management>
+    **CRISIS QUALITY OVER QUANTITY**:
+    - **The 80/20 Rule**: Only ~20% of crises should be life-threatening (Fatal). 80% should be structural, social, or resource-based (Non-Fatal).
+    - **Crisis Fatigue**: Constant danger is boring. If everyday is a struggle for survival, the player becomes numb.
+    - **Cooldown Principle**: Do NOT repeat the SAME type of crisis within ~50 turns.
+      * If the player just fought an assassin, do not send another assassin for a long time.
+      * If the player just survived a storm, do not trigger an earthquake immediately.
+    - **Rhythm**: Calm -> Tension -> Crisis -> Fallout -> Recovery -> Calm. Do not skip steps.
+  </crisis_management>
 </writing_craft>
 `;
 }

@@ -34,6 +34,7 @@ export function getStateManagementContent(_ctx: SkillContext): string {
     - **CONSISTENCY CHECK** (before updating, verify):
       * Does this entity exist? (Don't update non-existent items)
       * Is the change logically possible? (Dead NPCs can't move)
+      * **Trait Continuity**: Does this action contradict a physical trait? (A mute NPC cannot "shout")
       * Does this contradict recent events? (Can't find an item you just lost)
     - **Inventory**: Add/Remove/Update. Use \`sensory\` (texture, weight, smell) and \`condition\` for physical depth. Always include \`hidden.truth\` for items with secrets.
     - **NPCs**: Track affinity, impression, location, and status.
@@ -58,6 +59,18 @@ export function getStateManagementContent(_ctx: SkillContext): string {
       * **Physical Reality Check**: Physics cannot be violated. If player says "I fly" but character has no flight ability, the action fails.
       * **Dead Entity Lock**: Once an NPC or creature is marked dead, no further status updates except "corpse moved" or "corpse looted".
       * **Time Paradox Prevention**: If updating time backwards, reject the update. Time only moves forward.
+    - **NARRATIVE-STATE BINDING (MANDATORY)**:
+      * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
+      * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
+      * ✅ Narrative: "He hands you the key." + Tool: \`add_inventory({ id: "inv_key" })\`
+      * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
+      * ✅ Narrative: "The bridge collapses." + Tool: \`update_location({ id: "loc_bridge", visible: { description: "Rubbles..." } })\`
+
+    - **WORLD INDIFFERENCE**:
+      * **Time**: Time passes regardless of player wishes. If they waste time, quest deadlines fail. Daily fees accumulate.
+      * **Consequences**: Do not protect the player from their own stupidity. If they insult a King, they get arrested. No "warnings".
+      * **State Truth**: The State is the physics of the world. It does not bend for "coolness".
+
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
   </rule>
 `;
@@ -189,6 +202,28 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
       * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
 
     - **Inventory Hygiene**: If a player eats an apple, \`remove_inventory\` immediately. Do not keep \`inv_apple\` with quantity 0.
+
+    <realism_vs_bloat_prevention>
+      ⚠️ **CRITICAL: REALISM DOES NOT EQUAL ENTITY BLOAT**
+
+      You have been instructed to simulate "Biological Imperatives" (hunger, mud, fatigue).
+      **DO NOT CREATE ENTITIES FOR THESE** unless they are critical, long-term mechanics.
+
+      - **Mud/Blood on Clothes**:
+        * ❌ \`add_condition("cond_muddy")\` -> Bloat.
+        * ✅ Narrative only OR \`update_inventory({ id: "inv_clothes", visible: { description: "Stained with mud." } })\`
+
+      - **NPC Fatigue/Hunger**:
+        * ❌ \`add_condition("cond_tired_guard")\` -> Bloat.
+        * ✅ \`update_npc({ id: "npc_guard", visible: { mood: "Exhausted and irritable" } })\`
+
+      - **Transient Atmosphere**:
+        * ❌ \`add_item("item_fog")\` -> Absurd.
+        * ✅ \`update_location({ visible: { atmosphere: "Thick fog..." } })\`
+
+      **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
+      For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).
+    </realism_vs_bloat_prevention>
   </rule>
 `;
 }
@@ -250,27 +285,49 @@ export function getHiddenContentNarrationContent(_ctx: SkillContext): string {
 export function getGlobalNotesContent(_ctx: SkillContext): string {
   return `
   <rule name="GLOBAL NOTES SYSTEM">
-    **WHEN TO USE GLOBAL NOTES** (\`query_notes\`, \`list_notes\`, \`update_notes\`, \`remove_notes\`):
-    Global notes are for AI-important information that doesn't fit into specific entities:
-    - **Cross-entity patterns**: "Player has betrayed allies 3 times"
-    - **Meta-plot tracking**: "Prophecy countdown: 5 turns remaining"
-    - **Orphaned information**: Plot threads with no clear entity owner
-    - **Complex world state**: Events affecting multiple locations/NPCs
+    **THE "META-NARRATIVE" LAYER**:
+    Global notes are your **Long-Term Strategic Memory**. They track things that transcend individual entities or turns.
 
-    **PREFER ENTITY-SPECIFIC NOTES** (use these FIRST when applicable):
-    - Item information → \`item.notes\` or \`item.hidden.truth\`
-    - NPC observations → \`npc.observation\` or \`npc.hidden.impression\`
-    - Location lore → \`location.notes\`
-    - Quest details → \`quest.notes\`
+    <when_to_use>
+      **USE NOTES FOR**:
+      1.  **Cross-Entity Patterns**: "The Player has lied to 3 different guards about his identity." (Connects multiple interactions)
+      2.  **Meta-Plot & Time**: "Prophecy Countdown: 5 turns until the eclipse." (Time-based tracking)
+      3.  **Orphaned Information**: "A mysterious blue symbol was seen in the forest." (No specific location/item to attach to yet)
+      4.  **Complex World States**: "The Kingdom is on high alert due to the dragon attack." (Affects ALL guards/cities)
+      5.  **GM Secrets**: "The 'Black Knight' is actually the King's brother." (Hidden truth waiting to be revealed)
 
-    **ONLY use global notes when NO entity fits.**
+      **DO NOT USE NOTES FOR**:
+      - Simple Item Properties → Use \`item.visible.description\` or \`item.notes\`
+      - NPC Personality → Use \`npc.personality\`
+      - Quest Objectives → Use \`quest.visible.objectives\`
+    </when_to_use>
 
-    **QUERY LIMITS**: \`query_notes\` returns max 5 notes per call. Use \`list_notes\` to discover keys, then query specific ones.
+    <lifecycle_management>
+      **NOTES MUST BE MAINTAINED - DO NOT LET THEM ROT**:
+      1.  **CREATE**: When a new plot thread begins.
+          * \`update_notes({ key: "mystery_blue_symbol", value: "Seen in forest, glows at night." })\`
+      2.  **UPDATE**: When new info is found. **APPEND** new info, don't just overwrite unless replacing.
+          * \`update_notes({ key: "mystery_blue_symbol", value: "...Also seen on the King's ring.", diff: true })\`
+      3.  **DELETE**: When the thread is resolved or the fact becomes obsolete.
+          * *Example*: Player identifies the symbol.
+          * Action: **REMOVE** \`mystery_blue_symbol\` note and **ADD/UPDATE** the actual 'knowledge' or 'faction' entity.
+          * **CRITICAL**: If a note is no longer true (e.g., "Door is locked" -> Door is now open), **REMOVE IT IMMEDIATELY**.
+    </lifecycle_management>
 
-    **DIFF MODE**: For long notes (>500 chars), use \`diff: true\` with git-style +/- lines:
-    - Lines starting with \`+\` are added
-    - Lines starting with \`-\` are removed
-    - Lines starting with a space are kept unchanged
+    <search_strategy>
+      **AVOID DUPLICATES via "LIST THEN QUERY"**:
+      - **Problem**: You want to track "The Red Dragon". You don't know if a note exists.
+      - **Bad**: blindly adding key "red_dragon_info" (might duplicate "dragon_red_plot").
+      - **Good**:
+        1. Call \`list_notes({ search: "dragon" })\`
+        2. See existing key "dragon_plot_v1"
+        3. Update "dragon_plot_v1" instead of creating new.
+    </search_strategy>
+
+    <usage_limits>
+      - **Query Limit**: \`query_notes\` returns max 5. Be specific with keys.
+      - **Diff Mode**: ALWAYS use \`diff: true\` for notes >500 chars to save tokens.
+    </usage_limits>
   </rule>
 `;
 }

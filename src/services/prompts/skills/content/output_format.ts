@@ -258,12 +258,48 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
     - **Precision**: You explicitly declare intent before acting.
   </why_dynamic_loading>
 
+  <master_guide_by_tool_type>
+    **1. QUERY TOOLS (Information Gathering)**
+    *Goal: "I need to know X before I can write Y."*
+    - **The "Check-First" Rule**: Never assume. If you are about to write "You see a sword," CHECK if a sword exists first.
+    - **Regex Power**: Use regex for smart searches.
+      * \`query_inventory({ query: "^rusty.*sword" })\` -> Finds "Rusty Iron Sword"
+      * \`query_npcs({ query: "guard|soldier" })\` -> Finds any guard or soldier
+    - **Broad vs Specific**:
+      * \`list(type: "npc")\` -> See ALL NPCs (good for "who is in this room?").
+      * \`query_npcs({ query: "Captain" })\` -> Get details on a specific person.
+
+    **2. STATE TOOLS (Add, Update, Remove)**
+    *Goal: "The world has changed."*
+    - **The "Check-then-Act" Workflow**:
+      1. **Search**: \`search_tool({ queries: [{ "operation": "query", "entity": "inventory" }, { "operation": "add", "entity": "inventory" }] })\`
+      2. **Check**: \`query_inventory({ query: "Apple" })\` (Does he already have one?)
+      3. **Act**:
+         * If exists: \`update_inventory({ id: "inv_apple_1", ... })\`
+         * If new: \`add_inventory({ id: "inv_apple_2", ... })\`
+    - **Atomic Updates**: Update ALL related things in one turn. (See "Maximum Density Principle").
+
+    **3. ACTIVATE_SKILL (Specialized Capabilities)**
+    *Goal: "I need expert knowledge for this specific scene."*
+    - **When to use**:
+      - **Combat**: \`activate_skill({ skillIds: ["combat"] })\` -> Loads injury tables, weapon reaches, pain descriptions.
+      - **Social Logic**: \`activate_skill({ skillIds: ["npc_logic"] })\` -> Loads gossip rules, social networks, psychology.
+      - **Mystery**: \`activate_skill({ skillIds: ["mystery"] })\` -> Loads foreshadowing techniques, clue planting rules.
+    - **How it works**: Calling this ADDS the specialized skill prompt to your context for the rest of the turn (and future usage).
+
+    **4. NOTES TOOLS (Long-Term Memory)**
+    *Goal: "I need to remember this plot thread for later."*
+    - **Use for**: Prophecies, faction agendas, complex schemes, things not attached to one item/NPC.
+    - **Workflow**: \`list_notes\` (check existence) -> \`query_notes\` (read content) -> \`update_notes\` (append/modify).
+  </master_guide_by_tool_type>
+
   <how_to_use>
     **Step 1: Identify What You Need**
     - Want to give player an item? → Need \`add_inventory\`
     - Want to update NPC status? → Need \`update_npc\`
     - Want to check quest status? → Need \`query_quests\`
     - Want to trigger a consequence? → Need \`trigger_causal_chain\`
+    - Need combat rules? → Need \`activate_skill\`
 
     **Step 2: Call search_tool**
     Invoke the \`search_tool\` function with the required \`queries\`.
@@ -314,6 +350,7 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
     | turn          | Turn info                                 | query                    | query_turn           |
     | rag           | Semantic search in lore                   | query                    | rag_search           |
     | atmosphere    | Atmosphere enums                          | query                    | query_atmosphere_enums |
+    | skill         | Skill loading (special)                   | activate                 | activate_skill       |
   </entity_reference>
 
   <common_patterns>
@@ -336,6 +373,9 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
 
     6. **Bulk Operations** (load multiple at once):
        → \`search_tool\` with \`queries: [{"operation": "add", "entity": "inventory"}, {"operation": "update", "entity": "npc"}, {"operation": "add", "entity": "knowledge"}]\`
+
+    7. **Load Specialist Logic**:
+       → \`activate_skill({ skillIds: ["combat", "npc_logic"] })\` -> Enables advanced rules for fight/social.
   </common_patterns>
 
   <important_rules>

@@ -23,20 +23,26 @@ export function getCombatContent(_ctx: SkillContext): string {
       - Don't say "You take 10 damage."
       - Say "The blade bites deep into your thigh. The leg buckles. Warmth spreads down your boot."
     </injury_system>
+
+    <logic_enforcement>
+      **CONSISTENCY IS LAW**:
+      - **Injury Persistence**: If the narrative says "leg broken", you CANNOT run in the next sentence. You crawl. You limp. The penalty persists.
+      - **Genre/Tech Coherence**:
+        * **Fantasy**: No cellphones, no "downloads", no plastic. Magic exists, but follows rules (cost/fatigue).
+        * **Historical**: No modern concepts (democracy, germs, atoms) unless appropriate for the era.
+        * **Sci-Fi**: No "magic" without explanation. Physics (gravity, vacuum) kills.
+    </logic_enforcement>
   </rule>
 `;
 }
 
 export function getDialogueContent(_ctx: SkillContext): string {
   return `
-  <rule name="DIALOGUE & CONVERSATION">
-    <dialogue_protocol>
-      **NO WIKIPEDIA SPEAK**:
-      - NPCs never explain things they both know.
-      - **Subtext**: Real people rarely say exactly what they mean. They deflect, they hint, they lie.
-      - **Interruptions**: People cut each other off. They don't wait for paragraphs to end.
-      - **Economy of Words**: Use fragments. "Don't know." is better than "I do not know the answer to that."
-    </dialogue_protocol>
+  <rule name="DIALOGUE_MECHANICS">
+    <!-- Detailed Dialogue Style is in Writing Craft -->
+    <instruction>
+      Refer to **Writing Craft** (Always Loaded).
+    </instruction>
 
     <voice_texture>
       - **Accent/Dialect**: Show it through syntax, not just phonetic spelling. (e.g., A noble uses passive voice; a soldier uses commands).
@@ -92,13 +98,10 @@ export function getAtmosphereContent(_ctx: SkillContext): string {
         * **Sound**: House settling, fire snapping like bone.
     </dynamic_environment>
 
-    <syntax_control>
-      **THE RHYTHM OF REALITY (NOT POETRY)**:
-      - **Tension**: Short sentences. Fragments. Fact after fact. "The door opens. Darkness. A smell of rot."
-      - **Action**: Verbs. Hard consonants. "Crash. Snap. Run."
-      - **Calm**: Longer, complex observations. Detailed sensory focus.
-      - **BAN**: Do not use "flowery" language unless the POV character is a poet.
-    </syntax_control>
+    <!-- Detailed Syntax Rhythm is in Writing Craft -->
+    <instruction>
+      Refer to **Writing Craft** (Always Loaded).
+    </instruction>
   </rule>
 `;
 }

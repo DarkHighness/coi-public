@@ -42,6 +42,15 @@ export function getCulturalAdaptationContent(ctx: SkillContext): string {
       - **Conflict-Driven**: Like a high-quality drama, every scene must have a hook.
       - **Avoid "Summary Style"**: Don't say "经过一番激烈的打斗" (After a fierce fight). Describe the fight.
     </pacing_control>
+
+    <social_consistency>
+      **CLASS & STATION EXIST**:
+      - **Hierarchy of Knowledge**: A peasant likely cannot read, does not know who the Chancellor is, and cares mostly about harvest/taxes. A noble likely doesn't know the price of bread.
+      - **Language Register**:
+        * **Highborn**: Formal, indirect, uses allusions. "The tea is... barely adequate."
+        * **Lowborn**: Direct, rough, uses slang. "This swill tastes like piss."
+      - **Survival Instinct**: Commoners fear power. They bow, avert eyes, or flee. If they are brave, it is *despite* fear, not absence of it.
+    </social_consistency>
   </style>
 </cultural_adaptation>
 `;

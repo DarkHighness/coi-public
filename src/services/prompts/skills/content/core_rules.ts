@@ -29,38 +29,11 @@ export function getConsequencesContent(_ctx: SkillContext): string {
     - **Newton's Third Law of Narrative**: Every action has an equal and opposite reaction.
     - **Ripple Effects**: If the player kills a merchant, the economy shifts, guards investigate, his children starve.
     - **No "Reset"**: The world never forgets. Scars do not fade. Dead is dead.
-    - **Off-Screen Progression**: Simulate the world outside the player's vision.
 
-    <physical_consequences>
-      **PAIN IS TEACHER**:
-      - **Lasting Damage**: Wounds slow you down. Burns get infected. Broken bones don't heal in a day.
-      - **Exhaustion**: Heroes get tired. Adrenaline crashes. Hunger clouds judgment.
-      - **Equipment Degradation**: Swords dull. Armor dents. Clothes tear. Nothing stays pristine.
-    </physical_consequences>
-
-    <social_consequences>
-      **REPUTATION STICKS**:
-      - **Memory**: An insult is remembered longer than a favor.
-      - **Guilt by Association**: If you walk with thieves, you are treated like a thief.
-      - **Institutional Memory**: Guilds, governments, and cults keep records. Your bounty doesn't disappear just because you left town.
-    </social_consequences>
-
-    <consequence_timing>
-      **WHEN DO CONSEQUENCES HIT?**:
-      - **Immediate**: Blood, pain, broken objects, shocked faces.
-      - **Short-term** (same session): Guards arrive, rumors spread, prices change.
-      - **Long-term** (future sessions): Vendettas form, reputations solidify, children grow up seeking revenge.
-      - **Hidden Triggers**: Some consequences are "loaded guns"—set up now, fired later. The merchant you cheated? He has a brother in the Royal Guard.
-    </consequence_timing>
-
-    <social_power_dynamics>
-      **HIERARCHY MATTERS**:
-      - **Punching Down**: Hurting the weak is easy but costs reputation. The powerful notice cruelty.
-      - **Punching Up**: Challenging the strong is dangerous but earns respect. Failure means destruction.
-      - **Lateral Moves**: Conflicts among equals are dirty, prolonged, and expensive for both sides.
-      - **Leveraged Power**: The servant who knows secrets is more powerful than the lord who has none.
-      - **Debts as Currency**: "You owe me" is stronger than gold. Unpaid debts become leverage. Paid debts become alliances.
-    </social_power_dynamics>
+    <instruction>
+      For detailed rules on Social Consequences, Reputation, and Power Dynamics, **CALL TOOL**: \`activate_skill({ skillIds: ["npc_logic"] })\`.
+      For detailed rules on Physical Injury and Combat, **CALL TOOL**: \`activate_skill({ skillIds: ["combat"] })\`.
+    </instruction>
   </rule>
 `;
 }
@@ -68,10 +41,10 @@ export function getConsequencesContent(_ctx: SkillContext): string {
 export function getMaliceAndAntagonismContent(_ctx: SkillContext): string {
   return `
   <rule name="MALICE_AND_ANTAGONISM">
-    **THE WORLD IS NOT SAFE**:
-    - **Active Malevolence**: Some NPCs want to hurt the protagonist. Not because the plot demands it, but because they are cruel, greedy, or hateful.
-    - **Unfairness**: The world is not balanced. You will face enemies stronger than you. You will face situations where there is no "winning" choice.
-    - **Deception**: People lie. Allies betray. The smiling shopkeeper might be poisoning your supplies.
+    **THE WORLD IS NOT SAFE, BUT IT IS SMART**:
+    - **Active Malevolence**: Some NPCs want to hurt the protagonist, but they value their own lives more.
+    - **Calculated Aggression**: Villains are NOT mindless aggression bots. They wait for vulnerability. They strike when the odds are 90/10 in their favor.
+    - **Dread > Damage**: The *threat* of violence is often more stressful (and interesting) than the violence itself.
 
     <types_of_malice>
       - **The Sadist**: Enjoys inflicting pain. Will not kill quickly.
@@ -82,11 +55,11 @@ export function getMaliceAndAntagonismContent(_ctx: SkillContext): string {
     </types_of_malice>
 
     <antagonist_behavior>
-      **VILLAINS ACT, THEY DON'T JUST WAIT**:
-      - **Ambush**: They hit you when you are weak, sleeping, or distracted.
-      - **Sabotage**: They spread rumors, steal items, frame you for crimes.
+      **QUALITY OVER QUANTITY**:
+      - **No Spam**: Do not send waves of enemies just to fill the turn.
+      - **Cooldown**: If an antagonist fails an attack, they will retreat and REGROUP (for many turns). They won't just try again immediately.
+      - **Sabotage**: They spread rumors, steal items, frame you for crimes. This is safer than combat.
       - **Leverage**: They target what you love (NPCs, reputation, items) to control you.
-      - **No Monologues**: Smart enemies shoot first. They don't explain their plan.
     </antagonist_behavior>
   </rule>
 `;
@@ -144,71 +117,25 @@ export function getLivingWorldContent(_ctx: SkillContext): string {
     <social_fabric>
       **SOCIETY BREATHES**:
       - **Class Hierarchy**: Nobles sneer at merchants. Merchants bribe officials. Peasants resent everyone above.
-      - **Gossip Networks**: Secrets travel. What you do in the tavern reaches the lord by morning.
-      - **Reputation Memory**: Help a beggar; their child remembers you in 20 years. Cheat a merchant; the guild blacklists you.
-      - **Cultural Taboos**: Every society has things you simply DO NOT DO. Breaking them has severe consequences.
-      - **Festival & Ritual**: Holidays change the world's behavior. Markets close, temples fill, old feuds resurface.
+      - **Details**: For deep social simulation, **CALL TOOL**: \`activate_skill({ skillIds: ["npc_logic"] })\`.
     </social_fabric>
 
     <off_screen_world>
       **THE WORLD MOVES WITHOUT YOU**:
       - While you sleep, the assassin reaches the next town.
-      - While you negotiate, the army marches.
-      - While you hesitate, the opportunity passes.
-      - **Time-Sensitive Events**: Some things happen whether you're there or not. Miss the coronation, and you miss your chance to influence the new king.
-      - **NPC Lives Continue**: The blacksmith you met last week? He got married. The guard you bribed? He was promoted. Or executed.
+      - **Time-Sensitive Events**: Some things happen whether you're there or not.
     </off_screen_world>
 
     <ambient_information_sources>
       **THE PROTAGONIST LEARNS THROUGH AMBIENT CHANNELS:**
-
-      **Everyday Sources**:
-      - **Newspapers/Bulletins**: Headlines, editorials, obituaries reveal world events, public opinion, hidden opportunities.
-      - **Overheard Conversations**: Passersby gossip about events, rumors, scandals, local personalities.
-      - **Market Chatter**: Merchants discuss trade, shortages, price changes hinting at political/economic shifts.
-      - **Tavern Talk**: Drunken boasts, whispered conspiracies, travelers' tales from distant lands.
-      - **Street Voices**: Preachers, protesters, beggars—all have something to say about the world.
-      - **Graffiti/Posters**: Anonymous commentary, wanted posters, event announcements.
-
-      **Magical/Fantastical Sources** (if applicable):
-      - Spirits/ghosts echoing forgotten truths
-      - Animals/familiars showing warnings or leading to discoveries
-      - Magical artifacts whispering secrets
-      - Dreams/visions with prophetic glimpses
-      - Elemental voices: wind whispers, fire visions, water reflections
-
-      **What These Reveal**:
-      - World events happening beyond the protagonist's scope
-      - Public opinion on factions, leaders, locations, and the protagonist
-      - NPC reputations (visible layer, may contradict hidden truth)
-      - Location rumors (dangers, treasures, secrets)
-      - Recent timeline events (public's possibly distorted lens)
-
-      **Implementation**:
-      - Weave naturally into narrative—don't dump exposition
-      - Show public perception (visible layer), not GM truth (hidden layer)
-      - 80/20 rule: mostly plot-relevant, some "noise" for texture
-      - Vary the channel each turn (conversation, poster, song, etc.)
-      - Reflect consequences: if protagonist is famous, people talk about them
+      - **Everyday Sources**: Newspapers, Overheard Conversations, Market Chatter.
+      - **Implementation**: Weave naturally into narrative.
     </ambient_information_sources>
 
     <environmental_storytelling>
       **OBJECTS TELL STORIES**:
-      - A half-eaten meal: Someone left in a hurry.
-      - An unmade bed with blood on the sheets: Violence, or birth?
-      - A discarded letter, crumpled and water-stained.
-      - Scratch marks on the inside of a door.
-      - A child's toy next to an adult skeleton.
-
-      **ENVIRONMENT AS NARRATOR**:
-      - Don't SAY the tavern is poor—show the patched chairs, the watered ale, the barmaid's mended dress.
-      - Don't SAY the battlefield was brutal—show the crows, the mud churned with blood, the abandoned boot still containing a foot.
-      - **Cause implies effect**: A cracked foundation means the building will fall. A flooded basement means rot is coming.
-
-      **WEATHER AS CHARACTER**:
-      - Rain isn't just "atmosphere"—it slows travel, ruins supplies, hides sounds.
-      - Heat exhausts. Cold numbs fingers (bad for swordplay). Fog hides ambushes.
-      - **Weather changes behavior**: Merchants haggle faster before storms. Guards shelter, leaving posts unmanned.
+      - Don't SAY the tavern is poor—show the patched chairs.
+      - **Weather as Character**: Rain slows travel. Heat exhausts.
     </environmental_storytelling>
   </rule>
 `;

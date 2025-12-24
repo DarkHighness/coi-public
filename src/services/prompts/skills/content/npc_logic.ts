@@ -12,6 +12,14 @@ import type { SkillContext } from "../types";
 export function getNpcLogicContent(_ctx: SkillContext): string {
   return `
   <rule name="TRUE PERSON NPC LOGIC">
+    <trait_continuity>
+      **ABSOLUTE PHYSICAL CONSTRAINTS**:
+      - **Immutable Traits**: If a character is MUTE, they CANNOT speak. If they are BLIND, they CANNOT see.
+      - **No Narrative Cheating**: Do not write "He spoke with his eyes" if he is blind. Do not write "She whispered" if she is mute.
+      - **State Change Requirement**: These constraints persist until an event explicitly changes the state (e.g., "Cured by magic").
+      - **Consistency Check**: If your generated narrative contradicts a character's physical limitations, **REWRITE IT**.
+    </trait_continuity>
+
     - **INDEPENDENT AMBITION**: NPCs have dreams, fears, and goals in their \`hidden\` layer that have NOTHING to do with the player.
     - **SELF-PRESERVATION**: NPCs do not want to die. They will beg, flee, betray, or surrender if outmatched.
     - **FLAWED BEINGS**: NPCs make mistakes. They misjudge the player. They act on bad info. They have irrational prejudices.
@@ -111,6 +119,34 @@ export function getNpcLogicContent(_ctx: SkillContext): string {
         - **Peer Interaction**: NPCs talk to *each other*. They whisper, argue, or share looks. A guard might be more interested in his partner's joke than your arrival.
         - **Micro-Actions**: Small, human movements. Adjusting a wedgie, scratching a mosquito bite, checking a pocket watch, stifling a yawn. These make them alive.
       </npc_ecosystem>
+
+      <biological_imperative>
+        **NPCs ARE MEAT, NOT CODE**:
+        They are slaves to their biology. Prioritize this over "Plot".
+
+        - **Fatigue**: It is 3 AM. The guard is not "vigilant". He is fighting sleep. His eyes burn. He is irritable. He will take a bribe just to make you go away so he can nap.
+        - **Hunger**: A hungry merchant is distracted. He rushes the deal to get to lunch.
+        - **Pain**: Even a small cut hurts. It throbs. It makes them sweat. It makes them flinch. A "minor wound" ruins their mood for the day.
+        - **Libido/Loneliness**: They check out attractive people (subtly). They preen. They get distracted by a pretty face.
+        - **Temperature**: If it's cold, they huddle. They rush indoors. They complain. Use this!
+      </biological_imperative>
+
+      <social_friction>
+        **JUDGMENT PRECEDES INTERACTION**:
+        NPCs judge the player BEFORE the first word is spoken.
+
+        - **The Smell Test**: If you just killed 10 goblins, you smell like death and bowels. Civilians will vomit or flee. Innkeepers will refuse service.
+        - **Class Friction**: A noble will NEVER look a peasant in the eye. A peasant will mumble and look at the floor when talking to a knight.
+        - **Foreigner Bias**: "You ain't from around here." Trust starts at -50%. Prices start at +50%.
+        - **Weirdness Filter**: Wearing full plate mail in a tavern? Everyone is staring. It's weird. It's threatening. The vibe is ruined.
+      </social_friction>
+
+      <micro_social_dynamics>
+        **THEY HAVE BEEF WITH EACH OTHER**:
+        - **Petty Grievances**: Two guards at the gate aren't just "Gate Guards". One owes the other money. One slept with the other's sister. They are arguing *while* checking your papers.
+        - **Hierarchy displays**: The Sergeant yells at the Private just to look tough in front of you.
+        - **Secret Signals**: A glance. A cleared throat. A hand under the table. They communicate things they don't want you to know.
+      </micro_social_dynamics>
 
       <archetype_protocols>
         **1. THE SOLDIER / VETERAN / MERCENARY** (Tier 2-3)
