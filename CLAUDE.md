@@ -58,6 +58,7 @@ src/
 ### AI Provider System
 
 The app supports multiple LLM providers through a unified interface:
+
 - `src/services/providers/geminiProvider.ts` - Google Gemini
 - `src/services/providers/openaiProvider.ts` - OpenAI
 - `src/services/providers/claudeProvider.ts` - Anthropic Claude
@@ -66,6 +67,7 @@ The app supports multiple LLM providers through a unified interface:
 ### Prompt System
 
 Prompts are modularized in `src/services/prompts/`:
+
 - `common.ts` - Core rules, constants, role definitions
 - `storyOutline.ts` - Initial story generation (5 phases)
 - `turn.ts` - Main game loop prompts
@@ -82,6 +84,7 @@ Prompts are modularized in `src/services/prompts/`:
 ### RAG (Retrieval-Augmented Generation)
 
 Located in `src/services/rag/`:
+
 - `database.ts` - PGlite (PostgreSQL in WASM) for vector storage
 - `service.ts` - RAG service API
 - `worker.ts` - Web Worker for background processing
@@ -90,6 +93,7 @@ Located in `src/services/rag/`:
 ## Path Alias
 
 Use `@/` to import from `src/`:
+
 ```typescript
 import { GameState } from "@/types";
 import { useGameEngineContext } from "@/contexts/GameEngineContext";
@@ -114,6 +118,7 @@ import { useGameEngineContext } from "@/contexts/GameEngineContext";
 ### Versioned Timestamps
 
 Entities use `VersionedTimestamp` for fork-aware ordering:
+
 ```typescript
 interface VersionedTimestamp {
   forkId: number;
@@ -140,6 +145,7 @@ Build scripts auto-generate `utils/constants/buildInfo.ts` with git hash and tim
 ## COOP/COEP Headers
 
 Dev server requires special headers for SharedArrayBuffer (PGlite):
+
 ```
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp

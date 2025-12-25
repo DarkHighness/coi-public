@@ -2266,9 +2266,6 @@ export type UpdatePlayerProfileParams = InferToolParams<
 // Unlock Tool Types
 export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
 
-// Control Types
-// export type NextStageParams = InferToolParams<typeof NEXT_STAGE_TOOL>; // Removed
-
 // Finish Turn and Force Update Types
 export type FinishTurnParams = z.infer<typeof finishTurnSchema>;
 export type ForceUpdateParams = z.infer<typeof forceUpdateSchema>;

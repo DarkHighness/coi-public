@@ -88,7 +88,8 @@ export const SettingsExtra: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.disablePlayerProfiling") || "Disable Player Profiling"}
+              {t("settings.extra.disablePlayerProfiling") ||
+                "Disable Player Profiling"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.disablePlayerProfilingHelp") ||
@@ -97,7 +98,10 @@ export const SettingsExtra: React.FC = () => {
           </div>
           <button
             onClick={() =>
-              updateExtra("disablePlayerProfiling", !extra.disablePlayerProfiling)
+              updateExtra(
+                "disablePlayerProfiling",
+                !extra.disablePlayerProfiling,
+              )
             }
             className={`w-10 h-5 rounded-full relative transition-colors ${
               extra.disablePlayerProfiling ? "bg-red-500" : "bg-theme-border"

@@ -396,7 +396,7 @@ export type Resolution =
   | "1536x672";
 
 /** 分辨率到宽高比的映射表 */
-export const RESOLUTION_TO_ASPECT_RATIO: Record<Resolution, AspectRatio> = {
+const RESOLUTION_TO_ASPECT_RATIO: Record<Resolution, AspectRatio> = {
   "1024x1024": "1:1",
   "832x1248": "2:3",
   "1248x832": "3:2",
@@ -454,14 +454,6 @@ export class MalformedToolCallError extends AIProviderError {
       cause,
     );
     this.name = "MalformedToolCallError";
-  }
-}
-
-/** 资源配额耗尽错误 */
-export class QuotaExhaustedError extends AIProviderError {
-  constructor(provider: string, cause?: unknown) {
-    super("API quota exhausted", provider, "QUOTA_EXHAUSTED", cause);
-    this.name = "QuotaExhaustedError";
   }
 }
 

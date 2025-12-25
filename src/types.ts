@@ -189,15 +189,6 @@ type WithVersionedTimestamps<T> = T & {
   lastModified: number; // Keep for backward compatibility
 };
 
-/**
- * @deprecated 使用 WithVersionedTimestamps 替代
- * 保留用于向后兼容
- */
-type WithRequiredTimestamps<T> = T & {
-  createdAt: number;
-  lastModified: number;
-};
-
 // 导出应用层类型（带必需的系统字段）
 export type InventoryItem = WithRequiredId<
   WithVersionedTimestamps<ZodInventoryItem>

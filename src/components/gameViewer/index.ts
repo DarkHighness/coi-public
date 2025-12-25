@@ -16,8 +16,6 @@ export {
   SubsectionLabel,
   ContentBlock,
   EmptyState,
-  CardContainer,
-  CardTitle,
 } from "./helpers";
 
 // Shared types

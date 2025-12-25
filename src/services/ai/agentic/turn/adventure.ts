@@ -46,7 +46,7 @@ import {
   CharacterProfilePayload,
 } from "../../../tools";
 import { buildCoreSystemInstructionWithSkills } from "../../../prompts/skills";
-import { buildLayeredContext } from "../../../prompts/contextBuilder";
+import { toToon } from "../../../prompts/toon";
 import { getSkillRegistry } from "../../../prompts/skills/registry";
 import { registerAllSkills } from "../../../prompts/skills/definitions";
 
@@ -167,46 +167,49 @@ export interface AgenticLoopResult {
 }
 
 /**
- * Build turn messages using the new layered context system.
- *
- * Message structure optimized for prefix caching:
- * 1. System instruction (getCoreSystemInstruction) - in systemInstruction
- * 2. Static context (world outline, character base, entities static) - changes rarely
- * 3. Semi-static context (summaries, entity descriptions) - changes occasionally
- * 4. Dynamic context (current state, recent history) - changes every turn
- * 5. RAG context (if enabled) - changes based on semantic search
- * 6. User action - the actual player input
- *
- * NOTE: This function now builds the INITIAL context only.
- * The actual conversation history is managed by the History Manager.
+ * Build initial context messages for the agentic loop.
+ * Simplified: directly builds context from GameState without layered abstraction.
  */
 export const buildInitialContext = (
-  layers: ReturnType<typeof buildLayeredContext>,
+  gameState: GameState,
   ragContext?: string,
 ): UnifiedMessage[] => {
   const messages: UnifiedMessage[] = [];
+  const outline = gameState.outline;
+  const character = gameState.character;
 
-  // === 1. Static Layer: World Foundation ===
-  if (layers.staticLayer) {
+  // === 1. World Foundation ===
+  const worldFoundation = outline
+    ? `<world_foundation>
+<title>${outline.title}</title>
+<premise>${outline.premise}</premise>
+<main_goal>${toToon(outline.mainGoal)}</main_goal>
+<world_setting>${toToon(outline.worldSetting)}</world_setting>
+</world_foundation>`
+    : "";
+
+  // === 2. Protagonist ===
+  const protagonist = `<protagonist>
+name: ${character.name}
+title: ${character.title}
+race: ${character.race}
+profession: ${character.profession}
+appearance: ${character.appearance}
+background: ${character.background}
+</protagonist>`;
+
+  // Combine static context
+  const staticContext = [worldFoundation, protagonist]
+    .filter(Boolean)
+    .join("\n");
+
+  if (staticContext) {
     messages.push(
-      createUserMessage(`[CONTEXT: World Foundation]\n${layers.staticLayer}`),
+      createUserMessage(`[CONTEXT: World Foundation]\n${staticContext}`),
     );
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[World foundation acknowledged.]" }],
-    });
-  }
-
-  // === 2. Semi-Static Layer: Story Background ===
-  if (layers.semiStaticLayer) {
-    messages.push(
-      createUserMessage(
-        `[CONTEXT: Story Background]\n${layers.semiStaticLayer}`,
-      ),
-    );
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[Background acknowledged.]" }],
     });
   }
 
@@ -223,9 +226,15 @@ export const buildInitialContext = (
     });
   }
 
-  // === 4. Dynamic Layer: Current Situation ===
+  // === 4. God Mode (if enabled) ===
+  const godModeContext = gameState.godMode
+    ? `<god_mode>
+GOD MODE ACTIVE: Player has absolute power. All actions succeed. NPCs obey unconditionally.
+</god_mode>`
+    : "";
+
   messages.push(
-    createUserMessage(`[CONTEXT: Current Situation]\n${layers.dynamicLayer}`),
+    createUserMessage(`[CONTEXT: Current Situation]\n${godModeContext}`),
   );
   messages.push({
     role: "assistant",
@@ -241,11 +250,10 @@ export const buildInitialContext = (
 };
 
 /**
- * @deprecated Use buildInitialContext instead
- * Kept for backward compatibility
+ * Build turn messages for the agentic loop
  */
 export const buildTurnMessages = (
-  layers: ReturnType<typeof buildLayeredContext>,
+  gameState: GameState,
   userAction: string,
   ragContext?: string,
 ): {
@@ -255,19 +263,24 @@ export const buildTurnMessages = (
   userMessages: UnifiedMessage[];
   dynamicContext: string;
 } => {
-  const baseMessages = buildInitialContext(layers, ragContext);
+  const baseMessages = buildInitialContext(gameState, ragContext);
   // Wrap user action with [PLAYER_ACTION] marker to distinguish from system messages
   const markedAction = userAction.startsWith("[SUDO]")
     ? userAction // SUDO commands already have their own marker
     : `[PLAYER_ACTION] ${userAction}`;
   const userMessages = [createUserMessage(markedAction)];
 
+  // God mode context for logging
+  const godModeContext = gameState.godMode
+    ? `<god_mode>GOD MODE ACTIVE</god_mode>`
+    : "";
+
   return {
     messages: [...baseMessages, ...userMessages],
     staticMessages: baseMessages.slice(0, -2), // All except dynamic
     dynamicMessages: baseMessages.slice(-2), // Dynamic layer
     userMessages,
-    dynamicContext: layers.dynamicLayer,
+    dynamicContext: godModeContext,
   };
 };
 
@@ -359,18 +372,15 @@ export const generateAdventureTurn = async (
     }
   }
 
-  // ===== Build layered context using contextBuilder =====
-  const layers = buildLayeredContext({
-    outline: gameState.outline,
-    gameState,
-    godMode: gameState.godMode,
-  });
-
   // Get RAG context from parameter
   const ragContext: string | undefined = context.ragContext;
 
-  // Build messages using layered context
-  const buildResult = buildTurnMessages(layers, context.userAction, ragContext);
+  // Build messages directly from gameState
+  const buildResult = buildTurnMessages(
+    gameState,
+    context.userAction,
+    ragContext,
+  );
   const { staticMessages, dynamicMessages, userMessages, dynamicContext } =
     buildResult;
 

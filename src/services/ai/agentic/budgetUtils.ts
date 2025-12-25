@@ -10,9 +10,9 @@
 import { AISettings } from "../../../types";
 
 // Default budget values
-export const DEFAULT_MAX_TOOL_CALLS = 50;
-export const DEFAULT_MAX_RETRIES = 3;
-export const DEFAULT_MAX_ITERATIONS = 20;
+const DEFAULT_MAX_TOOL_CALLS = 50;
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_MAX_ITERATIONS = 20;
 
 /** Budget state for tracking tool calls, retries, and loop iterations */
 export interface BudgetState {

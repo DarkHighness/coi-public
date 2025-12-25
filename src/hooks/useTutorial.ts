@@ -23,34 +23,3 @@ export const useTutorialTarget = <T extends HTMLElement>(targetId: string) => {
 
   return ref;
 };
-
-/**
- * Hook to listen for tutorial action triggers
- */
-export const useTutorialAction = (
-  actionId: string,
-  callback: () => void,
-  deps: React.DependencyList = [],
-) => {
-  const tutorial = useTutorialContextOptional();
-
-  useEffect(() => {
-    if (!tutorial) return;
-
-    const unsubscribe = tutorial.onActionTriggered((triggeredId) => {
-      if (triggeredId === actionId) {
-        callback();
-      }
-    });
-
-    return unsubscribe;
-  }, [actionId, tutorial, ...deps]);
-};
-
-/**
- * Hook to mark current tutorial step as complete
- */
-export const useTutorialStepComplete = () => {
-  const tutorial = useTutorialContextOptional();
-  return tutorial?.markStepActionComplete ?? (() => {});
-};

@@ -125,7 +125,6 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
     }
 
     // If we have a background source, set it directly
-    // We skip imageLoader to avoid CORS issues with external providers (like pollinations.ai)
     // CSS background-image handles cross-origin resources more gracefully than JS Image objects
     if (bgSource) {
       setLoadedBgSource(bgSource);
