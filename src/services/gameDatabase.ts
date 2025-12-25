@@ -2955,6 +2955,15 @@ export class GameDatabase {
     return Object.keys(this.state.notes || {});
   }
 
+  // --- Player Profile (Per-save) ---
+  public getPlayerProfile(): string | undefined {
+    return this.state.playerProfile;
+  }
+
+  public updatePlayerProfile(profile: string): void {
+    this.state.playerProfile = profile;
+  }
+
   public removeKnowledge(id: string): boolean {
     const index = this.state.knowledge.findIndex((k) =>
       matchesIdentifier(k.id, id),

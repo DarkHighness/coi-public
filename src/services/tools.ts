@@ -590,6 +590,41 @@ export const REMOVE_NOTES_TOOL = defineTool({
 });
 
 // ============================================================================
+// PLAYER PROFILE TOOLS (Cross-save + Per-save Psychology)
+// ============================================================================
+
+/**
+ * Query player psychology profiles.
+ * Returns both cross-save (meta-player) and per-save (this story) portraits.
+ */
+export const QUERY_PLAYER_PROFILE_TOOL = defineTool({
+  name: "query_player_profile",
+  description:
+    "Query player psychology profiles. Returns cross-save (meta-player patterns) and per-save (this story's choices) portraits.",
+  parameters: z.object({}),
+});
+
+/**
+ * Update player psychology profile.
+ * Call when player choice reveals character. Update frequently early on.
+ */
+export const UPDATE_PLAYER_PROFILE_TOOL = defineTool({
+  name: "update_player_profile",
+  description:
+    "Update player psychology portrait. Use when player choice reveals character. Call frequently early on, refine as patterns emerge.",
+  parameters: z.object({
+    crossSave: z
+      .string()
+      .optional()
+      .describe("Updated cross-save portrait (meta-player across all saves)."),
+    perSave: z
+      .string()
+      .optional()
+      .describe("Updated per-save portrait (player in THIS story)."),
+  }),
+});
+
+// ============================================================================
 // ADD TOOLS (Stage 2)
 // ============================================================================
 
@@ -1826,6 +1861,10 @@ export const TOOL_MAP: Record<string, ZodToolDefinition[]> = {
   "list:notes": [LIST_NOTES_TOOL],
   "update:notes": [UPDATE_NOTES_TOOL],
   "remove:notes": [REMOVE_NOTES_TOOL],
+
+  // Player Profile (Cross-save + Per-save Psychology)
+  "query:player_profile": [QUERY_PLAYER_PROFILE_TOOL],
+  "update:player_profile": [UPDATE_PLAYER_PROFILE_TOOL],
 };
 
 /**
@@ -2216,6 +2255,14 @@ export type ListNotesParams = InferToolParams<typeof LIST_NOTES_TOOL>;
 export type UpdateNotesParams = InferToolParams<typeof UPDATE_NOTES_TOOL>;
 export type RemoveNotesParams = InferToolParams<typeof REMOVE_NOTES_TOOL>;
 
+// Player Profile Types
+export type QueryPlayerProfileParams = InferToolParams<
+  typeof QUERY_PLAYER_PROFILE_TOOL
+>;
+export type UpdatePlayerProfileParams = InferToolParams<
+  typeof UPDATE_PLAYER_PROFILE_TOOL
+>;
+
 // Unlock Tool Types
 export type UnlockEntityParams = InferToolParams<typeof UNLOCK_ENTITY_TOOL>;
 
@@ -2325,6 +2372,10 @@ export interface ToolParamsMap {
   list_notes: ListNotesParams;
   update_notes: UpdateNotesParams;
   remove_notes: RemoveNotesParams;
+
+  // Player Profile tools
+  query_player_profile: QueryPlayerProfileParams;
+  update_player_profile: UpdatePlayerProfileParams;
 }
 
 export type ToolName = keyof ToolParamsMap;

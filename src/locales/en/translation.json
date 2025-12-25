@@ -489,7 +489,12 @@
       "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
       "resetTutorials": "Reset Tutorials",
       "resetTutorialsHelp": "Show onboarding tutorials again on next visit",
-      "resetTutorialsButton": "Reset"
+      "resetTutorialsButton": "Reset",
+      "disablePlayerProfiling": "Disable Player Profiling",
+      "disablePlayerProfilingHelp": "When enabled, AI will not record/use cross-save player psychology data.",
+      "resetPlayerProfile": "Reset Player Profile",
+      "resetPlayerProfileHelp": "Clear all recorded cross-save player psychology data.",
+      "resetPlayerProfileButton": "Reset"
     }
   },
   "tutorial": {

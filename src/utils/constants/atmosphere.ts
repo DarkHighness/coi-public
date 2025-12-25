@@ -78,6 +78,8 @@ const AMBIENCE_TO_THEME: Record<Ambience, EnvThemeKey> = {
   scifi: "scifi",
   dungeon: "horror",
   space: "obsidian",
+
+  school: "modern",
 };
 
 // Mapping from ambience to default visual effect
@@ -114,6 +116,8 @@ const AMBIENCE_TO_EFFECT: Record<Ambience, VisualEffect> = {
   scifi: null,
   dungeon: "flicker",
   space: null,
+
+  school: "sunny",
 };
 
 // Audio file mapping (ambience name matches audio folder)

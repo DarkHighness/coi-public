@@ -396,6 +396,10 @@ export interface GameState {
   // Keys are note identifiers, values are note content
   // Use for: cross-entity patterns, meta-plot tracking, orphaned information
   notes?: Record<string, string>;
+
+  // Player Psychology System - per-save player portrait
+  // Records how the player is approaching THIS specific story
+  playerProfile?: string;
 }
 
 /** State for resuming outline generation after failure */
@@ -1139,7 +1143,13 @@ export interface AISettings {
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed
+    // Player Psychology System
+    disablePlayerProfiling?: boolean; // Disable cross-save player psychology tracking
   };
+
+  // Player Psychology System - cross-save player portrait
+  // Records the meta-player's personality patterns across all saves
+  playerProfile?: string;
 }
 
 // ============================================================================

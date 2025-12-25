@@ -462,7 +462,12 @@
       "maxToolCallsHelp": "每个代理循环的最大工具调用总数（默认：50）",
       "resetTutorials": "重置新手教程",
       "resetTutorialsHelp": "下次访问时重新显示新手引导",
-      "resetTutorialsButton": "重置"
+      "resetTutorialsButton": "重置",
+      "disablePlayerProfiling": "禁用玩家画像",
+      "disablePlayerProfilingHelp": "启用后，AI 将不会记录/使用跨存档的玩家心理数据。",
+      "resetPlayerProfile": "重置玩家画像",
+      "resetPlayerProfileHelp": "清除所有已记录的跨存档玩家心理数据。",
+      "resetPlayerProfileButton": "重置"
     }
   },
   "tutorial": {

@@ -19,6 +19,7 @@ import "./globalHandlers";
 import "./notesHandlers";
 import "./listHandler";
 import "./unlockHandler";
+import "./playerProfileHandlers";
 
 // Re-export registry functions for convenience
 export {
