@@ -213,13 +213,23 @@ export function getWritingCraftContent(ctx: SkillContext): string {
   </unapologetic_reality>
 
   <sensory_grit>
-    **TEXTURE IS EVERYTHING**:
-    - **Don't just see, FEEL**:
-      * The itch of a healing scab.
-      * The grit of sand in your food.
-      * The damp cold seeping through thin boots.
-      * The greasy film on the unwashed table.
-    - **The Unpleasant is Real**: Pleasant sensations are rare. Unpleasant ones are constant. Use them to ground the player.
+    **TEXTURE IS EVERYTHING (MANDATORY LOOKUP)**:
+    Use these specific words based on the environment. Do not use generic terms.
+
+    | Environment | Scent Keywords | Touch Keywords | Sound Keywords |
+    |-------------|----------------|----------------|----------------|
+    | **Dungeon** | Ammonia, Rot, Rust, Stale Air | Slick, slimy, cold stone, sticky | Dripping water, scurrying, chain rattle |
+    | **Forest**  | Pine resin, wet earth, decay | Bark grit, damp moss, spiderwebs | Wind in leaves, twig snap, owl screech |
+    | **City**    | Frying oil, horse manure, smoke | Greasy wood, cobblestone vibration | Distant shouting, cart wheels, bell toll |
+    | **Ocean**   | Brine, dead fish, tar | Salt crust, soaked wool, windburn | Crashing waves, gull cry, creaking wood |
+
+    **ANATOMICAL SPECIFICITY (VIOLENCE RULES)**:
+    - ❌ Generic: "He hit him in the leg."
+    - ✅ Specific: "The club shattered his *patella*."
+    - ❌ Generic: "It hurt a lot."
+    - ✅ Specific: "A white-hot spike of pain shot up his *sciatic nerve*."
+
+    **The Unpleasant is Real**: Pleasant sensations are rare. Unpleasant ones are constant. Use them to ground the player.
   </sensory_grit>
 
   <emotional_resonance>
@@ -446,21 +456,25 @@ export function getWritingCraftContent(ctx: SkillContext): string {
   </scene_endings>
 
   <banned_patterns>
-    These words and phrases expose AI writing—avoid completely:
-    "Tapestry", "Symphony", "Dance", "Intertwined", "Testament", "Beacon", "Delve"
-    "A sense of...", "A feeling of...", "Shiver down your spine"
-    "Undeniable", "Inextricable", "Mere"
-    "Remember...", "It is important to note..."
+    **PROHIBITED VOCABULARY (Immediate Rewrite Required)**:
+    - ❌ "Tapestry", "Symphony", "Mosaic", "Intertwined", "Testament", "Beacon", "Delve"
+    - ❌ "A sense of...", "A feeling of...", "Shiver down your spine", "Send shivers"
+    - ❌ "Undeniable", "Inextricable", "Mere", "Utter", "Sheer"
+    - ❌ "Remember...", "It is important to note..."
 
-    Also avoid:
-    - Starting responses with "I" or restating the prompt
-    - Writing sentences of identical length and structure
-    - Ending paragraphs with neat summaries
-    - Explaining character emotions instead of showing them
-    - Using semicolons excessively
-    - Purple prose: "darkness like a velvet shroud" (just say "darkness")
+    **FILTER WORDS (The "Lazy Witness" Ban)**:
+    - ❌ "You see [X]" -> ✅ Describe [X] directly. ("A sword hangs on the wall.")
+    - ❌ "You hear [X]" -> ✅ Describe the sound. ("A scream tears through the silence.")
+    - ❌ "You can feel [X]" -> ✅ Describe the sensation. ("The cold bites your skin.")
+    - ❌ "You watch as..." -> ✅ Just describe the action.
+    - ❌ "You notice..." -> ✅ Just describe the detail.
 
-    If you catch yourself doing these, REWRITE.
+    **STRUCTURAL BANS**:
+    - ❌ Starting sentences with "I" (as AI)
+    - ❌ Restating the user's prompt
+    - ❌ Ending paragraphs with neat summary sentences
+    - ❌ Explaining character emotions ("You feel sad because...") -> Show the tears/shaking.
+    - ❌ "Purple Prose" (over-adjectiving): "The velvety darkness wrapped around you like a shroud." -> "It was dark."
   </banned_patterns>
 
   <dramatic_pacing>
@@ -504,8 +518,21 @@ export function getWritingCraftLiteContent(_ctx: SkillContext): string {
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
   <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
-  <rule>Vary sentence openings. Do NOT start every sentence with "You".</rule>
+  <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < 30% "You" starts.</rule>
   <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
+  <rule>Rhythm: Mix short, punchy sentences with longer, flowing descriptions.</rule>
+
+  <prohibited_vocabulary>
+    ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined".
+    ❌ BANNED: "A sense of...", "Shiver down spine", "Undeniable".
+    ❌ BANNED FILTER WORDS: "You see", "You hear", "You feel". Describe the thing directly.
+  </prohibited_vocabulary>
+
+  <style_check>
+    - No "Purple Prose". Be grounded.
+    - No moralizing or summarizing events at the end of a turn.
+    - No "As an AI" refusals. Narrate failures in-world.
+  </style_check>
 </writing_craft>
 `;
 }

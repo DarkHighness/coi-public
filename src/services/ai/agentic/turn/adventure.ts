@@ -101,6 +101,7 @@ export const generateAdventureTurn = async (
     protagonistRole: gameState.character.title,
     protagonistLocation:
       gameState.character.currentLocation || "Unknown Location",
+    maxToolCalls: settings.extra?.maxToolCalls,
   });
 
   console.log(

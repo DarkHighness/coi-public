@@ -6,6 +6,12 @@
 
 import type { StorySummary, StorySegment } from "../../../../types";
 import { getLanguageEnforcement } from "../../../prompts";
+import {
+  getGmKnowledgeContent,
+  getEntityDefinitionsContent,
+  getStyleSectionContent,
+  getNarrativeCausalityContent,
+} from "../../../prompts/skills/content";
 import type { SummaryLoopInput } from "./summary";
 
 // ============================================================================
@@ -53,6 +59,17 @@ When you have enough information, call \`finish_summary\` to complete the summar
 - Note character development and relationship changes
 - Capture world state changes
 </critical_rules>
+
+${getGmKnowledgeContent({ language } as any)}
+
+${getEntityDefinitionsContent({ language } as any)}
+
+<style_injection>
+  You must capture the TONE of the story, not just the facts.
+  ${getStyleSectionContent({ language, isLiteMode: liteMode } as any)}
+</style_injection>
+
+${getNarrativeCausalityContent({ language } as any)}
 
 ${getLanguageEnforcement(language)}`;
 }

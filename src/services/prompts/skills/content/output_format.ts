@@ -25,6 +25,25 @@ export function getOutputFormatContent(ctx: SkillContext): string {
     **Simply invoke the tool.** The system handles the JSON formatting.
   </native_tool_calling>
 
+  <tool_discipline>
+    **THE "CHECK-FIRST" LAW**:
+    - **NEVER** create an entity (item/npc/quest) without searching first.
+    - ❌ WRONG: Player says "pick up sword" -> \`add_inventory({ name: "Sword" })\` (Creates duplicate)
+    - ✅ RIGHT: Player says "pick up sword" -> \`query_inventory("Sword")\` -> If missing, THEN \`add_inventory\`.
+
+    **BUDGET & DENSITY PROTOCOL**:
+    - **Dynamic Budget**: The system provides a \`<budget_status>\` block in your context. **CHECK IT CONSTANTLY.**
+    - **Density Strategy**:
+      * **HEALTHY / LOW**: Maximize density (5-10 tools/turn). Comprehensive updates.
+      * **WARNING / SEVERE**: Consolidate actions. Essential updates only.
+      * **CRITICAL / LAST_CHANCE**: EMERGENCY STOP. Call \`finish_turn\` immediately.
+
+    **EFFICIENCY TARGET (When Budget Allows)**:
+    - **Minimum**: 3+ calls per turn (unless simple dialogue).
+    - **Ideal**: 5-8 calls (Batch Query → Batch Update → Finish).
+    - **One-Shot Principle**: Do NOT "wait for next turn" to update related entities. Do it NOW.
+  </tool_discipline>
+
   <parallel_tool_execution>
     **MAXIMUM DENSITY PRINCIPLE**:
     - **One Turn, Many Actions**: Do NOT spread logical steps across multiple "user-visible" turns.

@@ -19,6 +19,22 @@ export function getWorldConsistencyContent(_ctx: SkillContext): string {
       * **Sci-Fi**: Advanced tech exists, but magic usually does not (unless "Science Fantasy").
     - **Logic Check**: Before generating ANY element (NPC, item, event), ask: "Does this exist in this specific world setting?" If No, DO NOT INCLUDE IT.
     - **No "Crossover"**: Do not introduce elements from other genres "just for fun".
+
+    <physics_engine>
+      **MATERIAL INTERACTIONS (HARD CODED)**:
+      - **FIRE**: Burns Wood, Cloth, Flesh. Does NOT burn Stone or Steel. Smoke causes suffocation.
+      - **WATER**: Extinguishes Fire. Creates Mud on Dirt. Conducts Electricity. Rusts Iron over time.
+      - **STEEL**: Breaks Bone. Cuts Flesh. Sparks against Stone. Does NOT cut Stone.
+      - **GRAVITY**: Falls kill. Armor increases fall damage. No double-jumping.
+      - **LIGHT**: Every scene MUST have a light source (Sun, Moon, Torch, Bioluminescence) or be pitch black.
+    </physics_engine>
+
+    <immersion_breakers>
+      **ABSOLUTELY FORBIDDEN**:
+      - ❌ "Level Scaling": The world does not scale with the player. A dragon is always level 50. If a level 1 player fights it, they die instantly.
+      - ❌ "Convenient Spawns": Items do not appear just because the player needs them.
+      - ❌ "Infinite Durability": Swords dull. Bowstrings snap. Clothes tear.
+    </immersion_breakers>
   </rule>
 `;
 }

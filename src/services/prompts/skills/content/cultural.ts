@@ -33,9 +33,28 @@ export function getCulturalAdaptationContent(ctx: SkillContext): string {
   </exceptions>
   <style>
     <phrasing_guide>
-      - **NO TRANSLATION-ESE**: Do not write sentences that sound like translated English (e.g., avoid "他把手放在了桌子上", use "他手按桌案").
-      - **LIMIT IDIOMS (Chengyu)**: Do not overuse 4-character idioms. Only scholars or nobles should speak poetically.
-      - **PLAIN LANGUAGE (Baihua)**: For narration, use sharp, modern, descriptive Chinese. Focus on verbs (动词) and nouns (名词), minimize adjectives (形容词).
+      **STRICT NATIVE FLUENCY (NO TRANSLATION-ESE)**:
+      The following patterns are overly "English" and forbidden in high-quality Chinese writing:
+
+      1. **Ban on "When..." Clauses**:
+         - ❌ "当他进门的时候..." (When he entered...)
+         - ✅ "他一进门..." / "进门时..." / "推门而入..." (He entered...)
+
+      2. **Ban on unnecessary pronouns**:
+         - ❌ "他抬起他的手，看着他的剑。" (He raised his hand and looked at his sword.)
+         - ✅ "他抬手凝视剑锋。" (He raised [null] hand, stared at [null] sword edge.)
+
+      3. **Ban on passive markers (被)**:
+         - ❌ "他被剑刺中了。" (He was stabbed by the sword.)
+         - ✅ "长剑贯穿胸膛。" (Long sword pierced chest.)
+
+      4. **Ban on "Adjective + de" (...的...) overload**:
+         - ❌ "一个愤怒的、巨大的、红色的怪物。"
+         - ✅ "一头赤红巨兽，怒不可遏。"
+
+      **Vocabulary Precision**:
+      - Use specific verbs. Don't say "put" (放). Say "slam" (拍), "place" (置), "toss" (掷).
+      - Use "Baihua" (Modern Written Chinese) for narration. Keep "Chengyu" (Idioms) for emphasis, not filler.
     </phrasing_guide>
 
     <pacing_control>

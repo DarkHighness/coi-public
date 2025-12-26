@@ -308,17 +308,19 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
   // Add tool information
   if (entry.toolName) {
     logDetails.toolName = entry.toolName;
-    // Add tool call details
-    logDetails.toolCalls = toolCalls.map((tc) => ({
-      name: tc.name,
-      input: tc.input,
-      output: tc.output,
-    }));
   }
 
   if (toolCalls?.length) {
     logDetails.toolCallCount = toolCalls.length;
     logDetails.toolCallNames = toolCalls.map((tc) => tc.name).join(", ");
+  }
+
+  if (toolInput) {
+    logDetails.toolInput = toolInput;
+  }
+
+  if (toolOutput) {
+    logDetails.toolOutput = toolOutput;
   }
 
   // Add image info if applicable
