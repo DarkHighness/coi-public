@@ -82,10 +82,18 @@ export function registerToolHandler<T extends ZodToolDefinition>(
   tool: T,
   handler: ToolHandler,
 ): void {
+  // In HMR scenarios, the same handler may be re-registered - skip silently
   if (handlerRegistry.has(tool.name)) {
-    console.warn(
-      `[ToolRegistry] Handler for "${tool.name}" is being overwritten`,
-    );
+    // Only warn in development if it's actually a different handler
+    if (import.meta.env.DEV && handlerRegistry.get(tool.name) !== handler) {
+      console.warn(
+        `[ToolRegistry] Handler for "${tool.name}" is being overwritten`,
+      );
+    }
+    // If same handler, skip re-registration entirely
+    if (handlerRegistry.get(tool.name) === handler) {
+      return;
+    }
   }
   handlerRegistry.set(tool.name, handler);
 }
@@ -98,9 +106,16 @@ export function registerHandlerByName(
   name: string,
   handler: ToolHandler,
 ): void {
+  // In HMR scenarios, skip if same handler already registered
   if (handlerRegistry.has(name)) {
-    console.warn(`[ToolRegistry] Handler for "${name}" is being overwritten`);
+    if (import.meta.env.DEV && handlerRegistry.get(name) !== handler) {
+      console.warn(`[ToolRegistry] Handler for "${name}" is being overwritten`);
+    }
+    if (handlerRegistry.get(name) === handler) {
+      return;
+    }
   }
+
   handlerRegistry.set(name, handler);
 }
 

@@ -1,12 +1,25 @@
 /**
  * ============================================================================
- * Skill Content: Writing Craft (Immersive Writing)
+ * Skill Content: Writing Craft (叙事诗学)
  * ============================================================================
  *
- * 完整迁移自 common.ts getImmersiveWriting
+ * 维度分类: ACTING (How existence is rendered into language)
+ * 本体论层级: Level 5 NARRATIVE (lowest priority, serves truth)
+ *
+ * 哲学基础：
+ * - 亚里士多德《诗学》: 模仿 (mimesis) — 叙事是对现实的模仿
+ * - 维特根斯坦: 语言游戏 — 叙事在规则中创造意义
+ * - 保罗·利科: 叙事身份 — 人通过故事理解自己
+ * - 罗兰·巴特: 作者之死 — 文本独立于作者意图存在
+ *
+ * 核心原则：
+ * - 展示，不要讲述 (Show, Don't Tell)
+ * - 节奏是张力的呼吸
+ * - 第二人称是沉浸的桥梁
+ * - 真实优于美丽
  */
 
-import type { SkillContext } from "../types";
+import type { SkillContext } from "../../types";
 
 export function getWritingCraftContent(ctx: SkillContext): string {
   if (ctx.isLiteMode) {

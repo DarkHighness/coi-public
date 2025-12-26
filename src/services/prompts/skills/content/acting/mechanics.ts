@@ -1,12 +1,23 @@
 /**
  * ============================================================================
- * Skill Content: Combat, Dialogue, and Atmosphere
+ * Skill Content: Combat, Dialogue, and Atmosphere (具身现象学)
  * ============================================================================
  *
- * 完整迁移自 common.ts getCoreRules 中的战斗、对话和氛围部分
+ * 维度分类: ACTING (How the body experiences the world)
+ * 本体论层级: Level 2 BIOLOGY / Level 3 PSYCHOLOGY
+ *
+ * 哲学基础：
+ * - 梅洛-庞蒂 (Merleau-Ponty): 肉身 — 身体是感知世界的媒介，不是灵魂的容器
+ * - 杜威 (Dewey): 经验即交互 — 战斗、对话是与世界的交互经验
+ * - 海德格尔: 情态 — 氛围是存在的基调，不是装饰
+ *
+ * 核心原则：
+ * - 战斗是丑陋的、混乱的、令人疲惫的
+ * - 疼痛是物理的，不是数字
+ * - 氛围是感知的，不是描述的
  */
 
-import type { SkillContext } from "../types";
+import type { SkillContext } from "../../types";
 
 export function getCombatContent(_ctx: SkillContext): string {
   return `

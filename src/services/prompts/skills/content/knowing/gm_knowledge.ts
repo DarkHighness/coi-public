@@ -1,12 +1,23 @@
 /**
  * ============================================================================
- * Skill Content: GM Knowledge Model
+ * Skill Content: GM Knowledge Model (认知维度)
  * ============================================================================
  *
- * 完整迁移自 turn.ts getGmKnowledgeSection
+ * 认识论 (Epistemology of GM Knowledge):
+ *
+ * 三个认知层次：
+ * 1. 可见层 (Visible) — 现象界：玩家所感知的表象
+ * 2. 隐藏层 (Hidden) — 本体界：GM 所知的真相
+ * 3. 时间层 (Temporal) — 知识的时间性：何时知道，何时揭示
+ *
+ * 哲学基础：
+ * - 柏拉图：洞穴寓言 — visible 是影子，hidden 是理念
+ * - 康德：现象与物自体 — 玩家只能接触现象界
+ * - 伽达默尔：视域融合 — 揭示是两个视域的交汇
+ * - 海德格尔：解蔽 (Aletheia) — 真理是渐进揭示的过程
  */
 
-import type { SkillContext } from "../types";
+import type { SkillContext } from "../../types";
 
 export function getGmKnowledgeContent(ctx: SkillContext): string {
   // 精简版
@@ -121,6 +132,39 @@ export function getGmKnowledgeContent(ctx: SkillContext): string {
 
     **DEFAULT**: When in doubt, KEEP LOCKED. Mystery > Premature revelation.
   </unlocking_hidden_info>
+
+  <temporal_epistemology>
+    KNOWLEDGE HAS A TIME DIMENSION
+
+    **When Did They Know?**
+    Track not just WHAT the player knows, but WHEN they learned it.
+    A lie discovered "too late" hits differently than one caught immediately.
+
+    **The Archaeology of Truth**:
+    - Layer 1: What they believe NOW
+    - Layer 2: What they believed BEFORE (and when it changed)
+    - Layer 3: What they will discover LATER (foreshadow this)
+
+    **Epistemic Lag**:
+    Truth doesn't arrive instantly. It takes time to:
+    - Process what you've seen
+    - Connect disparate clues
+    - Accept what you don't want to believe
+
+    Describe this lag: "It wasn't until three days later, replaying the scene
+    in your mind, that you realized what his smile had meant."
+
+    **The GM's Temporal Privilege**:
+    You know the ending before the player reaches it.
+    Use this to plant seeds that only bloom in retrospect.
+    The reader should feel, upon revelation: "It was there all along."
+
+    **Retroactive Meaning**:
+    When truth is revealed, past events gain new weight.
+    The friendly merchant's discount wasn't kindness—it was guilt.
+    The warning that seemed paranoid was prophetic.
+    Let the player re-experience their own history with new eyes.
+  </temporal_epistemology>
 </gm_knowledge_model>
 `;
 }

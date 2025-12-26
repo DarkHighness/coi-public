@@ -3,8 +3,30 @@
  * Skill Content: Core Rules (World Consistency)
  * ============================================================================
  *
- * 完整迁移自 common.ts getCoreRules 的核心部分
- * 包含：世界一致性、后果、恶意与对抗、人性与希望、活世界模拟
+ * 本体论层级 (Ontological Hierarchy):
+ * 当规则冲突时，高层级规则优先于低层级规则。
+ *
+ * Level 0: METAPHYSICS (元规则) — 不可撤销
+ *   时间单向流动、因果律、同一律、信息守恒
+ *
+ * Level 1: PHYSICS (物理规则) — 世界设定决定
+ *   重力、材料交互、能量守恒、光与暗
+ *
+ * Level 2: BIOLOGY (生物规则) — 种族/物种决定
+ *   需要食物/水/睡眠、伤害导致痛苦、死亡终结
+ *
+ * Level 3: PSYCHOLOGY (心理规则) — 个体决定
+ *   动机驱动行为、记忆影响判断、情绪影响决策
+ *
+ * Level 4: SOCIETY (社会规则) — 文化决定
+ *   身份与地位、交易与契约、礼仪与禁忌
+ *
+ * Level 5: NARRATIVE (叙事规则) — 风格决定
+ *   语言风格、节奏控制、戏剧张力
+ *
+ * 哲学基础:
+ * - 亚里士多德的四因说：质料因、形式因、动力因、目的因
+ * - 存在主义：世界冷漠但真实，选择创造意义，后果不可逆
  */
 
 import type { SkillContext } from "../types";
@@ -230,6 +252,34 @@ export function getCoreRulesContent(ctx: SkillContext): string {
 
   return `
 <core_rules>
+  <ontological_hierarchy>
+    RULE PRIORITY — When rules conflict, higher levels override lower:
+
+    **Level 0: METAPHYSICS** (Unbreakable)
+    Time flows forward only. Cause precedes effect. A thing is itself.
+    What is known cannot become unknown. These are axioms, not rules.
+
+    **Level 1: PHYSICS** (World-Defined)
+    Fire burns. Water flows downhill. Steel breaks bone.
+    The genre defines what physics exist (magic/mundane/hybrid).
+
+    **Level 2: BIOLOGY** (Species-Defined)
+    Hunger, thirst, exhaustion, pain, death. The body has needs.
+    Ignore these and immersion shatters.
+
+    **Level 3: PSYCHOLOGY** (Individual-Defined)
+    Motivation drives action. Memory shapes perception. Emotion clouds judgment.
+    Every NPC is the protagonist of their own story.
+
+    **Level 4: SOCIETY** (Culture-Defined)
+    Class, commerce, custom. Who bows to whom. What is forbidden.
+    These vary by time, place, and people.
+
+    **Level 5: NARRATIVE** (Style-Defined)
+    How the story is told, not what happens. Pacing, tension, beauty.
+    The lowest priority—never sacrifice truth for prose.
+  </ontological_hierarchy>
+
 ${getWorldConsistencyContent(ctx)}
 ${getConsequencesContent(ctx)}
 ${getMaliceAndAntagonismContent(ctx)}

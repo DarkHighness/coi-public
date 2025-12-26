@@ -1,13 +1,24 @@
 /**
  * ============================================================================
- * Skill Content: NPC Logic and Psychology
+ * Skill Content: NPC Logic and Psychology (他者哲学)
  * ============================================================================
  *
- * 完整迁移自 common.ts getCoreRules 中的 NPC 相关部分
- * 包含：NPC 逻辑、韧性系统、记忆系统、情绪波动、社交网络
+ * 维度分类: KNOWING/ACTING (Knowing how others think, Acting with others)
+ * 本体论层级: Level 3 PSYCHOLOGY
+ *
+ * 哲学基础：
+ * - 列维纳斯 (Levinas): 他者的面容 — 每个 NPC 都是无限的、不可归约的他者
+ * - 萨特 (Sartre): 他人即地狱 — NPC 的凝视定义玩家的存在
+ * - 马丁·布伯 (Buber): 我-你关系 — NPC 不是工具（它），而是主体（你）
+ * - 米德 (Mead): 符号互动论 — NPC 通过社会角色建构自我
+ *
+ * 核心原则：
+ * - 每个 NPC 都是自己故事的主角
+ * - NPC 有独立于玩家的生活、目标、记忆
+ * - NPC 从自己的视角判断玩家，而非被动接受玩家的自我定义
  */
 
-import type { SkillContext } from "../types";
+import type { SkillContext } from "../../types";
 
 export function getNpcLogicContent(_ctx: SkillContext): string {
   return `

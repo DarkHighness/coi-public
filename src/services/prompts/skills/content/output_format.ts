@@ -30,6 +30,7 @@ export function getOutputFormatContent(ctx: SkillContext): string {
     - **NEVER** create an entity (item/npc/quest) without searching first.
     - ❌ WRONG: Player says "pick up sword" -> \`add_inventory({ name: "Sword" })\` (Creates duplicate)
     - ✅ RIGHT: Player says "pick up sword" -> \`query_inventory("Sword")\` -> If missing, THEN \`add_inventory\`.
+    - **INVESTIGATIVE SEARCH**: Calling the same tool with different parameters (e.g., searching by name vs. role) is NOT a "duplicate call" and is highly encouraged to ensure uniqueness.
 
     **BUDGET & DENSITY PROTOCOL**:
     - **Dynamic Budget**: The system provides a \`<budget_status>\` block in your context. **CHECK IT CONSTANTLY.**
@@ -535,7 +536,7 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
   - **PARALLEL CALLS**: Supported. Order matters (causal).
   - **BATCH UPDATES**: Modify multiple fields in ONE call. Do not call update twice for the same entity.
   - **LIST FIRST, THEN ADD**: ⚠️ Before adding ANY entity, call \`list(type: "...")\` FIRST to see ALL existing entities. Query searches by name and MISSES synonyms ("Blade" won't find "Sword"). List catches everything.
-  - **NO REDUNDANT QUERIES**: Do not query if IDs are known from previous context/hints.
+  - **NO REDUNDANT QUERIES**: Do not query if IDs are known from previous context. However, **Investigative Queries** (different params) are REQUIRED when verifying uniqueness.
   - **FINISH_TURN LAST**: Must be the LAST tool call. When ready to end, call it DIRECTLY.
 </guidelines>
 `;

@@ -1,12 +1,24 @@
 /**
  * ============================================================================
- * Skill Content: State Management Rules
+ * Skill Content: State Management Rules (存在的持续性)
  * ============================================================================
  *
- * 完整迁移自 common.ts getCoreRules 中的状态管理部分
+ * 维度分类: ACTING (How the world persists and changes)
+ * 本体论层级: Level 0-1 (METAPHYSICS/PHYSICS - State is the fabric of reality)
+ *
+ * 哲学基础：
+ * - 赫拉克利特: 万物流变 — 状态是存在的河流，不断变化但保持同一性
+ * - 巴门尼德: 存在者存在 — 被记录的实体是真实的，未记录的是虚无
+ * - 莱布尼茨: 同一性法则 — 每个实体有唯一 ID，ID 即本质
+ * - 海德格尔: 上手性 — 工具（实体）在使用中显现自身
+ *
+ * 核心原则：
+ * - 状态是世界的物理法则，不为"酷炫"而弯曲
+ * - 如果你写了它，你必须追踪它；如果你追踪它，它必须发生过
+ * - 时间只向前流动，状态不可回溯
  */
 
-import type { SkillContext } from "../types";
+import type { SkillContext } from "../../types";
 
 export function getStateManagementContent(_ctx: SkillContext): string {
   return `
@@ -150,10 +162,13 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
     - **Depth > Breadth**: It is better to have one NPC with 10 note updates than 10 shallow NPCs.
 
-    **MANDATORY CHECK-BEFORE-WRITE WORKFLOW**:
-    1. **LIST (Broad Scan)**: Call \`list(type: "...")\` to see the landscape.
-    2. **QUERY (Deep Scan)**: Call \`query(name: "...")\` with synonyms.
-    3. **EVALUATE**:
+    **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
+    1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
+    2. **LIST (Broad Scan)**: Call \`list(type: "...")\` to see the complete landscape. This is the MOST RELIABLE way to see all entities.
+    3. **QUERY (Deep Scan)**: Call \`query(name: "...")\` or \`query(id: "...")\` for deep details.
+    4. **MULTI-PARAM SEARCH**: If searching for "Guard Marcus", call query with "Marcus", then "Guard", then "Soldier".
+       - ⚠️ **CLARIFICATION**: Calling the same tool (e.g., \`query_npcs\`) with **different parameters** is NOT a "duplicate call". It is a **necessary investigative action** and is HIGHLY ENCOURAGED.
+    5. **EVALUATE**:
        - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and \`update\` name to "Dagger".
        - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and \`update\` role/title.
     4. **CREATE (Last Resort)**: Only if NO semantic match exists.
@@ -223,6 +238,12 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
 
       **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
       For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).
+
+      **DUPLICATE PREVENTION (SESSION REBUILD)**:
+      When a context is rebuilt or a session is initialized:
+      - **DO NOT** blindly add entities described in the summary.
+      - **ALWAYS** \`list\` and \`query\` first to see what actually exists in the database.
+      - Summary descriptions may be outdated; the database (Entity Store) is the source of truth.
     </realism_vs_bloat_prevention>
   </rule>
 `;

@@ -12,7 +12,7 @@ import {
   getCulturalAdaptationContent,
   getLanguageEnforcementContent,
 } from "./skills/content/cultural";
-import { getRoleInstructionContent } from "./skills/content/identity";
+import { getRoleInstructionContent } from "./skills/content/being/identity";
 import { getWorldConsistencyContent } from "./skills/content/core_rules";
 
 // ============================================================================
