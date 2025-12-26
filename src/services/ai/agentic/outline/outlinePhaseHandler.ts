@@ -145,6 +145,7 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     title: p1.title,
     initialTime: p1.initialTime,
     premise: p1.premise,
+    narrativeScale: p1.narrativeScale,
     worldSetting: p1.worldSetting as StoryOutline["worldSetting"],
     mainGoal: p1.mainGoal as StoryOutline["mainGoal"],
 

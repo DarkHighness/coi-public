@@ -391,6 +391,10 @@ export interface GameState {
   // Player Psychology System - per-save player portrait
   // Records how the player is approaching THIS specific story
   playerProfile?: string;
+
+  // Narrative Scale - AI's creative decision about story scope
+  // Set during Phase 1 outline generation, influences subsequent prompts
+  narrativeScale?: "epic" | "intimate" | "balanced";
 }
 
 /** State for resuming outline generation after failure */

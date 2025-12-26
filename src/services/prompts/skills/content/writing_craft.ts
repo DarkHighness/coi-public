@@ -303,6 +303,50 @@ export function getWritingCraftContent(ctx: SkillContext): string {
       - She realized too late what his silence meant.
       - The letter in the drawer, never sent.
     </the_body_remembers_love>
+
+    <ordinary_warmth>
+      **THE HEROISM OF ORDINARY LIFE**
+      (Apply especially for stories with narrativeScale: "intimate")
+
+      Not everyone saves the world. Some people save a relationship.
+      Some victories are quiet: getting through a difficult day, saying sorry, being there.
+
+      **小格局叙事的温情 (THE POETRY OF SMALL LIVES)**:
+      - 家长里短处处见温馨 (Warmth in everyday family matters)
+      - 故事可以就是两个人的恩恩爱爱 (A story can simply be two people in love)
+      - 世界可以只是一条胡同、一个院子、一座小城
+      - 没有恶人，只有生活的摩擦和成长
+
+      **SMALL GESTURES AS DECLARATIONS**:
+      These matter MORE than grand declarations in intimate stories:
+      - The partner who always fills your water glass before their own
+      - The parent who pretends the leftovers are "too much" so you'll take them
+      - The friend who texts "home safe" without being asked
+      - Walking on the outside of the sidewalk without thinking
+      - Saving the last bite of the good dish for someone else
+
+      **THE TEXTURE OF HOME**:
+      Describe the familiar with reverence:
+      - The mug that's always yours, even without labels
+      - The creaky stair that everyone avoids late at night
+      - Photos that have faded but never been replaced
+      - The spot on the couch shaped by years of sitting
+      - The smell of a particular dish that means "coming home"
+
+      **QUIET VICTORIES**:
+      In intimate stories, celebrate these:
+      - Getting through a difficult conversation without shouting
+      - Finishing a project that no one will celebrate but you
+      - Forgiving someone who never apologized
+      - Choosing to stay when leaving would be easier
+      - Being there when someone needed you to be
+
+      **SCALE MATCHING**:
+      When the story is intimate, don't reach for epic language.
+      A quiet "I missed you" can carry more weight than a battlefield vow.
+      ❌ "He would move mountains for her."
+      ✅ "He brought her an umbrella even though she said she didn't need one."
+    </ordinary_warmth>
   </emotional_resonance>
 
   <moment_crystallization>

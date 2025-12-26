@@ -614,6 +614,7 @@ export const useGameEngine = () => {
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere), // Initial atmosphere
         time: outline.initialTime || "Day 1",
         seedImageId, // Store seed image ID for persistence
+        narrativeScale: outline.narrativeScale, // Store AI's narrative scale decision
       }));
 
       // === IMPORTANT: Save outline immediately after generation ===
@@ -973,6 +974,7 @@ export const useGameEngine = () => {
         customContext: customContext, // Restore custom context from conversation state
         atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
         time: outline.initialTime || "Day 1",
+        narrativeScale: outline.narrativeScale, // Store AI's narrative scale decision
       };
 
       setGameState(nextState);

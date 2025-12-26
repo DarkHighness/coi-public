@@ -1237,6 +1237,12 @@ export const storyOutlineSchema = z.object({
       "The starting time of the story (e.g., 'Year 2024', 'Day 1', 'The 3rd Era').",
     ),
   premise: z.string().describe("The inciting incident and setting setup."),
+  narrativeScale: z
+    .enum(["epic", "intimate", "balanced"])
+    .nullish()
+    .describe(
+      "The scale of the narrative. 'epic' for world-ending stakes, 'intimate' for personal focus, 'balanced' for middle ground.",
+    ),
   mainGoal: mainGoalSchema.describe("The primary driving force of the story."),
   quests: z
     .array(questSchema)
@@ -1441,6 +1447,11 @@ export const outlinePhase1Schema = z.object({
   premise: z
     .string()
     .describe("The inciting incident and setting setup (2-3 paragraphs)."),
+  narrativeScale: z
+    .enum(["epic", "intimate", "balanced"])
+    .describe(
+      "The scale of the narrative. 'epic' for world-ending stakes and grand conflicts, 'intimate' for personal/relationship focus and daily life, 'balanced' for personal stakes with wider implications.",
+    ),
   worldSetting: worldSettingSchema.describe(
     "Dual-layer world setting with visible and hidden truths.",
   ),
