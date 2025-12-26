@@ -27,7 +27,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-in relative"
+        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col animate-slide-in relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Dynamic Background */}
@@ -101,33 +101,38 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-theme-bg/50 p-5 rounded-xl border border-theme-border/50 relative group">
-            <div className="absolute -top-2 -left-2 text-3xl text-theme-primary/20 font-serif group-hover:text-theme-primary/30 transition-colors">
-              "
-            </div>
-            <div
-              className={`text-theme-text/90 leading-loose line-clamp-5 md:line-clamp-none ${
-                (envTheme?.fontClass || "font-sans") === "font-serif"
-                  ? "font-serif text-base"
-                  : "font-sans text-sm"
-              }`}
-            >
-              <MarkdownText
-                content={t(`${themeKey}.example`, { ns: "themes" })}
-                disableIndent
-                components={{
-                  p: ({ node, ...props }: any) => <span {...props} />,
-                }}
-              />
-            </div>
-            <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
-              "
+          <div>
+            <h3 className="text-xs text-theme-primary uppercase tracking-[0.2em] font-bold mb-2 opacity-70 font-sans">
+              {t("themeExample")}
+            </h3>
+            <div className="bg-theme-bg/50 p-5 rounded-xl border border-theme-border/50 relative group">
+              <div className="absolute -top-2 -left-2 text-3xl text-theme-primary/20 font-serif group-hover:text-theme-primary/30 transition-colors">
+                "
+              </div>
+              <div
+                className={`text-theme-text/90 leading-loose line-clamp-5 md:line-clamp-none ${
+                  (envTheme?.fontClass || "font-sans") === "font-serif"
+                    ? "font-serif text-base"
+                    : "font-sans text-sm"
+                }`}
+              >
+                <MarkdownText
+                  content={t(`${themeKey}.example`, { ns: "themes" })}
+                  disableIndent
+                  components={{
+                    p: ({ node, ...props }: any) => <span {...props} />,
+                  }}
+                />
+              </div>
+              <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
+                "
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface/50 backdrop-blur-sm">
+        <div className="relative z-10 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface/50 backdrop-blur-sm shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
           <button
             onClick={() => {
               onSelect(themeKey);

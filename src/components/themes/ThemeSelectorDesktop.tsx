@@ -255,12 +255,33 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">
+                      {t("themeExample")}
+                    </h3>
+                    <div className="bg-theme-bg/50 p-5 rounded-xl border border-theme-border/50 relative group">
+                      <div className="absolute -top-2 -left-2 text-3xl text-theme-primary/20 font-serif group-hover:text-theme-primary/30 transition-colors">
+                        "
+                      </div>
+                      <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                        <MarkdownText
+                          content={t(`${previewTheme}.example`, {
+                            ns: "themes",
+                          })}
+                        />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 text-3xl text-theme-primary/20 font-serif rotate-180 group-hover:text-theme-primary/30 transition-colors">
+                        "
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="p-6 border-t border-theme-border bg-theme-surface-highlight/10">
+            <div className="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface-highlight/10">
               <button
                 onClick={() => {
                   onSelect(previewTheme);
