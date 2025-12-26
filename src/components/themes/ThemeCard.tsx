@@ -22,7 +22,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   const envTheme = ENV_THEMES[themeConfig.envTheme];
   const primaryColor = envTheme?.vars["--theme-primary"] || "#f59e0b";
 
-  let lineClampClass = isDesktop ? "line-clamp-8" : "line-clamp-2";
+  let lineClampClass = isDesktop ? "line-clamp-8" : "line-clamp-4";
 
   return (
     <button
