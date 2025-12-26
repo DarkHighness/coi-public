@@ -290,12 +290,53 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
     response,
   };
 
-  console.log(`[Log] ${provider}/${model} - ${endpoint}`, {
+  // Enhanced console logging
+  const logDetails: Record<string, unknown> = {
     type: entry.type,
-    toolName: entry.toolName,
     usage: entry.usage,
-    toolCallCount: toolCalls?.length || 0,
-  });
+  };
+
+  // Add context identifiers if present
+  if (entry.turnNumber !== undefined) logDetails.turnNumber = entry.turnNumber;
+  if (entry.forkId !== undefined) logDetails.forkId = entry.forkId;
+  if (entry.turnId) logDetails.turnId = entry.turnId;
+
+  // Add phase/stage for outline/summary
+  if (entry.phase !== undefined) logDetails.phase = entry.phase;
+  if (entry.stage) logDetails.stage = entry.stage;
+
+  // Add tool information
+  if (entry.toolName) {
+    logDetails.toolName = entry.toolName;
+    // Add tool call details
+    logDetails.toolCalls = toolCalls.map((tc) => ({
+      name: tc.name,
+      input: tc.input,
+      output: tc.output,
+    }));
+  }
+
+  if (toolCalls?.length) {
+    logDetails.toolCallCount = toolCalls.length;
+    logDetails.toolCallNames = toolCalls.map((tc) => tc.name).join(", ");
+  }
+
+  // Add image info if applicable
+  if (entry.imagePrompt) {
+    logDetails.imagePrompt =
+      entry.imagePrompt.substring(0, 100) +
+      (entry.imagePrompt.length > 100 ? "..." : "");
+    if (entry.imageResolution)
+      logDetails.imageResolution = entry.imageResolution;
+  }
+
+  // Add raw response preview for debugging
+  if (rawResponse && rawResponse.length > 0) {
+    logDetails.rawResponsePreview =
+      rawResponse.substring(0, 200) + (rawResponse.length > 200 ? "..." : "");
+  }
+
+  console.log(`[Log] ${provider}/${model} - ${endpoint}`, logDetails);
 
   return entry;
 };

@@ -104,10 +104,17 @@ export function getLanguageEnforcementContent(language: string): string {
     1. **Narrative & Dialogue**: MUST be in ${language}.
     2. **UI Text & Choices**: MUST be in ${language}.
     3. **Consistency**: Do NOT revert to English even if the input/context contains English.
-    4. **Exceptions**:
+    4. **NO LANGUAGE MIXING**:
+       - ❌ FORBIDDEN: Parenthetical translations like "一个男人（A Man）" or "A sword (一把剑)"
+       - ❌ FORBIDDEN: Inline translations like "他是一个战士 - He is a warrior"
+       - ❌ FORBIDDEN: Mixed phrases like "这个Quest很重要" or "Level up你的技能"
+       - ✅ CORRECT: Use ONLY the target language throughout the entire output
+       - If a term has no direct translation, choose the most culturally appropriate equivalent or describe it
+    5. **Exceptions**:
        - JSON field names (MUST be English)
        - IDs (MUST be English/snake_case)
        - Code/Technical terms (If appropriate)
+       - Proper nouns that are universally known in their original form (e.g., "iPhone", "Google")
   </rules>
 </language_enforcement_protocol>
 `;

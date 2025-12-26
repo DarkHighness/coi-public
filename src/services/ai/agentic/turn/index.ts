@@ -1,6 +1,3 @@
-export {
-  generateAdventureTurn,
-  runAgenticLoop,
-  processFinishTurnResponse,
-} from "./adventure";
+export { generateAdventureTurn, runAgenticLoop } from "./adventure";
+export { processFinishTurnData } from "./resultAccumulator";
 export type { AgenticLoopResult } from "./adventure";

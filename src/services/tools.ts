@@ -245,6 +245,7 @@ export const QUERY_SUMMARY_TOOL = defineTool({
       .optional()
       .describe("Filter by node range."),
     limit: z.number().optional().describe("Max results. Default: 5."),
+    page: z.number().optional().describe("Page number. Default: 1."),
     order: z.enum(["asc", "desc"]).optional().describe("Default: 'desc'."),
   }),
 });
@@ -1425,12 +1426,17 @@ export const searchToolSchema = z.object({
             "skill",
             "condition",
             "trait",
-            "attribute", // Added
-            "profile", // Added
-            "global", // Added
-            "story", // Added
-            "turn", // Added
+            "attribute",
+            "profile",
+            "global",
+            "world", // Alias for global
+            "story",
+            "turn",
             "rag",
+            "notes", // Global notes
+            "atmosphere", // Atmosphere enums
+            "character", // Aggregate: profile + attribute + skill + condition + trait
+            "player_profile", // Player psychology profiling
           ])
           .describe("Entity type to search for."),
       }),
@@ -1504,11 +1510,6 @@ export type OverrideOutlineToolParams = InferToolParams<
 // ============================================================================
 // SUMMARY AGENTIC LOOP TOOLS (Preserved)
 // ============================================================================
-
-/**
- * Summary Stage Type
- */
-export type SummaryStage = "query" | "finish";
 
 /**
  * Query segments from the conversation being summarized.
@@ -1694,47 +1695,16 @@ export function findQueryToolsForEntities(
 /**
  * Summary tools grouped by stage
  */
-export const SUMMARY_QUERY_TOOLS: ZodToolDefinition[] = [
-  SUMMARY_QUERY_SEGMENTS_TOOL,
-  SUMMARY_QUERY_STATE_TOOL,
-  SUMMARY_LOAD_QUERY_TOOL,
-];
-
-export const SUMMARY_FINISH_TOOLS: ZodToolDefinition[] = [FINISH_SUMMARY_TOOL];
-
 /**
- * Get tools for summary stage
+ * Get all summary tools (stage-less design)
+ * Summary can only use query/list tools + finish_summary
  */
-export function getSummaryToolsForStage(
-  stage: SummaryStage,
-): ZodToolDefinition[] {
-  switch (stage) {
-    case "query":
-      // Query stage can also finish early
-      return [...SUMMARY_QUERY_TOOLS, FINISH_SUMMARY_TOOL];
-    case "finish":
-      return SUMMARY_FINISH_TOOLS;
-    default:
-      return [];
-  }
-}
-
-/**
- * Summary stage order
- */
-export const SUMMARY_STAGE_ORDER: SummaryStage[] = ["query", "finish"];
-
-/**
- * Get next summary stage
- */
-export function getNextSummaryStage(
-  currentStage: SummaryStage,
-): SummaryStage | null {
-  const currentIndex = SUMMARY_STAGE_ORDER.indexOf(currentStage);
-  if (currentIndex === -1 || currentIndex === SUMMARY_STAGE_ORDER.length - 1) {
-    return null;
-  }
-  return SUMMARY_STAGE_ORDER[currentIndex + 1];
+export function getSummaryTools(): ZodToolDefinition[] {
+  return [
+    SUMMARY_QUERY_SEGMENTS_TOOL,
+    SUMMARY_QUERY_STATE_TOOL,
+    FINISH_SUMMARY_TOOL,
+  ];
 }
 
 // ============================================================================
@@ -2033,7 +2003,24 @@ export function findTools(
     return [QUERY_TURN_TOOL, QUERY_RECENT_CONTEXT_TOOL];
   }
 
-  // 4. List Tool Fallback
+  // 4. Notes
+  if (entity === "notes") {
+    const notesKey = `${operation}:notes`;
+    if (TOOL_MAP[notesKey]) return TOOL_MAP[notesKey];
+  }
+
+  // 5. Atmosphere
+  if (entity === "atmosphere" && operation === "query") {
+    return TOOL_MAP["query:atmosphere"] || [];
+  }
+
+  // 6. Player Profile
+  if (entity === "player_profile") {
+    const profileKey = `${operation}:player_profile`;
+    if (TOOL_MAP[profileKey]) return TOOL_MAP[profileKey];
+  }
+
+  // 7. List Tool Fallback
   if (operation === "list") {
     return [LIST_TOOL];
   }
@@ -2363,6 +2350,7 @@ export interface ToolParamsMap {
   // Control tools
   finish_turn: FinishTurnParams;
   complete_force_update: ForceUpdateParams;
+  override_outline: OverrideOutlineToolParams;
 
   // Notes tools
   query_notes: QueryNotesParams;

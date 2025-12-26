@@ -43,16 +43,16 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const result = await generateVeoScript(
+      const { script: generatedScript } = await generateVeoScript(
         settings,
         gameState,
         currentHistory,
         i18n.language,
       );
-      setScript(result);
+      setScript(generatedScript);
       // Save to gameState via callback
       if (onScriptGenerated) {
-        onScriptGenerated(result);
+        onScriptGenerated(generatedScript);
       }
     } catch (e) {
       console.error("Failed to generate script", e);

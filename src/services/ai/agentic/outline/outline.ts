@@ -20,53 +20,15 @@ import {
   HistoryCorruptedError,
 } from "../../contextCompressor";
 
-import {
-  OutlinePhase0,
-  OutlinePhase1,
-  OutlinePhase2,
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase5,
-  OutlinePhase6,
-  OutlinePhase7,
-  OutlinePhase8,
-  OutlinePhase9,
-  OutlinePhase10,
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
-  outlinePhase10Schema,
-} from "../../../schemas";
+import { OutlinePhase0 } from "../../../schemas";
 
-import {
-  getOutlineSystemInstruction,
-  getOutlinePhase0Prompt,
-  getOutlinePhase1Prompt,
-  getOutlinePhase2Prompt,
-  getOutlinePhase3Prompt,
-  getOutlinePhase4Prompt,
-  getOutlinePhase5Prompt,
-  getOutlinePhase6Prompt,
-  getOutlinePhase7Prompt,
-  getOutlinePhase8Prompt,
-  getOutlinePhase9Prompt,
-  getOutlinePhase10Prompt,
-} from "../../../prompts/index";
+import { getOutlineSystemInstruction } from "../../../prompts/index";
 
 import { THEMES } from "../../../../utils/constants";
 
 import {
   getProviderConfig,
   createLogEntry,
-  createProviderConfig,
-  extractJson,
   createThemeConfig,
   IMAGE_BASED_THEME,
 } from "../../utils";
@@ -92,73 +54,13 @@ import {
   getBudgetSummary,
 } from "../budgetUtils";
 
+// Import extracted modules
+import { OUTLINE_PHASE_TOOLS } from "./outlineTools";
+import { getPhasePrompt } from "./outlinePrompts";
+import { mergeOutlinePhases } from "./outlinePhaseHandler";
+
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
-
-// ============================================================================
-// Tool Definitions for Outline Generation
-// ============================================================================
-
-// Define tools for each phase (Phase 0 is conditional, only for image-based generation)
-const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
-  {
-    name: "submit_phase0_image_interpretation",
-    description:
-      "Submit Phase 0: Image interpretation with visual elements and suggested world context",
-    parameters: outlinePhase0Schema,
-  },
-  {
-    name: "submit_phase1_world_foundation",
-    description:
-      "Submit Phase 1: World Foundation including title, premise, setting, and main goal",
-    parameters: outlinePhase1Schema,
-  },
-  {
-    name: "submit_phase2_character",
-    description: "Submit Phase 2: Protagonist character details",
-    parameters: outlinePhase2Schema,
-  },
-  {
-    name: "submit_phase3_locations",
-    description: "Submit Phase 3: Key locations in the story world",
-    parameters: outlinePhase3Schema,
-  },
-  {
-    name: "submit_phase4_factions",
-    description: "Submit Phase 4: Factions and groups",
-    parameters: outlinePhase4Schema,
-  },
-  {
-    name: "submit_phase5_npcs",
-    description: "Submit Phase 5: NPCs",
-    parameters: outlinePhase5Schema,
-  },
-  {
-    name: "submit_phase6_inventory",
-    description: "Submit Phase 6: Initial inventory items",
-    parameters: outlinePhase6Schema,
-  },
-  {
-    name: "submit_phase7_quests",
-    description: "Submit Phase 7: Available quests",
-    parameters: outlinePhase7Schema,
-  },
-  {
-    name: "submit_phase8_knowledge",
-    description: "Submit Phase 8: Initial knowledge",
-    parameters: outlinePhase8Schema,
-  },
-  {
-    name: "submit_phase9_timeline",
-    description: "Submit Phase 9: Timeline events and initial atmosphere",
-    parameters: outlinePhase9Schema,
-  },
-  {
-    name: "submit_phase10_opening_narrative",
-    description: "Submit Phase 10: Opening narrative that starts the story",
-    parameters: outlinePhase10Schema,
-  },
-];
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -203,6 +105,7 @@ export const generateStoryOutlinePhased = async (
   outline: StoryOutline;
   logs: LogEntry[];
   themeConfig: ResolvedThemeConfig;
+  usage: TokenUsage;
 }> => {
   if (!options?.settings) {
     throw new Error("settings is required in options");
@@ -528,6 +431,13 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       request: { retries: resp.retries },
     });
 
+    // Accumulate usage
+    if (resp.usage) {
+      totalUsage.promptTokens += resp.usage.promptTokens || 0;
+      totalUsage.completionTokens += resp.usage.completionTokens || 0;
+      totalUsage.totalTokens += resp.usage.totalTokens || 0;
+    }
+
     // Track tool call in budget
     incrementToolCalls(budgetState, 1);
     incrementIterations(budgetState);
@@ -537,6 +447,13 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
 
   // Initialize budget tracking
   const budgetState: BudgetState = createBudgetState(settings);
+
+  // Initialize total usage tracking
+  let totalUsage: TokenUsage = {
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+  };
 
   // Agentic loop for each phase
   // Phase 0 is at index 0, Phase 1 at index 1, etc.
@@ -829,199 +746,8 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
     };
   }
 
-  return { outline, logs, themeConfig: resolvedThemeConfig };
+  return { outline, logs, themeConfig: resolvedThemeConfig, usage: totalUsage };
 };
-
-/**
- * Get the prompt for a specific phase
- */
-function getPhasePrompt(
-  phase: number,
-  theme: string,
-  language: string,
-  customContext?: string,
-  hasImageContext?: boolean,
-): string | null {
-  switch (phase) {
-    case 0:
-      return getOutlinePhase0Prompt(language);
-    case 1:
-      return getOutlinePhase1Prompt(
-        theme,
-        language,
-        customContext,
-        hasImageContext,
-      );
-    case 2:
-      return getOutlinePhase2Prompt();
-    case 3:
-      return getOutlinePhase3Prompt();
-    case 4:
-      return getOutlinePhase4Prompt();
-    case 5:
-      return getOutlinePhase5Prompt();
-    case 6:
-      return getOutlinePhase6Prompt();
-    case 7:
-      return getOutlinePhase7Prompt();
-    case 8:
-      return getOutlinePhase8Prompt();
-    case 9:
-      return getOutlinePhase9Prompt();
-    case 10:
-      return getOutlinePhase10Prompt(hasImageContext);
-    default:
-      return null;
-  }
-}
-
-/**
- * Merge partial outline phases into a complete StoryOutline
- * Uses type assertions because PartialStoryOutline uses generic object type for persistence
- */
-function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
-  if (
-    !partial.phase1 ||
-    !partial.phase2 ||
-    !partial.phase3 ||
-    !partial.phase4 ||
-    !partial.phase5 ||
-    !partial.phase6 ||
-    !partial.phase7 ||
-    !partial.phase8 ||
-    !partial.phase9 ||
-    !partial.phase10
-  ) {
-    throw new Error("Cannot merge incomplete outline phases");
-  }
-
-  // Cast phases to their expected types
-  const p1 = partial.phase1 as OutlinePhase1;
-  const p2 = partial.phase2 as OutlinePhase2;
-  const p3 = partial.phase3 as OutlinePhase3;
-  const p4 = partial.phase4 as OutlinePhase4;
-  const p5 = partial.phase5 as OutlinePhase5;
-  const p6 = partial.phase6 as OutlinePhase6;
-  const p7 = partial.phase7 as OutlinePhase7;
-  const p8 = partial.phase8 as OutlinePhase8;
-  const p9 = partial.phase9 as OutlinePhase9;
-  const p10 = partial.phase10 as OutlinePhase10;
-
-  // Helper to ensure all entities have IDs and set unlocked: false
-  const prepareEntities = <T extends { id?: string; unlocked?: boolean }>(
-    items: T[] | undefined | null,
-    prefix: string,
-  ): T[] => {
-    // Validate that items is actually an array
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      if (items && !Array.isArray(items)) {
-        console.error(
-          `[OutlineMerge] Expected array for ${prefix}, got:`,
-          typeof items,
-          items,
-        );
-      }
-      return [];
-    }
-    let counter = 1;
-    const result = items.map((item) => {
-      const hasId = !!item.id;
-      let idNumber: number;
-
-      if (hasId) {
-        // Extract number from existing ID (e.g., "loc:5" -> 5)
-        const match = item.id!.match(/:(\d+)$/);
-        idNumber = match ? parseInt(match[1], 10) : counter;
-      } else {
-        idNumber = counter;
-      }
-
-      const newId = hasId ? item.id : `${prefix}:${idNumber}`;
-      if (!hasId) {
-        console.warn(
-          `[OutlineMerge] Auto-assigning ID ${newId} to entity without ID`,
-        );
-      }
-
-      counter = idNumber + 1;
-      return { ...item, id: newId, unlocked: false };
-    });
-
-    return result;
-  };
-
-  // Build outline with all entities properly prepared
-  const outline: StoryOutline = {
-    // Phase 1: World Foundation
-    title: p1.title,
-    initialTime: p1.initialTime,
-    premise: p1.premise,
-    worldSetting: p1.worldSetting as StoryOutline["worldSetting"],
-    mainGoal: p1.mainGoal as StoryOutline["mainGoal"],
-
-    // Phase 2: Character (with skills, conditions, hiddenTraits)
-    character: {
-      ...p2.character,
-      skills: p2.character.skills
-        ? prepareEntities(p2.character.skills, "skill")
-        : undefined,
-      conditions: p2.character.conditions
-        ? prepareEntities(p2.character.conditions, "cond")
-        : undefined,
-      hiddenTraits: p2.character.hiddenTraits
-        ? prepareEntities(p2.character.hiddenTraits, "trait")
-        : undefined,
-    } as StoryOutline["character"],
-
-    // Phase 3: Locations
-    locations: prepareEntities(
-      p3.locations as StoryOutline["locations"],
-      "loc",
-    ) as StoryOutline["locations"],
-
-    // Phase 4: Factions
-    factions: prepareEntities(
-      p4.factions as StoryOutline["factions"],
-      "fac",
-    ) as StoryOutline["factions"],
-
-    // Phase 5: NPCs
-    npcs: prepareEntities(
-      p5.npcs as StoryOutline["npcs"],
-      "npc",
-    ) as StoryOutline["npcs"],
-
-    // Phase 6: Inventory
-    inventory: prepareEntities(
-      p6.inventory as StoryOutline["inventory"],
-      "inv",
-    ) as StoryOutline["inventory"],
-
-    // Phase 7: Quests
-    quests: prepareEntities(
-      p7.quests as StoryOutline["quests"],
-      "quest",
-    ) as StoryOutline["quests"],
-
-    // Phase 8: Knowledge
-    knowledge: prepareEntities(
-      p8.knowledge as StoryOutline["knowledge"],
-      "know",
-    ) as StoryOutline["knowledge"],
-
-    timeline: prepareEntities(
-      p9.timeline as StoryOutline["timeline"],
-      "evt",
-    ) as StoryOutline["timeline"],
-    initialAtmosphere:
-      p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
-
-    // Phase 10: Opening Narrative
-    openingNarrative: p10.openingNarrative as StoryOutline["openingNarrative"],
-  };
-
-  return outline;
-}
 
 /**
  * 总结上下文 (Agentic Loop 版本)

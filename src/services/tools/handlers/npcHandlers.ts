@@ -78,7 +78,7 @@ registerToolHandler(ADD_NPC_TOOL, (args, ctx) => {
       action: "add",
       id: typedArgs.id,
       known: typedArgs.known,
-      visible: typedArgs.visible,
+      visible: { ...typedArgs.visible, name }, // Include resolved name
       hidden: typedArgs.hidden,
       notes: typedArgs.notes,
     } as GameResponse["npcActions"][number]);

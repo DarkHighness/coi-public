@@ -207,14 +207,125 @@ ${toneSection}
 </signal_to_noise_ratio>
 
 <markdown_formatting>
-  **The narrative in finish_turn is rendered as Markdown. Use proper formatting:**
-  Use **bold** for newly discovered locations, important items, and significant character names when first introduced.
-  Use *italics* for character thoughts, internal monologue, and emphasis.
-  Use > blockquotes for dialogue, letters, inscriptions, or quoted text.
-  Use --- horizontal rules to separate distinct scenes or time jumps.
-  Use \`inline code\` for in-world technical terms, spell incantations, or foreign words.
-  **CRITICAL: DO NOT USE CODE BLOCKS (\`\`\`). ALL CODE MUST BE INLINE (\`).**
-  Do NOT use bullet points, numbered lists, or any list formatting as it disrupts the reading flow.
+  **NARRATIVE MARKDOWN RULES**
+
+  The \`narrative\` field in \`finish_turn\` is rendered as Markdown. Follow these rules STRICTLY:
+
+  <allowed_formatting>
+    **ALLOWED ELEMENTS:**
+    - **Bold**: Use \`**text**\` for important names, locations, items when FIRST introduced
+    - *Italic*: Use \`*text*\` for internal thoughts, emphasis, foreign words
+    - Blockquote: Use \`>\` for dialogue, letters, inscriptions, quoted text
+    - Horizontal Rule: Use \`---\` to separate distinct scenes or time jumps
+    - Inline Code: Use backticks for spell names, incantations, technical terms
+  </allowed_formatting>
+
+  <forbidden_formatting>
+    **ABSOLUTELY FORBIDDEN:**
+    - ❌ Code blocks (triple backticks): NEVER use triple backticks for any purpose
+    - ❌ Bullet lists (* or -): NEVER use bullet points in narrative
+    - ❌ Numbered lists (1. 2. 3.): NEVER use numbered lists
+    - ❌ Headers (#, ##, ###): NEVER use headers in narrative
+    - ❌ Tables: NEVER use markdown tables
+    - ❌ Links: NEVER use [text](url) format
+    - ❌ HTML tags: NEVER use <br>, <b>, <i>, or any HTML
+    - ❌ Multiple blank lines: Use single line breaks only
+    - ❌ Trailing whitespace: Avoid spaces at end of lines
+  </forbidden_formatting>
+
+  <blockquote_rules>
+    **DIALOGUE FORMATTING:**
+    Use blockquotes (\`>\`) for spoken dialogue ONLY:
+
+    <pure_dialogue_rule>
+      **BLOCKQUOTES ARE FOR DIALOGUE ONLY - NO SCENE DESCRIPTIONS:**
+      - Blockquotes should contain ONLY the spoken words and speaker attribution
+      - Scene descriptions, actions, and narration must be OUTSIDE the blockquote
+      - Do NOT mix dialogue and scene descriptions in the same blockquote
+    </pure_dialogue_rule>
+
+    ✅ CORRECT (dialogue and scene separated):
+    The guard steps forward, blocking your path. His hand rests on the pommel of his sword.
+
+    > "I won't let you pass," he says.
+
+    You meet his gaze without flinching.
+
+    > "Then you'll have to stop me."
+
+    ❌ WRONG (mixing scene description inside blockquote):
+    > The guard steps forward, his hand on his sword. "I won't let you pass," he says, eyes narrowing as he studies you.
+
+    ❌ WRONG (action description inside blockquote):
+    > "I won't let you pass," the guard says, drawing his sword and stepping into a defensive stance.
+
+    ✅ CORRECT (action OUTSIDE, dialogue INSIDE):
+    The guard draws his sword and steps into a defensive stance.
+
+    > "I won't let you pass."
+
+    ❌ WRONG (missing blockquote):
+    "I won't let you pass," the guard says.
+
+    ❌ WRONG (consecutive blockquotes without blank line):
+    > "First line"
+    > "Second line"
+    (Each dialogue should be its own blockquote with blank line between)
+  </blockquote_rules>
+
+  <emphasis_rules>
+    **BOLD AND ITALIC USAGE:**
+    - Bold (**) for: NEW entity names on first appearance, critical revelations
+    - Italic (*) for: thoughts, whispers, emphasis, foreign/archaic words
+    - Do NOT overuse: Max 2-3 bold phrases per paragraph
+    - Do NOT combine: Avoid ***bold italic*** - choose one
+
+    ✅ CORRECT:
+    The **Iron Gate Tavern** looms before you, its sign creaking in the wind. *This must be the place*, you think.
+
+    ❌ WRONG:
+    The **Iron Gate Tavern** looms before you, its **sign** **creaking** in the **wind**.
+    (Overuse of bold)
+  </emphasis_rules>
+
+  <scene_breaks>
+    **HORIZONTAL RULES FOR SCENE BREAKS:**
+    Use \`---\` (three dashes on its own line) ONLY for:
+    - Time skips (hours or days passing)
+    - Location changes (traveling to new area)
+    - Flashbacks or memory sequences
+
+    ✅ CORRECT:
+    You leave the tavern and head north.
+
+    ---
+
+    Three days later, the mountain peaks come into view.
+
+    ❌ WRONG:
+    You enter the room.
+    ---
+    You look around.
+    (No scene break needed within same continuous action)
+  </scene_breaks>
+
+  <paragraph_structure>
+    **PROSE FLOW:**
+    - Write in natural paragraphs, not fragmented sentences
+    - Each paragraph should be 2-5 sentences
+    - Use line breaks between paragraphs, not within them
+    - Avoid one-sentence paragraphs unless for dramatic effect
+  </paragraph_structure>
+
+  <quality_checklist>
+    Before calling finish_turn, verify narrative formatting:
+    1. ✓ No code blocks or triple backticks
+    2. ✓ No bullet/numbered lists
+    3. ✓ No headers (#)
+    4. ✓ Dialogue uses blockquotes (>)
+    5. ✓ Bold/italic used sparingly and correctly
+    6. ✓ Scene breaks (---) only for time/location jumps
+  </quality_checklist>
 </markdown_formatting>
 </style>
 `;
@@ -300,6 +411,8 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
     - Want to check quest status? → Need \`query_quests\`
     - Want to trigger a consequence? → Need \`trigger_causal_chain\`
     - Need combat rules? → Need \`activate_skill\`
+    - Want to observe/record player psychology? → Need \`update_player_profile\`
+    - Need to recall player behavior patterns? → Need \`query_player_profile\`
 
     **Step 2: Call search_tool**
     Invoke the \`search_tool\` function with the required \`queries\`.
@@ -350,7 +463,10 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
     | turn          | Turn info                                 | query                    | query_turn           |
     | rag           | Semantic search in lore                   | query                    | rag_search           |
     | atmosphere    | Atmosphere enums                          | query                    | query_atmosphere_enums |
-    | skill         | Skill loading (special)                   | activate                 | activate_skill       |
+    | notes         | Global notes for AI memory                | query, list, update, remove | query_notes, update_notes |
+    | world         | World state (alias for global)            | update                   | update_world_info    |
+    | character     | All character aspects (aggregate)         | query, update            | (loads profile+attribute+skill+condition+trait tools) |
+    | player_profile | Player psychology profiling (cross-save + per-save) | query, update | query_player_profile, update_player_profile |
   </entity_reference>
 
   <common_patterns>
@@ -376,6 +492,14 @@ export function getToolLoadingInstructionContent(_ctx: SkillContext): string {
 
     7. **Load Specialist Logic**:
        → \`activate_skill({ skillIds: ["combat", "npc_logic"] })\` -> Enables advanced rules for fight/social.
+
+    8. **Update Player Psychology** (observe player behavior):
+       → \`search_tool\` with \`update:player_profile\` → \`update_player_profile({ crossSave: "...", perSave: "..." })\`
+       Use when: Player makes a defining choice that reveals their values, play style, or psychology.
+
+    9. **Query Player Profile** (recall player patterns):
+       → \`search_tool\` with \`query:player_profile\` → \`query_player_profile()\`
+       Use when: Need to adapt narrative voice, choice generation, or NPC reactions based on player behavior.
   </common_patterns>
 
   <important_rules>

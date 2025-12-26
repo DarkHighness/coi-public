@@ -326,7 +326,7 @@ export const generateVeoScript = async (
   gameState: GameState,
   history: StorySegment[],
   language: string = "English",
-): Promise<string> => {
+): Promise<{ script: string; log: LogEntry }> => {
   const prompt = getVeoScriptPrompt(gameState, history, language);
 
   const providerInfo = getProviderConfig(settings, "script");
@@ -357,7 +357,7 @@ export const generateVeoScript = async (
 
   try {
     const provider = createProvider(instance);
-    const { result } = await provider.generateChat({
+    const { result, usage, raw } = await provider.generateChat({
       modelId,
       systemInstruction: sys,
       messages: contents,
@@ -369,10 +369,26 @@ export const generateVeoScript = async (
       topK,
       minP,
     });
-    // result should be the text string since no schema was provided
-    return typeof result === "string" ? result : JSON.stringify(result);
+
+    const script = typeof result === "string" ? result : JSON.stringify(result);
+
+    const log = createLogEntry({
+      provider: instance.protocol,
+      model: modelId,
+      endpoint: "generateVeoScript",
+      response: raw,
+      usage,
+    });
+
+    return { script, log };
   } catch (e: unknown) {
     console.error("Veo script generation failed", e);
-    return "Failed to generate script.";
+    const log = createLogEntry({
+      provider: instance.protocol,
+      model: modelId,
+      endpoint: "generateVeoScript",
+      response: { error: e instanceof Error ? e.message : String(e) },
+    });
+    return { script: "Failed to generate script.", log };
   }
 };

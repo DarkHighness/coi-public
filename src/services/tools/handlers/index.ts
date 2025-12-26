@@ -20,6 +20,10 @@ import "./notesHandlers";
 import "./listHandler";
 import "./unlockHandler";
 import "./playerProfileHandlers";
+import "./storyQueryHandlers";
+import "./ragSearchHandler";
+import "./outlineHandler";
+import "./summaryHandlers";
 
 // Re-export registry functions for convenience
 export {
