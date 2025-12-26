@@ -707,6 +707,7 @@ function AppContent() {
     theme: string,
     customContext?: string,
     seedImage?: Blob,
+    protagonistFeature?: string,
   ) => {
     if (await performValidation()) {
       setStreamedText("");
@@ -727,6 +728,7 @@ function AppContent() {
         (progress) => setPhaseProgress(progress),
         undefined, // existingSlotId - not resuming
         seedImage, // Pass seedImage blob for IndexedDB storage
+        protagonistFeature,
       );
     }
   };

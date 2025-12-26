@@ -6,7 +6,7 @@ import { useIsMobile } from "../hooks/useMediaQuery";
 
 interface ThemeSelectorProps {
   themes: Record<string, StoryThemeConfig>;
-  onSelect: (theme: string) => void;
+  onSelect: (theme: string, protagonistFeature?: string) => void;
   onPreviewTheme?: (theme: string | null) => void;
   onBack?: () => void;
 }

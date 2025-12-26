@@ -600,6 +600,13 @@
     "Unknown": "未知",
     "palace": "宫殿"
   },
+  "selectYourIdentity": "选择你的身份",
+  "recommendedRoles": "推荐角色",
+  "customIdentity": "或者创建你自己的",
+  "customRolePlaceholder": "例如：一个穿越的时间刺客...",
+  "skipSelection": "跳过 / 无偏好",
+  "back": "返回",
+  "availableRoles": "可选身份",
 
   "gameStateViewer": {
     "title": "游戏状态查看器",

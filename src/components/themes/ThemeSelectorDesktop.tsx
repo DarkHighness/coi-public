@@ -7,12 +7,14 @@ import { ThemeFilters } from "./ThemeFilters";
 import { ThemeCard } from "./ThemeCard";
 import { MarkdownText } from "../render/MarkdownText";
 import { Pagination } from "./Pagination";
+import { RoleSelectionModal } from "./RoleSelectionModal";
+import i18n from "../../utils/i18n";
 
 const ITEMS_PER_PAGE = 12; // 4 rows x 3 columns
 
 interface ThemeSelectorDesktopProps {
   themes: Record<string, StoryThemeConfig>;
-  onSelect: (theme: string) => void;
+  onSelect: (theme: string, protagonistFeature?: string) => void;
   onPreviewTheme?: (theme: string | null) => void;
   onBack?: () => void;
 }
@@ -28,6 +30,10 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [roleSelectionTheme, setRoleSelectionTheme] = useState<string | null>(
+    null,
+  );
 
   const handlePreview = (key: string) => {
     setPreviewTheme(key);
@@ -276,6 +282,41 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Role Preview */}
+                  {(() => {
+                    const roles = t(`${previewTheme}.protagonist_preference`, {
+                      ns: "themes",
+                      returnObjects: true,
+                    }) as string[] | undefined;
+
+                    if (!Array.isArray(roles) || roles.length === 0)
+                      return null;
+
+                    return (
+                      <div className="space-y-3 pt-4 border-t border-theme-border/50 animate-fade-in animation-delay-300">
+                        <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-theme-secondary/70"></span>
+                          {t("availableRoles", "Possible Identities")}
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {roles.slice(0, 8).map((role, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1.5 bg-theme-surface-highlight/30 border border-theme-border/50 rounded-lg text-theme-text/80 text-xs font-medium backdrop-blur-sm"
+                            >
+                              {role.split(" (")[0]}
+                            </span>
+                          ))}
+                          {roles.length > 8 && (
+                            <span className="px-3 py-1.5 text-theme-muted text-xs font-medium italic opacity-70">
+                              +{roles.length - 8}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -284,8 +325,14 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
             <div className="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface-highlight/10">
               <button
                 onClick={() => {
-                  onSelect(previewTheme);
-                  closePreview();
+                  const prefs = t(`${previewTheme}.protagonist_preference`, {
+                    ns: "themes",
+                    returnObjects: true,
+                  }) as string[] | undefined;
+
+                  // Always show selection, even if prefs is empty (to support custom roles)
+                  setRoleSelectionTheme(previewTheme);
+                  setShowRoleSelection(true);
                 }}
                 className="w-full py-4 rounded-xl bg-theme-primary text-theme-bg font-bold text-lg uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(var(--theme-primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.5)]"
               >
@@ -300,6 +347,29 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
             onClick={closePreview}
           />
         </>
+      )}
+
+      {showRoleSelection && roleSelectionTheme && (
+        <RoleSelectionModal
+          themeKey={roleSelectionTheme}
+          roles={((): string[] => {
+            const r = t(`${roleSelectionTheme}.protagonist_preference`, {
+              ns: "themes",
+              returnObjects: true,
+            });
+            return Array.isArray(r) ? (r as string[]) : [];
+          })()}
+          onSelect={(role) => {
+            onSelect(roleSelectionTheme, role);
+            setShowRoleSelection(false);
+            setRoleSelectionTheme(null);
+            closePreview();
+          }}
+          onCancel={() => {
+            setShowRoleSelection(false);
+            setRoleSelectionTheme(null);
+          }}
+        />
       )}
     </div>
   );

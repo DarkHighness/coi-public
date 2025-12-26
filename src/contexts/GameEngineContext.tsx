@@ -99,6 +99,7 @@ export interface GameEngineActions {
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
     existingSlotId?: string,
     seedImage?: Blob,
+    protagonistFeature?: string,
   ) => Promise<void>;
   /** Resume outline generation from saved state */
   resumeOutlineGeneration: (

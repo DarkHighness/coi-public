@@ -73,7 +73,12 @@ const SaveManager = lazy(() =>
 );
 
 interface StartScreenProps {
-  onStart: (theme: string, customContext?: string, seedImage?: Blob) => void;
+  onStart: (
+    theme: string,
+    customContext?: string,
+    seedImage?: Blob,
+    protagonistFeature?: string,
+  ) => void;
   onContinue: () => void;
   onLoad: (file: File) => void;
   onOpenSaves: () => void;
@@ -175,10 +180,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     onThemePreview?.(null); // Reset to original (null means no preview override)
   };
 
-  const handleStart = (theme: string, customContext?: string) => {
+  const handleStart = (
+    theme: string,
+    customContext?: string,
+    protagonistFeature?: string,
+  ) => {
     setIsZooming(true);
     setTimeout(() => {
-      onStart(theme, customContext, seedImage || undefined);
+      onStart(theme, customContext, seedImage || undefined, protagonistFeature);
     }, 1500); // Match animation duration
   };
 
@@ -472,7 +481,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 {!isDesktop && (
                   <ThemeSelector
                     themes={THEMES}
-                    onSelect={(theme) => handleStart(theme, customContext)}
+                    onSelect={(theme, role) =>
+                      handleStart(theme, customContext, role)
+                    }
                     onPreviewTheme={onThemePreview}
                     onBack={exitThemeSelect}
                   />
@@ -493,7 +504,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         <div className="absolute inset-0 z-50 animate-fade-in">
           <ThemeSelector
             themes={THEMES}
-            onSelect={(theme) => handleStart(theme, customContext)}
+            onSelect={(theme, role) => handleStart(theme, customContext, role)}
             onPreviewTheme={onThemePreview}
             onBack={exitThemeSelect}
           />

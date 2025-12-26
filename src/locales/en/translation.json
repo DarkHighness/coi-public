@@ -606,6 +606,13 @@
     "palace": "Palace",
     "Unknown": "Unknown"
   },
+  "selectYourIdentity": "Choose Your Identity",
+  "recommendedRoles": "Recommended Roles",
+  "customIdentity": "Or Create Your Own",
+  "customRolePlaceholder": "e.g., A time-traveling chef...",
+  "skipSelection": "Skip / No Preference",
+  "back": "Back",
+  "availableRoles": "Possible Identities",
   "envThemeNames": {
     "fantasy": "Fantasy",
     "scifi": "Sci-Fi",

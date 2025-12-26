@@ -88,6 +88,8 @@ export interface PhasedOutlineOptions {
   slotId?: string;
   /** Base64 encoded image data URL for image-based story start (triggers Phase 0) */
   seedImageBase64?: string;
+  /** Optional protagonist feature/role selected by user */
+  protagonistFeature?: string;
 }
 
 /**
@@ -164,6 +166,7 @@ export const generateStoryOutlinePhased = async (
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
     settings.extra?.genderPreference,
+    options.protagonistFeature,
   );
 
   // Inject custom prompts if needed
@@ -218,6 +221,7 @@ Generate a story outline in ${totalPhases} phases (Phases ${phaseRange}). Each p
 Theme: ${theme}
 Language: ${language}
 ${customContext ? `Custom Context: ${customContext}` : ""}
+${options.protagonistFeature ? `User Selected Protagonist Role: ${options.protagonistFeature}` : ""}
 ${hasImage ? `\n**An image has been provided by the user.** This image should inspire the story world and atmosphere. Start with Phase 0 to analyze the image.` : ""}
 
 **PROCESS:**
@@ -487,6 +491,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       language,
       customContext,
       !!options.seedImageBase64,
+      options.protagonistFeature,
     );
     if (phasePrompt) {
       // Dynamically append tool usage emphasis

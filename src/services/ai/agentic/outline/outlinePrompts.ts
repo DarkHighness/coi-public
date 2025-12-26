@@ -27,6 +27,7 @@ export function getPhasePrompt(
   language: string,
   customContext?: string,
   hasImageContext?: boolean,
+  protagonistFeature?: string,
 ): string | null {
   switch (phase) {
     case 0:
@@ -37,9 +38,10 @@ export function getPhasePrompt(
         language,
         customContext,
         hasImageContext,
+        protagonistFeature,
       );
     case 2:
-      return getOutlinePhase2Prompt();
+      return getOutlinePhase2Prompt(protagonistFeature);
     case 3:
       return getOutlinePhase3Prompt();
     case 4:

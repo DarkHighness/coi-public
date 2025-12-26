@@ -312,6 +312,7 @@ export const useGameEngine = () => {
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
     existingSlotId?: string,
     seedImage?: Blob,
+    protagonistFeature?: string,
   ) => {
     // For image-based starts (seedImage provided with no theme), keep theme empty
     // so outline.ts can detect isImageBasedStart and let Phase 0 generate context
@@ -413,6 +414,8 @@ export const useGameEngine = () => {
           slotId,
           // Pass seed image for Phase 0 vision analysis
           seedImageBase64,
+          // Pass protagonist feature
+          protagonistFeature,
           // Save conversation state after each phase for fault recovery
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,

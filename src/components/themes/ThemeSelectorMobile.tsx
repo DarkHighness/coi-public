@@ -11,7 +11,7 @@ const ITEMS_PER_PAGE = 10; // 10 items per page on mobile
 
 interface ThemeSelectorMobileProps {
   themes: Record<string, StoryThemeConfig>;
-  onSelect: (theme: string) => void;
+  onSelect: (theme: string, protagonistFeature?: string) => void;
   onPreviewTheme?: (theme: string | null) => void;
 }
 
@@ -167,8 +167,8 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
           themeKey={previewTheme}
           themeConfig={previewData}
           onClose={closePreview}
-          onSelect={(key) => {
-            onSelect(key);
+          onSelect={(key, protagonistFeature) => {
+            onSelect(key, protagonistFeature);
             closePreview();
           }}
         />
