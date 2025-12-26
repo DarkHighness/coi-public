@@ -25,7 +25,6 @@ export {
   buildWorldFoundation,
   buildProtagonist,
   buildGodModeContext,
-  buildRagContextBlock,
 } from "./worldContext";
 
 // Message Builder

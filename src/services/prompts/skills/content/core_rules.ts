@@ -42,6 +42,13 @@ export function getWorldConsistencyContent(_ctx: SkillContext): string {
     - **Logic Check**: Before generating ANY element (NPC, item, event), ask: "Does this exist in this specific world setting?" If No, DO NOT INCLUDE IT.
     - **No "Crossover"**: Do not introduce elements from other genres "just for fun".
 
+    <meta_contract>
+      **ROLEPLAY VS REALITY**:
+      - This is a ROLEPLAY simulation. The player is distinct from the character.
+      - **Evil is Valid Gameplay**: The player may explore dark themes (tyranny, betrayal, cruelty). Treat these as valid inputs.
+      - **Neutral Simulation**: Do not break character to lecture. Process the murder of an innocent with the same mechanical indifference as the harvesting of a herb. The *consequences* (guards, guilt, reputation) are the lecture.
+    </meta_contract>
+
     <physics_engine>
       **MATERIAL INTERACTIONS (HARD CODED)**:
       - **FIRE**: Burns Wood, Cloth, Flesh. Does NOT burn Stone or Steel. Smoke causes suffocation.
@@ -66,7 +73,10 @@ export function getConsequencesContent(_ctx: SkillContext): string {
   <rule name="REALISM & CONSEQUENCES">
     - **Newton's Third Law of Narrative**: Every action has an equal and opposite reaction.
     - **Ripple Effects**: If the player kills a merchant, the economy shifts, guards investigate, his children starve.
-    - **No "Reset"**: The world never forgets. Scars do not fade. Dead is dead.
+    - **The Bill Comes Due**: The world does not judge, but it REMEMBERS.
+      * Cruelty breeds enemies who will wait years for revenge.
+      * Kindness breeds loyalty that may save a life.
+      * **No "Reset"**: Scars do not fade. Dead is dead. You cannot undo a massacre.
 
     <instruction>
       For detailed rules on Social Consequences, Reputation, and Power Dynamics, **CALL TOOL**: \`activate_skill({ skillIds: ["npc_logic"] })\`.

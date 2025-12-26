@@ -66,14 +66,3 @@ export function buildGodModeContext(gameState: GameState): string {
 GOD MODE ACTIVE: Player has absolute power. All actions succeed. NPCs obey unconditionally.
 </god_mode>`;
 }
-
-/**
- * Build RAG context block
- */
-export function buildRagContextBlock(ragContext?: string): string {
-  if (!ragContext?.trim()) return "";
-
-  return `<semantic_context>
-${ragContext}
-</semantic_context>`;
-}

@@ -144,7 +144,6 @@ export const generateAdventureTurn = async (
   const { contextMessages, userMessage, godModeContext } = buildTurnMessages(
     gameState,
     context.userAction,
-    ragContext,
   );
 
   // Log injected rules and NSFW mode

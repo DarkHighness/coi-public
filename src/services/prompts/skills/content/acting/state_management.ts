@@ -154,13 +154,19 @@ export function getIdGenerationContent(_ctx: SkillContext): string {
     \`\`\`
   </rule>
 
-  <rule name="MINIMAL ENTITY PRINCIPLE - CANONIZATION OVER CREATION">
-    ⚠️ **CRITICAL: DO NOT POLLUTE THE DATABASE**
+    <rule name="MINIMAL ENTITY PRINCIPLE - QUALITY OVER QUANTITY">
+    ⚠️ **CRITICAL: AVOID BLOAT, BUT MAXIMIZE DEPTH**
 
     **THE PRINCIPLE**:
+    - **Minimal Quantity**: Do not create entities for trivial background noise (crowds, debris).
+    - **Maximum Quality**: If you DO create an entity (NPC, Item, Location), it must be **RICH, DETAILED, AND HISTORICALLY GROUNDED**.
+    - **Contextual Integration**: Newly created entities must integrate with the existing world state.
+      * If there is a plague, a new NPC should be coughing or wearing a mask.
+      * If there was a fire, a new building should have scorch marks or be a rebuild.
+
     - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
-    - **Depth > Breadth**: It is better to have one NPC with 10 note updates than 10 shallow NPCs.
+    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Query it first.
 
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.

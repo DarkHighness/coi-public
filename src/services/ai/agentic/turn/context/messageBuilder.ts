@@ -15,17 +15,13 @@ import {
   buildWorldFoundation,
   buildProtagonist,
   buildGodModeContext,
-  buildRagContextBlock,
 } from "./worldContext";
 
 /**
  * Build initial context messages for the agentic loop.
  * Returns messages in order: static context -> RAG context -> dynamic context
  */
-export function buildInitialContext(
-  gameState: GameState,
-  ragContext?: string,
-): UnifiedMessage[] {
+export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
   const messages: UnifiedMessage[] = [];
 
   // === 1. World Foundation (Static) ===
@@ -46,27 +42,15 @@ export function buildInitialContext(
     });
   }
 
-  // === 2. RAG Context (Semi-dynamic) ===
-  const ragBlock = buildRagContextBlock(ragContext);
-  if (ragBlock) {
-    messages.push(createUserMessage(`[CONTEXT: Relevant Lore]\n${ragBlock}`));
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[Lore context acknowledged.]" }],
-    });
-  }
-
-  // === 3. Dynamic Context (God Mode, Current Situation) ===
+  // === 2. Dynamic Context (God Mode) ===
   const godModeContext = buildGodModeContext(gameState);
-  messages.push(
-    createUserMessage(`[CONTEXT: Current Situation]\n${godModeContext}`),
-  );
+  messages.push(createUserMessage(`[CONTEXT: God Mode]\n${godModeContext}`));
   messages.push({
     role: "assistant",
     content: [
       {
         type: "text",
-        text: "[Current situation acknowledged. Awaiting player action.]",
+        text: "[Awaiting player action.]",
       },
     ],
   });
@@ -81,9 +65,8 @@ export function buildInitialContext(
 export function buildTurnMessages(
   gameState: GameState,
   userAction: string,
-  ragContext?: string,
 ): TurnMessagesResult {
-  const contextMessages = buildInitialContext(gameState, ragContext);
+  const contextMessages = buildInitialContext(gameState);
 
   // Wrap user action with marker
   const markedAction = userAction.startsWith("[SUDO]")

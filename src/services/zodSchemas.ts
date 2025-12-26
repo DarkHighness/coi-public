@@ -735,7 +735,7 @@ export const conditionSchema = z.object({
     .string()
     .nullish()
     .describe("Severity level (e.g. Mild, Severe). Must in target language."),
-  startTime: z.number().nullish().describe("When the condition started."),
+  startTime: z.string().nullish().describe("When the condition started."),
   unlocked: z
     .boolean()
     .nullish()
