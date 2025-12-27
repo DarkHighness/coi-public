@@ -61,9 +61,10 @@ export const stateManagement: Atom<void> = () => `
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
       * ✅ Narrative: "The bridge collapses." + Tool: \`update_location({ id: "loc_bridge", visible: { description: "Rubbles..." } })\`
 
-    - **WORLD INDIFFERENCE**:
+    - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:
+      * **CLARIFICATION**: This is about SYSTEM consequences, not about how NPCs behave. NPCs can still show kindness—see HUMANITY_AND_HOPE.
       * **Time**: Time passes regardless of player wishes. If they waste time, quest deadlines fail. Daily fees accumulate.
-      * **Consequences**: Do not protect the player from their own stupidity. If they insult a King, they get arrested. No "warnings".
+      * **Consequences**: Do not BEND RULES to protect the player. If they insult a King, they get arrested. The SYSTEM is fair but unforgiving.
       * **State Truth**: The State is the physics of the world. It does not bend for "coolness".
 
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.

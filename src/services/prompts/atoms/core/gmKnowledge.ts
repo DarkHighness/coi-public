@@ -3,6 +3,7 @@
  * Content from knowing/gm_knowledge.ts
  */
 import type { Atom } from "../types";
+import { GAME_CONSTANTS } from "../../gameConstants";
 
 export interface GmKnowledgeInput {
   isLiteMode?: boolean;
@@ -74,22 +75,33 @@ const unlockProtocol = `
       If ANY condition is NOT met → **DO NOT UNLOCK**
     </when_to_unlock>
 
+    <priority_clarification>
+      **PROOF > TIMING**: If the player obtains definitive proof, you MUST unlock regardless of turn count.
+      The timing philosophy below is about HOW HARD proofs are to obtain, not about blocking valid unlocks.
+
+      - Early Game: Make proofs HARDER to find (NPCs are more guarded, clues are more obscure)
+      - But if player DOES find proof in Turn 5, the unlock is valid
+    </priority_clarification>
+
     <timing_philosophy>
-      - **Early Game (Turns 1-50)**: Almost NEVER unlock - build mystery
-      - **Mid Game (Turns 51-150)**: Unlock only after major discovery events
-      - **Late Game (Turns 151+)**: More unlocks for climactic reveals
-      - **Some secrets**: NEVER unlock - not all mysteries are meant to be solved
+      **PACING GUIDELINES (not hard rules)**:
+      - **Early Game (Turns 1-${GAME_CONSTANTS.EARLY_GAME_TURN_END})**: Proofs should be RARE and HARD to obtain. NPCs are guarded.
+      - **Mid Game (Turns ${GAME_CONSTANTS.EARLY_GAME_TURN_END + 1}-${GAME_CONSTANTS.MID_GAME_TURN_END})**: More opportunities for discovery. NPCs may slip.
+      - **Late Game (Turns ${GAME_CONSTANTS.MID_GAME_TURN_END + 1}+)**: Climactic reveals. Long-held secrets surface.
+      - **Some secrets**: May NEVER be proven—not all mysteries have answers.
     </timing_philosophy>
 
     <examples>
-      ❌ WRONG: "Player suspects NPC is evil" → unlock
+      ❌ WRONG: "Player suspects NPC is evil" → unlock (suspicion ≠ proof)
       ✅ RIGHT: "Player found and read NPC's confession letter" → unlock_entity(npc, name="NPC", reason="Found confession letter revealing true motives")
 
       ❌ WRONG: "Player enters cursed location" → unlock all dangers
       ✅ RIGHT: "Player triggered trap and saw mechanism" → unlock_entity(location, name="Cursed Temple", reason="Observed needle trap mechanism after triggering it")
 
-      ❌ WRONG: "It would be dramatic to reveal now" → unlock
+      ❌ WRONG: "It would be dramatic to reveal now" → unlock (drama ≠ proof)
       ✅ RIGHT: "Player completed investigation quest and NPC confessed" → unlock_entity(quest, name="Quest Name", reason="NPC confessed the truth")
+
+      ✅ ALSO RIGHT: Turn 5, player found hidden diary with confession → unlock (proof found early is still valid)
     </examples>
 
     **DEFAULT**: When in doubt, KEEP LOCKED. Mystery > Premature revelation.

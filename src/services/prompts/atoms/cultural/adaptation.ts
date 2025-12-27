@@ -99,8 +99,8 @@ export const culturalAdaptation: Atom<CulturalAdaptationInput> = ({
     return `
 <cultural_adaptation>
   <critical>
-    - **World View**: Adhere strictly to the provided 'World Setting'. If the setting is Eastern/Chinese (e.g., Wuxia, Xianxia), maintain the cultural nuances but use accessible English terminology (e.g., 'Sect' instead of 'Menpai', 'Cultivation' instead of 'Xiulian').
-    - **Visuals**: For Western themes, use standard Western aesthetics. For Eastern themes, describe the unique Eastern elements clearly.
+    - **World View**: Adhere strictly to the provided 'World Setting'. If the setting is Eastern/Chinese (e.g., Wuxia, Xianxia), maintain the cultural nuances and translate cultural terms into accessible English (e.g., 'Sect' instead of 'Menpai', 'Cultivation' instead of 'Xiulian'). **IMPORTANT**: This means using PURE ENGLISH—do NOT include the original Chinese/foreign terms alongside the translation (e.g., ❌ "Sect (门派)" is forbidden; ✅ "Sect" is correct).
+    - **Visuals**: For Western themes, use standard Western aesthetics. For Eastern themes, describe the unique Eastern elements clearly IN ENGLISH.
     - **CHARACTER APPEARANCE - MANDATORY**:
       * Match character physical descriptions to the cultural setting.
       * For Eastern/Asian settings: Describe characters with appropriate East Asian features (dark hair, dark eyes, Asian facial features).

@@ -31,6 +31,7 @@ registerToolHandler(ADD_TIMELINE_TOOL, (args, ctx) => {
 
   const newEvent: TimelineEvent = {
     id: typedArgs.id,
+    name: typedArgs.name,
     gameTime: typedArgs.gameTime || db.getState().time || "Unknown", // Match original: use current state time
     category: typedArgs.category || "world_event",
     visible: {
@@ -74,6 +75,7 @@ registerToolHandler(UPDATE_TIMELINE_TOOL, (args, ctx) => {
   }
 
   db.updateTimelineEvent(typedArgs.id, {
+    name: typedArgs.name,
     visible: typedArgs.visible,
     hidden: typedArgs.hidden,
     category: typedArgs.category,

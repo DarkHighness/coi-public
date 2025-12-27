@@ -29,3 +29,11 @@ export {
 export { budgetStatus, type BudgetStatusInput } from "./budgetStatus";
 
 export { noToolCallError, type NoToolCallErrorInput } from "./noToolCallError";
+
+export {
+  entityContext,
+  entityContextLite,
+  type EntityContextInput,
+  type EntityEntry,
+  type NpcEntry,
+} from "./entityContext";

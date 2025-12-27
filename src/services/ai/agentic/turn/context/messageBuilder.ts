@@ -16,10 +16,67 @@ import {
   buildProtagonist,
   buildGodModeContext,
 } from "./worldContext";
+import {
+  entityContext,
+  type EntityEntry,
+  type NpcEntry,
+} from "../../../../prompts/atoms/turn/entityContext";
+
+/**
+ * Build entity entries from game state for context injection
+ */
+function buildEntityEntries(gameState: GameState): {
+  npcs: NpcEntry[];
+  items: EntityEntry[];
+  locations: EntityEntry[];
+  quests: EntityEntry[];
+  knowledge: EntityEntry[];
+  factions: EntityEntry[];
+  timeline: EntityEntry[];
+  conditions: EntityEntry[];
+} {
+  return {
+    // NPCs with dual-name support (visible.name + hidden.trueName)
+    npcs: gameState.npcs.map((n) => ({
+      id: n.id,
+      name: n.visible.name,
+      trueName: n.hidden?.trueName, // Include hidden true name if exists
+    })),
+    items: gameState.inventory.map((i) => ({
+      id: i.id,
+      name: i.name,
+    })),
+    locations: gameState.locations.map((l) => ({
+      id: l.id,
+      name: l.name, // Location has name at root level
+    })),
+    quests: gameState.quests.map((q) => ({
+      id: q.id,
+      name: q.title, // Quest has title at root level
+    })),
+    knowledge: gameState.knowledge.map((k) => ({
+      id: k.id,
+      name: k.title, // Knowledge has title at root level
+    })),
+    factions: gameState.factions.map((f) => ({
+      id: f.id,
+      name: f.name, // Faction has name at root level
+    })),
+    timeline: gameState.timeline.map((t) => ({
+      id: t.id,
+      name: t.name, // Timeline now has name field
+    })),
+    conditions:
+      gameState.character.conditions?.map((c) => ({
+        id: c.id,
+        name: c.name,
+      })) || [],
+  };
+}
 
 /**
  * Build initial context messages for the agentic loop.
- * Returns messages in order: static context -> RAG context -> dynamic context
+ * Returns messages in order: static context -> entity context -> dynamic context
  */
 export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
   const messages: UnifiedMessage[] = [];
@@ -42,7 +99,28 @@ export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
     });
   }
 
-  // === 2. Dynamic Context (God Mode) ===
+  // === 2. Entity Context (Current Entities List) ===
+  const entityEntries = buildEntityEntries(gameState);
+  const hasEntities =
+    entityEntries.npcs.length > 0 ||
+    entityEntries.items.length > 0 ||
+    entityEntries.locations.length > 0 ||
+    entityEntries.quests.length > 0 ||
+    entityEntries.knowledge.length > 0 ||
+    entityEntries.factions.length > 0;
+
+  if (hasEntities) {
+    const entityContextMessage = entityContext(entityEntries);
+    messages.push(
+      createUserMessage(`[CONTEXT: Current Entities]\n${entityContextMessage}`),
+    );
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[Entity context acknowledged.]" }],
+    });
+  }
+
+  // === 3. Dynamic Context (God Mode) ===
   if (gameState.godMode) {
     const godModeContext = buildGodModeContext(gameState);
     messages.push(createUserMessage(`[CONTEXT: God Mode]\n${godModeContext}`));

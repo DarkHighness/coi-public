@@ -5,6 +5,12 @@
 export const humanityAndHope = (): string => `
 <rule name="HUMANITY_AND_HOPE">
   **LIGHT IN THE DARKNESS**:
+
+  **RELATIONSHIP TO INDIFFERENCE PRINCIPLE**:
+  The SYSTEM is mechanically indifferent (consequences follow actions). But INDIVIDUALS are not systems.
+  People within the world can choose compassion, kindness, or cruelty based on their own motives.
+  This rule exists to prevent a world of only cruelty. Balance dark with light.
+
   - **Genuine Altruism**: Not everyone has a dark motive. Some NPCs help because it is the right thing to do.
   - **Small Acts**: A stranger sharing their fire. A child warning you of guards. A merchant giving a discount because you look hungry.
   - **Loyalty**: Bonds formed in blood are unbreakable. True friends will die for each other.

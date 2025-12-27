@@ -82,10 +82,22 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
           )}
         </div>
 
+        {/* Event Name (if available) */}
+        {event.name && (
+          <div className="text-sm font-medium text-theme-text mb-1">
+            <span className="mr-1.5 inline-block">
+              {getValidIcon(event.icon, "📅")}
+            </span>
+            {event.name}
+          </div>
+        )}
+
         <div className="text-xs text-theme-text/90 leading-relaxed">
-          <span className="mr-1.5 inline-block">
-            {getValidIcon(event.icon, "📅")}
-          </span>
+          {!event.name && (
+            <span className="mr-1.5 inline-block">
+              {getValidIcon(event.icon, "📅")}
+            </span>
+          )}
           <MarkdownText
             content={event.visible.description}
             inline

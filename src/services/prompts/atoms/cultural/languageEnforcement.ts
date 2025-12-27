@@ -14,46 +14,201 @@ export type LanguageEnforcementInput = {
 };
 
 /**
+ * Helper function to check if language is Chinese family
+ */
+const isChineseFamily = (language: string): boolean =>
+  [
+    "zh",
+    "zh-CN",
+    "zh-TW",
+    "Chinese",
+    "Chinese (Simplified)",
+    "Chinese (Traditional)",
+  ].some((l) => language.includes(l) || l.includes(language));
+
+/**
+ * Helper function to get language-specific examples
+ */
+const getExamples = (language: string) => {
+  if (isChineseFamily(language)) {
+    return {
+      npcNameWrong1: `"name": "法海 (Fahai)"`,
+      npcNameWrong2: `"name": "Fahai / 法海"`,
+      npcNameCorrect: `"name": "法海"`,
+      titleWrong1: `"title": "孤傲的孽龙公子 (The Desolate Dragon Prince)"`,
+      titleWrong2: `"title": "Dragon Prince - 龙太子"`,
+      titleCorrect: `"title": "孤傲的孽龙公子"`,
+      locationWrong1: `"name": "黑龙潭 (Black Dragon Pool)"`,
+      locationWrong2: `"name": "Black Dragon Pool / 黑龙潭"`,
+      locationCorrect: `"name": "黑龙潭"`,
+      npcTypeWrong1: `"npcType": "引导者 / Mentor"`,
+      npcTypeWrong2: `"npcType": "Guide / 向导"`,
+      npcTypeCorrect: `"npcType": "引导者"`,
+      statusWrong: `"status": "虚弱 (Weakened)"`,
+      statusCorrect: `"status": "虚弱"`,
+      raceWrong: `"race": "黑龙族 男性 (Black Dragon Male)"`,
+      raceCorrect: `"race": "黑龙族男性"`,
+      mixedTermsWrong: `"Level up你的技能", "NPC对话", "HP恢复"`,
+      mixedTermsCorrect: `"提升你的技能", "角色对话", "生命值恢复"`,
+      parenWrong1: `"一个战士（A Warrior）"`,
+      parenWrong2: `"A sword (一把剑)"`,
+      parenCorrect: `"一个战士"`,
+      inlineWrong: `"他是战士 - He is a warrior"`,
+      inlineCorrect: `"他是战士"`,
+      // Lite version examples
+      liteForbidden: `"法海 (Fahai)", "黑龙潭 (Black Dragon Pool)", "npcType: 引导者/Guide"`,
+      liteCorrect: `"法海", "黑龙潭", "npcType: 引导者"`,
+    };
+  }
+
+  // English and other languages - use generic placeholders
+  return {
+    npcNameWrong1: `"name": "John (约翰)"`,
+    npcNameWrong2: `"name": "ジョン / John"`,
+    npcNameCorrect: `"name": "John"`,
+    titleWrong1: `"title": "Dragon Slayer (屠龙者)"`,
+    titleWrong2: `"title": "屠龙者 - Dragon Slayer"`,
+    titleCorrect: `"title": "Dragon Slayer"`,
+    locationWrong1: `"name": "Black Pool (黒い池)"`,
+    locationWrong2: `"name": "黑龙潭 / Black Dragon Pool"`,
+    locationCorrect: `"name": "Black Dragon Pool"`,
+    npcTypeWrong1: `"npcType": "Mentor / 导师"`,
+    npcTypeWrong2: `"npcType": "导师 / Mentor"`,
+    npcTypeCorrect: `"npcType": "Mentor"`,
+    statusWrong: `"status": "Weakened (虚弱)"`,
+    statusCorrect: `"status": "Weakened"`,
+    raceWrong: `"race": "Dragon Male (龙族男性)"`,
+    raceCorrect: `"race": "Black Dragon Male"`,
+    mixedTermsWrong: `"提升你的Level", "NPC对话", "HP回復"`,
+    mixedTermsCorrect: `"Level up your skills", "Character dialogue", "Health recovery"`,
+    parenWrong1: `"a warrior（戦士）"`,
+    parenWrong2: `"一把剑 (a sword)"`,
+    parenCorrect: `"a warrior"`,
+    inlineWrong: `"He is a warrior - 他是战士"`,
+    inlineCorrect: `"He is a warrior"`,
+    // Lite version examples
+    liteForbidden: `"John (约翰)", "Black Pool (黒池)", "npcType: Mentor/导师"`,
+    liteCorrect: `"John", "Black Pool", "npcType: Mentor"`,
+  };
+};
+
+/**
  * 语言强制规则 - 完整版
  */
 export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
   language,
-}) => `
+}) => {
+  const ex = getExamples(language);
+
+  return `
 <language_enforcement_protocol>
   <critical_directive>
+    ⚠️ ABSOLUTE LANGUAGE PURITY REQUIRED ⚠️
     TARGET LANGUAGE: ${language}
+    ALL user-facing content MUST be in ${language} ONLY.
   </critical_directive>
-  <rules>
-    1. **Narrative & Dialogue**: MUST be in ${language}.
-    2. **UI Text & Choices**: MUST be in ${language}.
-    3. **Consistency**: Do NOT revert to English even if the input/context contains English.
-    4. **NO LANGUAGE MIXING (STRICT)**:
-        - ❌ FORBIDDEN: Parenthetical translations like "一个男人（A Man）" or "A sword (一把剑)".
-        - ❌ FORBIDDEN: Inline translations like "他是一个战士 - He is a warrior".
-        - ❌ FORBIDDEN: Mixed phrases like "这个Quest很重要", "Level up你的技能", "NPC的对话".
-        - ❌ FORBIDDEN: Dual-language descriptions in any field (e.g., "Appearance: 黑发 (Black hair)").
-        - ❌ FORBIDDEN: Using English abbreviations for common terms (e.g., using "HP" instead of "生命值" in narrative).
-        - ✅ CORRECT: Use ONLY the target language throughout the entire output.
-        - If a term has no direct translation, use the most culturally appropriate equivalent (e.g., "Mana" -> "法力/灵力", "Level" -> "等级/境界").
-    5. **Exceptions**:
-       - JSON field names (MUST be English)
-       - IDs (MUST be English/snake_case)
-       - Code/Technical terms (Only if strictly necessary for system functions)
-       - Proper nouns that are universally known in their original form (e.g., "iPhone", "Google"), but prefer transliteration if available.
-  </rules>
+
+  <strict_field_rules>
+    **EVERY text field in JSON output must be PURE ${language}:**
+    - "name" fields: PURE ${language} only
+    - "title" fields: PURE ${language} only
+    - "description" fields: PURE ${language} only
+    - "npcType" fields: PURE ${language} only
+    - "status" fields: PURE ${language} only
+    - "appearance" fields: PURE ${language} only
+    - "choices" text: PURE ${language} only
+    - "lore" fields: PURE ${language} only
+    - "background" fields: PURE ${language} only
+    - "profession" fields: PURE ${language} only
+    - "dialogueStyle" fields: PURE ${language} only
+    - "narrative" fields: PURE ${language} only
+    - "objectives" fields: PURE ${language} only
+    - ALL other narrative content: PURE ${language} only
+  </strict_field_rules>
+
+  <common_violations>
+    🚫 **THESE PATTERNS ARE STRICTLY FORBIDDEN:**
+
+    **NPC/Character Names:**
+    ❌ WRONG: ${ex.npcNameWrong1}
+    ❌ WRONG: ${ex.npcNameWrong2}
+    ✅ CORRECT: ${ex.npcNameCorrect}
+
+    **Character Titles:**
+    ❌ WRONG: ${ex.titleWrong1}
+    ❌ WRONG: ${ex.titleWrong2}
+    ✅ CORRECT: ${ex.titleCorrect}
+
+    **Location Names:**
+    ❌ WRONG: ${ex.locationWrong1}
+    ❌ WRONG: ${ex.locationWrong2}
+    ✅ CORRECT: ${ex.locationCorrect}
+
+    **NPC Types:**
+    ❌ WRONG: ${ex.npcTypeWrong1}
+    ❌ WRONG: ${ex.npcTypeWrong2}
+    ✅ CORRECT: ${ex.npcTypeCorrect}
+
+    **Status Fields:**
+    ❌ WRONG: ${ex.statusWrong}
+    ✅ CORRECT: ${ex.statusCorrect}
+
+    **Race Fields:**
+    ❌ WRONG: ${ex.raceWrong}
+    ✅ CORRECT: ${ex.raceCorrect}
+
+    **Parenthetical Translations:**
+    ❌ WRONG: ${ex.parenWrong1}
+    ❌ WRONG: ${ex.parenWrong2}
+    ✅ CORRECT: ${ex.parenCorrect}
+
+    **Inline Translations:**
+    ❌ WRONG: ${ex.inlineWrong}
+    ✅ CORRECT: ${ex.inlineCorrect}
+
+    **Mixed Terms:**
+    ❌ WRONG: ${ex.mixedTermsWrong}
+    ✅ CORRECT: ${ex.mixedTermsCorrect}
+  </common_violations>
+
+  <exceptions>
+    **ONLY these may be in English (regardless of target language):**
+    - JSON field KEYS (e.g., "name", "description", "visible", "hidden")
+    - Entity IDs (e.g., "saint_monk_fahai", "black_dragon_pool")
+    - Technical code terms strictly required by system
+
+    **NEVER put translations or alternative languages in field VALUES (the content).**
+  </exceptions>
+
+  <enforcement>
+    Before outputting ANY text field value, verify:
+    1. Is this an ID field or JSON key? → English is allowed
+    2. Is this a content/narrative field? → Must be PURE ${language}
+    3. Does it have parentheses containing an alternative-language translation?
+    4. Does it have slashes or dashes separating two languages?
+    If #3 or #4 is YES → REWRITE in PURE ${language}.
+  </enforcement>
 </language_enforcement_protocol>
 `;
+};
 
 /**
  * 语言强制规则 - 精简版
  */
 export const languageEnforcementLite: Atom<LanguageEnforcementInput> = ({
   language,
-}) => `
+}) => {
+  const ex = getExamples(language);
+
+  return `
 <language_enforcement>
-ALL output MUST be in ${language}. NO language mixing.
-Exceptions: JSON field names, IDs, and code terms only.
+⚠️ LANGUAGE PURITY: ALL field VALUES must be in ${language}.
+ONLY JSON keys and entity IDs may be in English.
+❌ FORBIDDEN: ${ex.liteForbidden}
+✅ CORRECT: ${ex.liteCorrect}
+NO parenthetical translations. NO slash-separated alternatives. PURE ${language} only.
 </language_enforcement>
 `;
+};
 
 export default languageEnforcement;

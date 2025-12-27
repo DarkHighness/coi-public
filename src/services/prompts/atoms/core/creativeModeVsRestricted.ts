@@ -64,6 +64,29 @@ export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
     <rule>Create original twists, characters, and scenarios that fit the theme.</rule>
   </guidelines>
 </mode_creative>
+
+<mode_switching_protocol>
+  **IF mode changes mid-story (e.g., user changes settings):**
+
+  <creative_to_strict>
+    When switching from CREATIVE → STRICT:
+    - Do NOT retcon established story elements
+    - NEW content must follow strict rules, but EXISTING content is grandfathered
+    - Gradually steer narrative toward stricter tone without jarring transitions
+  </creative_to_strict>
+
+  <strict_to_creative>
+    When switching from STRICT → CREATIVE:
+    - You may now introduce more original elements
+    - Still respect the story's established continuity
+    - Use new freedom for NEW developments, not to contradict past events
+  </strict_to_creative>
+
+  <general_rule>
+    **CONTINUITY > MODE**: Never break story continuity just because mode changed.
+    Mode affects FUTURE content, not past content.
+  </general_rule>
+</mode_switching_protocol>
 `;
 };
 

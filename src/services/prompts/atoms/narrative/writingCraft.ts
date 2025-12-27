@@ -3,6 +3,7 @@
  * Content from acting/writing_craft.ts
  */
 import type { Atom } from "../types";
+import { GAME_CONSTANTS } from "../../gameConstants";
 
 export interface WritingCraftInput {
   isLiteMode?: boolean;
@@ -112,7 +113,7 @@ const secondPersonImmersion = `
       6. **Object Focus**: "The letter lies on the table. Your eyes scan the words again." / "那封信静静躺在桌上。你的目光反复扫过那几行字。"
       7. **Other Character**: "He turns. Cold eyes sweep over you." / "他转过身来。冰冷的目光扫过你。"
 
-      **RHYTHM RULE**: In any paragraph, no more than 30% of sentences should start with "You"/"你".
+      **RHYTHM RULE**: In any paragraph, no more than ${GAME_CONSTANTS.MAX_YOU_START_RATE}% of sentences should start with "You"/"你".
     </varied_openings_critical>
 
     <sensory_ownership>
@@ -560,9 +561,9 @@ const dramaticPacing = `
 const crisisManagement = `
   <crisis_management>
     **CRISIS QUALITY OVER QUANTITY**:
-    - **The 80/20 Rule**: Only ~20% of crises should be life-threatening (Fatal). 80% should be structural, social, or resource-based (Non-Fatal).
+    - **The 80/20 Rule**: Only ~${GAME_CONSTANTS.FATAL_CRISIS_RATE}% of crises should be life-threatening (Fatal). ${GAME_CONSTANTS.NON_FATAL_CRISIS_RATE}% should be structural, social, or resource-based (Non-Fatal).
     - **Crisis Fatigue**: Constant danger is boring. If everyday is a struggle for survival, the player becomes numb.
-    - **Cooldown Principle**: Do NOT repeat the SAME type of crisis within ~50 turns.
+    - **Cooldown Principle**: Do NOT repeat the SAME type of crisis within ~${GAME_CONSTANTS.CRISIS_COOLDOWN_TURNS} turns.
       * If the player just fought an assassin, do not send another assassin for a long time.
       * If the player just survived a storm, do not trigger an earthquake immediately.
     - **Rhythm**: Calm -> Tension -> Crisis -> Fallout -> Recovery -> Calm. Do not skip steps.
@@ -582,7 +583,7 @@ export const writingCraft: Atom<WritingCraftInput> = ({ isLiteMode }) => {
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
   <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
-  <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < 30% "You" starts.</rule>
+  <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < ${GAME_CONSTANTS.MAX_YOU_START_RATE}% "You" starts.</rule>
   <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
   <rule>Rhythm: Mix short, punchy sentences with longer, flowing descriptions.</rule>
 

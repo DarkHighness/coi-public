@@ -883,6 +883,11 @@ export const timelineEventHiddenSchema = z.object({
 /** 完整时间线事件 Schema */
 export const timelineEventSchema = z.object({
   id: z.string().describe("Unique ID for the event. Format: evt:N"),
+  name: z
+    .string()
+    .describe(
+      "Short, memorable name for the event (e.g. 'The Great Fire', 'First Encounter'). Used for display and reference.",
+    ),
   gameTime: z.string().describe("When the event happened in game time."),
   category: timelineEventCategorySchema.describe("Category of the event."),
   visible: timelineEventVisibleSchema,

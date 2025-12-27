@@ -20,6 +20,7 @@ export const renderTimelineVisible: Atom<RenderTimelineInput> = ({ event }) => {
   const v = event.visible;
   const lines: string[] = [
     `id: ${event.id}`,
+    `name: ${event.name}`,
     `gameTime: ${event.gameTime}`,
     `category: ${event.category}`,
   ];
@@ -58,6 +59,7 @@ export const renderTimelineFull: Atom<RenderTimelineInput> = ({ event }) => {
   const h = event.hidden;
 
   const visibleLines: string[] = [
+    `name: ${event.name}`,
     `gameTime: ${event.gameTime}`,
     `category: ${event.category}`,
   ];
