@@ -21,7 +21,9 @@ export type RenderConditionInput = {
 /**
  * 渲染 Condition 的 visible 层
  */
-export const renderConditionVisible: Atom<RenderConditionInput> = ({ condition }) => {
+export const renderConditionVisible: Atom<RenderConditionInput> = ({
+  condition,
+}) => {
   const v = condition.visible;
   const lines: string[] = [
     `id: ${condition.id}`,
@@ -32,7 +34,8 @@ export const renderConditionVisible: Atom<RenderConditionInput> = ({ condition }
   if (condition.startTime) lines.push(`startTime: ${condition.startTime}`);
   if (condition.severity) lines.push(`severity: ${condition.severity}`);
   if (v.description) lines.push(`description: ${v.description}`);
-  if (v.perceivedSeverity) lines.push(`perceivedSeverity: ${v.perceivedSeverity}`);
+  if (v.perceivedSeverity)
+    lines.push(`perceivedSeverity: ${v.perceivedSeverity}`);
 
   // Visible effects
   if (condition.effects?.visible?.length) {
@@ -47,7 +50,9 @@ ${lines.join("\n")}
 /**
  * 渲染 Condition 的 hidden 层
  */
-export const renderConditionHidden: Atom<RenderConditionInput> = ({ condition }) => {
+export const renderConditionHidden: Atom<RenderConditionInput> = ({
+  condition,
+}) => {
   const h = condition.hidden;
   if (!h) return "";
 
@@ -71,7 +76,9 @@ ${lines.join("\n")}
 /**
  * 渲染 Condition 完整信息（visible + hidden）
  */
-export const renderConditionFull: Atom<RenderConditionInput> = ({ condition }) => {
+export const renderConditionFull: Atom<RenderConditionInput> = ({
+  condition,
+}) => {
   const v = condition.visible;
   const h = condition.hidden;
 
@@ -79,12 +86,16 @@ export const renderConditionFull: Atom<RenderConditionInput> = ({ condition }) =
     `name: ${condition.name}`,
     `type: ${condition.type}`,
   ];
-  if (condition.startTime) visibleLines.push(`startTime: ${condition.startTime}`);
+  if (condition.startTime)
+    visibleLines.push(`startTime: ${condition.startTime}`);
   if (condition.severity) visibleLines.push(`severity: ${condition.severity}`);
   if (v.description) visibleLines.push(`description: ${v.description}`);
-  if (v.perceivedSeverity) visibleLines.push(`perceivedSeverity: ${v.perceivedSeverity}`);
+  if (v.perceivedSeverity)
+    visibleLines.push(`perceivedSeverity: ${v.perceivedSeverity}`);
   if (condition.effects?.visible?.length) {
-    visibleLines.push(`visibleEffects: ${JSON.stringify(condition.effects.visible)}`);
+    visibleLines.push(
+      `visibleEffects: ${JSON.stringify(condition.effects.visible)}`,
+    );
   }
 
   if (!h) {
@@ -99,7 +110,9 @@ ${visibleLines.join("\n")}
   if (h.progression) hiddenLines.push(`progression: ${h.progression}`);
   if (h.cure) hiddenLines.push(`cure: ${h.cure}`);
   if (condition.effects?.hidden?.length) {
-    hiddenLines.push(`hiddenEffects: ${JSON.stringify(condition.effects.hidden)}`);
+    hiddenLines.push(
+      `hiddenEffects: ${JSON.stringify(condition.effects.hidden)}`,
+    );
   }
 
   return `<condition id="${condition.id}" layer="full">

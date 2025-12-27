@@ -4,9 +4,6 @@
  * ============================================================================
  */
 
-export {
-  summarySystemRole,
-  type SummarySystemRoleInput,
-} from "./systemRole";
+export { summarySystemRole, type SummarySystemRoleInput } from "./systemRole";
 
 export { summaryTools } from "./tools";

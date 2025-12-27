@@ -32,8 +32,8 @@
  * │ Condition: imagePrompt exists BUT !imageUrl                             │
  * │ Scenarios:                                                               │
  * │   • isGenerating = true     → Show loading placeholder                  │
- * │   • manualImageGen = true AND !userRequestedLoad → Show "Click to Gen"  │
- * │   • manualImageGen = true AND userRequestedLoad  → Show loading         │
+ * │   • !userRequestedLoad → Show "Click to Gen"  │
+ * │   • userRequestedLoad  → Show loading         │
  * │   • actuallyFailed = true   → Show "Failed - Retry" placeholder         │
  * │                                                                          │
  * │ Display:   Placeholder with copy prompt button (top-right)              │
@@ -87,11 +87,13 @@ interface StoryImageProps {
   onRegenerate?: () => void;
   disableImages: boolean;
   imageGenerationEnabled: boolean;
-  manualImageGen?: boolean;
   themeFont?: string;
   onUpload?: () => void;
   onDelete?: () => void;
   hasFailed?: boolean;
+  onGeneratePrompt?: () => void;
+  onGenerateImageFull?: () => void;
+  onGenerateCinematic?: () => void;
 }
 
 export const StoryImage: React.FC<StoryImageProps> = ({
@@ -106,11 +108,13 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   onRegenerate,
   disableImages,
   imageGenerationEnabled,
-  manualImageGen,
   themeFont,
   onUpload,
   onDelete,
   hasFailed,
+  onGeneratePrompt,
+  onGenerateImageFull,
+  onGenerateCinematic,
 }) => {
   const { t } = useTranslation();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -176,8 +180,12 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   // Early return: Global image disable
   if (disableImages && !displayUrl) return null;
 
-  // If no image prompt and no image (ID or URL), don't show anything
-  if (!hasPrompt && !displayUrl) return null;
+  // We show the container if:
+  // 1. We have an image
+  // 2. We have a prompt
+  // 3. We have high-level generation handlers (on-demand mode)
+  const canShowActionButtons = !!(onGeneratePrompt || onGenerateImageFull);
+  if (!hasPrompt && !hasImage && !canShowActionButtons) return null;
 
   // Transient failure state detection (passed via props or inferred)
   const canRegenerate = !!(imageGenerationEnabled && onRegenerate);
@@ -193,23 +201,17 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     (!hasImage &&
       !isGenerating &&
       canRegenerate &&
-      !manualImageGen &&
       hasPrompt &&
       hasFailed === undefined);
 
   // Determine if we should show generating state:
-  // - Manual mode: Show loading when user has requested load (clicked button)
-  //   OR when this segment is actively generating
-  // - Normal mode: show when isGenerating is true for THIS segment
-  const shouldShowGenerating = manualImageGen
-    ? userRequestedLoad || isGenerating
-    : isGenerating;
+  // - Show loading when the global service is running
+  // - OR when we are resolving the resulting image ID to a blob URL
+  const shouldShowGenerating = isGenerating || displayImage.isLoading;
 
   // Handler for regenerate that also sets userRequestedLoad in manual mode
   const handleRegenerate = () => {
-    if (manualImageGen) {
-      setUserRequestedLoad(true);
-    }
+    setUserRequestedLoad(true);
     onRegenerate?.();
   };
 
@@ -235,14 +237,23 @@ export const StoryImage: React.FC<StoryImageProps> = ({
           </div>
         ) : (
           // Placeholder Display
-          <ImagePlaceholder
-            isGenerating={shouldShowGenerating}
-            hasFailed={actuallyFailed}
-            labelVision={labelVision}
-            labelUnavailable={labelUnavailable}
-            themeFont={themeFont}
-            onRegenerate={canRegenerate ? handleRegenerate : undefined}
-          />
+          <div
+            className={`w-full h-full ${onGenerateImageFull && !shouldShowGenerating ? "cursor-pointer" : ""}`}
+            onClick={() => {
+              if (!shouldShowGenerating && onGenerateImageFull) {
+                onGenerateImageFull();
+              }
+            }}
+          >
+            <ImagePlaceholder
+              isGenerating={shouldShowGenerating}
+              hasFailed={actuallyFailed}
+              labelVision={labelVision}
+              labelUnavailable={labelUnavailable}
+              themeFont={themeFont}
+              onRegenerate={canRegenerate ? handleRegenerate : undefined}
+            />
+          </div>
         )}
 
         {/* Action Buttons Container */}
@@ -342,14 +353,75 @@ export const StoryImage: React.FC<StoryImageProps> = ({
             </button>
           )}
 
-          {/* Regenerate Button - Visible if can regenerate and image exists (for placeholder it's handled inside ImagePlaceholder) */}
-          {/* Actually, we want regenerate button on top of image too if needed, or just rely on placeholder for failed state */}
-          {/* Requirement says: "Copy Prompt Button only when imagePrompt exists" - handled */}
-          {/* "Upload Button always visible" - handled */}
+          {/* Cinematic Animate Button - Visible if image exists and we have a way to animate it */}
+          {hasImage && (onAnimate || onGenerateCinematic) && (
+            <MagicMirrorButton
+              onAnimate={onAnimate ? () => onAnimate(displayUrl!) : undefined}
+              onGenerateCinematic={onGenerateCinematic}
+              title={
+                onGenerateCinematic
+                  ? t("visual.cinematicAnimate")
+                  : t("visual.magicMirror")
+              }
+            />
+          )}
 
-          {/* Magic Mirror Button - Visible if image exists */}
-          {hasImage && onAnimate && (
-            <MagicMirrorButton onAnimate={() => onAnimate(displayUrl)} />
+          {/* Action Buttons for Missing Image */}
+          {!hasImage && !shouldShowGenerating && (
+            <div className="flex gap-2">
+              {onGeneratePrompt && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGeneratePrompt();
+                  }}
+                  className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10 flex items-center gap-1.5"
+                  title={
+                    hasPrompt
+                      ? t("visual.regeneratePrompt")
+                      : t("visual.promptGenerator")
+                  }
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              )}
+              {onGenerateImageFull && !hasPrompt && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGenerateImageFull();
+                  }}
+                  className="bg-black/60 hover:bg-theme-accent text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10 flex items-center gap-1.5"
+                  title={t("visual.generateImageFull")}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

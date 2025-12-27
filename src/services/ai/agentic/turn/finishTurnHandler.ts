@@ -57,22 +57,6 @@ export function handleFinishTurn(params: FinishTurnParams): FinishTurnResult {
     const validationResult = strictSchema.safeParse(args);
 
     if (!validationResult.success) {
-      // Check if imagePrompt is disabled and field is present
-      if (
-        settings?.extra?.disableImagePrompt &&
-        args &&
-        "imagePrompt" in args
-      ) {
-        return {
-          output: {
-            success: false,
-            error: `[VALIDATION_ERROR] The 'imagePrompt' field is disabled in settings and should not be present in "${toolName}". Please remove this field from your arguments.`,
-            code: "DISABLED_FIELD",
-          },
-          turnFinished: false,
-        };
-      }
-
       // Categorize errors as missing vs extra fields
       const errors = validationResult.error.errors;
       const missingFields = errors

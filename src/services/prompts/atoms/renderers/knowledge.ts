@@ -20,7 +20,9 @@ export type RenderKnowledgeInput = {
 /**
  * 渲染 Knowledge 的 visible 层
  */
-export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = ({ knowledge }) => {
+export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = ({
+  knowledge,
+}) => {
   const v = knowledge.visible;
   const lines: string[] = [
     `id: ${knowledge.id}`,
@@ -30,8 +32,10 @@ export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = ({ knowledge }
 
   if (v.description) lines.push(`description: ${v.description}`);
   if (v.details) lines.push(`details: ${v.details}`);
-  if (knowledge.discoveredAt) lines.push(`discoveredAt: ${knowledge.discoveredAt}`);
-  if (knowledge.relatedTo?.length) lines.push(`relatedTo: ${JSON.stringify(knowledge.relatedTo)}`);
+  if (knowledge.discoveredAt)
+    lines.push(`discoveredAt: ${knowledge.discoveredAt}`);
+  if (knowledge.relatedTo?.length)
+    lines.push(`relatedTo: ${JSON.stringify(knowledge.relatedTo)}`);
 
   return `<knowledge id="${knowledge.id}" layer="visible">
 ${lines.join("\n")}
@@ -41,15 +45,19 @@ ${lines.join("\n")}
 /**
  * 渲染 Knowledge 的 hidden 层
  */
-export const renderKnowledgeHidden: Atom<RenderKnowledgeInput> = ({ knowledge }) => {
+export const renderKnowledgeHidden: Atom<RenderKnowledgeInput> = ({
+  knowledge,
+}) => {
   const h = knowledge.hidden;
   if (!h) return "";
 
   const lines: string[] = [`id: ${knowledge.id}`];
 
   if (h.fullTruth) lines.push(`fullTruth: ${h.fullTruth}`);
-  if (h.misconceptions?.length) lines.push(`misconceptions: ${JSON.stringify(h.misconceptions)}`);
-  if (h.toBeRevealed?.length) lines.push(`toBeRevealed: ${JSON.stringify(h.toBeRevealed)}`);
+  if (h.misconceptions?.length)
+    lines.push(`misconceptions: ${JSON.stringify(h.misconceptions)}`);
+  if (h.toBeRevealed?.length)
+    lines.push(`toBeRevealed: ${JSON.stringify(h.toBeRevealed)}`);
 
   return `<knowledge id="${knowledge.id}" layer="hidden">
 ${lines.join("\n")}
@@ -59,7 +67,9 @@ ${lines.join("\n")}
 /**
  * 渲染 Knowledge 完整信息（visible + hidden）
  */
-export const renderKnowledgeFull: Atom<RenderKnowledgeInput> = ({ knowledge }) => {
+export const renderKnowledgeFull: Atom<RenderKnowledgeInput> = ({
+  knowledge,
+}) => {
   const v = knowledge.visible;
   const h = knowledge.hidden;
 
@@ -69,8 +79,10 @@ export const renderKnowledgeFull: Atom<RenderKnowledgeInput> = ({ knowledge }) =
   ];
   if (v.description) visibleLines.push(`description: ${v.description}`);
   if (v.details) visibleLines.push(`details: ${v.details}`);
-  if (knowledge.discoveredAt) visibleLines.push(`discoveredAt: ${knowledge.discoveredAt}`);
-  if (knowledge.relatedTo?.length) visibleLines.push(`relatedTo: ${JSON.stringify(knowledge.relatedTo)}`);
+  if (knowledge.discoveredAt)
+    visibleLines.push(`discoveredAt: ${knowledge.discoveredAt}`);
+  if (knowledge.relatedTo?.length)
+    visibleLines.push(`relatedTo: ${JSON.stringify(knowledge.relatedTo)}`);
 
   if (!h) {
     return `<knowledge id="${knowledge.id}" layer="visible">
@@ -80,8 +92,10 @@ ${visibleLines.join("\n")}
 
   const hiddenLines: string[] = [];
   if (h.fullTruth) hiddenLines.push(`fullTruth: ${h.fullTruth}`);
-  if (h.misconceptions?.length) hiddenLines.push(`misconceptions: ${JSON.stringify(h.misconceptions)}`);
-  if (h.toBeRevealed?.length) hiddenLines.push(`toBeRevealed: ${JSON.stringify(h.toBeRevealed)}`);
+  if (h.misconceptions?.length)
+    hiddenLines.push(`misconceptions: ${JSON.stringify(h.misconceptions)}`);
+  if (h.toBeRevealed?.length)
+    hiddenLines.push(`toBeRevealed: ${JSON.stringify(h.toBeRevealed)}`);
 
   return `<knowledge id="${knowledge.id}" layer="full">
 <visible>

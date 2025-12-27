@@ -15,6 +15,11 @@ import { GenerationTimer } from "./common/GenerationTimer";
 import { MarkdownText } from "./render/MarkdownText";
 import { useGameEngineContext } from "../contexts/GameEngineContext";
 import { useSettingsContext } from "../contexts/SettingsContext";
+import {
+  runVisualLoop,
+  VisualProgress,
+} from "../services/ai/agentic/visual/visualLoop";
+import { VisualProgressModal } from "./VisualProgressModal";
 
 export interface StoryFeedRef {
   scrollToSegment: (segmentId: string) => void;
@@ -64,7 +69,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     },
     ref,
   ) => {
-    const { state } = useGameEngineContext();
+    const { state, actions } = useGameEngineContext();
+    const { setGameState } = actions;
     const { settings, updateSettings } = useSettingsContext();
     const {
       gameState,
@@ -94,6 +100,15 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const [disableVirtualization, setDisableVirtualization] = useState(true);
 
     const { t } = useTranslation();
+
+    // Visual Generation Modal State
+    const [isVisualModalOpen, setIsVisualModalOpen] = useState(false);
+    const [visualProgress, setVisualProgress] = useState<VisualProgress | null>(
+      null,
+    );
+    const [visualTarget, setVisualTarget] = useState<
+      "image_prompt" | "veo_script" | "both"
+    >("image_prompt");
 
     // Scroll to specific segment (for timeline navigation)
     const scrollToSegment = useCallback(
@@ -462,6 +477,133 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     // Dynamic text scaling
     const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
 
+    const handleGeneratePrompt = async (id: string) => {
+      setVisualTarget("image_prompt");
+      setIsVisualModalOpen(true);
+      setVisualProgress(null);
+
+      try {
+        const result = await runVisualLoop({
+          gameState,
+          segment: currentHistory.find((s) => s.id === id)!,
+          settings,
+          target: "image_prompt",
+          language: settings.language || "English",
+          onProgress: (p) => setVisualProgress(p),
+        });
+
+        if (result.imagePrompt) {
+          // Update game state with the new prompt
+          setGameState((prev: GameState) => {
+            const node = prev.nodes[id];
+            if (!node) return prev;
+            return {
+              ...prev,
+              nodes: {
+                ...prev.nodes,
+                [id]: { ...node, imagePrompt: result.imagePrompt },
+              },
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Failed to generate prompt:", error);
+      } finally {
+        setIsVisualModalOpen(false);
+      }
+    };
+
+    const handleGenerateImageFull = async (id: string) => {
+      const segment = currentHistory.find((s) => s.id === id);
+      if (!segment) return;
+
+      // If prompt already exists, just trigger image generation directly without modal
+      if (segment.imagePrompt && segment.imagePrompt.trim().length > 0) {
+        onGenerateImage(id);
+        return;
+      }
+
+      setVisualTarget("image_prompt"); // We start with prompt generation
+      setIsVisualModalOpen(true);
+      setVisualProgress(null);
+
+      try {
+        // Step 1: Generate prompt
+        const result = await runVisualLoop({
+          gameState,
+          segment,
+          settings,
+          target: "image_prompt",
+          language: settings.language || "English",
+          onProgress: (p) => setVisualProgress(p),
+        });
+
+        if (result.imagePrompt) {
+          // Update prompt first
+          setGameState((prev: GameState) => {
+            const node = prev.nodes[id];
+            if (!node) return prev;
+            return {
+              ...prev,
+              nodes: {
+                ...prev.nodes,
+                [id]: { ...node, imagePrompt: result.imagePrompt },
+              },
+            };
+          });
+
+          // Step 2: Trigger image generation using the prompt
+          onGenerateImage(id);
+        }
+      } catch (error) {
+        console.error("Failed to generate image:", error);
+      } finally {
+        setIsVisualModalOpen(false);
+      }
+    };
+
+    const handleGenerateCinematic = async (id: string) => {
+      const segment = currentHistory.find((s) => s.id === id);
+      if (!segment || !segment.imageUrl) return;
+
+      setVisualTarget("veo_script");
+      setIsVisualModalOpen(true);
+      setVisualProgress(null);
+
+      try {
+        const result = await runVisualLoop({
+          gameState,
+          segment: currentHistory.find((s) => s.id === id)!,
+          settings,
+          target: "veo_script",
+          language: settings.language || "English",
+          onProgress: (p) => setVisualProgress(p),
+        });
+
+        if (result.veoScript) {
+          // Update node with the new script
+          setGameState((prev: GameState) => {
+            const node = prev.nodes[id];
+            if (!node) return prev;
+            return {
+              ...prev,
+              nodes: {
+                ...prev.nodes,
+                [id]: { ...node, veoScript: result.veoScript },
+              },
+            };
+          });
+
+          // Trigger animation with the script
+          onAnimate(currentHistory.find((s) => s.id === id)?.imageUrl || "");
+        }
+      } catch (error) {
+        console.error("Failed to generate cinematic:", error);
+      } finally {
+        setIsVisualModalOpen(false);
+      }
+    };
+
     return (
       <div className="flex-1 flex flex-col relative overflow-hidden">
         <FeedHeader
@@ -641,6 +783,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           saveId={saveId}
                           hasFailed={failedImageNodes?.has(segment.id)}
                           maxWidthClass={contentMaxWidth}
+                          onGeneratePrompt={handleGeneratePrompt}
+                          onGenerateImageFull={handleGenerateImageFull}
+                          onGenerateCinematic={handleGenerateCinematic}
                           onFork={
                             onFork &&
                             segment.role === "model" &&
@@ -709,6 +854,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           saveId={saveId}
                           hasFailed={failedImageNodes?.has(introSegment.id)}
                           maxWidthClass={contentMaxWidth}
+                          onGeneratePrompt={handleGeneratePrompt}
+                          onGenerateImageFull={handleGenerateImageFull}
+                          onGenerateCinematic={handleGenerateCinematic}
                         />
                       </div>
                     )}
@@ -821,6 +969,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                               saveId={saveId}
                               hasFailed={failedImageNodes?.has(segment.id)}
                               maxWidthClass={contentMaxWidth}
+                              onGeneratePrompt={handleGeneratePrompt}
+                              onGenerateImageFull={handleGenerateImageFull}
+                              onGenerateCinematic={handleGenerateCinematic}
                               onFork={
                                 onFork &&
                                 segment.role === "model" &&
@@ -890,6 +1041,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
             </div>
           </div>
         )}
+        {/* Visual progress feedback */}
+        <VisualProgressModal
+          isOpen={isVisualModalOpen}
+          progress={visualProgress}
+          target={visualTarget}
+          onClose={() => setIsVisualModalOpen(false)}
+        />
       </div>
     );
   },

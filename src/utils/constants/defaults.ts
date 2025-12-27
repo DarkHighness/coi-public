@@ -117,7 +117,6 @@ export const DEFAULTS: AISettings = {
   },
   language: "zh",
   imageTimeout: 60, // 60 seconds
-  manualImageGen: true, // Manual generate by default
   enableFallbackBackground: true,
   lockEnvTheme: false,
   fixedEnvTheme: undefined, // No fixed theme by default

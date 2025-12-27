@@ -16,7 +16,9 @@ export type RenderCharacterInput = {
 /**
  * 渲染 Character 的 visible 层（基本信息）
  */
-export const renderCharacterVisible: Atom<RenderCharacterInput> = ({ character }) => {
+export const renderCharacterVisible: Atom<RenderCharacterInput> = ({
+  character,
+}) => {
   const lines: string[] = [
     `name: ${character.name}`,
     `title: ${character.title}`,
@@ -28,12 +30,13 @@ export const renderCharacterVisible: Atom<RenderCharacterInput> = ({ character }
   if (character.status) lines.push(`status: ${character.status}`);
   if (character.appearance) lines.push(`appearance: ${character.appearance}`);
   if (character.background) lines.push(`background: ${character.background}`);
-  if (character.currentLocation) lines.push(`currentLocation: ${character.currentLocation}`);
+  if (character.currentLocation)
+    lines.push(`currentLocation: ${character.currentLocation}`);
 
   // Attributes
   if (character.attributes?.length) {
-    const attrStrs = character.attributes.map(a =>
-      `${a.label}: ${a.value}/${a.maxValue}`
+    const attrStrs = character.attributes.map(
+      (a) => `${a.label}: ${a.value}/${a.maxValue}`,
     );
     lines.push(`attributes: ${attrStrs.join(", ")}`);
   }
@@ -42,8 +45,10 @@ export const renderCharacterVisible: Atom<RenderCharacterInput> = ({ character }
   if (character.psychology) {
     const psych = character.psychology;
     if (psych.coreTrauma) lines.push(`coreTrauma: ${psych.coreTrauma}`);
-    if (psych.copingMechanism) lines.push(`copingMechanism: ${psych.copingMechanism}`);
-    if (psych.internalContradiction) lines.push(`internalContradiction: ${psych.internalContradiction}`);
+    if (psych.copingMechanism)
+      lines.push(`copingMechanism: ${psych.copingMechanism}`);
+    if (psych.internalContradiction)
+      lines.push(`internalContradiction: ${psych.internalContradiction}`);
   }
 
   return `<protagonist layer="visible">
@@ -54,12 +59,14 @@ ${lines.join("\n")}
 /**
  * 渲染 Character 的 hidden 层（hiddenTraits 和未解锁的能力）
  */
-export const renderCharacterHidden: Atom<RenderCharacterInput> = ({ character }) => {
+export const renderCharacterHidden: Atom<RenderCharacterInput> = ({
+  character,
+}) => {
   const lines: string[] = [];
 
   // Hidden traits (潜在特质)
   if (character.hiddenTraits?.length) {
-    const traitStrs = character.hiddenTraits.map(t => {
+    const traitStrs = character.hiddenTraits.map((t) => {
       const effects = t.effects?.join(", ") || "";
       const triggers = t.triggerConditions?.join(", ") || "";
       return `[${t.name}] ${t.description} | effects: ${effects} | triggers: ${triggers} | unlocked: ${t.unlocked}`;
@@ -69,10 +76,10 @@ export const renderCharacterHidden: Atom<RenderCharacterInput> = ({ character })
 
   // Skills with hidden effects
   if (character.skills?.length) {
-    const skillsWithHidden = character.skills.filter(s => s.hidden);
+    const skillsWithHidden = character.skills.filter((s) => s.hidden);
     if (skillsWithHidden.length) {
-      const skillStrs = skillsWithHidden.map(s =>
-        `[${s.name}] hidden: ${JSON.stringify(s.hidden)}`
+      const skillStrs = skillsWithHidden.map(
+        (s) => `[${s.name}] hidden: ${JSON.stringify(s.hidden)}`,
       );
       lines.push(`skillsWithHiddenEffects:\n  ${skillStrs.join("\n  ")}`);
     }
@@ -88,7 +95,9 @@ ${lines.join("\n")}
 /**
  * 渲染 Character 完整信息（visible + hidden）
  */
-export const renderCharacterFull: Atom<RenderCharacterInput> = ({ character }) => {
+export const renderCharacterFull: Atom<RenderCharacterInput> = ({
+  character,
+}) => {
   const visibleContent = renderCharacterVisible({ character });
   const hiddenContent = renderCharacterHidden({ character });
 

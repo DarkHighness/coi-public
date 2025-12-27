@@ -526,14 +526,10 @@ export const useGameAction = ({
             // Only trigger image generation if there's a valid imagePrompt
             // In manual mode, don't auto-set generating state - wait for user click
             isImageGenerating: !!(
-              modelNode.imagePrompt &&
-              modelNode.imagePrompt.trim() &&
-              !aiSettings.manualImageGen
+              modelNode.imagePrompt && modelNode.imagePrompt.trim()
             ),
             generatingNodeId:
-              modelNode.imagePrompt &&
-              modelNode.imagePrompt.trim() &&
-              !aiSettings.manualImageGen
+              modelNode.imagePrompt && modelNode.imagePrompt.trim()
                 ? modelNodeId
                 : null,
             atmosphere: responseAtmosphere,

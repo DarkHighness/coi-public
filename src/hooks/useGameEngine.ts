@@ -716,11 +716,7 @@ export const useGameEngine = () => {
           );
 
           // Trigger image generation for the first node if enabled AND no seed image
-          if (
-            openingNarrative.imagePrompt &&
-            !aiSettings.manualImageGen &&
-            !seedImageId
-          ) {
+          if (openingNarrative.imagePrompt && !seedImageId) {
             generateImageForNode(firstNodeId, firstNode);
           }
 
@@ -1028,7 +1024,6 @@ export const useGameEngine = () => {
               text: c.text,
               consequence: c.consequence || undefined,
             })),
-            imagePrompt: openingNarrative.imagePrompt || "",
             role: "model",
             timestamp: Date.now(),
             segmentIdx: 0,
@@ -1062,11 +1057,6 @@ export const useGameEngine = () => {
           console.log(
             "[ResumeOutline] First segment created from Phase 10 openingNarrative",
           );
-
-          // Trigger image generation for the first node if enabled
-          if (openingNarrative.imagePrompt && !aiSettings.manualImageGen) {
-            generateImageForNode(firstNodeId, firstNode);
-          }
         } catch (error) {
           console.error("First segment creation error after resume", error);
           setGameState((prev) => ({
@@ -1377,13 +1367,6 @@ export const useGameEngine = () => {
       return;
     }
 
-    // Manual Mode Check
-    // If manual mode is ON, and this is NOT a manual click (i.e. auto-gen), skip.
-    if (aiSettings.manualImageGen && !isManualClick) {
-      console.log("Skipping auto-generation due to Manual Mode");
-      return;
-    }
-
     // Add to queue if not already present
     setImageQueue((prev) => {
       if (prev.includes(nodeId)) return prev;
@@ -1520,7 +1503,6 @@ export const useGameEngine = () => {
         text: response.narrative, // Remove FORCE UPDATE markers - cleaner display
         choices:
           sanitizedChoices.length > 0 ? sanitizedChoices : [t("continue")],
-        imagePrompt: response.imagePrompt || "",
         role: "system",
         timestamp: Date.now() + 1,
         atmosphere: responseAtmosphere,

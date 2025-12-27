@@ -1295,10 +1295,6 @@ export const storyOutlineSchema = z.object({
           }),
         )
         .describe("Initial choices for the player."),
-      imagePrompt: z
-        .string()
-        .nullish()
-        .describe("Visual scene prompt for the opening."),
       atmosphere: atmosphereSchema.nullish().describe("Override atmosphere."),
     })
     .nullish()
@@ -1589,12 +1585,6 @@ export const outlinePhase10Schema = z.object({
       .min(2)
       .max(4)
       .describe("2-4 initial choices for the player's first action."),
-    imagePrompt: z
-      .string()
-      .nullish()
-      .describe(
-        "Visual scene prompt for the opening scene in TARGET LANGUAGE. Include time/lighting, location, protagonist, atmosphere.",
-      ),
     atmosphere: atmosphereSchema
       .nullish()
       .describe("Override initial atmosphere if the opening scene differs."),
@@ -1700,12 +1690,6 @@ export const gameResponseSchema = z.object({
     .min(2)
     .max(4)
     .describe("2-4 options for the player's next action."),
-  imagePrompt: z
-    .string()
-    .nullish()
-    .describe(
-      `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
-    ),
   atmosphere: atmosphereSchema
     .nullish()
     .describe("Atmosphere settings (envTheme and ambience)."),
@@ -2077,12 +2061,6 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 5. **Hidden Traits**: If a hidden trait is unlocked, it may unlock new choice types.
 
 **⚠️ NO GAME IDs**: Never include IDs like "inv:1", "npc:2", "loc:3" in choice text. Use natural names only.`,
-      ),
-    imagePrompt: z
-      .string()
-      .nullish()
-      .describe(
-        `Visual scene prompt in TARGET LANGUAGE (same as narrative). Include: time/lighting, location, protagonist appearance/action, relevant NPCs (YOU decide who appears), atmosphere/mood, composition. Omit if not needed.`,
       ),
     atmosphere: atmosphereSchema
       .nullish()

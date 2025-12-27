@@ -11,7 +11,9 @@ import type { Atom } from "../types";
 /**
  * 视觉语言模板
  */
-export const visualLanguageTemplate: Atom<void> = () => `**VISUAL LANGUAGE & CINEMATOGRAPHY**
+export const visualLanguageTemplate: Atom<
+  void
+> = () => `**VISUAL LANGUAGE & CINEMATOGRAPHY**
 
 Lighting Design:
 - PRIMARY LIGHT: (e.g., "Harsh side-lighting creating deep shadows")
@@ -37,7 +39,9 @@ Film Language:
 /**
  * 角色视觉描述模板
  */
-export const characterVisualProfile: Atom<void> = () => `**CHARACTER VISUAL PROFILE**
+export const characterVisualProfile: Atom<
+  void
+> = () => `**CHARACTER VISUAL PROFILE**
 
 Describe the PROTAGONIST from <game_state><protagonist> in THIS SPECIFIC FRAME:
 - Physical State: <status> content (reflect in posture/movement)
@@ -49,7 +53,9 @@ Describe the PROTAGONIST from <game_state><protagonist> in THIS SPECIFIC FRAME:
 /**
  * 输出结构模板
  */
-export const veoOutputStructure: Atom<void> = () => `**REQUIRED OUTPUT STRUCTURE:**
+export const veoOutputStructure: Atom<
+  void
+> = () => `**REQUIRED OUTPUT STRUCTURE:**
 
 **1. NARRATIVE ESSENCE & CONTINUITY**
 Distill the EMOTIONAL CORE and DRAMATIC STAKES of this moment from <game_state><current_scene>.

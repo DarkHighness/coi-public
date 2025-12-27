@@ -18,10 +18,7 @@ export type RenderNpcInput = {
  */
 export const renderNpcVisible: Atom<RenderNpcInput> = ({ npc }) => {
   const v = npc.visible;
-  const lines: string[] = [
-    `id: ${npc.id}`,
-    `name: ${v.name}`,
-  ];
+  const lines: string[] = [`id: ${npc.id}`, `name: ${v.name}`];
 
   if (v.description) lines.push(`description: ${v.description}`);
   if (v.appearance) lines.push(`appearance: ${v.appearance}`);
@@ -31,7 +28,8 @@ export const renderNpcVisible: Atom<RenderNpcInput> = ({ npc }) => {
   if (v.personality) lines.push(`personality: ${v.personality}`);
   if (v.dialogueStyle) lines.push(`dialogueStyle: ${v.dialogueStyle}`);
   if (v.affinity !== undefined) lines.push(`affinity: ${v.affinity}`);
-  if (npc.currentLocation) lines.push(`currentLocation: ${npc.currentLocation}`);
+  if (npc.currentLocation)
+    lines.push(`currentLocation: ${npc.currentLocation}`);
 
   return `<npc id="${npc.id}" layer="visible">
 ${lines.join("\n")}
@@ -55,9 +53,11 @@ export const renderNpcHidden: Atom<RenderNpcInput> = ({ npc }) => {
   if (h.npcType) lines.push(`trueNpcType: ${h.npcType}`);
   if (h.status) lines.push(`trueStatus: ${h.status}`);
   if (h.ambivalence) lines.push(`ambivalence: ${h.ambivalence}`);
-  if (h.transactionalBenefit) lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
+  if (h.transactionalBenefit)
+    lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
   if (h.loveExpression) lines.push(`loveExpression: ${h.loveExpression}`);
-  if (h.unspokenSacrifice) lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
+  if (h.unspokenSacrifice)
+    lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
 
   return `<npc id="${npc.id}" layer="hidden">
 ${lines.join("\n")}
@@ -114,9 +114,11 @@ const renderNpcHiddenContent: Atom<RenderNpcInput> = ({ npc }) => {
   if (h.npcType) lines.push(`trueNpcType: ${h.npcType}`);
   if (h.status) lines.push(`trueStatus: ${h.status}`);
   if (h.ambivalence) lines.push(`ambivalence: ${h.ambivalence}`);
-  if (h.transactionalBenefit) lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
+  if (h.transactionalBenefit)
+    lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
   if (h.loveExpression) lines.push(`loveExpression: ${h.loveExpression}`);
-  if (h.unspokenSacrifice) lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
+  if (h.unspokenSacrifice)
+    lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
 
   return lines.join("\n");
 };

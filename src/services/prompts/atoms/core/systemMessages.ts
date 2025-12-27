@@ -15,7 +15,9 @@ export interface SystemMessageInput {
 /**
  * SUDO Mode Instruction
  */
-export const sudoModeInstruction: Atom<void> = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
+export const sudoModeInstruction: Atom<
+  void
+> = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
 2. Use \`search_tool\` to load any tools you need for state changes.
@@ -28,7 +30,9 @@ This is a **GM COMMAND**. You must:
 /**
  * Normal Turn Instruction
  */
-export const normalTurnInstruction: Atom<SystemMessageInput> = ({ finishToolName }) => `[SYSTEM: TOOL USAGE INSTRUCTION]
+export const normalTurnInstruction: Atom<SystemMessageInput> = ({
+  finishToolName,
+}) => `[SYSTEM: TOOL USAGE INSTRUCTION]
 You are in AGENTIC MODE.
 1. You have limited tools initially: \`search_tool\` and \`${finishToolName}\`.
 2. **SEARCH FIRST**: If you need to ADD, UPDATE, REMOVE, QUERY, or UNLOCK specific entities, use \`search_tool\` to load them.
@@ -43,18 +47,23 @@ You are in AGENTIC MODE.
 /**
  * Pending Consequences Message
  */
-export const pendingConsequencesMessage: Atom<SystemMessageInput> = ({ readyConsequences }) => {
-    if (!readyConsequences || readyConsequences.length === 0) return "";
-    const list = readyConsequences.join("\n");
-    return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nSearch for 'update:causal_chain' to trigger these.`;
+export const pendingConsequencesMessage: Atom<SystemMessageInput> = ({
+  readyConsequences,
+}) => {
+  if (!readyConsequences || readyConsequences.length === 0) return "";
+  const list = readyConsequences.join("\n");
+  return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nSearch for 'update:causal_chain' to trigger these.`;
 };
 
 /**
  * Budget Status Message
  */
-export const budgetStatusMessage: Atom<SystemMessageInput> = ({ budgetPrompt }) => `[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`;
+export const budgetStatusMessage: Atom<SystemMessageInput> = ({
+  budgetPrompt,
+}) => `[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`;
 
 /**
  * No Tool Call Error Message
  */
-export const noToolCallError: Atom<SystemMessageInput> = ({ finishToolName }) => `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one tool to progress. Use \`search_tool\` to load more state or \`${finishToolName}\` to finalize the narrative. Bare text is not allowed.`;
+export const noToolCallError: Atom<SystemMessageInput> = ({ finishToolName }) =>
+  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one tool to progress. Use \`search_tool\` to load more state or \`${finishToolName}\` to finalize the narrative. Bare text is not allowed.`;

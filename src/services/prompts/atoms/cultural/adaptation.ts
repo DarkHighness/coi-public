@@ -19,7 +19,9 @@ export type CulturalAdaptationInput = {
 export const culturalAdaptation: Atom<CulturalAdaptationInput> = ({
   language,
 }) => {
-  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(language);
+  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
+    language,
+  );
 
   if (isChineseFamily) {
     return `
@@ -88,7 +90,12 @@ export const culturalAdaptation: Atom<CulturalAdaptationInput> = ({
 `;
   }
 
-  if (language === "en" || language === "en-US" || language === "en-GB" || language === "English") {
+  if (
+    language === "en" ||
+    language === "en-US" ||
+    language === "en-GB" ||
+    language === "English"
+  ) {
     return `
 <cultural_adaptation>
   <critical>
@@ -141,7 +148,9 @@ Adapt cultural references appropriately:
 export const culturalAdaptationLite: Atom<CulturalAdaptationInput> = ({
   language,
 }) => {
-  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(language);
+  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
+    language,
+  );
 
   if (isChineseFamily) {
     return `<cultural_adaptation>

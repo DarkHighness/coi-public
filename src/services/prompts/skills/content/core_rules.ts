@@ -75,11 +75,6 @@ export function getCoreRulesLiteContent(ctx: SkillContext): string {
   <rule>NPC: Use \`hidden\` for true motives, \`visible\` for public face. Track affinity/status changes.</rule>
   <rule>STATE: Output ONLY deltas. Update state IMMEDIATELY when events occur.</rule>
   <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = player knows. Reveal only through investigation.</rule>
-  ${
-    ctx.disableImagePrompt
-      ? ""
-      : "<rule>VISUALS: Provide `imagePrompt` for key moments. Include protagonist, NPCs, lighting.</rule>"
-  }
   <rule>ICONS: Generate emoji \`icon\` for every entity.</rule>
 </core_rules>
 `;

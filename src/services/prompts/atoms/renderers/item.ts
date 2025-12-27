@@ -18,13 +18,11 @@ export type RenderItemInput = {
  */
 export const renderItemVisible: Atom<RenderItemInput> = ({ item }) => {
   const v = item.visible;
-  const lines: string[] = [
-    `id: ${item.id}`,
-    `name: ${item.name}`,
-  ];
+  const lines: string[] = [`id: ${item.id}`, `name: ${item.name}`];
 
   if (item.lore) lines.push(`lore: ${item.lore}`);
-  if (item.emotionalWeight) lines.push(`emotionalWeight: ${item.emotionalWeight}`);
+  if (item.emotionalWeight)
+    lines.push(`emotionalWeight: ${item.emotionalWeight}`);
   if (v.description) lines.push(`description: ${v.description}`);
   if (v.usage) lines.push(`usage: ${v.usage}`);
   if (v.observation) lines.push(`observation: ${v.observation}`);
@@ -35,7 +33,8 @@ export const renderItemVisible: Atom<RenderItemInput> = ({ item }) => {
     if (v.sensory.texture) sensoryParts.push(`texture: ${v.sensory.texture}`);
     if (v.sensory.weight) sensoryParts.push(`weight: ${v.sensory.weight}`);
     if (v.sensory.smell) sensoryParts.push(`smell: ${v.sensory.smell}`);
-    if (sensoryParts.length) lines.push(`sensory: { ${sensoryParts.join(", ")} }`);
+    if (sensoryParts.length)
+      lines.push(`sensory: { ${sensoryParts.join(", ")} }`);
   }
 
   return `<item id="${item.id}" layer="visible">
@@ -69,7 +68,8 @@ export const renderItemFull: Atom<RenderItemInput> = ({ item }) => {
 
   const visibleLines: string[] = [`name: ${item.name}`];
   if (item.lore) visibleLines.push(`lore: ${item.lore}`);
-  if (item.emotionalWeight) visibleLines.push(`emotionalWeight: ${item.emotionalWeight}`);
+  if (item.emotionalWeight)
+    visibleLines.push(`emotionalWeight: ${item.emotionalWeight}`);
   if (v.description) visibleLines.push(`description: ${v.description}`);
   if (v.usage) visibleLines.push(`usage: ${v.usage}`);
   if (v.observation) visibleLines.push(`observation: ${v.observation}`);
@@ -80,7 +80,8 @@ export const renderItemFull: Atom<RenderItemInput> = ({ item }) => {
     if (v.sensory.texture) sensoryParts.push(`texture: ${v.sensory.texture}`);
     if (v.sensory.weight) sensoryParts.push(`weight: ${v.sensory.weight}`);
     if (v.sensory.smell) sensoryParts.push(`smell: ${v.sensory.smell}`);
-    if (sensoryParts.length) visibleLines.push(`sensory: { ${sensoryParts.join(", ")} }`);
+    if (sensoryParts.length)
+      visibleLines.push(`sensory: { ${sensoryParts.join(", ")} }`);
   }
 
   if (!h) {
@@ -91,7 +92,8 @@ ${visibleLines.join("\n")}
 
   const hiddenLines: string[] = [];
   if (h.truth) hiddenLines.push(`truth: ${h.truth}`);
-  if (h.secrets?.length) hiddenLines.push(`secrets: ${JSON.stringify(h.secrets)}`);
+  if (h.secrets?.length)
+    hiddenLines.push(`secrets: ${JSON.stringify(h.secrets)}`);
 
   return `<item id="${item.id}" layer="full">
 <visible>

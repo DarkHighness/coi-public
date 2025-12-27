@@ -18,15 +18,13 @@ export type RenderFactionInput = {
  */
 export const renderFactionVisible: Atom<RenderFactionInput> = ({ faction }) => {
   const v = faction.visible;
-  const lines: string[] = [
-    `id: ${faction.id}`,
-    `name: ${faction.name}`,
-  ];
+  const lines: string[] = [`id: ${faction.id}`, `name: ${faction.name}`];
 
   if (v.agenda) lines.push(`agenda: ${v.agenda}`);
   if (v.influence) lines.push(`influence: ${v.influence}`);
   if (v.members?.length) lines.push(`members: ${JSON.stringify(v.members)}`);
-  if (v.relations?.length) lines.push(`relations: ${JSON.stringify(v.relations)}`);
+  if (v.relations?.length)
+    lines.push(`relations: ${JSON.stringify(v.relations)}`);
 
   return `<faction id="${faction.id}" layer="visible">
 ${lines.join("\n")}
@@ -44,9 +42,11 @@ export const renderFactionHidden: Atom<RenderFactionInput> = ({ faction }) => {
 
   if (h.agenda) lines.push(`trueAgenda: ${h.agenda}`);
   if (h.influence) lines.push(`trueInfluence: ${h.influence}`);
-  if (h.members?.length) lines.push(`secretMembers: ${JSON.stringify(h.members)}`);
+  if (h.members?.length)
+    lines.push(`secretMembers: ${JSON.stringify(h.members)}`);
   if (h.internalConflict) lines.push(`internalConflict: ${h.internalConflict}`);
-  if (h.relations?.length) lines.push(`secretRelations: ${JSON.stringify(h.relations)}`);
+  if (h.relations?.length)
+    lines.push(`secretRelations: ${JSON.stringify(h.relations)}`);
 
   return `<faction id="${faction.id}" layer="hidden">
 ${lines.join("\n")}
@@ -63,8 +63,10 @@ export const renderFactionFull: Atom<RenderFactionInput> = ({ faction }) => {
   const visibleLines: string[] = [`name: ${faction.name}`];
   if (v.agenda) visibleLines.push(`agenda: ${v.agenda}`);
   if (v.influence) visibleLines.push(`influence: ${v.influence}`);
-  if (v.members?.length) visibleLines.push(`members: ${JSON.stringify(v.members)}`);
-  if (v.relations?.length) visibleLines.push(`relations: ${JSON.stringify(v.relations)}`);
+  if (v.members?.length)
+    visibleLines.push(`members: ${JSON.stringify(v.members)}`);
+  if (v.relations?.length)
+    visibleLines.push(`relations: ${JSON.stringify(v.relations)}`);
 
   if (!h) {
     return `<faction id="${faction.id}" layer="visible">
@@ -75,9 +77,12 @@ ${visibleLines.join("\n")}
   const hiddenLines: string[] = [];
   if (h.agenda) hiddenLines.push(`trueAgenda: ${h.agenda}`);
   if (h.influence) hiddenLines.push(`trueInfluence: ${h.influence}`);
-  if (h.members?.length) hiddenLines.push(`secretMembers: ${JSON.stringify(h.members)}`);
-  if (h.internalConflict) hiddenLines.push(`internalConflict: ${h.internalConflict}`);
-  if (h.relations?.length) hiddenLines.push(`secretRelations: ${JSON.stringify(h.relations)}`);
+  if (h.members?.length)
+    hiddenLines.push(`secretMembers: ${JSON.stringify(h.members)}`);
+  if (h.internalConflict)
+    hiddenLines.push(`internalConflict: ${h.internalConflict}`);
+  if (h.relations?.length)
+    hiddenLines.push(`secretRelations: ${JSON.stringify(h.relations)}`);
 
   return `<faction id="${faction.id}" layer="full">
 <visible>

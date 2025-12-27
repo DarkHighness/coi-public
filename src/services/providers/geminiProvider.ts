@@ -162,8 +162,7 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
 async function fetchModelsViaRestApi(
   config: GeminiConfig,
 ): Promise<ModelInfo[]> {
-  const baseUrl =
-    config.baseUrl || "https://generativelanguage.googleapis.com";
+  const baseUrl = config.baseUrl || "https://generativelanguage.googleapis.com";
   const url = `${baseUrl}/v1beta/models?key=${config.apiKey}`;
 
   const response = await fetch(url, {
@@ -174,7 +173,9 @@ async function fetchModelsViaRestApi(
   });
 
   if (!response.ok) {
-    throw new Error(`REST API returned ${response.status}: ${response.statusText}`);
+    throw new Error(
+      `REST API returned ${response.status}: ${response.statusText}`,
+    );
   }
 
   const data = await response.json();

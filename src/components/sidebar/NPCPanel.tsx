@@ -433,7 +433,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     {rel.hidden?.loveExpression && (
                       <div className="mb-2">
                         <span className="text-[9px] uppercase tracking-wider text-pink-500/80 block mb-0.5">
-                          💕 {t("gameViewer.loveExpression") || "How They Show Care"}:
+                          💕{" "}
+                          {t("gameViewer.loveExpression") ||
+                            "How They Show Care"}
+                          :
                         </span>
                         <div className="leading-relaxed text-theme-text">
                           <MarkdownText
@@ -447,7 +450,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     {rel.hidden?.unspokenSacrifice && (
                       <div className="mb-2">
                         <span className="text-[9px] uppercase tracking-wider text-purple-500/80 block mb-0.5">
-                          🎭 {t("gameViewer.unspokenSacrifice") || "Unspoken Sacrifice"}:
+                          🎭{" "}
+                          {t("gameViewer.unspokenSacrifice") ||
+                            "Unspoken Sacrifice"}
+                          :
                         </span>
                         <div className="leading-relaxed text-theme-text">
                           <MarkdownText

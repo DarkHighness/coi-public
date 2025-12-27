@@ -20,8 +20,6 @@ import {
   memoryQueryAtom,
   systemRulesAtom,
   atmosphereDiscoveryAtom,
-  visualPolicy,
-  visualsAtom,
   formattingAtom,
   npcObservationAtom,
 } from "../../../atoms/core";
@@ -65,11 +63,6 @@ export function getAtmosphereDiscoveryContent(_ctx: SkillContext): string {
   return atmosphereDiscoveryAtom();
 }
 
-export function getVisualsContent(ctx: SkillContext): string {
-  if (ctx.disableImagePrompt) return "";
-  return visualsAtom();
-}
-
 export function getIconsContent(_ctx: SkillContext): string {
   return iconsAtom();
 }
@@ -80,4 +73,8 @@ export function getFormattingContent(_ctx: SkillContext): string {
 
 export function getNpcObservationContent(_ctx: SkillContext): string {
   return npcObservationAtom();
+}
+
+export function getVisualsContent(_ctx: SkillContext): string {
+  return atmosphereDiscoveryAtom();
 }

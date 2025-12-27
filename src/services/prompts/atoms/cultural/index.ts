@@ -4,10 +4,7 @@
  * ============================================================================
  */
 
-export {
-  culturalAdaptation,
-  type CulturalAdaptationInput,
-} from "./adaptation";
+export { culturalAdaptation, type CulturalAdaptationInput } from "./adaptation";
 
 export {
   languageEnforcement,

@@ -8,10 +8,7 @@
  */
 
 import type { SkillContext } from "../types";
-import {
-  culturalAdaptation,
-  languageEnforcement,
-} from "../../atoms/cultural";
+import { culturalAdaptation, languageEnforcement } from "../../atoms/cultural";
 
 export function getCulturalAdaptationContent(ctx: SkillContext): string {
   // culturalAdaptation atom expects { language: string }

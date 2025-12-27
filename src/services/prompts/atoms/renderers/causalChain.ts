@@ -23,7 +23,9 @@ export type RenderCausalChainInput = {
 /**
  * 渲染 CausalChain 的 visible 层（玩家所知的因果链）
  */
-export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({ chain }) => {
+export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({
+  chain,
+}) => {
   const lines: string[] = [
     `chainId: ${chain.chainId}`,
     `status: ${chain.status}`,
@@ -34,10 +36,11 @@ export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({ chain }
   }
 
   // Only show known consequences
-  const knownConsequences = chain.pendingConsequences?.filter(c => c.known) || [];
+  const knownConsequences =
+    chain.pendingConsequences?.filter((c) => c.known) || [];
   if (knownConsequences.length > 0) {
-    const conseqStrs = knownConsequences.map(c =>
-      `[${c.id}] ${c.description}${c.triggered ? " (triggered)" : ""}`
+    const conseqStrs = knownConsequences.map(
+      (c) => `[${c.id}] ${c.description}${c.triggered ? " (triggered)" : ""}`,
     );
     lines.push(`knownConsequences: ${conseqStrs.join("; ")}`);
   }
@@ -50,18 +53,21 @@ ${lines.join("\n")}
 /**
  * 渲染 CausalChain 的 hidden 层（所有后果，包括未知的）
  */
-export const renderCausalChainHidden: Atom<RenderCausalChainInput> = ({ chain }) => {
-  const lines: string[] = [
-    `chainId: ${chain.chainId}`,
-  ];
+export const renderCausalChainHidden: Atom<RenderCausalChainInput> = ({
+  chain,
+}) => {
+  const lines: string[] = [`chainId: ${chain.chainId}`];
 
   if (chain.rootCause) {
-    lines.push(`rootCause: { eventId: ${chain.rootCause.eventId}, description: ${chain.rootCause.description} }`);
+    lines.push(
+      `rootCause: { eventId: ${chain.rootCause.eventId}, description: ${chain.rootCause.description} }`,
+    );
   }
 
   if (chain.pendingConsequences?.length) {
-    const conseqStrs = chain.pendingConsequences.map(c =>
-      `[${c.id}] ${c.description} | trigger: ${c.triggerCondition || "none"} | severity: ${c.severity || "normal"} | known: ${c.known} | triggered: ${c.triggered}`
+    const conseqStrs = chain.pendingConsequences.map(
+      (c) =>
+        `[${c.id}] ${c.description} | trigger: ${c.triggerCondition || "none"} | severity: ${c.severity || "normal"} | known: ${c.known} | triggered: ${c.triggered}`,
     );
     lines.push(`allConsequences:\n  ${conseqStrs.join("\n  ")}`);
   }
@@ -74,10 +80,10 @@ ${lines.join("\n")}
 /**
  * 渲染 CausalChain 完整信息（visible + hidden）
  */
-export const renderCausalChainFull: Atom<RenderCausalChainInput> = ({ chain }) => {
-  const visibleLines: string[] = [
-    `status: ${chain.status}`,
-  ];
+export const renderCausalChainFull: Atom<RenderCausalChainInput> = ({
+  chain,
+}) => {
+  const visibleLines: string[] = [`status: ${chain.status}`];
   if (chain.rootCause) {
     visibleLines.push(`rootCause: ${chain.rootCause.description}`);
   }
@@ -87,7 +93,9 @@ export const renderCausalChainFull: Atom<RenderCausalChainInput> = ({ chain }) =
     hiddenLines.push(`rootCauseEventId: ${chain.rootCause.eventId}`);
   }
   if (chain.pendingConsequences?.length) {
-    hiddenLines.push(`pendingConsequences: ${JSON.stringify(chain.pendingConsequences, null, 2)}`);
+    hiddenLines.push(
+      `pendingConsequences: ${JSON.stringify(chain.pendingConsequences, null, 2)}`,
+    );
   }
 
   return `<causal_chain id="${chain.chainId}" layer="full">

@@ -34,9 +34,7 @@ export function injectNormalTurnInstruction(
   history: UnifiedMessage[],
   finishToolName: string,
 ): void {
-  history.push(
-    createUserMessage(normalTurnInstruction({ finishToolName })),
-  );
+  history.push(createUserMessage(normalTurnInstruction({ finishToolName })));
 }
 
 /**
@@ -83,7 +81,5 @@ export function injectNoToolCallError(
   history: UnifiedMessage[],
   finishToolName: string,
 ): void {
-  history.push(
-    createUserMessage(noToolCallError({ finishToolName })),
-  );
+  history.push(createUserMessage(noToolCallError({ finishToolName })));
 }

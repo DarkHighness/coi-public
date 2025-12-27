@@ -169,7 +169,9 @@ Read the theme's worldSetting and narrativeStyle carefully:
 /**
  * 叙事规模选择指南 - 精简版
  */
-export const narrativeScaleSelectionLite: Atom<NarrativeScaleSelectionInput> = () => `
+export const narrativeScaleSelectionLite: Atom<
+  NarrativeScaleSelectionInput
+> = () => `
 <narrative_scale_philosophy>
 Choose narrative scale based on theme:
 - **EPIC**: World-ending stakes, cosmic threats, chosen ones, faction wars

@@ -446,7 +446,8 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                           value={config.modelId}
                           className="text-black dark:text-white"
                         >
-                          {config.modelId} ({t("saveManager.current") || "Current"})
+                          {config.modelId} (
+                          {t("saveManager.current") || "Current"})
                         </option>
                         {modelList.map((m, idx) => (
                           <option
@@ -620,37 +621,6 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                     <p className="text-[10px] text-theme-muted italic">
                       {t("models.imageTimeoutHelp")}
                     </p>
-                  </div>
-
-                  {/* Manual Generation Toggle */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex-1">
-                      <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
-                        {t("models.manualImageGen")}
-                      </label>
-                      <p className="text-[10px] text-theme-muted italic mt-1">
-                        {t("models.manualImageGenHelp")}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        onUpdateSettings({
-                          ...currentSettings,
-                          manualImageGen: !currentSettings.manualImageGen,
-                        })
-                      }
-                      className={`w-8 h-4 rounded-full relative transition-colors ${
-                        currentSettings.manualImageGen
-                          ? "bg-green-500"
-                          : "bg-theme-border"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${
-                          currentSettings.manualImageGen ? "translate-x-4" : ""
-                        }`}
-                      ></span>
-                    </button>
                   </div>
                 </div>
               )}

@@ -33,7 +33,7 @@ export const pendingConsequences: Atom<PendingConsequencesInput> = ({
       (rc) =>
         `- [${rc.chainId}/${rc.consequenceId}] ${rc.description}${
           rc.triggerCondition ? ` (trigger: ${rc.triggerCondition})` : ""
-        }${rc.known ? " [player will know]" : " [hidden]"}`
+        }${rc.known ? " [player will know]" : " [hidden]"}`,
     )
     .join("\n");
 

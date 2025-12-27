@@ -19,7 +19,10 @@ export {
   type NarrativeScaleRuntimeInput,
 } from "./narrativeScaleRuntime";
 
-export { temporalPhilosophy, temporalPhilosophyLite } from "./temporalPhilosophy";
+export {
+  temporalPhilosophy,
+  temporalPhilosophyLite,
+} from "./temporalPhilosophy";
 export { openingScene } from "./openingScene";
 export { narrativeCausality, type NarrativeCausalityInput } from "./causality";
 export { combatMechanics } from "./combat";

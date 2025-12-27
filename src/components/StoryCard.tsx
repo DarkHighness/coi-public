@@ -42,6 +42,9 @@ export interface StoryCardProps {
   /** Dynamic max width class based on sidebar states */
   maxWidthClass?: string;
   onFork?: () => void;
+  onGeneratePrompt?: (id: string) => void;
+  onGenerateImageFull?: (id: string) => void;
+  onGenerateCinematic?: (id: string) => void;
 }
 
 export const StoryCardComponent: React.FC<StoryCardProps> = ({
@@ -63,6 +66,9 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
   hasFailed,
   maxWidthClass = "max-w-3xl",
   onFork,
+  onGeneratePrompt,
+  onGenerateImageFull,
+  onGenerateCinematic,
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
@@ -277,7 +283,6 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
         }
         disableImages={disableImages}
         imageGenerationEnabled={aiSettings?.image?.enabled !== false}
-        manualImageGen={aiSettings?.manualImageGen}
         onUpload={onImageUpload ? handleUploadClick : undefined}
         onDelete={
           (segment.imageId || segment.imageUrl || segment.imagePrompt) &&
@@ -286,6 +291,19 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
             : undefined
         }
         hasFailed={hasFailed}
+        onGeneratePrompt={
+          onGeneratePrompt ? () => onGeneratePrompt(segment.id) : undefined
+        }
+        onGenerateImageFull={
+          onGenerateImageFull
+            ? () => onGenerateImageFull(segment.id)
+            : undefined
+        }
+        onGenerateCinematic={
+          onGenerateCinematic
+            ? () => onGenerateCinematic(segment.id)
+            : undefined
+        }
       />
 
       {/* Hidden File Input */}

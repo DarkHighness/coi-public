@@ -11,7 +11,9 @@ import type { Atom } from "../types";
 /**
  * 视觉连续性规则
  */
-export const visualContinuityRules: Atom<void> = () => `**CRITICAL: VISUAL CONTINUITY & COHERENCE**
+export const visualContinuityRules: Atom<
+  void
+> = () => `**CRITICAL: VISUAL CONTINUITY & COHERENCE**
 You must analyze <veo_context> to ensure visual consistency.
 - **Environment Fidelity**: The video MUST reflect environment details in <game_state><location><environment>.
 - **Character State**: If <game_state><protagonist><status> mentions injuries, camera movement should be heavy/shaky; if <game_state><inventory> has glowing items, they must be visible light sources.

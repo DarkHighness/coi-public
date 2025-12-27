@@ -11,7 +11,9 @@ import type { Atom } from "../types";
 /**
  * IP 忠实度要求
  */
-export const ipFidelityRequirements: Atom<void> = () => `<ip_fidelity_requirements>
+export const ipFidelityRequirements: Atom<
+  void
+> = () => `<ip_fidelity_requirements>
   If this story is based on an established intellectual property (IP), game, novel, film, or other known work:
   You MUST adhere to the original IP's visual identity:
   - **Art Style**: Match the visual style of original illustrations, concept art, or film/game adaptations

@@ -673,9 +673,10 @@ export interface StorySegment {
   text: string;
   choices: (string | Choice)[]; // Support both string (legacy) and Choice object
 
-  imagePrompt: string;
+  imagePrompt?: string; // Opt-in image prompt (generated on demand)
   imageUrl?: string;
   imageId?: string; // ID of the image in IndexedDB
+  veoScript?: string; // Cinematic script (generated on demand)
   audioKey?: string; // Key for cached TTS audio in IndexedDB
   role: "user" | "model" | "system" | "command";
   timestamp: number;
@@ -1097,7 +1098,6 @@ export interface AISettings {
 
   // Image Generation Settings
   imageTimeout: number; // Timeout in seconds
-  manualImageGen: boolean; // Require manual click to generate
   enableFallbackBackground: boolean; // Enable fallback background images
 
   // Visual Theme Settings
@@ -1127,7 +1127,6 @@ export interface AISettings {
     nsfw?: boolean; // Enable NSFW/adult content generation
     genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
     promptInjectionEnabled?: boolean;
-    disableImagePrompt?: boolean; // Completely disable imagePrompt generation
     customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill

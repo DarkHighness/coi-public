@@ -46,9 +46,11 @@ export const worldFoundation: Atom<WorldFoundationInput> = ({
 
   // World setting
   const settingParts: string[] = [];
-  if (worldSetting.visible) settingParts.push(`visible: ${worldSetting.visible}`);
+  if (worldSetting.visible)
+    settingParts.push(`visible: ${worldSetting.visible}`);
   if (worldSetting.hidden) settingParts.push(`hidden: ${worldSetting.hidden}`);
-  if (worldSetting.history) settingParts.push(`history: ${worldSetting.history}`);
+  if (worldSetting.history)
+    settingParts.push(`history: ${worldSetting.history}`);
   if (settingParts.length) {
     lines.push(`<world_setting>\n${settingParts.join("\n")}\n</world_setting>`);
   }

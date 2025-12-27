@@ -10,17 +10,19 @@ import type { Atom, GameState } from "../types";
 import { toToon } from "../../toon";
 
 export type RenderWorldFoundationInput = {
-    outline?: GameState["outline"];
-    godMode?: boolean;
+  outline?: GameState["outline"];
+  godMode?: boolean;
 };
 
 /**
  * Render basic world foundation
  */
-export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = ({ outline }) => {
-    if (!outline) return "";
+export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = ({
+  outline,
+}) => {
+  if (!outline) return "";
 
-    return `<world_foundation>
+  return `<world_foundation>
 <title>${outline.title}</title>
 <premise>${outline.premise}</premise>
 <main_goal>${toToon(outline.mainGoal)}</main_goal>
@@ -31,10 +33,12 @@ export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = ({ outlin
 /**
  * Render God Mode context
  */
-export const renderGodMode: Atom<RenderWorldFoundationInput> = ({ godMode }) => {
-    if (!godMode) return "";
+export const renderGodMode: Atom<RenderWorldFoundationInput> = ({
+  godMode,
+}) => {
+  if (!godMode) return "";
 
-    return `<god_mode>
+  return `<god_mode>
 GOD MODE ACTIVE: Player has absolute power. All actions succeed. NPCs obey unconditionally.
 </god_mode>`;
 };

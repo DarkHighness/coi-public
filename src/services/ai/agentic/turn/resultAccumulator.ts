@@ -25,7 +25,6 @@ export function processFinishTurnData(
     ?.replace(/\\n/g, "\n")
     .replace(/\\"/g, '"');
   response.choices = data.choices as GameResponse["choices"];
-  response.imagePrompt = data.imagePrompt as string;
 
   // Extract atmosphere
   if (data.atmosphere) {

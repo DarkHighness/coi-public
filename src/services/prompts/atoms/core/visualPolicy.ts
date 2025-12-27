@@ -4,10 +4,6 @@
  */
 import type { Atom } from "../types";
 
-export interface VisualPolicyInput {
-  disableImagePrompt?: boolean;
-}
-
 const atmosphereDiscovery = `
   <rule name="ATMOSPHERE DISCOVERY - CRITICAL">
     - **Valid Atmosphere Options**: Available values for \`envTheme\`, \`ambience\`, and \`weather\` are strictly validated.
@@ -49,17 +45,10 @@ const visuals = `
   </rule>
 `;
 
-export const visualPolicy: Atom<VisualPolicyInput> = ({
-  disableImagePrompt,
-}) => {
-  if (disableImagePrompt) {
-    return atmosphereDiscovery;
-  }
+export const visualPolicy: Atom<void> = () => {
   return `
 ${atmosphereDiscovery}
-${visuals}
 `;
 };
 
 export const atmosphereDiscoveryAtom: Atom<void> = () => atmosphereDiscovery;
-export const visualsAtom: Atom<void> = () => visuals;

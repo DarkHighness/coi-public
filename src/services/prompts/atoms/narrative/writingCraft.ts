@@ -637,13 +637,15 @@ export const sensoryImmersionAtom: Atom<void> = () => sensoryImmersion;
 export const dialogueIsCharacterAtom: Atom<void> = () => dialogueIsCharacter;
 export const narratingFailureAtom: Atom<void> = () => narratingFailure;
 export const npcPersonalityAtom: Atom<void> = () => npcPersonality;
-export const secondPersonImmersionAtom: Atom<void> = () => secondPersonImmersion;
+export const secondPersonImmersionAtom: Atom<void> = () =>
+  secondPersonImmersion;
 export const perspectiveAnchorAtom: Atom<void> = () => perspectiveAnchor;
 export const physicalityAtom: Atom<void> = () => physicality;
 export const unapologeticRealityAtom: Atom<void> = () => unapologeticReality;
 export const sensoryGritAtom: Atom<void> = () => sensoryGrit;
 export const emotionalResonanceAtom: Atom<void> = () => emotionalResonance;
-export const momentCrystallizationAtom: Atom<void> = () => momentCrystallization;
+export const momentCrystallizationAtom: Atom<void> = () =>
+  momentCrystallization;
 export const worldTextureAtom: Atom<void> = () => worldTexture;
 export const bannedPatternsAtom: Atom<void> = () => bans;
 export const dramaticPacingAtom: Atom<void> = () => dramaticPacing;

@@ -29,7 +29,8 @@ export const protagonistContext: Atom<ProtagonistContextInput> = ({
 
   if (character.age) lines.push(`age: ${character.age}`);
   if (character.status) lines.push(`status: ${character.status}`);
-  if (character.currentLocation) lines.push(`currentLocation: ${character.currentLocation}`);
+  if (character.currentLocation)
+    lines.push(`currentLocation: ${character.currentLocation}`);
 
   return `<protagonist>
 ${lines.join("\n")}

@@ -8,7 +8,9 @@ export interface DetailedModeInput {
   detailedDescription: boolean;
 }
 
-export const detailedMode: Atom<DetailedModeInput> = ({ detailedDescription }) => {
+export const detailedMode: Atom<DetailedModeInput> = ({
+  detailedDescription,
+}) => {
   if (!detailedDescription) return "";
 
   return `

@@ -11,7 +11,9 @@ import type { Atom } from "../types";
 /**
  * SUDO 模式指令 - 无参数
  */
-export const sudoModeInstruction: Atom<void> = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
+export const sudoModeInstruction: Atom<
+  void
+> = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
 2. Use \`search_tool\` to load any tools you need for state changes.

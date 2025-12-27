@@ -11,7 +11,9 @@ import type { Atom } from "../types";
 /**
  * 镜头分解模板
  */
-export const shotBreakdownTemplate: Atom<void> = () => `**PROFESSIONAL SHOT BREAKDOWN**
+export const shotBreakdownTemplate: Atom<
+  void
+> = () => `**PROFESSIONAL SHOT BREAKDOWN**
 
 Create AS MANY SHOTS AS NEEDED to tell the story (minimum 2, typically 3-5, more for complex scenes).
 For each shot, specify:

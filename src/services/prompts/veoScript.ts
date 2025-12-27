@@ -9,7 +9,7 @@ import {
   veoFinalDirective,
   shotBreakdownTemplate,
   mandatoryKeywords,
-  avoidList
+  avoidList,
 } from "./atoms/veo";
 
 // --- VEO Script Prompt ---

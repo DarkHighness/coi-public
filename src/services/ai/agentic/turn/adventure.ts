@@ -92,7 +92,6 @@ export const generateAdventureTurn = async (
     backgroundTemplate,
     example,
     worldSetting,
-    disableImagePrompt: settings.extra?.disableImagePrompt,
     customRules: gameState.customRules,
     isNSFW: settings.extra?.nsfw,
     isLiteMode: settings.extra?.liteMode,

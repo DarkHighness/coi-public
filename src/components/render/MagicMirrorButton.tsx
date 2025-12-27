@@ -2,21 +2,40 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 interface MagicMirrorButtonProps {
-  onAnimate: () => void;
+  onAnimate?: () => void;
+  onGenerateCinematic?: () => void;
+  className?: string;
+  title?: string;
 }
 
 export const MagicMirrorButton: React.FC<MagicMirrorButtonProps> = ({
   onAnimate,
+  onGenerateCinematic,
+  className = "",
+  title,
 }) => {
   const { t } = useTranslation();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onGenerateCinematic) {
+      onGenerateCinematic();
+    } else if (onAnimate) {
+      onAnimate();
+    }
+  };
+
+  const displayTitle =
+    title ||
+    (onGenerateCinematic
+      ? t("visual.cinematicAnimate")
+      : t("visual.magicMirror"));
+
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onAnimate();
-      }}
-      className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
-      title={t("magicMirrorAction.animate")}
+      onClick={handleClick}
+      className={`bg-black/60 hover:bg-theme-accent text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10 ${className}`}
+      title={displayTitle}
     >
       <svg
         className="w-5 h-5"

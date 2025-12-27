@@ -71,7 +71,8 @@ ${visibleLines.join("\n")}
   }
 
   const hiddenLines: string[] = [];
-  if (h.trueDescription) hiddenLines.push(`trueDescription: ${h.trueDescription}`);
+  if (h.trueDescription)
+    hiddenLines.push(`trueDescription: ${h.trueDescription}`);
   if (h.trueCausedBy) hiddenLines.push(`trueCausedBy: ${h.trueCausedBy}`);
   if (h.consequences) hiddenLines.push(`consequences: ${h.consequences}`);
 
