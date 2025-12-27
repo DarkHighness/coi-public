@@ -287,7 +287,7 @@ class SkillRegistry implements ISkillRegistry {
     parts.push("    To load additional skills, use the activate_skill tool:");
     parts.push('    activate_skill({ skillIds: ["<skill_id>", ...] })');
     parts.push(
-      '    Example: activate_skill({ skillIds: ["npc_logic", "combat"] })',
+      '    Example: activate_skill({ skillIds: ["combat", "mystery"] })',
     );
     parts.push("  </activate_skill_instruction>");
     parts.push("</skill_manifest>");
