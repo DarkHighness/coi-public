@@ -44,18 +44,23 @@
  * │       completes or fails.                                                │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
- * Priority 4: No Image Intended (Case 1.1)
+ * Priority 4: No Image Prompt Yet (Case 1.1)
  * ┌─────────────────────────────────────────────────────────────────────────┐
  * │ Condition: !imagePrompt AND !imageUrl                                   │
- * │ Display:   Simple "Image Unavailable" placeholder                       │
- * │ Note:      If AI doesn't want image, it won't provide imagePrompt       │
+ * │ Scenarios:                                                               │
+ * │   • imageGenerationEnabled = true && onGenerateImageFull exists         │
+ * │     → Show "One-click Generate" button (user-friendly)                  │
+ * │   • imageGenerationEnabled = false OR no handler                        │
+ * │     → Show "Image Unavailable" placeholder                              │
+ * │ Note:      Prioritizes UX by offering immediate action when possible    │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * STATE COMBINATION TABLE:
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  * | Prompt | URL | Provider | Generating | Manual | UserReq | Result      |
  * |--------|-----|----------|------------|--------|---------|-------------|
- * |   ❌   | ❌  |    -     |     -      |   -    |    -    | Unavailable |
+ * |   ❌   | ❌  |    ✅    |     -      |   -    |    -    | Gen Button  |
+ * |   ❌   | ❌  |    ❌    |     -      |   -    |    -    | Unavailable |
  * |   ✅   | ❌  |    ❌    |     -      |   -    |    -    | null (1.2)  |
  * |   ✅   | ❌  |    ✅    |    ✅      |  ❌    |    -    | Loading     |
  * |   ✅   | ❌  |    ✅    |    ❌      |  ✅    |  ❌     | Manual      |
@@ -252,6 +257,9 @@ export const StoryImage: React.FC<StoryImageProps> = ({
               labelUnavailable={labelUnavailable}
               themeFont={themeFont}
               onRegenerate={canRegenerate ? handleRegenerate : undefined}
+              onGenerateImageFull={
+                imageGenerationEnabled ? onGenerateImageFull : undefined
+              }
             />
           </div>
         )}
