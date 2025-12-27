@@ -757,7 +757,11 @@
     },
     "disableFilter": "禁用模型筛选",
     "disableFilterHelp": "显示所有模型，忽略能力检测。请谨慎使用。",
-    "disableFilterWarning": "⚠️ 警告 ⚠️\n\n禁用模型筛选将显示所有模型，无论其能力如何。\n\n选择不兼容的模型可能导致生成失败。\n\n确定要继续吗？"
+    "disableFilterWarning": "⚠️ 警告 ⚠️\n\n禁用模型筛选将显示所有模型，无论其能力如何。\n\n选择不兼容的模型可能导致生成失败。\n\n确定要继续吗？",
+    "customModelPlaceholder": "输入模型 ID...",
+    "customModelWarning": "自定义模型未经验证，可能导致生成失败",
+    "switchToDropdown": "切换到下拉选择",
+    "switchToCustom": "手动输入"
   },
   "customize": "自定义",
   "surpriseMe": "来点惊喜",

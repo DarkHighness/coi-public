@@ -1048,6 +1048,7 @@ export interface ProviderCredentials {
 export interface FunctionConfig {
   providerId: string; // 引用 ProviderInstance.id
   modelId: string;
+  isCustomModel?: boolean; // 用户手动输入的自定义模型 ID
   enabled?: boolean;
   resolution?: string; // e.g. "512x512", "1024x1024"
   thinkingEffort?:

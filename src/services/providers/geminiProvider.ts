@@ -135,11 +135,69 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
         m.id.includes("imagen") ||
         m.id.includes("veo"),
     );
-  } catch (error) {
-    console.warn("Failed to list Gemini models:", error);
+  } catch (sdkError) {
+    console.warn("Failed to list Gemini models via SDK:", sdkError);
+
+    // Fallback: 尝试直接调用 v1beta/models REST API
+    try {
+      const models = await fetchModelsViaRestApi(config);
+      if (models.length > 0) {
+        console.log(
+          `[Gemini] Successfully fetched ${models.length} models via REST API fallback`,
+        );
+        return models;
+      }
+    } catch (restError) {
+      console.warn("Failed to list Gemini models via REST API:", restError);
+    }
+
     // 返回默认模型列表
     return getDefaultModels();
   }
+}
+
+/**
+ * 通过 REST API 直接获取模型列表 (fallback)
+ */
+async function fetchModelsViaRestApi(
+  config: GeminiConfig,
+): Promise<ModelInfo[]> {
+  const baseUrl =
+    config.baseUrl || "https://generativelanguage.googleapis.com";
+  const url = `${baseUrl}/v1beta/models?key=${config.apiKey}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`REST API returned ${response.status}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.models || !Array.isArray(data.models)) {
+    throw new Error("Invalid response format from v1beta/models");
+  }
+
+  const models: ModelInfo[] = data.models
+    .filter(
+      (model: any) =>
+        model.name &&
+        (model.name.includes("gemini") ||
+          model.name.includes("imagen") ||
+          model.name.includes("veo")),
+    )
+    .map((model: any) => ({
+      id: model.name.replace("models/", ""),
+      name: model.displayName || model.name,
+      capabilities: inferModelCapabilities(model.name),
+    }));
+
+  return models;
 }
 
 /**

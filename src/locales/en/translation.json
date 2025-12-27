@@ -748,7 +748,11 @@
     },
     "disableFilter": "Disable Model Filter",
     "disableFilterHelp": "Show all models regardless of capability detection. Use with caution.",
-    "disableFilterWarning": "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?"
+    "disableFilterWarning": "⚠️ WARNING ⚠️\n\nDisabling model filter will show ALL models regardless of their capabilities.\n\nSelecting an incompatible model may cause generation to fail.\n\nAre you sure you want to proceed?",
+    "customModelPlaceholder": "Enter model ID...",
+    "customModelWarning": "Custom model is unverified and may cause generation failures",
+    "switchToDropdown": "Switch to dropdown",
+    "switchToCustom": "Enter manually"
   },
   "summarySnapshot": "Story So Far",
   "customize": "Customize",

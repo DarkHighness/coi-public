@@ -21,6 +21,18 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     loadModels: onLoadModels,
   } = useSettings();
 
+  // Toggle custom model input mode (persisted in settings)
+  const toggleCustomMode = (sectionKey: FunctionKey) => {
+    const config = currentSettings[sectionKey];
+    onUpdateSettings({
+      ...currentSettings,
+      [sectionKey]: {
+        ...config,
+        isCustomModel: !config.isCustomModel,
+      },
+    });
+  };
+
   // Auto-refresh models on mount if empty
   React.useEffect(() => {
     const hasModels = Object.keys(providerModels).length > 0;
@@ -44,12 +56,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const updateFunction = (func: FunctionKey, field: string, value: any) => {
     // Special handling for model selection on text-related functions
-    const textFunctions: FunctionKey[] = [
-      "story",
-      "translation",
-      "lore",
-      "script",
-    ];
+    const textFunctions: FunctionKey[] = ["story", "lore", "script"];
 
     if (
       field === "modelId" &&
@@ -67,7 +74,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         // Prompt user for batch update
         const shouldBatchUpdate = window.confirm(
           t("models.batchUpdatePrompt") ||
-            "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Translation, Lore, and Script functions?",
+            "All text-related models are currently unavailable. Would you like to apply this model selection to Story, Lore, and Script functions?",
         );
 
         if (shouldBatchUpdate) {
@@ -305,12 +312,6 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             hasEnable: true,
           },
           {
-            key: "translation",
-            label: t("models.translation"),
-            help: t("models.translationHelp"),
-            hasEnable: true,
-          },
-          {
             key: "image",
             label: t("models.image"),
             help: t("models.imageHelp"),
@@ -412,42 +413,104 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                 </div>
 
                 <div className="relative w-full md:w-2/3">
-                  <select
-                    value={config.modelId}
-                    onChange={(e) =>
-                      updateFunction(sectionKey, "modelId", e.target.value)
-                    }
-                    className={`w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
-                      !isModelValid && !loadingModels
-                        ? "border-red-500 text-red-500"
-                        : "border-theme-border"
-                    }`}
-                    disabled={loadingModels}
-                  >
-                    <option
-                      value={config.modelId}
-                      className="text-black dark:text-white"
-                    >
-                      {config.modelId} ({t("saveManager.current") || "Current"})
-                    </option>
-                    {modelList.map((m, idx) => (
-                      <option
-                        key={`${config.providerId}-${m.id}-${idx}`}
-                        value={m.id}
-                        className="text-black dark:text-white"
+                  <div className="flex gap-2">
+                    {config.isCustomModel ? (
+                      /* Custom model input mode */
+                      <input
+                        type="text"
+                        value={config.modelId}
+                        onChange={(e) =>
+                          updateFunction(sectionKey, "modelId", e.target.value)
+                        }
+                        placeholder={
+                          t("models.customModelPlaceholder") ||
+                          "Enter model ID..."
+                        }
+                        className="flex-1 bg-theme-bg border border-yellow-500/50 rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono"
+                      />
+                    ) : (
+                      /* Dropdown mode */
+                      <select
+                        value={config.modelId}
+                        onChange={(e) =>
+                          updateFunction(sectionKey, "modelId", e.target.value)
+                        }
+                        className={`flex-1 bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
+                          !isModelValid && !loadingModels && config.modelId
+                            ? "border-yellow-500/50"
+                            : "border-theme-border"
+                        }`}
+                        disabled={loadingModels}
                       >
-                        {m.name || m.id}
-                      </option>
-                    ))}
-                  </select>
-                  {loadingModels && (
-                    <div className="absolute right-2 top-2 text-theme-muted text-xs">
+                        <option
+                          value={config.modelId}
+                          className="text-black dark:text-white"
+                        >
+                          {config.modelId} ({t("saveManager.current") || "Current"})
+                        </option>
+                        {modelList.map((m, idx) => (
+                          <option
+                            key={`${config.providerId}-${m.id}-${idx}`}
+                            value={m.id}
+                            className="text-black dark:text-white"
+                          >
+                            {m.name || m.id}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {/* Toggle button for custom mode */}
+                    <button
+                      type="button"
+                      onClick={() => toggleCustomMode(sectionKey)}
+                      title={
+                        config.isCustomModel
+                          ? t("models.switchToDropdown") || "Switch to dropdown"
+                          : t("models.switchToCustom") || "Enter manually"
+                      }
+                      className={`px-2 py-1 border rounded text-xs transition-colors flex-shrink-0 ${
+                        config.isCustomModel
+                          ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/30"
+                          : "bg-theme-surface-highlight border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-primary"
+                      }`}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        {config.isCustomModel ? (
+                          /* List icon for switching back to dropdown */
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 6h16M4 12h16M4 18h16"
+                          />
+                        ) : (
+                          /* Pencil icon for switching to custom input */
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                          />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+                  {loadingModels && !config.isCustomModel && (
+                    <div className="absolute right-10 top-2 text-theme-muted text-xs">
                       {t("loadingGeneric")}
                     </div>
                   )}
-                  {!isModelValid && !loadingModels && (
-                    <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-                      {t("settings.modelNotFound")}
+                  {/* Show warning for custom mode OR non-listed models (both are valid custom models) */}
+                  {(config.isCustomModel ||
+                    (!isModelValid && !loadingModels && config.modelId)) && (
+                    <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+                      {t("models.customModelWarning") ||
+                        "Custom model is unverified"}
                     </div>
                   )}
                 </div>
@@ -592,9 +655,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                 </div>
               )}
               {/* Advanced Parameters for Text Models */}
-              {["story", "lore", "script", "translation"].includes(
-                sectionKey,
-              ) && (
+              {["story", "lore", "script"].includes(sectionKey) && (
                 <div className="col-span-3 mt-2">
                   <details className="group">
                     <summary className="text-xs font-bold text-theme-muted uppercase tracking-widest cursor-pointer hover:text-theme-primary transition-colors select-none flex items-center gap-2">
