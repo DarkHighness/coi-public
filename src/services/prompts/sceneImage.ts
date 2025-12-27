@@ -1,7 +1,6 @@
 import {
   GameState,
   GameStateSnapshot,
-  ImageGenerationContext,
   NPC,
   Location as GameLocation,
 } from "../../types";
@@ -10,6 +9,15 @@ import {
 
 import { getThemeStyle, getLoadedThemes } from "../themeRegistry";
 import { formatImageStyleRules } from "./rulesInjector";
+import {
+  imageQualityPrefix,
+  imageTechnicalSpecs,
+  compositionDirectives,
+  renderingInstructions,
+  ipFidelityRequirements,
+  lightingContext,
+  weatherEffects,
+} from "./atoms/image";
 
 /**
  * NPC info extracted from AI prompt or game state
@@ -205,7 +213,7 @@ export const getSceneImagePrompt = (
     // Fallback: Wrap basic prompt in minimal structure
     return `<scene>
   <description>${prompt}</description>
-  <quality>masterpiece, best quality, 8k, ultra detailed, cinematic composition, photorealistic</quality>
+  <quality>${imageQualityPrefix()}</quality>
 </scene>`;
   }
 
@@ -226,9 +234,6 @@ export const getSceneImagePrompt = (
   // Extract NPCs mentioned in the AI's prompt and enrich with game state data
   const mentionedNPCs = extractMentionedNPCs(prompt, knownNPCs);
 
-  // === QUALITY TAGS (Front for emphasis in some models) ===
-  const qualityPrefix = `(Masterpiece, Best Quality, 8K Resolution, Ultra-Detailed, Cinematic Lighting, Ray Tracing, Global Illumination, Unreal Engine 5 Render, Photorealistic, Professional Photography, High Fidelity, Hyperrealistic Textures)`;
-
   // === STYLE REFERENCE ===
   const themeStyleRef = getThemeStyleReference(theme, storyTitle);
   const styleBlock = themeStyleRef
@@ -236,7 +241,7 @@ export const getSceneImagePrompt = (
     : "";
 
   // === BUILD COMPREHENSIVE XML CONTEXT ===
-  let xmlPrompt = `${qualityPrefix}\n\n<visual_context>\n`;
+  let xmlPrompt = `${imageQualityPrefix()}\n\n<visual_context>\n`;
 
   // Story Background and Narrative Context
   if (storyTitle || worldSetting || theme) {
@@ -251,63 +256,21 @@ export const getSceneImagePrompt = (
       xmlPrompt += `    <world_setting>\n      ${worldSetting}\n    </world_setting>\n`;
     }
 
-    // ALWAYS include IP fidelity requirements - let the image model determine if applicable
-    xmlPrompt += `    <ip_fidelity_requirements>\n`;
-    xmlPrompt += `      If this story is based on an established intellectual property (IP), game, novel, film, or other known work:\n`;
-    xmlPrompt += `      You MUST adhere to the original IP's visual identity:\n`;
-    xmlPrompt += `      - **Art Style**: Match the visual style of original illustrations, concept art, or film/game adaptations\n`;
-    xmlPrompt += `      - **Composition**: Use framing and shot composition consistent with the source material's cinematography or illustration style\n`;
-    xmlPrompt += `      - **Color Palette**: Replicate the characteristic color schemes and grading of the original work\n`;
-    xmlPrompt += `      - **Iconic Elements**: Include signature visual motifs, symbols, or design elements from the IP (e.g., lightsabers for Star Wars, One Ring for LOTR, etc.)\n`;
-    xmlPrompt += `      - **Character Design**: Maintain consistency with established character appearances and costume designs from the source material\n`;
-    xmlPrompt += `      - **World Design**: Architecture, environments, and props must match the IP's established aesthetic and lore\n`;
-    xmlPrompt += `      - **Tone**: Capture the visual mood and atmosphere that defines the original property\n`;
-    xmlPrompt += `      - **References**: Draw from official artwork, film stills, game screenshots, or published illustrations\n`;
-    xmlPrompt += `      DO NOT deviate from the established visual language if this is a known IP. Fans expect authenticity.\n`;
-    xmlPrompt += `      If this is NOT based on a known IP, you may use creative freedom while maintaining thematic consistency.\n`;
-    xmlPrompt += `    </ip_fidelity_requirements>\n`;
+    // IP Fidelity Rules Atom
+    xmlPrompt += `    ${ipFidelityRequirements()}\n`;
 
     xmlPrompt += `    <narrative_context>Visual style should reinforce the story's themes and world-building, maintaining consistency with established lore and atmosphere</narrative_context>\n`;
     xmlPrompt += `  </story_background>\n`;
   }
 
-  // Time and Lighting
+  // Time and Lighting Atom
   if (time) {
-    xmlPrompt += `  <temporal_context>\n`;
-    xmlPrompt += `    <time>${time}</time>\n`;
-
-    // Detailed lighting based on time
-    const timeLower = time.toLowerCase();
-    let lightingDetails = "";
-    if (timeLower.match(/night|midnight|晚|夜/)) {
-      lightingDetails = `Moonlight casting silver highlights, deep indigo and black shadows, stars visible in sky, artificial light sources (torches, lanterns, magical glows, neon signs) providing warm or colored accents, cold blue color temperature, high contrast between light and shadow, mysterious atmosphere, specular highlights on wet surfaces`;
-    } else if (timeLower.match(/dawn|sunrise|晨|黎明/)) {
-      lightingDetails = `Soft diffused morning light, golden hour warmth beginning to spread, pastel pink and orange sky, long gentle shadows, dew glistening on surfaces, cool-to-warm color transition, ethereal and peaceful atmosphere, rim lighting on characters, volumetric morning mist`;
-    } else if (timeLower.match(/dusk|sunset|黄昏|傍晚/)) {
-      lightingDetails = `Dramatic golden hour lighting, vibrant orange and purple sky, long dramatic shadows, warm backlight creating silhouettes, rich color saturation, lens flare potential, romantic or melancholic atmosphere, strong rim lighting, subsurface scattering on skin`;
-    } else {
-      lightingDetails = `Balanced natural daylight, clear visibility, soft ambient shadows, realistic color rendering, even illumination, bright and open atmosphere, sharp shadows, high dynamic range`;
-    }
-    xmlPrompt += `    <lighting>\n      ${lightingDetails}\n    </lighting>\n`;
-    xmlPrompt += `  </temporal_context>\n`;
+    xmlPrompt += `  ${lightingContext({ time })}\n`;
   }
 
-  // Weather and Atmospheric Effects
+  // Weather and Atmospheric Effects Atom
   if (weather && weather !== "none") {
-    xmlPrompt += `  <weather_effects>\n`;
-    const weatherDetails: Record<string, string> = {
-      rain: "Rain falling, wet surfaces with high reflectivity, water droplets on skin/clothing, puddles reflecting environment, misty atmosphere, cool color palette, dramatic contrast, screen space reflections",
-      snow: "Snow falling, accumulation on surfaces, cold breath visible, frost and ice details with subsurface scattering, muted white and blue tones, soft diffused light, peaceful yet cold atmosphere",
-      fog: "Dense volumetric fog obscuring background, limited visibility, mysterious atmosphere, soft focus on distant objects, diffused light, muted colors, ethereal quality, light shafts piercing through fog",
-      embers:
-        "Glowing embers floating in air, warm orange light sources, fire glow, ash particles, heat haze distortion, warm color temperature, magical or destructive atmosphere",
-      flicker:
-        "Unstable lighting, flickering shadows, dramatic light changes, supernatural or electrical atmosphere, high contrast, tension and unease, strobe effects",
-      sunny:
-        "Bright sunlight, clear sky, strong shadows, vibrant colors, warm atmosphere, lens flare, high visibility, cheerful or harsh depending on intensity, caustic reflections",
-    };
-    xmlPrompt += `    ${weatherDetails[weather] || weather}\n`;
-    xmlPrompt += `  </weather_effects>\n`;
+    xmlPrompt += `  ${weatherEffects({ weather })}\n`;
   }
 
   // Location and Environment - now with rich details
@@ -455,47 +418,19 @@ export const getSceneImagePrompt = (
 
   xmlPrompt += `</visual_context>\n`;
 
-  // === SCENE COMPOSITION DIRECTIVES ===
-  xmlPrompt += `\n<composition_directives>\n`;
-  xmlPrompt += `  <camera>\n`;
-  xmlPrompt += `    <angle>Third-person cinematic angle, dynamic perspective, appropriate depth of field with bokeh on background</angle>\n`;
-  xmlPrompt += `    <framing>Rule of thirds composition, balanced negative space, leading lines drawing eye to subject, frame within frame if applicable</framing>\n`;
-  xmlPrompt += `    <focus>Sharp focus on main subject (protagonist), soft focus on background for depth, selective focus emphasizing emotion or action</focus>\n`;
-  xmlPrompt += `  </camera>\n`;
-  xmlPrompt += `  <visual_elements>\n`;
-  xmlPrompt += `    <texture_details>\n`;
-  xmlPrompt += `      High fidelity surface details: visible skin pores, fabric weave patterns, metal scratches and patina, wood grain, leather creases, realistic material properties (roughness, metallicity, specular)\n`;
-  xmlPrompt += `    </texture_details>\n`;
-  xmlPrompt += `    <lighting_and_reflections>\n`;
-  xmlPrompt += `      Cinematic lighting setup, volumetric fog/lighting, screen space reflections, specular highlights on wet or shiny surfaces, caustics for water/glass, rim lighting to separate subjects from background, high dynamic range (HDR)\n`;
-  xmlPrompt += `    </lighting_and_reflections>\n`;
-  xmlPrompt += `    <color_grading>Cinematic color grading appropriate to mood and theme, color contrast for visual interest, color harmony, saturated where appropriate, desaturated for mood where needed</color_grading>\n`;
-  xmlPrompt += `    <details>Environmental particles (dust, mist, magic, snow, rain), atmospheric effects, motion blur on moving elements, depth haze, realistic shadows with soft penumbra</details>\n`;
-  xmlPrompt += `  </visual_elements>\n`;
-  xmlPrompt += `</composition_directives>\n`;
+  // === SCENE COMPOSITION DIRECTIVES ATOM ===
+  xmlPrompt += `\n${compositionDirectives()}\n`;
 
-  // === RENDERING INSTRUCTIONS ===
-  xmlPrompt += `\n<rendering_instructions>\n`;
-  xmlPrompt += `  <character_rendering>\n`;
-  xmlPrompt += `    Realistic human anatomy and proportions, detailed facial features with micro-expressions, skin with visible texture (pores, imperfections, subsurface scattering), realistic hair with individual strands visible, believable clothing physics and draping, armor/equipment with wear and weathering, sweat or moisture where contextually appropriate\n`;
-  xmlPrompt += `  </character_rendering>\n`;
-  xmlPrompt += `  <realism_level>\n`;
-  xmlPrompt += `    Photorealistic rendering quality, physically based materials (PBR), accurate light behavior (ray tracing), realistic shadows and reflections, proper perspective and foreshortening, anatomically correct poses, believable weight and mass\n`;
-  xmlPrompt += `  </realism_level>\n`;
-  xmlPrompt += `  <artistic_direction>\n`;
-  xmlPrompt += `    Capture emotional intensity through visual storytelling, emphasize tension or intimacy through composition and framing, use lighting to guide viewer attention, create atmosphere that supports narrative, don't shy away from depicting scene's true nature (beauty, violence, intimacy, horror as contextually appropriate), aesthetic appeal and visual impact prioritized\n`;
-  xmlPrompt += `  </artistic_direction>\n`;
-  xmlPrompt += `</rendering_instructions>\n`;
+  // === RENDERING INSTRUCTIONS ATOM ===
+  xmlPrompt += `\n${renderingInstructions()}\n`;
 
   // === CORE SCENE DESCRIPTION (from AI) ===
   xmlPrompt += `\n<scene_description>\n`;
   xmlPrompt += `  ${prompt}\n`;
   xmlPrompt += `</scene_description>\n`;
 
-  // === TECHNICAL SPECIFICATIONS ===
-  xmlPrompt += `\n<technical_specs>\n`;
-  xmlPrompt += `  masterpiece, best quality, 8k uhd, ultra detailed, highly detailed, professional photography, award winning composition, sharp focus, crystal clear, photorealistic, ray tracing, path tracing, lumen reflections, global illumination, subsurface scattering, ambient occlusion, physically based rendering, depth of field, bokeh, cinematic color grading, film grain (subtle), lens flare (if appropriate), chromatic aberration (minimal), vignette (subtle), ISO 100, f/1.8, high shutter speed\n`;
-  xmlPrompt += `</technical_specs>`;
+  // === TECHNICAL SPECIFICATIONS ATOM ===
+  xmlPrompt += `\n${imageTechnicalSpecs()}`;
 
   // === CUSTOM IMAGE STYLE RULES ===
   const customImageRules = formatImageStyleRules(gameState.customRules);

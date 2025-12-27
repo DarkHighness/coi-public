@@ -285,6 +285,32 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                               />
                             </div>
                           )}
+                          {rel.hidden.loveExpression && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-pink-500/80 block mb-1">
+                                💕{" "}
+                                {t("gameViewer.loveExpression") ||
+                                  "How They Show Care"}
+                                :
+                              </span>
+                              <MarkdownText
+                                content={rel.hidden.loveExpression}
+                              />
+                            </div>
+                          )}
+                          {rel.hidden.unspokenSacrifice && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-purple-500/80 block mb-1">
+                                🎭{" "}
+                                {t("gameViewer.unspokenSacrifice") ||
+                                  "Unspoken Sacrifice"}
+                                :
+                              </span>
+                              <MarkdownText
+                                content={rel.hidden.unspokenSacrifice}
+                              />
+                            </div>
+                          )}
                         </div>
                       }
                     />

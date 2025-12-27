@@ -1224,7 +1224,9 @@
     "internalContradiction": "Contradiction",
     "internalConflict": "Internal Conflict",
     "ambivalence": "Ambivalence",
-    "transactionalBenefit": "Transactional Benefit"
+    "transactionalBenefit": "Transactional Benefit",
+    "loveExpression": "How They Show Care",
+    "unspokenSacrifice": "Unspoken Sacrifice"
   },
   "gameOver": "GAME OVER",
   "victory": "VICTORY",

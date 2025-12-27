@@ -43,8 +43,11 @@ export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
   }
 
   // === 2. Dynamic Context (God Mode) ===
-  const godModeContext = buildGodModeContext(gameState);
-  messages.push(createUserMessage(`[CONTEXT: God Mode]\n${godModeContext}`));
+  if (gameState.godMode) {
+    const godModeContext = buildGodModeContext(gameState);
+    messages.push(createUserMessage(`[CONTEXT: God Mode]\n${godModeContext}`));
+  }
+
   messages.push({
     role: "assistant",
     content: [

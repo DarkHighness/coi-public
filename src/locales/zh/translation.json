@@ -1253,7 +1253,9 @@
     "internalContradiction": "内在矛盾",
     "internalConflict": "内部冲突",
     "ambivalence": "矛盾情感",
-    "transactionalBenefit": "利益交换"
+    "transactionalBenefit": "利益交换",
+    "loveExpression": "TA如何表达关心",
+    "unspokenSacrifice": "无声的牺牲"
   },
   "notes": "笔记",
   "gameOver": "游戏结束",

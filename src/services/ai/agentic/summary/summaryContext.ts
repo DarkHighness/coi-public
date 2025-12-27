@@ -4,15 +4,16 @@
  * Functions for building summary context and instructions.
  */
 
-import type { StorySummary, StorySegment } from "../../../../types";
-import { getLanguageEnforcement } from "../../../prompts";
-import {
-  getGmKnowledgeContent,
-  getEntityDefinitionsContent,
-  getStyleSectionContent,
-  getNarrativeCausalityContent,
-} from "../../../prompts/skills/content";
 import type { SummaryLoopInput } from "./summary";
+
+// Atoms
+import {
+  gmKnowledge,
+  entityDefinitions,
+  styleGuide,
+} from "../../../prompts/atoms/core";
+import { narrativeCausality } from "../../../prompts/atoms/narrative";
+import { languageEnforcement } from "../../../prompts/atoms/cultural";
 
 // ============================================================================
 // System Instruction
@@ -60,18 +61,18 @@ When you have enough information, call \`finish_summary\` to complete the summar
 - Capture world state changes
 </critical_rules>
 
-${getGmKnowledgeContent({ language } as any)}
+${gmKnowledge({})}
 
-${getEntityDefinitionsContent({ language } as any)}
+${entityDefinitions()}
 
 <style_injection>
   You must capture the TONE of the story, not just the facts.
-  ${getStyleSectionContent({ language, isLiteMode: liteMode } as any)}
+  ${styleGuide({ isLiteMode: liteMode })}
 </style_injection>
 
-${getNarrativeCausalityContent({ language } as any)}
+${narrativeCausality({ isLiteMode: liteMode })}
 
-${getLanguageEnforcement(language)}`;
+${languageEnforcement({ language })}`;
 }
 
 // ============================================================================

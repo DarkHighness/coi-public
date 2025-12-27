@@ -252,6 +252,18 @@ export const npcHiddenSchema = z.object({
     .describe(
       "Objective complexity: What do they get out of their interaction with the protagonist?",
     ),
+  loveExpression: z
+    .string()
+    .nullish()
+    .describe(
+      "How this NPC shows they care. Not everyone says 'I love you'. Types: PROTECTOR (takes hits, walks on street-side), PROVIDER (leaves food, covers debts), COMPANION (just... stays), REMEMBERER (knows old details), TRUTH-TELLER (harsh words from caring).",
+    ),
+  unspokenSacrifice: z
+    .string()
+    .nullish()
+    .describe(
+      "What has this NPC sacrificed that the protagonist doesn't know? What do they hide to protect the protagonist? What would they die for, but never admit?",
+    ),
 });
 
 /** 完整关系 Schema */
