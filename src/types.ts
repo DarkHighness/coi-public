@@ -991,6 +991,87 @@ export interface ThemeConfig {
   fontClass: string;
 }
 
+// ============================================================================
+// Theme-Based Prompt Configuration Types
+// ============================================================================
+
+/**
+ * Available prompt atom names that can be referenced in theme configurations.
+ */
+export type PromptAtomName =
+  // Core atoms
+  | "worldConsistency"
+  | "livingWorld"
+  | "worldIndifference"
+  | "maliceAndAntagonism"
+  | "roleInstruction"
+  | "humanityAndHope"
+  // Narrative atoms
+  | "writingCraft"
+  | "subjectiveObjectiveBalance"
+  | "narrativeScale"
+  | "perspectiveAnchor"
+  | "unapologeticReality"
+  | "physicality"
+  // Entity atoms
+  | "npcLogic"
+  | "npcAutonomy"
+  | "npcEcosystem"
+  | "socialFriction"
+  // Cultural atoms
+  | "culturalContext"
+  // Mature content atoms
+  | "matureWorldDirective";
+
+/**
+ * Configuration for a single prompt atom.
+ */
+export interface PromptAtomConfig {
+  /** The atom name to load */
+  atom: PromptAtomName;
+  /** Parameters to pass to the atom function */
+  params?: Record<string, unknown>;
+  /** Priority for conflict resolution (higher = more important). Default: 0 */
+  priority?: number;
+  /** Whether this atom is enabled. Default: true */
+  enabled?: boolean;
+}
+
+/**
+ * Theme-specific prompt configuration.
+ */
+export interface ThemePromptConfiguration {
+  /** Core world rules - physics, consistency, world behavior */
+  coreRules?: PromptAtomConfig[];
+  /** Narrative style - writing craft, perspective, scale */
+  narrativeStyle?: PromptAtomConfig[];
+  /** NPC behavior - interaction patterns, autonomy, social dynamics */
+  npcBehavior?: PromptAtomConfig[];
+  /** Cultural context - background-specific behavior patterns */
+  culturalContext?: PromptAtomConfig[];
+  /** Additional custom atoms */
+  custom?: PromptAtomConfig[];
+}
+
+/**
+ * 主题特化参数 - 直接控制各 atom 的行为
+ * 这是替代复杂 PromptAtomConfig 的简化设计
+ */
+export interface ThemeParams {
+  /** 物理规则严苛程度: cinematic(电影化/轻松), standard(标准一致), realistic(硬核写实) */
+  physicsHarshness?: "cinematic" | "standard" | "realistic";
+  /** 世界冷漠程度: benevolent(善意), neutral(中立), hostile(敌对/冷漠) */
+  worldIndifference?: "benevolent" | "neutral" | "hostile";
+  /** NPC 自主程度: supportive(辅助), balanced(独立但配合), independent(完全独立/自私) */
+  npcAutonomyLevel?: "supportive" | "balanced" | "independent";
+  /** 社交复杂度: transparent(直白), standard(正常社交), intricate(权谋/潜台词) */
+  socialComplexity?: "transparent" | "standard" | "intricate";
+  /** 经济复杂度: primitive(原始/物物交换), standard(标准货币), advanced(金融/税务) */
+  economicComplexity?: "primitive" | "standard" | "advanced";
+  /** 文化背景提示 */
+  culturalHint?: string;
+}
+
 export interface StoryThemeConfig {
   envTheme: string; // The visual theme key (ENV_THEMES key, e.g. "fantasy", "horror")
   defaultAtmosphere: AtmosphereObject; // The default atmosphere { envTheme, ambience }
@@ -999,6 +1080,10 @@ export interface StoryThemeConfig {
   restricted?: boolean;
   backgroundTemplate?: string;
   example?: string;
+  /** Theme-specific prompt configuration (complex structure). */
+  promptConfig?: ThemePromptConfiguration;
+  /** Theme parameters (simple direct params) - 推荐使用这个简化设计 */
+  themeParams?: ThemeParams;
 }
 
 export type LanguageCode = "en" | "zh";

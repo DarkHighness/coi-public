@@ -101,6 +101,7 @@ export const generateAdventureTurn = async (
     protagonistLocation:
       gameState.character.currentLocation || "Unknown Location",
     maxToolCalls: settings.extra?.maxToolCalls,
+    themeKey: context.themeKey, // Theme-based atom specialization
   });
 
   console.log(

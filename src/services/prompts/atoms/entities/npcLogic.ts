@@ -1,11 +1,17 @@
 /**
  * Entity Atom: NPC Logic
  * Content from knowing/npc_logic.ts
+ *
+ * Supports theme-based specialization via parameters.
  */
 import type { Atom } from "../types";
 
 export interface NpcLogicInput {
   isLiteMode?: boolean;
+  /** NPC 自主程度: supportive, balanced, independent */
+  npcAutonomyLevel?: "supportive" | "balanced" | "independent";
+  /** 社交复杂度: transparent, standard, intricate */
+  socialComplexity?: "transparent" | "standard" | "intricate";
 }
 
 const traitContinuity = `
@@ -450,15 +456,131 @@ const gossipNetwork = `
   </gossip_network>
 `;
 
-export const npcLogic: Atom<NpcLogicInput> = ({ isLiteMode }) => {
+/**
+ * 根据NPC自主程度生成不同的规则
+ */
+function getAutonomyContent(
+  level: "supportive" | "balanced" | "independent",
+): string {
+  if (level === "supportive") {
+    return `
+    <npc_autonomy_level mode="supportive">
+      **NPC BEHAVIOR (SUPPORTIVE)**:
+      <directive>
+        Bias NPC reactions towards HELPING the protagonist.
+        Refusals should be temporary hurdles, not absolute walls.
+        Betrayal is FORBIDDEN without extreme narrative justification.
+      </directive>
+      - **Benevolent Disposition**: NPCs are fundamentally well-meaning towards the protagonist unless provoked.
+      - **Reasonable Refusals**: If an NPC declines, they have a solid, understandable reason, not malice.
+      - **Mentorship**: Elders and stronger characters are inclined to offer guidance, items, or protection.
+      - **Resolution focused**: Conflicts are often based on misunderstandings that can be cleared with dialogue.
+      - **Safe Social Environment**: Betrayal is rare and shocking, not a daily occurrence.
+
+      **MAINTAINED REALISM**:
+      - NPCs still have lives (they aren't standing still waiting for you).
+      - Kindness is not slavery; they will not die for you without reason.
+      - Affinity must be earned, even if the baseline is higher.
+    </npc_autonomy_level>`;
+  } else if (level === "independent") {
+    return `
+    <npc_autonomy_level mode="independent">
+      **NPC BEHAVIOR (INDEPENDENT / RUTHLESS)**:
+      <directive>
+        NPCs are PROTAGONISTS of their own stories. They view the player as a tool, threat, or obstacle.
+        Loyalty is transactional. Betrayal is a valid business move.
+      </directive>
+      - **Zero Obligation**: NPCs owe you nothing. You are not special to them until you prove your value.
+      - **Self-Interest Rule**: Every action is calculated. If betraying you yields more profit than helping you, they will betray you.
+      - **Active Hostility**: Rivals may set traps, spread rumors, or hire assassins proactively.
+      - **Transactional Loyalty**: Even "friends" have a price. Loyalty is maintained only as long as interests align.
+      - **Deception is Default**: Assume everyone is lying or omitting truth.
+      - **Irrelevance**: To a king, you are an ant. To a merchant, you are a wallet. To a bandit, you are prey.
+
+      **COMPLETE AUTONOMY**:
+      ${npcAutonomy}
+      ${socialFriction}
+    </npc_autonomy_level>`;
+  } else {
+    return `
+    <npc_autonomy_level mode="balanced">
+      **NPC BEHAVIOR (STANDARD)**:
+      - **Agency**: NPCs have their own goals but interact normally with the player.
+      - **Variety**: A realistic mix of friendly, neutral, and hostile characters.
+      - **Reasonability**: Characters are neither saints nor psychopaths by default.
+
+      ${npcAutonomy}
+    </npc_autonomy_level>`;
+  }
+}
+
+/**
+ * 根据社交复杂度生成不同内容
+ */
+function getSocialContent(
+  complexity: "transparent" | "standard" | "intricate",
+): string {
+  if (complexity === "transparent") {
+    return `
+    <social_complexity mode="simple">
+      **SIMPLE SOCIAL DYNAMICS**:
+      <directive>
+        Communication is transparent.
+        Characters generally mean what they say.
+        Hidden motives are reserved for Major Villains only.
+      </directive>
+      - **Direct Communication**: People say what they mean. Sarcasm and subtext are rare.
+      - **Clear Motives**: You know what the villain wants (power/money). You know what the hero wants (justice).
+      - **Binary Relations**: Friend or Foe. Grey areas are minimal.
+      - **Honest Emotion**: Anger is anger, love is love. No "smiling tigers".
+    </social_complexity>`;
+  } else if (complexity === "intricate") {
+    return `
+    <social_complexity mode="intricate">
+      **COMPLEX SOCIAL WEB**:
+      <directive>
+        EVERY dialogue line should have subtext.
+        Information is a weapon. No one gives it away for free.
+        Assume a "Game of Thrones" level of paranoia.
+      </directive>
+      - **Layers of Motives**: The "Visible" motive is a decoy. The "Hidden" motive is the real one. There may be a third layer.
+      - **Factional Ripples**: Helping the Blacksmith offends the Merchant Guild. Saving the Princess angers the Duke. Every action has political weight.
+      - **Information Warfare**: Secrets are currency. Rumors are weapons. Truth is subjective.
+      - **Etiquette & Face**: Insults are deadly. Politeness is armor. A wrong word at a banquet can start a war.
+      - **Double Agents**: The friendly innkeeper reports to the guards. The guard reports to the thieves.
+
+      ${socialFriction}
+      ${gossipNetwork}
+    </social_complexity>`;
+  } else {
+    return `
+    <social_complexity mode="standard">
+      **STANDARD SOCIAL DYNAMICS**:
+      - **Natural Interactions**: Conversations follow standard social norms.
+      - **Depth**: Important characters have depth; extras are functional.
+      - **Factions**: Groups exist but don't obsess over the player unless provoked.
+
+      ${socialFriction}
+    </social_complexity>`;
+  }
+}
+
+export const npcLogic: Atom<NpcLogicInput> = ({
+  isLiteMode,
+  npcAutonomyLevel,
+  socialComplexity,
+}) => {
+  const autonomy = npcAutonomyLevel ?? "balanced";
+  const social = socialComplexity ?? "standard";
+
   if (isLiteMode) {
     return `
 <npc_logic>
   <rule name="NPC_LOGIC">
     - NPCs have \`visible\` (public face) and \`hidden\` (true motives) layers
     - NPCs act on hidden.realMotives even when player doesn't know
-    - Track affinity, status, and currentLocation changes
-    - NPCs remember actions and update impression accordingly
+    - **Autonomy**: ${autonomy === "independent" ? "NPCs are strictly independent" : autonomy === "supportive" ? "NPCs are generally helpful" : "NPCs are pragmatic"}
+    - **Social**: ${social === "intricate" ? "Expect complex webs of lies and intrigue" : social === "transparent" ? "Interactions are direct and simple" : "Standard social nuances apply"}
     - Self-preservation: NPCs flee/beg/betray when outmatched
   </rule>
 </npc_logic>
@@ -473,29 +595,24 @@ ${traitContinuity}
   - **SELF-PRESERVATION**: NPCs do not want to die. They will beg, flee, betray, or surrender if outmatched.
   - **FLAWED BEINGS**: NPCs make mistakes. They misjudge the player. They act on bad info. They have irrational prejudices.
   - **DUAL PERSONALITY**: \`visible.personality\` is their public mask. \`hidden.realPersonality\` is who they truly are.
-  - **INTER-NPC DYNAMICS**: NPCs interact with each other based on their hidden motivations. They gossip, trade, fight, and love without the player.
-  - **EMOTIONAL COMPLEXITY**:
-    * High affinity NPC might still betray if it serves their \`hidden.realMotives\`
-    * Low affinity NPC might help if their hidden goals align with the player's actions
-    * NPCs have irrational biases, flaws, and moods stored in their \`hidden\` layer
-  - **NO "QUEST GIVERS"**: NPCs are living their own stories. The player must earn their attention.
+  - **INTER-NPC DYNAMICS**: NPCs interact with each other based on their hidden motivations.
   - **DUAL STATUS TRACKING**:
-    * \`visible.status\`: What the protagonist BELIEVES the NPC is doing (perception)
-    * \`hidden.status\`: What the NPC is ACTUALLY doing (truth)
-    * These may differ! NPCs can deceive the player about their activities.
-  - **LOCATION TRACKING**: Always update \`currentLocation\` when NPCs move. Use location IDs.
+    * \`visible.status\`: What the protagonist BELIEVES the NPC is doing
+    * \`hidden.status\`: What the NPC is ACTUALLY doing
+  - **LOCATION TRACKING**: Always update \`currentLocation\` when NPCs move.
 
-${ beliefAndResilience}
+${getAutonomyContent(autonomy)}
+
+${getSocialContent(social)}
+
+${beliefAndResilience}
 ${npcEcosystem}
-${npcAutonomy}
-${socialFriction}
 ${npcMemorySystem}
 ${emotionalFluctuation}
 ${socialWeb}
 ${complexIntimacy}
 ${dailyExistence}
 ${groupBehavior}
-${gossipNetwork}
 </true_person_npc_logic>
 `;
 };

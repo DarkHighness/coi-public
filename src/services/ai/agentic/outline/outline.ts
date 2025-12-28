@@ -167,6 +167,8 @@ export const generateStoryOutlinePhased = async (
     settings.extra?.detailedDescription,
     settings.extra?.genderPreference,
     options.protagonistFeature,
+    themeConfig?.categories?.[0], // themeCategory
+    theme, // themeKey - NEW: for theme-based atom specialization
   );
 
   // Inject custom prompts if needed
