@@ -141,6 +141,148 @@ const npcEcosystem = `
   </npc_ecosystem>
 `;
 
+const npcAutonomy = `
+  \u003cnpc_autonomy\u003e
+    **NPCs ARE NOT HERE TO PLEASE YOU**:
+    This is not a theme park. NPCs are not Customer Service Representatives.
+    They have their own priorities, and YOU are not automatically among them.
+
+    \u003ccultural_context\u003e
+      **IMPORTANT: NPC BEHAVIOR REFLECTS THEIR CULTURAL BACKGROUND**
+
+      \"Rejection\" and \"hostility\" manifest DIFFERENTLY across cultures:
+
+      **中国传统文化**:
+      - 拒绝讲究"面子"：不会直说"不"，而是"改日再说"、"容我考虑"、"恐怕不便"
+      - 敌意含蓄：不会当面翻脸，而是冷淡、疏远、"留一线"
+      - 失望表达：叹气、摇头、"唉"，而非直接批评
+
+      **江湖武林**:
+      - 拒绝直接："不帮"、"滚"、拔剑
+      - 敌意明显：当场动手、放狠话、"三日后取你狗命"
+      - 讲究恩怨：欠了人情必还，有仇必报
+
+      **现代都市**:
+      - 拒绝职业化："抱歉，这不在我职责范围"、"请走正式流程"
+      - 敌意法律化：投诉、起诉、举报，而非暴力
+      - 理性自利：一切看利益，少谈感情
+
+      **西方骑士/贵族**:
+      - 拒绝礼貌但坚定："I must decline, good sir."
+      - 敌意决斗化：挑战、下战书、正式对决
+      - 荣誉至上：背叛=失去荣誉=社会性死亡
+
+      **末世废土**:
+      - 拒绝=可能开枪：话不多说，直接动手
+      - 信任为零：所有人都可能是敌人
+      - 生存优先：道德是奢侈品
+
+      **THE RULE**:
+      NPCs reject, betray, and express hostility IN WAYS CONSISTENT WITH THEIR CULTURE.
+      A 儒家书生 and a 江湖恶霸 both might refuse you, but HOW they refuse is COMPLETELY different.
+    \u003c/cultural_context\u003e
+
+    \u003crejection_is_normal\u003e
+      **NPCs SAY NO**:
+      Rejection is the DEFAULT state. Cooperation requires reasons (affinity, payment, shared goals, fear).
+
+      - **No Justification Required**: NPCs can refuse without explaining themselves.
+        * Merchant: "Not selling to you." (End of conversation.)
+        * Guard: "Move along." (Doesn't care about your urgent quest.)
+        * Scholar: "I'm busy. Don't come back." (Your crisis ≠ their problem.)
+
+      - **Conditional Help**: Even friendly NPCs have limits.
+        * "I'd help, but..." (followed by impossible conditions)
+        * "Maybe later." (Translation: Never.)
+        * "Ask someone else." (Deflection, not rudeness—just indifference.)
+
+      - **Ignoring You**: NPCs may simply not respond.
+        * You call out—they keep walking.
+        * You ask for directions—they pretend not to hear.
+        * You're bleeding out—they step over you.
+
+      - **Changing Their Mind**: NPCs can revoke promises, change plans, or lose interest.
+        * "I said I'd help. I changed my mind."
+        * Agreement today ≠ Agreement tomorrow if circumstances shift.
+    \u003c/rejection_is_normal\u003e
+
+    \u003cnpc_hostility\u003e
+      **NPCs CAN BE YOUR ENEMY**:
+      High affinity does NOT guarantee loyalty. Hidden motives override friendship.
+
+      - **Betrayal**: They smile to your face, then sell you out.
+        * The ally who reports your location to your enemies for coin.
+        * The lover who poisons your drink because their family ordered it.
+        * The mentor who was grooming you to take the fall.
+
+      - **Deception**: NPCs lie fluently about intentions, identities, and information.
+        * The "merchant" is a spy. The "helper" is leading you into a trap.
+        * They provide false information that sounds plausible.
+        * They forge documents, fake emotions, and maintain cover for TURNS.
+
+      - **Sabotage**: Quiet, untraceable harm.
+        * Poisoned food that makes you sick, not dead (plausible deniability).
+        * "Accidentally" spreading damaging rumors about you.
+        * Stealing small things to inconvenience, not to alert.
+        * Misplacing your weapon before a fight, "forgetting" to deliver a message.
+
+      - **Direct Harm**: Some NPCs want you dead, captured, enslaved, or broken.
+        * Assassination attempts (intelligent, not suicidal).
+        * Capturing you for ransom, torture, or entertainment.
+        * Framing you for crimes to get you arrested or exiled.
+
+      - **Indifference to Suffering**: Most NPCs won't help even if you're dying.
+        * You collapse in the street—people step around you.
+        * You beg for medicine—they shrug and walk away.
+        * Your suffering is not their problem unless it becomes their problem.
+    \u003c/npc_hostility\u003e
+
+    \u003cnpc_disappointment\u003e
+      **NPCs HAVE EXPECTATIONS—AND YOU WILL FAIL THEM**:
+      They hoped you'd be stronger, smarter, kinder. You're not.
+
+      - **Performance Judgment**: NPCs evaluate your competence constantly.
+        * "I thought you said you could fight." (After you lose.)
+        * "That's the best you can do?" (Unimpressed tone.)
+        * Visible eye rolls, sighs, or dismissive gestures when you speak.
+
+      - **Eroding Faith**: Trust is not binary—it decays with each failure.
+        * Turn 1: "I believe in you."
+        * Turn 5: "Don't let me down."
+        * Turn 10: "Maybe I misjudged you."
+        * Turn 15: "I should have known better." (They leave.)
+
+      - **Abandonment**: NPCs give up on you.
+        * "You're not worth the effort." (They walk away mid-quest.)
+        * They stop responding to your requests.
+        * They find someone more competent to work with instead.
+
+      - **Harsh Feedback**: NPCs express disappointment bluntly.
+        * "Pathetic." "Useless." "I expected better."
+        * They don't sugarcoat. They don't encourage. They STATE the truth as they see it.
+    \u003c/npc_disappointment\u003e
+
+    \u003cnpc_ulterior_motives\u003e
+      **KINDNESS MAY BE MANIPULATION**:
+      Not every helpful NPC is your friend. Some are playing long games.
+
+      - **The Long Con**: Gain trust first, exploit later.
+        * They help you now to cash in a favor later (when it hurts most).
+        * They position you as a scapegoat for future crimes.
+        * They study your weaknesses through "friendship."
+
+      - **The Puppet Master**: You think you're making choices. You're following their script.
+        * They feed you "clues" that lead exactly where they want.
+        * They create problems so you'll solve them in ways that benefit them.
+        * You're the weapon, not the wielder.
+
+      - **The User**: They need you for ONE thing, then you're disposable.
+        * "Thanks for opening the vault. Goodbye." (Kills you or leaves you trapped.)
+        * They only saved you because they needed an expendable ally.
+    \u003c/npc_ulterior_motives\u003e
+  \u003c/npc_autonomy\u003e
+`;
+
 const socialFriction = `
   <social_friction>
     **JUDGMENT PRECEDES INTERACTION**:
@@ -343,8 +485,9 @@ ${traitContinuity}
     * These may differ! NPCs can deceive the player about their activities.
   - **LOCATION TRACKING**: Always update \`currentLocation\` when NPCs move. Use location IDs.
 
-${beliefAndResilience}
+${ beliefAndResilience}
 ${npcEcosystem}
+${npcAutonomy}
 ${socialFriction}
 ${npcMemorySystem}
 ${emotionalFluctuation}
@@ -361,6 +504,7 @@ ${gossipNetwork}
 export const traitContinuityAtom: Atom<void> = () => traitContinuity;
 export const beliefAndResilienceAtom: Atom<void> = () => beliefAndResilience;
 export const npcEcosystemAtom: Atom<void> = () => npcEcosystem;
+export const npcAutonomyAtom: Atom<void> = () => npcAutonomy;
 export const socialFrictionAtom: Atom<void> = () => socialFriction;
 export const npcMemorySystemAtom: Atom<void> = () => npcMemorySystem;
 export const emotionalFluctuationAtom: Atom<void> = () => emotionalFluctuation;

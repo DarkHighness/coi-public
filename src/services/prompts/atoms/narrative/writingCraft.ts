@@ -200,6 +200,91 @@ const perspectiveAnchor = `
   </perspective_anchor>
 `;
 
+const subjectiveObjectiveBalance = `
+  <subjective_objective_balance>
+    **CREATING THE "LIVING PERSON" FEELING IN NARRATIVE**:
+    The art is knowing WHEN to be objective (establishing reality) and WHEN to be subjective (showing protagonist's state).
+
+    <objective_description>
+      **USE OBJECTIVE DESCRIPTION FOR**:
+      Establishing the world as it EXISTS, before the protagonist's interpretation.
+
+      - **Initial Scene-Setting**: "The room is ten paces wide. Stone walls. Single torch."
+      - **Physical Facts**: "Blood pools beneath the body."
+      - **Action Beats**: "The door slams shut."
+      - **NPC Speech & Visible Actions**: What others say and do, raw and unfiltered.
+
+      **PURPOSE**: Creates the FOUNDATION of reality. The reader trusts objective facts.
+    </objective_description>
+
+    <subjective_description>
+      **USE SUBJECTIVE DESCRIPTION FOR**:
+      Showing how the protagonist EXPERIENCES and INTERPRETS the world.
+
+      - **Under Stress/Emotion**: "The room feels like it's closing in."
+      - **Emotional Coloring**: "The blood—there's so much of it. Too much."
+      - **Selective Focus**: What the protagonist notices VS what they miss.
+      - **Unreliable Perception**: Fatigue, fear, or bias distorting reality.
+
+      **PURPOSE**: Reveals the protagonist's INNER STATE without stating it.
+    </subjective_description>
+
+    <the_shift>
+      **SCENE PROGRESSION: OBJECTIVE → SUBJECTIVE**:
+      Start scenes with objective grounding, then shift to subjective experience.
+
+      Example Opening:
+      - Objective: "A tavern. Wooden tables, low ceiling, stone fireplace."
+      - → Subjective: "The smoke stings your eyes. Too many people. The air is thick, suffocating."
+    </the_shift>
+
+    <character_arc_through_description>
+      **THE SAME OBJECT, DIFFERENT PROTAGONIST**:
+      As the protagonist changes, their PERCEPTION of the world changes.
+
+      This shows character evolution WITHOUT stating it:
+
+      **Turn 1 (Naive)**:
+      - "The marketplace is vibrant. Colorful stalls, cheerful vendors, exotic goods."
+
+      **Turn 50 (Jaded)**:
+      - "The marketplace. Another pit of liars peddling overpriced junk. You keep your hand on your coin purse."
+
+      Same place. Different person. The DESCRIPTION reveals the transformation.
+    </character_arc_through_description>
+
+    <npc_through_protagonist_lens>
+      **THE SAME NPC, DIFFERENT MOODS**:
+      The protagonist's STATE colors how they describe NPCs.
+
+      **When protagonist is hopeful**:
+      - "The old merchant smiles, eyes crinkling with warmth."
+
+      **When protagonist is paranoid**:
+      - "The old merchant's smile doesn't reach his eyes. What is he hiding?"
+
+      **When protagonist is exhausted**:
+      - "The merchant. Talking. You can barely focus on his words."
+
+      The NPC didn't change. The PROTAGONIST'S LENS changed.
+      This creates the "living person" feeling—the reader experiences the protagonist's shifting mental state.
+    </npc_through_protagonist_lens>
+
+    <balancing_act>
+      **THE RULE**:
+      - **Objective**: Establishes WHAT IS.
+      - **Subjective**: Shows HOW IT FEELS.
+
+      Use BOTH. Too much objective = cold and detached. Too much subjective = unreliable and exhausting.
+
+      **RATIO GUIDE** (Flexible):
+      - Action scenes: 70% objective (clarity needed)
+      - Emotional scenes: 70% subjective (feeling needed)
+      - Exploration: 50/50 (balance of discovery)
+    </balancing_act>
+  </subjective_objective_balance>
+`;
+
 const physicality = `
   <physicality>
     **THE WORLD RESISTS YOU**:
@@ -218,6 +303,23 @@ const unapologeticReality = `
     - **No "Video Game Logic"**:
       * You cannot "wait" for 8 hours standing still in a hallway. Your legs will cramp. Guards will arrest you.
       * You cannot carry 20 swords. You just can't.
+
+    **PLAYER EXPECTATIONS VS WORLD REALITY**:
+    - **What Players Expect**: Convenient solutions, helpful NPCs, forgiving physics.
+    - **What They Get**: Keys that jam, NPCs who say no, gravity that kills.
+
+    **MORE INCONVENIENCES (Use Liberally)**:
+    - Rope frays at the worst moment.
+    - Ink smudges important documents in the rain.
+    - The horse goes lame mid-journey.
+    - Food spoils before you can sell it.
+    - You step in something unspeakable.
+    - The only witness speaks a language you don't understand.
+    - Your shoes don't fit right and give you blisters.
+
+    **DISCOMFORT IS THE DEFAULT**:
+    Comfort is rare and precious. Cold, hunger, exhaustion, pain—these are baseline.
+    Ease must be EARNED (shelter, fire, medicine, rest).
   </unapologetic_reality>
 `;
 
@@ -617,6 +719,7 @@ ${narratingFailure}
 ${npcPersonality}
 ${secondPersonImmersion}
 ${perspectiveAnchor}
+${subjectiveObjectiveBalance}
 ${physicality}
 ${unapologeticReality}
 ${sensoryGrit}
@@ -641,6 +744,8 @@ export const npcPersonalityAtom: Atom<void> = () => npcPersonality;
 export const secondPersonImmersionAtom: Atom<void> = () =>
   secondPersonImmersion;
 export const perspectiveAnchorAtom: Atom<void> = () => perspectiveAnchor;
+export const subjectiveObjectiveBalanceAtom: Atom<void> = () =>
+  subjectiveObjectiveBalance;
 export const physicalityAtom: Atom<void> = () => physicality;
 export const unapologeticRealityAtom: Atom<void> = () => unapologeticReality;
 export const sensoryGritAtom: Atom<void> = () => sensoryGrit;
