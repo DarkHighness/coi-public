@@ -1,59 +1,47 @@
 /**
  * Common Prompts - Wrapper Functions
  *
- * These functions wrap the skills content functions for use by
+ * These functions wrap atom functions for use by
  * non-skills callers (storyOutline.ts, veoScript.ts, summaryContext.ts).
  *
- * The actual content is defined in skills/content/* files.
+ * REFACTORED: Now imports directly from atoms/* instead of skills/content/*
  */
 
-import type { SkillContext } from "./skills/types";
-import {
-  getCulturalAdaptationContent,
-  getLanguageEnforcementContent,
-} from "./skills/content/cultural";
-import { getRoleInstructionContent } from "./skills/content/being/identity";
-import { getWorldConsistencyContent } from "./skills/content/core_rules";
+import { culturalAdaptation, languageEnforcement } from "./atoms/cultural";
+import { roleInstruction, worldConsistency } from "./atoms/core";
 
 // ============================================================================
 // Wrapper Functions
 // ============================================================================
 
 /**
- * Create a minimal SkillContext for simple callers
- */
-function createMinimalContext(language: string): SkillContext {
-  return { language };
-}
-
-/**
  * Get cultural adaptation instruction for the specified language.
- * Wraps skills/content/cultural.ts::getCulturalAdaptationContent
+ * Wraps atoms/cultural/adaptation.ts::culturalAdaptation
  */
 export const getCulturalAdaptationInstruction = (language: string): string => {
-  return getCulturalAdaptationContent(createMinimalContext(language));
+  return culturalAdaptation({ language });
 };
 
 /**
  * Get language enforcement instruction.
- * Wraps skills/content/cultural.ts::getLanguageEnforcementContent
+ * Wraps atoms/cultural/languageEnforcement.ts::languageEnforcement
  */
 export const getLanguageEnforcement = (language: string): string => {
-  return getLanguageEnforcementContent(language);
+  return languageEnforcement({ language });
 };
 
 /**
  * Get core role instruction.
- * Wraps skills/content/identity.ts::getRoleInstructionContent
+ * Wraps atoms/core/roleInstruction.ts::roleInstruction
  */
 export const getRoleInstruction = (): string => {
-  return getRoleInstructionContent(createMinimalContext("en"));
+  return roleInstruction();
 };
 
 /**
  * Get world consistency rules.
- * Wraps skills/content/core_rules.ts::getWorldConsistencyContent
+ * Wraps atoms/core/worldConsistency.ts::worldConsistency
  */
 export const getWorldConsistencyRule = (): string => {
-  return getWorldConsistencyContent(createMinimalContext("en"));
+  return worldConsistency();
 };
