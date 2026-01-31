@@ -1,5 +1,6 @@
 import { applyPatch } from "fast-json-patch";
 import type { Operation } from "fast-json-patch";
+import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
@@ -44,9 +45,11 @@ export class VfsSession {
 
     const patched = applyPatch(document, patchOps, true, false).newDocument;
     const schema = getSchemaForPath(file.path);
-    const validated = schema.parse(patched);
+    const strictSchema =
+      schema instanceof z.ZodObject ? schema.strict() : schema;
+    strictSchema.parse(patched);
 
-    this.writeFile(file.path, JSON.stringify(validated), file.contentType);
+    this.writeFile(file.path, JSON.stringify(patched), file.contentType);
   }
 
   public list(path: string): string[] {

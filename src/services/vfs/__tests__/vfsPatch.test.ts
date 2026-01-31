@@ -33,4 +33,15 @@ describe("VfsSession patch", () => {
     );
     expect(updated.visible.name).toBe("B");
   });
+
+  it("rejects unknown keys under strict validation", () => {
+    const session = new VfsSession();
+    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+
+    expect(() =>
+      session.applyJsonPatch("world/npcs/npc:1.json", [
+        { op: "add", path: "/unknownKey", value: "nope" },
+      ]),
+    ).toThrow();
+  });
 });
