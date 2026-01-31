@@ -44,4 +44,15 @@ describe("VfsSession patch", () => {
       ]),
     ).toThrow();
   });
+
+  it("rejects unknown nested keys under strict validation", () => {
+    const session = new VfsSession();
+    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+
+    expect(() =>
+      session.applyJsonPatch("world/npcs/npc:1.json", [
+        { op: "add", path: "/visible/extra", value: "nope" },
+      ]),
+    ).toThrow();
+  });
 });

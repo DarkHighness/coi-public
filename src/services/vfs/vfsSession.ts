@@ -5,6 +5,39 @@ import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 
+const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
+  if (input === null || typeof input !== "object") {
+    return false;
+  }
+
+  if (Array.isArray(input)) {
+    if (!Array.isArray(parsed)) {
+      return true;
+    }
+    return input.some((item, index) => hasUnknownKeys(item, parsed[index]));
+  }
+
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return true;
+  }
+
+  for (const key of Object.keys(input as Record<string, unknown>)) {
+    if (!(key in (parsed as Record<string, unknown>))) {
+      return true;
+    }
+    if (
+      hasUnknownKeys(
+        (input as Record<string, unknown>)[key],
+        (parsed as Record<string, unknown>)[key],
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export class VfsSession {
   private files: VfsFileMap = {};
 
@@ -47,9 +80,13 @@ export class VfsSession {
     const schema = getSchemaForPath(file.path);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    strictSchema.parse(patched);
+    const validated = strictSchema.parse(patched);
 
-    this.writeFile(file.path, JSON.stringify(patched), file.contentType);
+    if (hasUnknownKeys(patched, validated)) {
+      throw new Error(`Unknown keys found after validation: ${file.path}`);
+    }
+
+    this.writeFile(file.path, JSON.stringify(validated), file.contentType);
   }
 
   public list(path: string): string[] {
