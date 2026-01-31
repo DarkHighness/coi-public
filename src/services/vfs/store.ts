@@ -21,7 +21,12 @@ const buildVfsIndexEntries = (files: VfsFileMap): VfsIndexEntry[] =>
 
 export const buildVfsIndex = (
   files: VfsFileMap,
-  meta: { saveId: string; forkId: number; turn: number; createdAt: number },
+  meta: { saveId: string; forkId: number; turn: number; createdAt: number } = {
+    saveId: "",
+    forkId: 0,
+    turn: 0,
+    createdAt: 0,
+  },
 ): VfsIndex => ({
   saveId: meta.saveId,
   forkId: meta.forkId,
