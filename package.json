@@ -15,6 +15,7 @@
     "@openrouter/sdk": "^0.3.7",
     "@tailwindcss/vite": "^4.1.17",
     "@toon-format/toon": "^2.0.1",
+    "fast-json-patch": "^3.1.1",
     "framer-motion": "^12.23.24",
     "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",

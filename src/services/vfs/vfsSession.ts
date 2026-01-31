@@ -1,3 +1,6 @@
+import { applyPatch } from "fast-json-patch";
+import type { Operation } from "fast-json-patch";
+import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 
@@ -20,6 +23,30 @@ export class VfsSession {
   public readFile(path: string): VfsFile | null {
     const file = this.files[normalizeVfsPath(path)];
     return file ? { ...file } : null;
+  }
+
+  public applyJsonPatch(path: string, patchOps: Operation[]): void {
+    const file = this.readFile(path);
+    if (!file) {
+      throw new Error(`File not found: ${normalizeVfsPath(path)}`);
+    }
+
+    if (file.contentType !== "application/json") {
+      throw new Error(`File is not JSON: ${file.path}`);
+    }
+
+    let document: unknown;
+    try {
+      document = JSON.parse(file.content);
+    } catch (error) {
+      throw new Error(`Invalid JSON content: ${file.path}`, { cause: error });
+    }
+
+    const patched = applyPatch(document, patchOps, true, false).newDocument;
+    const schema = getSchemaForPath(file.path);
+    const validated = schema.parse(patched);
+
+    this.writeFile(file.path, JSON.stringify(validated), file.contentType);
   }
 
   public list(path: string): string[] {
