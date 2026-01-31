@@ -19,12 +19,15 @@ const buildVfsIndexEntries = (files: VfsFileMap): VfsIndexEntry[] =>
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
 
-export const buildVfsIndex = (snapshot: VfsSnapshot): VfsIndex => ({
-  saveId: snapshot.saveId,
-  forkId: snapshot.forkId,
-  turn: snapshot.turn,
-  createdAt: snapshot.createdAt,
-  files: buildVfsIndexEntries(snapshot.files),
+export const buildVfsIndex = (
+  files: VfsFileMap,
+  meta: { saveId: string; forkId: number; turn: number; createdAt: number },
+): VfsIndex => ({
+  saveId: meta.saveId,
+  forkId: meta.forkId,
+  turn: meta.turn,
+  createdAt: meta.createdAt,
+  files: buildVfsIndexEntries(files),
 });
 
 export class InMemoryVfsStore implements VfsStore {
@@ -34,7 +37,15 @@ export class InMemoryVfsStore implements VfsStore {
   async saveSnapshot(snapshot: VfsSnapshot): Promise<void> {
     const key = this.snapshotKey(snapshot.saveId, snapshot.forkId, snapshot.turn);
     this.snapshots.set(key, snapshot);
-    this.indexes.set(key, buildVfsIndex(snapshot));
+    this.indexes.set(
+      key,
+      buildVfsIndex(snapshot.files, {
+        saveId: snapshot.saveId,
+        forkId: snapshot.forkId,
+        turn: snapshot.turn,
+        createdAt: snapshot.createdAt,
+      }),
+    );
   }
 
   async loadSnapshot(
