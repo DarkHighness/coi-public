@@ -11,6 +11,7 @@ import {
   characterStatusSchema,
   atmosphereSchema,
 } from "../zodSchemas";
+import { normalizeVfsPath } from "./utils";
 
 const GlobalSchema = z.object({
   time: z.string(),
@@ -46,9 +47,12 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
 ];
 
 export function getSchemaForPath(path: string): z.ZodSchema {
-  const match = schemaRegistry.find((entry) => entry.pattern.test(path));
+  const normalizedPath = normalizeVfsPath(path);
+  const match = schemaRegistry.find((entry) =>
+    entry.pattern.test(normalizedPath),
+  );
   if (!match) {
-    throw new Error(`No schema registered for path: ${path}`);
+    throw new Error(`No schema registered for path: ${normalizedPath}`);
   }
   return match.schema;
 }
