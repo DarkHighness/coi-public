@@ -10,6 +10,9 @@ export interface VfsStore {
   listSnapshots(saveId: string, forkId: number): Promise<VfsIndex[]>;
 }
 
+const cloneSnapshot = (snapshot: VfsSnapshot): VfsSnapshot =>
+  JSON.parse(JSON.stringify(snapshot)) as VfsSnapshot;
+
 const buildVfsIndexEntries = (files: VfsFileMap): VfsIndexEntry[] =>
   Object.values(files)
     .map((file) => ({
@@ -41,14 +44,15 @@ export class InMemoryVfsStore implements VfsStore {
 
   async saveSnapshot(snapshot: VfsSnapshot): Promise<void> {
     const key = this.snapshotKey(snapshot.saveId, snapshot.forkId, snapshot.turn);
-    this.snapshots.set(key, snapshot);
+    const storedSnapshot = cloneSnapshot(snapshot);
+    this.snapshots.set(key, storedSnapshot);
     this.indexes.set(
       key,
-      buildVfsIndex(snapshot.files, {
-        saveId: snapshot.saveId,
-        forkId: snapshot.forkId,
-        turn: snapshot.turn,
-        createdAt: snapshot.createdAt,
+      buildVfsIndex(storedSnapshot.files, {
+        saveId: storedSnapshot.saveId,
+        forkId: storedSnapshot.forkId,
+        turn: storedSnapshot.turn,
+        createdAt: storedSnapshot.createdAt,
       }),
     );
   }
@@ -59,13 +63,18 @@ export class InMemoryVfsStore implements VfsStore {
     turn: number,
   ): Promise<VfsSnapshot | null> {
     const key = this.snapshotKey(saveId, forkId, turn);
-    return this.snapshots.get(key) ?? null;
+    const snapshot = this.snapshots.get(key);
+    return snapshot ? cloneSnapshot(snapshot) : null;
   }
 
   async listSnapshots(saveId: string, forkId: number): Promise<VfsIndex[]> {
     return Array.from(this.indexes.values())
       .filter((entry) => entry.saveId === saveId && entry.forkId === forkId)
-      .sort((a, b) => a.turn - b.turn);
+      .sort((a, b) => a.turn - b.turn)
+      .map((entry) => ({
+        ...entry,
+        files: entry.files.map((file) => ({ ...file })),
+      }));
   }
 
   private snapshotKey(saveId: string, forkId: number, turn: number): string {
