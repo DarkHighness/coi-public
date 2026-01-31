@@ -55,4 +55,15 @@ describe("VfsSession patch", () => {
       ]),
     ).toThrow();
   });
+
+  it("rejects prototype-pollution keys under strict validation", () => {
+    const session = new VfsSession();
+    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+
+    expect(() =>
+      session.applyJsonPatch("world/npcs/npc:1.json", [
+        { op: "add", path: "/__proto__", value: { polluted: true } },
+      ]),
+    ).toThrow();
+  });
 });

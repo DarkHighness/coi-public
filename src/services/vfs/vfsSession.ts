@@ -22,7 +22,11 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
   }
 
   for (const key of Object.keys(input as Record<string, unknown>)) {
-    if (!(key in (parsed as Record<string, unknown>))) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+      return true;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(parsed, key)) {
       return true;
     }
     if (
