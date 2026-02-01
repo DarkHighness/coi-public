@@ -29,31 +29,14 @@ interface VfsMatch {
   text: string;
 }
 
-type VfsSessionInternal = { files: VfsFileMap };
-
-const getInternalFiles = (session: VfsSession): VfsFileMap =>
-  (session as unknown as VfsSessionInternal).files;
-
-const setInternalFiles = (session: VfsSession, files: VfsFileMap): void => {
-  (session as unknown as VfsSessionInternal).files = files;
-};
-
-const cloneFiles = (files: VfsFileMap): VfsFileMap => {
-  const cloned: VfsFileMap = {};
-  for (const [path, file] of Object.entries(files)) {
-    cloned[path] = { ...file };
-  }
-  return cloned;
-};
-
 const cloneSession = (session: VfsSession): VfsSession => {
   const clone = new VfsSession();
-  setInternalFiles(clone, cloneFiles(getInternalFiles(session)));
+  clone.restore(session.snapshot());
   return clone;
 };
 
 const commitSession = (target: VfsSession, source: VfsSession): void => {
-  setInternalFiles(target, cloneFiles(getInternalFiles(source)));
+  target.restore(source.snapshot());
 };
 
 const getSession = (ctx: ToolContext): VfsSession | null => {
@@ -170,8 +153,15 @@ registerToolHandler(VFS_SEARCH_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_search", args);
-  const files = getInternalFiles(session);
+  const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
+
+  if (typedArgs.semantic) {
+    return createError(
+      "Semantic search is not available in this session",
+      "INVALID_DATA",
+    );
+  }
 
   if (typedArgs.regex) {
     let regex: RegExp;
@@ -208,7 +198,7 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_grep", args);
-  const files = getInternalFiles(session);
+  const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
 
   let regex: RegExp;
@@ -263,20 +253,17 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_move", args);
 
   return withAtomicSession(ctx, (draft) => {
-    const files = getInternalFiles(draft);
     const moved: Array<{ from: string; to: string }> = [];
 
     for (const move of typedArgs.moves) {
       const from = normalizeVfsPath(move.from);
       const to = normalizeVfsPath(move.to);
-      const file = files[from];
-
-      if (!file) {
-        return createError(`File not found: ${from}`, "NOT_FOUND");
+      try {
+        draft.renameFile(from, to);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return createError(message, "NOT_FOUND");
       }
-
-      files[to] = { ...file, path: to, updatedAt: Date.now() };
-      delete files[from];
       moved.push({ from, to });
     }
 
@@ -288,16 +275,16 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_delete", args);
 
   return withAtomicSession(ctx, (draft) => {
-    const files = getInternalFiles(draft);
     const deleted: string[] = [];
 
     for (const path of typedArgs.paths) {
       const normalized = normalizeVfsPath(path);
-      if (!files[normalized]) {
-        return createError(`File not found: ${normalized}`, "NOT_FOUND");
+      try {
+        draft.deleteFile(normalized);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return createError(message, "NOT_FOUND");
       }
-
-      delete files[normalized];
       deleted.push(normalized);
     }
 

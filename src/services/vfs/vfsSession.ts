@@ -5,6 +5,14 @@ import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 
+const cloneFiles = (files: VfsFileMap): VfsFileMap => {
+  const cloned: VfsFileMap = {};
+  for (const [path, file] of Object.entries(files)) {
+    cloned[path] = { ...file };
+  }
+  return cloned;
+};
+
 const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
   if (input === null || typeof input !== "object") {
     return false;
@@ -61,6 +69,37 @@ export class VfsSession {
   public readFile(path: string): VfsFile | null {
     const file = this.files[normalizeVfsPath(path)];
     return file ? { ...file } : null;
+  }
+
+  public snapshot(): VfsFileMap {
+    return cloneFiles(this.files);
+  }
+
+  public restore(snapshot: VfsFileMap): void {
+    this.files = cloneFiles(snapshot);
+  }
+
+  public renameFile(from: string, to: string): void {
+    const normalizedFrom = normalizeVfsPath(from);
+    const normalizedTo = normalizeVfsPath(to);
+    const file = this.files[normalizedFrom];
+    if (!file) {
+      throw new Error(`File not found: ${normalizedFrom}`);
+    }
+    this.files[normalizedTo] = {
+      ...file,
+      path: normalizedTo,
+      updatedAt: Date.now(),
+    };
+    delete this.files[normalizedFrom];
+  }
+
+  public deleteFile(path: string): void {
+    const normalized = normalizeVfsPath(path);
+    if (!this.files[normalized]) {
+      throw new Error(`File not found: ${normalized}`);
+    }
+    delete this.files[normalized];
   }
 
   public applyJsonPatch(path: string, patchOps: Operation[]): void {
