@@ -522,6 +522,120 @@ export const RAG_SEARCH_TOOL = defineTool({
 });
 
 // ============================================================================
+// VFS TOOLS (Virtual File System)
+// ============================================================================
+
+const vfsPathSchema = z
+  .string()
+  .describe("VFS path (leading/trailing slashes are ok).");
+
+const vfsContentTypeSchema = z.enum(["application/json", "text/plain"]);
+
+const vfsJsonPatchOpSchema = z.object({
+  op: z
+    .enum(["add", "remove", "replace", "move", "copy", "test"])
+    .describe("JSON Patch operation."),
+  path: z.string().describe("JSON Pointer path."),
+  from: z.string().optional().describe("Source path (for move/copy)."),
+  value: z.unknown().optional().describe("Value (for add/replace/test)."),
+});
+
+export const VFS_LS_TOOL = defineTool({
+  name: "vfs_ls",
+  description: "List VFS entries at a path.",
+  parameters: z.object({
+    path: vfsPathSchema.optional().describe("Directory path. Omit for root."),
+  }),
+});
+
+export const VFS_READ_TOOL = defineTool({
+  name: "vfs_read",
+  description: "Read a VFS file.",
+  parameters: z.object({
+    path: vfsPathSchema.describe("File path."),
+  }),
+});
+
+export const VFS_SEARCH_TOOL = defineTool({
+  name: "vfs_search",
+  description: "Search VFS files by text/regex (optionally semantic).",
+  parameters: z.object({
+    query: z.string().describe("Search query (text or regex)."),
+    path: vfsPathSchema.optional().describe("Root path to search within."),
+    regex: z.boolean().optional().describe("Treat query as regex."),
+    semantic: z.boolean().optional().describe("Enable semantic search if available."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+  }),
+});
+
+export const VFS_GREP_TOOL = defineTool({
+  name: "vfs_grep",
+  description: "Grep VFS files using a regex pattern.",
+  parameters: z.object({
+    pattern: z.string().describe("Regex pattern."),
+    path: vfsPathSchema.optional().describe("Root path to search within."),
+    flags: z.string().optional().describe("Regex flags (e.g. 'i')."),
+    limit: z.number().optional().describe("Max results. Default: 20."),
+  }),
+});
+
+export const VFS_WRITE_TOOL = defineTool({
+  name: "vfs_write",
+  description: "Write one or more files to the VFS (atomic batch).",
+  parameters: z.object({
+    files: z
+      .array(
+        z.object({
+          path: vfsPathSchema.describe("File path."),
+          content: z.string().describe("File contents."),
+          contentType: vfsContentTypeSchema.describe("Content type."),
+        }),
+      )
+      .describe("Files to write."),
+  }),
+});
+
+export const VFS_EDIT_TOOL = defineTool({
+  name: "vfs_edit",
+  description: "Apply JSON Patch edits to VFS files (atomic batch).",
+  parameters: z.object({
+    edits: z
+      .array(
+        z.object({
+          path: vfsPathSchema.describe("JSON file path."),
+          patch: z
+            .array(vfsJsonPatchOpSchema)
+            .describe("JSON Patch operations."),
+        }),
+      )
+      .describe("Edits to apply."),
+  }),
+});
+
+export const VFS_MOVE_TOOL = defineTool({
+  name: "vfs_move",
+  description: "Move or rename VFS paths (atomic batch).",
+  parameters: z.object({
+    moves: z
+      .array(
+        z.object({
+          from: vfsPathSchema.describe("Source path."),
+          to: vfsPathSchema.describe("Destination path."),
+        }),
+      )
+      .describe("Move operations."),
+  }),
+});
+
+export const VFS_DELETE_TOOL = defineTool({
+  name: "vfs_delete",
+  description: "Delete one or more VFS paths (atomic batch).",
+  parameters: z.object({
+    paths: z.array(vfsPathSchema).describe("Paths to delete."),
+  }),
+});
+
+// ============================================================================
 // NOTES TOOLS (Global Notes System)
 // ============================================================================
 
@@ -1905,6 +2019,14 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   QUERY_CHARACTER_CONDITIONS_TOOL,
   QUERY_CHARACTER_TRAITS_TOOL,
   RAG_SEARCH_TOOL,
+  VFS_LS_TOOL,
+  VFS_READ_TOOL,
+  VFS_SEARCH_TOOL,
+  VFS_GREP_TOOL,
+  VFS_WRITE_TOOL,
+  VFS_EDIT_TOOL,
+  VFS_MOVE_TOOL,
+  VFS_DELETE_TOOL,
   ADD_INVENTORY_TOOL,
   ADD_NPC_TOOL,
   ADD_LOCATION_TOOL,
@@ -2223,6 +2345,14 @@ export type QueryCausalChainParams = InferToolParams<
 export type QueryFactionsParams = InferToolParams<typeof QUERY_FACTIONS_TOOL>;
 export type QueryGlobalParams = InferToolParams<typeof QUERY_GLOBAL_TOOL>;
 export type RagSearchParams = InferToolParams<typeof RAG_SEARCH_TOOL>;
+export type VfsLsParams = InferToolParams<typeof VFS_LS_TOOL>;
+export type VfsReadParams = InferToolParams<typeof VFS_READ_TOOL>;
+export type VfsSearchParams = InferToolParams<typeof VFS_SEARCH_TOOL>;
+export type VfsGrepParams = InferToolParams<typeof VFS_GREP_TOOL>;
+export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
+export type VfsEditParams = InferToolParams<typeof VFS_EDIT_TOOL>;
+export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
+export type VfsDeleteParams = InferToolParams<typeof VFS_DELETE_TOOL>;
 
 // Story Memory Query Types
 export type QueryStoryParams = InferToolParams<typeof QUERY_STORY_TOOL>;
@@ -2297,6 +2427,14 @@ export interface ToolParamsMap {
   query_character_conditions: QueryCharacterConditionsParams;
   query_character_traits: QueryCharacterTraitsParams;
   rag_search: RagSearchParams;
+  vfs_ls: VfsLsParams;
+  vfs_read: VfsReadParams;
+  vfs_search: VfsSearchParams;
+  vfs_grep: VfsGrepParams;
+  vfs_write: VfsWriteParams;
+  vfs_edit: VfsEditParams;
+  vfs_move: VfsMoveParams;
+  vfs_delete: VfsDeleteParams;
 
   // Add tools
   add_inventory: AddInventoryParams;
