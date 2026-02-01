@@ -19,6 +19,7 @@ import {
   type ToolCallResult,
 } from "../../gameDatabase";
 import type { VfsFileMap } from "../../vfs/types";
+import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
 import { VfsSession } from "../../vfs/vfsSession";
 import { registerToolHandler, type ToolContext } from "../toolHandlerRegistry";
@@ -41,6 +42,17 @@ const commitSession = (target: VfsSession, source: VfsSession): void => {
 
 const getSession = (ctx: ToolContext): VfsSession | null => {
   return ctx.vfsSession ?? null;
+};
+
+const resolveCurrentPath = (
+  path?: string,
+): { ok: true; path: string } | { ok: false; error: ToolCallResult } => {
+  try {
+    return { ok: true, path: stripCurrentPath(path ?? "current") };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: createError(message, "INVALID_DATA") };
+  }
 };
 
 const withAtomicSession = <T>(
@@ -127,7 +139,11 @@ registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_ls", args);
-  const entries = session.list(typedArgs.path ?? "");
+  const resolved = resolveCurrentPath(typedArgs.path);
+  if (!resolved.ok) {
+    return resolved.error;
+  }
+  const entries = session.list(resolved.path);
   return createSuccess({ entries }, "VFS entries listed");
 });
 
@@ -138,12 +154,19 @@ registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_read", args);
-  const file = session.readFile(typedArgs.path);
+  const resolved = resolveCurrentPath(typedArgs.path);
+  if (!resolved.ok) {
+    return resolved.error;
+  }
+  const file = session.readFile(resolved.path);
   if (!file) {
     return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
   }
 
-  return createSuccess(file, "VFS file read");
+  return createSuccess(
+    { ...file, path: toCurrentPath(file.path) },
+    "VFS file read",
+  );
 });
 
 registerToolHandler(VFS_SEARCH_TOOL, (args, ctx) => {
@@ -155,6 +178,13 @@ registerToolHandler(VFS_SEARCH_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_search", args);
   const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
+  const resolvedPath = typedArgs.path
+    ? resolveCurrentPath(typedArgs.path)
+    : null;
+  if (resolvedPath && !resolvedPath.ok) {
+    return resolvedPath.error;
+  }
+  const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
 
   if (typedArgs.regex) {
     let regex: RegExp;
@@ -167,19 +197,19 @@ registerToolHandler(VFS_SEARCH_TOOL, (args, ctx) => {
 
     const results = collectMatches(
       files,
-      typedArgs.path,
+      rootPath,
       makeRegexMatcher(regex),
       limit,
-    );
+    ).map((match) => ({ ...match, path: toCurrentPath(match.path) }));
     return createSuccess({ results }, "VFS search complete");
   }
 
   const results = collectMatches(
     files,
-    typedArgs.path,
+    rootPath,
     (line) => line.includes(typedArgs.query),
     limit,
-  );
+  ).map((match) => ({ ...match, path: toCurrentPath(match.path) }));
 
   return createSuccess({ results }, "VFS search complete");
 });
@@ -193,6 +223,13 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_grep", args);
   const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
+  const resolvedPath = typedArgs.path
+    ? resolveCurrentPath(typedArgs.path)
+    : null;
+  if (resolvedPath && !resolvedPath.ok) {
+    return resolvedPath.error;
+  }
+  const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
 
   let regex: RegExp;
   try {
@@ -204,10 +241,10 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
 
   const results = collectMatches(
     files,
-    typedArgs.path,
+    rootPath,
     makeRegexMatcher(regex),
     limit,
-  );
+  ).map((match) => ({ ...match, path: toCurrentPath(match.path) }));
 
   return createSuccess({ results }, "VFS grep complete");
 });
@@ -216,14 +253,18 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_write", args);
 
   return withAtomicSession(ctx, (draft) => {
+    const written: string[] = [];
+
     for (const file of typedArgs.files) {
-      draft.writeFile(file.path, file.content, file.contentType);
+      const resolved = resolveCurrentPath(file.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+      draft.writeFile(resolved.path, file.content, file.contentType);
+      written.push(toCurrentPath(resolved.path));
     }
 
-    return createSuccess(
-      { written: typedArgs.files.map((file) => normalizeVfsPath(file.path)) },
-      "VFS files written",
-    );
+    return createSuccess({ written }, "VFS files written");
   });
 });
 
@@ -231,14 +272,18 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_edit", args);
 
   return withAtomicSession(ctx, (draft) => {
+    const edited: string[] = [];
+
     for (const edit of typedArgs.edits) {
-      draft.applyJsonPatch(edit.path, edit.patch);
+      const resolved = resolveCurrentPath(edit.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+      draft.applyJsonPatch(resolved.path, edit.patch);
+      edited.push(toCurrentPath(resolved.path));
     }
 
-    return createSuccess(
-      { edited: typedArgs.edits.map((edit) => normalizeVfsPath(edit.path)) },
-      "VFS files edited",
-    );
+    return createSuccess({ edited }, "VFS files edited");
   });
 });
 
@@ -249,15 +294,23 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
     const moved: Array<{ from: string; to: string }> = [];
 
     for (const move of typedArgs.moves) {
-      const from = normalizeVfsPath(move.from);
-      const to = normalizeVfsPath(move.to);
+      const resolvedFrom = resolveCurrentPath(move.from);
+      if (!resolvedFrom.ok) {
+        return resolvedFrom.error;
+      }
+      const resolvedTo = resolveCurrentPath(move.to);
+      if (!resolvedTo.ok) {
+        return resolvedTo.error;
+      }
+      const from = normalizeVfsPath(resolvedFrom.path);
+      const to = normalizeVfsPath(resolvedTo.path);
       try {
         draft.renameFile(from, to);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return createError(message, "NOT_FOUND");
       }
-      moved.push({ from, to });
+      moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
     }
 
     return createSuccess({ moved }, "VFS files moved");
@@ -271,14 +324,18 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
     const deleted: string[] = [];
 
     for (const path of typedArgs.paths) {
-      const normalized = normalizeVfsPath(path);
+      const resolved = resolveCurrentPath(path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+      const normalized = normalizeVfsPath(resolved.path);
       try {
         draft.deleteFile(normalized);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return createError(message, "NOT_FOUND");
       }
-      deleted.push(normalized);
+      deleted.push(toCurrentPath(normalized));
     }
 
     return createSuccess({ deleted }, "VFS files deleted");

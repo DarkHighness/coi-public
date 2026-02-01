@@ -13,7 +13,7 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "world/global.json",
+            path: "current/world/global.json",
             content: "{}",
             contentType: "application/json",
           },
@@ -26,7 +26,7 @@ describe("VFS handlers", () => {
 
     const readResult = dispatchToolCall(
       "vfs_read",
-      { path: "world/global.json" },
+      { path: "current/world/global.json" },
       ctx,
     ) as { success: boolean; data?: { content?: string } };
 
@@ -48,5 +48,51 @@ describe("VFS handlers", () => {
 
     expect(searchResult.success).toBe(true);
     expect(searchResult.data?.results?.[0]?.text).toContain("hello");
+  });
+
+  it("rejects non-current paths and returns current-prefixed paths", () => {
+    const session = new VfsSession();
+    const ctx = { db: {} as GameDatabase, vfsSession: session };
+
+    const badWrite = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "world/global.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(badWrite.success).toBe(false);
+
+    const okWrite = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(okWrite.success).toBe(true);
+
+    const readResult = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/global.json" },
+      ctx,
+    ) as { success: boolean; data?: { path?: string } };
+
+    expect(readResult.success).toBe(true);
+    expect(readResult.data?.path).toBe("current/world/global.json");
   });
 });
