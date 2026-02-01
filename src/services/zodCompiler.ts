@@ -824,6 +824,9 @@ function processZodToGeminiCompatible(
 
     // Default fallback: first option
     if (options.length > 0) {
+      console.warn(
+        "Gemini Compatible schema does not support generic union types. Falling back to first option.",
+      );
       return processZodToGeminiCompatible(options[0]);
     }
     return { type: "string" };
@@ -1244,6 +1247,9 @@ function processZodToClaudeCompatible(
     }
 
     if (options.length > 0) {
+      console.warn(
+        "Claude Compatible schema does not support generic union types. Falling back to first option.",
+      );
       return processZodToClaudeCompatible(options[0]);
     }
     return { type: "string" };
