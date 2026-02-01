@@ -529,16 +529,53 @@ const vfsPathSchema = z
   .string()
   .describe("VFS path (leading/trailing slashes are ok).");
 
+const vfsFilePathSchema = vfsPathSchema.min(1, "Path is required.");
+
 const vfsContentTypeSchema = z.enum(["application/json", "text/plain"]);
 
-const vfsJsonPatchOpSchema = z.object({
-  op: z
-    .enum(["add", "remove", "replace", "move", "copy", "test"])
-    .describe("JSON Patch operation."),
-  path: z.string().describe("JSON Pointer path."),
-  from: z.string().optional().describe("Source path (for move/copy)."),
-  value: z.unknown().optional().describe("Value (for add/replace/test)."),
-});
+const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
+  z
+    .object({
+      op: z.literal("add"),
+      path: z.string().describe("JSON Pointer path."),
+      value: z.unknown().describe("Value for add."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("replace"),
+      path: z.string().describe("JSON Pointer path."),
+      value: z.unknown().describe("Value for replace."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("test"),
+      path: z.string().describe("JSON Pointer path."),
+      value: z.unknown().describe("Value for test."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("remove"),
+      path: z.string().describe("JSON Pointer path."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("move"),
+      path: z.string().describe("Destination path."),
+      from: z.string().describe("Source path."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("copy"),
+      path: z.string().describe("Destination path."),
+      from: z.string().describe("Source path."),
+    })
+    .strict(),
+]);
 
 export const VFS_LS_TOOL = defineTool({
   name: "vfs_ls",
@@ -552,7 +589,7 @@ export const VFS_READ_TOOL = defineTool({
   name: "vfs_read",
   description: "Read a VFS file.",
   parameters: z.object({
-    path: vfsPathSchema.describe("File path."),
+    path: vfsFilePathSchema.describe("File path."),
   }),
 });
 
@@ -586,7 +623,7 @@ export const VFS_WRITE_TOOL = defineTool({
     files: z
       .array(
         z.object({
-          path: vfsPathSchema.describe("File path."),
+          path: vfsFilePathSchema.describe("File path."),
           content: z.string().describe("File contents."),
           contentType: vfsContentTypeSchema.describe("Content type."),
         }),
@@ -602,7 +639,7 @@ export const VFS_EDIT_TOOL = defineTool({
     edits: z
       .array(
         z.object({
-          path: vfsPathSchema.describe("JSON file path."),
+          path: vfsFilePathSchema.describe("JSON file path."),
           patch: z
             .array(vfsJsonPatchOpSchema)
             .describe("JSON Patch operations."),
@@ -619,8 +656,8 @@ export const VFS_MOVE_TOOL = defineTool({
     moves: z
       .array(
         z.object({
-          from: vfsPathSchema.describe("Source path."),
-          to: vfsPathSchema.describe("Destination path."),
+          from: vfsFilePathSchema.describe("Source path."),
+          to: vfsFilePathSchema.describe("Destination path."),
         }),
       )
       .describe("Move operations."),
@@ -631,7 +668,7 @@ export const VFS_DELETE_TOOL = defineTool({
   name: "vfs_delete",
   description: "Delete one or more VFS paths (atomic batch).",
   parameters: z.object({
-    paths: z.array(vfsPathSchema).describe("Paths to delete."),
+    paths: z.array(vfsFilePathSchema).describe("Paths to delete."),
   }),
 });
 
