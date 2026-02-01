@@ -34,17 +34,19 @@ describe("VFS handlers", () => {
     expect(readResult.data?.content).toBe("{}");
   });
 
-  it("rejects semantic search when unavailable", () => {
+  it("falls back to text search for semantic queries", () => {
     const session = new VfsSession();
     const ctx = { db: {} as GameDatabase, vfsSession: session };
 
+    session.writeFile("world/global.json", "hello world", "text/plain");
+
     const searchResult = dispatchToolCall(
       "vfs_search",
-      { query: "foo", semantic: true },
+      { query: "hello", semantic: true },
       ctx,
-    ) as { success: boolean; code?: string };
+    ) as { success: boolean; data?: { results?: Array<{ text: string }> } };
 
-    expect(searchResult.success).toBe(false);
-    expect(searchResult.code).toBe("INVALID_DATA");
+    expect(searchResult.success).toBe(true);
+    expect(searchResult.data?.results?.[0]?.text).toContain("hello");
   });
 });

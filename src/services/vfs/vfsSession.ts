@@ -82,6 +82,9 @@ export class VfsSession {
   public renameFile(from: string, to: string): void {
     const normalizedFrom = normalizeVfsPath(from);
     const normalizedTo = normalizeVfsPath(to);
+    if (normalizedFrom === normalizedTo) {
+      return;
+    }
     const file = this.files[normalizedFrom];
     if (!file) {
       throw new Error(`File not found: ${normalizedFrom}`);

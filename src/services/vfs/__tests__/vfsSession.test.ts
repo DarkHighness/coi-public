@@ -50,4 +50,13 @@ describe("VfsSession", () => {
     expect(second?.path).toBe("world/global.json");
     expect(second).not.toBe(first);
   });
+
+  it("treats rename to same path as no-op", () => {
+    const session = new VfsSession();
+    session.writeFile("world/global.json", "{}", "application/json");
+
+    session.renameFile("world/global.json", "world/global.json");
+
+    expect(session.readFile("world/global.json")?.content).toBe("{}");
+  });
 });

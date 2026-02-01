@@ -156,13 +156,6 @@ registerToolHandler(VFS_SEARCH_TOOL, (args, ctx) => {
   const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
 
-  if (typedArgs.semantic) {
-    return createError(
-      "Semantic search is not available in this session",
-      "INVALID_DATA",
-    );
-  }
-
   if (typedArgs.regex) {
     let regex: RegExp;
     try {
