@@ -26,12 +26,17 @@ export const SAVES_STORE = "saves";
 export const META_STORE = "meta";
 export const AUDIO_STORE = "audio";
 export const IMAGES_STORE = "images";
+export const VFS_DB_NAME = "ChroniclesOfInfinityVFS";
+const VFS_DB_VERSION = 1;
+export const VFS_SNAPSHOTS_STORE = "vfs_snapshots";
+export const VFS_META_STORE = "vfs_meta";
 
 interface DBConnection {
   db: IDBDatabase;
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+let vfsDbPromise: Promise<IDBDatabase> | null = null;
 
 /**
  * Initialize and open the IndexedDB database
@@ -93,6 +98,50 @@ export const openDB = (): Promise<IDBDatabase> => {
   });
 
   return dbPromise;
+};
+
+/**
+ * Initialize and open the VFS IndexedDB database
+ */
+export const openVfsDB = (): Promise<IDBDatabase> => {
+  if (vfsDbPromise) return vfsDbPromise;
+
+  vfsDbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(VFS_DB_NAME, VFS_DB_VERSION);
+
+    request.onerror = () => {
+      console.error("Failed to open VFS IndexedDB:", request.error);
+      reject(request.error);
+    };
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+
+      if (!db.objectStoreNames.contains(VFS_SNAPSHOTS_STORE)) {
+        db.createObjectStore(VFS_SNAPSHOTS_STORE, { keyPath: "id" });
+      }
+
+      if (!db.objectStoreNames.contains(VFS_META_STORE)) {
+        const store = db.createObjectStore(VFS_META_STORE, { keyPath: "id" });
+        store.createIndex("saveFork", ["saveId", "forkId"], { unique: false });
+      } else {
+        const store = (
+          event.target as IDBOpenDBRequest
+        ).transaction!.objectStore(VFS_META_STORE);
+        if (!store.indexNames.contains("saveFork")) {
+          store.createIndex("saveFork", ["saveId", "forkId"], {
+            unique: false,
+          });
+        }
+      }
+    };
+  });
+
+  return vfsDbPromise;
 };
 
 /**
