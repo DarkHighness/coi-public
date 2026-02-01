@@ -57,9 +57,17 @@ export const stateManagement: Atom<void> = () => `
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`add_inventory({ id: "inv_key" })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ files: [{ path: "current/world/inventory/inv_key.json", content: "{...}", contentType: "application/json" }] })\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "The bridge collapses." + Tool: \`update_location({ id: "loc_bridge", visible: { description: "Rubbles..." } })\`
+      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_edit({ edits: [{ path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
+
+    - **VFS STATE AUTHORITY (MANDATORY)**:
+      * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.
+      * Use \`vfs_write\` to create/replace files, \`vfs_edit\` with JSON Patch (RFC 6902) to update existing JSON.
+      * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
+      * Inspect before you change: \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\`.
+      * Always reference explicit file paths under \`current/\` (e.g., \`current/world/npcs/npc:1.json\`).
+      * Update the current turn log in \`current/conversation/turn.json\` after finishing the turn.
 
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:
       * **CLARIFICATION**: This is about SYSTEM consequences, not about how NPCs behave. NPCs can still show kindness—see HUMANITY_AND_HOPE.
