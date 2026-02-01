@@ -242,6 +242,9 @@ export class VfsSession {
 
   public searchText(query: string, options: VfsSearchOptions = {}): VfsSearchMatch[] {
     const { path, limit = 20, semantic } = options;
+    if (limit <= 0) {
+      return [];
+    }
 
     if (semantic) {
       const semanticMatches = this.searchSemantic(query, { path, limit });
@@ -255,6 +258,9 @@ export class VfsSession {
 
   public grep(regex: RegExp, options: VfsGrepOptions = {}): VfsSearchMatch[] {
     const { path, limit = 20 } = options;
+    if (limit <= 0) {
+      return [];
+    }
     return collectMatches(this.files, path, makeRegexMatcher(regex), limit);
   }
 }
