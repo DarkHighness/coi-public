@@ -356,14 +356,25 @@ export const clearDatabase = async (): Promise<void> => {
     db.close();
     dbPromise = null;
   }
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(DB_NAME);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => {
-      console.warn("Delete database blocked");
-      // Try to resolve anyway as we can't do much else
-      resolve();
-    };
-  });
+
+  if (vfsDbPromise) {
+    const vfsDb = await vfsDbPromise;
+    vfsDb.close();
+    vfsDbPromise = null;
+  }
+
+  const deleteDb = (name: string): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(name);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => {
+        console.warn(`Delete database blocked: ${name}`);
+        // Try to resolve anyway as we can't do much else
+        resolve();
+      };
+    });
+
+  await deleteDb(DB_NAME);
+  await deleteDb(VFS_DB_NAME);
 };
