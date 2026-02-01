@@ -59,4 +59,11 @@ describe("VfsSession", () => {
 
     expect(session.readFile("world/global.json")?.content).toBe("{}");
   });
+
+  it("throws when renaming a missing file even if paths match", () => {
+    const session = new VfsSession();
+    expect(() =>
+      session.renameFile("world/missing.json", "world/missing.json"),
+    ).toThrow();
+  });
 });
