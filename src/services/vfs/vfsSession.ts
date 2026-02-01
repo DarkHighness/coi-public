@@ -50,8 +50,84 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
   return false;
 };
 
+export interface VfsSearchMatch {
+  path: string;
+  line: number;
+  text: string;
+}
+
+export interface VfsSearchOptions {
+  path?: string;
+  limit?: number;
+  semantic?: boolean;
+}
+
+export interface VfsGrepOptions {
+  path?: string;
+  limit?: number;
+}
+
+export type VfsSemanticIndexer = (
+  query: string,
+  options: Omit<VfsSearchOptions, "semantic">,
+) => VfsSearchMatch[];
+
+const isInScope = (filePath: string, rootPath?: string): boolean => {
+  if (!rootPath) {
+    return true;
+  }
+  const normalized = normalizeVfsPath(rootPath);
+  if (!normalized) {
+    return true;
+  }
+  return filePath === normalized || filePath.startsWith(`${normalized}/`);
+};
+
+const makeRegexMatcher = (regex: RegExp) => {
+  return (line: string): boolean => {
+    const matches = regex.test(line);
+    if (regex.global || regex.sticky) {
+      regex.lastIndex = 0;
+    }
+    return matches;
+  };
+};
+
+const collectMatches = (
+  files: VfsFileMap,
+  rootPath: string | undefined,
+  matcher: (line: string) => boolean,
+  limit: number,
+): VfsSearchMatch[] => {
+  const matches: VfsSearchMatch[] = [];
+
+  for (const file of Object.values(files)) {
+    if (!isInScope(file.path, rootPath)) {
+      continue;
+    }
+
+    const lines = file.content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (matcher(line)) {
+        matches.push({ path: file.path, line: i + 1, text: line });
+        if (matches.length >= limit) {
+          return matches;
+        }
+      }
+    }
+  }
+
+  return matches;
+};
+
 export class VfsSession {
   private files: VfsFileMap = {};
+  private semanticIndexer?: VfsSemanticIndexer;
+
+  constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
+    this.semanticIndexer = options?.semanticIndexer;
+  }
 
   public writeFile(path: string, content: string, contentType: VfsContentType) {
     const normalized = normalizeVfsPath(path);
@@ -148,5 +224,37 @@ export class VfsSession {
       .map((p) => p.slice(prefix.length + 1))
       .filter((p) => !p.includes("/"));
     return Array.from(new Set(entries));
+  }
+
+  public setSemanticIndexer(indexer?: VfsSemanticIndexer): void {
+    this.semanticIndexer = indexer;
+  }
+
+  public searchSemantic(
+    query: string,
+    options: Omit<VfsSearchOptions, "semantic"> = {},
+  ): VfsSearchMatch[] {
+    if (!this.semanticIndexer) {
+      return [];
+    }
+    return this.semanticIndexer(query, options);
+  }
+
+  public searchText(query: string, options: VfsSearchOptions = {}): VfsSearchMatch[] {
+    const { path, limit = 20, semantic } = options;
+
+    if (semantic) {
+      const semanticMatches = this.searchSemantic(query, { path, limit });
+      if (semanticMatches.length > 0) {
+        return semanticMatches.slice(0, limit);
+      }
+    }
+
+    return collectMatches(this.files, path, (line) => line.includes(query), limit);
+  }
+
+  public grep(regex: RegExp, options: VfsGrepOptions = {}): VfsSearchMatch[] {
+    const { path, limit = 20 } = options;
+    return collectMatches(this.files, path, makeRegexMatcher(regex), limit);
   }
 }
