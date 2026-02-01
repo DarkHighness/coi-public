@@ -1,4 +1,5 @@
 import type { AtmosphereObject } from "./utils/constants/atmosphere";
+import type { VfsSession } from "./services/vfs/vfsSession";
 
 // ============================================================================
 // 版本化时间戳类型
@@ -726,6 +727,8 @@ export interface TurnContext {
   slotId: string;
   /** Whether this is the initial turn of a new game */
   isInit?: boolean;
+  /** VFS session for file-based state */
+  vfsSession?: VfsSession;
 }
 
 export interface GameStateSnapshot {

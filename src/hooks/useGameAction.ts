@@ -9,6 +9,7 @@ import {
   GameState,
   LanguageCode,
 } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
 import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
@@ -35,6 +36,7 @@ interface UseGameActionProps {
     nodeOverride?: StorySegment,
   ) => Promise<void>;
   triggerSave: () => void;
+  vfsSession?: VfsSession;
 }
 
 export const useGameAction = ({
@@ -47,6 +49,7 @@ export const useGameAction = ({
   currentSlotId,
   generateImageForNode,
   triggerSave,
+  vfsSession,
 }: UseGameActionProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -352,6 +355,7 @@ export const useGameAction = ({
           settings: aiSettings,
           slotId: currentSlotId || "default",
           isInit: isInit,
+          vfsSession,
         });
 
         // ===== STATE UPDATE =====

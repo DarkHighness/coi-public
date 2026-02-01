@@ -259,5 +259,6 @@ export const runAgenticLoop = async (
     settings,
     isSudoMode,
     sessionId: _sessionId,
+    vfsSession: context.vfsSession,
   });
 };

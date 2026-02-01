@@ -10,6 +10,7 @@ import type {
   TokenUsage,
   GameResponse,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { GameDatabase } from "../../../gameDatabase";
 import { BudgetState, createBudgetState } from "../budgetUtils";
@@ -32,6 +33,8 @@ import {
 export interface LoopState {
   /** Game database for state queries and modifications */
   db: GameDatabase;
+  /** VFS session for file-based state */
+  vfsSession?: VfsSession;
   /** Budget tracking state */
   budgetState: BudgetState;
   /** Accumulated response being built */
@@ -61,6 +64,7 @@ export function createLoopState(
   gameState: GameState,
   settings: AISettings,
   isSudoMode: boolean,
+  vfsSession?: VfsSession,
 ): LoopState {
   const db = createGameDatabase(gameState);
   const budgetState = createBudgetState(settings);
@@ -71,6 +75,7 @@ export function createLoopState(
 
   return {
     db,
+    vfsSession,
     budgetState,
     accumulatedResponse,
     changedEntities: new Map(),

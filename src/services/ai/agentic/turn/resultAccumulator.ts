@@ -7,6 +7,8 @@
 import type { GameResponse, LogEntry, TokenUsage } from "../../../../types";
 import type { GameDatabase } from "../../../gameDatabase";
 import { createLogEntry } from "../../utils";
+import type { VfsSession } from "../../../vfs/vfsSession";
+import { deriveGameStateFromVfs } from "../../../vfs/derivations";
 
 // ============================================================================
 // Response Processing
@@ -19,6 +21,7 @@ export function processFinishTurnData(
   data: Record<string, unknown>,
   response: GameResponse,
   db: GameDatabase,
+  vfsSession?: VfsSession,
 ): void {
   // Extract narrative and choices
   response.narrative = (data.narrative as string)
@@ -44,9 +47,15 @@ export function processFinishTurnData(
     response.forceEnd = data.forceEnd;
   }
 
-  // Attach final state from DB
-  (response as GameResponse & { finalState: unknown }).finalState =
-    db.getState();
+  // Attach final state from VFS when available, otherwise fall back to DB
+  const vfsSnapshot = vfsSession ? vfsSession.snapshot() : null;
+  if (vfsSnapshot && Object.keys(vfsSnapshot).length > 0) {
+    (response as GameResponse & { finalState: unknown }).finalState =
+      deriveGameStateFromVfs(vfsSnapshot);
+  } else {
+    (response as GameResponse & { finalState: unknown }).finalState =
+      db.getState();
+  }
 }
 
 // ============================================================================

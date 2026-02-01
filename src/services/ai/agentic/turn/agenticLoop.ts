@@ -15,6 +15,7 @@ import type {
   ProviderProtocol,
   ProviderInstance,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ToolCallResult } from "../../../providers/types";
 import { UnifiedMessage } from "../../../messageTypes";
 
@@ -72,6 +73,7 @@ export interface AgenticLoopConfig {
   settings: AISettings;
   isSudoMode?: boolean;
   sessionId?: string;
+  vfsSession?: VfsSession;
 }
 
 export interface AgenticLoopResult {
@@ -108,7 +110,12 @@ export async function runAgenticLoopRefactored(
     : createProvider(instance);
 
   // Initialize loop state
-  const loopState = createLoopState(gameState, settings, isSudoMode);
+  const loopState = createLoopState(
+    gameState,
+    settings,
+    isSudoMode,
+    config.vfsSession,
+  );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
 
@@ -284,6 +291,7 @@ async function processToolCalls(
     clearerSearchTool: settings.extra?.clearerSearchTool,
     conversationHistory,
     sessionId,
+    vfsSession: loopState.vfsSession,
   };
 
   for (const call of functionCalls) {

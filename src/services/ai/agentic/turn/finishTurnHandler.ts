@@ -94,7 +94,12 @@ export function handleFinishTurn(params: FinishTurnParams): FinishTurnResult {
 
   // Process the finish turn data
   try {
-    processFinishTurnData(args, loopState.accumulatedResponse, loopState.db);
+    processFinishTurnData(
+      args,
+      loopState.accumulatedResponse,
+      loopState.db,
+      loopState.vfsSession,
+    );
     const message =
       toolName === "complete_force_update"
         ? "Force update completed. State captured."

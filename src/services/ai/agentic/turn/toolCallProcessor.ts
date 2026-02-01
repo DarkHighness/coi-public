@@ -27,6 +27,7 @@ import { getSkillRegistry } from "../../../prompts/skills/registry";
 import { registerAllSkills } from "../../../prompts/skills/definitions";
 import { createUserMessage } from "../../../messageTypes";
 import type { LoopState } from "./loopInitializer";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 // ============================================================================
 // Types
@@ -41,6 +42,8 @@ export interface ToolCallContext {
   conversationHistory?: UnifiedMessage[];
   /** Session ID for skill registry */
   sessionId?: string;
+  /** VFS session for file-based tools */
+  vfsSession?: VfsSession;
 }
 
 export interface ProcessedToolCall {
@@ -274,6 +277,7 @@ export function executeGenericTool(
       changedEntities: loopState.changedEntities,
       gameState,
       settings,
+      vfsSession: ctx.vfsSession ?? loopState.vfsSession,
     };
     return dispatchToolCall(name, args, toolContext);
   }
