@@ -24,6 +24,7 @@ import "./storyQueryHandlers";
 import "./ragSearchHandler";
 import "./outlineHandler";
 import "./summaryHandlers";
+import "./vfsHandlers";
 
 // Re-export registry functions for convenience
 export {

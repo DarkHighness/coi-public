@@ -14,6 +14,7 @@
 import type { GameState, GameResponse, AISettings } from "../../types";
 import type { GameDatabase } from "../gameDatabase";
 import type { ZodToolDefinition } from "../providers/types";
+import type { VfsSession } from "../vfs/vfsSession";
 
 // ============================================================================
 // Types
@@ -34,6 +35,8 @@ export interface ToolContext {
   gameState?: GameState;
   /** AI settings (optional) */
   settings?: AISettings;
+  /** VFS session for file-based tools (optional) */
+  vfsSession?: VfsSession;
 }
 
 /**
