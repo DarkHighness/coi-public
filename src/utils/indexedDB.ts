@@ -358,8 +358,12 @@ export const clearDatabase = async (): Promise<void> => {
   }
 
   if (vfsDbPromise) {
-    const vfsDb = await vfsDbPromise;
-    vfsDb.close();
+    try {
+      const vfsDb = await vfsDbPromise;
+      vfsDb.close();
+    } catch {
+      // Ignore failed open; still attempt deletion below.
+    }
     vfsDbPromise = null;
   }
 
