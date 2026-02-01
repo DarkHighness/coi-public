@@ -12,7 +12,7 @@ import {
   TurnContext,
 } from "../types";
 import { useGameState } from "./useGameState";
-import { useGamePersistence } from "./useGamePersistence";
+import { useVfsPersistence } from "./useVfsPersistence";
 import { useSettings } from "./useSettings";
 import {
   generateAdventureTurn,
@@ -177,7 +177,9 @@ export const useGameEngine = () => {
     setSkipNextSave,
     triggerSave,
     refreshSlots,
-  } = useGamePersistence(gameState, setGameState, view);
+    vfsSession,
+    seedFromGameState,
+  } = useVfsPersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
   const gameStateRef = useRef(gameState);
@@ -303,6 +305,7 @@ export const useGameEngine = () => {
         await generateImageForNode(nodeId, nodeOverride);
       },
       triggerSave,
+      vfsSession,
     });
 
   const startNewGame = async (
@@ -632,6 +635,7 @@ export const useGameEngine = () => {
             themeConfig, // Include resolved theme config
             outlineConversation: undefined,
           };
+          seedFromGameState(nextState);
           await saveToSlot(slotId, nextState);
           console.log("[StartNewGame] Outline checkpoint saved successfully");
         } catch (e) {
@@ -1418,6 +1422,7 @@ export const useGameEngine = () => {
         tFunc: t,
         settings: aiSettings,
         slotId: currentSlotId || "default",
+        vfsSession,
       };
 
       const { response, logs } = await generateForceUpdate(
@@ -1598,6 +1603,7 @@ export const useGameEngine = () => {
         tFunc: t,
         settings: aiSettings,
         slotId: currentSlotId || "default",
+        vfsSession,
       };
 
       const { response, logs, changedEntities } = await generateEntityCleanup(
