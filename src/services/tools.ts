@@ -528,6 +528,9 @@ export const RAG_SEARCH_TOOL = defineTool({
 const vfsPathSchema = z
   .string()
   .describe("VFS path (leading/trailing slashes are ok).");
+const vfsOptionalPathSchema = vfsPathSchema
+  .nullish()
+  .describe("Optional VFS path (omit or null for root).");
 
 const vfsFilePathSchema = vfsPathSchema.min(1, "Path is required.");
 
@@ -539,6 +542,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("add"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for add."),
+      from: z.string().optional().describe("Ignored for add."),
     })
     .strict(),
   z
@@ -546,6 +550,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("replace"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for replace."),
+      from: z.string().optional().describe("Ignored for replace."),
     })
     .strict(),
   z
@@ -553,12 +558,14 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("test"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for test."),
+      from: z.string().optional().describe("Ignored for test."),
     })
     .strict(),
   z
     .object({
       op: z.literal("remove"),
       path: z.string().describe("JSON Pointer path."),
+      from: z.string().optional().describe("Ignored for remove."),
     })
     .strict(),
   z
@@ -581,7 +588,7 @@ export const VFS_LS_TOOL = defineTool({
   name: "vfs_ls",
   description: "List VFS entries at a path.",
   parameters: z.object({
-    path: vfsPathSchema.optional().describe("Directory path. Omit for root."),
+    path: vfsOptionalPathSchema.describe("Directory path. Omit for root."),
   }),
 });
 
@@ -598,7 +605,7 @@ export const VFS_SEARCH_TOOL = defineTool({
   description: "Search VFS files by text/regex (optionally semantic).",
   parameters: z.object({
     query: z.string().describe("Search query (text or regex)."),
-    path: vfsPathSchema.optional().describe("Root path to search within."),
+    path: vfsOptionalPathSchema.describe("Root path to search within."),
     regex: z.boolean().optional().describe("Treat query as regex."),
     semantic: z.boolean().optional().describe("Enable semantic search if available."),
     limit: z.number().optional().describe("Max results. Default: 20."),
@@ -610,7 +617,7 @@ export const VFS_GREP_TOOL = defineTool({
   description: "Grep VFS files using a regex pattern.",
   parameters: z.object({
     pattern: z.string().describe("Regex pattern."),
-    path: vfsPathSchema.optional().describe("Root path to search within."),
+    path: vfsOptionalPathSchema.describe("Root path to search within."),
     flags: z.string().optional().describe("Regex flags (e.g. 'i')."),
     limit: z.number().optional().describe("Max results. Default: 20."),
   }),

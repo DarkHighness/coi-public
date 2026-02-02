@@ -30,4 +30,42 @@ describe("VFS tools", () => {
       true,
     );
   });
+
+  it("accepts null for optional VFS path parameters", () => {
+    const searchResult = VFS_SEARCH_TOOL.parameters.safeParse({
+      query: "test",
+      path: null,
+    });
+    expect(searchResult.success).toBe(true);
+
+    const grepResult = VFS_GREP_TOOL.parameters.safeParse({
+      pattern: "test",
+      path: null,
+    });
+    expect(grepResult.success).toBe(true);
+
+    const lsResult = VFS_LS_TOOL.parameters.safeParse({
+      path: null,
+    });
+    expect(lsResult.success).toBe(true);
+  });
+
+  it("allows redundant from fields on non-move/copy patch ops", () => {
+    const editResult = VFS_EDIT_TOOL.parameters.safeParse({
+      edits: [
+        {
+          path: "current/world/global.json",
+          patch: [
+            {
+              op: "replace",
+              path: "/time",
+              value: "noon",
+              from: "/unused",
+            },
+          ],
+        },
+      ],
+    });
+    expect(editResult.success).toBe(true);
+  });
 });

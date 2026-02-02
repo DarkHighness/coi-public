@@ -12,6 +12,7 @@ describe("stateManagement atom", () => {
     expect(content).toContain("current/world/");
     expect(content).toContain("current/conversation/turns/fork-");
     expect(content).not.toContain("finish_turn");
+    expect(content).toContain("omit optional fields");
   });
 
   it("documents outline immutability and VFS outline paths", () => {
