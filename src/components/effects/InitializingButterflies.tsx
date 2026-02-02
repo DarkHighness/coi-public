@@ -21,6 +21,52 @@ interface InitializingButterfliesProps {
   isComplete?: boolean;
 }
 
+export const buildButterflyContainerStyle = (
+  butterfly: Butterfly,
+  finaleTriggered: boolean,
+): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    left: `${butterfly.left}%`,
+    top: `${butterfly.top}%`,
+    transform: `rotate(${butterfly.rotation}deg) scale(${butterfly.scale})`,
+  };
+
+  if (!finaleTriggered) {
+    return base;
+  }
+
+  return {
+    ...base,
+    animationName: "butterfly-fly-out",
+    animationDuration: "0.8s",
+    animationTimingFunction: "ease-in",
+    animationFillMode: "forwards",
+    animationDelay: `${butterfly.flyOutDelay ?? 0}s`,
+  };
+};
+
+export const buildButterflyInnerStyle = (
+  butterfly: Butterfly,
+  finaleTriggered: boolean,
+): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    position: "relative",
+  };
+
+  if (finaleTriggered) {
+    return base;
+  }
+
+  return {
+    ...base,
+    animationName: "butterfly-float",
+    animationDuration: `${butterfly.duration}s`,
+    animationTimingFunction: "linear",
+    animationIterationCount: "infinite",
+    animationDelay: `${butterfly.delay}s`,
+  };
+};
+
 /**
  * Butterflies that increase in count as phases progress
  * When complete, triggers a finale effect where butterflies fly off screen
@@ -84,26 +130,11 @@ export const InitializingButterflies: React.FC<
         <div
           key={b.id}
           className="absolute"
-          style={{
-            left: `${b.left}%`,
-            top: `${b.top}%`,
-            transform: `rotate(${b.rotation}deg) scale(${b.scale})`,
-            // When finale triggered, apply fly-out animation
-            animation: finaleTriggered
-              ? `butterfly-fly-out 0.8s ease-in forwards`
-              : undefined,
-            animationDelay: finaleTriggered ? `${b.flyOutDelay}s` : undefined,
-          }}
+          style={buildButterflyContainerStyle(b, finaleTriggered)}
         >
           <div
             className="butterfly"
-            style={{
-              position: "relative",
-              animation: !finaleTriggered
-                ? `butterfly-float ${b.duration}s linear infinite`
-                : undefined,
-              animationDelay: `${b.delay}s`,
-            }}
+            style={buildButterflyInnerStyle(b, finaleTriggered)}
           >
             <div className="butterfly-wings text-theme-primary/60">
               <svg

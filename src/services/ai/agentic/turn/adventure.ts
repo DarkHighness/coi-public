@@ -22,6 +22,7 @@ registerAllSkills();
 import { getProviderConfig, resolveThemeConfig } from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 // @ts-ignore
 import promptInjectionData from "@/prompt/prompt.toml";
@@ -211,6 +212,7 @@ export const generateAdventureTurn = async (
       context.settings,
       isSudoMode,
       sessionId,
+      context.vfsSession,
     );
 
     // Append new messages to session history
@@ -246,6 +248,7 @@ export const runAgenticLoop = async (
   settings: AISettings,
   isSudoMode: boolean = false,
   _sessionId?: string,
+  vfsSession?: VfsSession,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -259,6 +262,6 @@ export const runAgenticLoop = async (
     settings,
     isSudoMode,
     sessionId: _sessionId,
-    vfsSession: context.vfsSession,
+    vfsSession,
   });
 };
