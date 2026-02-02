@@ -197,6 +197,10 @@ export async function callWithAgenticRetry(
         if (schema) {
           const validationResult = schema.safeParse(toolCall.args);
           if (!validationResult.success) {
+            console.warn(`[ToolValidation] ${toolCall.name} invalid args`, {
+              args: toolCall.args,
+              issues: validationResult.error.issues,
+            });
             const toolHint = toolDef
               ? `\n\nSchema Hint:\n${getToolInfo(toolDef as any)}`
               : "";
