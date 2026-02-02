@@ -16,6 +16,16 @@ interface NpcPanelProps {
   unlockMode?: boolean;
 }
 
+export const buildNpcList = (npcs: NPC[], unlockMode?: boolean) => {
+  const safeNpcs = Array.isArray(npcs) ? npcs : [];
+  return safeNpcs
+    .filter((npc) => unlockMode || npc.known !== false)
+    .map((npc, idx) => ({
+      ...npc,
+      id: npc.id || npc.visible?.name || `unknown-${idx}`,
+    }));
+};
+
 interface NpcItemProps {
   npc: Omit<NPC, "id"> & { id: string | number };
   locations?: Location[];
@@ -563,17 +573,10 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
     setExpandedItems(newSet);
   };
 
-  const safeNpcs = Array.isArray(npcs) ? npcs : [];
-
   // Map NPCs to include ID for useListManagement
   const npcsWithId = useMemo(() => {
-    return safeNpcs
-      .filter((r) => unlockMode || r.known !== false) // Show all if unlockMode is true
-      .map((r, idx) => ({
-        ...r,
-        id: r.id || r.visible?.name || `unknown-${idx}`,
-      }));
-  }, [safeNpcs, unlockMode]);
+    return buildNpcList(npcs, unlockMode);
+  }, [npcs, unlockMode]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
@@ -653,7 +656,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
             </svg>
             {t("npcs") || "NPCs"}
             <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
-              {npcs.length}
+              {npcsWithId.length}
             </span>
           </span>
         </div>
