@@ -12,4 +12,13 @@ describe("stateManagement atom", () => {
     expect(content).toContain("current/conversation/turns/fork-");
     expect(content).not.toContain("finish_turn");
   });
+
+  it("documents outline immutability and VFS outline paths", () => {
+    const content = stateManagement();
+    expect(content).toContain("current/outline/outline.json");
+    expect(content).toContain("current/outline/progress.json");
+    expect(content).toContain("outline is immutable");
+    expect(content).toContain("sudo");
+    expect(content).toContain("god mode");
+  });
 });

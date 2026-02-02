@@ -71,6 +71,12 @@ export const stateManagement: Atom<void> = () => `
         - \`current/conversation/turns/fork-<id>/turn-<n>.json\` (full snapshot)
         - \`current/conversation/index.json\` (active turn + ordering)
 
+    - **VFS OUTLINE RULES (MANDATORY)**:
+      * The outline is immutable once generated. Do NOT edit it by default.
+      * You may edit the outline ONLY in sudo or god mode AND only when the user explicitly asks you to.
+      * If you edit the outline, write to \`current/outline/outline.json\` and reconcile related \`current/world/\` files to stay consistent.
+      * During outline generation, save progress to \`current/outline/progress.json\`.
+
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:
       * **CLARIFICATION**: This is about SYSTEM consequences, not about how NPCs behave. NPCs can still show kindness—see HUMANITY_AND_HOPE.
       * **Time**: Time passes regardless of player wishes. If they waste time, quest deadlines fail. Daily fees accumulate.
