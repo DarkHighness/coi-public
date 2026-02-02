@@ -67,7 +67,9 @@ export const stateManagement: Atom<void> = () => `
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Inspect before you change: \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\`.
       * Always reference explicit file paths under \`current/\` (e.g., \`current/world/npcs/npc:1.json\`).
-      * Update the current turn log in \`current/conversation/turn.json\` after finishing the turn.
+      * After each turn, write BOTH:
+        - \`current/conversation/turns/fork-<id>/turn-<n>.json\` (full snapshot)
+        - \`current/conversation/index.json\` (active turn + ordering)
 
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:
       * **CLARIFICATION**: This is about SYSTEM consequences, not about how NPCs behave. NPCs can still show kindness—see HUMANITY_AND_HOPE.
