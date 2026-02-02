@@ -649,6 +649,24 @@ export const VFS_EDIT_TOOL = defineTool({
   }),
 });
 
+export const VFS_MERGE_TOOL = defineTool({
+  name: "vfs_merge",
+  description:
+    "Merge JSON objects into VFS files (atomic batch). Arrays are replaced.",
+  parameters: z.object({
+    files: z
+      .array(
+        z.object({
+          path: vfsFilePathSchema.describe("JSON file path."),
+          content: z
+            .record(z.any())
+            .describe("JSON object to merge into the file."),
+        }),
+      )
+      .describe("Files to merge."),
+  }),
+});
+
 export const VFS_MOVE_TOOL = defineTool({
   name: "vfs_move",
   description: "Move or rename VFS paths (atomic batch).",
@@ -2036,6 +2054,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_GREP_TOOL,
   VFS_WRITE_TOOL,
   VFS_EDIT_TOOL,
+  VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
 ];
@@ -2312,6 +2331,7 @@ export type VfsSearchParams = InferToolParams<typeof VFS_SEARCH_TOOL>;
 export type VfsGrepParams = InferToolParams<typeof VFS_GREP_TOOL>;
 export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
 export type VfsEditParams = InferToolParams<typeof VFS_EDIT_TOOL>;
+export type VfsMergeParams = InferToolParams<typeof VFS_MERGE_TOOL>;
 export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
 export type VfsDeleteParams = InferToolParams<typeof VFS_DELETE_TOOL>;
 
@@ -2394,6 +2414,7 @@ export interface ToolParamsMap {
   vfs_grep: VfsGrepParams;
   vfs_write: VfsWriteParams;
   vfs_edit: VfsEditParams;
+  vfs_merge: VfsMergeParams;
   vfs_move: VfsMoveParams;
   vfs_delete: VfsDeleteParams;
 

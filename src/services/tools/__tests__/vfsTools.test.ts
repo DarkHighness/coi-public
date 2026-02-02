@@ -6,6 +6,7 @@ import {
   VFS_GREP_TOOL,
   VFS_WRITE_TOOL,
   VFS_EDIT_TOOL,
+  VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
   ALL_DEFINED_TOOLS,
@@ -19,6 +20,7 @@ describe("VFS tools", () => {
     expect(VFS_GREP_TOOL.name).toBe("vfs_grep");
     expect(VFS_WRITE_TOOL.name).toBe("vfs_write");
     expect(VFS_EDIT_TOOL.name).toBe("vfs_edit");
+    expect(VFS_MERGE_TOOL.name).toBe("vfs_merge");
     expect(VFS_MOVE_TOOL.name).toBe("vfs_move");
     expect(VFS_DELETE_TOOL.name).toBe("vfs_delete");
   });
