@@ -5,25 +5,7 @@
  * Import this once in your application entry point or in the agentic loop.
  */
 
-// Import all handlers to trigger registration
-import "./inventoryHandlers";
-import "./npcHandlers";
-import "./locationHandlers";
-import "./questHandlers";
-import "./knowledgeHandlers";
-import "./timelineHandlers";
-import "./factionHandlers";
-import "./causalChainHandlers";
-import "./characterHandlers";
-import "./globalHandlers";
-import "./notesHandlers";
-import "./listHandler";
-import "./unlockHandler";
-import "./playerProfileHandlers";
-import "./storyQueryHandlers";
-import "./ragSearchHandler";
-import "./outlineHandler";
-import "./summaryHandlers";
+// Import only VFS handlers to trigger registration
 import "./vfsHandlers";
 
 // Re-export registry functions for convenience
