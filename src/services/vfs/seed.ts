@@ -9,7 +9,9 @@ import type {
   Quest,
   TimelineEvent,
 } from "@/types";
+import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { VfsSession } from "./vfsSession";
+import { writeConversationIndex, writeTurnFile } from "./conversation";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -68,4 +70,35 @@ export const seedVfsSessionFromGameState = (
       );
     }
   }
+};
+
+export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
+  writeJson(session, "world/global.json", {
+    time: "Day 1, 08:00",
+    theme: "fantasy",
+    currentLocation: "Unknown",
+    atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+    turnNumber: 0,
+    forkId: 0,
+  });
+
+  writeJson(session, "world/character.json", DEFAULT_CHARACTER);
+
+  writeConversationIndex(session, {
+    activeForkId: 0,
+    activeTurnId: "fork-0/turn-0",
+    rootTurnIdByFork: { "0": "fork-0/turn-0" },
+    latestTurnNumberByFork: { "0": 0 },
+    turnOrderByFork: { "0": ["fork-0/turn-0"] },
+  });
+
+  writeTurnFile(session, 0, 0, {
+    turnId: "fork-0/turn-0",
+    forkId: 0,
+    turnNumber: 0,
+    parentTurnId: null,
+    createdAt: Date.now(),
+    userAction: "",
+    assistant: { narrative: "", choices: [] },
+  });
 };
