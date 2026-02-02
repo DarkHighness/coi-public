@@ -40,6 +40,7 @@ import {
   MalformedToolCallError,
   getAspectRatio,
 } from "./types";
+import { extractOpenRouterToolCalls } from "./openRouterToolParser";
 // Re-export OpenRouterConfig for consumers
 export type { OpenRouterConfig } from "./types";
 import {
@@ -376,17 +377,11 @@ async function handleNonStreamingResponse(
   const message = choice?.message;
   const content = message?.content || "";
   let toolCalls: ToolCallResult[] = [];
-  if (message?.toolCalls) {
-    toolCalls = message.toolCalls.map((tc: any) => ({
-      id: tc.id,
-      name: tc.function.name,
-      args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-      // Extract thought_signature if present (Gemini via OpenRouter)
-      // Gemini 3 uses extra_content.google.thought_signature format
-      thoughtSignature:
-        tc.extra_content?.google?.thought_signature ||
-        tc.function?.thought_signature,
-    }));
+  try {
+    toolCalls = extractOpenRouterToolCalls(message);
+  } catch (error) {
+    console.error("[OpenRouter] Failed to parse tool calls:", error);
+    throw error;
   }
   if (choice?.finishReason === "content_filter") {
     throw new SafetyFilterError("openrouter");
@@ -485,8 +480,9 @@ async function handleStreamingResponse(
       if (delta?.reasoning_content) {
         reasoningContent += delta.reasoning_content;
       }
-      if (delta?.toolCalls) {
-        for (const tc of delta.toolCalls) {
+      const deltaToolCalls = delta?.toolCalls || delta?.tool_calls;
+      if (deltaToolCalls) {
+        for (const tc of deltaToolCalls) {
           const index = tc.index;
           const existing = accumulatedToolCalls.get(index);
           if (existing) {
