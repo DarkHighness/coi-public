@@ -13,6 +13,7 @@ import { StartScreen } from "./components/StartScreen";
 import { THEMES, ENV_THEMES } from "./utils/constants";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { getEnvApiKey } from "./utils/env";
+import { isCriticalAppError } from "./utils/appErrorClassifier";
 import {
   validateConnection,
   type OutlinePhaseProgress,
@@ -336,11 +337,7 @@ function AppContent() {
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
       console.error("Global error caught:", event.error);
-      if (
-        event.message?.includes("ChunkLoadError") ||
-        event.message?.includes("Importing a module script failed") ||
-        event.message?.includes("Failed to fetch")
-      ) {
+      if (isCriticalAppError(event.message)) {
         setAppError(event.message);
       }
     };
@@ -348,12 +345,7 @@ function AppContent() {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error("Unhandled rejection caught:", event.reason);
       const reason = event.reason?.toString() || "";
-      if (
-        reason.includes("ChunkLoadError") ||
-        reason.includes("Importing a module script failed") ||
-        reason.includes("Failed to fetch") ||
-        reason.includes("QuotaExceededError")
-      ) {
+      if (isCriticalAppError(reason)) {
         setAppError(reason);
       }
     };
