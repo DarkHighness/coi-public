@@ -6,6 +6,7 @@ describe("stateManagement atom", () => {
     const content = stateManagement();
     expect(content).toContain("vfs_write");
     expect(content).toContain("vfs_edit");
+    expect(content).toContain("vfs_merge");
     expect(content).toContain("JSON Patch");
     expect(content).toContain("vfs_delete");
     expect(content).toContain("current/world/");
@@ -20,5 +21,6 @@ describe("stateManagement atom", () => {
     expect(content).toContain("outline is immutable");
     expect(content).toContain("sudo");
     expect(content).toContain("god mode");
+    expect(content).toContain("from only for move/copy");
   });
 });

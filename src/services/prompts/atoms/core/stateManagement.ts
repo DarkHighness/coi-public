@@ -64,7 +64,9 @@ export const stateManagement: Atom<void> = () => `
     - **VFS STATE AUTHORITY (MANDATORY)**:
       * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.
       * Use \`vfs_write\` to create/replace files, \`vfs_edit\` with JSON Patch (RFC 6902) to update existing JSON.
+      * Use \`vfs_merge\` to deep-merge JSON objects (arrays replaced, no deletions).
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
+      * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * Inspect before you change: \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\`.
       * Always reference explicit file paths under \`current/\` (e.g., \`current/world/npcs/npc:1.json\`).
       * After each turn, write BOTH:

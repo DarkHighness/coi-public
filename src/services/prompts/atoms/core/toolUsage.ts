@@ -17,6 +17,7 @@ export const toolUsage: Atom<ToolUsageInput> = (input) => {
   - Use \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\` to inspect.
   - Use \`vfs_write\` to create/replace JSON files.
   - Use \`vfs_edit\` with JSON Patch (RFC 6902) to update existing JSON.
+  - Use \`vfs_merge\` to deep-merge JSON objects (arrays replaced, no deletions).
   - Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files.
 
   **STATE = FILES**:

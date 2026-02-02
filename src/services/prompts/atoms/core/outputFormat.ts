@@ -49,7 +49,8 @@ export const outputFormat: Atom<OutputFormatInput> = ({
   <rules>
     <rule>Do NOT output markdown text outside of tool arguments.</rule>
     <rule>Inspect with \`vfs_ls\`/\`vfs_read\` before edits.</rule>
-    <rule>Use \`vfs_write\`/\`vfs_edit\` for all state updates under \`current/world/\`.</rule>
+    <rule>Use \`vfs_write\`/\`vfs_merge\`/\`vfs_edit\` for all state updates under \`current/world/\`.</rule>
+    <rule>Deletions use JSON Patch \`remove\` via \`vfs_edit\` (never \`vfs_merge\`).</rule>
     <rule>\`vfs_write\` for conversation files MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>
