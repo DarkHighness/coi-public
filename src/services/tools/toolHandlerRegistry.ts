@@ -26,7 +26,7 @@ import type { VfsSession } from "../vfs/vfsSession";
  */
 export interface ToolContext {
   /** Game database for state queries and modifications */
-  db: GameDatabase;
+  db?: GameDatabase;
   /** Accumulated response for tracking actions (optional, for turn handlers) */
   accumulatedResponse?: GameResponse;
   /** Map of changed entities for RAG updates (optional) */

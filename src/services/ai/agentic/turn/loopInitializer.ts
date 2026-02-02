@@ -12,7 +12,6 @@ import type {
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ZodToolDefinition } from "../../../providers/types";
-import { GameDatabase } from "../../../gameDatabase";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import {
   SEARCH_TOOL,
@@ -31,8 +30,6 @@ import {
 // ============================================================================
 
 export interface LoopState {
-  /** Game database for state queries and modifications */
-  db: GameDatabase;
   /** VFS session for file-based state */
   vfsSession?: VfsSession;
   /** Budget tracking state */
@@ -66,7 +63,6 @@ export function createLoopState(
   isSudoMode: boolean,
   vfsSession?: VfsSession,
 ): LoopState {
-  const db = createGameDatabase(gameState);
   const budgetState = createBudgetState(settings);
   const accumulatedResponse = createEmptyResponse();
   const isRAGEnabled = settings.embedding?.enabled ?? false;
@@ -74,7 +70,6 @@ export function createLoopState(
   const finishToolName = isSudoMode ? "complete_force_update" : "finish_turn";
 
   return {
-    db,
     vfsSession,
     budgetState,
     accumulatedResponse,
@@ -85,20 +80,6 @@ export function createLoopState(
     finishToolName,
     isRAGEnabled,
   };
-}
-
-/**
- * Create GameDatabase from game state
- */
-export function createGameDatabase(gameState: GameState): GameDatabase {
-  return new GameDatabase({
-    ...gameState,
-    knowledge: gameState.knowledge || [],
-    factions: gameState.factions || [],
-    timeline: gameState.timeline || [],
-    causalChains: gameState.causalChains || [],
-    time: gameState.time || "Unknown",
-  });
 }
 
 /**

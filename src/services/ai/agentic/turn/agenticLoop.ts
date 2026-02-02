@@ -43,10 +43,7 @@ import {
   incrementIterations,
   getBudgetSummary,
 } from "../budgetUtils";
-import {
-  processFinishTurnData,
-  getChangedEntitiesArray,
-} from "./resultAccumulator";
+import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulator";
 
 // Import tool handling
 import {
@@ -55,7 +52,6 @@ import {
   executeGenericTool,
   ToolCallContext,
 } from "./toolCallProcessor";
-import { handleFinishTurn } from "./finishTurnHandler";
 import { handleAICall } from "./aiCallHandler";
 
 // ============================================================================
@@ -120,7 +116,7 @@ export async function runAgenticLoopRefactored(
   const allLogs: LogEntry[] = [];
 
   // Inject ready consequences
-  injectReadyConsequences(conversationHistory, loopState.db);
+  injectReadyConsequences(conversationHistory);
 
   // Inject mode-specific instruction
   if (isSudoMode) {
@@ -305,22 +301,6 @@ async function processToolCalls(
         output = result.output;
       } else if (call.name === "activate_skill") {
         output = handleActivateSkill(call.args as any, toolCtx);
-      } else if (
-        call.name === "finish_turn" ||
-        call.name === "complete_force_update"
-      ) {
-        const result = handleFinishTurn({
-          toolName: call.name,
-          args: call.args,
-          loopState,
-          hasErrors,
-          failedTools,
-          settings,
-        });
-        output = result.output;
-        if (result.turnFinished) {
-          turnFinished = true;
-        }
       } else {
         // Generic tool execution
         output = executeGenericTool(call.name, call.args, toolCtx);
@@ -353,6 +333,13 @@ async function processToolCalls(
       name: call.name,
       content: output,
     });
+
+    const responseFromVfs = buildResponseFromVfs(loopState.vfsSession);
+    if (responseFromVfs) {
+      loopState.accumulatedResponse = responseFromVfs;
+      turnFinished = true;
+      break;
+    }
 
     // Log tool usage
     allLogs.push(

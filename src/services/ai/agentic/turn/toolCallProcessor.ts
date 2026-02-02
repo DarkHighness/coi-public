@@ -272,7 +272,6 @@ export function executeGenericTool(
 
   if (hasHandler(name)) {
     const toolContext: ToolContext = {
-      db: loopState.db,
       accumulatedResponse: loopState.accumulatedResponse,
       changedEntities: loopState.changedEntities,
       gameState,

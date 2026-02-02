@@ -5,13 +5,11 @@
  */
 
 import type { UnifiedMessage } from "../../../../types";
-import type { GameDatabase } from "../../../gameDatabase";
 import { createUserMessage } from "../../../messageTypes";
 import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
 import {
   sudoModeInstruction,
   normalTurnInstruction,
-  pendingConsequencesMessage,
   budgetStatusMessage,
   noToolCallError,
 } from "../../../prompts/atoms/core";
@@ -42,24 +40,8 @@ export function injectNormalTurnInstruction(
  */
 export function injectReadyConsequences(
   history: UnifiedMessage[],
-  db: GameDatabase,
 ): void {
-  const readyConsequences = db.getReadyConsequences();
-  if (readyConsequences.length === 0) return;
-
-  const readyList = readyConsequences.map(
-    (rc) =>
-      `- [${rc.chainId}/${rc.consequence.id}] ${rc.consequence.description}${
-        rc.consequence.triggerCondition
-          ? ` (trigger: ${rc.consequence.triggerCondition})`
-          : ""
-      }${rc.consequence.known ? " [player will know]" : " [hidden]"}`,
-  );
-
-  const msg = pendingConsequencesMessage({ readyConsequences: readyList });
-  if (msg) {
-    history.push(createUserMessage(msg));
-  }
+  void history;
 }
 
 /**

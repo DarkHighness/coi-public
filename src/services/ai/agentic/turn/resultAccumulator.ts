@@ -5,10 +5,10 @@
  */
 
 import type { GameResponse, LogEntry, TokenUsage } from "../../../../types";
-import type { GameDatabase } from "../../../gameDatabase";
 import { createLogEntry } from "../../utils";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { deriveGameStateFromVfs } from "../../../vfs/derivations";
+import { readConversationIndex, readTurnFile } from "../../../vfs/conversation";
 
 // ============================================================================
 // Response Processing
@@ -17,46 +17,60 @@ import { deriveGameStateFromVfs } from "../../../vfs/derivations";
 /**
  * Process finish_turn response data
  */
-export function processFinishTurnData(
-  data: Record<string, unknown>,
-  response: GameResponse,
-  db: GameDatabase,
+const createEmptyResponse = (): GameResponse => ({
+  narrative: "",
+  choices: [],
+  inventoryActions: [],
+  npcActions: [],
+  locationActions: [],
+  questActions: [],
+  knowledgeActions: [],
+  factionActions: [],
+  characterUpdates: undefined,
+  timelineEvents: [],
+});
+
+const parseTurnId = (
+  turnId: string,
+): { forkId: number; turnNumber: number } | null => {
+  const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
+  if (!match) return null;
+  return { forkId: Number(match[1]), turnNumber: Number(match[2]) };
+};
+
+export const buildResponseFromVfs = (
   vfsSession?: VfsSession,
-): void {
-  // Extract narrative and choices
-  response.narrative = (data.narrative as string)
-    ?.replace(/\\n/g, "\n")
-    .replace(/\\"/g, '"');
-  response.choices = data.choices as GameResponse["choices"];
+): GameResponse | null => {
+  if (!vfsSession) return null;
+  const snapshot = vfsSession.snapshot();
+  if (!snapshot || Object.keys(snapshot).length === 0) return null;
+  const index = readConversationIndex(snapshot);
+  if (!index) return null;
+  const activeTurnId = index.activeTurnId;
+  const parsed = activeTurnId ? parseTurnId(activeTurnId) : null;
+  if (!parsed) return null;
+  const turn = readTurnFile(snapshot, parsed.forkId, parsed.turnNumber);
+  if (!turn) return null;
 
-  // Extract atmosphere
-  if (data.atmosphere) {
-    response.atmosphere = data.atmosphere as GameResponse["atmosphere"];
+  const response = createEmptyResponse();
+  response.narrative = turn.assistant.narrative || "";
+  response.choices = turn.assistant.choices as GameResponse["choices"];
+  if (turn.assistant.atmosphere) {
+    response.atmosphere = turn.assistant.atmosphere as GameResponse["atmosphere"];
   }
-  if (data.narrativeTone) {
-    response.narrativeTone = data.narrativeTone as string;
+  if (turn.assistant.narrativeTone) {
+    response.narrativeTone = turn.assistant.narrativeTone;
   }
-
-  // Extract ending type
-  if (data.ending && data.ending !== "continue") {
-    response.ending = data.ending as GameResponse["ending"];
+  if (turn.assistant.ending) {
+    response.ending = turn.assistant.ending as GameResponse["ending"];
   }
-
-  // Extract forceEnd flag
-  if (data.forceEnd === true || data.forceEnd === false) {
-    response.forceEnd = data.forceEnd;
+  if (turn.assistant.forceEnd === true || turn.assistant.forceEnd === false) {
+    response.forceEnd = turn.assistant.forceEnd;
   }
 
-  // Attach final state from VFS when available, otherwise fall back to DB
-  const vfsSnapshot = vfsSession ? vfsSession.snapshot() : null;
-  if (vfsSnapshot && Object.keys(vfsSnapshot).length > 0) {
-    (response as GameResponse & { finalState: unknown }).finalState =
-      deriveGameStateFromVfs(vfsSnapshot);
-  } else {
-    (response as GameResponse & { finalState: unknown }).finalState =
-      db.getState();
-  }
-}
+  response.finalState = deriveGameStateFromVfs(snapshot);
+  return response;
+};
 
 // ============================================================================
 // Log Creation

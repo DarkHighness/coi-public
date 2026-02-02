@@ -1,3 +1,3 @@
 export { generateAdventureTurn, runAgenticLoop } from "./adventure";
-export { processFinishTurnData } from "./resultAccumulator";
+export { buildResponseFromVfs } from "./resultAccumulator";
 export type { AgenticLoopResult } from "./adventure";
