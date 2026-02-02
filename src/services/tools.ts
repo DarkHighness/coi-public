@@ -542,7 +542,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("add"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for add."),
-      from: z.string().optional().describe("Ignored for add."),
+      from: z.string().nullish().describe("Ignored for add."),
     })
     .strict(),
   z
@@ -550,7 +550,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("replace"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for replace."),
-      from: z.string().optional().describe("Ignored for replace."),
+      from: z.string().nullish().describe("Ignored for replace."),
     })
     .strict(),
   z
@@ -558,14 +558,14 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
       op: z.literal("test"),
       path: z.string().describe("JSON Pointer path."),
       value: z.unknown().describe("Value for test."),
-      from: z.string().optional().describe("Ignored for test."),
+      from: z.string().nullish().describe("Ignored for test."),
     })
     .strict(),
   z
     .object({
       op: z.literal("remove"),
       path: z.string().describe("JSON Pointer path."),
-      from: z.string().optional().describe("Ignored for remove."),
+      from: z.string().nullish().describe("Ignored for remove."),
     })
     .strict(),
   z

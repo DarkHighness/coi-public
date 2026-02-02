@@ -68,4 +68,23 @@ describe("VFS tools", () => {
     });
     expect(editResult.success).toBe(true);
   });
+
+  it("accepts null from fields on non-move/copy patch ops", () => {
+    const editResult = VFS_EDIT_TOOL.parameters.safeParse({
+      edits: [
+        {
+          path: "current/world/global.json",
+          patch: [
+            {
+              op: "add",
+              path: "/flags/-",
+              value: "new-flag",
+              from: null,
+            },
+          ],
+        },
+      ],
+    });
+    expect(editResult.success).toBe(true);
+  });
 });
