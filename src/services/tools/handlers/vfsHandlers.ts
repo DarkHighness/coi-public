@@ -9,6 +9,7 @@ import {
   VFS_GREP_TOOL,
   VFS_WRITE_TOOL,
   VFS_EDIT_TOOL,
+  VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
   getTypedArgs,
@@ -284,6 +285,25 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
     }
 
     return createSuccess({ edited }, "VFS files edited");
+  });
+});
+
+registerToolHandler(VFS_MERGE_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_merge", args);
+
+  return withAtomicSession(ctx, (draft) => {
+    const merged: string[] = [];
+
+    for (const file of typedArgs.files) {
+      const resolved = resolveCurrentPath(file.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+      draft.mergeJson(resolved.path, file.content);
+      merged.push(toCurrentPath(resolved.path));
+    }
+
+    return createSuccess({ merged }, "VFS files merged");
   });
 });
 

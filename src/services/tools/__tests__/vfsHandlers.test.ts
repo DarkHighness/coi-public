@@ -95,4 +95,90 @@ describe("VFS handlers", () => {
     expect(readResult.success).toBe(true);
     expect(readResult.data?.path).toBe("current/world/global.json");
   });
+
+  it("merges JSON objects and preserves existing fields", () => {
+    const session = new VfsSession();
+    const ctx = { db: {} as GameDatabase, vfsSession: session };
+
+    session.writeFile(
+      "world/npcs/npc:1.json",
+      JSON.stringify({
+        id: "npc:1",
+        currentLocation: "loc:1",
+        visible: {
+          name: "A",
+          description: "x",
+          npcType: "Friend",
+          affinity: 50,
+        },
+        hidden: {
+          realPersonality: "y",
+          realMotives: "z",
+          npcType: "Tool",
+          impression: "neutral",
+          status: "idle",
+        },
+      }),
+      "application/json",
+    );
+
+    const mergeResult = dispatchToolCall(
+      "vfs_merge",
+      {
+        files: [
+          {
+            path: "current/world/npcs/npc:1.json",
+            content: { visible: { name: "B" } },
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(mergeResult.success).toBe(true);
+
+    const updated = JSON.parse(
+      session.readFile("world/npcs/npc:1.json")!.content,
+    );
+    expect(updated.visible.name).toBe("B");
+    expect(updated.visible.description).toBe("x");
+  });
+
+  it("replaces arrays on merge", () => {
+    const session = new VfsSession();
+    const ctx = { db: {} as GameDatabase, vfsSession: session };
+
+    session.writeFile(
+      "conversation/turn.json",
+      JSON.stringify({
+        turn: 1,
+        forkId: 0,
+        timestamp: 123,
+        user: { text: "hi", inputId: "u1" },
+        model: { text: "yo", outputId: "m1" },
+        toolCalls: ["a", "b"],
+      }),
+      "application/json",
+    );
+
+    const mergeResult = dispatchToolCall(
+      "vfs_merge",
+      {
+        files: [
+          {
+            path: "current/conversation/turn.json",
+            content: { toolCalls: ["c"] },
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(mergeResult.success).toBe(true);
+
+    const updated = JSON.parse(
+      session.readFile("conversation/turn.json")!.content,
+    );
+    expect(updated.toolCalls).toEqual(["c"]);
+  });
 });

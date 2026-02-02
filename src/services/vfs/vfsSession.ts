@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
+import { deepMergeJson } from "./merge";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -209,6 +210,42 @@ export class VfsSession {
     }
 
     this.writeFile(file.path, JSON.stringify(validated), file.contentType);
+  }
+
+  public mergeJson(path: string, content: Record<string, unknown>): void {
+    if (Array.isArray(content) || content === null || typeof content !== "object") {
+      throw new Error("Merge content must be a JSON object");
+    }
+
+    const normalized = normalizeVfsPath(path);
+    const file = this.readFile(normalized);
+    let document: unknown = {};
+    let contentType: VfsContentType = "application/json";
+
+    if (file) {
+      if (file.contentType !== "application/json") {
+        throw new Error(`File is not JSON: ${file.path}`);
+      }
+
+      try {
+        document = JSON.parse(file.content);
+      } catch (error) {
+        throw new Error(`Invalid JSON content: ${file.path}`, { cause: error });
+      }
+      contentType = file.contentType;
+    }
+
+    const merged = deepMergeJson(document, content);
+    const schema = getSchemaForPath(normalized);
+    const strictSchema =
+      schema instanceof z.ZodObject ? schema.strict() : schema;
+    const validated = strictSchema.parse(merged);
+
+    if (hasUnknownKeys(merged, validated)) {
+      throw new Error(`Unknown keys found after validation: ${normalized}`);
+    }
+
+    this.writeFile(normalized, JSON.stringify(validated), contentType);
   }
 
   public list(path: string): string[] {
