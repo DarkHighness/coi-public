@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  idAndEntityPolicy,
+  memoryPolicy,
   outputFormat,
   protocols,
   roleInstruction,
@@ -15,14 +17,18 @@ describe("core prompt hygiene", () => {
       outputFormat({ language: "en" }),
       styleGuide({ language: "en" }),
       toolUsage({}),
+      idAndEntityPolicy(),
+      memoryPolicy(),
     ].join("\n");
 
     expect(content).not.toContain("finish_turn");
     expect(content).not.toContain("search_tool");
     expect(content).not.toContain("activate_skill");
     expect(content).not.toContain("complete_force_update");
+    expect(content).not.toContain("rag_search");
     expect(content).not.toContain("list_");
     expect(content).not.toContain("query_");
-    expect(content).not.toContain("rag_search");
+    expect(content).not.toContain("add_");
+    expect(content).toContain("vfs_");
   });
 });

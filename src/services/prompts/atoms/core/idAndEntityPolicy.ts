@@ -6,17 +6,16 @@ import type { Atom } from "../types";
 
 const idUsage = `
   <rule name="ID FIELD USAGE - CRITICAL">
-    **ID FIELDS ARE FOR TOOL CALLS ONLY**
+    **ID FIELDS ARE FOR FILE STORAGE AND REFERENCES ONLY**
 
     ⚠️ **THE MOST IMPORTANT RULE ABOUT IDs**:
-    - The \`id\` field exists ONLY for **tool call operations** (add/update/remove/query).
+    - The \`id\` field exists ONLY for **file-based storage** and entity references.
     - **NEVER** include IDs in ANY narrative or descriptive content.
     - IDs are **backend identifiers**, NOT player-facing information.
 
     **WHERE IDs BELONG (ONLY THESE PLACES)**:
-    ✅ Tool call arguments: \`add_inventory({ id: "sword_of_kings", ... })\`
-    ✅ Tool call arguments: \`update_npc({ id: "npc_marcus", ... })\`
-    ✅ Tool call arguments: \`query_inventory({ id: "healing_potion" })\`
+    ✅ VFS file paths: \`vfs_write({ files: [{ path: "current/world/inventory/inv_sword_of_kings.json", ... }] })\`
+    ✅ VFS file edits: \`vfs_edit({ edits: [{ path: "current/world/npcs/npc_marcus.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
 
     **WHERE IDs MUST NEVER APPEAR**:
@@ -85,18 +84,17 @@ const minimalEntity = `
 
     - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
-    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Query it first.
+    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read it first via \`vfs_read\` (\`current/outline/outline.json\`) and check existing files under \`current/world/\`.
 
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
-    2. **LIST (Broad Scan)**: Call \`list(type: "...")\` to see the complete landscape. This is the MOST RELIABLE way to see all entities.
-    3. **QUERY (Deep Scan)**: Call \`query(name: "...")\` or \`query(id: "...")\` for deep details.
-    4. **MULTI-PARAM SEARCH**: If searching for "Guard Marcus", call query with "Marcus", then "Guard", then "Soldier".
-       - ⚠️ **CLARIFICATION**: Calling the same tool (e.g., \`query_npcs\`) with **different parameters** is NOT a "duplicate call". It is a **necessary investigative action** and is HIGHLY ENCOURAGED.
+    2. **BROWSE (Directory Scan)**: Use \`vfs_ls\` on \`current/world/<type>/\` to see the full landscape.
+    3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_grep\` on \`current/world/<type>/\` and \`current/outline/outline.json\`.
+    4. **READ (Deep Details)**: Use \`vfs_read\` on candidate files to confirm identity and details.
     5. **EVALUATE**:
-       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and \`update\` name to "Dagger".
-       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and \`update\` role/title.
-    4. **CREATE (Last Resort)**: Only if NO semantic match exists.
+       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_edit\` or \`vfs_write\`.
+       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via \`vfs_edit\` or \`vfs_write\`.
+    6. **CREATE (Last Resort)**: Only if NO semantic match exists.
 
     **ANTI-CLUTTER & SIGNIFICANCE THRESHOLD**:
     ⚠️ **CRITICAL: ONLY CREATE "SIGNIFICANT" ENTITIES**
@@ -105,12 +103,12 @@ const minimalEntity = `
     - **NPCs**:
       * **MUST HAVE**: A proper Name (not just "Guard") AND (Speaking Role OR Combat Role).
       * **NARRATIVE ONLY**: Crowds, background villagers, unnamed guards, servants causing no consequence.
-      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> Call \`add_npc\` (id: "npc_captain_vance").
+      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write({ files: [{ path: "current/world/npcs/npc_captain_vance.json", ... }] })\`
 
     - **Items**:
       * **MUST BE**: Added to Player/NPC Inventory OR Key Quest Object.
       * **NARRATIVE ONLY**: Flavor objects, furniture, food eaten immediately, debris.
-      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> Call \`add_inventory\` (id: "inv_iron_key").
+      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write({ files: [{ path: "current/world/inventory/inv_iron_key.json", ... }] })\`
 
     - **Locations**:
       * **MUST BE**: Named, distinct, and revisit-able (e.g., "The Blue Dragon Inn").
@@ -119,7 +117,7 @@ const minimalEntity = `
     - **Quests**:
       * **MUST BE**: A structured mission with clear success/fail state tracked in journal.
       * **NARRATIVE ONLY**: Momentary goals ("Open the door", "Ask him a question"), impulsive actions.
-      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> Call \`add_quest\` (id: "quest_purge_camp").
+      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> \`vfs_write({ files: [{ path: "current/world/quests/quest_purge_camp.json", ... }] })\`
 
     - **Knowledge**:
       * **MUST BE**: Reusable information (passwords, history, recipes, secret locations).
@@ -141,7 +139,7 @@ const minimalEntity = `
       * **MUST BE**: Complex logic tracking consequences >3 turns away or involving off-screen NPCs.
       * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
 
-    - **Inventory Hygiene**: If a player eats an apple, \`remove_inventory\` immediately. Do not keep \`inv_apple\` with quantity 0.
+    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_delete({ path: "current/world/inventory/inv_apple.json" })\`). Do not keep quantity 0.
 
     <realism_vs_bloat_prevention>
       ⚠️ **CRITICAL: REALISM DOES NOT EQUAL ENTITY BLOAT**
@@ -150,16 +148,16 @@ const minimalEntity = `
       **DO NOT CREATE ENTITIES FOR THESE** unless they are critical, long-term mechanics.
 
       - **Mud/Blood on Clothes**:
-        * ❌ \`add_condition("cond_muddy")\` -> Bloat.
-        * ✅ Narrative only OR \`update_inventory({ id: "inv_clothes", visible: { description: "Stained with mud." } })\`
+        * ❌ Create a new condition entry for \`cond_muddy\` -> Bloat.
+        * ✅ Narrative only OR \`vfs_edit({ edits: [{ path: "current/world/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
 
       - **NPC Fatigue/Hunger**:
-        * ❌ \`add_condition("cond_tired_guard")\` -> Bloat.
-        * ✅ \`update_npc({ id: "npc_guard", visible: { mood: "Exhausted and irritable" } })\`
+        * ❌ Create a new condition entry for \`cond_tired_guard\` -> Bloat.
+        * ✅ \`vfs_edit({ edits: [{ path: "current/world/npcs/npc_guard.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
 
       - **Transient Atmosphere**:
-        * ❌ \`add_item("item_fog")\` -> Absurd.
-        * ✅ \`update_location({ visible: { atmosphere: "Thick fog..." } })\`
+        * ❌ Create a new item file for \`item_fog\` -> Absurd.
+        * ✅ \`vfs_edit({ edits: [{ path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] }] })\`
 
       **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
       For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).
@@ -167,7 +165,7 @@ const minimalEntity = `
       **DUPLICATE PREVENTION (SESSION REBUILD)**:
       When a context is rebuilt or a session is initialized:
       - **DO NOT** blindly add entities described in the summary.
-      - **ALWAYS** \`list\` and \`query\` first to see what actually exists in the database.
+      - **ALWAYS** \`vfs_ls\` and \`vfs_search\` first to see what actually exists in the files.
       - Summary descriptions may be outdated; the database (Entity Store) is the source of truth.
     </realism_vs_bloat_prevention>
   </rule>
