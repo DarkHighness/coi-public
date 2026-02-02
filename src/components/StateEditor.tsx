@@ -1,18 +1,21 @@
 /**
- * StateEditor - A modal component for editing GameState via /edit command
- * Allows direct JSON editing of various game state sections
+ * StateEditor - A modal component for editing VFS files via /edit command
+ * Allows direct JSON/text editing through a file tree interface
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
-import type { GameState, StorySegment } from "../types";
+import type { GameState } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
+import type { VfsContentType, VfsFileMap } from "../services/vfs/types";
 import {
-  applyVfsStateEdit,
-  type EditableVfsSection,
-} from "./stateEditorUtils";
-import { getValidIcon } from "../utils/emojiValidator";
-import { deriveHistory } from "../utils/storyUtils";
+  buildVfsTree,
+  isReadonlyPath,
+  type VfsTreeNode,
+} from "./vfsExplorer/tree";
+import { formatVfsContent, readVfsFile } from "./vfsExplorer/fileOps";
+import { applyVfsFileEdit } from "./stateEditorUtils";
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -24,71 +27,6 @@ interface StateEditorProps {
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
 
-// Sections available for editing
-type EditableSection = EditableVfsSection | "segments";
-
-const SECTION_CONFIGS: Record<
-  EditableSection,
-  {
-    icon: string;
-    labelKey: string;
-    stateKey: keyof GameState | "global" | "segments";
-  }
-> = {
-  character: {
-    icon: "👤",
-    labelKey: "stateEditor.character",
-    stateKey: "character",
-  },
-  inventory: {
-    icon: "🎒",
-    labelKey: "stateEditor.inventory",
-    stateKey: "inventory",
-  },
-  npcs: {
-    icon: "👥",
-    labelKey: "stateEditor.npcs",
-    stateKey: "npcs",
-  },
-  locations: {
-    icon: "📍",
-    labelKey: "stateEditor.locations",
-    stateKey: "locations",
-  },
-  quests: { icon: "📜", labelKey: "stateEditor.quests", stateKey: "quests" },
-  knowledge: {
-    icon: "📚",
-    labelKey: "stateEditor.knowledge",
-    stateKey: "knowledge",
-  },
-  factions: {
-    icon: "⚔️",
-    labelKey: "stateEditor.factions",
-    stateKey: "factions",
-  },
-  timeline: {
-    icon: "⏳",
-    labelKey: "stateEditor.timeline",
-    stateKey: "timeline",
-  },
-  causalChains: {
-    icon: "🔗",
-    labelKey: "stateEditor.causalChains",
-    stateKey: "causalChains",
-  },
-  global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
-  outline: {
-    icon: "🧭",
-    labelKey: "stateEditor.outline",
-    stateKey: "outline",
-  },
-  segments: {
-    icon: "📄",
-    labelKey: "stateEditor.segmentsList",
-    stateKey: "segments",
-  },
-};
-
 export const StateEditor: React.FC<StateEditorProps> = ({
   isOpen,
   onClose,
@@ -99,170 +37,304 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   onShowToast,
 }) => {
   const { t } = useTranslation();
-  const [activeSection, setActiveSection] =
-    useState<EditableSection>("character");
-  const [jsonText, setJsonText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState("");
+  const [fileContentType, setFileContentType] =
+    useState<VfsContentType>("application/json");
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [allowOutlineEdit, setAllowOutlineEdit] = useState(false);
+  const [allowConversationEdit, setAllowConversationEdit] = useState(false);
+  const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
 
   const canEditOutline = gameState.godMode || allowOutlineEdit;
-  const isReadOnly =
-    activeSection === "segments" ||
-    (activeSection === "outline" && !canEditOutline);
 
-  // Segment Viewer State
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
-    null,
+  const snapshot = useMemo<VfsFileMap>(() => {
+    if (!vfsSession) {
+      return {};
+    }
+    return vfsSession.snapshot();
+  }, [vfsSession, gameState]);
+
+  const filteredSnapshot = useMemo<VfsFileMap>(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return snapshot;
+    }
+    const next: VfsFileMap = {};
+    for (const [path, file] of Object.entries(snapshot)) {
+      if (
+        path.toLowerCase().includes(query) ||
+        file.content.toLowerCase().includes(query)
+      ) {
+        next[path] = file;
+      }
+    }
+    return next;
+  }, [snapshot, searchQuery]);
+
+  const tree = useMemo(
+    () => buildVfsTree(filteredSnapshot),
+    [filteredSnapshot],
   );
 
-  // Derive full history for the list view
-  const history = useMemo(() => {
-    if (activeSection !== "segments") return [];
-    return deriveHistory(gameState.nodes, gameState.activeNodeId);
-  }, [gameState.nodes, gameState.activeNodeId, activeSection]);
+  const filePaths = useMemo(
+    () => Object.keys(filteredSnapshot).sort(),
+    [filteredSnapshot],
+  );
 
-  // Set default selection when opening segments tab
-  useEffect(() => {
-    if (
-      activeSection === "segments" &&
-      !selectedSegmentId &&
-      gameState.activeNodeId
-    ) {
-      setSelectedSegmentId(gameState.activeNodeId);
-    }
-  }, [activeSection, gameState.activeNodeId, selectedSegmentId]);
-
-  // Extract the current section's data
-  const getSectionData = (section: EditableSection): any => {
-    if (section === "global") {
-      return {
-        time: gameState.time,
-        atmosphere: gameState.atmosphere,
-        theme: gameState.theme,
-        currentLocation: gameState.currentLocation,
-        turnNumber: gameState.turnNumber,
-        forkId: gameState.forkId,
-        language: gameState.language,
-        customContext: gameState.customContext,
-        seedImageId: gameState.seedImageId,
-        narrativeScale: gameState.narrativeScale,
-      };
-    }
-    if (section === "segments") {
-      // Return the selected segment's data
-      if (!selectedSegmentId) return null;
-      return gameState.nodes[selectedSegmentId] || null;
-    }
-    if (section === "outline") {
-      return gameState.outline;
-    }
-    return gameState[SECTION_CONFIGS[section].stateKey as keyof GameState];
-  };
-
-  // Initialize JSON text when section changes or modal opens
-  useEffect(() => {
-    if (isOpen) {
-      const data = getSectionData(activeSection);
-      setJsonText(JSON.stringify(data, null, 2));
-      setError(null);
-      setHasChanges(false);
-    }
-  }, [isOpen, activeSection, gameState, selectedSegmentId]); // Add selectedSegmentId dependency
+  const hasSearch = searchQuery.trim().length > 0;
+  const isReadOnly =
+    !selectedPath ||
+    isReadonlyPath(selectedPath, canEditOutline, allowConversationEdit);
 
   useEffect(() => {
     if (!isOpen) {
       setAllowOutlineEdit(false);
+      setAllowConversationEdit(false);
+      setSearchQuery("");
+      setSelectedPath(null);
+      setExpandedPaths([""]);
+      setError(null);
+      setHasChanges(false);
     }
   }, [isOpen]);
 
-  // Validate JSON on change
-  const handleJsonChange = (value: string) => {
-    if (isReadOnly) return;
+  useEffect(() => {
+    if (!isOpen || !vfsSession) {
+      return;
+    }
 
-    setJsonText(value);
-    setHasChanges(true);
-    try {
-      JSON.parse(value);
+    if (filePaths.length === 0) {
+      setSelectedPath(null);
+      return;
+    }
+
+    if (!selectedPath || !filteredSnapshot[selectedPath]) {
+      setSelectedPath(filePaths[0]);
+    }
+  }, [isOpen, vfsSession, filePaths, filteredSnapshot, selectedPath]);
+
+  useEffect(() => {
+    if (!selectedPath) {
+      return;
+    }
+
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      next.add("");
+      const parts = selectedPath.split("/").filter(Boolean);
+      let current = "";
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        current = current ? `${current}/${parts[i]}` : parts[i];
+        next.add(current);
+      }
+      return Array.from(next);
+    });
+  }, [selectedPath]);
+
+  useEffect(() => {
+    if (!isOpen || !vfsSession || !selectedPath) {
+      setFileContent("");
       setError(null);
-    } catch (e) {
-      setError(t("stateEditor.invalidJson") || "Invalid JSON syntax");
+      setHasChanges(false);
+      return;
     }
-  };
 
-  // Apply changes to GameState
-  const handleApply = () => {
+    const file = readVfsFile(vfsSession, selectedPath);
+    if (!file) {
+      setFileContent("");
+      setFileContentType("text/plain");
+      setError(null);
+      setHasChanges(false);
+      return;
+    }
+
+    setFileContent(formatVfsContent(file.content, file.contentType));
+    setFileContentType(file.contentType);
+    setError(null);
+    setHasChanges(false);
+  }, [isOpen, vfsSession, selectedPath, snapshot]);
+
+  if (!isOpen) return null;
+
+  const invalidJsonMessage =
+    t("stateEditor.invalidJson") || "Invalid JSON syntax";
+  const invalidSchemaMessage =
+    t("stateEditor.invalidSchema") || "Schema validation failed";
+  const applyFailedMessage =
+    t("stateEditor.applyFailed") || "Failed to apply changes";
+  const fixErrorsMessage =
+    t("stateEditor.fixErrors") || "Fix JSON errors before saving";
+
+  const handleContentChange = (value: string) => {
     if (isReadOnly) return;
 
-    if (error) {
-      onShowToast?.(
-        t("stateEditor.fixErrors") || "Fix JSON errors before applying",
-        "error",
-      );
-      return;
-    }
+    setFileContent(value);
+    setHasChanges(true);
 
-    if (!vfsSession) {
-      onShowToast?.(
-        t("stateEditor.applyFailed") || "VFS session unavailable",
-        "error",
-      );
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(jsonText);
-      const nextState = applyVfsStateEdit({
-        session: vfsSession,
-        section: activeSection as EditableVfsSection,
-        data: parsed,
-        baseState: gameState,
-        options: { allowOutlineEdit: canEditOutline },
-      });
-      setGameState(nextState);
-      triggerSave();
-
-      setHasChanges(false);
-      onShowToast?.(
-        t("stateEditor.applied") || `${activeSection} updated successfully`,
-        "success",
-      );
-    } catch (e) {
-      onShowToast?.(
-        t("stateEditor.applyFailed") || "Failed to apply changes",
-        "error",
-      );
+    if (fileContentType === "application/json") {
+      try {
+        JSON.parse(value);
+        setError(null);
+      } catch {
+        setError(invalidJsonMessage);
+      }
+    } else {
+      setError(null);
     }
   };
 
-  // Reset to current state
   const handleReset = () => {
-    const data = getSectionData(activeSection);
-    setJsonText(JSON.stringify(data, null, 2));
+    if (!vfsSession || !selectedPath) return;
+    const file = readVfsFile(vfsSession, selectedPath);
+    if (!file) return;
+    setFileContent(formatVfsContent(file.content, file.contentType));
+    setFileContentType(file.contentType);
     setError(null);
     setHasChanges(false);
   };
 
-  // Format/prettify JSON
   const handleFormat = () => {
-    if (isReadOnly) return; // Read-only (already formatted on load)
-    try {
-      const parsed = JSON.parse(jsonText);
-      setJsonText(JSON.stringify(parsed, null, 2));
-      setError(null);
-    } catch (e) {
-      // Keep as-is if invalid
+    if (isReadOnly) return;
+    const formatted = formatVfsContent(fileContent, fileContentType);
+    setFileContent(formatted);
+    if (fileContentType === "application/json") {
+      try {
+        JSON.parse(formatted);
+        setError(null);
+      } catch {
+        setError(invalidJsonMessage);
+      }
     }
   };
 
-  // Line count for editor
-  const lineCount = useMemo(() => jsonText.split("\n").length, [jsonText]);
+  const handleSave = () => {
+    if (!vfsSession || !selectedPath) {
+      onShowToast?.(applyFailedMessage, "error");
+      return;
+    }
 
-  if (!isOpen) return null;
+    if (isReadOnly) {
+      return;
+    }
+
+    if (error) {
+      onShowToast?.(fixErrorsMessage, "error");
+      return;
+    }
+
+    try {
+      const nextState = applyVfsFileEdit({
+        session: vfsSession,
+        path: selectedPath,
+        content: fileContent,
+        contentType: fileContentType,
+        baseState: gameState,
+      });
+      setGameState(nextState);
+      triggerSave();
+      setHasChanges(false);
+      setError(null);
+      onShowToast?.(
+        t("stateEditor.applied") || "Changes saved successfully",
+        "success",
+      );
+    } catch (err) {
+      const message =
+        err instanceof ZodError
+          ? invalidSchemaMessage
+          : err instanceof Error && err.message.includes("Invalid JSON")
+            ? invalidJsonMessage
+            : applyFailedMessage;
+      setError(message);
+      onShowToast?.(message, "error");
+    }
+  };
+
+  const lineCount = useMemo(
+    () => (fileContent ? fileContent.split("\n").length : 0),
+    [fileContent],
+  );
+
+  const toggleFolder = (path: string) => {
+    if (path === "") return;
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      next.add("");
+      return Array.from(next);
+    });
+  };
+
+  const renderTreeNode = (node: VfsTreeNode, depth = 0): React.ReactNode => {
+    const isFolder = node.kind === "folder";
+    const isRoot = node.path === "";
+    const expanded = isRoot || hasSearch || expandedPaths.includes(node.path);
+    const padding = { paddingLeft: `${depth * 12}px` };
+
+    if (isFolder) {
+      return (
+        <div key={node.path || "root"}>
+          <button
+            type="button"
+            onClick={() => toggleFolder(node.path)}
+            className={`w-full flex items-center gap-2 px-2 py-1 text-left text-xs rounded transition-colors ${
+              isRoot
+                ? "text-theme-muted font-semibold"
+                : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+            }`}
+            style={padding}
+          >
+            <span className="w-3 text-[10px] font-mono">
+              {expanded ? "v" : ">"}
+            </span>
+            <span className="truncate">{node.name}</span>
+          </button>
+          {expanded &&
+            node.children?.map((child) => renderTreeNode(child, depth + 1))}
+        </div>
+      );
+    }
+
+    const readonly = isReadonlyPath(
+      node.path,
+      canEditOutline,
+      allowConversationEdit,
+    );
+    const isSelected = node.path === selectedPath;
+
+    return (
+      <button
+        key={node.path}
+        type="button"
+        onClick={() => setSelectedPath(node.path)}
+        className={`w-full flex items-center gap-2 px-2 py-1 text-left text-xs rounded transition-colors ${
+          isSelected
+            ? "bg-theme-primary/20 text-theme-primary"
+            : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+        }`}
+        style={padding}
+      >
+        <span className="w-3 text-[10px] font-mono">-</span>
+        <span className="truncate flex-1">{node.name}</span>
+        {readonly && (
+          <span className="text-[10px] text-theme-info">
+            {t("stateEditor.readOnly") || "Read Only"}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-none p-4 border-b border-theme-border flex items-center justify-between bg-theme-bg/50">
           <div className="flex items-center gap-3">
@@ -301,62 +373,57 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
         {/* Body */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          {/* Section Tabs (Left on Desktop, Top on Mobile) */}
-          <div className="w-full md:w-48 flex-none border-b md:border-b-0 md:border-r border-theme-border bg-theme-bg/30 overflow-x-auto md:overflow-y-auto flex md:flex-col scrollbar-hide">
-            {(Object.keys(SECTION_CONFIGS) as EditableSection[]).map(
-              (section) => {
-                const config = SECTION_CONFIGS[section];
-                const isActive = section === activeSection;
-                return (
-                  <button
-                    key={section}
-                    onClick={() => setActiveSection(section)}
-                    className={`flex-none md:w-full px-4 py-3 text-left flex items-center gap-3 transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "bg-theme-primary/20 text-theme-primary border-b-2 md:border-b-0 md:border-r-2 border-theme-primary"
-                        : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
-                    }`}
-                  >
-                    <span className="text-lg">
-                      {getValidIcon(config.icon, "📖")}
-                    </span>
-                    <span className="text-sm font-medium md:truncate">
-                      {t(config.labelKey) || section}
-                    </span>
-                  </button>
-                );
-              },
-            )}
+          {/* File Tree */}
+          <div className="w-full md:w-72 flex-none border-b md:border-b-0 md:border-r border-theme-border bg-theme-bg/30 flex flex-col">
+            <div className="p-3 border-b border-theme-border">
+              <div className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-2">
+                {t("stateEditor.fileTree") || "File Tree"}
+              </div>
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-xs px-3 py-2 rounded bg-theme-bg border border-theme-border text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
+                placeholder={
+                  t("stateEditor.searchPlaceholder") || "Search files..."
+                }
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {tree.children && tree.children.length > 0 ? (
+                renderTreeNode(tree)
+              ) : (
+                <div className="text-xs text-theme-muted px-2 py-4">
+                  {t("stateEditor.emptyState") || "No files available"}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Editor Area */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* Toolbar */}
-            <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex items-center justify-between gap-4">
+            <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
-                <span className="text-lg flex-none">
-                  {getValidIcon(SECTION_CONFIGS[activeSection].icon, "📖")}
+                <span className="font-mono text-xs text-theme-muted">
+                  {selectedPath || t("stateEditor.noSelection") || "No file"}
                 </span>
-                <span className="font-medium text-theme-text truncate">
-                  {t(SECTION_CONFIGS[activeSection].labelKey) || activeSection}
-                </span>
-                <span className="text-xs text-theme-muted flex-none hidden sm:inline">
+                <span className="text-xs text-theme-muted hidden sm:inline">
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
                 {hasChanges && !isReadOnly && (
-                  <span className="px-2 py-0.5 bg-theme-warning/20 text-theme-warning text-xs rounded-full flex-none">
+                  <span className="px-2 py-0.5 bg-theme-warning/20 text-theme-warning text-xs rounded-full">
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
                 {isReadOnly && (
-                  <span className="px-2 py-0.5 bg-theme-info/20 text-theme-info text-xs rounded-full flex-none">
+                  <span className="px-2 py-0.5 bg-theme-info/20 text-theme-info text-xs rounded-full">
                     {t("stateEditor.readOnly") || "Read Only"}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 flex-none">
-                {activeSection === "outline" && !gameState.godMode && (
-                  <label className="flex items-center gap-2 text-xs text-theme-muted">
+              <div className="flex items-center gap-3 flex-wrap text-xs text-theme-muted">
+                {!gameState.godMode && (
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={allowOutlineEdit}
@@ -369,121 +436,74 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     </span>
                   </label>
                 )}
-                {!isReadOnly && (
-                  <button
-                    onClick={handleFormat}
-                    className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
-                    title={t("stateEditor.format") || "Format JSON"}
-                  >
-                    {t("stateEditor.format") || "Format"}
-                  </button>
-                )}
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={allowConversationEdit}
+                    onChange={(e) => setAllowConversationEdit(e.target.checked)}
+                    className="accent-theme-primary"
+                  />
+                  <span>
+                    {t("stateEditor.unlockConversationEdit") ||
+                      "Unlock conversation editing"}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Editor */}
+            <div className="flex-1 overflow-hidden relative">
+              <textarea
+                value={fileContent}
+                onChange={(e) => handleContentChange(e.target.value)}
+                readOnly={isReadOnly}
+                className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
+                  error ? "border-2 border-theme-error/50" : ""
+                } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
+                spellCheck={false}
+                placeholder={t("loadingGeneric") || "Loading..."}
+              />
+              {error && (
+                <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
+                  <span aria-hidden="true">!</span> {error}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
+              <div className="text-xs text-theme-muted">
+                <span aria-hidden="true">!</span>{" "}
+                {t("stateEditor.warning") ||
+                  "Changes are applied immediately. Be careful!"}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleFormat}
+                  className="px-3 py-2 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
+                  disabled={isReadOnly}
+                >
+                  {t("stateEditor.format") || "Format"}
+                </button>
                 <button
                   onClick={handleReset}
-                  className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
-                  title={t("stateEditor.reset") || "Reset to current state"}
+                  className="px-3 py-2 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
                 >
                   {t("stateEditor.reset") || "Reset"}
                 </button>
+                <button
+                  onClick={handleSave}
+                  disabled={!!error || !hasChanges || isReadOnly}
+                  className={`px-6 py-2 rounded-lg font-bold transition-colors ${
+                    error || !hasChanges || isReadOnly
+                      ? "bg-theme-muted/20 text-theme-muted cursor-not-allowed"
+                      : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg"
+                  }`}
+                >
+                  {t("stateEditor.save") || "Save"}
+                </button>
               </div>
             </div>
-
-            {/* Content Area: Split View for Segments, Single View for others */}
-            <div className="flex-1 flex overflow-hidden relative">
-              {activeSection === "segments" && (
-                <div className="w-1/3 border-r border-theme-border flex flex-col overflow-hidden bg-theme-bg/10">
-                  <div className="p-2 border-b border-theme-border bg-theme-bg/20 text-xs font-bold text-theme-muted uppercase tracking-wider">
-                    {t("stateEditor.segmentsList") || "History Segments"}
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {history.map((segment) => {
-                      const isSelected = segment.id === selectedSegmentId;
-                      const isCurrent = segment.id === gameState.activeNodeId;
-                      return (
-                        <button
-                          key={segment.id}
-                          onClick={() => setSelectedSegmentId(segment.id)}
-                          className={`w-full text-left p-2 rounded text-xs transition-colors border ${
-                            isSelected
-                              ? "bg-theme-primary/20 border-theme-primary text-theme-text"
-                              : "bg-theme-surface border-transparent hover:bg-theme-surface/80 text-theme-muted hover:text-theme-text"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-bold uppercase opacity-70">
-                              {segment.role}
-                            </span>
-                            {isCurrent && (
-                              <span className="px-1.5 py-0.5 bg-theme-success/20 text-theme-success rounded-full text-[10px]">
-                                {t("stateEditor.current")}
-                              </span>
-                            )}
-                          </div>
-                          <div className="truncate opacity-80">
-                            {segment.text || "(No text)"}
-                          </div>
-                          <div className="text-[10px] opacity-50 mt-1 font-mono">
-                            {segment.id}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* JSON Editor (Right side in split view, full width otherwise) */}
-              <div
-                className={`flex-1 overflow-hidden relative ${activeSection === "segments" ? "w-2/3" : "w-full"}`}
-              >
-                <textarea
-                  value={jsonText}
-                  onChange={(e) => handleJsonChange(e.target.value)}
-                  readOnly={isReadOnly}
-                  className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
-                    error ? "border-2 border-theme-error/50" : ""
-                  } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
-                  spellCheck={false}
-                  placeholder={t("loadingGeneric") || "Loading..."}
-                />
-                {/* Error indicator */}
-                {error && (
-                  <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
-                    <span aria-hidden="true">⚠️</span> {error}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
-          <div className="text-xs text-theme-muted">
-            <span aria-hidden="true">⚠️</span>{" "}
-            {t("stateEditor.warning") ||
-              "Changes are applied immediately. Be careful!"}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded-lg transition-colors"
-            >
-              {t("close") || "Close"}
-            </button>
-            {!isReadOnly && (
-              <button
-                onClick={handleApply}
-                disabled={!!error || !hasChanges}
-                className={`px-6 py-2 rounded-lg font-bold transition-colors ${
-                  error || !hasChanges
-                    ? "bg-theme-muted/20 text-theme-muted cursor-not-allowed"
-                    : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg"
-                }`}
-              >
-                {t("stateEditor.apply") || "Apply Changes"}
-              </button>
-            )}
           </div>
         </div>
       </div>

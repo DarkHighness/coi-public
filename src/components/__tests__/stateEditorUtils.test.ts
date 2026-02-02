@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { VfsSession } from "../../services/vfs/vfsSession";
-import { applyVfsStateEdit } from "../stateEditorUtils";
+import { applyVfsStateEdit, applyVfsFileEdit } from "../stateEditorUtils";
 import { applySectionEdit } from "../../services/vfs/editor";
 import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
 import { mergeDerivedViewState } from "../../hooks/vfsViewState";
+import { writeVfsFile } from "../vfsExplorer/fileOps";
 
 const mockDerivedState = { derived: true } as any;
 const mockMergedState = { merged: true } as any;
@@ -18,6 +19,10 @@ vi.mock("../../services/vfs/derivations", () => ({
 
 vi.mock("../../hooks/vfsViewState", () => ({
   mergeDerivedViewState: vi.fn(() => mockMergedState),
+}));
+
+vi.mock("../vfsExplorer/fileOps", () => ({
+  writeVfsFile: vi.fn(),
 }));
 
 describe("stateEditorUtils", () => {
@@ -37,6 +42,32 @@ describe("stateEditorUtils", () => {
       "global",
       { time: "Night 1" },
       undefined,
+    );
+    expect(deriveGameStateFromVfs).toHaveBeenCalledWith(session.snapshot());
+    expect(mergeDerivedViewState).toHaveBeenCalledWith(
+      baseState,
+      mockDerivedState,
+    );
+    expect(result).toBe(mockMergedState);
+  });
+
+  it("applies file edits then re-derives view state", () => {
+    const session = new VfsSession();
+    const baseState = { base: true } as any;
+
+    const result = applyVfsFileEdit({
+      session,
+      path: "world/global.json",
+      content: "{}",
+      contentType: "application/json",
+      baseState,
+    });
+
+    expect(writeVfsFile).toHaveBeenCalledWith(
+      session,
+      "world/global.json",
+      "{}",
+      "application/json",
     );
     expect(deriveGameStateFromVfs).toHaveBeenCalledWith(session.snapshot());
     expect(mergeDerivedViewState).toHaveBeenCalledWith(
