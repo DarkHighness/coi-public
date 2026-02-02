@@ -54,6 +54,29 @@ describe("zodToOpenAISchema", () => {
     const result = zodToOpenAISchema(simpleObjectSchema);
     expect(result.additionalProperties).toBe(false);
   });
+
+  it("should handle record types without warning", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const recordSchema = z.record(z.string());
+
+    const result = zodToOpenAISchema(recordSchema);
+
+    expect(result.type).toBe("object");
+    expect(result.additionalProperties).toMatchObject({ type: "string" });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("should handle unknown types without warning", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const unknownSchema = z.unknown();
+
+    const result = zodToOpenAISchema(unknownSchema);
+
+    expect(result.type).toBe("object");
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });
 
 describe("zodToGeminiCompatibleSchema", () => {

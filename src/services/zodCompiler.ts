@@ -29,6 +29,7 @@ import {
   ZodDiscriminatedUnion,
   ZodNull,
   ZodAny,
+  ZodRecord,
   ZodUnknown,
 } from "zod";
 import type { ZodTypeAny } from "zod";
@@ -644,6 +645,37 @@ function processZodToOpenAI(
       result.type = ["object", "null"];
     }
 
+    return result;
+  }
+
+  // Handle record
+  if (schema instanceof ZodRecord || typeName === "ZodRecord") {
+    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const result: OpenAISchema = {
+      type: "object",
+      additionalProperties: processZodToOpenAI(valueSchema, strict, false),
+    };
+    if (schema.description) result.description = schema.description;
+    if (strict && isOptionalField) {
+      result.type = ["object", "null"];
+    }
+    return result;
+  }
+
+  // Handle any/unknown
+  if (
+    schema instanceof ZodAny ||
+    typeName === "ZodAny" ||
+    schema instanceof ZodUnknown ||
+    typeName === "ZodUnknown"
+  ) {
+    const result: OpenAISchema = {
+      type: "object",
+      description: schema.description || "Any value",
+    };
+    if (strict && isOptionalField) {
+      result.type = ["object", "null"];
+    }
     return result;
   }
 
