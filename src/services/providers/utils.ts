@@ -10,9 +10,11 @@ import {
   ZodNumber,
   ZodBoolean,
   ZodNull,
+  ZodLiteral,
   ZodNullable,
   ZodIntersection,
   ZodRecord,
+  ZodDiscriminatedUnion,
 } from "zod";
 import { AIProviderError } from "./types";
 
@@ -274,6 +276,17 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
   if (schema instanceof ZodNumber) return "number";
   if (schema instanceof ZodBoolean) return "boolean";
   if (schema instanceof ZodNull) return "null";
+  if (schema instanceof ZodLiteral) {
+    const value = schema._def.value;
+    return typeof value === "string" ? `"${value}"` : String(value);
+  }
+  if (schema instanceof ZodDiscriminatedUnion) {
+    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .options as ZodObject<any>[];
+    return options
+      .map((opt) => getToolSchemaHint(opt, indent + "  "))
+      .join(" | ");
+  }
   if (schema instanceof ZodEnum) {
     return (schema as ZodEnum<any>)._def.values
       .map((v) => `"${v}"`)
