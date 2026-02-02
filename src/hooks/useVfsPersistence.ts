@@ -11,33 +11,12 @@ import { sessionManager } from "../services/ai/sessionManager";
 import { VfsSession } from "../services/vfs/vfsSession";
 import { IndexedDbVfsStore } from "../services/vfs/store";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
+import { mergeDerivedViewState } from "./vfsViewState";
 import {
   restoreVfsSessionFromSnapshot,
   saveVfsSessionSnapshot,
 } from "../services/vfs/persistence";
-import { seedVfsSessionFromGameState } from "../services/vfs/seed";
-
-const applyDerivedState = (
-  base: GameState,
-  derived: GameState,
-): GameState => ({
-  ...base,
-  inventory: derived.inventory,
-  npcs: derived.npcs,
-  quests: derived.quests,
-  character: derived.character,
-  knowledge: derived.knowledge,
-  factions: derived.factions,
-  currentLocation: derived.currentLocation,
-  locations: derived.locations,
-  time: derived.time,
-  atmosphere: derived.atmosphere,
-  theme: derived.theme,
-  timeline: derived.timeline,
-  causalChains: derived.causalChains,
-  turnNumber: derived.turnNumber,
-  forkId: derived.forkId,
-});
+import { seedVfsSessionFromDefaults } from "../services/vfs/seed";
 
 export const useVfsPersistence = (
   gameState: GameState,
@@ -70,8 +49,8 @@ export const useVfsPersistence = (
       const forkId = state?.forkId ?? gameState.forkId ?? 0;
       const turn = state?.turnNumber ?? gameState.turnNumber ?? 0;
 
-      if (Object.keys(vfsSessionRef.current.snapshot()).length === 0 && state) {
-        seedVfsSessionFromGameState(vfsSessionRef.current, state);
+      if (Object.keys(vfsSessionRef.current.snapshot()).length === 0) {
+        seedVfsSessionFromDefaults(vfsSessionRef.current);
       }
 
       await saveVfsSessionSnapshot(vfsStoreRef.current, vfsSessionRef.current, {
@@ -129,7 +108,7 @@ export const useVfsPersistence = (
                 const derived = deriveGameStateFromVfs(
                   vfsSessionRef.current.snapshot(),
                 );
-                setGameState((prev) => applyDerivedState(prev, derived));
+                setGameState((prev) => mergeDerivedViewState(prev, derived));
                 setCurrentSlotId(lastSlotId);
               }
             }
@@ -248,7 +227,7 @@ export const useVfsPersistence = (
           const derived = deriveGameStateFromVfs(
             vfsSessionRef.current.snapshot(),
           );
-          setGameState((prev) => applyDerivedState(prev, derived));
+          setGameState((prev) => mergeDerivedViewState(prev, derived));
         }
       }
       setCurrentSlotId(id);
@@ -322,7 +301,6 @@ export const useVfsPersistence = (
     refreshSlots,
     vfsSession: vfsSessionRef.current,
     latestSlotId,
-    seedFromGameState: (state: GameState) =>
-      seedVfsSessionFromGameState(vfsSessionRef.current, state),
+    seedFromDefaults: () => seedVfsSessionFromDefaults(vfsSessionRef.current),
   };
 };

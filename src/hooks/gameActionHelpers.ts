@@ -300,13 +300,20 @@ export const createModelNode = (
   usage: any,
   newSegmentId: string,
   forceTheme?: string,
+  options?: {
+    finalState?: GameState;
+    modelNodeId?: string;
+  },
 ): {
   modelNode: StorySegment;
   responseAtmosphere: AtmosphereObject;
   modelNodeId: string;
 } => {
-  const modelNodeId = `model-${newSegmentId}`;
-  const finalState = response.finalState;
+  const modelNodeId = options?.modelNodeId ?? `model-${newSegmentId}`;
+  const finalState = options?.finalState ?? response.finalState;
+  if (!finalState) {
+    throw new Error("Missing final state for model node snapshot.");
+  }
 
   // Sanitize choices to ensure valid structure
   const sanitizedChoices = Array.isArray(response.choices)

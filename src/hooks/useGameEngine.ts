@@ -39,11 +39,13 @@ import { getRAGService } from "../services/rag";
 import { extractDocumentsFromState } from "./useRAG";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
 import { useGameAction } from "./useGameAction";
+import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import { saveImage } from "../utils/imageStorage";
 import { getThemeName } from "../services/ai/utils";
 
 import { preloadAudio } from "../utils/audioLoader";
 import { useToast } from "../contexts/ToastContext";
+import { mergeDerivedViewState } from "./vfsViewState";
 
 /**
  * Update RAG documents for changed entities in background (non-blocking)
@@ -178,7 +180,7 @@ export const useGameEngine = () => {
     triggerSave,
     refreshSlots,
     vfsSession,
-    seedFromGameState,
+    seedFromDefaults,
   } = useVfsPersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -635,7 +637,7 @@ export const useGameEngine = () => {
             themeConfig, // Include resolved theme config
             outlineConversation: undefined,
           };
-          seedFromGameState(nextState);
+          seedFromDefaults();
           await saveToSlot(slotId, nextState);
           console.log("[StartNewGame] Outline checkpoint saved successfully");
         } catch (e) {
@@ -1439,10 +1441,17 @@ export const useGameEngine = () => {
         }));
       }
 
-      const finalState = (response as any).finalState;
-      if (!finalState) {
-        throw new Error("Force update failed: No final state returned.");
+      const vfsSnapshot = vfsSession?.snapshot() ?? {};
+      if (Object.keys(vfsSnapshot).length === 0) {
+        throw new Error(
+          "VFS snapshot is empty after force update. Ensure tools wrote state files.",
+        );
       }
+      const derivedState = deriveGameStateFromVfs(vfsSnapshot);
+      const viewState = mergeDerivedViewState(
+        gameStateRef.current,
+        derivedState,
+      );
 
       // Resolve atmosphere
       const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
@@ -1515,42 +1524,30 @@ export const useGameEngine = () => {
         ending: "continue",
         summaries: baseSummaries,
         summarizedIndex: baseIndex,
-        stateSnapshot: createStateSnapshot(finalState, {
+        stateSnapshot: createStateSnapshot(derivedState, {
           summaries: baseSummaries,
           lastSummarizedIndex: baseIndex,
-          currentLocation: finalState.currentLocation,
-          time: finalState.time,
+          currentLocation: derivedState.currentLocation,
+          time: derivedState.time,
           atmosphere: responseAtmosphere,
-          veoScript: gameStateRef.current.veoScript,
-          uiState: gameStateRef.current.uiState,
+          veoScript: viewState.veoScript,
+          uiState: viewState.uiState,
         }),
       };
 
       setGameState((prev) => {
+        const mergedBase = mergeDerivedViewState(prev, derivedState);
         const newNodes = {
-          ...prev.nodes,
+          ...mergedBase.nodes,
           [commandNodeId]: commandNode,
           [resultNodeId]: resultNode,
         };
 
         return {
-          ...prev,
+          ...mergedBase,
           nodes: newNodes,
           activeNodeId: resultNodeId,
           currentFork: deriveHistory(newNodes, resultNodeId),
-          // Update state
-          inventory: finalState.inventory,
-          npcs: finalState.npcs,
-          quests: finalState.quests,
-          currentLocation: finalState.currentLocation,
-          locations: finalState.locations,
-          character: finalState.character,
-          knowledge: finalState.knowledge,
-          factions: finalState.factions,
-          time: finalState.time,
-          nextIds: finalState.nextIds,
-          timeline: finalState.timeline,
-          causalChains: finalState.causalChains,
           atmosphere: responseAtmosphere,
           isProcessing: false,
         };
@@ -1619,8 +1616,17 @@ export const useGameEngine = () => {
         }));
       }
 
-      // Update changed entities in state
-      const finalState = (response as any).finalState || gameStateRef.current;
+      const vfsSnapshot = vfsSession?.snapshot() ?? {};
+      if (Object.keys(vfsSnapshot).length === 0) {
+        throw new Error(
+          "VFS snapshot is empty after cleanup. Ensure tools wrote state files.",
+        );
+      }
+      const derivedState = deriveGameStateFromVfs(vfsSnapshot);
+      const viewState = mergeDerivedViewState(
+        gameStateRef.current,
+        derivedState,
+      );
 
       // Create a system node to record the cleanup result
       const newSegmentId = Date.now().toString();
@@ -1652,39 +1658,29 @@ export const useGameEngine = () => {
         ending: "continue",
         summaries: baseSummaries,
         summarizedIndex: baseIndex,
-        stateSnapshot: createStateSnapshot(finalState, {
+        stateSnapshot: createStateSnapshot(derivedState, {
           summaries: baseSummaries,
           lastSummarizedIndex: baseIndex,
-          currentLocation: finalState.currentLocation,
-          time: finalState.time,
+          currentLocation: derivedState.currentLocation,
+          time: derivedState.time,
           atmosphere: gameStateRef.current.atmosphere,
-          veoScript: gameStateRef.current.veoScript,
-          uiState: gameStateRef.current.uiState,
+          veoScript: viewState.veoScript,
+          uiState: viewState.uiState,
         }),
       };
 
       setGameState((prev) => {
+        const mergedBase = mergeDerivedViewState(prev, derivedState);
         const newNodes = {
-          ...prev.nodes,
+          ...mergedBase.nodes,
           [cleanupNodeId]: cleanupNode,
         };
 
         return {
-          ...prev,
+          ...mergedBase,
           nodes: newNodes,
           activeNodeId: cleanupNodeId,
           currentFork: deriveHistory(newNodes, cleanupNodeId),
-          inventory: finalState.inventory,
-          npcs: finalState.npcs,
-          quests: finalState.quests,
-          currentLocation: finalState.currentLocation,
-          locations: finalState.locations,
-          character: finalState.character,
-          knowledge: finalState.knowledge,
-          factions: finalState.factions,
-          time: finalState.time,
-          timeline: finalState.timeline,
-          causalChains: finalState.causalChains,
           isProcessing: false,
         };
       });

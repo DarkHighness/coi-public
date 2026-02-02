@@ -14,6 +14,7 @@ import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
+import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import {
   updateProviderStats,
   handleForking,
@@ -21,6 +22,7 @@ import {
   createModelNode,
   notifySessionSummaryCreated,
 } from "./gameActionHelpers";
+import { mergeDerivedViewState } from "./vfsViewState";
 import { sessionManager } from "../services/ai/sessionManager";
 
 interface UseGameActionProps {
@@ -359,13 +361,31 @@ export const useGameAction = ({
         });
 
         // ===== STATE UPDATE =====
-        const finalState = response.finalState;
-
-        if (!finalState) {
+        const vfsSnapshot = vfsSession?.snapshot() ?? {};
+        if (Object.keys(vfsSnapshot).length === 0) {
           throw new Error(
-            "AI Service did not return a final state. Agentic loop failed?",
+            "VFS snapshot is empty after turn. Ensure tools wrote state files.",
           );
         }
+        const derivedState = deriveGameStateFromVfs(vfsSnapshot);
+        const viewState = mergeDerivedViewState(
+          gameStateRef.current,
+          derivedState,
+        );
+        const activeModelNodeId = derivedState.activeNodeId;
+        if (!activeModelNodeId) {
+          throw new Error(
+            "VFS conversation missing active turn after turn completion.",
+          );
+        }
+        const derivedUserNodeId = activeModelNodeId.startsWith("model-")
+          ? activeModelNodeId.replace(/^model-/, "user-")
+          : null;
+        const effectiveModelNodeId = activeModelNodeId;
+        const effectiveViewUserNodeId =
+          derivedUserNodeId && viewState.nodes[derivedUserNodeId]
+            ? derivedUserNodeId
+            : effectiveUserNodeId;
 
         // Collect state changes for toast notifications (with names)
         // Collect unlock events from all action types
@@ -485,8 +505,8 @@ export const useGameAction = ({
         // Create Model Node using Helper
         const { modelNode, responseAtmosphere, modelNodeId } = createModelNode(
           response,
-          gameStateRef.current,
-          effectiveUserNodeId,
+          viewState,
+          effectiveViewUserNodeId,
           isInit,
           effectiveSummaries,
           lastIndex,
@@ -494,38 +514,30 @@ export const useGameAction = ({
           usage,
           newSegmentId,
           forceTheme,
+          {
+            finalState: derivedState,
+            modelNodeId: effectiveModelNodeId,
+          },
         );
 
         // Update State with Response
         setGameState((prev) => {
+          const mergedBase = mergeDerivedViewState(prev, derivedState);
           const newNodes = {
-            ...prev.nodes,
+            ...mergedBase.nodes,
             [modelNodeId]: modelNode,
           };
 
           const updatedState = {
-            ...prev,
+            ...mergedBase,
             nodes: newNodes,
             activeNodeId: modelNodeId,
-            rootNodeId: isInit ? modelNodeId : prev.rootNodeId || modelNodeId,
+            rootNodeId: isInit
+              ? modelNodeId
+              : mergedBase.rootNodeId || modelNodeId,
             currentFork: deriveHistory(newNodes, modelNodeId),
-
-            // Apply the full new state from the database
-            inventory: finalState.inventory,
-            npcs: finalState.npcs,
-            quests: finalState.quests,
-            currentLocation: finalState.currentLocation,
-            locations: finalState.locations,
-            character: finalState.character,
-            knowledge: finalState.knowledge,
-            factions: finalState.factions,
-            time: finalState.time,
-            timeline: finalState.timeline,
-            causalChains: finalState.causalChains,
-            // History is now managed internally by session manager
-            turnNumber: prev.turnNumber + 1,
-
             summaries: effectiveSummaries,
+            lastSummarizedIndex: lastIndex,
             isProcessing: false,
             // Only trigger image generation if there's a valid imagePrompt
             // In manual mode, don't auto-set generating state - wait for user click
@@ -537,21 +549,23 @@ export const useGameAction = ({
                 ? modelNodeId
                 : null,
             atmosphere: responseAtmosphere,
-            theme: prev.theme,
-            logs: [...turnLogs, ...prev.logs].slice(0, 100),
+            logs: [...turnLogs, ...mergedBase.logs].slice(0, 100),
             tokenUsage: {
               promptTokens:
-                (prev.tokenUsage?.promptTokens || 0) +
+                (mergedBase.tokenUsage?.promptTokens || 0) +
                 (usage.promptTokens || 0),
               completionTokens:
-                (prev.tokenUsage?.completionTokens || 0) +
+                (mergedBase.tokenUsage?.completionTokens || 0) +
                 (usage.completionTokens || 0),
               totalTokens:
-                (prev.tokenUsage?.totalTokens || 0) + (usage.totalTokens || 0),
+                (mergedBase.tokenUsage?.totalTokens || 0) +
+                (usage.totalTokens || 0),
               cacheRead:
-                (prev.tokenUsage?.cacheRead || 0) + (usage.cacheRead || 0),
+                (mergedBase.tokenUsage?.cacheRead || 0) +
+                (usage.cacheRead || 0),
               cacheWrite:
-                (prev.tokenUsage?.cacheWrite || 0) + (usage.cacheWrite || 0),
+                (mergedBase.tokenUsage?.cacheWrite || 0) +
+                (usage.cacheWrite || 0),
             },
           };
 
