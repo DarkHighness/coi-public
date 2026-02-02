@@ -38,14 +38,51 @@ const parseTurnId = (
   return { forkId: Number(match[1]), turnNumber: Number(match[2]) };
 };
 
+export interface ConversationMarker {
+  activeForkId: number;
+  activeTurnId: string;
+  latestTurnNumber: number | null;
+}
+
+export const getConversationMarker = (
+  vfsSession?: VfsSession,
+): ConversationMarker | null => {
+  if (!vfsSession) return null;
+  const snapshot = vfsSession.snapshot();
+  if (!snapshot || Object.keys(snapshot).length === 0) return null;
+  const index = readConversationIndex(snapshot);
+  if (!index) return null;
+  const latestTurnNumber =
+    index.latestTurnNumberByFork?.[String(index.activeForkId)] ?? null;
+  return {
+    activeForkId: index.activeForkId,
+    activeTurnId: index.activeTurnId,
+    latestTurnNumber,
+  };
+};
+
 export const buildResponseFromVfs = (
   vfsSession?: VfsSession,
+  baseline?: ConversationMarker | null,
 ): GameResponse | null => {
   if (!vfsSession) return null;
   const snapshot = vfsSession.snapshot();
   if (!snapshot || Object.keys(snapshot).length === 0) return null;
   const index = readConversationIndex(snapshot);
   if (!index) return null;
+
+  const latestTurnNumber =
+    index.latestTurnNumberByFork?.[String(index.activeForkId)] ?? null;
+  if (baseline) {
+    const unchanged =
+      baseline.activeForkId === index.activeForkId &&
+      baseline.activeTurnId === index.activeTurnId &&
+      baseline.latestTurnNumber === latestTurnNumber;
+    if (unchanged) {
+      return null;
+    }
+  }
+
   const activeTurnId = index.activeTurnId;
   const parsed = activeTurnId ? parseTurnId(activeTurnId) : null;
   if (!parsed) return null;

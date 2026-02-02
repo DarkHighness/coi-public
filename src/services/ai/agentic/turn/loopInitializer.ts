@@ -14,6 +14,7 @@ import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
+import { getConversationMarker, type ConversationMarker } from "./resultAccumulator";
 
 // ============================================================================
 // Types
@@ -22,6 +23,8 @@ import { ALL_DEFINED_TOOLS } from "../../../tools";
 export interface LoopState {
   /** VFS session for file-based state */
   vfsSession?: VfsSession;
+  /** Baseline conversation marker (for detecting new turns) */
+  conversationMarker: ConversationMarker | null;
   /** Budget tracking state */
   budgetState: BudgetState;
   /** Accumulated response being built */
@@ -58,9 +61,11 @@ export function createLoopState(
   const isRAGEnabled = settings.embedding?.enabled ?? false;
   const activeTools = createInitialTools(isSudoMode, isRAGEnabled);
   const finishToolName = "vfs_write";
+  const conversationMarker = getConversationMarker(vfsSession);
 
   return {
     vfsSession,
+    conversationMarker,
     budgetState,
     accumulatedResponse,
     changedEntities: new Map(),

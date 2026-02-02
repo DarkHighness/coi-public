@@ -334,7 +334,10 @@ async function processToolCalls(
       content: output,
     });
 
-    const responseFromVfs = buildResponseFromVfs(loopState.vfsSession);
+    const responseFromVfs = buildResponseFromVfs(
+      loopState.vfsSession,
+      loopState.conversationMarker,
+    );
     if (responseFromVfs) {
       loopState.accumulatedResponse = responseFromVfs;
       turnFinished = true;

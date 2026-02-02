@@ -4,7 +4,7 @@ import { VfsSession } from "@/services/vfs/vfsSession";
 import { deriveGameStateFromVfs } from "@/services/vfs/derivations";
 import { createLoopState } from "../loopInitializer";
 import { executeGenericTool } from "../toolCallProcessor";
-import { buildResponseFromVfs } from "../resultAccumulator";
+import { buildResponseFromVfs, getConversationMarker } from "../resultAccumulator";
 
 describe("toolCallProcessor VFS integration", () => {
   it("passes VFS session to tool handlers", () => {
@@ -80,6 +80,143 @@ describe("toolCallProcessor VFS integration", () => {
 
     const response = buildResponseFromVfs(session);
     expect(response?.narrative).toBe("hello");
+  });
+
+  it("returns null when conversation has not advanced from baseline", () => {
+    const session = new VfsSession();
+    const gameState = deriveGameStateFromVfs({});
+    const loopState = createLoopState(gameState, DEFAULTS, false);
+
+    executeGenericTool(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/conversation/index.json",
+            content: JSON.stringify({
+              activeForkId: 0,
+              activeTurnId: "fork-0/turn-0",
+              rootTurnIdByFork: { "0": "fork-0/turn-0" },
+              latestTurnNumberByFork: { "0": 0 },
+              turnOrderByFork: { "0": ["fork-0/turn-0"] },
+            }),
+            contentType: "application/json",
+          },
+          {
+            path: "current/conversation/turns/fork-0/turn-0.json",
+            content: JSON.stringify({
+              turnId: "fork-0/turn-0",
+              forkId: 0,
+              turnNumber: 0,
+              parentTurnId: null,
+              createdAt: 1,
+              userAction: "start",
+              assistant: { narrative: "hello", choices: [] },
+            }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+        vfsSession: session,
+      },
+    );
+
+    const baseline = getConversationMarker(session);
+    const response = buildResponseFromVfs(session, baseline);
+    expect(response).toBeNull();
+  });
+
+  it("returns response when conversation advances beyond baseline", () => {
+    const session = new VfsSession();
+    const gameState = deriveGameStateFromVfs({});
+    const loopState = createLoopState(gameState, DEFAULTS, false);
+
+    executeGenericTool(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/conversation/index.json",
+            content: JSON.stringify({
+              activeForkId: 0,
+              activeTurnId: "fork-0/turn-0",
+              rootTurnIdByFork: { "0": "fork-0/turn-0" },
+              latestTurnNumberByFork: { "0": 0 },
+              turnOrderByFork: { "0": ["fork-0/turn-0"] },
+            }),
+            contentType: "application/json",
+          },
+          {
+            path: "current/conversation/turns/fork-0/turn-0.json",
+            content: JSON.stringify({
+              turnId: "fork-0/turn-0",
+              forkId: 0,
+              turnNumber: 0,
+              parentTurnId: null,
+              createdAt: 1,
+              userAction: "start",
+              assistant: { narrative: "hello", choices: [] },
+            }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+        vfsSession: session,
+      },
+    );
+
+    const baseline = getConversationMarker(session);
+
+    executeGenericTool(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/conversation/index.json",
+            content: JSON.stringify({
+              activeForkId: 0,
+              activeTurnId: "fork-0/turn-1",
+              rootTurnIdByFork: { "0": "fork-0/turn-0" },
+              latestTurnNumberByFork: { "0": 1 },
+              turnOrderByFork: {
+                "0": ["fork-0/turn-0", "fork-0/turn-1"],
+              },
+            }),
+            contentType: "application/json",
+          },
+          {
+            path: "current/conversation/turns/fork-0/turn-1.json",
+            content: JSON.stringify({
+              turnId: "fork-0/turn-1",
+              forkId: 0,
+              turnNumber: 1,
+              parentTurnId: "fork-0/turn-0",
+              createdAt: 2,
+              userAction: "next",
+              assistant: { narrative: "second", choices: [] },
+            }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+        vfsSession: session,
+      },
+    );
+
+    const response = buildResponseFromVfs(session, baseline);
+    expect(response?.narrative).toBe("second");
   });
 
   it("initial tools are vfs-only", () => {
