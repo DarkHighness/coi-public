@@ -12,8 +12,11 @@ import type {
   TimelineEvent,
 } from "@/types";
 import { DEFAULT_CHARACTER } from "@/utils/constants";
+import { deriveHistory } from "@/utils/storyUtils";
+import type { StorySegment } from "@/types";
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
+import { readConversationIndex, readTurnFile } from "./conversation";
 
 const DEFAULT_FORK_TREE = {
   nodes: {
@@ -96,6 +99,110 @@ const parseJsonFile = (file: VfsFile): unknown | null => {
   }
 };
 
+const stripCurrentPrefix = (path: string): string =>
+  path.startsWith("current/") ? path.slice("current/".length) : path;
+
+const parseTurnId = (
+  turnId: string,
+): { forkId: number; turnNumber: number } | null => {
+  const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
+  if (!match) return null;
+  return {
+    forkId: Number(match[1]),
+    turnNumber: Number(match[2]),
+  };
+};
+
+const deriveConversationNodes = (
+  files: VfsFileMap,
+): {
+  nodes: Record<string, StorySegment>;
+  activeNodeId: string | null;
+  rootNodeId: string | null;
+  currentFork: StorySegment[];
+  activeForkId: number | null;
+  latestTurnNumber: number | null;
+} => {
+  const index = readConversationIndex(files);
+  if (!index) {
+    return {
+      nodes: {},
+      activeNodeId: null,
+      rootNodeId: null,
+      currentFork: [],
+      activeForkId: null,
+      latestTurnNumber: null,
+    };
+  }
+
+  const activeForkId = index.activeForkId;
+  const order = index.turnOrderByFork?.[String(activeForkId)] || [];
+  const nodes: Record<string, StorySegment> = {};
+  let segmentIdx = 0;
+
+  for (const turnId of order) {
+    const parsed = parseTurnId(turnId);
+    if (!parsed) continue;
+    const turn = readTurnFile(files, parsed.forkId, parsed.turnNumber);
+    if (!turn) continue;
+
+    const userId = `user-${turn.turnId}`;
+    const modelId = `model-${turn.turnId}`;
+    const parentModelId = turn.parentTurnId
+      ? `model-${turn.parentTurnId}`
+      : null;
+
+    nodes[userId] = {
+      id: userId,
+      parentId: parentModelId,
+      text: turn.userAction,
+      choices: [],
+      imagePrompt: "",
+      role: "user",
+      timestamp: turn.createdAt,
+      segmentIdx,
+      ending: "continue",
+    };
+    segmentIdx += 1;
+
+    nodes[modelId] = {
+      id: modelId,
+      parentId: userId,
+      text: turn.assistant.narrative || "",
+      choices: turn.assistant.choices || [],
+      imagePrompt: "",
+      role: "model",
+      timestamp: turn.createdAt,
+      segmentIdx,
+      atmosphere: turn.assistant.atmosphere as any,
+      narrativeTone: turn.assistant.narrativeTone,
+      ending: (turn.assistant.ending as any) || "continue",
+      forceEnd: turn.assistant.forceEnd,
+    };
+    segmentIdx += 1;
+  }
+
+  const activeNodeId = index.activeTurnId
+    ? `model-${index.activeTurnId}`
+    : null;
+  const rootTurnId = index.rootTurnIdByFork?.[String(activeForkId)] || null;
+  const rootNodeId = rootTurnId ? `model-${rootTurnId}` : null;
+  const currentFork = activeNodeId
+    ? deriveHistory(nodes, activeNodeId)
+    : [];
+  const latestTurnNumber =
+    index.latestTurnNumberByFork?.[String(activeForkId)] ?? null;
+
+  return {
+    nodes,
+    activeNodeId,
+    rootNodeId,
+    currentFork,
+    activeForkId,
+    latestTurnNumber,
+  };
+};
+
 export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const state = createBaseGameState();
   const entries = Object.values(files).sort((a, b) =>
@@ -104,12 +211,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
+    const pathWithoutCurrent = stripCurrentPrefix(normalizedPath);
     const data = parseJsonFile(file);
     if (data === null) {
       continue;
     }
 
-    if (normalizedPath === "world/global.json") {
+    if (pathWithoutCurrent === "world/global.json") {
       const globalData = data as {
         time?: string;
         theme?: string;
@@ -139,49 +247,61 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
-    if (normalizedPath === "world/character.json") {
+    if (pathWithoutCurrent === "world/character.json") {
       state.character = data as CharacterStatus;
       continue;
     }
 
-    if (normalizedPath.startsWith("world/inventory/")) {
+    if (pathWithoutCurrent.startsWith("world/inventory/")) {
       state.inventory.push(data as InventoryItem);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/npcs/")) {
+    if (pathWithoutCurrent.startsWith("world/npcs/")) {
       state.npcs.push(data as NPC);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/quests/")) {
+    if (pathWithoutCurrent.startsWith("world/quests/")) {
       state.quests.push(data as Quest);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/locations/")) {
+    if (pathWithoutCurrent.startsWith("world/locations/")) {
       state.locations.push(data as Location);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/knowledge/")) {
+    if (pathWithoutCurrent.startsWith("world/knowledge/")) {
       state.knowledge.push(data as KnowledgeEntry);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/factions/")) {
+    if (pathWithoutCurrent.startsWith("world/factions/")) {
       state.factions.push(data as Faction);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/timeline/")) {
+    if (pathWithoutCurrent.startsWith("world/timeline/")) {
       state.timeline.push(data as TimelineEvent);
       continue;
     }
 
-    if (normalizedPath.startsWith("world/causal_chains/")) {
+    if (pathWithoutCurrent.startsWith("world/causal_chains/")) {
       state.causalChains.push(data as CausalChain);
     }
+  }
+
+  const conversation = deriveConversationNodes(files);
+  state.nodes = conversation.nodes;
+  state.activeNodeId = conversation.activeNodeId;
+  state.rootNodeId = conversation.rootNodeId;
+  state.currentFork = conversation.currentFork;
+  if (conversation.activeForkId !== null) {
+    state.forkId = conversation.activeForkId;
+  }
+  if (conversation.latestTurnNumber !== null) {
+    state.turnNumber = conversation.latestTurnNumber;
   }
 
   return state;

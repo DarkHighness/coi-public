@@ -65,4 +65,48 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.inventory).toHaveLength(1);
     expect(state.inventory[0]?.id).toBe("inv_key");
   });
+
+  it("derives conversation nodes from turn files", () => {
+    const files: VfsFileMap = {
+      "current/conversation/index.json": makeJsonFile(
+        "current/conversation/index.json",
+        {
+          activeForkId: 0,
+          activeTurnId: "fork-0/turn-1",
+          rootTurnIdByFork: { "0": "fork-0/turn-0" },
+          latestTurnNumberByFork: { "0": 1 },
+          turnOrderByFork: { "0": ["fork-0/turn-0", "fork-0/turn-1"] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-0.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-0.json",
+        {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: 1,
+          userAction: "start",
+          assistant: { narrative: "hello", choices: [] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-1.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-1.json",
+        {
+          turnId: "fork-0/turn-1",
+          forkId: 0,
+          turnNumber: 1,
+          parentTurnId: "fork-0/turn-0",
+          createdAt: 2,
+          userAction: "go",
+          assistant: { narrative: "ok", choices: [] },
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.activeNodeId).toContain("fork-0/turn-1");
+    expect(state.currentFork.length).toBeGreaterThan(0);
+  });
 });

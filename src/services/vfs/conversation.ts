@@ -42,8 +42,25 @@ export const buildTurnPath = (forkId: number, turn: number): string =>
 const resolveRelativePath = (path: string): string =>
   normalizeVfsPath(stripCurrentPath(path));
 
+const findFile = (files: VfsFileMap, path: string) => {
+  const normalized = normalizeVfsPath(path);
+  const relative = resolveRelativePath(path);
+  const candidates = new Set<string>([relative, normalized]);
+  if (normalized.startsWith("current/")) {
+    candidates.add(normalizeVfsPath(stripCurrentPath(normalized)));
+  } else {
+    candidates.add(normalizeVfsPath(`current/${normalized}`));
+  }
+
+  for (const candidate of candidates) {
+    const file = files[candidate];
+    if (file) return file;
+  }
+  return null;
+};
+
 const parseJson = <T>(files: VfsFileMap, path: string): T | null => {
-  const file = files[resolveRelativePath(path)];
+  const file = findFile(files, path);
   if (!file || file.contentType !== "application/json") {
     return null;
   }
