@@ -10,6 +10,7 @@ import {
   causalChainSchema,
   characterStatusSchema,
   atmosphereSchema,
+  storyOutlineSchema,
 } from "../zodSchemas";
 import { normalizeVfsPath } from "./utils";
 
@@ -20,6 +21,10 @@ const GlobalSchema = z.object({
   atmosphere: atmosphereSchema,
   turnNumber: z.number(),
   forkId: z.number(),
+  language: z.string().optional(),
+  customContext: z.string().optional(),
+  seedImageId: z.string().optional(),
+  narrativeScale: z.enum(["epic", "intimate", "balanced"]).optional(),
 });
 
 const ConversationTurnSchema = z.object({
@@ -43,6 +48,8 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/causal_chains\/[^/]+\.json$/, schema: causalChainSchema },
   { pattern: /^world\/character\.json$/, schema: characterStatusSchema },
   { pattern: /^world\/global\.json$/, schema: GlobalSchema },
+  { pattern: /^outline\/outline\.json$/, schema: storyOutlineSchema },
+  { pattern: /^outline\/progress\.json$/, schema: z.any() },
   { pattern: /^conversation\/turn\.json$/, schema: ConversationTurnSchema },
 ];
 

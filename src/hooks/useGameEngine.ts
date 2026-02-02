@@ -42,6 +42,13 @@ import { useGameAction } from "./useGameAction";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import { saveImage } from "../utils/imageStorage";
 import { getThemeName } from "../services/ai/utils";
+import {
+  clearOutlineProgress,
+  writeOutlineFile,
+  writeOutlineProgress,
+} from "../services/vfs/outline";
+import { seedVfsSessionFromOutline } from "../services/vfs/seed";
+import { writeConversationIndex, writeTurnFile } from "../services/vfs/conversation";
 
 import { preloadAudio } from "../utils/audioLoader";
 import { useToast } from "../contexts/ToastContext";
@@ -431,6 +438,7 @@ export const useGameEngine = () => {
               outlineConversation: conversationState,
             };
             setGameState(updatedState);
+            writeOutlineProgress(vfsSession, conversationState);
             // Persist immediately with the updated state
             await saveToSlot(slotId, updatedState);
             console.log(
@@ -458,6 +466,7 @@ export const useGameEngine = () => {
         console.log(
           "[StartNewGame] History corrupted - clearing saved conversation state",
         );
+        clearOutlineProgress(vfsSession);
         setGameState((prev) => ({
           ...prev,
           outlineConversation: undefined,
@@ -637,7 +646,41 @@ export const useGameEngine = () => {
             themeConfig, // Include resolved theme config
             outlineConversation: undefined,
           };
-          seedFromDefaults();
+          seedVfsSessionFromOutline(vfsSession, outline, {
+            theme: selectedTheme,
+            time: outline.initialTime || "Day 1",
+            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
+            language,
+            customContext,
+            seedImageId,
+            narrativeScale: outline.narrativeScale,
+          });
+          writeOutlineFile(vfsSession, outline);
+          clearOutlineProgress(vfsSession);
+          writeConversationIndex(vfsSession, {
+            activeForkId: 0,
+            activeTurnId: "fork-0/turn-0",
+            rootTurnIdByFork: { "0": "fork-0/turn-0" },
+            latestTurnNumberByFork: { "0": 0 },
+            turnOrderByFork: { "0": ["fork-0/turn-0"] },
+          });
+          writeTurnFile(vfsSession, 0, 0, {
+            turnId: "fork-0/turn-0",
+            forkId: 0,
+            turnNumber: 0,
+            parentTurnId: null,
+            createdAt: Date.now(),
+            userAction: "",
+            assistant: {
+              narrative: outline.openingNarrative?.narrative || "",
+              choices: outline.openingNarrative?.choices || [],
+              narrativeTone: outline.openingNarrative?.narrativeTone,
+              atmosphere: outline.openingNarrative?.atmosphere,
+              ending: outline.openingNarrative?.ending,
+              forceEnd: outline.openingNarrative?.forceEnd,
+            },
+          });
           await saveToSlot(slotId, nextState);
           console.log("[StartNewGame] Outline checkpoint saved successfully");
         } catch (e) {
@@ -662,7 +705,7 @@ export const useGameEngine = () => {
           }
 
           // Create the first segment directly from openingNarrative
-          const firstNodeId = `model-opening-${Date.now()}`;
+          const firstNodeId = "model-fork-0/turn-0";
 
           // Determine atmosphere - use openingNarrative.atmosphere if provided, otherwise use initialAtmosphere
           const openingAtmosphere = openingNarrative.atmosphere
@@ -713,7 +756,7 @@ export const useGameEngine = () => {
             currentFork: [firstNode],
             isProcessing: false,
             initialPrompt: fallbackPrompt, // Keep for backward compatibility with retry
-            turnNumber: 1,
+            turnNumber: 0,
             atmosphere: openingAtmosphere,
           }));
 
@@ -881,6 +924,7 @@ export const useGameEngine = () => {
               outlineConversation: conversationState,
             };
             setGameState(updatedState);
+            writeOutlineProgress(vfsSession, conversationState);
             await saveToSlot(currentSlotId!, updatedState);
             console.log(
               `[ResumeOutline] Saved conversation state at phase ${conversationState.currentPhase}`,
@@ -986,6 +1030,40 @@ export const useGameEngine = () => {
 
       // Save checkpoint
       setTimeout(async () => {
+        seedVfsSessionFromOutline(vfsSession, outline, {
+          theme,
+          time: outline.initialTime || "Day 1",
+          currentLocation: outline.locations?.[0]?.name || "Unknown",
+          atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
+          language: savedConversation.language,
+          customContext,
+          narrativeScale: outline.narrativeScale,
+        });
+        writeOutlineFile(vfsSession, outline);
+        clearOutlineProgress(vfsSession);
+        writeConversationIndex(vfsSession, {
+          activeForkId: 0,
+          activeTurnId: "fork-0/turn-0",
+          rootTurnIdByFork: { "0": "fork-0/turn-0" },
+          latestTurnNumberByFork: { "0": 0 },
+          turnOrderByFork: { "0": ["fork-0/turn-0"] },
+        });
+        writeTurnFile(vfsSession, 0, 0, {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: Date.now(),
+          userAction: "",
+          assistant: {
+            narrative: outline.openingNarrative?.narrative || "",
+            choices: outline.openingNarrative?.choices || [],
+            narrativeTone: outline.openingNarrative?.narrativeTone,
+            atmosphere: outline.openingNarrative?.atmosphere,
+            ending: outline.openingNarrative?.ending,
+            forceEnd: outline.openingNarrative?.forceEnd,
+          },
+        });
         await saveToSlot(currentSlotId!, nextState);
         console.log("[ResumeOutline] Outline checkpoint saved");
       }, 50);
@@ -1004,7 +1082,7 @@ export const useGameEngine = () => {
           }
 
           // Create the first segment directly from openingNarrative
-          const firstNodeId = `model-opening-${Date.now()}`;
+          const firstNodeId = "model-fork-0/turn-0";
 
           // Determine atmosphere
           const openingAtmosphere = openingNarrative.atmosphere
@@ -1056,7 +1134,7 @@ export const useGameEngine = () => {
             currentFork: [firstNode],
             isProcessing: false,
             initialPrompt: fallbackPrompt,
-            turnNumber: 1,
+            turnNumber: 0,
             atmosphere: openingAtmosphere,
           }));
 
@@ -1082,6 +1160,7 @@ export const useGameEngine = () => {
         console.log(
           "[ResumeOutline] History corrupted - clearing saved conversation state",
         );
+        clearOutlineProgress(vfsSession);
       }
 
       const resumeErrorMsg = isHistoryCorrupted

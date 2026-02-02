@@ -13,17 +13,7 @@ import type {
 import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
-import {
-  SEARCH_TOOL,
-  FINISH_TURN_TOOL,
-  COMPLETE_FORCE_UPDATE_TOOL,
-  OVERRIDE_OUTLINE_TOOL,
-  QUERY_STORY_TOOL,
-  QUERY_TURN_TOOL,
-  ACTIVATE_SKILL_TOOL,
-  LIST_TOOL,
-  findTools,
-} from "../../../tools";
+import { ALL_DEFINED_TOOLS } from "../../../tools";
 
 // ============================================================================
 // Types
@@ -67,7 +57,7 @@ export function createLoopState(
   const accumulatedResponse = createEmptyResponse();
   const isRAGEnabled = settings.embedding?.enabled ?? false;
   const activeTools = createInitialTools(isSudoMode, isRAGEnabled);
-  const finishToolName = isSudoMode ? "complete_force_update" : "finish_turn";
+  const finishToolName = "vfs_write";
 
   return {
     vfsSession,
@@ -107,29 +97,9 @@ export function createInitialTools(
   isSudoMode: boolean,
   isRAGEnabled: boolean,
 ): ZodToolDefinition[] {
-  const tools: ZodToolDefinition[] = [
-    SEARCH_TOOL,
-    LIST_TOOL,
-    ACTIVATE_SKILL_TOOL,
-    isSudoMode ? COMPLETE_FORCE_UPDATE_TOOL : FINISH_TURN_TOOL,
-    QUERY_STORY_TOOL,
-    QUERY_TURN_TOOL,
-  ];
-
-  // Add override_outline tool only in sudo mode
-  if (isSudoMode) {
-    tools.push(OVERRIDE_OUTLINE_TOOL);
-  }
-
-  // Add RAG tool if enabled
-  if (isRAGEnabled) {
-    const ragTools = findTools("query", "rag_search");
-    if (ragTools.length > 0) {
-      tools.push(ragTools[0]);
-    }
-  }
-
-  return tools;
+  void isSudoMode;
+  void isRAGEnabled;
+  return [...ALL_DEFINED_TOOLS];
 }
 
 /**

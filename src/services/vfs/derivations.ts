@@ -17,6 +17,7 @@ import type { StorySegment } from "@/types";
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
 import { readConversationIndex, readTurnFile } from "./conversation";
+import { readOutlineFile, readOutlineProgress } from "./outline";
 
 const DEFAULT_FORK_TREE = {
   nodes: {
@@ -152,22 +153,30 @@ const deriveConversationNodes = (
       ? `model-${turn.parentTurnId}`
       : null;
 
-    nodes[userId] = {
-      id: userId,
-      parentId: parentModelId,
-      text: turn.userAction,
-      choices: [],
-      imagePrompt: "",
-      role: "user",
-      timestamp: turn.createdAt,
-      segmentIdx,
-      ending: "continue",
-    };
-    segmentIdx += 1;
+    const hasUserAction =
+      typeof turn.userAction === "string" && turn.userAction.trim().length > 0;
+
+    let modelParentId = parentModelId;
+
+    if (hasUserAction) {
+      nodes[userId] = {
+        id: userId,
+        parentId: parentModelId,
+        text: turn.userAction,
+        choices: [],
+        imagePrompt: "",
+        role: "user",
+        timestamp: turn.createdAt,
+        segmentIdx,
+        ending: "continue",
+      };
+      segmentIdx += 1;
+      modelParentId = userId;
+    }
 
     nodes[modelId] = {
       id: modelId,
-      parentId: userId,
+      parentId: modelParentId,
       text: turn.assistant.narrative || "",
       choices: turn.assistant.choices || [],
       imagePrompt: "",
@@ -225,6 +234,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         atmosphere?: AtmosphereObject;
         turnNumber?: number;
         forkId?: number;
+        language?: string;
+        customContext?: string;
+        seedImageId?: string;
+        narrativeScale?: GameState["narrativeScale"];
       };
       if (typeof globalData.time === "string") {
         state.time = globalData.time;
@@ -243,6 +256,18 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       }
       if (typeof globalData.forkId === "number") {
         state.forkId = globalData.forkId;
+      }
+      if (typeof globalData.language === "string") {
+        state.language = globalData.language;
+      }
+      if (typeof globalData.customContext === "string") {
+        state.customContext = globalData.customContext;
+      }
+      if (typeof globalData.seedImageId === "string") {
+        state.seedImageId = globalData.seedImageId;
+      }
+      if (typeof globalData.narrativeScale === "string") {
+        state.narrativeScale = globalData.narrativeScale;
       }
       continue;
     }
@@ -302,6 +327,25 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   }
   if (conversation.latestTurnNumber !== null) {
     state.turnNumber = conversation.latestTurnNumber;
+  }
+
+  const outlineProgress = readOutlineProgress(files);
+  if (outlineProgress) {
+    state.outlineConversation = outlineProgress;
+    if (outlineProgress.language) {
+      state.language = outlineProgress.language;
+    }
+    if (outlineProgress.customContext) {
+      state.customContext = outlineProgress.customContext;
+    }
+  }
+
+  const outline = readOutlineFile(files);
+  if (outline) {
+    state.outline = outline;
+    if ((outline as any).narrativeScale) {
+      state.narrativeScale = (outline as any).narrativeScale;
+    }
   }
 
   return state;

@@ -44,7 +44,7 @@ ${toneSection}
 <markdown_formatting>
   **NARRATIVE MARKDOWN RULES**
 
-  The \`narrative\` field in \`finish_turn\` is rendered as Markdown. Follow these rules STRICTLY:
+  The \`assistant.narrative\` field in the turn file is rendered as Markdown. Follow these rules STRICTLY:
 
   <allowed_formatting>
     **ALLOWED ELEMENTS:**
@@ -146,7 +146,7 @@ ${toneSection}
   </paragraph_structure>
 
   <quality_checklist>
-    Before calling finish_turn, verify narrative formatting:
+    Before writing the turn files, verify narrative formatting:
     1. ✓ No code blocks or triple backticks
     2. ✓ No bullet/numbered lists
     3. ✓ No headers (#)

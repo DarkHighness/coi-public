@@ -81,4 +81,13 @@ describe("toolCallProcessor VFS integration", () => {
     const response = buildResponseFromVfs(session);
     expect(response?.narrative).toBe("hello");
   });
+
+  it("initial tools are vfs-only", () => {
+    const gameState = deriveGameStateFromVfs({});
+    const loopState = createLoopState(gameState, DEFAULTS, false);
+
+    expect(
+      loopState.activeTools.every((tool) => tool.name.startsWith("vfs_")),
+    ).toBe(true);
+  });
 });

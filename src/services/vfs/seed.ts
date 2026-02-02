@@ -1,4 +1,5 @@
 import type {
+  AtmosphereObject,
   CausalChain,
   Faction,
   GameState,
@@ -7,6 +8,7 @@ import type {
   Location,
   NPC,
   Quest,
+  StoryOutline,
   TimelineEvent,
 } from "@/types";
 import { DEFAULT_CHARACTER } from "@/utils/constants";
@@ -101,4 +103,48 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     userAction: "",
     assistant: { narrative: "", choices: [] },
   });
+};
+
+export const seedVfsSessionFromOutline = (
+  session: VfsSession,
+  outline: StoryOutline,
+  options: {
+    theme: string;
+    time: string;
+    currentLocation: string;
+    atmosphere: AtmosphereObject;
+    language?: string;
+    customContext?: string;
+    seedImageId?: string;
+    narrativeScale?: GameState["narrativeScale"];
+  },
+): void => {
+  writeJson(session, "world/global.json", {
+    time: options.time,
+    theme: options.theme,
+    currentLocation: options.currentLocation,
+    atmosphere: options.atmosphere,
+    turnNumber: 0,
+    forkId: 0,
+    language: options.language,
+    customContext: options.customContext,
+    seedImageId: options.seedImageId,
+    narrativeScale: options.narrativeScale,
+  });
+
+  if (outline.character) {
+    writeJson(session, "world/character.json", outline.character);
+  }
+
+  writeEntities(session, "world/inventory", outline.inventory as InventoryItem[]);
+  writeEntities(session, "world/npcs", outline.npcs as NPC[]);
+  writeEntities(session, "world/quests", outline.quests as Quest[]);
+  writeEntities(session, "world/locations", outline.locations as Location[]);
+  writeEntities(
+    session,
+    "world/knowledge",
+    outline.knowledge as KnowledgeEntry[],
+  );
+  writeEntities(session, "world/factions", outline.factions as Faction[]);
+  writeEntities(session, "world/timeline", outline.timeline as TimelineEvent[]);
 };

@@ -109,4 +109,72 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.activeNodeId).toContain("fork-0/turn-1");
     expect(state.currentFork.length).toBeGreaterThan(0);
   });
+
+  it("derives outline progress and outline data", () => {
+    const files: VfsFileMap = {
+      "current/outline/progress.json": makeJsonFile(
+        "current/outline/progress.json",
+        {
+          conversation: {
+            theme: "fantasy",
+            language: "en",
+            customContext: "test",
+            conversationHistory: [],
+            partial: {},
+            currentPhase: 3,
+          },
+          savedAt: 10,
+        },
+      ),
+      "current/outline/outline.json": makeJsonFile(
+        "current/outline/outline.json",
+        {
+          title: "Outline Title",
+          premise: "Outline premise.",
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.outlineConversation?.currentPhase).toBe(3);
+    expect(state.outline?.title).toBe("Outline Title");
+    expect(state.language).toBe("en");
+    expect(state.customContext).toBe("test");
+  });
+
+  it("omits empty user nodes for root turns", () => {
+    const files: VfsFileMap = {
+      "current/conversation/index.json": makeJsonFile(
+        "current/conversation/index.json",
+        {
+          activeForkId: 0,
+          activeTurnId: "fork-0/turn-0",
+          rootTurnIdByFork: { "0": "fork-0/turn-0" },
+          latestTurnNumberByFork: { "0": 0 },
+          turnOrderByFork: { "0": ["fork-0/turn-0"] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-0.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-0.json",
+        {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: 1,
+          userAction: "",
+          assistant: { narrative: "hello", choices: [] },
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    const hasEmptyUser = Object.values(state.nodes).some(
+      (node) => node.role === "user" && node.text.trim() === "",
+    );
+    expect(hasEmptyUser).toBe(false);
+    expect(state.nodes["model-fork-0/turn-0"]).toBeTruthy();
+  });
 });

@@ -11,9 +11,5 @@ export const consequences = (): string => `
     * Kindness breeds loyalty that may save a life.
     * **No "Reset"**: Scars do not fade. Dead is dead. You cannot undo a massacre.
 
-  <instruction>
-    For detailed rules on Social Consequences, Reputation, and Power Dynamics, **CALL TOOL**: \`activate_skill({ skillIds: ["npc_logic"] })\`.
-    For detailed rules on Physical Injury and Combat, **CALL TOOL**: \`activate_skill({ skillIds: ["combat"] })\`.
-  </instruction>
 </rule>
 `;

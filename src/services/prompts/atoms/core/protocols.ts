@@ -52,11 +52,11 @@ const errorRecovery = `
   **Mandatory Steps**:
   1. Read the error message carefully
   2. Look for "Did you mean: ...?" suggestions
-  3. Retry with corrected arguments OR query to find correct ID
-  4. Do NOT call finish_turn while errors remain unhandled
+  3. Retry with corrected arguments OR search files to find correct IDs
+  4. Do NOT write turn files while errors remain unhandled
 
   **Self-Correction**:
-  - If NOT_FOUND, use list_* or query_* to find the correct entity
+  - If NOT_FOUND, use \`vfs_search\`/\`vfs_grep\` to find the correct entity file
   - If VALIDATION_ERROR, check the required fields and types
   - If you cannot fix, explain in narrative why
 </error_recovery_protocol>
@@ -70,16 +70,16 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least call finish_turn. Ideally: query → update → finish.
+  At least write the turn files. Ideally: inspect → update → write turn files.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)
   - ❌ Response with only thinking (no tool calls)
   - ❌ Empty response
 
-  **Query Tools Are Free**:
-  Call query_* and list_* as many times as needed.
-  Before add_*, always query_* first to prevent duplicates.
+  **Inspection Tools Are Free**:
+  Call \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\` as many times as needed.
+  Before writing new entity files, always search first to prevent duplicates.
 </tool_protocol>
 `;
 

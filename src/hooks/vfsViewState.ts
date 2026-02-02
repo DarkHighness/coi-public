@@ -38,9 +38,11 @@ const mergeNodes = (
 export const mergeDerivedViewState = (
   base: GameState,
   derived: GameState,
+  options?: { resetRuntime?: boolean },
 ): GameState => {
   const mergedNodes = mergeNodes(base.nodes, derived.nodes);
   const activeNodeId = derived.activeNodeId;
+  const resetRuntime = options?.resetRuntime === true;
 
   return {
     ...derived,
@@ -49,24 +51,25 @@ export const mergeDerivedViewState = (
     uiState: base.uiState,
     summaries: base.summaries,
     lastSummarizedIndex: base.lastSummarizedIndex,
-    outline: base.outline,
-    outlineConversation: base.outlineConversation,
-    themeConfig: base.themeConfig,
-    customContext: base.customContext,
-    language: base.language,
+    outline: derived.outline ?? base.outline,
+    outlineConversation:
+      derived.outlineConversation ?? base.outlineConversation,
+    themeConfig: derived.themeConfig ?? base.themeConfig,
+    customContext: derived.customContext ?? base.customContext,
+    language: derived.language || base.language,
     customRules: base.customRules,
     notes: base.notes,
     playerProfile: base.playerProfile,
-    narrativeScale: base.narrativeScale,
-    seedImageId: base.seedImageId,
+    narrativeScale: derived.narrativeScale ?? base.narrativeScale,
+    seedImageId: derived.seedImageId ?? base.seedImageId,
     initialPrompt: base.initialPrompt,
-    veoScript: base.veoScript,
+    veoScript: derived.veoScript ?? base.veoScript,
     tokenUsage: base.tokenUsage,
     logs: base.logs,
-    isProcessing: base.isProcessing,
-    isImageGenerating: base.isImageGenerating,
-    generatingNodeId: base.generatingNodeId,
-    error: base.error,
+    isProcessing: resetRuntime ? false : base.isProcessing,
+    isImageGenerating: resetRuntime ? false : base.isImageGenerating,
+    generatingNodeId: resetRuntime ? null : base.generatingNodeId,
+    error: resetRuntime ? null : base.error,
     godMode: base.godMode,
     unlockMode: base.unlockMode,
   };

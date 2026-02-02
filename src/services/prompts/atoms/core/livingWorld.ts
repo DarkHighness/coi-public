@@ -145,7 +145,6 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
   <social_fabric>
     **SOCIETY BREATHES**:
     - **Class Hierarchy**: Nobles sneer at merchants. Merchants bribe officials.
-    - **Details**: For deep social simulation, **CALL TOOL**: \`activate_skill({ skillIds: ["npc_logic"] })\`.
   </social_fabric>
 
   ${getIndifferenceContent(indifference)}

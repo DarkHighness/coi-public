@@ -108,7 +108,9 @@ export const useVfsPersistence = (
                 const derived = deriveGameStateFromVfs(
                   vfsSessionRef.current.snapshot(),
                 );
-                setGameState((prev) => mergeDerivedViewState(prev, derived));
+                setGameState((prev) =>
+                  mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+                );
                 setCurrentSlotId(lastSlotId);
               }
             }
@@ -227,7 +229,9 @@ export const useVfsPersistence = (
           const derived = deriveGameStateFromVfs(
             vfsSessionRef.current.snapshot(),
           );
-          setGameState((prev) => mergeDerivedViewState(prev, derived));
+          setGameState((prev) =>
+            mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+          );
         }
       }
       setCurrentSlotId(id);

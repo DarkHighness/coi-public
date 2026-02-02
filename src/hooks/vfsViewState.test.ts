@@ -72,6 +72,7 @@ describe("mergeDerivedViewState", () => {
       time: "Night 1, 22:00",
       turnNumber: 3,
       forkId: 2,
+      language: "fr",
     });
 
     const merged = mergeDerivedViewState(base, derived);
@@ -81,6 +82,23 @@ describe("mergeDerivedViewState", () => {
     expect(merged.turnNumber).toBe(3);
     expect(merged.forkId).toBe(2);
     expect(merged.uiState.feedLayout).toBe("cards");
-    expect(merged.language).toBe("en");
+    expect(merged.language).toBe("fr");
+  });
+
+  it("can reset runtime flags and prefer derived outline", () => {
+    const base = makeState({
+      error: "boom",
+      isProcessing: true,
+      outline: { title: "Old" } as any,
+    });
+    const derived = makeState({
+      outline: { title: "New" } as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived, { resetRuntime: true });
+
+    expect(merged.error).toBeNull();
+    expect(merged.isProcessing).toBe(false);
+    expect(merged.outline?.title).toBe("New");
   });
 });

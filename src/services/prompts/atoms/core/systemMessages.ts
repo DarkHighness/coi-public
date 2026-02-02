@@ -20,11 +20,13 @@ export const sudoModeInstruction: Atom<
 > = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
-2. Use \`search_tool\` to load any tools you need for state changes.
-3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn (e.g., update_inventory, update_npc, override_outline all at once).
+2. Use **VFS-only tools** (\`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\`, \`vfs_write\`, \`vfs_edit\`, \`vfs_move\`, \`vfs_delete\`).
+3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 4. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
-5. **FINISH LAST**: Call \`complete_force_update\` as your FINAL tool call with narrative describing the new reality and choices.
-   - ⚠️ CRITICAL: \`complete_force_update\` must be the LAST tool in your call sequence.
+5. **FINISH BY WRITING TURN FILES**: Your LAST tool call must write:
+   - \`current/conversation/turns/fork-<id>/turn-<n>.json\`
+   - \`current/conversation/index.json\`
+   Use \`vfs_write\` (or \`vfs_edit\` if replacing).
 `;
 
 /**
@@ -33,15 +35,16 @@ This is a **GM COMMAND**. You must:
 export const normalTurnInstruction: Atom<SystemMessageInput> = ({
   finishToolName,
 }) => `[SYSTEM: TOOL USAGE INSTRUCTION]
-You are in AGENTIC MODE.
-1. You have limited tools initially: \`search_tool\` and \`${finishToolName}\`.
-2. **SEARCH FIRST**: If you need to ADD, UPDATE, REMOVE, QUERY, or UNLOCK specific entities, use \`search_tool\` to load them.
-3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn to be efficient (e.g., query_inventory, update_npc, add_quest all at once).
-4. **USE TOOLS**: Once loaded, use the tools to modify the game state in parallel when possible.
-5. **FINISH LAST**: When done, use \`${finishToolName}\` as your FINAL tool call with narrative and choices.
-   - ⚠️ CRITICAL: \`${finishToolName}\` must be the LAST tool in your call sequence.
-6. **NO DUPLICATES**: Before adding new entities, check if similar ones exist. UPDATE existing entities instead of creating duplicates.
-7. **CAUSAL CHAINS**: If PENDING CONSEQUENCES are shown, use \`search_tool\` for 'update:causal_chain' to trigger them when conditions are met.
+You are in AGENTIC MODE (VFS-only).
+1. You may ONLY use \`vfs_*\` tools. No other tools exist.
+2. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\` before changing files.
+3. **STATE CHANGES = FILE CHANGES**: Update JSON under \`current/world/\` with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
+4. **FINISH BY WRITING TURN FILES**: Your LAST tool call must write:
+   - \`current/conversation/turns/fork-<id>/turn-<n>.json\`
+   - \`current/conversation/index.json\`
+5. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
+6. **NO DUPLICATES**: Check existing files before adding new entities.
+7. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update the relevant world files directly.
 `;
 
 /**
@@ -65,5 +68,5 @@ export const budgetStatusMessage: Atom<SystemMessageInput> = ({
 /**
  * No Tool Call Error Message
  */
-export const noToolCallError: Atom<SystemMessageInput> = ({ finishToolName }) =>
-  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one tool to progress. Use \`search_tool\` to load more state or \`${finishToolName}\` to finalize the narrative. Bare text is not allowed.`;
+export const noToolCallError: Atom<SystemMessageInput> = () =>
+  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then write or edit files with \`vfs_write\`/\`vfs_edit\` (including \`current/conversation/index.json\` and the current turn file). Bare text is not allowed.`;
