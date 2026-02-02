@@ -24,6 +24,7 @@ import type {
   ThemeConfig,
 } from "../types";
 import type { OutlinePhaseProgress } from "../services/aiService";
+import type { VfsSession } from "../services/vfs/vfsSession";
 
 // ============================================================================
 // Types
@@ -45,6 +46,8 @@ export interface GameEngineState {
   isTranslating: boolean;
   /** Main game state object */
   gameState: GameState;
+  /** VFS session (canonical state source) */
+  vfsSession: VfsSession;
   /** Whether auto-save is in progress */
   isAutoSaving: boolean;
   /** Current AI settings */
@@ -217,6 +220,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         language: engine.language,
         isTranslating: engine.isTranslating,
         gameState: engine.gameState,
+        vfsSession: engine.vfsSession,
         isAutoSaving: engine.isAutoSaving,
         aiSettings: engine.aiSettings,
         currentHistory: engine.currentHistory,

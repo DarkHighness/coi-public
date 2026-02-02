@@ -5,33 +5,27 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState } from "../types";
+import type { GameState, StorySegment } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
+import {
+  applyVfsStateEdit,
+  type EditableVfsSection,
+} from "./stateEditorUtils";
 import { getValidIcon } from "../utils/emojiValidator";
 import { deriveHistory } from "../utils/storyUtils";
-import { StorySegment } from "../types";
 
 interface StateEditorProps {
   isOpen: boolean;
   onClose: () => void;
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  vfsSession: VfsSession | null;
+  triggerSave: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
 
 // Sections available for editing
-type EditableSection =
-  | "character"
-  | "inventory"
-  | "npcs"
-  | "locations"
-  | "quests"
-  | "knowledge"
-  | "factions"
-  | "timeline"
-  | "causalChains"
-  | "global"
-  | "segments"
-  | "notes";
+type EditableSection = EditableVfsSection | "segments";
 
 const SECTION_CONFIGS: Record<
   EditableSection,
@@ -83,15 +77,15 @@ const SECTION_CONFIGS: Record<
     stateKey: "causalChains",
   },
   global: { icon: "🌍", labelKey: "stateEditor.global", stateKey: "global" },
+  outline: {
+    icon: "🧭",
+    labelKey: "stateEditor.outline",
+    stateKey: "outline",
+  },
   segments: {
     icon: "📄",
     labelKey: "stateEditor.segmentsList",
     stateKey: "segments",
-  },
-  notes: {
-    icon: "📝",
-    labelKey: "stateEditor.notes",
-    stateKey: "notes",
   },
 };
 
@@ -100,6 +94,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   onClose,
   gameState,
   setGameState,
+  vfsSession,
+  triggerSave,
   onShowToast,
 }) => {
   const { t } = useTranslation();
@@ -108,6 +104,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [jsonText, setJsonText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [allowOutlineEdit, setAllowOutlineEdit] = useState(false);
+
+  const canEditOutline = gameState.godMode || allowOutlineEdit;
+  const isReadOnly =
+    activeSection === "segments" ||
+    (activeSection === "outline" && !canEditOutline);
 
   // Segment Viewer State
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
@@ -139,15 +141,21 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         atmosphere: gameState.atmosphere,
         theme: gameState.theme,
         currentLocation: gameState.currentLocation,
-        godMode: gameState.godMode,
-        unlockMode: gameState.unlockMode,
         turnNumber: gameState.turnNumber,
+        forkId: gameState.forkId,
+        language: gameState.language,
+        customContext: gameState.customContext,
+        seedImageId: gameState.seedImageId,
+        narrativeScale: gameState.narrativeScale,
       };
     }
     if (section === "segments") {
       // Return the selected segment's data
       if (!selectedSegmentId) return null;
       return gameState.nodes[selectedSegmentId] || null;
+    }
+    if (section === "outline") {
+      return gameState.outline;
     }
     return gameState[SECTION_CONFIGS[section].stateKey as keyof GameState];
   };
@@ -162,10 +170,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
   }, [isOpen, activeSection, gameState, selectedSegmentId]); // Add selectedSegmentId dependency
 
+  useEffect(() => {
+    if (!isOpen) {
+      setAllowOutlineEdit(false);
+    }
+  }, [isOpen]);
+
   // Validate JSON on change
   const handleJsonChange = (value: string) => {
-    // Read-only check
-    if (activeSection === "segments") return;
+    if (isReadOnly) return;
 
     setJsonText(value);
     setHasChanges(true);
@@ -179,7 +192,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Apply changes to GameState
   const handleApply = () => {
-    if (activeSection === "segments") return; // Read-only
+    if (isReadOnly) return;
 
     if (error) {
       onShowToast?.(
@@ -189,30 +202,25 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
+    if (!vfsSession) {
+      onShowToast?.(
+        t("stateEditor.applyFailed") || "VFS session unavailable",
+        "error",
+      );
+      return;
+    }
+
     try {
       const parsed = JSON.parse(jsonText);
-
-      setGameState((prev) => {
-        if (activeSection === "global") {
-          return {
-            ...prev,
-            time: parsed.time ?? prev.time,
-            atmosphere: parsed.atmosphere ?? prev.atmosphere,
-            theme: parsed.theme ?? prev.theme,
-            currentLocation: parsed.currentLocation ?? prev.currentLocation,
-            godMode: parsed.godMode ?? prev.godMode,
-            unlockMode: parsed.unlockMode ?? prev.unlockMode,
-            turnNumber: parsed.turnNumber ?? prev.turnNumber,
-          };
-        }
-
-        const stateKey = SECTION_CONFIGS[activeSection]
-          .stateKey as keyof GameState;
-        return {
-          ...prev,
-          [stateKey]: parsed,
-        };
+      const nextState = applyVfsStateEdit({
+        session: vfsSession,
+        section: activeSection as EditableVfsSection,
+        data: parsed,
+        baseState: gameState,
+        options: { allowOutlineEdit: canEditOutline },
       });
+      setGameState(nextState);
+      triggerSave();
 
       setHasChanges(false);
       onShowToast?.(
@@ -237,7 +245,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   // Format/prettify JSON
   const handleFormat = () => {
-    if (activeSection === "segments") return; // Read-only (already formatted on load)
+    if (isReadOnly) return; // Read-only (already formatted on load)
     try {
       const parsed = JSON.parse(jsonText);
       setJsonText(JSON.stringify(parsed, null, 2));
@@ -251,8 +259,6 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const lineCount = useMemo(() => jsonText.split("\n").length, [jsonText]);
 
   if (!isOpen) return null;
-
-  const isReadOnly = activeSection === "segments";
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
@@ -349,6 +355,20 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2 flex-none">
+                {activeSection === "outline" && !gameState.godMode && (
+                  <label className="flex items-center gap-2 text-xs text-theme-muted">
+                    <input
+                      type="checkbox"
+                      checked={allowOutlineEdit}
+                      onChange={(e) => setAllowOutlineEdit(e.target.checked)}
+                      className="accent-theme-primary"
+                    />
+                    <span>
+                      {t("stateEditor.allowOutlineEdit") ||
+                        "Allow /sudo outline edit"}
+                    </span>
+                  </label>
+                )}
                 {!isReadOnly && (
                   <button
                     onClick={handleFormat}

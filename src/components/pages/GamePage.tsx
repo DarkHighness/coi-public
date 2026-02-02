@@ -115,6 +115,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     currentSlotId,
     failedImageNodes,
     themeFont: engineThemeFont,
+    vfsSession,
   } = engineState;
 
   // Use override font if provided (debug), otherwise usage engine state
@@ -608,6 +609,8 @@ export const GamePage: React.FC<GamePageProps> = ({
             onClose={() => setIsStateEditorOpen(false)}
             gameState={gameState}
             setGameState={setGameState}
+            vfsSession={vfsSession}
+            triggerSave={triggerSave}
             onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}

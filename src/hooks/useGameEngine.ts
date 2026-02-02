@@ -1834,5 +1834,6 @@ export const useGameEngine = () => {
     triggerSave,
     failedImageNodes,
     refreshSlots,
+    vfsSession,
   };
 };
