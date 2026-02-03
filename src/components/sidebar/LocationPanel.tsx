@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { DetailedListModal } from "../DetailedListModal";
+import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -49,6 +50,8 @@ const LocationItem: React.FC<LocationItemProps> = ({
   isPinned,
   t,
 }) => {
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const isExpanded = expandedLocations.has(item.name);
   const locationData = item.data;
   const isCurrent = item.isCurrent;
@@ -58,10 +61,15 @@ const LocationItem: React.FC<LocationItemProps> = ({
     locationData.highlight || false,
   );
 
+  useEffect(() => {
+    setIsHighlight(locationData.highlight || false);
+  }, [locationData.highlight]);
+
   const handleToggle = () => {
     onLocationClick(item.name);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({ kind: "locations", id: item.id });
     }
   };
 

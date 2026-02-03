@@ -34,6 +34,8 @@ export const useVfsPersistence = (
   const isSavingRef = useRef(false);
   const vfsStoreRef = useRef(new IndexedDbVfsStore());
   const vfsSessionRef = useRef(new VfsSession());
+  const isRestoringRef = useRef(false);
+  const uiStateSaveTimeoutRef = useRef<number | null>(null);
   const { t } = useTranslation();
 
   const latestSlotId = useMemo(() => {
@@ -41,6 +43,58 @@ export const useVfsPersistence = (
     const sorted = [...saveSlots].sort((a, b) => b.timestamp - a.timestamp);
     return sorted[0].id;
   }, [saveSlots]);
+
+  const mergeUiState = useCallback(
+    (
+      base: GameState["uiState"],
+      stored: unknown,
+    ): GameState["uiState"] => {
+      const isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null;
+
+      const isStringArray = (value: unknown): value is string[] =>
+        Array.isArray(value) && value.every((entry) => typeof entry === "string");
+
+      const isListState = (
+        value: unknown,
+      ): value is { pinnedIds: string[]; customOrder: string[]; hiddenIds?: string[] } => {
+        if (!isRecord(value)) return false;
+        if (!isStringArray(value.pinnedIds)) return false;
+        if (!isStringArray(value.customOrder)) return false;
+        if (value.hiddenIds !== undefined && !isStringArray(value.hiddenIds))
+          return false;
+        return true;
+      };
+
+      if (!isRecord(stored)) {
+        return base;
+      }
+
+      const sections = ["inventory", "locations", "npcs", "knowledge", "quests"] as const;
+      const merged: GameState["uiState"] = { ...base };
+
+      for (const section of sections) {
+        const incoming = (stored as Record<string, unknown>)[section];
+        if (!isListState(incoming)) {
+          continue;
+        }
+        merged[section] = {
+          ...base[section],
+          ...incoming,
+        };
+      }
+
+      for (const key of Object.keys(stored)) {
+        if (sections.includes(key as (typeof sections)[number])) {
+          continue;
+        }
+        (merged as any)[key] = (stored as any)[key];
+      }
+
+      return merged;
+    },
+    [],
+  );
 
   const triggerSave = useCallback(() => {
     setTriggerSaveCount((prev) => prev + 1);
@@ -156,6 +210,7 @@ export const useVfsPersistence = (
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        isRestoringRef.current = true;
         await sessionManager.initialize();
 
         const inferSlotsIfMissing = async (): Promise<SaveSlot[]> => {
@@ -300,8 +355,15 @@ export const useVfsPersistence = (
               const derived = deriveGameStateFromVfs(
                 vfsSessionRef.current.snapshot(),
               );
+              const storedUiState = await loadMetadata(
+                `ui_state:${lastSlotId}`,
+              );
               setGameState((prev) =>
-                mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+                mergeDerivedViewState(
+                  { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
+                  derived,
+                  { resetRuntime: true },
+                ),
               );
               setCurrentSlotId(lastSlotId);
 
@@ -378,11 +440,13 @@ export const useVfsPersistence = (
       } catch (error: any) {
         console.error("Failed to load saves from IndexedDB", error);
         setPersistenceError(error?.message || "Unknown IndexedDB error");
+      } finally {
+        isRestoringRef.current = false;
       }
     };
 
     loadInitialData();
-  }, [setGameState]);
+  }, [mergeUiState, setGameState]);
 
   // Persist current slot ID
   useEffect(() => {
@@ -395,6 +459,37 @@ export const useVfsPersistence = (
     };
     saveCurrentSlot();
   }, [currentSlotId]);
+
+  // Persist UI state per save slot (sorting/pins/collapsed widths, etc.)
+  useEffect(() => {
+    if (isRestoringRef.current) {
+      return;
+    }
+    if (view !== "game" || !currentSlotId) {
+      return;
+    }
+
+    if (uiStateSaveTimeoutRef.current) {
+      window.clearTimeout(uiStateSaveTimeoutRef.current);
+      uiStateSaveTimeoutRef.current = null;
+    }
+
+    uiStateSaveTimeoutRef.current = window.setTimeout(() => {
+      saveMetadata(`ui_state:${currentSlotId}`, gameState.uiState).catch(
+        (error) => {
+          console.error("[VFS Persistence] Failed to save UI state:", error);
+        },
+      );
+      uiStateSaveTimeoutRef.current = null;
+    }, 250);
+
+    return () => {
+      if (uiStateSaveTimeoutRef.current) {
+        window.clearTimeout(uiStateSaveTimeoutRef.current);
+        uiStateSaveTimeoutRef.current = null;
+      }
+    };
+  }, [currentSlotId, gameState.uiState, view]);
 
   // Auto-save on trigger
   useEffect(() => {
@@ -468,6 +563,7 @@ export const useVfsPersistence = (
     hasOutlineConversation?: boolean;
   }> => {
     try {
+      isRestoringRef.current = true;
       const latestMeta = await loadMetadata<{
         forkId?: unknown;
         turn?: unknown;
@@ -507,8 +603,13 @@ export const useVfsPersistence = (
         const derived = deriveGameStateFromVfs(
           vfsSessionRef.current.snapshot(),
         );
+        const storedUiState = await loadMetadata(`ui_state:${id}`);
         setGameState((prev) =>
-          mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+          mergeDerivedViewState(
+            { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
+            derived,
+            { resetRuntime: true },
+          ),
         );
       }
       setCurrentSlotId(id);
@@ -516,6 +617,8 @@ export const useVfsPersistence = (
     } catch (error) {
       console.error("[VFS Persistence] Failed to load slot:", error);
       return { success: false };
+    } finally {
+      isRestoringRef.current = false;
     }
   };
 

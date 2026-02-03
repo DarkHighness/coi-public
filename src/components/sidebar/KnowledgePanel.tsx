@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { KnowledgeEntry, ListState } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
+import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -59,13 +60,20 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   isEditMode,
   isDragging,
 }) => {
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isHighlight, setIsHighlight] = useState(k.highlight || false);
+
+  useEffect(() => {
+    setIsHighlight(k.highlight || false);
+  }, [k.highlight]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggle(k.id, isModal);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({ kind: "knowledge", id: k.id.toString() });
     }
   };
 

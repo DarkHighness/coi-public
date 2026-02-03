@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { InventoryItem as InventoryItemType } from "../types";
 import { getValidIcon } from "../utils/emojiValidator";
 import { MarkdownText } from "./render/MarkdownText";
+import { useOptionalGameEngineContext } from "../contexts/GameEngineContext";
 
 interface InventoryItemProps {
   item: InventoryItemType;
@@ -32,20 +33,30 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
   isDragging,
 }) => {
   const { t } = useTranslation();
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isOpen, setIsOpen] = useState(false);
   const [isHighlight, setIsHighlight] = useState(item.highlight || false);
 
   useEffect(() => {
     if (item.highlight) {
-      const timer = setTimeout(() => setIsHighlight(false), 3000);
+      setIsHighlight(true);
+      const timer = setTimeout(() => {
+        setIsHighlight(false);
+        clearHighlight?.({ kind: "inventory", id: item.id });
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [item.highlight]);
+    setIsHighlight(false);
+  }, [clearHighlight, item.highlight, item.id]);
 
   const handleClick = () => {
     if (!isEditMode) {
       setIsOpen(!isOpen);
-      setIsHighlight(false);
+      if (isHighlight || item.highlight) {
+        setIsHighlight(false);
+        clearHighlight?.({ kind: "inventory", id: item.id });
+      }
     }
   };
 

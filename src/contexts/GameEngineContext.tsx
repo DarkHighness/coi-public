@@ -141,6 +141,26 @@ export interface GameEngineActions {
   ) => Promise<void>;
   /** Update audio for a node */
   updateNodeAudio: (nodeId: string, audioUrl: string | null) => void;
+  /** Persistently clear a UI highlight flag */
+  clearHighlight: (
+    target:
+      | {
+          kind:
+            | "inventory"
+            | "npcs"
+            | "locations"
+            | "knowledge"
+            | "quests"
+            | "factions"
+            | "timeline";
+          id: string;
+        }
+      | {
+          kind: "characterSkills" | "characterConditions" | "characterTraits";
+          id?: string;
+          name?: string;
+        },
+  ) => void;
   /** Trigger manual save */
   triggerSave: () => void;
   /** Force update game state with AI */
@@ -254,6 +274,7 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         navigateToNode: engine.navigateToNode,
         generateImageForNode: engine.generateImageForNode,
         updateNodeAudio: engine.updateNodeAudio,
+        clearHighlight: engine.clearHighlight,
         triggerSave: engine.triggerSave,
         handleForceUpdate: engine.handleForceUpdate,
         cleanupEntities: engine.cleanupEntities,

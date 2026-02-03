@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CharacterStatus,
@@ -8,6 +8,7 @@ import {
 } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -242,13 +243,24 @@ const getStatusConfig = (condition: CharacterCondition) => {
 // Sub-component for individual skills to handle expansion state
 const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
   const { t } = useTranslation();
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(skill.highlight || false);
+
+  useEffect(() => {
+    setIsHighlight(skill.highlight || false);
+  }, [skill.highlight]);
 
   const handleClick = () => {
     setIsExpanded(!isExpanded);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({
+        kind: "characterSkills",
+        id: skill.id,
+        name: skill.name,
+      });
     }
   };
 
@@ -405,15 +417,26 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
   condition,
 }) => {
   const { t } = useTranslation();
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
 
   const { icon, accentBorder, accentText } = getStatusConfig(condition);
 
+  useEffect(() => {
+    setIsHighlight(condition.highlight || false);
+  }, [condition.highlight]);
+
   const handleClick = () => {
     setIsExpanded(!isExpanded);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({
+        kind: "characterConditions",
+        id: condition.id,
+        name: condition.name,
+      });
     }
   };
 
@@ -610,13 +633,24 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 // Sub-component for individual traits to handle expansion state
 const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
   const { t } = useTranslation();
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(trait.highlight || false);
+
+  useEffect(() => {
+    setIsHighlight(trait.highlight || false);
+  }, [trait.highlight]);
 
   const handleClick = () => {
     setIsExpanded(!isExpanded);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({
+        kind: "characterTraits",
+        id: trait.id,
+        name: trait.name,
+      });
     }
   };
 

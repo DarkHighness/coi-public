@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
 import { NPC, ListState, Location } from "../../types";
@@ -6,6 +6,7 @@ import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -63,16 +64,23 @@ const NpcItem: React.FC<NpcItemProps> = ({
   getAffinityColor,
   t,
 }) => {
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const isUnknown = rel.visible?.affinityKnown === false;
   const pinned = isPinned?.(rel.id) ?? false;
   const isDragging = draggedId === rel.id;
   const isExpanded = expandedItems.has(rel.id);
   const [isHighlight, setIsHighlight] = useState(rel.highlight || false);
 
+  useEffect(() => {
+    setIsHighlight(rel.highlight || false);
+  }, [rel.highlight]);
+
   const handleToggle = () => {
     onToggle(rel.id);
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({ kind: "npcs", id: rel.id.toString() });
     }
   };
 
