@@ -1771,6 +1771,28 @@ export const useGameEngine = () => {
     setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
     try {
+      if (!vfsSession) {
+        throw new Error("VFS session is not available");
+      }
+
+      // Cleanup is a maintenance action; preserve the story conversation files so
+      // it doesn't pollute the player's visible history or break retry semantics.
+      const baselineConversationFiles = (() => {
+        const snapshot = vfsSession.snapshot();
+        const baseline: Record<
+          string,
+          { content: string; contentType: (typeof snapshot)[string]["contentType"] }
+        > = {};
+
+        for (const [path, file] of Object.entries(snapshot)) {
+          if (path.startsWith("conversation/") || path.startsWith("current/conversation/")) {
+            baseline[path] = { content: file.content, contentType: file.contentType };
+          }
+        }
+
+        return baseline;
+      })();
+
       // Construct TurnContext
       const fullHistory = deriveHistory(
         gameStateRef.current.nodes,
@@ -1793,7 +1815,8 @@ export const useGameEngine = () => {
         themeKey: gameStateRef.current.theme,
         tFunc: t,
         settings: aiSettings,
-        slotId: currentSlotId || "default",
+        // Use a dedicated session id so cleanup doesn't overwrite story retry checkpoints.
+        slotId: `${currentSlotId || "default"}:cleanup`,
         vfsSession,
       };
 
@@ -1801,6 +1824,26 @@ export const useGameEngine = () => {
         gameStateRef.current,
         context,
       );
+
+      // Restore conversation files back to baseline, while keeping world/entity edits.
+      // This avoids appending a synthetic "[CLEANUP]" turn into story history.
+      const afterCleanupSnapshot = vfsSession.snapshot();
+      for (const path of Object.keys(afterCleanupSnapshot)) {
+        if (
+          (path.startsWith("conversation/") ||
+            path.startsWith("current/conversation/")) &&
+          !baselineConversationFiles[path]
+        ) {
+          try {
+            vfsSession.deleteFile(path);
+          } catch (error) {
+            console.warn("[Cleanup] Failed to delete conversation file:", path, error);
+          }
+        }
+      }
+      for (const [path, file] of Object.entries(baselineConversationFiles)) {
+        vfsSession.writeFile(path, file.content, file.contentType);
+      }
 
       // Add cleanup logs to game state
       if (logs && logs.length > 0) {
@@ -1810,7 +1853,7 @@ export const useGameEngine = () => {
         }));
       }
 
-      const vfsSnapshot = vfsSession?.snapshot() ?? {};
+      const vfsSnapshot = vfsSession.snapshot() ?? {};
       if (Object.keys(vfsSnapshot).length === 0) {
         throw new Error(
           "VFS snapshot is empty after cleanup. Ensure tools wrote state files.",

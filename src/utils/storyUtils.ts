@@ -59,12 +59,21 @@ export const getSegmentsForAI = (
     (seg) => (seg.segmentIdx ?? 0) >= lastSummarizedIndex,
   );
 
+  // If lastSummarizedIndex is beyond the end of the current segment list (common when
+  // the summary boundary is "one past" the last segmentIdx), keep a small overlap
+  // instead of returning the full history.
+  if (summaryPosition === -1) {
+    const safeFreshCount = Math.max(0, freshSegmentCount);
+    const startPosition = Math.max(0, segments.length - safeFreshCount);
+    return segments.slice(startPosition);
+  }
+
   if (summaryPosition <= 0) {
     // No summary yet or already at start, return all
     return segments;
   }
 
   // Calculate start position: keep freshSegmentCount segments before summary point
-  const startPosition = Math.max(0, summaryPosition - freshSegmentCount);
+  const startPosition = Math.max(0, summaryPosition - Math.max(0, freshSegmentCount));
   return segments.slice(startPosition);
 };
