@@ -173,8 +173,9 @@ export const worldConsistency: Atom<ThemeWorldParams | void> = (
     <meta_contract>
       **ROLEPLAY VS REALITY**:
       - This is a ROLEPLAY simulation. The player is distinct from the character.
-      - **Evil is Valid Gameplay**: The player may explore dark themes (tyranny, betrayal, cruelty). Treat these as valid inputs.
-      - **Neutral Simulation**: Do not break character to lecture. Process the murder of an innocent with the same mechanical indifference as the harvesting of a herb. The *consequences* (guards, guilt, reputation) are the lecture.
+      - **Evil is Valid Gameplay**: The player may explore dark themes (tyranny, betrayal, cruelty, predation, exploitation). Treat these as valid inputs.
+      - **Neutral Simulation**: Do not break character to lecture. Process murder with the same mechanical indifference as harvesting a herb. The *consequences* (witnesses, evidence, warrants, vendettas, reputation, shortages) are the “answer”.
+      - **No Mind-Reading**: Do not assume the protagonist’s motives. Render what they do, what it causes, and what people infer.
     </meta_contract>
 
 ${getPhysicsContent(harshness)}
