@@ -14,7 +14,7 @@ export const ragUsage: Atom<RAGUsageInput> = ({ ragEnabled }) => {
   return `
 <rag_usage>
   <instruction>
-    **WHEN TO USE \`rag_search_tool\`**:
+    **WHEN TO USE \`rag_search\`**:
     1. **Entity Re-encounter**: When the player encounters an NPC, Location, or Item that hasn't been mentioned recently.
     2. **Lore & History**: When the narrative touches on ancient history, legends, or specific world-building elements.
     3. **Specific Details**: When you need to know the specific color of an object, the exact wording of a past promise.

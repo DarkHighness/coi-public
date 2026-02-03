@@ -593,6 +593,155 @@ export const getThemeTranslation = (
   return tFunc(`${themeKey}.${field}`, { ns: "themes" });
 };
 
+export type NarrativeStylePreset =
+  | "theme"
+  | "cinematic"
+  | "literary"
+  | "noir"
+  | "brutal"
+  | "cozy"
+  | "cdrama"
+  | "minimal";
+
+export function extractXmlTagValue(
+  input: string | undefined,
+  tagName: string,
+): string | undefined {
+  if (!input) return undefined;
+  const re = new RegExp(`<${tagName}>\\s*([\\s\\S]*?)\\s*<\\/${tagName}>`, "i");
+  const match = input.match(re);
+  const value = match?.[1]?.trim();
+  return value ? value : undefined;
+}
+
+export function getNarrativeStylePresetText(
+  preset: NarrativeStylePreset,
+  language: string,
+): string | undefined {
+  if (preset === "theme") return undefined;
+
+  const isZh = language?.toLowerCase().startsWith("zh");
+
+  if (isZh) {
+    switch (preset) {
+      case "cinematic":
+        return "电影感：镜头调度清晰（站位/光线/动作路径），画面先于解释；用可见细节推紧张（脚步声、门缝光、手上血），段落像剪辑点；结尾留钩子，不写总结。";
+      case "literary":
+        return "文学向：句式有起伏但不飘；细节带气味与质地（潮气、锈、油烟、旧布），隐喻克制；暗示必须落在可观察证据上；冲突有余味，别急着解释完。";
+      case "noir":
+        return "黑色/侦探：冷、硬、压抑；对白带刺、带试探；线索靠观察与误导（烟灰、鞋底泥、账本缺页），人都在算账；城市脏，关系也脏。";
+      case "brutal":
+        return "冷硬残酷：后果写实，疼痛有重量（淤青、气喘、手抖、药钱、名声损耗）；权力与代价摆台面（税、告密、欠债、保护费）；不讲“命运”，也不替玩家找借口。";
+      case "cozy":
+        return "温情日常：慢一点，但细节要真（饭味、灯火、手上茧、零钱）；人情与小心思靠动作/停顿/话里话外呈现；冲突更贴身（钱、面子、关系、误会），不靠大场面。";
+      case "cdrama":
+        return "中式短剧/简单恋爱：节奏快、情绪点明确（误会/抓包/告白/反转），场景短、切换利落；台词直给但有钩子（“你到底想要什么？”“我只要你一句话。”）；少解释，多用动作与小道具（戒指、手机、病历、转账截图）推进；结尾留悬念或下一步冲突；绝不写主角心理，主角=玩家。";
+      case "minimal":
+        return "极简：短句为主，信息密度高；只写关键动作/细节/后果；每段都推动局势；少形容词，多动词；留白靠事实，不靠玄乎。";
+      default:
+        return undefined;
+    }
+  }
+
+  switch (preset) {
+    case "cinematic":
+      return "Cinematic: clear blocking (who stands where, light, motion), image-first, tension via concrete tells (footsteps, thin light, blood on knuckles); paragraph breaks like cuts; end on a hook, not a recap.";
+    case "literary":
+      return "Literary: varied rhythm without purple prose; tactile specificity (rust, damp, grease, old cloth); restrained metaphor; implications must rest on observable evidence; leave an aftertaste instead of wrapping everything up.";
+    case "noir":
+      return "Noir: cold, hard, morally stained; barbed dialogue with subtext; clues via observation and misdirection (ash, mud, missing pages); everyone is calculating; the city (and people) are not clean.";
+    case "brutal":
+      return "Brutal realism: consequences have weight; pain is specific (breath, bruises, shaking hands, bills); power and price are explicit (tax, debt, snitches, protection money); no fate-talk, no softening.";
+    case "cozy":
+      return "Cozy slice-of-life: slower pace but sharp texture (food smell, lamplight, small change, calluses); subtext via action/dialogue pauses; conflicts are intimate and practical (money, face, relationships).";
+    case "cdrama":
+      return "C-drama short-form / simple romance: fast, punchy beats (misunderstanding, caught-in-the-act, confession, reversal); short scenes and clean cut points; direct lines with a hook; push plot via actions and small props (ring, phone, medical report, transfer screenshot); end on a cliffhanger; never narrate the protagonist's inner life (player = protagonist).";
+    case "minimal":
+      return "Minimal: short sentences, high signal; key actions/details/consequences only; fewer adjectives, more verbs; every paragraph advances the situation.";
+    default:
+      return undefined;
+  }
+}
+
+export type WorldDispositionPreset = "theme" | "benevolent" | "mixed" | "cynical";
+
+export function getWorldDispositionPresetText(
+  preset: WorldDispositionPreset,
+  language: string,
+): string | undefined {
+  if (preset === "theme") return undefined;
+
+  const isZh = language?.toLowerCase().startsWith("zh");
+
+  if (isZh) {
+    switch (preset) {
+      case "benevolent":
+        return "人性本善（基线偏善）：善意与纯爱并不罕见；互相帮助不一定要回报；恶人也存在，但不会“全世界都在算计你”。";
+      case "mixed":
+        return "善恶并存（现实中间值）：有人真心，有人算计；善意可能无条件，也可能带交换；让行为与代价说话，不要预设结论。";
+      case "cynical":
+        return "犬儒/交易社会（基线偏冷）：善意更常带条件或成本；人际多算计、更多试探；但仍允许少数真心与纯爱，且往往更昂贵、更冒险。";
+      default:
+        return undefined;
+    }
+  }
+
+  switch (preset) {
+    case "benevolent":
+      return "Benevolent baseline: kindness and sincere love are not rare; help does not always demand repayment; evil exists, but the whole world isn't out to get you.";
+    case "mixed":
+      return "Mixed baseline: people range from sincere to calculating; kindness can be unconditional or transactional; let behavior and cost reveal which.";
+    case "cynical":
+      return "Cynical baseline: kindness more often has strings attached; relationships involve leverage and testing; still allow pockets of sincerity and pure love, usually at real cost.";
+    default:
+      return undefined;
+  }
+}
+
+export function resolveWorldDisposition(input: {
+  preset?: WorldDispositionPreset;
+  language: string;
+  customContext?: string;
+}): string | undefined {
+  const fromCustomContext = extractXmlTagValue(
+    input.customContext,
+    "world_disposition",
+  );
+  if (fromCustomContext) return fromCustomContext;
+
+  if (!input.preset) return undefined;
+  return getWorldDispositionPresetText(input.preset, input.language);
+}
+
+export function resolveNarrativeStyle(
+  input: {
+    themeStyle?: string;
+    preset?: NarrativeStylePreset;
+    language: string;
+    customContext?: string;
+  },
+): string | undefined {
+  const fromCustomContext = extractXmlTagValue(
+    input.customContext,
+    "narrative_style",
+  );
+  if (fromCustomContext) return fromCustomContext;
+
+  const presetText = input.preset
+    ? getNarrativeStylePresetText(input.preset, input.language)
+    : undefined;
+
+  // Preset is a supplement to theme style, not a replacement.
+  if (presetText) {
+    const base = input.themeStyle?.trim();
+    if (!base) return presetText;
+    const isZh = input.language?.toLowerCase().startsWith("zh");
+    return isZh ? `${base}\n\n补充风格：${presetText}` : `${base}\n\nStyle add-on: ${presetText}`;
+  }
+
+  return input.themeStyle;
+}
+
 /**
  * 解析主题配置
  * @param themeKey 主题键

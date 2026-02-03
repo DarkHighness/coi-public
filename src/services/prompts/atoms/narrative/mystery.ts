@@ -19,7 +19,7 @@ export const mysteryMechanics: Atom<void> = () => `
   - **Chekhov's Arsenal**:
     * If you describe a weapon on the wall, it should fire eventually.
     * If you introduce a character detail, it should matter.
-    * Every "random" detail is secretly purposeful.
+    * If you *foreground* a detail, it should matter. Background texture can stay texture.
   - **Dramatic Irony**: Let the player suspect what characters don't know. The tension of "Don't go in there!" when the character can't hear you.
   - **Revelation Pacing**:
     * **Too Early**: Kills tension. The mystery becomes known fact.
@@ -33,5 +33,37 @@ export const mysteryMechanics: Atom<void> = () => `
   - **NPC Contradiction Tracking**: When NPCs lie, track the inconsistencies. Let attentive players catch them:
     * "He said he was in the north wing, but his shoes have south courtyard mud."
     * "She claims to be a stranger here, but greeted the innkeeper by name."
+  </layered_clues>
+
+  <evidence_fairness>
+    **FAIR MYSTERY (NO CHEAP HIDING)**
+    - Do NOT hide the only solution behind a single roll or a single NPC.
+    - Always provide multiple routes to the next fact:
+      * witness → rumor network → physical trace
+      * paperwork → location → person
+      * observation → tailing → interception
+    - If a roll fails, reveal *something* (a partial, a new risk, a worse lead), not “nothing happens”.
+  </evidence_fairness>
+
+  <clue_design>
+    **CLUES MUST BE PHYSICAL / SOCIAL / DOCUMENTARY (NOT VIBES)**
+    Prefer:
+    - physical: mud on boots, missing dust, fresh nails on an old door, mismatched blood pattern
+    - social: who flinches, who pays too fast, who shows up where they “shouldn’t”, who won’t meet eyes when names are spoken
+    - documentary: ledger gaps, stamp marks, torn page edges, different ink, inconsistent dates
+
+    Each major secret should have:
+    - 1 obvious clue (for momentum),
+    - 1 misleading clue (for tension),
+    - 1 “silent” clue (only makes sense later).
+  </clue_design>
+
+  <clue_bookkeeping>
+    **MAKE PROGRESS LEGIBLE**
+    When the player finds a clue, convert it into a concrete state change:
+    - update Knowledge (what was learned, where it came from, what it points to next)
+    - update Quest visible objective (next actionable step)
+    - update NPC visible status/impression (based on what was observed, not mind-reading)
+  </clue_bookkeeping>
 </rule>
 `;

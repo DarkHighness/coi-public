@@ -1223,6 +1223,24 @@ export interface AISettings {
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)
+    /**
+     * Narrative style preset. Applies a concise, model-robust style override on top of theme defaults.
+     * If customContext includes <narrative_style>, that takes priority.
+     */
+    narrativeStylePreset?:
+      | "theme"
+      | "cinematic"
+      | "literary"
+      | "noir"
+      | "brutal"
+      | "cozy"
+      | "cdrama"
+      | "minimal";
+    /**
+     * World disposition preset. Sets a small explicit baseline for "human nature" and social tone.
+     * If customContext includes <world_disposition>, that takes priority.
+     */
+    worldDispositionPreset?: "theme" | "benevolent" | "mixed" | "cynical";
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed

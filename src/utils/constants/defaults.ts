@@ -148,5 +148,7 @@ export const DEFAULTS: AISettings = {
   },
   extra: {
     forceAutoToolChoice: false,
+    narrativeStylePreset: "theme",
+    worldDispositionPreset: "theme",
   },
 };

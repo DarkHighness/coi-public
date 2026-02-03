@@ -122,7 +122,7 @@ function getIndifferenceContent(
         - NPCs act purely on self-interest. They will not help without reason/payment.
         - Resources are scarce. Competition is fierce. The weak are eaten.
         - Good luck is an anomaly. Bad luck is the baseline.
-        - Failure is often fatal. There are no second chances.
+        - Mistakes can be catastrophic. If game-design constraints prevent early death, convert fatal outcomes into capture, injury, loss, or long-term debt.
         - The only "rescue" comes from your own preparation and competence.
       </world_disposition>`;
   } else {
@@ -189,7 +189,7 @@ ${getIndifferenceContent(indifference)}
       - ❌ "Selective Physics": Physics applies to EVERYONE.
       ${
         harshness === "realistic"
-          ? `- ❌ "Narrative Rescue": If player makes a fatal mistake, they die. No "but suddenly" saves.
+          ? `- ❌ "Narrative Rescue": Do not invent last-second saves. If a situation would normally be fatal, apply severe consequences; if death-prevention rules apply, use capture/injury instead of a miracle.
       - ❌ "Instant Travel": Walking takes TIME. No teleporting without in-world justification.
       - ❌ "Universal Language": Not everyone speaks the player's language.
       - ❌ "Plot Armor Supplies": The exact item you need is NOT in the next chest.`

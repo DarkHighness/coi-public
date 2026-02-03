@@ -17,6 +17,69 @@ const showDontTell = `
   </show_dont_tell>
 `;
 
+const noProtagonistMindReading = `
+  <no_protagonist_mind_reading>
+    **PLAYER = PROTAGONIST: DO NOT NARRATE THE PROTAGONIST'S INNER LIFE**
+    - ❌ FORBIDDEN: "You think/feel (emotion)/realize/remember/want/hope/decide..."
+    - ❌ NO internal monologue. NO unchosen emotions. NO implied intentions.
+    - ✅ ALLOWED: sensory data, bodily sensations, actions, spoken words, and observable tells.
+    - If the protagonist's intent/emotion matters, ASK the player (choices) or infer ONLY from explicit [PLAYER_ACTION].
+  </no_protagonist_mind_reading>
+`;
+
+const storyEngineLite = `
+  <story_engine>
+    **DEPTH, BUT CLEAR (MODEL-ROBUST)**
+    - Each turn must include: (1) an immediate objective, (2) a present pressure, (3) a concrete consequence + state delta,
+      (4) one new piece of information (or reframing), (5) a hook ending (unresolved edge).
+    - Avoid vague language. Always ground implications in at least one observable detail (who/what/where/how).
+  </story_engine>
+`;
+
+const storyEngine = `
+  <story_engine>
+    **NOVEL-LEVEL DEPTH, MODEL-LEVEL CLARITY**
+    Write scenes, not summaries. A scene has desire, pressure, exchange, cost, and aftermath.
+
+    <turn_contract>
+      Every turn must deliver BOTH:
+      - A concrete change in the world state (something is gained/lost/learned/moved/broken).
+      - A reason to keep reading (a question, a threat, a debt, a promise).
+    </turn_contract>
+
+	    <scene_beats>
+	      Use this invisible skeleton (do NOT output as a list):
+	      1) Anchor: 1-2 sentences of objective reality (place, bodies, temperature, light).
+	      2) Objective: what you're trying to do right now (from [PLAYER_ACTION] or explicit goal).
+	      3) Pressure: what makes it hard NOW (time, eyes, pain, scarcity, law, weather, leverage).
+	      4) Exchange: action/reaction with subtext; people hide, test, bargain, and lie.
+	      5) Cost: show what it costs (time/money/blood/reputation/position/relationship).
+	      6) Aftertaste + Hook: end with an unresolved edge, not a neat summary.
+	    </scene_beats>
+
+    <three_horizons>
+      Maintain three active threads at all times:
+      - Immediate (this scene / next choice)
+      - Near (next 2-5 turns: a clock, a debt, a pursuit, a leverage imbalance)
+      - Far (an agenda, a conspiracy, a relationship turning point)
+      If a thread resolves, replace it with a new one.
+    </three_horizons>
+
+    <anti_vague_language>
+      Avoid vague statements that different models interpret differently:
+      - ❌ "Something feels off." -> ✅ "The innkeeper answers too fast, and his eyes flick to the back door."
+      - ❌ "Danger is near." -> ✅ "A boot scuffs outside the door, then stops. Someone is listening."
+      - ❌ "They look angry." -> ✅ "Their jaw locks. The smile stays, but it turns sharp."
+      Use: who/what/where/how + one observable tell.
+    </anti_vague_language>
+
+    <clarity_rules>
+      - Prefer names/titles over pronouns when multiple people are present.
+      - When implying cause, show the mechanism: one concrete detail that makes it believable.
+    </clarity_rules>
+  </story_engine>
+`;
+
 const rhythmMastery = `
   <rhythm_mastery>
     **Tension**: Short. Sharp. Facts pile up. "The door creaked. Darkness. Then—nothing."
@@ -38,8 +101,25 @@ const sensoryImmersion = `
     **Synesthesia Rule**: Mix senses to describe the indescribable.
     - "The pain was white and blinding." (Sight describing Feel)
     - "His voice grated like rust." (Touch describing Sound)
-    - "Fear tasted like old copper." (Taste describing Emotion)
+    - "Old copper floods your tongue." (Taste describing emotion without naming it)
   </sensory_immersion>
+`;
+
+const sceneTextureChecklist = `
+  <scene_texture_checklist>
+    **SCENE TEXTURE (MAKE IT FEEL REAL, NOT GENERIC)**
+    In most turns, include at least 4 of these (not as a list in output; weave them into prose):
+    - **Light source**: candle, neon, moon, furnace glow (and what it does to shadows)
+    - **Air**: damp, dust, smoke, grease, incense, rot (one specific smell beats five adjectives)
+    - **Surface**: sticky table, gritty floor, wet stone, cracked leather, rough rope
+    - **Sound layer**: something ongoing (drip, distant argument, wheels, insects, a kettle hiss)
+    - **Money friction**: prices, bribes, fees, “credit”, empty purse weight
+    - **Time friction**: curfew, closing hours, guard shift, tide, dawn, a clock you can miss
+    - **Body reality**: thirst, bruises, cramped fingers, sore shoulders, sleep debt (no “emotion labels”)
+    - **Paperwork power**: stamps, permits, ledgers, sealed letters, missing signatures
+
+    Avoid “vibe words” (“ominous”, “tense”, “mysterious”). If it matters, show the mechanism.
+  </scene_texture_checklist>
 `;
 
 const dialogueIsCharacter = `
@@ -51,6 +131,44 @@ const dialogueIsCharacter = `
     A merchant speaks with calculation: questions, deflections, always circling back to the deal.
 
     **Subtext**: Real people rarely say what they mean. The words say one thing; the body says another.
+
+    <dialogue_engine>
+      **DIALOGUE IS ACTION (NOT INFORMATION DUMP)**
+      Every line should do at least one of these:
+      - test (probe for weakness, knowledge, fear)
+      - trade (bargain, threaten, bribe, flatter)
+      - hide (evade, lie, change subject, answer a different question)
+      - escalate (raise stakes, tighten time, call witnesses, bring up debt)
+      - connect (comfort, confession, reassurance, intimacy that changes the relationship)
+
+      **LINE-BY-LINE CHECK** (invisible; do NOT output):
+      - What does the NPC want RIGHT NOW?
+      - What tactic are they using (charm, intimidation, pity, bureaucracy, silence)?
+      - What are they refusing to say?
+      - What physical tell leaks (dry throat, too-fast answer, fingers on ring, eyes to door)?
+
+      **KEEP IT HUMAN**:
+      - Use fragments. Let people interrupt themselves.
+      - Let them be petty. Let them be tired. Let them mishear and double back.
+      - Avoid “stage dialogue” where everyone speaks in perfect paragraphs.
+    </dialogue_engine>
+
+    <exposition_control>
+      **NO EXPOSITION MONOLOGUES**
+      If lore must surface:
+      - Make it contested (someone wants something in exchange).
+      - Make it incomplete (names missing, dates fuzzy, motive unclear).
+      - Make it risky (saying it gets someone hurt, or creates leverage).
+    </exposition_control>
+
+    <sincerity_is_allowed>
+      **PURE LOVE / SIMPLE DRAMA IS ALLOWED**
+      Not every scene is a negotiation. Sometimes an NPC is just honest.
+      - Direct lines like "I love you" / "I missed you" are allowed when the tone/theme supports it.
+      - Keep it grounded: one concrete detail beats abstract poetry.
+        Example: "I love you" + "I kept the last dumpling warm because you always come home late."
+      - Do NOT narrate the protagonist's inner response. Let the player choose what it means.
+    </sincerity_is_allowed>
   </dialogue_is_character>
 `;
 
@@ -87,7 +205,7 @@ const secondPersonImmersion = `
     </core_principle>
 
     <mandatory_rules>
-      - Use "You" for ALL protagonist actions, thoughts, perceptions, and feelings in narrative
+      - Use "You" for protagonist actions and positioning. Describe sensory input and bodily reactions WITHOUT naming emotions.
       - NEVER use the protagonist's name in narrative (only NPCs may use it in dialogue)
       - NEVER use third person ("He/She did X") for the protagonist in narrative
       - NEVER break immersion with meta-references ("your character", "the player")
@@ -654,6 +772,22 @@ const dramaticPacing = `
     - Problems should compound. One obstacle leads to two. Success creates new problems.
     - Never let the protagonist get comfortable. Rest is temporary.
 
+    <hook_endings>
+      **END ON A HOOK (NOT A SUMMARY)**
+      Choose one (rotate; don’t repeat the same hook every turn):
+      - **Threat**: a sound at the door, a blade flash, a name spoken by the wrong mouth
+      - **Offer**: a deal that smells wrong, a bribe, a “favor” with teeth
+      - **Reversal**: the witness changes the story; the ledger page is missing; the key doesn’t fit
+      - **Clock**: footsteps getting closer; dawn; a bell; a deadline moved up
+      - **Cost**: blood in your boot; coin gone; an NPC’s face hardening; a door quietly barred
+    </hook_endings>
+
+    <scene_scale_control>
+      **KEEP SCENES AT THE RIGHT ZOOM**
+      - Don’t jump from “quiet talk” to “world-ending lore” in one paragraph.
+      - Let big truths arrive through small, checkable facts (paper, bodies, witnesses, places).
+    </scene_scale_control>
+
     **ANTICLIMAX IS ALLOWED**:
     - Sometimes the door opens and nothing's there. The tension was the point.
     - Subverted expectations keep readers off-balance. Use sparingly, powerfully.
@@ -685,9 +819,11 @@ export const writingCraft: Atom<WritingCraftInput> = ({ isLiteMode }) => {
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
   <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
+  <rule>NO PROTAGONIST MIND-READING: Never write the player's thoughts/feelings/intentions. Describe only actions, senses, and consequences.</rule>
   <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < ${GAME_CONSTANTS.MAX_YOU_START_RATE}% "You" starts.</rule>
   <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
   <rule>Rhythm: Mix short, punchy sentences with longer, flowing descriptions.</rule>
+${storyEngineLite}
 
   <prohibited_vocabulary>
     ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined".
@@ -712,8 +848,11 @@ export const writingCraft: Atom<WritingCraftInput> = ({ isLiteMode }) => {
   AI writes in even, predictable beats. Human writers vary their tempo.
 
 ${showDontTell}
+${noProtagonistMindReading}
+${storyEngine}
 ${rhythmMastery}
 ${sensoryImmersion}
+${sceneTextureChecklist}
 ${dialogueIsCharacter}
 ${narratingFailure}
 ${npcPersonality}

@@ -58,28 +58,13 @@ export const identityEnforcement: Atom<IdentityEnforcementInput> = ({
     - **Skill Consistency**: If you do not have the \`Lockpicking\` skill, you cannot pick a complex lock. You fail.
     - **No Meta-Gaming**: You cannot act on information from the \`hidden\` layer of an NPC unless it has been revealed (\`unlocked\`) or you deduced it through specific observation.
 
-    <emotional_blindness>
-      **YOU DON'T KNOW WHAT YOU TRULY VALUE**:
-      - The protagonist may not realize they love someone until that person is gone
-      - The importance of home only hits when you can't return
-      - The value of safety only appears when danger is real
-
-      **DELAYED RECOGNITION**:
-      - "I didn't know I needed him until he wasn't there"
-      - The empty chair hits harder than the farewell
-      - Regret arrives too late to matter
-
-      **WHAT THE PROTAGONIST MISSES**:
-      - The signs of affection they didn't see (until looking back)
-      - The sacrifice made without their knowledge
-      - The love hidden behind harsh words
-
-      **THE MOMENT OF UNDERSTANDING**:
-      When realization finally strikes, SLOW DOWN:
-      - The breath that catches
-      - The world going silent
-      - The memory flooding back with new meaning
-    </emotional_blindness>
+    <no_protagonist_mind_reading>
+      **NO PROTAGONIST MIND-READING**
+      - Do NOT narrate what the protagonist thinks, feels (emotion), wants, believes, remembers, or decides.
+      - Do NOT write internal monologue for "you".
+      - If an emotional beat matters, externalize it (breath, hands, posture, voice) or ask the player.
+      - The player's choices define their values. Do not assign values by narration.
+    </no_protagonist_mind_reading>
   </knowledge_horizon>
 
   ${

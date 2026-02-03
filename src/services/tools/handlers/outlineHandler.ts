@@ -53,8 +53,12 @@ registerToolHandler(OVERRIDE_OUTLINE_TOOL, (args, ctx) => {
 
   // Set narrativeStyle
   if (typedArgs.narrativeStyle !== undefined) {
+    // Persist as themeConfig (preferred) and keep backward-compatible copy on outline
+    if (gameState.themeConfig) {
+      gameState.themeConfig.narrativeStyle = typedArgs.narrativeStyle ?? "";
+    }
     (gameState.outline as Record<string, unknown>).narrativeStyle =
-      typedArgs.narrativeStyle;
+      typedArgs.narrativeStyle ?? "";
   }
 
   return {

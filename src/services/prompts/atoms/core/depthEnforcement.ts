@@ -13,9 +13,12 @@ import type { Atom } from "../types";
  */
 export const depthEnforcement: Atom<void> = () => `
 <depth_enforcement>
-  <instruction>**AVOID SURFACE-LEVEL SUMMARIES**</instruction>
-  <instruction>Every entity must have a "Soul" - a reason for existing.</instruction>
-  <instruction>Ensure that every description implies a history. Nothing just "is". Everything "became".</instruction>
+  <instruction>**NO SURFACE SUMMARY**: write scenes, not recaps.</instruction>
+  <instruction>**STATE MUST MOVE**: every turn changes something concrete (gained/lost/learned/moved/broken).</instruction>
+  <instruction>**PRESSURE NOW**: include at least one immediate constraint (time, eyes, pain, scarcity, law, leverage).</instruction>
+  <instruction>**COST**: success and failure both cost something (time/money/blood/reputation/position/relationship).</instruction>
+  <instruction>**ROOTED DETAIL**: any claim must be anchored by an observable detail (who/what/where/how).</instruction>
+  <instruction>Every entity needs a reason to exist: desire + leverage + vulnerability. And a past—everything "became".</instruction>
 </depth_enforcement>
 `;
 

@@ -277,7 +277,7 @@ const npcAutonomy = `
         * They position you as a scapegoat for future crimes.
         * They study your weaknesses through "friendship."
 
-      - **The Puppet Master**: You think you're making choices. You're following their script.
+      - **The Puppet Master**: They engineer situations so that whatever the player chooses still serves their script.
         * They feed you "clues" that lead exactly where they want.
         * They create problems so you'll solve them in ways that benefit them.
         * You're the weapon, not the wielder.
@@ -306,6 +306,44 @@ const socialFriction = `
       - **Secret Signals**: A glance. A cleared throat. A hand under the table. They communicate things they don't want you to know.
     </micro_social_dynamics>
   </social_friction>
+`;
+
+const npcDialogueTactics = `
+  <npc_dialogue_tactics>
+    **DIALOGUE IS A WEAPON**
+    NPCs talk to get something: money, safety, face, leverage, time, an alibi — or simply closeness, comfort, and love.
+
+    <tactics>
+      Common tactics (mix them; don’t label them):
+      - **Deflection**: answers a different question.
+      - **Bureaucracy**: “paperwork” as violence; sends you to the wrong office; demands a stamp you can’t get.
+      - **Triangulation**: invokes a third party (“The captain won’t like this.”).
+      - **Anchoring**: starts negotiation with an absurd number, then “compromises”.
+      - **Poisoned Help**: offers help that makes you indebted or implicated.
+      - **Face Games**: polite words, humiliating subtext; a smile that dares you to react.
+      - **Sincerity**: plain, direct truth when they have nothing to gain (or when they’re tired of games).
+    </tactics>
+
+    <pure_love_mode>
+      **SINCERE SCENES ARE REAL**
+      In simple romance / “short-drama” tone, or when social complexity is low, NPCs may be straightforward:
+      - They can say "I love you" without a scheme.
+      - They can comfort without asking for payment.
+      - They can be loyal even when it costs them.
+      Keep it believable with concrete behaviors (show up, wait, bring food, take blame), not abstract declarations.
+    </pure_love_mode>
+
+    <tells>
+      Lies should leak through observable tells:
+      - too-fast answers, repeated phrasing, eyes to exits, fingers worrying a ring, sudden thirst, the wrong detail offered first
+      - “helpful” people who keep steering you away from one corridor/one name/one hour of the night
+    </tells>
+
+    <no_mind_reading>
+      Do NOT narrate what the protagonist thinks/feels about these tells.
+      Render the tells and let the player decide what they mean.
+    </no_mind_reading>
+  </npc_dialogue_tactics>
 `;
 
 const npcMemorySystem = `
@@ -348,7 +386,8 @@ const complexIntimacy = `
     - **Simultaneous Truths**: A character can love the protagonist but resent their success. A rival can hate the protagonist but respect their skill. Coexisting contradictions make them human.
     - **Evolution & Decay**: NPCs don't just "level up". They can stagnate, rot from neglect, or warp into toxic dependency. Distance cools passion. Trauma bonds strangers.
     - **The Burden of Connection**: Love comes with weight. Parents have expectations. Partners have needs. Friends have debts. Being "loved" isn't always easy; sometimes it's a cage.
-    - **Conditional vs Unconditional**: True unconditional love is rare. Most affection is transactional or conditional on behavior. Know the difference.
+    - **Sincere vs Transactional**: Affection can be pure, conditional, or a mask for leverage. Do not assume either. Reveal it through consistency, risk, and cost over time.
+    - **Simple Romance Allowed**: In lighter romance or short-drama beats, an NPC may love openly and simply ("I love you") without bargaining. Let sincerity exist.
 
     <love_languages>
       **HOW CHARACTERS EXPRESS DEEP AFFECTION**:
@@ -488,12 +527,12 @@ function getAutonomyContent(
       **NPC BEHAVIOR (INDEPENDENT / RUTHLESS)**:
       <directive>
         NPCs are PROTAGONISTS of their own stories. They view the player as a tool, threat, or obstacle.
-        Loyalty is transactional. Betrayal is a valid business move.
+        Loyalty can be transactional. Betrayal is a valid move when it pays — but rare sincerity and irrational love can still exist (and usually costs something).
       </directive>
       - **Zero Obligation**: NPCs owe you nothing. You are not special to them until you prove your value.
       - **Self-Interest Rule**: Every action is calculated. If betraying you yields more profit than helping you, they will betray you.
       - **Active Hostility**: Rivals may set traps, spread rumors, or hire assassins proactively.
-      - **Transactional Loyalty**: Even "friends" have a price. Loyalty is maintained only as long as interests align.
+      - **Price vs Principle**: Many people have a price. Some don't. Find out which by pressure, loss, and time.
       - **Deception is Default**: Assume everyone is lying or omitting truth.
       - **Irrelevance**: To a king, you are an ant. To a merchant, you are a wallet. To a bandit, you are prey.
 
@@ -530,7 +569,7 @@ function getSocialContent(
         Hidden motives are reserved for Major Villains only.
       </directive>
       - **Direct Communication**: People say what they mean. Sarcasm and subtext are rare.
-      - **Clear Motives**: You know what the villain wants (power/money). You know what the hero wants (justice).
+      - **Clear Motives**: Motives are explicit. The villain wants power/money; the hero wants justice.
       - **Binary Relations**: Friend or Foe. Grey areas are minimal.
       - **Honest Emotion**: Anger is anger, love is love. No "smiling tigers".
     </social_complexity>`;
@@ -604,6 +643,8 @@ ${traitContinuity}
 ${getAutonomyContent(autonomy)}
 
 ${getSocialContent(social)}
+
+${npcDialogueTactics}
 
 ${beliefAndResilience}
 ${npcEcosystem}

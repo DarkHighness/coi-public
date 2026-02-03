@@ -8,6 +8,7 @@
  */
 
 import type { SkillContext } from "../types";
+import { THEMES } from "../../../../utils/constants/themes";
 import {
   worldConsistency,
   consequences,
@@ -18,8 +19,24 @@ import {
   ontologicalPriorityAtom,
 } from "../../atoms/core";
 
-export function getWorldConsistencyContent(_ctx: SkillContext): string {
-  return worldConsistency();
+export function getWorldConsistencyContent(ctx: SkillContext): string {
+  const themeKey = ctx.themeKey || ctx.gameState?.atmosphere?.envTheme;
+  const themeParams = themeKey ? THEMES[themeKey]?.themeParams : undefined;
+
+  const mappedIndifference =
+    ctx.worldDispositionPreset && ctx.worldDispositionPreset !== "theme"
+      ? ctx.worldDispositionPreset === "benevolent"
+        ? "benevolent"
+        : ctx.worldDispositionPreset === "cynical"
+          ? "hostile"
+          : "neutral"
+      : undefined;
+
+  return worldConsistency({
+    physicsHarshness: themeParams?.physicsHarshness,
+    worldIndifference: mappedIndifference ?? themeParams?.worldIndifference,
+    culturalHint: themeParams?.culturalHint,
+  });
 }
 
 export function getConsequencesContent(_ctx: SkillContext): string {

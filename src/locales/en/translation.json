@@ -505,6 +505,26 @@
       "description": "Additional configuration options",
       "detailedDescription": "Detailed Descriptions",
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
+      "narrativeStylePreset": "Narrative Style",
+      "narrativeStylePresetHelp": "Add a concise style add-on to the theme default. Per-game <narrative_style> in custom context overrides this.",
+      "narrativeStylePresetOptions": {
+        "theme": "Theme Default",
+        "cinematic": "Cinematic",
+        "literary": "Literary",
+        "noir": "Noir",
+        "brutal": "Brutal",
+        "cozy": "Cozy",
+        "cdrama": "C-Drama / Simple Romance",
+        "minimal": "Minimal"
+      },
+      "worldDispositionPreset": "World Disposition",
+      "worldDispositionPresetHelp": "Add an explicit baseline for human nature and social tone (supplement to theme, not a replacement). Per-game <world_disposition> in custom context overrides this.",
+      "worldDispositionPresetOptions": {
+        "theme": "Theme Default",
+        "benevolent": "Benevolent",
+        "mixed": "Mixed",
+        "cynical": "Cynical"
+      },
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "genderPreference": "Gender Preference",

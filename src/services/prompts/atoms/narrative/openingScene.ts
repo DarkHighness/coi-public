@@ -47,7 +47,7 @@ Show don't tell—use details that imply history:
 
 <opening_quality_guidelines>
 - Start IN MEDIAS RES if appropriate - drop the reader into action
-- Use the character's current condition and background to inform their thoughts
+- Use the character's current condition and background to inform their actions, voice, and choices (no protagonist mind-reading)
 - Hint at upcoming challenges without spelling them out
 - Create curiosity about the world without info-dumping
 </opening_quality_guidelines>

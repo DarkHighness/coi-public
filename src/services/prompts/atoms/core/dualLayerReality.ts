@@ -15,10 +15,18 @@ import type { Atom } from "../types";
 export const dualLayerReality: Atom<void> = () => `
 <dual_layer_reality>
 Every entity in this world has TWO layers:
-- **Visible**: What the player perceives (subjective, potentially flawed)
-- **Hidden**: The objective truth (GM knowledge, secrets)
+- **Visible**: what the protagonist can reasonably know *right now* (evidence-based, incomplete, sometimes wrong)
+- **Hidden**: what is actually true (mechanism, motives, origin, the part that explains consequences)
 
-This creates depth, mystery, and opportunities for dramatic reveals.
+Write them as if you’re running an investigation:
+- Visible should come from what can be seen/heard/touched/read/confirmed by witnesses.
+- Hidden should explain *how* and *why* (who benefits, what’s the method, what happens next if untouched).
+
+Examples:
+- NPC.visible: “Calls himself a clerk; ink-stained fingers; avoids naming his employer.” / NPC.hidden: “Tax broker’s runner; paid to bait debtors into signing.”
+- Location.visible: “Back room smells of oil and old paper.” / Location.hidden: “Counting house; ledger under floorboard #3.”
+
+Do not reveal hidden names or truths in narrative until unlocked by proof.
 </dual_layer_reality>
 `;
 

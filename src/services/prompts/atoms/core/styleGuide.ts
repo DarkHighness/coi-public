@@ -49,7 +49,7 @@ ${toneSection}
   <allowed_formatting>
     **ALLOWED ELEMENTS:**
     - **Bold**: Use \`**text**\` for important names, locations, items when FIRST introduced
-    - *Italic*: Use \`*text*\` for internal thoughts, emphasis, foreign words
+    - *Italic*: Use \`*text*\` for whispers, emphasis, foreign/archaic words. DO NOT use italics for protagonist inner thoughts.
     - Blockquote: Use \`>\` for dialogue, letters, inscriptions, quoted text
     - Horizontal Rule: Use \`---\` to separate distinct scenes or time jumps
     - Inline Code: Use backticks for spell names, incantations, technical terms
@@ -111,7 +111,7 @@ ${toneSection}
   <emphasis_rules>
     **BOLD AND ITALIC USAGE:**
     - Bold (**) for: NEW entity names on first appearance, critical revelations
-    - Italic (*) for: thoughts, whispers, emphasis, foreign/archaic words
+    - Italic (*) for: whispers, emphasis, foreign/archaic words (NOT protagonist inner thoughts)
     - Do NOT overuse: Max 2-3 bold phrases per paragraph
     - Do NOT combine: Avoid ***bold italic*** - choose one
   </emphasis_rules>
