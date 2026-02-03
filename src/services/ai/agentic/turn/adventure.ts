@@ -25,10 +25,13 @@ import {
   resolveNarrativeStyle,
   resolveWorldDisposition,
   resolvePlayerMaliceProfile,
+  pickModelMatchedPrompt,
 } from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
 import type { VfsSession } from "../../../vfs/vfsSession";
+
+import promptToml from "@/prompt/prompt.toml";
 
 // Import new modular context and tools
 import {
@@ -151,6 +154,13 @@ export const generateAdventureTurn = async (
     `[Adventure] Built system instruction with skills. Length: ${systemInstruction.length} chars`,
   );
 
+  // System default model-specific injection (for consistent style across models).
+  // Required order at the very front of systemInstruction: (1) user custom instruction, (2) system default injection, then base.
+  const systemDefaultInjection = pickModelMatchedPrompt(
+    (promptToml as any)?.system_prompts,
+    modelId,
+  );
+
   // Optional user-provided prompt prefix (typically used for language/style preferences).
   const customInstructionRaw = settings.extra?.customInstruction;
   const customInstruction =
@@ -159,11 +169,21 @@ export const generateAdventureTurn = async (
     settings.extra?.customInstructionEnabled ??
     Boolean(customInstruction.trim());
 
+  const prepends: string[] = [];
   if (customInstruction.trim() && customInstructionEnabled) {
-    systemInstruction = `${customInstruction}\n\n${systemInstruction}`;
+    prepends.push(customInstruction.trim());
     console.warn(
       `[CustomInstruction] Prepended custom instruction (${customInstruction.length} chars)`,
     );
+  }
+  if (systemDefaultInjection) {
+    prepends.push(systemDefaultInjection);
+    console.warn(
+      `[SystemDefaultInjection] Matched model ${modelId} (${systemDefaultInjection.length} chars)`,
+    );
+  }
+  if (prepends.length > 0) {
+    systemInstruction = `${prepends.join("\n\n")}\n\n${systemInstruction}`;
   }
 
   // Get RAG context from parameter
