@@ -11,6 +11,7 @@ import {
   characterStatusSchema,
   atmosphereSchema,
   storyOutlineSchema,
+  storySummarySchema,
 } from "../zodSchemas";
 import { normalizeVfsPath } from "./utils";
 
@@ -37,6 +38,11 @@ const ConversationTurnSchema = z.object({
   references: z.record(z.array(z.string())).optional(),
 });
 
+const SummaryStateSchema = z.object({
+  summaries: z.array(storySummarySchema),
+  lastSummarizedIndex: z.number().int(),
+});
+
 const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/npcs\/[^/]+\.json$/, schema: npcSchema },
   { pattern: /^world\/locations\/[^/]+\.json$/, schema: locationSchema },
@@ -48,6 +54,7 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/causal_chains\/[^/]+\.json$/, schema: causalChainSchema },
   { pattern: /^world\/character\.json$/, schema: characterStatusSchema },
   { pattern: /^world\/global\.json$/, schema: GlobalSchema },
+  { pattern: /^summary\/state\.json$/, schema: SummaryStateSchema },
   { pattern: /^outline\/outline\.json$/, schema: storyOutlineSchema },
   { pattern: /^outline\/progress\.json$/, schema: z.any() },
   { pattern: /^conversation\/turn\.json$/, schema: ConversationTurnSchema },

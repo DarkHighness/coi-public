@@ -66,6 +66,79 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.inventory[0]?.id).toBe("inv_key");
   });
 
+  it("derives summary state and restores summary markers", () => {
+    const summary = {
+      id: 0,
+      displayText: "Summary",
+      visible: {
+        narrative: "Visible summary",
+        majorEvents: [],
+        characterDevelopment: "Growth",
+        worldState: "World",
+      },
+      hidden: {
+        truthNarrative: "Truth",
+        hiddenPlots: [],
+        npcActions: [],
+        worldTruth: "Truth world",
+        unrevealed: [],
+      },
+      timeRange: { from: "t1", to: "t2" },
+      nodeRange: { fromIndex: 0, toIndex: 2 },
+    };
+
+    const files: VfsFileMap = {
+      "summary/state.json": makeJsonFile("summary/state.json", {
+        summaries: [summary],
+        lastSummarizedIndex: 3,
+      }),
+      "current/conversation/index.json": makeJsonFile(
+        "current/conversation/index.json",
+        {
+          activeForkId: 0,
+          activeTurnId: "fork-0/turn-1",
+          rootTurnIdByFork: { "0": "fork-0/turn-0" },
+          latestTurnNumberByFork: { "0": 1 },
+          turnOrderByFork: { "0": ["fork-0/turn-0", "fork-0/turn-1"] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-0.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-0.json",
+        {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: 1,
+          userAction: "start",
+          assistant: { narrative: "hello", choices: [] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-1.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-1.json",
+        {
+          turnId: "fork-0/turn-1",
+          forkId: 0,
+          turnNumber: 1,
+          parentTurnId: "fork-0/turn-0",
+          createdAt: 2,
+          userAction: "go",
+          assistant: { narrative: "ok", choices: [] },
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.summaries).toHaveLength(1);
+    expect(state.lastSummarizedIndex).toBe(3);
+
+    // Summary toIndex=2 => marker prefers segmentIdx=3 (the model node for turn-1).
+    expect(state.nodes["model-fork-0/turn-1"]?.summarySnapshot?.displayText).toBe(
+      "Summary",
+    );
+  });
+
   it("derives conversation nodes from turn files", () => {
     const files: VfsFileMap = {
       "current/conversation/index.json": makeJsonFile(
