@@ -39,7 +39,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
             {gameState.knowledge.map((entry, idx) => (
               <div
                 key={entry.id || idx}
-                className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-bold text-theme-primary text-sm flex items-center gap-2">
@@ -50,7 +50,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                     {t(`knowledge.category.${entry.category}`)}
                   </span>
                 </div>
-                <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                   <MarkdownText content={entry.visible.description} />
                 </div>
                 {(entry.unlocked || gameState.unlockMode) && entry.hidden && (
@@ -109,7 +109,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
               .map((event, idx) => (
                 <div
                   key={event.id || idx}
-                  className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                  className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-theme-muted font-mono">
@@ -122,7 +122,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                       })}
                     </span>
                   </div>
-                  <div className="text-theme-text text-sm pl-2 border-l-2 border-theme-border/50">
+                  <div className="story-text text-theme-text text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                     <MarkdownText content={event.visible.description} />
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
             {gameState.inventory.map((item, idx) => (
               <div
                 key={item.id || idx}
-                className="p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50 flex flex-col gap-2"
+                className="p-3 bg-theme-bg rounded-none border border-theme-border/40 flex flex-col gap-2"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xl">

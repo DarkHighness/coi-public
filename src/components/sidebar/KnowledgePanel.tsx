@@ -75,9 +75,9 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
   return (
     <div
-      className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-3
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
-        ${isDragging ? "opacity-50 scale-95" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2
+        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
+        ${isDragging ? "opacity-60" : ""}
         ${isEditMode ? "cursor-grab active:cursor-grabbing" : ""}
       `}
       draggable={isEditMode}
@@ -88,7 +88,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
       onDragEnd={handleDragEnd}
     >
       <div
-        className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-center justify-between gap-3"
+        className="py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
         onClick={handleToggle}
       >
         {/* Pin button - only show in edit mode or if pinned */}
@@ -122,7 +122,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-1">
-            <span className="text-xl">
+            <span className="text-lg">
               {isValidEmoji(k.icon)
                 ? k.icon
                 : CATEGORY_ICONS[k.category] || "📖"}
@@ -164,7 +164,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="p-4 pt-0 text-xs text-theme-muted/90 leading-relaxed border-t border-theme-border/30 mt-1">
+          <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-muted/90 leading-relaxed border-t border-theme-border/25 mt-1">
             <div className="mt-3">
               <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                 {t("description") || "Description"}
@@ -205,7 +205,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   </svg>
                   {t("hidden.truth")}
                 </span>
-                <div className="text-theme-text/90 bg-theme-surface/50 p-3 rounded border border-theme-unlocked/20">
+                <div className="text-theme-text/90 pl-2 border-l-2 border-theme-unlocked/30">
                   <MarkdownText content={k.hidden.fullTruth} indentSize={2} />
 
                   {k.hidden.misconceptions &&
@@ -452,9 +452,9 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       </div>
 
       {isOpen && (
-        <div className="space-y-3 animate-[fade-in_0.3s_ease-in]">
+        <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
           {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic p-4 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+            <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
               {t("knowledgePanel.empty")}
             </div>
           ) : (

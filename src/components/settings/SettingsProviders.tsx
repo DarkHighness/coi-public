@@ -425,7 +425,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       {/* Warning: No available providers */}
       {hasNoAvailableProviders &&
         currentSettings.providers.instances.length > 0 && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded p-4 flex items-start gap-3">
+          <div className="border-l-2 border-red-500/60 pl-3 py-2 flex items-start gap-3">
             <svg
               className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
               fill="none"
@@ -453,7 +453,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
         )}
 
       {/* Header with action buttons */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-4">
           {t("providers.configuration")}
         </h3>
@@ -461,13 +461,13 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
           <button
             onClick={handleAddProviderClick}
             data-tutorial-id="add-provider-button"
-            className="px-4 py-2 bg-theme-primary text-theme-bg rounded border border-theme-primary hover:bg-theme-primary-hover transition-colors text-sm font-medium"
+            className="px-1 py-1 text-sm font-bold uppercase tracking-widest text-theme-primary hover:text-theme-primary-hover border-b border-transparent hover:border-theme-primary/60 transition-colors"
           >
             {t("providers.addProvider")}
           </button>
           <button
             onClick={handleOpenTemplate}
-            className="px-4 py-2 bg-theme-bg text-theme-text rounded border border-theme-border hover:border-theme-primary transition-colors text-sm font-medium"
+            className="px-1 py-1 text-sm font-bold uppercase tracking-widest text-theme-muted hover:text-theme-text border-b border-transparent hover:border-theme-muted transition-colors"
           >
             {t("providers.addFromTemplate")}
           </button>
@@ -477,7 +477,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       {/* Provider list */}
       <div className="space-y-2">
         {currentSettings.providers.instances.length === 0 ? (
-          <div className="bg-theme-surface-highlight/30 p-6 rounded border border-theme-border text-center text-theme-text-secondary">
+          <div className="py-6 text-center text-theme-text-secondary story-text border-b border-theme-border/25">
             {t("providers.noProviders")}
           </div>
         ) : (
@@ -488,10 +488,8 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             return (
               <div
                 key={instance.id}
-                className={`bg-theme-surface-highlight/30 px-4 py-3 rounded border transition-colors ${
-                  instance.enabled
-                    ? "border-theme-border"
-                    : "border-theme-border/50 opacity-60"
+                className={`px-2 py-3 border-b border-theme-border/25 transition-colors ${
+                  instance.enabled ? "" : "opacity-60"
                 }`}
               >
                 {/* Single row layout */}
@@ -499,7 +497,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                   {/* Enable checkbox */}
                   <button
                     onClick={() => handleToggleEnabled(instance.id)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                    className={`w-5 h-5 rounded-none border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                       instance.enabled
                         ? "bg-theme-primary border-theme-primary"
                         : "bg-theme-bg border-theme-border"
@@ -529,7 +527,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
 
                   {/* Protocol badge */}
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${getProtocolBadgeStyle(
+                    className={`px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${getProtocolBadgeStyle(
                       instance.protocol,
                     )}`}
                   >
@@ -714,7 +712,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       {/* Add/Edit Modal */}
       {(modalMode === "add" || modalMode === "edit") && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-theme-surface max-w-lg w-full rounded-lg border border-theme-border shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-theme-bg border border-theme-border/25 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-bold text-theme-text mb-4">
                 {modalMode === "add"
@@ -1094,7 +1092,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       {modalMode === "template" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
-            className="bg-theme-surface max-w-lg w-full rounded-lg border border-theme-border shadow-xl max-h-[90vh] overflow-y-auto"
+            className="bg-theme-bg border border-theme-border/25 w-full max-w-lg max-h-[90vh] overflow-y-auto"
             data-tutorial-id="provider-template-modal"
           >
             <div className="p-6">

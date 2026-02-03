@@ -94,7 +94,7 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
             {char.attributes.map((attr, idx) => (
               <div
                 key={attr.label || idx}
-                className="flex items-center gap-3 p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                className="flex items-center gap-3 p-3 bg-theme-bg rounded-none border border-theme-border/40"
               >
                 <span className="text-theme-primary text-sm font-bold uppercase tracking-wider min-w-[80px]">
                   {attr.label}:
@@ -131,10 +131,10 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
             {char.skills.map((skill, idx) => (
               <div
                 key={skill.id || idx}
-                className={`p-4 rounded border ${
+                className={`p-4 rounded-none border ${
                   skill.highlight
-                    ? "bg-theme-surface-highlight/30 border-theme-border/50 ring-2 ring-theme-primary/50"
-                    : "bg-theme-surface-highlight/30 border-theme-border/50"
+                    ? "bg-theme-primary/5 border-theme-primary/40"
+                    : "bg-theme-bg border-theme-border/40"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -146,7 +146,7 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
                     {skill.level}
                   </span>
                 </div>
-                <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                   <MarkdownText content={skill.visible.description} />
                 </div>
                 {skill.visible.knownEffects &&
@@ -233,12 +233,12 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
             {char.conditions.map((cond, idx) => (
               <div
                 key={cond.id || idx}
-                className={`p-4 rounded border ${
+                className={`p-4 rounded-none border ${
                   cond.type === "buff"
                     ? "bg-green-500/10 border-green-500/30"
                     : cond.type === "debuff"
                       ? "bg-red-500/10 border-red-500/30"
-                      : "bg-theme-surface-highlight/30 border-theme-border/50"
+                      : "bg-theme-bg border-theme-border/40"
                 }`}
               >
                 <span className="font-bold text-theme-text text-sm flex items-center gap-2 mb-2">
@@ -375,7 +375,7 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
               return (
                 <div
                   key={trait.id || trait.name || idx}
-                  className="p-4 rounded border bg-theme-unlocked/5 border-theme-unlocked/20"
+                  className="p-4 rounded-none border bg-theme-unlocked/5 border-theme-unlocked/20"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-bold text-theme-text text-sm flex items-center gap-2">
@@ -386,7 +386,7 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
                       {t("gameViewer.hiddenLabel")}
                     </span>
                   </div>
-                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-unlocked/30">
+                  <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-unlocked/30 leading-relaxed">
                     <MarkdownText content={trait.description} />
                   </div>
                   {trait.effects && trait.effects.length > 0 && (

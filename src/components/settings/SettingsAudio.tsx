@@ -23,7 +23,7 @@ export const SettingsAudio: React.FC = () => {
   const audioProtocol = audioProvider?.protocol;
 
   return (
-    <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+    <div className="space-y-8 animate-slide-in">
       {/* Environment Audio */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">

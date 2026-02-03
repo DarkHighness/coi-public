@@ -197,8 +197,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
       >
         <StoryTimeline
-          title={gameState.outline?.title}
-          subtitle={gameState.outline?.premise}
           onNavigateToSegment={handleNavigateToSegment}
           onFork={onFork}
         />

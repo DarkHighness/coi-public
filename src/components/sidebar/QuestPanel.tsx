@@ -107,11 +107,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     return (
       <div
         key={q.id}
-        className={`bg-theme-surface-highlight/30 rounded border border-theme-border overflow-hidden transition-all duration-300 mb-2 ${
-          q.type === "main"
-            ? "border-l-4 border-l-theme-primary"
-            : "border-l-4 border-l-theme-muted"
-        } ${options?.isDragging ? "opacity-50 scale-95" : ""} ${
+        className={`relative border-l-2 border-theme-border/50 border-b border-theme-border/25 transition-colors mb-2 pb-2 ${
+          q.type === "main" ? "border-l-theme-primary/70" : "border-l-theme-muted/60"
+        } ${options?.isDragging ? "opacity-60" : ""} ${
           effectiveEditMode ? "cursor-grab active:cursor-grabbing" : ""
         }`}
         draggable={effectiveEditMode}
@@ -122,7 +120,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         onDragEnd={handleDragEnd}
       >
         <div
-          className="p-3 cursor-pointer hover:bg-theme-surface-highlight/50 transition-colors flex items-start justify-between gap-2"
+          className="py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-start justify-between gap-2"
           onClick={() => toggleQuest(q.id, isModal)}
         >
           {/* Pin button - only show in edit mode or if pinned */}
@@ -220,7 +218,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="p-3 pt-0 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/30 mt-1">
+            <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/25 mt-1">
               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
                 {t("questPanel.description") || "Description"}
               </span>
@@ -237,7 +235,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
 
               {/* Hidden content - only shown when unlocked */}
               {q.unlocked && q.hidden && (
-                <div className="mt-3 space-y-2 border-t border-theme-unlocked/20 pt-2 bg-theme-surface/50 rounded">
+                <div className="mt-3 space-y-2 border-t border-theme-unlocked/20 pt-2">
                   <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-1">
                     <svg
                       className="w-3 h-3"
@@ -324,8 +322,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     );
   };
 
-  return (
-    <div>
+    return (
+      <div>
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between cursor-pointer group ${
@@ -440,7 +438,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         <div className="overflow-hidden">
           <div className="space-y-3">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
                 {t("questPanel.empty")}
               </div>
             ) : (

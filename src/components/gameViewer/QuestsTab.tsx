@@ -22,12 +22,12 @@ const QuestCard: React.FC<{
   gameState: GameState;
   t: (key: string, options?: any) => string;
 }> = ({ quest, gameState, t }) => (
-  <div className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50">
+  <div className="p-4 bg-theme-bg rounded-none border border-theme-border/40">
     <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-2">
       <span>{getValidIcon(quest.icon, "📜")}</span>
       {quest.title}
     </div>
-    <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+    <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
       <MarkdownText content={quest.visible.description} />
     </div>
     {quest.visible.objectives && quest.visible.objectives.length > 0 && (
@@ -202,7 +202,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
             {completedQuests.map((quest, idx) => (
               <div
                 key={quest.id || idx}
-                className="p-3 bg-green-500/5 rounded border border-green-500/20"
+                className="p-3 bg-green-500/5 rounded-none border border-green-500/20"
               >
                 <span className="text-theme-text text-sm flex items-center gap-2 font-medium">
                   <span>{getValidIcon(quest.icon, "✅")}</span>
@@ -227,7 +227,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
             {failedQuests.map((quest, idx) => (
               <div
                 key={quest.id || idx}
-                className="p-3 bg-red-500/5 rounded border border-red-500/20"
+                className="p-3 bg-red-500/5 rounded-none border border-red-500/20"
               >
                 <span className="text-theme-text text-sm line-through opacity-70 flex items-center gap-2 font-medium">
                   <span>{getValidIcon(quest.icon, "❌")}</span>

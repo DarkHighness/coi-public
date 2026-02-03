@@ -94,26 +94,26 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-none sm:rounded-xl shadow-2xl w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden ring-1 ring-theme-border/50">
+    <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+      <div className="vn-scroll-surface vn-scroll-edge border border-theme-border/70 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden bg-theme-bg">
         {/* Header */}
-        <div className="flex-none p-3 sm:p-5 border-b border-theme-border flex items-center justify-between bg-theme-surface-highlight/10">
+        <div className="flex-none px-4 py-3 sm:p-5 border-b border-theme-border/60 flex items-center justify-between bg-transparent">
           <div className="flex items-center gap-3 sm:gap-4">
             <span className="text-2xl sm:text-3xl" aria-hidden="true">
               📖
             </span>
             <div>
-              <h2 className="text-lg sm:text-2xl font-bold text-theme-primary uppercase tracking-widest">
+              <h2 className="text-base sm:text-2xl font-[var(--font-fantasy)] text-theme-primary uppercase tracking-[0.22em]">
                 {t("gameViewer.title") || "Chronicle"}
               </h2>
-              <p className="text-xs text-theme-muted uppercase tracking-wider font-bold">
+              <p className="text-[11px] sm:text-xs text-theme-muted uppercase tracking-[0.18em] font-bold">
                 {t("gameViewer.subtitle") || "Your story at a glance"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface rounded-lg transition-colors"
+            className="p-3 -m-1 text-theme-muted hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
           >
             <svg
               className="w-8 h-8"
@@ -132,7 +132,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Tab Bar */}
-        <div className="flex-none border-b border-theme-border bg-theme-bg/30 overflow-x-auto scrollbar-hide">
+        <div className="flex-none border-b border-theme-border/50 bg-transparent overflow-x-auto scrollbar-hide">
           <div className="flex px-2 min-w-full">
             {(Object.keys(TAB_CONFIGS) as ViewTab[]).map((tab) => {
               const config = TAB_CONFIGS[tab];
@@ -141,16 +141,16 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-none px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+                  className={`flex-none px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-2 transition-colors whitespace-nowrap border-b-2 ${
                     isActive
-                      ? "border-theme-primary text-theme-primary bg-theme-primary/5"
-                      : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+                      ? "border-theme-primary text-theme-primary"
+                      : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-bg/10"
                   }`}
                 >
                   <span className="text-base sm:text-lg">
                     {getValidIcon(config.icon, "📖")}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">
+                  <span className="text-[11px] sm:text-sm font-bold uppercase tracking-[0.18em]">
                     {t(config.labelKey) || tab}
                   </span>
                 </button>
@@ -160,19 +160,19 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-theme-bg/20">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-transparent">
           {renderTabContent()}
         </div>
 
         {/* Footer */}
-        <div className="flex-none p-3 sm:p-4 border-t border-theme-border bg-theme-surface-highlight/10 flex items-center justify-between">
+        <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-border/60 bg-transparent flex items-center justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
           <div className="text-xs text-theme-muted font-mono">
             {t("gameViewer.turnInfo", { turn: gameState.turnNumber }) ||
               `Turn ${gameState.turnNumber}`}
           </div>
           <button
             onClick={onClose}
-            className="px-6 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded-lg transition-colors border border-transparent hover:border-theme-border uppercase text-xs font-bold tracking-wider"
+            className="px-6 py-2.5 text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-theme-border/50 hover:border-theme-border uppercase text-xs font-bold tracking-[0.18em]"
           >
             {t("close") || "Close"}
           </button>

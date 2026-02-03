@@ -76,6 +76,25 @@ body {
     color 1s ease;
 }
 
+/* Better default cursors for interactive elements */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled {
+  cursor: not-allowed;
+}
+
+/* Theme-aware overlay for modals/menus (pairs well with Tailwind backdrop-blur-*) */
+.ui-overlay {
+  background-color: rgba(var(--theme-bg-rgb, 15 23 42), 0.72);
+}
+
 /* Global focus ring for keyboard navigation */
 :focus-visible {
   outline: 2px solid var(--theme-primary, #f59e0b) !important;
@@ -109,6 +128,57 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--theme-primary, #64748b);
+}
+
+/* Hide scrollbars on overflow containers (still scrollable) */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* VN-style "scroll" surface used by in-game editors/viewers */
+.vn-scroll-surface {
+  background:
+    radial-gradient(
+      900px circle at 50% 0%,
+      rgba(var(--theme-primary-rgb, 245 158 11), 0.12),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(var(--theme-bg-rgb, 15 23 42), 0.65),
+      rgba(var(--theme-bg-rgb, 15 23 42), 0.28) 45%,
+      rgba(var(--theme-bg-rgb, 15 23 42), 0.65)
+    );
+}
+
+.vn-scroll-edge {
+  position: relative;
+}
+.vn-scroll-edge::before,
+.vn-scroll-edge::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--theme-primary-rgb, 245 158 11), 0.22),
+    transparent
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+.vn-scroll-edge::before {
+  top: 0;
+}
+.vn-scroll-edge::after {
+  bottom: 0;
 }
 
 /* --- Environmental Effects --- */

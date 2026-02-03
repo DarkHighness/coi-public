@@ -9,6 +9,7 @@ interface StoryTextHeaderProps {
   onCopyPrompt?: () => string | Promise<string>;
   onUpload?: () => void;
   onFork?: () => void;
+  showOnHover?: boolean;
 }
 
 export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
@@ -19,6 +20,7 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   onCopyPrompt,
   onUpload,
   onFork,
+  showOnHover = false,
 }) => {
   const { t } = useTranslation();
   const [showCopied, setShowCopied] = React.useState(false);
@@ -35,7 +37,13 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   };
 
   return (
-    <div className="flex justify-between items-start mb-2">
+    <div
+      className={`mb-3 gap-3 ${
+        showOnHover
+          ? "hidden md:flex md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          : "flex"
+      } justify-between items-start`}
+    >
       <div className="flex items-center gap-2">
         <span className="text-xs text-theme-primary font-bold uppercase tracking-widest opacity-50">
           {t("narrator")}
@@ -43,11 +51,12 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
         {onFork && (
           <button
             onClick={onFork}
-            className="md:hidden flex items-center gap-1 px-1.5 py-0.5 rounded border border-theme-primary/30 text-[10px] text-theme-primary hover:bg-theme-primary/10 transition-colors"
+            className="md:hidden h-9 px-2.5 text-[10px] uppercase tracking-wider font-bold text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
             title={t("tree.fork") || "Create Fork"}
+            aria-label={t("tree.fork") || "Create Fork"}
           >
             <svg
-              className="w-3 h-3"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -70,11 +79,12 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
         {onUpload && (
           <button
             onClick={onUpload}
-            className="flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider text-theme-muted hover:text-theme-text transition-all"
+            className="flex items-center justify-center h-9 w-9 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/15 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
             title={t("uploadImage", "Upload Image")}
+            aria-label={t("uploadImage", "Upload Image")}
           >
             <svg
-              className="w-3 h-3"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -92,16 +102,17 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
         {onCopyPrompt && (
           <button
             onClick={handleCopyPrompt}
-            className="flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider text-theme-muted hover:text-theme-text transition-all"
+            className="flex items-center justify-center h-9 w-9 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/15 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
             title={t("copyImagePrompt", "Copy Image Prompt")}
+            aria-label={t("copyImagePrompt", "Copy Image Prompt")}
           >
             {showCopied ? (
-              <span className="text-green-400 font-bold">
+              <span className="text-[10px] font-bold text-theme-success">
                 {t("copied", "Copied!")}
               </span>
             ) : (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -120,16 +131,17 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
         <button
           onClick={onPlay}
           disabled={isLoading}
-          className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] uppercase tracking-wider transition-all ${
+          className={`flex items-center justify-center h-9 w-9 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg ${
             isPlaying
               ? "text-theme-primary animate-pulse"
-              : "text-theme-muted hover:text-theme-text"
+              : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/15"
           }`}
           title={label}
+          aria-label={label}
         >
           {isLoading ? (
             <svg
-              className="animate-spin h-3 w-3"
+              className="animate-spin h-4 w-4"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -150,7 +162,7 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
             </svg>
           ) : (
             <svg
-              className="w-3 h-3"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

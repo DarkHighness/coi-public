@@ -243,10 +243,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         className={`relative z-10 lg:w-6/12 h-1/3 lg:h-full flex flex-col justify-center p-8 lg:p-20 pointer-events-none ${mode === "theme_select" ? "hidden lg:flex" : "flex"}`}
       >
         <div className="space-y-4 lg:space-y-6 animate-fade-in-up">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-fantasy tracking-tighter text-transparent bg-clip-text bg-linear-to-r from-theme-text to-theme-muted drop-shadow-lg transition-all duration-300">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-fantasy tracking-tighter text-theme-text transition-all duration-300">
             {t("titlePart1")}
           </h1>
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl xl:text-6xl font-scifi uppercase tracking-[0.2em] text-theme-primary/80 transition-all duration-300">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl xl:text-6xl font-scifi uppercase tracking-[0.15em] text-theme-primary/80 transition-all duration-300">
             {t("titlePart2")}
           </h2>
           <p className="hidden lg:block text-lg text-theme-muted max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
@@ -257,7 +257,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
       {/* Right Panel: Interaction */}
       <div
-        className={`relative z-20 lg:w-6/12 ${mode === "theme_select" ? "h-full w-full" : "h-2/3"} lg:h-full bg-theme-surface/80 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-theme-border/50 shadow-2xl flex flex-col overflow-hidden transition-all duration-500`}
+        className={`relative z-20 lg:w-6/12 ${mode === "theme_select" ? "h-full w-full" : "h-2/3"} lg:h-full bg-theme-bg/85 backdrop-blur-lg border-t lg:border-t-0 lg:border-l border-theme-border/25 flex flex-col overflow-hidden transition-all duration-500`}
       >
         {/* Save Preview Background */}
         {latestSave?.previewImage && (
@@ -280,7 +280,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               onSettings();
             }}
             data-tutorial-id="settings-button"
-            className="p-2 text-theme-muted hover:text-theme-primary transition-colors rounded-full hover:bg-theme-surface-highlight/50"
+            className="p-2.5 text-theme-muted hover:text-theme-primary transition-colors hover:bg-theme-surface/10"
             title={t("settings.title")}
           >
             <svg
@@ -311,41 +311,41 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           {mode === "main" ? (
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full overflow-y-auto custom-scrollbar px-2">
               {latestSave && (
-                <div className="mb-4 group relative">
-                  <div className="absolute -inset-0.5 bg-linear-to-r from-theme-primary to-theme-primary-hover rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                <div className="mb-2 border-y border-theme-border/20">
                   <button
                     onClick={onContinue}
-                    className="relative w-full py-5 bg-theme-surface border border-theme-primary text-theme-text font-bold text-xl uppercase tracking-widest hover:bg-theme-surface-highlight transition-all shadow-xl hover:scale-[1.02] transform rounded-lg flex flex-col items-center overflow-hidden"
+                    className="w-full py-5 px-2 text-left hover:bg-theme-surface/10 transition-colors"
                   >
-                    <div className="absolute inset-0 bg-theme-primary/5 group-hover:bg-theme-primary/10 transition-colors"></div>
-                    <span className="relative z-10 text-theme-primary">
-                      {t("continueGame")}
-                    </span>
-                    <div className="relative z-10 text-xs normal-case opacity-80 mt-2 font-normal max-w-[90%] text-theme-muted line-clamp-2 [&_p]:mb-0">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="text-theme-primary font-bold uppercase tracking-widest text-sm">
+                        {t("continueGame")}
+                      </span>
+                      <span className="text-[11px] text-theme-muted/80 font-mono">
+                        {new Date(latestSave.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-sm text-theme-text/90 story-text line-clamp-2 [&_p]:mb-0">
                       <MarkdownText
-                        content={
-                          latestSave.summary || t("continueLastAdventure")
-                        }
+                        content={latestSave.summary || t("continueLastAdventure")}
                         disableIndent
                       />
                     </div>
-                    <div className="relative z-10 text-[10px] mt-2 text-theme-muted/70 uppercase tracking-wider">
-                      {new Date(latestSave.timestamp).toLocaleString() + " | "}
-                      <span>{getThemeName(latestSave?.theme, t)}</span>
+                    <div className="mt-2 text-xs text-theme-muted uppercase tracking-wider">
+                      {getThemeName(latestSave?.theme, t)}
                     </div>
                   </button>
                 </div>
               )}
 
-              <button
-                ref={startButtonRef}
-                onClick={enterThemeSelect}
-                data-tutorial-id="start-adventure-button"
-                className={`w-full py-4 border-2 border-theme-text/10 hover:border-theme-primary text-theme-text font-bold text-lg uppercase tracking-widest hover:bg-theme-surface-highlight transition-all rounded-sm flex items-center justify-center gap-3 group ${!latestSave ? "bg-theme-primary text-theme-bg border-theme-primary hover:bg-theme-primary-hover hover:border-theme-primary-hover" : ""}`}
-              >
-                <span>{t("startTitle")}</span>
-                <svg
-                  className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+	              <button
+	                ref={startButtonRef}
+	                onClick={enterThemeSelect}
+	                data-tutorial-id="start-adventure-button"
+	                className={`w-full py-4 px-2 border-b border-theme-border/20 hover:border-theme-primary/30 font-bold text-lg tracking-wide transition-colors flex items-center justify-between group hover:bg-theme-surface/10 ${!latestSave ? "border-t text-theme-primary hover:text-theme-primary-hover" : "text-theme-text hover:text-theme-primary"}`}
+	              >
+	                <span>{t("startTitle")}</span>
+	                <svg
+	                  className="w-5 h-5 group-hover:translate-x-1 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -362,7 +362,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               {/* Custom Game Button */}
               <button
                 onClick={() => setIsCustomGameModalOpen(true)}
-                className="w-full py-3 border border-theme-border hover:border-theme-primary/50 text-theme-muted hover:text-theme-text font-medium text-sm uppercase tracking-wider hover:bg-theme-surface-highlight/50 transition-all rounded-sm flex items-center justify-center gap-2 group"
+                className="w-full py-3 px-2 border-b border-theme-border/20 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -383,7 +383,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               {/* Start from Image Button */}
               <button
                 onClick={() => setIsImageUploadOpen(true)}
-                className="w-full py-3 border border-theme-border hover:border-theme-primary/50 text-theme-muted hover:text-theme-text font-medium text-sm uppercase tracking-wider hover:bg-theme-surface-highlight/50 transition-all rounded-sm flex items-center justify-center gap-2 group"
+                className="w-full py-3 px-2 border-b border-theme-border/20 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -493,7 +493,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 {/* Customize Button */}
                 <button
                   onClick={() => setIsCustomContextModalOpen(true)}
-                  className="relative px-3 py-2 border border-theme-border hover:border-theme-primary text-theme-muted hover:text-theme-primary transition-all rounded-lg text-xs uppercase tracking-wider font-bold flex items-center gap-2"
+                  className="relative px-1 py-2 text-theme-muted hover:text-theme-primary transition-colors text-xs uppercase tracking-wider font-bold flex items-center gap-2 border-b border-theme-border/25 hover:border-theme-primary/60"
                 >
                   <svg
                     className="w-4 h-4"

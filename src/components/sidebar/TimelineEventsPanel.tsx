@@ -26,25 +26,25 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
 
   return (
     <div
-      className={`relative rounded border transition-all duration-300 mb-2 overflow-hidden
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2
         ${
           isHighlight
-            ? "bg-theme-surface-highlight/20 border-theme-primary/50 animate-pulse ring-1 ring-theme-primary/30"
-            : "bg-theme-surface/30 border-theme-border/50 hover:bg-theme-surface-highlight/10 hover:border-theme-primary/30"
+            ? "border-l-theme-primary/70 bg-theme-surface-highlight/15 animate-pulse"
+            : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"
         }
-        ${event.unlocked ? "cursor-pointer" : "cursor-default"}
+        ${event.unlocked ? "cursor-pointer" : "cursor-default opacity-90"}
       `}
       onClick={handleClick}
     >
       {/* Card Header / Main Content */}
-      <div className="p-2.5">
-        <div className="flex justify-between items-start mb-1.5">
+      <div className="py-2 pl-2 pr-1">
+        <div className="flex justify-between items-start gap-2 mb-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-theme-muted bg-theme-bg/50 px-1.5 py-0.5 rounded border border-theme-border/30">
+            <span className="text-[10px] font-mono text-theme-muted">
               {event.gameTime}
             </span>
             {event.category && (
-              <span className="text-[9px] uppercase tracking-wider text-theme-muted bg-theme-surface/50 px-1.5 py-0.5 rounded border border-theme-border/20">
+              <span className="text-[9px] uppercase tracking-wider text-theme-muted">
                 {t(`timeline.categories.${event.category}`, {
                   defaultValue: event.category.replace("_", " "),
                 })}
@@ -65,7 +65,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
           </div>
           {event.unlocked && (
             <svg
-              className={`w-3 h-3 text-theme-muted transition-transform duration-300 ${
+              className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${
                 isExpanded ? "rotate-180" : ""
               }`}
               fill="none"
@@ -84,7 +84,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
 
         {/* Event Name (if available) */}
         {event.name && (
-          <div className="text-sm font-medium text-theme-text mb-1">
+          <div className="text-xs font-bold text-theme-text mb-1 break-words whitespace-normal">
             <span className="mr-1.5 inline-block">
               {getValidIcon(event.icon, "📅")}
             </span>
@@ -106,7 +106,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
         </div>
 
         {event.visible.causedBy && (
-          <div className="mt-2 pt-2 border-t border-theme-border/20 flex items-center gap-1.5">
+          <div className="mt-2 pt-2 border-t border-theme-border/30 flex items-center gap-1.5">
             <span className="text-[9px] uppercase tracking-wider text-theme-muted">
               {t("worldInfo.causedBy")}:
             </span>
@@ -122,7 +122,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
 
         {/* Involved Entities */}
         {event.involvedEntities && event.involvedEntities.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-theme-border/20">
+          <div className="mt-2 pt-2 border-t border-theme-border/30">
             <span className="text-[9px] uppercase tracking-wider text-theme-muted block mb-1">
               {t("timeline.involved") || "Involved"}:
             </span>
@@ -130,7 +130,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
               {event.involvedEntities.map((entityId, idx) => (
                 <span
                   key={idx}
-                  className="text-[10px] text-theme-text/70 bg-theme-bg/30 px-1.5 py-0.5 rounded border border-theme-border/20"
+                  className="text-[10px] text-theme-text/70 px-1"
                 >
                   {entityId}
                 </span>
@@ -159,7 +159,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="bg-theme-surface/50 border-t border-theme-primary/20 p-2.5">
+          <div className="border-t border-theme-border/30 pt-2 pl-3 border-l border-theme-border/25 pr-2">
             <div className="flex items-center gap-1.5 mb-2">
               <svg
                 className="w-3 h-3 text-theme-primary"
@@ -177,7 +177,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
               </span>
             </div>
 
-            <div className="space-y-2 pl-1">
+            <div className="space-y-2">
               {event.hidden?.trueDescription && (
                 <div className="text-[10px] text-theme-text leading-relaxed">
                   <MarkdownText
@@ -271,7 +271,7 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
               ></path>
             </svg>
             {t("timeline.title") || "Timeline Events"}
-            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            <span className="ml-2 text-[10px] text-theme-muted font-mono">
               {events?.length || 0}
             </span>
           </span>

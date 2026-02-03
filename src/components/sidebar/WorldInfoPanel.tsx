@@ -96,7 +96,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
             !worldSetting?.visible?.description &&
             (!factions || factions.length === 0) &&
             !isMainGoalUnlocked && (
-              <div className="text-xs text-theme-muted italic text-center py-4 opacity-70 border border-dashed border-theme-border/50 rounded bg-theme-surface-highlight/10">
+              <div className="text-xs text-theme-muted italic py-2 pl-2 pr-1 border-t border-theme-border/25 opacity-80">
                 {t("worldInfo.empty") || "No world information recorded yet."}
               </div>
             )}
@@ -117,7 +117,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
           {/* World Setting (Visible) */}
           {worldSetting?.visible?.description && (
-            <div className="space-y-2">
+            <div className="space-y-2 pt-4 border-t border-theme-border/25">
               <h4
                 className={`text-xs text-theme-primary/70 uppercase tracking-wider font-bold ${themeFont}`}
               >
@@ -130,18 +130,22 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 />
               </div>
               {worldSetting.visible?.rules && (
-                <div className="text-xs text-theme-muted mt-2 pl-2">
-                  <span className="font-bold">📜 {t("rules.short")}:</span>{" "}
-                  <MarkdownText
-                    content={worldSetting.visible.rules}
-                    indentSize={2}
-                  />
+                <div className="mt-3 pt-2 border-t border-theme-border/25 pl-2">
+                  <div className="text-[10px] uppercase tracking-wider text-theme-muted mb-1">
+                    📜 {t("rules.short") || "Rules"}
+                  </div>
+                  <div className="text-xs text-theme-text/85 leading-relaxed pl-2 border-l border-theme-border/25">
+                    <MarkdownText
+                      content={worldSetting.visible.rules}
+                      indentSize={2}
+                    />
+                  </div>
                 </div>
               )}
 
               {/* Hidden World Setting - shown when unlocked */}
               {isWorldSettingUnlocked && worldSetting?.hidden && (
-                <div className="mt-4 pt-3 border-t border-theme-unlocked/20">
+                <div className="mt-4 pt-3 border-t border-theme-border/25">
                   <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-2">
                     <svg
                       className="w-3 h-3"
@@ -157,7 +161,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                     {t("worldInfo.hiddenTruth") || "Hidden Truth"}
                   </div>
                   {worldSetting.hidden?.hiddenRules && (
-                    <div className="text-xs text-theme-danger/90 mb-2">
+                    <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l border-theme-border/25">
                       <MarkdownText
                         content={worldSetting.hidden.hiddenRules}
                         indentSize={2}
@@ -166,17 +170,22 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                   )}
                   {worldSetting.hidden?.secrets &&
                     worldSetting.hidden.secrets.length > 0 && (
-                      <ul className="text-xs text-theme-danger/80 mt-2 list-disc pl-4 space-y-1">
-                        {worldSetting.hidden.secrets.map((secret, idx) => (
-                          <li key={idx}>
-                            <MarkdownText
-                              content={secret}
-                              indentSize={2}
-                              inline
-                            />
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="mt-3 pl-2">
+                        <div className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 mb-1">
+                          {t("hidden.secrets") || "Secrets"}
+                        </div>
+                        <ul className="text-xs text-theme-danger/80 list-disc pl-5 space-y-1">
+                          {worldSetting.hidden.secrets.map((secret, idx) => (
+                            <li key={idx}>
+                              <MarkdownText
+                                content={secret}
+                                indentSize={2}
+                                inline
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                 </div>
               )}
@@ -185,7 +194,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
           {/* Main Goal Hidden - shown when unlocked */}
           {isMainGoalUnlocked && outline?.mainGoal?.hidden && (
-            <div className="space-y-2">
+            <div className="space-y-2 pt-4 border-t border-theme-border/25">
               <h4
                 className={`text-xs text-theme-unlocked/90 uppercase tracking-wider font-bold ${themeFont} flex items-center gap-1.5`}
               >
@@ -202,7 +211,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                 </svg>
                 {t("worldInfo.secretObjective") || "Secret Objective"}
               </h4>
-              <div className="text-xs text-theme-danger/90 leading-relaxed bg-theme-surface/50 p-3 rounded border border-theme-danger/20">
+              <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l-2 border-theme-border/40">
                 {outline.mainGoal.hidden?.trueDescription && (
                   <MarkdownText
                     content={outline.mainGoal.hidden.trueDescription}
@@ -210,14 +219,16 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                   />
                 )}
                 {outline.mainGoal.hidden?.trueConditions && (
-                  <div className="mt-2 text-xs text-theme-danger/70 border-t border-theme-danger/10 pt-2">
-                    <span className="font-bold">
-                      📝 {t("worldInfo.conditions")}
-                    </span>{" "}
-                    <MarkdownText
-                      content={outline.mainGoal.hidden.trueConditions}
-                      indentSize={2}
-                    />
+                  <div className="mt-3 pt-2 border-t border-theme-border/25">
+                    <div className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 mb-1">
+                      📝 {t("worldInfo.conditions") || "Conditions"}
+                    </div>
+                    <div className="text-xs text-theme-danger/80 leading-relaxed pl-2 border-l border-theme-border/25">
+                      <MarkdownText
+                        content={outline.mainGoal.hidden.trueConditions}
+                        indentSize={2}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -226,29 +237,32 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
           {/* Factions */}
           {factions && factions.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3 pt-4 border-t border-theme-border/25">
               <h4
                 className={`text-xs text-theme-primary/70 uppercase tracking-wider font-bold ${themeFont}`}
               >
                 {t("worldInfo.factions") || "Factions"}
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {factions.map((faction, idx) => (
                   <div
                     key={idx}
-                    className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 p-3 transition-all ${
+                    className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2 ${
                       faction.highlight
-                        ? "border-l-theme-unlocked ring-1 ring-theme-unlocked/30"
-                        : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30"
+                        ? "border-l-theme-unlocked/70 bg-theme-surface-highlight/15 animate-pulse"
+                        : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-bold text-xs text-theme-primary flex items-center gap-2">
-                        <span className="text-base">
-                          {getValidIcon(faction.icon, "⚔️")}
+                    <div className="py-2 pl-2 pr-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-xs text-theme-text flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0">
+                            {getValidIcon(faction.icon, "⚔️")}
+                          </span>
+                          <span className="break-words whitespace-normal">
+                            {faction.name}
+                          </span>
                         </span>
-                        {faction.name}
-                      </span>
                       {/* Unlocked indicator */}
                       {faction.unlocked && (
                         <span
@@ -268,150 +282,166 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                           </svg>
                         </span>
                       )}
-                    </div>
-                    <div className="text-xs text-theme-text/80 mb-3">
-                      <MarkdownText
-                        content={faction.visible?.agenda || ""}
-                        indentSize={2}
-                      />
-                    </div>
+                      </div>
+                      <div className="text-xs text-theme-text/80 mt-1 leading-relaxed">
+                        <MarkdownText
+                          content={faction.visible?.agenda || ""}
+                          indentSize={2}
+                        />
+                      </div>
 
-                    {/* Visible Extended Info */}
-                    <div className="mt-3 space-y-2 border-t border-theme-border/30 pt-2">
-                      {faction.visible?.members &&
-                        faction.visible.members.length > 0 && (
-                          <div className="text-xs text-theme-muted">
-                            <span className="text-theme-primary/80 font-bold block mb-1">
-                              {t("faction.members") || "Members"}:
-                            </span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {faction.visible.members.map((member, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-0.5 bg-theme-bg/50 rounded text-theme-text/90 border border-theme-border/50 flex items-center gap-1"
-                                  title={member.title}
-                                >
-                                  {member.name}
-                                  {member.title && (
-                                    <span className="text-[10px] text-theme-muted opacity-75">
-                                      ({member.title})
-                                    </span>
-                                  )}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      {faction.visible?.influence && (
-                        <div className="text-xs text-theme-muted flex items-start gap-1">
-                          <span className="text-theme-primary/80 font-bold whitespace-nowrap">
-                            {t("faction.influence") || "Influence"}:
-                          </span>
-                          <span className="text-theme-text/80">
-                            {faction.visible.influence}
-                          </span>
-                        </div>
-                      )}
-                      {faction.visible?.relations &&
-                        faction.visible.relations.length > 0 && (
-                          <div className="text-xs text-theme-muted">
-                            <span className="text-theme-primary/80 font-bold block mb-1">
-                              {t("faction.relations") || "Relations"}:
-                            </span>
-                            <div className="grid grid-cols-1 gap-1 pl-1">
-                              {faction.visible.relations.map((rel, idx) => (
-                                <div key={idx} className="flex justify-between">
-                                  <span>{rel.target}</span>
-                                  <span className="text-theme-text/70">
-                                    {rel.status}
-                                  </span>
+                      {/* Visible Extended Info */}
+                      {(faction.visible?.members?.length ||
+                        faction.visible?.influence ||
+                        faction.visible?.relations?.length) && (
+                        <div className="mt-3 pt-2 border-t border-theme-border/25 space-y-3">
+                          {faction.visible?.members &&
+                            faction.visible.members.length > 0 && (
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-theme-muted mb-1">
+                                  {t("faction.members") || "Members"}
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-
-                    {/* Hidden content - only shown when unlocked */}
-                    {faction.unlocked && faction.hidden && (
-                      <div className="mt-3 pt-3 border-t border-theme-unlocked/20">
-                        <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-2">
-                          <svg
-                            className="w-3 h-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {t("secretAgenda") || "Secret Agenda"}
-                        </div>
-                        <div className="text-xs text-theme-danger/90 mb-3">
-                          <MarkdownText
-                            content={faction.hidden?.agenda || ""}
-                            indentSize={2}
-                          />
-                        </div>
-
-                        {/* Hidden Extended Info */}
-                        <div className="space-y-2">
-                          {faction.hidden?.members &&
-                            faction.hidden.members.length > 0 && (
-                              <div className="text-xs text-theme-danger/70">
-                                <span className="text-theme-unlocked/80 font-bold block mb-1">
-                                  {t("faction.members") || "Members"}:
-                                </span>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {faction.hidden.members.map((member, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="px-2 py-0.5 bg-theme-surface/50 rounded text-theme-danger/90 border border-theme-danger/30 flex items-center gap-1"
-                                      title={member.title}
-                                    >
-                                      {member.name}
+                                <ul className="text-xs text-theme-text/80 space-y-1 pl-3 border-l border-theme-border/25">
+                                  {faction.visible.members.map((member, idx) => (
+                                    <li key={idx}>
+                                      <span className="text-theme-text/90">
+                                        {member.name}
+                                      </span>
                                       {member.title && (
-                                        <span className="text-[10px] text-theme-danger/60 opacity-75">
+                                        <span className="text-theme-muted">
+                                          {" "}
                                           ({member.title})
                                         </span>
                                       )}
-                                    </span>
+                                    </li>
                                   ))}
-                                </div>
+                                </ul>
                               </div>
                             )}
-                          {faction.hidden?.influence && (
-                            <div className="text-xs text-theme-danger/70 flex items-start gap-1">
-                              <span className="text-theme-unlocked/80 font-bold whitespace-nowrap">
-                                {t("faction.influence") || "Influence"}:
+
+                          {faction.visible?.influence && (
+                            <div className="text-xs text-theme-muted">
+                              <span className="text-[10px] uppercase tracking-wider block mb-1">
+                                {t("faction.influence") || "Influence"}
                               </span>
-                              <span>{faction.hidden.influence}</span>
+                              <div className="text-xs text-theme-text/80 pl-3 border-l border-theme-border/25">
+                                {faction.visible.influence}
+                              </div>
                             </div>
                           )}
-                          {faction.hidden?.relations &&
-                            faction.hidden.relations.length > 0 && (
-                              <div className="text-xs text-theme-danger/70">
-                                <span className="text-theme-unlocked/80 font-bold block mb-1">
-                                  {t("faction.relations") || "Relations"}:
+
+                          {faction.visible?.relations &&
+                            faction.visible.relations.length > 0 && (
+                              <div className="text-xs text-theme-muted">
+                                <span className="text-[10px] uppercase tracking-wider block mb-1">
+                                  {t("faction.relations") || "Relations"}
                                 </span>
-                                <div className="grid grid-cols-1 gap-1 pl-1">
-                                  {faction.hidden.relations.map((rel, idx) => (
+                                <div className="pl-3 border-l border-theme-border/25 divide-y divide-theme-border/20">
+                                  {faction.visible.relations.map((rel, idx) => (
                                     <div
                                       key={idx}
-                                      className="flex justify-between"
+                                      className="py-1 flex justify-between gap-2"
                                     >
-                                      <span>{rel.target}</span>
-                                      <span>{rel.status}</span>
+                                      <span className="text-theme-text/80">
+                                        {rel.target}
+                                      </span>
+                                      <span className="text-theme-text/60">
+                                        {rel.status}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             )}
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Hidden content - only shown when unlocked */}
+                      {faction.unlocked && faction.hidden && (
+                        <div className="mt-4 pt-3 border-t border-theme-border/25">
+                          <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-2">
+                            <svg
+                              className="w-3 h-3"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {t("secretAgenda") || "Secret Agenda"}
+                          </div>
+                          <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l border-theme-border/25">
+                            <MarkdownText
+                              content={faction.hidden?.agenda || ""}
+                              indentSize={2}
+                            />
+                          </div>
+
+                          {/* Hidden Extended Info */}
+                          <div className="mt-3 space-y-3">
+                            {faction.hidden?.members &&
+                              faction.hidden.members.length > 0 && (
+                                <div className="text-xs text-theme-danger/70">
+                                  <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                    {t("faction.members") || "Members"}
+                                  </span>
+                                  <ul className="text-xs text-theme-danger/80 space-y-1 pl-3 border-l border-theme-border/25">
+                                    {faction.hidden.members.map((member, idx) => (
+                                      <li key={idx}>
+                                        <span className="text-theme-danger/90">
+                                          {member.name}
+                                        </span>
+                                        {member.title && (
+                                          <span className="text-theme-danger/60">
+                                            {" "}
+                                            ({member.title})
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            {faction.hidden?.influence && (
+                              <div className="text-xs text-theme-danger/70">
+                                <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("faction.influence") || "Influence"}
+                                </span>
+                                <div className="text-xs text-theme-danger/80 pl-3 border-l border-theme-border/25">
+                                  {faction.hidden.influence}
+                                </div>
+                              </div>
+                            )}
+                            {faction.hidden?.relations &&
+                              faction.hidden.relations.length > 0 && (
+                                <div className="text-xs text-theme-danger/70">
+                                  <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                    {t("faction.relations") || "Relations"}
+                                  </span>
+                                  <div className="pl-3 border-l border-theme-border/25 divide-y divide-theme-border/20">
+                                    {faction.hidden.relations.map((rel, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="py-1 flex justify-between gap-2"
+                                      >
+                                        <span className="text-theme-danger/80">
+                                          {rel.target}
+                                        </span>
+                                        <span className="text-theme-danger/70">
+                                          {rel.status}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

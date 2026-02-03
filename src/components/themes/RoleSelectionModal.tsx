@@ -28,7 +28,7 @@ export const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-210 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fade-in p-4"
+      className="fixed inset-0 z-210 flex items-center justify-center ui-overlay backdrop-blur-md animate-fade-in p-4"
       onClick={onCancel}
     >
       <div

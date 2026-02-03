@@ -22,9 +22,9 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="p-6 bg-theme-surface-highlight/20 rounded border border-theme-border/50 text-center">
+      <div className="p-6 bg-theme-bg rounded-none border border-theme-border/40 text-center">
         <div className="text-5xl mb-3">🧠</div>
-        <h3 className="text-xl font-bold text-theme-primary mb-2 uppercase tracking-wider">
+        <h3 className="text-lg sm:text-xl font-[var(--font-fantasy)] text-theme-primary mb-2 uppercase tracking-[0.22em]">
           {t("gameViewer.embeddingStatus") || "Embedding Status"}
         </h3>
         <p className="text-theme-muted text-sm max-w-md mx-auto">
@@ -54,7 +54,7 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
               value={`${embeddingProgress.current} / ${embeddingProgress.total}`}
             />
             {embeddingProgress.message && (
-              <div className="text-xs text-theme-muted italic mt-2 p-2 bg-theme-bg/30 rounded border border-theme-border/30">
+              <div className="text-xs text-theme-muted italic mt-2 p-2 bg-theme-bg rounded-none border border-theme-border/30">
                 {embeddingProgress.message}
               </div>
             )}
@@ -69,7 +69,7 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
           </div>
         </Section>
       ) : (
-        <div className="p-6 text-center text-theme-muted italic border border-dashed border-theme-border/50 rounded bg-theme-surface-highlight/10">
+        <div className="p-6 text-center text-theme-muted italic border border-dashed border-theme-border/40 rounded-none bg-theme-bg">
           {t("gameViewer.noEmbeddingActivity") || "No active embedding tasks."}
         </div>
       )}

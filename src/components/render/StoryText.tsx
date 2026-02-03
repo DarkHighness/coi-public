@@ -60,7 +60,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
   );
 
   return (
-    <div className="relative px-2 md:px-6">
+    <div className="relative px-2 md:px-6 group">
       {warning && (
         <div className="absolute top-0 left-0 right-0 z-50 flex justify-center -mt-10 animate-fade-in">
           <div className="bg-red-500/90 text-white px-4 py-2 rounded shadow-lg text-sm font-bold backdrop-blur">
@@ -74,33 +74,46 @@ export const StoryText: React.FC<StoryTextProps> = ({
           </div>
         </div>
       )}
-      {/* Decorative side line */}
-      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-theme-primary/50 via-theme-primary/10 to-transparent opacity-50"></div>
 
-      <StoryTextHeader
-        isPlaying={isPlaying}
-        isLoading={isLoadingAudio}
-        onPlay={playAudio}
-        label={t("readAloud")}
-        onCopyPrompt={onCopyPrompt}
-        onUpload={onUpload}
-        onFork={onFork}
-      />
-
-      <div
-        className={`prose prose-lg max-w-none text-theme-text leading-8 font-serif ${isDarkMode ? "prose-invert" : ""}`}
-      >
-        {isLast ? (
-          <TypewriterText
-            text={text}
-            speed={aiSettings.typewriterSpeed ?? 15}
-            instant={!shouldAnimate}
-            onComplete={onTypingComplete}
-            enableMarkdown={true}
+      <div className="relative">
+        {/* Show tools on all segments (desktop: hover for past segments, mobile: only last) */}
+        {(isLast || onCopyPrompt || onUpload || onFork) && (
+          <StoryTextHeader
+            isPlaying={isPlaying}
+            isLoading={isLoadingAudio}
+            onPlay={playAudio}
+            label={t("readAloud")}
+            onCopyPrompt={onCopyPrompt}
+            onUpload={onUpload}
+            onFork={onFork}
+            showOnHover={!isLast}
           />
-        ) : (
-          <MarkdownText content={text} />
         )}
+
+        <div
+          className={`mx-auto max-w-[72ch] prose prose-lg max-w-none text-theme-text font-serif leading-7 md:leading-8
+            prose-p:my-4 md:prose-p:my-5
+            prose-headings:font-semibold prose-headings:tracking-wide prose-headings:text-theme-text
+            prose-strong:text-theme-text prose-em:text-theme-text/90
+            prose-hr:my-6 prose-hr:border-theme-border/25
+            prose-a:text-theme-primary prose-a:no-underline hover:prose-a:underline
+            prose-blockquote:my-5 prose-blockquote:border-l-2 prose-blockquote:border-theme-border/35 prose-blockquote:pl-4 prose-blockquote:text-theme-text/85 prose-blockquote:not-italic
+            prose-code:text-theme-text prose-code:bg-theme-surface/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+            prose-pre:bg-theme-surface/10 prose-pre:border prose-pre:border-theme-border/25
+            ${isDarkMode ? "prose-invert" : ""}`}
+        >
+          {isLast ? (
+            <TypewriterText
+              text={text}
+              speed={aiSettings.typewriterSpeed ?? 15}
+              instant={!shouldAnimate}
+              onComplete={onTypingComplete}
+              enableMarkdown={true}
+            />
+          ) : (
+            <MarkdownText content={text} />
+          )}
+        </div>
       </div>
     </div>
   );

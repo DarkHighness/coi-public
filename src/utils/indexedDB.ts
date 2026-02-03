@@ -275,6 +275,31 @@ export const getAllSaveIds = async (): Promise<string[]> => {
 };
 
 /**
+ * Get all VFS save IDs (derived from VFS metadata store).
+ * Useful for recovering saves when the `slots` metadata is missing/corrupted.
+ */
+export const getAllVfsSaveIds = async (): Promise<string[]> => {
+  const db = await openVfsDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([VFS_META_STORE], "readonly");
+    const store = transaction.objectStore(VFS_META_STORE);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const rows = (request.result as any[] | undefined) ?? [];
+      const ids = new Set<string>();
+      for (const row of rows) {
+        if (row && typeof row.saveId === "string") {
+          ids.add(row.saveId);
+        }
+      }
+      resolve(Array.from(ids));
+    };
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
  * Save metadata (save slots info)
  */
 export const saveMetadata = async <T>(key: string, data: T): Promise<void> => {

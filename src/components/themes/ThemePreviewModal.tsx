@@ -49,7 +49,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-200 flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in p-4"
+        className="fixed inset-0 z-200 flex items-center justify-center ui-overlay backdrop-blur-sm animate-fade-in p-4"
         onClick={onClose}
       >
         <div
@@ -75,7 +75,8 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-theme-muted hover:text-theme-text transition-colors rounded-full hover:bg-theme-surface-highlight"
+              className="p-2.5 text-theme-muted hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60"
+              aria-label={t("close")}
             >
               <svg
                 className="w-6 h-6"
@@ -186,7 +187,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
           <div className="relative z-10 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-surface/50 backdrop-blur-sm shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
             <button
               onClick={handleStartClick}
-              className="w-full py-3 bg-theme-primary text-theme-bg font-bold text-lg uppercase tracking-widest hover:bg-theme-primary-hover transition-all shadow-[0_0_20px_rgba(var(--theme-primary),0.3)] hover:scale-[1.01] rounded-xl flex items-center justify-center gap-2"
+              className="w-full py-3 bg-theme-primary text-theme-bg font-bold text-lg uppercase tracking-widest hover:bg-theme-primary-hover transition-all shadow-[0_0_20px_rgba(var(--theme-primary-rgb),0.3)] hover:scale-[1.01] rounded-xl flex items-center justify-center gap-2"
             >
               <span>{t("startThisAdventure")}</span>
               <svg

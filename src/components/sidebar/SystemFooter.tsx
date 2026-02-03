@@ -26,64 +26,10 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="shrink-0 px-4 pt-4 border-t border-theme-border bg-theme-surface/30 space-y-4 mt-auto">
-      {/* Tools Panel */}
-      <div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              onMagicMirror();
-              onCloseMobile();
-            }}
-            className="flex-1 py-2 px-3 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text border border-theme-border rounded-md hover:border-theme-primary group"
-            title={t("magicMirror.title")}
-          >
-            <svg
-              className="w-5 h-5 mr-2 text-theme-primary group-hover:scale-110 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-              ></path>
-            </svg>
-            <span className="text-sm font-medium">
-              {t("magicMirror.title")}
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              onVeoScript();
-              onCloseMobile();
-            }}
-            className="w-12 py-2 bg-theme-surface-highlight hover:bg-theme-surface-highlight/80 transition-all flex items-center justify-center text-theme-text border border-theme-border rounded-md hover:border-theme-primary"
-            title={t("veoScript.title")}
-          >
-            <svg
-              className="w-5 h-5 text-theme-muted hover:text-theme-primary transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              ></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* System Panel */}
+    <div className="shrink-0 px-4 pt-3 pb-4 border-t border-theme-border/50 bg-theme-surface/10 mt-auto space-y-4">
       <div>
         <h2
-          className={`text-theme-primary uppercase text-sm font-bold tracking-widest mb-2 flex items-center ${themeFont}`}
+          className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-2 flex items-center ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -106,36 +52,34 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           </svg>
           {t("system")}
         </h2>
-        <div className="grid grid-cols-2 gap-2">
+
+        <div className="border-t border-theme-border/25 divide-y divide-theme-border/20">
           <button
             onClick={() => {
-              onNewGame();
+              onMagicMirror();
               onCloseMobile();
             }}
-            className="px-3 py-2 bg-theme-surface-highlight/50 hover:bg-theme-primary/20 border border-theme-border hover:border-theme-primary text-theme-text text-sm rounded transition-colors"
+            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+            title={t("magicMirror.title")}
           >
-            {t("mainMenu")}
-          </button>
-          <div className="relative">
-            <button
-              onClick={onSave}
-              className="w-full px-3 py-2 bg-theme-surface-highlight/50 hover:bg-theme-primary/20 border border-theme-border hover:border-theme-primary text-theme-text text-sm rounded transition-colors"
-            >
-              {t("saveGame")}
-            </button>
-          </div>
-        </div>
-        {/* Second Row of System Buttons */}
-        <div className="grid grid-cols-1 gap-2 mt-2">
-          <button
-            onClick={() => {
-              onSettings();
-              onCloseMobile();
-            }}
-            className="px-3 py-2 bg-theme-surface-highlight/50 hover:bg-theme-surface-highlight border border-theme-border hover:border-theme-muted text-theme-muted hover:text-theme-text text-sm rounded transition-colors flex items-center justify-center gap-2"
-          >
+            <span className="flex items-center gap-2 min-w-0">
+              <svg
+                className="w-5 h-5 text-theme-primary shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                ></path>
+              </svg>
+              <span className="text-sm truncate">{t("magicMirror.title")}</span>
+            </span>
             <svg
-              className="w-4 h-4"
+              className="w-4 h-4 text-theme-muted shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -144,16 +88,120 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth="2"
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-              ></path>
+                d="M9 5l7 7-7 7"
+              />
             </svg>
-            {t("settings.title")}
+          </button>
+
+          <button
+            onClick={() => {
+              onVeoScript();
+              onCloseMobile();
+            }}
+            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+            title={t("veoScript.title")}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <svg
+                className="w-5 h-5 text-theme-primary shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              <span className="text-sm truncate">{t("veoScript.title")}</span>
+            </span>
+            <svg
+              className="w-4 h-4 text-theme-muted shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => {
+              onNewGame();
+              onCloseMobile();
+            }}
+            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+          >
+            <span className="text-sm">{t("mainMenu")}</span>
+            <svg
+              className="w-4 h-4 text-theme-muted shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={onSave}
+            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+          >
+            <span className="text-sm">{t("saveGame")}</span>
+            <svg
+              className="w-4 h-4 text-theme-muted shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => {
+              onSettings();
+              onCloseMobile();
+            }}
+            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+          >
+            <span className="text-sm">{t("settings.title")}</span>
+            <svg
+              className="w-4 h-4 text-theme-muted shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
           </button>
         </div>
 
-        <div className="p-2 text-xs text-theme-muted text-center mt-2 border-t border-theme-border pt-2">
+        <div className="mt-3 pt-2 border-t border-theme-border/25 text-[10px] text-theme-muted text-center">
           {t("builtWith")}
-          <div className="text-[10px] opacity-50 mt-1">
+          <div className="opacity-60 mt-1 font-mono">
             {BUILD_INFO.gitHash} ({BUILD_INFO.buildTime})
           </div>
         </div>

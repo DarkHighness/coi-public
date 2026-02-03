@@ -900,7 +900,7 @@ function AppContent() {
   };
 
   const LoadingFallback = () => (
-    <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/50 backdrop-blur pointer-events-none">
+    <div className="fixed inset-0 flex items-center justify-center z-[100] ui-overlay backdrop-blur pointer-events-none">
       <div className="w-10 h-10 border-4 border-theme-primary border-t-transparent rounded-full animate-spin"></div>
     </div>
   );

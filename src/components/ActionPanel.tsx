@@ -59,6 +59,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const [customInput, setCustomInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isChoicesExpanded, setIsChoicesExpanded] = useState(false);
+  const [isCustomChoiceOpen, setIsCustomChoiceOpen] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<{
     message: string;
     action: CommandAction;
@@ -73,6 +74,16 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     .slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
   const isDisabled = gameState.isProcessing || isTranslating;
+  const hasChoices = availableChoices.length > 0;
+  const customChoiceIndex = availableChoices.length + 1;
+  const showCommandHints = customInput.startsWith("/");
+
+  const openCustomChoice = useCallback(() => {
+    setIsCustomChoiceOpen(true);
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
 
   // Command context for command parsing
   const commandContext: CommandContext = {
@@ -112,12 +123,24 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       const key = parseInt(e.key);
       if (!isNaN(key) && key >= 1 && key <= (availableChoices?.length || 0)) {
         onAction(getChoiceLabel(availableChoices[key - 1]));
+        return;
+      }
+
+      if (!isNaN(key) && hasChoices && key === customChoiceIndex) {
+        openCustomChoice();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [availableChoices, isDisabled, onAction]);
+  }, [
+    availableChoices,
+    customChoiceIndex,
+    hasChoices,
+    isDisabled,
+    onAction,
+    openCustomChoice,
+  ]);
 
   // Auto-collapse choices on mobile when processing finishes
   useEffect(() => {
@@ -126,9 +149,18 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     }
   }, [gameState.isProcessing]);
 
+  // Auto-expand choices on mobile when new choices appear
+  useEffect(() => {
+    if (!hasChoices) return;
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setIsChoicesExpanded(true);
+    }
+  }, [hasChoices, availableChoices.length]);
+
   // Helper to clear input and reset textarea height
   const clearInput = useCallback(() => {
     setCustomInput("");
+    setIsCustomChoiceOpen(false);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -260,12 +292,129 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     if (actionText === customInput) setCustomInput("");
   };
 
+  const showCustomAsOption =
+    hasChoices && !isCustomChoiceOpen && !customInput.trim() && !showCommandHints;
+
+  const customChoiceRow = (
+    <form
+      onSubmit={handleCustomSubmit}
+      className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-border/15 hover:bg-theme-surface/10 transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 text-[11px] tabular-nums text-theme-muted/60 select-none w-5 text-right">
+          {customChoiceIndex}
+        </div>
+
+        <div className="flex-1">
+          {showCustomAsOption ? (
+            <button
+              type="button"
+              onClick={openCustomChoice}
+              className="w-full text-left font-serif text-[15px] md:text-base text-theme-muted/70 italic py-0.5"
+            >
+              {t("placeholder")}
+            </button>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={customInput}
+              onFocus={() => setIsCustomChoiceOpen(true)}
+              onChange={(e) => {
+                setCustomInput(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleCustomSubmit(e);
+                }
+              }}
+              placeholder={t("placeholder")}
+              disabled={isDisabled}
+              rows={1}
+              className="w-full bg-transparent text-theme-text px-2 py-1.5 focus:outline-none placeholder-theme-muted/50 resize-none min-h-10 max-h-[120px] font-serif leading-6"
+              style={{ height: "auto" }}
+            />
+          )}
+
+          {showCommandHints && hasChoices && (
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-theme-muted/70">
+              {SUPPORTED_COMMANDS.map((cmd) => (
+                <button
+                  key={cmd.cmd}
+                  type="button"
+                  onClick={() => {
+                    setCustomInput(cmd.cmd + " ");
+                    openCustomChoice();
+                  }}
+                  disabled={isDisabled}
+                  className="px-0.5 py-0.5 border-b border-transparent hover:border-theme-primary/60 hover:text-theme-primary transition-colors disabled:opacity-50"
+                  title={cmd.desc}
+                >
+                  {cmd.cmd}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {!showCustomAsOption && (
+          <div className="flex-none flex items-center gap-1.5 mt-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={(e) => handleRollClick(e, customInput)}
+              disabled={isDisabled || !customInput.trim()}
+              className="p-1.5 text-theme-muted/70 hover:text-theme-primary disabled:opacity-30 transition-colors"
+              title={t("roll")}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                ></path>
+              </svg>
+            </button>
+
+            <button
+              type="submit"
+              disabled={isDisabled || !customInput.trim()}
+              className="p-1.5 text-theme-primary hover:text-theme-primary-hover transition-colors disabled:text-theme-muted/50"
+              title={t("send") || "Send"}
+            >
+              <svg
+                className="w-4 h-4 transform rotate-90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+    </form>
+  );
+
   return (
     <div className="flex-none w-full z-30">
       {/* God Mode Indicator */}
       {gameState.godMode && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-pulse">
-          <div className="px-4 py-1.5 bg-theme-warning/20 border border-theme-warning/50 rounded-full text-theme-warning text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+          <div className="px-4 py-1.5 bg-theme-warning/15 border border-theme-warning/35 rounded-full text-theme-warning text-xs font-bold uppercase tracking-widest flex items-center gap-2">
             <span className="text-lg">🔱</span>
             <span>{t("commands.godMode.indicator") || "GOD MODE"}</span>
             <span className="text-lg">🔱</span>
@@ -275,7 +424,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       {/* Command Confirmation Modal */}
       {pendingCommand && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
             <div className="text-theme-text whitespace-pre-wrap text-sm mb-6">
               {pendingCommand.message}
@@ -300,7 +449,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       {/* Action Confirmation Modal */}
       {pendingAction && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
             <div className="text-theme-text text-sm mb-6">
               {pendingAction === "retry" && t("confirmRetry")}
@@ -333,19 +482,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Gradient fade to blend with content */}
       <div className="h-8 bg-linear-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
-      <div className="bg-theme-bg/80 backdrop-blur-md p-4 md:px-8">
+      <div className="bg-theme-bg/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-4 border-t border-theme-border/15">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-4">
           {/* Action Controls - Always show retry/jump buttons when not processing */}
           {!gameState.isProcessing && !isTranslating && (
             <div className="animate-fade-in-up">
               {/* Retry + Jump Buttons - Always visible */}
-              <div className="flex justify-center items-center gap-2 mb-2">
+              <div className="flex justify-center items-center gap-1.5 mb-2 flex-wrap">
                 {/* Retry Button - Always show */}
                 {onRetry && (
                   <button
                     onClick={() => setPendingAction("retry")}
                     disabled={isDisabled}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-primary uppercase tracking-widest border-b border-transparent hover:border-theme-primary/60 hover:bg-theme-surface/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("retryGeneration")}
                   >
                     <svg
@@ -372,7 +521,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <button
                     onClick={() => setPendingAction("rebuild")}
                     disabled={isDisabled}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-warning/50 rounded-full text-xs font-bold text-theme-warning uppercase tracking-widest hover:bg-theme-warning hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-warning uppercase tracking-widest border-b border-transparent hover:border-theme-warning/60 hover:bg-theme-surface/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("rebuildContext") || "Rebuild Context"}
                   >
                     <svg
@@ -399,7 +548,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <button
                     onClick={() => setPendingAction("cleanup")}
                     disabled={isDisabled}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-info/50 rounded-full text-xs font-bold text-theme-info uppercase tracking-widest hover:bg-theme-info hover:text-theme-bg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-info uppercase tracking-widest border-b border-transparent hover:border-theme-info/60 hover:bg-theme-surface/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("cleanupEntities") || "Cleanup Entities"}
                   >
                     <svg
@@ -427,7 +576,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     {!isJumpOpen ? (
                       <button
                         onClick={() => setIsJumpOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-surface border border-theme-border rounded-full text-xs font-bold text-theme-muted uppercase tracking-widest hover:text-theme-primary hover:border-theme-primary transition-colors shadow-sm"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-muted uppercase tracking-widest border-b border-transparent hover:border-theme-primary/60 hover:bg-theme-surface/10 hover:text-theme-primary transition-colors"
                         title={t("jumpToSegment") || "Jump to Segment"}
                       >
                         <svg
@@ -445,7 +594,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         </svg>
                       </button>
                     ) : (
-                      <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface border border-theme-primary/30 rounded-full pl-3 pr-1 py-1">
+                      <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface/20 border border-theme-border/25 px-2.5 py-1">
                         <input
                           autoFocus
                           type="text"
@@ -496,7 +645,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         </button>
                         <button
                           onClick={() => setIsJumpOpen(false)}
-                          className="ml-1 p-1 rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
+                          className="ml-1 p-1 text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
                         >
                           <svg
                             className="w-3 h-3"
@@ -521,7 +670,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {availableChoices.length > 0 && (
                   <button
                     onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                    className="md:hidden flex items-center gap-2 px-4 py-1 bg-theme-surface border border-theme-primary/50 rounded-full text-xs font-bold text-theme-primary uppercase tracking-widest hover:bg-theme-primary hover:text-theme-bg transition-colors shadow-sm"
+                    className="md:hidden flex items-center gap-2 px-2.5 py-1 text-[11px] font-bold text-theme-primary uppercase tracking-widest border-b border-transparent hover:border-theme-primary/60 hover:bg-theme-surface/10 transition-colors"
                   >
                     {isChoicesExpanded ? (
                       <>
@@ -565,83 +714,92 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               {/* Choices List - Only show when there are choices */}
               {availableChoices.length > 0 && (
                 <div
-                  className={`flex flex-wrap gap-2 justify-center transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
+                  className={`transition-all duration-300 overflow-hidden pt-2 ${isChoicesExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 md:max-h-none md:opacity-100"}`}
                 >
-                  {availableChoices.map((rawChoice, idx) => {
-                    const label = getChoiceLabel(rawChoice);
-                    return (
-                      <div
-                        key={idx}
-                        className="group relative inline-flex rounded-full shadow-sm hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.4)] transition-all duration-300"
-                      >
-                        <button
-                          onClick={() => onAction(label)}
-                          className="px-4 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-text hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-l-full border-r-0 text-sm transition-all duration-300 text-left flex flex-col items-start"
+                  <div className="mx-auto max-w-[72ch]">
+                    {availableChoices.map((rawChoice, idx) => {
+                      const label = getChoiceLabel(rawChoice);
+                      return (
+                        <div
+                          key={idx}
+                          className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-border/15 hover:bg-theme-surface/10 transition-colors"
                         >
-                          <span className="absolute -top-2 -left-2 w-5 h-5 bg-theme-bg border border-theme-muted/30 text-[10px] text-theme-muted rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            {idx + 1}
-                          </span>
-                          <div className="font-medium">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                p: ({ children }) => (
-                                  <span className="inline">{children}</span>
-                                ),
-                                strong: ({ children }) => (
-                                  <span className="font-bold">{children}</span>
-                                ),
-                                em: ({ children }) => (
-                                  <span className="italic">{children}</span>
-                                ),
-                              }}
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-muted/60 select-none w-5 text-right">
+                              {idx + 1}
+                            </div>
+
+                            <button
+                              onClick={() => onAction(label)}
+                              className="flex-1 text-left text-theme-text font-serif leading-6 md:leading-7"
                             >
-                              {label}
-                            </ReactMarkdown>
+                              <div className="text-[15px] md:text-base font-medium">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    p: ({ children }) => (
+                                      <span className="inline">{children}</span>
+                                    ),
+                                    strong: ({ children }) => (
+                                      <span className="font-bold">{children}</span>
+                                    ),
+                                    em: ({ children }) => (
+                                      <span className="italic">{children}</span>
+                                    ),
+                                  }}
+                                >
+                                  {label}
+                                </ReactMarkdown>
+                              </div>
+                              {(rawChoice as any).consequence &&
+                                gameState.unlockMode && (
+                                  <div className="mt-1 text-[11px] text-theme-muted/75 italic">
+                                    {(rawChoice as any).consequence}
+                                  </div>
+                                )}
+                            </button>
+
+                            <button
+                              onClick={(e) => handleRollClick(e, label)}
+                              className="flex-none mt-0.5 p-1.5 text-theme-muted/70 hover:text-theme-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
+                              title={t("roll")}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.5"
+                                  d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                                ></path>
+                              </svg>
+                            </button>
                           </div>
-                          {(rawChoice as any).consequence &&
-                            gameState.unlockMode && (
-                              <span className="text-[10px] text-theme-muted opacity-80 mt-0.5 font-normal italic block">
-                                {(rawChoice as any).consequence}
-                              </span>
-                            )}
-                        </button>
-                        <button
-                          onClick={(e) => handleRollClick(e, label)}
-                          className="px-2 py-2 bg-theme-surface-highlight/80 hover:bg-theme-primary text-theme-muted hover:text-theme-bg border border-theme-border hover:border-theme-primary rounded-r-full border-l border-l-theme-border/30 text-sm transition-all duration-300 flex items-center justify-center z-0"
-                          title={t("roll")}
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
-                            ></path>
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                    {customChoiceRow}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           {/* Command Hints - Only show when user starts with / */}
-          {customInput.startsWith("/") && (
-            <div className="flex flex-wrap gap-2 justify-center px-4">
+          {showCommandHints && !hasChoices && (
+            <div
+              className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-muted/70 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
+            >
               {SUPPORTED_COMMANDS.map((cmd) => (
                 <button
                   key={cmd.cmd}
                   onClick={() => setCustomInput(cmd.cmd + " ")}
                   disabled={isDisabled}
-                  className="px-2 py-1 text-[10px] bg-theme-surface/30 border border-theme-border/50 rounded-md text-theme-muted hover:text-theme-primary hover:border-theme-primary/50 transition-colors"
+                  className="px-0.5 py-0.5 border-b border-transparent hover:border-theme-primary/60 hover:text-theme-primary transition-colors disabled:opacity-50"
                   title={cmd.desc}
                 >
                   {cmd.cmd}
@@ -652,77 +810,80 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {/* Input Bar */}
           <div className="relative">
-            <form
-              onSubmit={handleCustomSubmit}
-              className="relative flex items-end gap-2 bg-theme-surface/50 backdrop-blur-sm border border-theme-border rounded-xl shadow-lg p-2 transition-colors focus-within:border-theme-primary/50 focus-within:ring-1 focus-within:ring-theme-primary/50"
-            >
-              {/* Roll Button (Integrated) */}
-              <button
-                type="button"
-                onClick={(e) => handleRollClick(e, customInput)}
-                disabled={isDisabled || !customInput.trim()}
-                className="p-2 mb-0.5 text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight rounded-lg transition-colors disabled:opacity-30 flex-none"
-                title={t("roll")}
+            {hasChoices ? null : (
+              <form
+                onSubmit={handleCustomSubmit}
+                className="relative flex items-end gap-2 bg-theme-bg/60 backdrop-blur-sm border border-theme-border/20 border-t border-t-theme-border/30 rounded-none px-1.5 py-2 transition-colors focus-within:border-t-theme-primary/50"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                {/* Roll Button (Integrated) */}
+                <button
+                  type="button"
+                  onClick={(e) => handleRollClick(e, customInput)}
+                  disabled={isDisabled || !customInput.trim()}
+                  className="p-2 mb-0.5 text-theme-muted/80 hover:text-theme-primary transition-colors disabled:opacity-30 flex-none"
+                  title={t("roll")}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
-                  ></path>
-                </svg>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                    ></path>
+                  </svg>
+                </button>
 
-              {/* Main Input */}
-              <textarea
-                ref={textareaRef}
-                value={customInput}
-                onChange={(e) => {
-                  setCustomInput(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height =
-                    Math.min(e.target.scrollHeight, 120) + "px";
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleCustomSubmit(e);
-                  }
-                }}
-                placeholder={t("placeholder")}
-                disabled={isDisabled}
-                rows={1}
-                className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-11 max-h-[120px] self-center"
-                style={{ height: "auto" }}
-              />
+                {/* Main Input */}
+                <textarea
+                  ref={textareaRef}
+                  value={customInput}
+                  onChange={(e) => {
+                    setCustomInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height =
+                      Math.min(e.target.scrollHeight, 120) + "px";
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleCustomSubmit(e);
+                    }
+                  }}
+                  placeholder={t("placeholder")}
+                  disabled={isDisabled}
+                  rows={1}
+                  className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-11 max-h-[120px] self-center font-serif"
+                  style={{ height: "auto" }}
+                />
 
-              {/* Send/Act Button */}
-              <button
-                type="submit"
-                disabled={isDisabled || !customInput.trim()}
-                className="p-2 mb-0.5 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-all disabled:bg-theme-surface-highlight disabled:text-theme-muted shadow-md flex-none"
-              >
-                <svg
-                  className="w-5 h-5 transform rotate-90"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                {/* Send/Act Button */}
+                <button
+                  type="submit"
+                  disabled={isDisabled || !customInput.trim()}
+                  className="p-2 mb-0.5 text-theme-primary hover:text-theme-primary-hover transition-colors disabled:text-theme-muted/50 flex-none"
+                  title={t("send") || "Send"}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  ></path>
-                </svg>
-              </button>
-            </form>
+                  <svg
+                    className="w-5 h-5 transform rotate-90"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    ></path>
+                  </svg>
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>

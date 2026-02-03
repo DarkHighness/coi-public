@@ -51,10 +51,10 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
   return (
     <div
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 ease-in-out mb-3 group
-        ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
-        ${isOpen ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2 group
+        ${isDragging ? "opacity-60" : "opacity-100"}
+        ${isOpen ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
       `}
       onDragOver={onDragOver}
       onDragEnter={onDragEnter}
@@ -63,7 +63,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
       onDragStart={isEditMode && onDragStart ? onDragStart : undefined}
     >
       <div
-        className="flex justify-between items-center px-3 py-2.5 cursor-pointer"
+        className="flex justify-between items-center py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors"
         onClick={handleClick}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -97,7 +97,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                 e.stopPropagation();
                 onPin();
               }}
-              className={`p-1 rounded hover:bg-theme-bg transition-colors ${
+              className={`p-1 rounded hover:bg-theme-surface-highlight/20 transition-colors ${
                 isPinned
                   ? "text-theme-primary"
                   : "text-theme-muted hover:text-theme-text opacity-0 group-hover:opacity-100"
@@ -128,8 +128,8 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-3 pb-3 pt-0 space-y-3">
-            <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
+          <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
+            <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/25 pt-2">
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                   {t("description") || "Description"}
@@ -274,7 +274,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
+          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface/10 border-l border-theme-border/40 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
         >
           <svg

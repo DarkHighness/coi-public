@@ -43,7 +43,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       >
         {outline?.worldSetting ? (
           <>
-            <div className="text-theme-text text-sm leading-relaxed">
+            <div className="story-text text-theme-text text-sm leading-relaxed">
               <MarkdownText
                 content={outline.worldSetting.visible?.description || ""}
               />
@@ -127,10 +127,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             {gameState.locations.map((loc, idx) => (
               <div
                 key={loc.id || idx}
-                className={`p-4 rounded border ${
+                className={`p-4 rounded-none border ${
                   loc.id === gameState.currentLocation
-                    ? "bg-theme-primary/10 border-theme-primary/50 ring-1 ring-theme-primary/30"
-                    : "bg-theme-surface-highlight/30 border-theme-border/50"
+                    ? "bg-theme-primary/10 border-theme-primary/50"
+                    : "bg-theme-bg border-theme-border/40"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -381,7 +381,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             {gameState.factions.map((faction, idx) => (
               <div
                 key={faction.id || idx}
-                className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
               >
                 <div className="font-bold text-theme-primary text-base flex items-center gap-2 mb-2">
                   <span>{getValidIcon(faction.icon, "⚔️")}</span>
