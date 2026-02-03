@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <h1
           className={`text-xl md:text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider text-center leading-none`}
         >
-          {t("titlePart1")}
+          {t("titleShort")}
           <div className="text-[11px] md:text-xs text-theme-muted/80 font-mono text-center mt-2 flex flex-col gap-0.5 max-w-[28ch] md:max-w-[36ch] mx-auto leading-snug">
             {/* Mobile View (Stacked) */}
             <div className="md:hidden flex flex-col gap-0.5">
