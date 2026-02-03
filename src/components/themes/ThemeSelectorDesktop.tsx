@@ -226,7 +226,11 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                 </div>
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="text-4xl mb-2">{previewData.icon}</div>
-                  <h2 className="text-3xl font-bold text-theme-primary font-display shadow-black/50 drop-shadow-lg">
+                  <h2
+                    className={`text-3xl font-bold text-theme-primary ${
+                      ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"
+                    } shadow-black/50 drop-shadow-lg`}
+                  >
                     {t(`${previewTheme}.name`, { ns: "themes" })}
                   </h2>
                 </div>
@@ -240,7 +244,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">
                       {t("narrativeStyle")}
                     </h3>
-                    <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                    <div className="text-theme-text indent-4 text-lg leading-relaxed">
                       <MarkdownText
                         content={t(`${previewTheme}.narrativeStyle`, {
                           ns: "themes",
@@ -253,7 +257,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     <h3 className="text-sm font-bold text-theme-muted uppercase tracking-wider font-sans">
                       {t("worldSetting")}
                     </h3>
-                    <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                    <div className="text-theme-text indent-4 text-lg leading-relaxed">
                       <MarkdownText
                         content={t(`${previewTheme}.worldSetting`, {
                           ns: "themes",
@@ -270,7 +274,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       <div className="absolute -top-2 -left-2 text-3xl text-theme-primary/20 font-serif group-hover:text-theme-primary/30 transition-colors">
                         "
                       </div>
-                      <div className="text-theme-text-primary indent-4 text-lg leading-relaxed">
+                      <div className="text-theme-text indent-4 text-lg leading-relaxed">
                         <MarkdownText
                           content={t(`${previewTheme}.example`, {
                             ns: "themes",

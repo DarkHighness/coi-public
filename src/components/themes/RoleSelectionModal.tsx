@@ -37,7 +37,7 @@ export const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
       >
         {/* Header */}
         <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/30 flex-shrink-0">
-          <h3 className="text-2xl font-bold text-theme-text text-center font-display tracking-wide">
+          <h3 className="text-2xl font-bold text-theme-text text-center tracking-wide">
             {t("selectYourIdentity", "Choose Your Identity")}
           </h3>
           <div className="flex items-center justify-center gap-2 mt-2">

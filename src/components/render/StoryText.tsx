@@ -8,6 +8,7 @@ import { AISettings } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
 import { markdownComponents } from "../../utils/markdownComponents";
 import { MarkdownText } from "./MarkdownText";
+import { useSettings } from "../../hooks/useSettings";
 
 interface StoryTextProps {
   text: string;
@@ -40,6 +41,11 @@ export const StoryText: React.FC<StoryTextProps> = ({
 }) => {
   const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
+  const { themeMode } = useSettings();
+  const isDarkMode =
+    themeMode === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : themeMode === "night";
 
   const { isPlaying, isLoadingAudio, playAudio } = useStoryAudio(
     text,
@@ -81,7 +87,9 @@ export const StoryText: React.FC<StoryTextProps> = ({
         onFork={onFork}
       />
 
-      <div className="prose prose-invert prose-lg max-w-none text-theme-text leading-8 font-serif">
+      <div
+        className={`prose prose-lg max-w-none text-theme-text leading-8 font-serif ${isDarkMode ? "prose-invert" : ""}`}
+      >
         {isLast ? (
           <TypewriterText
             text={text}

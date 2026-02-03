@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { generateVeoScript } from "../services/aiService";
 import { AISettings, GameState, StorySegment } from "../types";
+import { useSettings } from "../hooks/useSettings";
 
 interface VeoScriptModalProps {
   isOpen: boolean;
@@ -26,6 +27,11 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t, i18n } = useTranslation();
+  const { themeMode } = useSettings();
+  const isDarkMode =
+    themeMode === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : themeMode === "night";
 
   useEffect(() => {
     if (isOpen) {
@@ -117,7 +123,9 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
               </button>
             </div>
           ) : (
-            <div className="prose prose-invert max-w-none whitespace-pre-wrap font-mono text-sm text-theme-text/90">
+            <div
+              className={`prose max-w-none whitespace-pre-wrap font-mono text-sm text-theme-text/90 ${isDarkMode ? "prose-invert" : ""}`}
+            >
               {script}
             </div>
           )}

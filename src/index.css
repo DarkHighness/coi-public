@@ -11,6 +11,25 @@
   --color-theme-text: var(--theme-text);
   --color-theme-muted: var(--theme-muted);
 
+  /* Extended theme tokens (safe fallbacks) */
+  --color-theme-secondary: var(
+    --theme-secondary,
+    var(--theme-primary-hover, var(--theme-primary))
+  );
+  --color-theme-accent: var(--theme-accent, var(--theme-primary));
+  --color-theme-hover: var(--theme-hover, var(--theme-surface-highlight));
+  --color-theme-surface-hover: var(
+    --theme-surface-hover,
+    var(--theme-surface-highlight)
+  );
+  --color-theme-primary-muted: var(
+    --theme-primary-muted,
+    var(--theme-primary-hover, var(--theme-primary))
+  );
+  --color-theme-primary-contrast: var(--theme-primary-contrast, var(--theme-bg));
+  --color-theme-text-primary: var(--theme-text);
+  --color-theme-text-secondary: var(--theme-text-secondary, var(--theme-muted));
+
   /* State colors - for status indicators, toasts, and unlocked content */
   --color-theme-success: var(--theme-success);
   --color-theme-success-muted: var(--theme-success-muted);
@@ -49,9 +68,18 @@ body {
   font-family: "Lato", sans-serif;
   background-color: var(--theme-bg, #0f172a);
   color: var(--theme-text, #e2e8f0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition:
     background-color 1s ease,
     color 1s ease;
+}
+
+/* Global focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--theme-primary, #f59e0b) !important;
+  outline-offset: 2px;
 }
 
 /* Global theme transition - smooth color changes when envTheme changes */
