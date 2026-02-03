@@ -1253,6 +1253,11 @@ export interface AISettings {
       | "bureaucratic"
       | "manipulation"
       | "sabotage";
+    /**
+     * Player malice intensity. Controls how fast Trace/Heat accumulates and how quickly counterplay escalates.
+     * If customContext includes <player_malice_intensity>, that takes priority.
+     */
+    playerMaliceIntensity?: "light" | "standard" | "heavy";
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed

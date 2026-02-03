@@ -219,6 +219,42 @@ export const SettingsExtra: React.FC = () => {
           </select>
         </div>
 
+        {/* Player Malice Intensity */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.playerMaliceIntensity") || "Malice Intensity"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.playerMaliceIntensityHelp") ||
+                "Controls Trace/Heat accumulation and escalation speed."}
+            </div>
+          </div>
+          <select
+            value={extra.playerMaliceIntensity || "standard"}
+            onChange={(e) =>
+              updateExtra(
+                "playerMaliceIntensity",
+                e.target.value as "light" | "standard" | "heavy",
+              )
+            }
+            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+          >
+            <option value="light">
+              {t("settings.extra.playerMaliceIntensityOptions.light") ||
+                "Light"}
+            </option>
+            <option value="standard">
+              {t("settings.extra.playerMaliceIntensityOptions.standard") ||
+                "Standard"}
+            </option>
+            <option value="heavy">
+              {t("settings.extra.playerMaliceIntensityOptions.heavy") ||
+                "Heavy"}
+            </option>
+          </select>
+        </div>
+
         {/* NSFW Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
