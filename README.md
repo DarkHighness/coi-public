@@ -109,6 +109,12 @@ This project is configured to support both **GitHub Pages** and **Cloudflare Pag
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## 📚 Docs
+
+- `docs/ui_vn_style.md`: UI design notes (Modern VN / Scroll-first)
+- `docs/how_to_add_story_theme.md`: How to add a story theme
+- `docs/SCHEMA_DOCS.md`: Schema documentation
+
 ## 📄 License
 
 This project is licensed under the MIT License.
