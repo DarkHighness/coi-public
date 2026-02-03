@@ -17,6 +17,7 @@ import type {
   ImportValidation,
   StorySegment,
   CURRENT_EXPORT_VERSION,
+  GameStateSnapshot,
 } from "../types";
 import { CURRENT_SAVE_VERSION } from "../types";
 import {
@@ -24,6 +25,8 @@ import {
   saveGameState,
   saveMetadata,
   loadMetadata,
+  openVfsDB,
+  VFS_META_STORE,
 } from "../utils/indexedDB";
 import {
   getImagesBySaveId,
@@ -34,12 +37,410 @@ import {
 import { getMigrationManager } from "./migrationManager";
 import { getRAGService } from "./rag";
 import type { RAGExportData } from "./rag/types";
+import { IndexedDbVfsStore } from "./vfs/store";
+import type { VfsSnapshot } from "./vfs/types";
+import { VfsSession } from "./vfs/vfsSession";
+import { restoreVfsSessionFromSnapshot, saveVfsSessionSnapshot } from "./vfs/persistence";
+import { deriveGameStateFromVfs } from "./vfs/derivations";
+import { seedVfsSessionFromGameState } from "./vfs/seed";
+import { writeOutlineFile, writeOutlineProgress } from "./vfs/outline";
+import {
+  buildTurnId,
+  writeConversationIndex,
+  writeForkTree,
+  writeTurnFile,
+} from "./vfs/conversation";
 
 // App version for export metadata
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 // Current export format version
-const EXPORT_FORMAT_VERSION = 2;
+const EXPORT_FORMAT_VERSION = CURRENT_EXPORT_VERSION;
+
+type VfsLatestMeta = { forkId: number; turn: number };
+
+interface VfsExportIndexEntry {
+  forkId: number;
+  turn: number;
+  createdAt: number;
+}
+
+interface VfsExportBundleIndex {
+  version: number;
+  latest: VfsLatestMeta | null;
+  snapshots: VfsExportIndexEntry[];
+}
+
+const isValidLatestMeta = (value: unknown): value is VfsLatestMeta => {
+  if (!value || typeof value !== "object") return false;
+  const forkId = (value as any).forkId;
+  const turn = (value as any).turn;
+  return typeof forkId === "number" && typeof turn === "number";
+};
+
+const loadLatestVfsMeta = async (saveId: string): Promise<VfsLatestMeta | null> => {
+  try {
+    const meta = await loadMetadata<unknown>(`vfs_latest:${saveId}`);
+    if (isValidLatestMeta(meta)) {
+      return meta;
+    }
+  } catch (error) {
+    console.warn("[SaveExport] Failed to load vfs_latest metadata:", error);
+  }
+
+  try {
+    const entries = await listVfsSnapshotIndexEntries(saveId);
+    if (entries.length === 0) return null;
+    const latest = entries.reduce((best, entry) => {
+      if (!best) return entry;
+      if (entry.createdAt > best.createdAt) return entry;
+      return best;
+    }, null as VfsExportIndexEntry | null);
+    return latest ? { forkId: latest.forkId, turn: latest.turn } : null;
+  } catch (error) {
+    console.warn("[SaveExport] Failed to infer latest VFS snapshot:", error);
+    return null;
+  }
+};
+
+const listVfsSnapshotIndexEntries = async (
+  saveId: string,
+): Promise<VfsExportIndexEntry[]> => {
+  const db = await openVfsDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([VFS_META_STORE], "readonly");
+    const store = transaction.objectStore(VFS_META_STORE);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const rows = (request.result as any[] | undefined) ?? [];
+      const filtered = rows
+        .filter(
+          (row) =>
+            row &&
+            typeof row.saveId === "string" &&
+            row.saveId === saveId &&
+            typeof row.forkId === "number" &&
+            typeof row.turn === "number",
+        )
+        .map((row) => ({
+          forkId: row.forkId as number,
+          turn: row.turn as number,
+          createdAt: typeof row.createdAt === "number" ? row.createdAt : 0,
+        }))
+        .sort((a, b) => a.forkId - b.forkId || a.turn - b.turn);
+
+      resolve(filtered);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const loadDerivedStateFromLatestVfsSnapshot = async (
+  saveId: string,
+): Promise<{ state: VersionedGameState; latest: VfsLatestMeta } | null> => {
+  const latest = await loadLatestVfsMeta(saveId);
+  if (!latest) return null;
+
+  const store = new IndexedDbVfsStore();
+  const snapshot = await store.loadSnapshot(saveId, latest.forkId, latest.turn);
+  if (!snapshot) {
+    return null;
+  }
+
+  const session = new VfsSession();
+  restoreVfsSessionFromSnapshot(session, snapshot);
+  const derived = deriveGameStateFromVfs(session.snapshot()) as VersionedGameState;
+  if (!derived._saveVersion) {
+    derived._saveVersion = {
+      version: CURRENT_SAVE_VERSION,
+      createdAt: Date.now(),
+    };
+  }
+
+  return { state: derived, latest };
+};
+
+const writeVfsSnapshotsToZip = async (
+  zip: JSZip,
+  saveId: string,
+): Promise<{
+  snapshotCount: number;
+  latest: VfsLatestMeta | null;
+}> => {
+  const indexEntries = await listVfsSnapshotIndexEntries(saveId);
+  if (indexEntries.length === 0) {
+    return { snapshotCount: 0, latest: null };
+  }
+
+  const latest = await loadLatestVfsMeta(saveId);
+  const store = new IndexedDbVfsStore();
+
+  const bundle: VfsExportBundleIndex = {
+    version: 1,
+    latest,
+    snapshots: indexEntries,
+  };
+
+  zip.file("vfs/index.json", JSON.stringify(bundle, null, 2));
+
+  const snapshotsRoot = zip.folder("vfs")?.folder("snapshots");
+  if (!snapshotsRoot) {
+    console.warn("[SaveExport] Failed to create vfs/snapshots folder in ZIP");
+    return { snapshotCount: 0, latest };
+  }
+
+  let written = 0;
+  for (const entry of indexEntries) {
+    try {
+      const snapshot = await store.loadSnapshot(saveId, entry.forkId, entry.turn);
+      if (!snapshot) {
+        console.warn(
+          `[SaveExport] Missing VFS snapshot for fork=${entry.forkId} turn=${entry.turn}`,
+        );
+        continue;
+      }
+      const forkFolder = snapshotsRoot.folder(`fork-${entry.forkId}`);
+      forkFolder?.file(
+        `turn-${entry.turn}.json`,
+        JSON.stringify(snapshot, null, 2),
+      );
+      written += 1;
+    } catch (error) {
+      console.warn(
+        `[SaveExport] Failed to export VFS snapshot fork=${entry.forkId} turn=${entry.turn}:`,
+        error,
+      );
+    }
+  }
+
+  return { snapshotCount: written, latest };
+};
+
+type LegacyParsedNodeId =
+  | { kind: "turn"; role: "model" | "user"; forkId: number; turn: number }
+  | { kind: "turnId"; forkId: number; turn: number };
+
+const parseLegacyNodeId = (id: string): LegacyParsedNodeId | null => {
+  if (typeof id !== "string") return null;
+  const match = /^(model|user)-fork-(\d+)\/turn-(\d+)$/.exec(id);
+  if (match) {
+    return {
+      kind: "turn",
+      role: match[1] === "model" ? "model" : "user",
+      forkId: Number(match[2]),
+      turn: Number(match[3]),
+    };
+  }
+  const bare = /^fork-(\d+)\/turn-(\d+)$/.exec(id);
+  if (bare) {
+    return {
+      kind: "turnId",
+      forkId: Number(bare[1]),
+      turn: Number(bare[2]),
+    };
+  }
+  return null;
+};
+
+type LegacyTurnSegments = { user?: StorySegment; model?: StorySegment };
+
+const buildLegacyTurnsIndex = (
+  nodes: Record<string, StorySegment> | undefined,
+): Map<number, Map<number, LegacyTurnSegments>> => {
+  const byFork = new Map<number, Map<number, LegacyTurnSegments>>();
+  if (!nodes) return byFork;
+
+  for (const [id, node] of Object.entries(nodes)) {
+    const parsed = parseLegacyNodeId(id);
+    if (!parsed || parsed.kind !== "turn") continue;
+    const { forkId, turn, role } = parsed;
+    if (!Number.isFinite(forkId) || !Number.isFinite(turn)) continue;
+
+    const forkMap = byFork.get(forkId) ?? new Map<number, LegacyTurnSegments>();
+    const entry = forkMap.get(turn) ?? {};
+    if (role === "model") entry.model = node;
+    if (role === "user") entry.user = node;
+    forkMap.set(turn, entry);
+    byFork.set(forkId, forkMap);
+  }
+
+  return byFork;
+};
+
+const createVfsSnapshotsFromLegacyState = async (
+  store: IndexedDbVfsStore,
+  newSaveId: string,
+  state: VersionedGameState,
+): Promise<{ snapshotCount: number; latest: VfsLatestMeta | null }> => {
+  const turnsIndex = buildLegacyTurnsIndex(state.nodes as any);
+  if (turnsIndex.size === 0) {
+    console.warn("[SaveImport] No legacy nodes found to seed VFS");
+    return { snapshotCount: 0, latest: null };
+  }
+
+  const latestTurnByFork = new Map<number, number>();
+  for (const [forkId, turns] of turnsIndex.entries()) {
+    const turnNumbers = Array.from(turns.keys()).filter((t) => Number.isFinite(t));
+    const maxTurn = turnNumbers.length > 0 ? Math.max(...turnNumbers) : -1;
+    if (maxTurn >= 0) latestTurnByFork.set(forkId, maxTurn);
+  }
+
+  const forkIds = Array.from(latestTurnByFork.keys()).sort((a, b) => a - b);
+  if (forkIds.length === 0) {
+    return { snapshotCount: 0, latest: null };
+  }
+
+  // Build a stable view of turn files for all forks (final state).
+  const turnFiles: Array<{ forkId: number; turn: number; file: any }> = [];
+  for (const forkId of forkIds) {
+    const maxTurn = latestTurnByFork.get(forkId) ?? -1;
+    for (let turn = 0; turn <= maxTurn; turn += 1) {
+      const segments = turnsIndex.get(forkId)?.get(turn);
+      const model = segments?.model;
+      if (!model) continue;
+      const userAction = segments?.user?.text ?? "";
+      turnFiles.push({
+        forkId,
+        turn,
+        file: {
+          turnId: buildTurnId(forkId, turn),
+          forkId,
+          turnNumber: turn,
+          parentTurnId: turn === 0 ? null : buildTurnId(forkId, turn - 1),
+          createdAt: typeof model.timestamp === "number" ? model.timestamp : Date.now(),
+          userAction,
+          assistant: {
+            narrative: model.text || "",
+            choices: model.choices || [],
+            narrativeTone: model.narrativeTone,
+            atmosphere: model.atmosphere,
+            ending: model.ending,
+            forceEnd: model.forceEnd,
+          },
+        },
+      });
+    }
+  }
+
+  const rootTurnIdByFork: Record<string, string> = {};
+  const latestTurnNumberByFork: Record<string, number> = {};
+  const turnOrderByFork: Record<string, string[]> = {};
+
+  for (const forkId of forkIds) {
+    const maxTurn = latestTurnByFork.get(forkId) ?? 0;
+    rootTurnIdByFork[String(forkId)] = buildTurnId(forkId, 0);
+    latestTurnNumberByFork[String(forkId)] = maxTurn;
+    const order: string[] = [];
+    for (let turn = 0; turn <= maxTurn; turn += 1) {
+      const segments = turnsIndex.get(forkId)?.get(turn);
+      if (!segments?.model) continue;
+      order.push(buildTurnId(forkId, turn));
+    }
+    turnOrderByFork[String(forkId)] = order;
+  }
+
+  const activeParsed = parseLegacyNodeId(state.activeNodeId ?? "");
+  const activeForkId =
+    activeParsed && (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
+      ? activeParsed.forkId
+      : typeof state.forkId === "number"
+        ? state.forkId
+        : forkIds[0];
+  const activeTurn =
+    activeParsed && (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
+      ? activeParsed.turn
+      : typeof state.turnNumber === "number"
+        ? state.turnNumber
+        : latestTurnByFork.get(activeForkId) ?? 0;
+
+  const fallbackLatest: VfsLatestMeta = {
+    forkId: activeForkId,
+    turn: activeTurn,
+  };
+
+  let written = 0;
+
+  for (const forkId of forkIds) {
+    const maxTurn = latestTurnByFork.get(forkId) ?? -1;
+    for (let turn = 0; turn <= maxTurn; turn += 1) {
+      const segments = turnsIndex.get(forkId)?.get(turn);
+      const model = segments?.model;
+      if (!model) continue;
+
+      const session = new VfsSession();
+
+      const snapshotState = (model.stateSnapshot as GameStateSnapshot | undefined) ?? null;
+      const worldState: GameState = {
+        ...(state as any),
+        ...(snapshotState ? (snapshotState as any) : {}),
+        theme: state.theme,
+        playerProfile: (state as any).playerProfile,
+        customContext: (state as any).customContext,
+        language: (state as any).language,
+        narrativeScale: (state as any).narrativeScale,
+        seedImageId: (state as any).seedImageId,
+        forkId,
+        turnNumber: turn,
+      };
+
+      seedVfsSessionFromGameState(session, worldState);
+
+      if ((state as any).outline) {
+        writeOutlineFile(session, (state as any).outline);
+      }
+      if ((state as any).outlineConversation) {
+        writeOutlineProgress(session, (state as any).outlineConversation ?? null);
+      }
+
+      writeForkTree(session, (state as any).forkTree);
+
+      const latestForSnapshot: Record<string, number> = {};
+      const orderForSnapshot: Record<string, string[]> = {};
+
+      for (const id of forkIds) {
+        const fullLatest = latestTurnByFork.get(id) ?? 0;
+        const latest = id === forkId ? turn : fullLatest;
+        latestForSnapshot[String(id)] = latest;
+        orderForSnapshot[String(id)] =
+          (turnOrderByFork[String(id)] || []).filter((turnId) => {
+            const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
+            if (!match) return false;
+            const parsedTurn = Number(match[2]);
+            return Number.isFinite(parsedTurn) && parsedTurn <= latest;
+          });
+      }
+
+      for (const entry of turnFiles) {
+        const limit = latestForSnapshot[String(entry.forkId)];
+        if (typeof limit === "number" && entry.turn > limit) {
+          continue;
+        }
+        writeTurnFile(session, entry.forkId, entry.turn, entry.file);
+      }
+
+      writeConversationIndex(session, {
+        activeForkId: forkId,
+        activeTurnId: buildTurnId(forkId, turn),
+        rootTurnIdByFork,
+        latestTurnNumberByFork: latestForSnapshot,
+        turnOrderByFork: orderForSnapshot,
+      });
+
+      await saveVfsSessionSnapshot(store, session, {
+        saveId: newSaveId,
+        forkId,
+        turn,
+        createdAt: typeof model.timestamp === "number" ? model.timestamp : Date.now(),
+      });
+      written += 1;
+    }
+  }
+
+  return { snapshotCount: written, latest: fallbackLatest };
+};
 
 // ============================================================================
 // Export Functions
@@ -52,7 +453,11 @@ export async function getExportStats(
   slotId: string,
 ): Promise<ExportStats | null> {
   try {
-    const gameState = await loadGameState<VersionedGameState>(slotId);
+    const derived = await loadDerivedStateFromLatestVfsSnapshot(slotId);
+    let gameState = derived?.state ?? null;
+    if (!gameState) {
+      gameState = await loadGameState<VersionedGameState>(slotId);
+    }
     if (!gameState) return null;
 
     const nodeCount = Object.keys(gameState.nodes || {}).length;
@@ -147,9 +552,13 @@ export async function exportSave(
     console.log(`[SaveExport] Starting export for slot ${slotId}`);
 
     // Load the full game state
-    const gameState = await loadGameState<VersionedGameState>(slotId);
+    const derived = await loadDerivedStateFromLatestVfsSnapshot(slotId);
+    let gameState = derived?.state ?? null;
     if (!gameState) {
-      console.error("[SaveExport] Failed to load game state");
+      gameState = await loadGameState<VersionedGameState>(slotId);
+    }
+    if (!gameState) {
+      console.error("[SaveExport] Failed to load game state (legacy + VFS)");
       return null;
     }
 
@@ -258,6 +667,14 @@ export async function exportSave(
     };
 
     zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+
+    // Add VFS snapshots if present (required for VFS-based restores/forking).
+    try {
+      const { snapshotCount } = await writeVfsSnapshotsToZip(zip, slotId);
+      console.log(`[SaveExport] Exported ${snapshotCount} VFS snapshots`);
+    } catch (error) {
+      console.warn("[SaveExport] Failed to export VFS snapshots:", error);
+    }
 
     // Generate ZIP blob
     const blob = await zip.generateAsync({
@@ -394,6 +811,15 @@ export async function validateImport(file: File): Promise<ImportValidation> {
           "Images were marked as included but images folder is missing.",
         );
       }
+    }
+
+    // VFS snapshots are required for correct restore/fork behavior in newer builds.
+    // If missing, we'll attempt to reconstruct from save.json during import.
+    const hasVfsIndex = !!zip.file("vfs/index.json");
+    if (!hasVfsIndex) {
+      warnings.push(
+        "This export does not include VFS snapshot history. The app will reconstruct VFS state from save.json during import; advanced restore/fork features may be limited.",
+      );
     }
 
     return {
@@ -546,6 +972,25 @@ export async function importSave(
       // Save to IndexedDB
       await saveGameState(newSlotId, saveData);
 
+      // Seed VFS so the save works with VFS-based persistence.
+      try {
+        const store = new IndexedDbVfsStore();
+        const { snapshotCount, latest } = await createVfsSnapshotsFromLegacyState(
+          store,
+          newSlotId,
+          saveData,
+        );
+        if (latest) {
+          await saveMetadata(`vfs_latest:${newSlotId}`, {
+            ...latest,
+            updatedAt: Date.now(),
+          });
+        }
+        console.log(`[SaveImport] Seeded ${snapshotCount} VFS snapshots from legacy JSON`);
+      } catch (error) {
+        console.warn("[SaveImport] Failed to seed VFS snapshots from legacy JSON:", error);
+      }
+
       // Create new slot metadata
       const newSlot: SaveSlot = {
         id: newSlotId,
@@ -646,6 +1091,83 @@ export async function importSave(
 
     // Save to IndexedDB
     await saveGameState(newSlotId, saveData);
+
+    // Import VFS snapshot history (preferred) or reconstruct it from save.json (fallback).
+    try {
+      const store = new IndexedDbVfsStore();
+      const vfsIndexFile = zip.file("vfs/index.json");
+      if (vfsIndexFile) {
+        const indexJson = await vfsIndexFile.async("text");
+        const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
+        const latestMeta = bundle?.latest ?? null;
+        const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+
+        let imported = 0;
+        for (const entry of snapshots) {
+          if (
+            !entry ||
+            typeof entry.forkId !== "number" ||
+            typeof entry.turn !== "number"
+          ) {
+            continue;
+          }
+          const snapshotFile = zip.file(
+            `vfs/snapshots/fork-${entry.forkId}/turn-${entry.turn}.json`,
+          );
+          if (!snapshotFile) continue;
+          const snapshotJson = await snapshotFile.async("text");
+          const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
+          if (!snapshot || typeof snapshot !== "object") continue;
+          snapshot.saveId = newSlotId;
+          await store.saveSnapshot(snapshot);
+          imported += 1;
+        }
+
+        if (latestMeta && isValidLatestMeta(latestMeta)) {
+          await saveMetadata(`vfs_latest:${newSlotId}`, {
+            forkId: latestMeta.forkId,
+            turn: latestMeta.turn,
+            updatedAt: Date.now(),
+          });
+        } else if (imported > 0) {
+          // Best-effort: use the latest by createdAt.
+          const indexes = await listVfsSnapshotIndexEntries(newSlotId);
+          const best = indexes.reduce((acc, item) => {
+            if (!acc) return item;
+            return item.createdAt > acc.createdAt ? item : acc;
+          }, null as VfsExportIndexEntry | null);
+          if (best) {
+            await saveMetadata(`vfs_latest:${newSlotId}`, {
+              forkId: best.forkId,
+              turn: best.turn,
+              updatedAt: Date.now(),
+            });
+          }
+        }
+
+        console.log(`[SaveImport] Imported ${imported} VFS snapshots`);
+      } else {
+        const { snapshotCount, latest } = await createVfsSnapshotsFromLegacyState(
+          store,
+          newSlotId,
+          saveData,
+        );
+        if (latest) {
+          await saveMetadata(`vfs_latest:${newSlotId}`, {
+            ...latest,
+            updatedAt: Date.now(),
+          });
+        }
+        console.log(
+          `[SaveImport] Reconstructed ${snapshotCount} VFS snapshots from save.json`,
+        );
+      }
+    } catch (error) {
+      console.warn("[SaveImport] Failed to import/reconstruct VFS snapshots:", error);
+      warnings.push(
+        "VFS snapshots failed to import. Restore/fork features may not work for this save until it is re-saved.",
+      );
+    }
 
     // Create new slot metadata
     const newSlot: SaveSlot = {

@@ -12,7 +12,6 @@
  */
 
 import type { GameState, GameResponse, AISettings } from "../../types";
-import type { GameDatabase } from "../gameDatabase";
 import type { ZodToolDefinition } from "../providers/types";
 import type { VfsSession } from "../vfs/vfsSession";
 
@@ -25,8 +24,6 @@ import type { VfsSession } from "../vfs/vfsSession";
  * Contains all dependencies needed for tool execution.
  */
 export interface ToolContext {
-  /** Game database for state queries and modifications */
-  db?: GameDatabase;
   /** Accumulated response for tracking actions (optional, for turn handlers) */
   accumulatedResponse?: GameResponse;
   /** Map of changed entities for RAG updates (optional) */
@@ -75,9 +72,10 @@ const handlerRegistry = new Map<string, ToolHandler>();
  *
  * @example
  * ```ts
- * registerToolHandler(ADD_INVENTORY_TOOL, (args, ctx) => {
- *   const typedArgs = getTypedArgs('add_inventory', args);
- *   return ctx.db.modify('inventory', 'add', typedArgs);
+ * registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
+ *   const typedArgs = getTypedArgs("vfs_write", args);
+ *   ctx.vfsSession?.writeFile(typedArgs.files[0].path, typedArgs.files[0].content, typedArgs.files[0].contentType);
+ *   return { success: true };
  * });
  * ```
  */

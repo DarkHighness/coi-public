@@ -74,7 +74,7 @@ Authoritative index for navigation and active turn selection.
 
 ## Tooling Changes (Hard Removal)
 - Remove all non-VFS tools from definitions, handlers, prompts, and tests.
-- The tool registry registers **only** `vfsHandlers` (and optional minimal `search_tool` that returns only vfs tools).
+- The tool registry registers **only** `vfsHandlers`.
 - `GameDatabase`-based mutations are removed from runtime paths.
 
 ## Runtime & Data Flow

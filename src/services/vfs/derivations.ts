@@ -277,6 +277,28 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
+    if (pathWithoutCurrent === "world/player_profile.json") {
+      const profile = (data as { profile?: unknown })?.profile;
+      if (typeof profile === "string") {
+        state.playerProfile = profile;
+      }
+      continue;
+    }
+
+    if (pathWithoutCurrent === "conversation/fork_tree.json") {
+      const tree = data as any;
+      if (
+        tree &&
+        typeof tree === "object" &&
+        typeof tree.nextForkId === "number" &&
+        tree.nodes &&
+        typeof tree.nodes === "object"
+      ) {
+        state.forkTree = tree;
+      }
+      continue;
+    }
+
     if (pathWithoutCurrent.startsWith("world/inventory/")) {
       state.inventory.push(data as InventoryItem);
       continue;

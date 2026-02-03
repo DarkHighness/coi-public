@@ -20,10 +20,10 @@ export {
   atmosphereSchema,
   envThemeSchema,
   ambienceSchema,
-  finishTurnSchema,
   forceUpdateSchema,
-  // Schema builders (for conditional RAG fields)
-  buildFinishTurnSchema,
+  turnAssistantSchema,
+  // Schema builders
+  buildTurnAssistantSchema,
   buildForceUpdateSchema,
   // 分阶段 Outline Schemas
   outlinePhase0Schema,
@@ -63,7 +63,7 @@ export type {
   Atmosphere,
   EnvTheme,
   Ambience,
-  FinishTurnResponse,
+  TurnAssistantResponse,
   ForceUpdateResponse,
   // 分阶段 Outline 类型
   OutlinePhase0,

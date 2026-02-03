@@ -493,10 +493,8 @@ z.object({
    - 预编译的 Gemini/OpenAI schemas
 
 2. **tools.ts**:
-   - 10 个查询工具
-   - 11 个更新工具
-   - `finish_turn` 工具
-   - `rag_search` 工具
+   - VFS 文件工具（`vfs_*`）
+   - 总结工具（`summary_query_*` / `finish_summary`）
 
 3. **gameDatabase.ts**:
    - 完整的 CRUD 操作

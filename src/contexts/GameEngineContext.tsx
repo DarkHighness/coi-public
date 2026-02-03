@@ -132,7 +132,7 @@ export interface GameEngineActions {
   /** Hard reset (factory reset) */
   hardReset: () => void;
   /** Navigate to a specific node in story tree */
-  navigateToNode: (nodeId: string, isFork?: boolean) => void;
+  navigateToNode: (nodeId: string, isFork?: boolean) => Promise<void>;
   /** Generate image for a specific node */
   generateImageForNode: (
     nodeId: string,

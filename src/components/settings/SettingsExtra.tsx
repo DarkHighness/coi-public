@@ -8,6 +8,11 @@ export const SettingsExtra: React.FC = () => {
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
   const extra = currentSettings.extra || {};
+  const customInstructionRaw = extra.customInstruction || "";
+  const customInstructionTrimmed =
+    typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
+  const customInstructionEnabled =
+    extra.customInstructionEnabled ?? Boolean(customInstructionTrimmed);
 
   const updateExtra = (field: string, value: any) => {
     onUpdateSettings({
@@ -252,63 +257,63 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
-        {/* Prompt Injection Toggle */}
+        {/* Custom Instruction Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.promptInjection") || "Prompt Injection"}
+              {t("settings.extra.promptInjection") || "Custom Instruction"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.promptInjectionHelp") ||
-                "Inject custom prompts based on model keywords from prompt.toml."}
+                "When enabled, this text is prepended to the system instruction."}
             </div>
           </div>
           <button
             onClick={() =>
               updateExtra(
-                "promptInjectionEnabled",
-                !extra.promptInjectionEnabled,
+                "customInstructionEnabled",
+                !customInstructionEnabled,
               )
             }
             className={`w-10 h-5 rounded-full relative transition-colors ${
-              extra.promptInjectionEnabled ? "bg-green-500" : "bg-theme-border"
+              customInstructionEnabled ? "bg-green-500" : "bg-theme-border"
             }`}
           >
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                extra.promptInjectionEnabled ? "translate-x-5" : ""
+                customInstructionEnabled ? "translate-x-5" : ""
               }`}
             />
           </button>
         </div>
 
-        {/* Custom Prompt Injection */}
+        {/* Custom Instruction */}
         <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-2">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.customPromptInjection") ||
-                "Custom Prompt Injection"}
+                "Instruction Text"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.customPromptInjectionHelp") ||
-                "Custom prompt to inject. When set, overrides model-based prompt injection."}
+                "Write style/tone/language requirements here."}
             </div>
           </div>
           <textarea
-            value={extra.customPromptInjection || ""}
+            value={typeof customInstructionRaw === "string" ? customInstructionRaw : ""}
             onChange={(e) =>
-              updateExtra("customPromptInjection", e.target.value)
+              updateExtra("customInstruction", e.target.value)
             }
             placeholder={
               t("settings.extra.customPromptInjectionPlaceholder") ||
-              "Enter custom prompt to inject before system instructions..."
+              "Enter custom instruction..."
             }
             className="w-full h-24 p-2 text-xs bg-theme-surface border border-theme-border rounded resize-none focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text placeholder:text-theme-muted/50"
           />
-          {extra.customPromptInjection && (
+          {customInstructionEnabled && customInstructionTrimmed && (
             <div className="text-[10px] text-theme-warning">
               {t("settings.extra.customPromptInjectionWarning") ||
-                "⚠ Custom injection is active. Model-based injection is disabled."}
+                "Custom instruction is active."}
             </div>
           )}
         </div>

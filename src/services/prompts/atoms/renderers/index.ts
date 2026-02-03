@@ -90,3 +90,12 @@ export {
   renderGodMode,
   type RenderWorldFoundationInput,
 } from "./worldFoundation";
+
+// Entity Context (for turn context injection)
+export {
+  renderEntityContext,
+  renderEntityContextLite,
+  type EntityContextInput,
+  type EntityEntry,
+  type NpcEntry,
+} from "./entityContext";

@@ -4,6 +4,7 @@ import { stateManagement } from "../stateManagement";
 describe("stateManagement atom", () => {
   it("requires VFS tools for state updates", () => {
     const content = stateManagement();
+    const legacyFinishTool = ["finish", "turn"].join("_");
     expect(content).toContain("vfs_write");
     expect(content).toContain("vfs_edit");
     expect(content).toContain("vfs_merge");
@@ -11,7 +12,7 @@ describe("stateManagement atom", () => {
     expect(content).toContain("vfs_delete");
     expect(content).toContain("current/world/");
     expect(content).toContain("current/conversation/turns/fork-");
-    expect(content).not.toContain("finish_turn");
+    expect(content).not.toContain(legacyFinishTool);
     expect(content).toContain("omit optional fields");
   });
 

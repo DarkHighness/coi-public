@@ -6,7 +6,6 @@
 
 import type { AISettings, TokenUsage } from "../../../../types";
 import type { ZodToolDefinition } from "../../../providers/types";
-import { GameDatabase } from "../../../gameDatabase";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { getSummaryTools } from "../../../tools";
 import type { SummaryLoopInput } from "./summary";
@@ -16,7 +15,6 @@ import type { SummaryLoopInput } from "./summary";
 // ============================================================================
 
 export interface SummaryLoopState {
-  db: GameDatabase;
   budgetState: BudgetState;
   totalUsage: TokenUsage;
   activeTools: ZodToolDefinition[];
@@ -29,19 +27,9 @@ export interface SummaryLoopState {
 export function createSummaryLoopState(
   input: SummaryLoopInput,
 ): SummaryLoopState {
-  const { gameState, settings } = input;
-
-  const db = new GameDatabase({
-    ...gameState,
-    knowledge: gameState.knowledge || [],
-    factions: gameState.factions || [],
-    timeline: gameState.timeline || [],
-    causalChains: gameState.causalChains || [],
-    time: gameState.time || "Unknown",
-  });
+  const { settings } = input;
 
   return {
-    db,
     budgetState: createBudgetState(settings),
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     activeTools: getSummaryTools(),

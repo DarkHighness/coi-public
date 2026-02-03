@@ -68,11 +68,12 @@ export const stateManagement: Atom<void> = () => `
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
-      * Inspect before you change: \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\`.
+      * Inspect before you change: \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`.
       * Always reference explicit file paths under \`current/\` (e.g., \`current/world/npcs/npc:1.json\`).
       * After each turn, write BOTH:
         - \`current/conversation/turns/fork-<id>/turn-<n>.json\` (full snapshot)
         - \`current/conversation/index.json\` (active turn + ordering)
+        Prefer \`vfs_commit_turn\`, or write both files via \`vfs_write\`/\`vfs_edit\`.
 
     - **VFS OUTLINE RULES (MANDATORY)**:
       * The outline is immutable once generated. Do NOT edit it by default.

@@ -48,7 +48,12 @@ import {
   writeOutlineProgress,
 } from "../services/vfs/outline";
 import { seedVfsSessionFromOutline } from "../services/vfs/seed";
-import { writeConversationIndex, writeTurnFile } from "../services/vfs/conversation";
+import {
+  forkConversation,
+  writeConversationIndex,
+  writeForkTree,
+  writeTurnFile,
+} from "../services/vfs/conversation";
 
 import { preloadAudio } from "../utils/audioLoader";
 import { useToast } from "../contexts/ToastContext";
@@ -188,6 +193,7 @@ export const useGameEngine = () => {
     refreshSlots,
     vfsSession,
     seedFromDefaults,
+    restoreVfsToTurn,
   } = useVfsPersistence(gameState, setGameState, view);
 
   // Ref to access latest state in async callbacks/closures
@@ -1225,56 +1231,130 @@ export const useGameEngine = () => {
    * @param nodeId - The node to navigate to
    * @param isFork - If true, creates a new fork branch from this node
    */
-  const navigateToNode = (nodeId: string, isFork: boolean = false) => {
-    let newForkId: number | null = null;
-    let newForkTree: any = null;
+  const navigateToNode = async (
+    nodeId: string,
+    isFork: boolean = false,
+  ): Promise<void> => {
+    const match = /fork-(\d+)\/turn-(\d+)/.exec(nodeId);
+    if (!match) {
+      // Fallback: keep existing behavior (UI focus only).
+      setGameState((prev) => ({
+        ...prev,
+        activeNodeId: nodeId,
+        currentFork: deriveHistory(prev.nodes, nodeId),
+      }));
+      return;
+    }
 
-    setGameState((prev) => {
-      const targetNode = prev.nodes[nodeId];
-      let newState = { ...prev, activeNodeId: nodeId };
+    const forkId = Number(match[1]);
+    const turn = Number(match[2]);
+    if (!Number.isFinite(forkId) || !Number.isFinite(turn)) {
+      showToast(`Invalid node id: ${nodeId}`, "error", 4000);
+      return;
+    }
 
-      if (targetNode && targetNode.stateSnapshot) {
-        // Restore state from snapshot
-        newState = restoreStateFromSnapshot(newState, targetNode.stateSnapshot);
+    if (!currentSlotId) {
+      showToast("No active save slot.", "error", 4000);
+      return;
+    }
+
+    // Lock UI while we restore VFS + re-derive state.
+    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+
+    try {
+      const restored = await restoreVfsToTurn(currentSlotId, forkId, turn);
+      if (!restored) {
+        throw new Error(
+          `Snapshot not found for save=${currentSlotId}, fork=${forkId}, turn=${turn}`,
+        );
       }
 
-      // If this is a fork operation (going back to an earlier point to diverge),
-      // create a new fork branch
-      if (isFork && nodeId !== prev.activeNodeId) {
+      if (!vfsSession) {
+        throw new Error("VFS session is not available");
+      }
+
+      if (isFork) {
+        const baseDerived = deriveGameStateFromVfs(vfsSession.snapshot());
         const forkResult = createFork(
-          prev.forkId,
-          prev.forkTree,
+          baseDerived.forkId ?? forkId,
+          baseDerived.forkTree,
           nodeId,
-          newState.turnNumber,
+          turn,
         );
-        newForkId = forkResult.newForkId;
-        newForkTree = forkResult.newForkTree;
-        newState = {
-          ...newState,
-          forkId: newForkId,
-          forkTree: newForkTree,
+
+        forkConversation(vfsSession, {
+          sourceForkId: forkId,
+          sourceTurnNumber: turn,
+          newForkId: forkResult.newForkId,
+        });
+        writeForkTree(vfsSession, forkResult.newForkTree);
+
+        const derived = deriveGameStateFromVfs(vfsSession.snapshot());
+        const nextState = mergeDerivedViewState(gameStateRef.current, derived, {
+          resetRuntime: true,
+        });
+
+        gameStateRef.current = nextState;
+        setGameState(nextState);
+
+        // Persist the fork baseline snapshot immediately so future restores work.
+        await saveToSlot(currentSlotId, nextState);
+
+        // Update RAG context (best-effort, non-blocking).
+        if (aiSettings.embedding?.enabled) {
+          const ragService = getRAGService();
+          if (ragService) {
+            ragService
+              .switchSave(
+                currentSlotId,
+                forkResult.newForkId,
+                forkResult.newForkTree,
+              )
+              .catch((error) => {
+                console.error("[RAG] Failed to switch fork context:", error);
+              });
+          }
+        }
+
+        return;
+      }
+
+      const derived = deriveGameStateFromVfs(vfsSession.snapshot());
+      let nextState = mergeDerivedViewState(gameStateRef.current, derived, {
+        resetRuntime: true,
+      });
+
+      if (nextState.nodes[nodeId]) {
+        nextState = {
+          ...nextState,
+          activeNodeId: nodeId,
+          currentFork: deriveHistory(nextState.nodes, nodeId),
         };
-        console.log(
-          `[Fork] Created new fork ${newForkId} from node ${nodeId}, parent fork: ${prev.forkId}`,
-        );
       }
 
-      return newState;
-    });
+      gameStateRef.current = nextState;
+      setGameState(nextState);
 
-    // Update RAG context if a fork was created (background, non-blocking)
-    if (isFork && newForkId !== null && aiSettings.embedding?.enabled) {
-      const ragService = getRAGService();
-      if (ragService && currentSlotId) {
-        ragService
-          .switchSave(currentSlotId, newForkId, newForkTree)
-          .then(() => {
-            console.log(`[RAG] Switched to fork ${newForkId} context`);
-          })
-          .catch((error) => {
-            console.error("[RAG] Failed to switch fork context:", error);
-          });
+      // Update RAG context when switching forks (best-effort, non-blocking).
+      if (aiSettings.embedding?.enabled) {
+        const ragService = getRAGService();
+        if (ragService) {
+          ragService
+            .switchSave(currentSlotId, nextState.forkId, nextState.forkTree)
+            .catch((error) => {
+              console.error("[RAG] Failed to switch save context:", error);
+            });
+        }
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[NavigateToNode] Failed:", error);
+      showToast(message, "error", 5000);
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+        error: message,
+      }));
     }
   };
 

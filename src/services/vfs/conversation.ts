@@ -2,6 +2,7 @@ import type { VfsFileMap } from "./types";
 import { VfsSession } from "./vfsSession";
 import { stripCurrentPath } from "./currentAlias";
 import { normalizeVfsPath } from "./utils";
+import type { ForkTree } from "@/types";
 
 export interface ConversationIndex {
   activeForkId: number;
@@ -31,6 +32,7 @@ export interface TurnFile {
 }
 
 const INDEX_PATH = "current/conversation/index.json";
+const FORK_TREE_PATH = "current/conversation/fork_tree.json";
 const TURN_ROOT = "current/conversation/turns";
 
 export const buildTurnId = (forkId: number, turn: number): string =>
@@ -87,6 +89,17 @@ export const readConversationIndex = (
   files: VfsFileMap,
 ): ConversationIndex | null => parseJson<ConversationIndex>(files, INDEX_PATH);
 
+export const writeForkTree = (session: VfsSession, tree: ForkTree): void => {
+  session.writeFile(
+    resolveRelativePath(FORK_TREE_PATH),
+    JSON.stringify(tree),
+    "application/json",
+  );
+};
+
+export const readForkTree = (files: VfsFileMap): ForkTree | null =>
+  parseJson<ForkTree>(files, FORK_TREE_PATH);
+
 export const writeTurnFile = (
   session: VfsSession,
   forkId: number,
@@ -106,3 +119,73 @@ export const readTurnFile = (
   turn: number,
 ): TurnFile | null =>
   parseJson<TurnFile>(files, buildTurnPath(forkId, turn));
+
+export const forkConversation = (
+  session: VfsSession,
+  options: {
+    sourceForkId: number;
+    sourceTurnNumber: number;
+    newForkId: number;
+  },
+): ConversationIndex => {
+  const { sourceForkId, sourceTurnNumber, newForkId } = options;
+  const snapshot = session.snapshot();
+  const index = readConversationIndex(snapshot);
+  if (!index) {
+    throw new Error("Conversation index is missing");
+  }
+
+  const forkKey = String(newForkId);
+  if (index.turnOrderByFork?.[forkKey] || index.rootTurnIdByFork?.[forkKey]) {
+    throw new Error(`Fork already exists in conversation index: ${newForkId}`);
+  }
+
+  if (!Number.isFinite(sourceTurnNumber) || sourceTurnNumber < 0) {
+    throw new Error(`Invalid source turn number: ${sourceTurnNumber}`);
+  }
+
+  const newOrder: string[] = [];
+
+  for (let turn = 0; turn <= sourceTurnNumber; turn += 1) {
+    const existing = readTurnFile(snapshot, sourceForkId, turn);
+    if (!existing) {
+      throw new Error(
+        `Missing source turn file: fork-${sourceForkId}/turn-${turn}`,
+      );
+    }
+
+    const turnId = buildTurnId(newForkId, turn);
+    const parentTurnId = turn === 0 ? null : buildTurnId(newForkId, turn - 1);
+
+    writeTurnFile(session, newForkId, turn, {
+      ...existing,
+      turnId,
+      forkId: newForkId,
+      turnNumber: turn,
+      parentTurnId,
+    });
+
+    newOrder.push(turnId);
+  }
+
+  const nextIndex: ConversationIndex = {
+    ...index,
+    activeForkId: newForkId,
+    activeTurnId: buildTurnId(newForkId, sourceTurnNumber),
+    rootTurnIdByFork: {
+      ...index.rootTurnIdByFork,
+      [forkKey]: buildTurnId(newForkId, 0),
+    },
+    latestTurnNumberByFork: {
+      ...index.latestTurnNumberByFork,
+      [forkKey]: sourceTurnNumber,
+    },
+    turnOrderByFork: {
+      ...index.turnOrderByFork,
+      [forkKey]: newOrder,
+    },
+  };
+
+  writeConversationIndex(session, nextIndex);
+  return nextIndex;
+};

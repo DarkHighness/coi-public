@@ -24,9 +24,6 @@ import { getProviderConfig, resolveThemeConfig } from "../../utils";
 import { sessionManager } from "../../sessionManager";
 import type { VfsSession } from "../../../vfs/vfsSession";
 
-// @ts-ignore
-import promptInjectionData from "@/prompt/prompt.toml";
-
 // Import new modular context and tools
 import {
   buildTurnMessages,
@@ -97,6 +94,9 @@ export const generateAdventureTurn = async (
     isNSFW: settings.extra?.nsfw,
     isLiteMode: settings.extra?.liteMode,
     godMode: gameState.godMode,
+    crossSaveProfile: settings.playerProfile,
+    perSaveProfile: gameState.playerProfile,
+    disablePlayerProfiling: settings.extra?.disablePlayerProfiling,
     protagonistName: gameState.character.name,
     protagonistRole: gameState.character.title,
     protagonistLocation:
@@ -109,33 +109,19 @@ export const generateAdventureTurn = async (
     `[Adventure] Built system instruction with skills. Length: ${systemInstruction.length} chars`,
   );
 
-  // Handle prompt injection if enabled
-  const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
-  const customPromptInjection = settings.extra?.customPromptInjection?.trim();
+  // Optional user-provided prompt prefix (typically used for language/style preferences).
+  const customInstructionRaw = settings.extra?.customInstruction;
+  const customInstruction =
+    typeof customInstructionRaw === "string" ? customInstructionRaw : "";
+  const customInstructionEnabled =
+    settings.extra?.customInstructionEnabled ??
+    Boolean(customInstruction.trim());
 
-  // Custom prompt injection takes priority over model-based injection
-  if (customPromptInjection) {
-    systemInstruction = `${customPromptInjection}\n\n${systemInstruction}`;
+  if (customInstruction.trim() && customInstructionEnabled) {
+    systemInstruction = `${customInstruction}\n\n${systemInstruction}`;
     console.warn(
-      `[PromptInjection] Injecting custom prompt (${customPromptInjection.length} chars)`,
+      `[CustomInstruction] Prepended custom instruction (${customInstruction.length} chars)`,
     );
-  } else if (promptInjectionEnabled && promptInjectionData) {
-    const loweredModelId = modelId.toLowerCase();
-    console.log(
-      `[PromptInjection] Checking for prompts to inject for model ${modelId}`,
-    );
-    const matchedPrompt = promptInjectionData.prompts.find(
-      (p: { keywords: string[] }) =>
-        p.keywords.some((k: string) =>
-          loweredModelId.includes(k.toLowerCase()),
-        ),
-    );
-    if (matchedPrompt) {
-      systemInstruction = `${(matchedPrompt as { prompt: string }).prompt}\n\n${systemInstruction}`;
-      console.warn(
-        `[PromptInjection] Injecting prompt for model ${modelId} (matched keywords: ${(matchedPrompt as { keywords: string[] }).keywords.join(", ")})`,
-      );
-    }
   }
 
   // Get RAG context from parameter
@@ -188,10 +174,11 @@ export const generateAdventureTurn = async (
     initialHistory,
     context.userAction,
     instance.protocol,
+    context.vfsSession,
   );
 
   // Create checkpoint before new turn
-  createCheckpoint(sessionId);
+  createCheckpoint(sessionId, context.vfsSession);
 
   // Construct request context
   const fullContext = [...activeHistory, userMessage];

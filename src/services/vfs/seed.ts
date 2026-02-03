@@ -13,7 +13,7 @@ import type {
 } from "@/types";
 import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { VfsSession } from "./vfsSession";
-import { writeConversationIndex, writeTurnFile } from "./conversation";
+import { writeConversationIndex, writeForkTree, writeTurnFile } from "./conversation";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -50,6 +50,12 @@ export const seedVfsSessionFromGameState = (
 
   if (state.character) {
     writeJson(session, "world/character.json", state.character);
+  }
+
+  if (state.playerProfile) {
+    writeJson(session, "world/player_profile.json", {
+      profile: state.playerProfile,
+    });
   }
 
   writeEntities(session, "world/inventory", state.inventory as InventoryItem[]);
@@ -94,6 +100,19 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     turnOrderByFork: { "0": ["fork-0/turn-0"] },
   });
 
+  writeForkTree(session, {
+    nodes: {
+      0: {
+        id: 0,
+        parentId: null,
+        createdAt: 0,
+        createdAtTurn: 0,
+        sourceNodeId: "",
+      },
+    },
+    nextForkId: 1,
+  });
+
   writeTurnFile(session, 0, 0, {
     turnId: "fork-0/turn-0",
     forkId: 0,
@@ -130,6 +149,19 @@ export const seedVfsSessionFromOutline = (
     customContext: options.customContext,
     seedImageId: options.seedImageId,
     narrativeScale: options.narrativeScale,
+  });
+
+  writeForkTree(session, {
+    nodes: {
+      0: {
+        id: 0,
+        parentId: null,
+        createdAt: 0,
+        createdAtTurn: 0,
+        sourceNodeId: "",
+      },
+    },
+    nextForkId: 1,
   });
 
   if (outline.character) {

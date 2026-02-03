@@ -33,10 +33,11 @@ const observationProtocol = `
 
 const updateTiming = `
   <update_timing>
-    **WHEN TO UPDATE** (call \`update_player_profile\`):
+    **WHEN TO UPDATE** (write to \`current/world/player_profile.json\` using \`vfs_write\` or \`vfs_edit\`):
 
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
+    - **File format**: \`{ "profile": "<your text>" }\`
     - **Always update when**:
       * Choice surprises you (contradicts established pattern)
       * Choice confirms pattern strongly (defining moment)

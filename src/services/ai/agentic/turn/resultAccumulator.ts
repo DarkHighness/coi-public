@@ -15,7 +15,7 @@ import { readConversationIndex, readTurnFile } from "../../../vfs/conversation";
 // ============================================================================
 
 /**
- * Process finish_turn response data
+ * Process turn output derived from VFS conversation files
  */
 const createEmptyResponse = (): GameResponse => ({
   narrative: "",

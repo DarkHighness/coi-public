@@ -139,7 +139,7 @@ const minimalEntity = `
       * **MUST BE**: Complex logic tracking consequences >3 turns away or involving off-screen NPCs.
       * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
 
-    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_delete({ path: "current/world/inventory/inv_apple.json" })\`). Do not keep quantity 0.
+    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_delete({ paths: ["current/world/inventory/inv_apple.json"] })\`). Do not keep quantity 0.
 
     <realism_vs_bloat_prevention>
       ⚠️ **CRITICAL: REALISM DOES NOT EQUAL ENTITY BLOAT**
@@ -166,7 +166,7 @@ const minimalEntity = `
       When a context is rebuilt or a session is initialized:
       - **DO NOT** blindly add entities described in the summary.
       - **ALWAYS** \`vfs_ls\` and \`vfs_search\` first to see what actually exists in the files.
-      - Summary descriptions may be outdated; the database (Entity Store) is the source of truth.
+      - Summary descriptions may be outdated; the VFS files under \`current/\` are the source of truth.
     </realism_vs_bloat_prevention>
   </rule>
 `;

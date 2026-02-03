@@ -148,5 +148,7 @@ export const DEFAULTS: AISettings = {
   },
   extra: {
     forceAutoToolChoice: false,
+    customInstructionEnabled: false,
+    customInstruction: "",
   },
 };

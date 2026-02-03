@@ -7,10 +7,7 @@ import type { Atom } from "../types";
 const atmosphereDiscovery = `
   <rule name="ATMOSPHERE DISCOVERY - CRITICAL">
     - **Valid Atmosphere Options**: Available values for \`envTheme\`, \`ambience\`, and \`weather\` are strictly validated.
-    - **Discovery Tools**: If you are unsure about valid values or want to explore available styles:
-      1. Use \`query_atmosphere_enums\` to see the full list of valid options.
-      2. Use \`query_atmosphere_enum_description\` to get detailed descriptions of what those options represent.
-    - **Selection Protocol**: Choose options that best match the current scene's tone and the story's theme. Do NOT hallucinate theme names.
+    - **Selection Protocol**: Choose options that best match the current scene's tone and the story's theme. Do NOT invent new enum keys. If unsure, choose safe defaults (e.g., \`envTheme=fantasy\`, \`ambience=quiet\`, \`weather=clear\`).
   </rule>
 `;
 

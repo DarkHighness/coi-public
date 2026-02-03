@@ -25,7 +25,6 @@ import { createLogEntry } from "../../utils";
 import {
   createToolCallMessage,
   createToolResponseMessage,
-  createUserMessage,
 } from "../../../messageTypes";
 
 // Import modular components
@@ -47,8 +46,6 @@ import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulat
 
 // Import tool handling
 import {
-  handleSearchTool,
-  handleActivateSkill,
   executeGenericTool,
   ToolCallContext,
 } from "./toolCallProcessor";
@@ -105,6 +102,13 @@ export async function runAgenticLoopRefactored(
     ? sessionManager.getProvider(sessionId, instance)
     : createProvider(instance);
 
+  // Turn-level VFS rollback:
+  // - Tool handlers are atomic per call, but a turn can involve multiple calls.
+  // - If the loop fails to commit a turn (or throws), we must restore the VFS to
+  //   the pre-turn snapshot so retries start from a clean baseline.
+  const baselineVfsSnapshot = config.vfsSession?.snapshot() ?? null;
+  const vfsSession = config.vfsSession;
+
   // Initialize loop state
   const loopState = createLoopState(
     gameState,
@@ -114,109 +118,127 @@ export async function runAgenticLoopRefactored(
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
+  let didFinishTurn = false;
 
-  // Inject ready consequences
-  injectReadyConsequences(conversationHistory);
+  try {
+    // Inject ready consequences
+    injectReadyConsequences(conversationHistory);
 
-  // Inject mode-specific instruction
-  if (isSudoMode) {
-    injectSudoModeInstruction(conversationHistory);
-  } else {
-    injectNormalTurnInstruction(conversationHistory, loopState.finishToolName);
+    // Inject mode-specific instruction
+    if (isSudoMode) {
+      injectSudoModeInstruction(conversationHistory);
+    } else {
+      injectNormalTurnInstruction(conversationHistory, loopState.finishToolName);
+    }
+
+    // Main loop
+    while (
+      loopState.budgetState.loopIterationsUsed <
+      loopState.budgetState.loopIterationsMax
+    ) {
+      // Check budget exhaustion
+      const budgetCheck = checkBudgetExhaustion(loopState.budgetState);
+      if (budgetCheck.exhausted) {
+        console.warn(`[AgenticLoop] ${budgetCheck.message}`);
+        throw new Error(budgetCheck.message);
+      }
+
+      // Inject budget status
+      injectBudgetStatus(
+        conversationHistory,
+        loopState.budgetState,
+        loopState.finishToolName,
+      );
+
+      const turnId = `turn_${Date.now()}_${loopState.budgetState.loopIterationsUsed}`;
+      console.log(
+        `[AgenticLoop] Iteration: ${loopState.budgetState.loopIterationsUsed + 1}/${loopState.budgetState.loopIterationsMax}, Budget: ${getBudgetSummary(loopState.budgetState)}`,
+      );
+
+      // Call AI
+      const aiResult = await handleAICall({
+        provider,
+        modelId,
+        systemInstruction,
+        conversationHistory,
+        loopState,
+        settings,
+        sessionId,
+      });
+
+      // Accumulate usage
+      accumulateUsage(loopState.totalUsage, aiResult.usage);
+
+      // Record assistant message
+      if (aiResult.functionCalls && aiResult.functionCalls.length > 0) {
+        conversationHistory.push(
+          createToolCallMessage(
+            aiResult.functionCalls.map((fc) => ({
+              id: fc.id,
+              name: fc.name,
+              arguments: fc.args,
+              thoughtSignature: fc.thoughtSignature,
+            })),
+            aiResult.text,
+          ),
+        );
+      } else if (aiResult.text) {
+        conversationHistory.push({
+          role: "assistant",
+          content: [{ type: "text", text: aiResult.text }],
+        });
+      }
+
+      // Handle no tool calls
+      if (!aiResult.functionCalls || aiResult.functionCalls.length === 0) {
+        if (aiResult.text.length > 0) {
+          injectNoToolCallError(conversationHistory, loopState.finishToolName);
+          incrementIterations(loopState.budgetState);
+          continue;
+        }
+      }
+
+      // Process tool calls
+      const toolResult = await processToolCalls({
+        functionCalls: aiResult.functionCalls || [],
+        loopState,
+        gameState,
+        settings,
+        sessionId,
+        conversationHistory,
+        protocol,
+        modelId,
+        turnId,
+        allLogs,
+      });
+
+      // Add tool responses to history
+      if (toolResult.responses.length > 0) {
+        conversationHistory.push(createToolResponseMessage(toolResult.responses));
+      }
+
+      // Check if turn finished
+      if (toolResult.turnFinished) {
+        didFinishTurn = true;
+        break;
+      }
+
+      incrementIterations(loopState.budgetState);
+    }
+  } catch (error) {
+    if (baselineVfsSnapshot && vfsSession) {
+      vfsSession.restore(baselineVfsSnapshot);
+    }
+    throw error;
   }
 
-  // Main loop
-  while (
-    loopState.budgetState.loopIterationsUsed <
-    loopState.budgetState.loopIterationsMax
-  ) {
-    // Check budget exhaustion
-    const budgetCheck = checkBudgetExhaustion(loopState.budgetState);
-    if (budgetCheck.exhausted) {
-      console.warn(`[AgenticLoop] ${budgetCheck.message}`);
-      throw new Error(budgetCheck.message);
+  if (!didFinishTurn) {
+    if (baselineVfsSnapshot && vfsSession) {
+      vfsSession.restore(baselineVfsSnapshot);
     }
-
-    // Inject budget status
-    injectBudgetStatus(
-      conversationHistory,
-      loopState.budgetState,
-      loopState.finishToolName,
+    throw new Error(
+      `TURN_NOT_COMMITTED: Agentic loop exhausted its budget without writing conversation files (expected ${loopState.finishToolName} or equivalent conversation writes as the last tool call).`,
     );
-
-    const turnId = `turn_${Date.now()}_${loopState.budgetState.loopIterationsUsed}`;
-    console.log(
-      `[AgenticLoop] Iteration: ${loopState.budgetState.loopIterationsUsed + 1}/${loopState.budgetState.loopIterationsMax}, Budget: ${getBudgetSummary(loopState.budgetState)}`,
-    );
-
-    // Call AI
-    const aiResult = await handleAICall({
-      provider,
-      modelId,
-      systemInstruction,
-      conversationHistory,
-      loopState,
-      settings,
-      sessionId,
-    });
-
-    // Accumulate usage
-    accumulateUsage(loopState.totalUsage, aiResult.usage);
-
-    // Record assistant message
-    if (aiResult.functionCalls && aiResult.functionCalls.length > 0) {
-      conversationHistory.push(
-        createToolCallMessage(
-          aiResult.functionCalls.map((fc) => ({
-            id: fc.id,
-            name: fc.name,
-            arguments: fc.args,
-            thoughtSignature: fc.thoughtSignature,
-          })),
-          aiResult.text,
-        ),
-      );
-    } else if (aiResult.text) {
-      conversationHistory.push({
-        role: "assistant",
-        content: [{ type: "text", text: aiResult.text }],
-      });
-    }
-
-    // Handle no tool calls
-    if (!aiResult.functionCalls || aiResult.functionCalls.length === 0) {
-      if (aiResult.text.length > 0) {
-        injectNoToolCallError(conversationHistory, loopState.finishToolName);
-        incrementIterations(loopState.budgetState);
-        continue;
-      }
-    }
-
-    // Process tool calls
-    const toolResult = await processToolCalls({
-      functionCalls: aiResult.functionCalls || [],
-      loopState,
-      gameState,
-      settings,
-      sessionId,
-      conversationHistory,
-      protocol,
-      modelId,
-      turnId,
-      allLogs,
-    });
-
-    // Add tool responses to history
-    if (toolResult.responses.length > 0) {
-      conversationHistory.push(createToolResponseMessage(toolResult.responses));
-    }
-
-    // Check if turn finished
-    if (toolResult.turnFinished) {
-      break;
-    }
-
-    incrementIterations(loopState.budgetState);
   }
 
   return {
@@ -277,16 +299,11 @@ async function processToolCalls(
     content: unknown;
   }> = [];
   let turnFinished = false;
-  let hasErrors = false;
-  const failedTools: string[] = [];
 
   const toolCtx: ToolCallContext = {
     loopState,
     gameState,
     settings,
-    clearerSearchTool: settings.extra?.clearerSearchTool,
-    conversationHistory,
-    sessionId,
     vfsSession: loopState.vfsSession,
   };
 
@@ -295,16 +312,9 @@ async function processToolCalls(
     let isError = false;
 
     try {
-      // Handle special tools
-      if (call.name === "search_tool") {
-        const result = handleSearchTool(call.args as any, toolCtx);
-        output = result.output;
-      } else if (call.name === "activate_skill") {
-        output = handleActivateSkill(call.args as any, toolCtx);
-      } else {
-        // Generic tool execution
-        output = executeGenericTool(call.name, call.args, toolCtx);
-      }
+      output = await Promise.resolve(
+        executeGenericTool(call.name, call.args, toolCtx),
+      );
 
       // Check for errors
       if (
@@ -314,8 +324,6 @@ async function processToolCalls(
         (output as any).success === false
       ) {
         isError = true;
-        hasErrors = true;
-        failedTools.push(call.name);
       }
     } catch (err: any) {
       output = {
@@ -324,8 +332,6 @@ async function processToolCalls(
         code: "EXECUTION_ERROR",
       };
       isError = true;
-      hasErrors = true;
-      failedTools.push(call.name);
     }
 
     responses.push({

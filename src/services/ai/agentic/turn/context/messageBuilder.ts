@@ -17,10 +17,10 @@ import {
   buildGodModeContext,
 } from "./worldContext";
 import {
-  entityContext,
+  renderEntityContext,
   type EntityEntry,
   type NpcEntry,
-} from "../../../../prompts/atoms/turn/entityContext";
+} from "../../../../prompts/atoms/renderers";
 
 /**
  * Build entity entries from game state for context injection
@@ -110,7 +110,7 @@ export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
     entityEntries.factions.length > 0;
 
   if (hasEntities) {
-    const entityContextMessage = entityContext(entityEntries);
+    const entityContextMessage = renderEntityContext(entityEntries);
     messages.push(
       createUserMessage(`[CONTEXT: Current Entities]\n${entityContextMessage}`),
     );

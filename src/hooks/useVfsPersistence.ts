@@ -58,6 +58,14 @@ export const useVfsPersistence = (
         forkId,
         turn,
       });
+
+      // Track the latest VFS snapshot per save slot so we can restore the correct
+      // fork+turn (not just fork-0) on reload.
+      await saveMetadata(`vfs_latest:${slotId}`, {
+        forkId,
+        turn,
+        updatedAt: Date.now(),
+      });
     },
     [gameState.forkId, gameState.turnNumber],
   );
@@ -73,6 +81,27 @@ export const useVfsPersistence = (
       }
     },
     [saveSnapshot],
+  );
+
+  const restoreVfsToTurn = useCallback(
+    async (saveId: string, forkId: number, turn: number): Promise<boolean> => {
+      try {
+        const snapshot = await vfsStoreRef.current.loadSnapshot(
+          saveId,
+          forkId,
+          turn,
+        );
+        if (!snapshot) {
+          return false;
+        }
+        restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
+        return true;
+      } catch (error) {
+        console.error("[VFS Persistence] Restore snapshot failed:", error);
+        return false;
+      }
+    },
+    [],
   );
 
   // Load slots and latest snapshot
@@ -92,27 +121,52 @@ export const useVfsPersistence = (
           }
 
           if (lastSlotId && typeof lastSlotId === "string") {
-            const indexes = await vfsStoreRef.current.listSnapshots(
-              lastSlotId,
-              0,
-            );
-            const latest = indexes[indexes.length - 1];
-            if (latest) {
-              const snapshot = await vfsStoreRef.current.loadSnapshot(
-                latest.saveId,
-                latest.forkId,
-                latest.turn,
+            const latestMeta = await loadMetadata<{
+              forkId?: unknown;
+              turn?: unknown;
+            }>(`vfs_latest:${lastSlotId}`);
+
+            let snapshot = null as Awaited<
+              ReturnType<typeof vfsStoreRef.current.loadSnapshot>
+            >;
+
+            if (
+              latestMeta &&
+              typeof latestMeta.forkId === "number" &&
+              typeof latestMeta.turn === "number"
+            ) {
+              snapshot = await vfsStoreRef.current.loadSnapshot(
+                lastSlotId,
+                latestMeta.forkId,
+                latestMeta.turn,
               );
-              if (snapshot) {
-                restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
-                const derived = deriveGameStateFromVfs(
-                  vfsSessionRef.current.snapshot(),
+            }
+
+            // Fallback for older saves: default to fork-0 latest.
+            if (!snapshot) {
+              const indexes = await vfsStoreRef.current.listSnapshots(
+                lastSlotId,
+                0,
+              );
+              const latest = indexes[indexes.length - 1];
+              if (latest) {
+                snapshot = await vfsStoreRef.current.loadSnapshot(
+                  latest.saveId,
+                  latest.forkId,
+                  latest.turn,
                 );
-                setGameState((prev) =>
-                  mergeDerivedViewState(prev, derived, { resetRuntime: true }),
-                );
-                setCurrentSlotId(lastSlotId);
               }
+            }
+
+            if (snapshot) {
+              restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
+              const derived = deriveGameStateFromVfs(
+                vfsSessionRef.current.snapshot(),
+              );
+              setGameState((prev) =>
+                mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+              );
+              setCurrentSlotId(lastSlotId);
             }
           }
         }
@@ -216,23 +270,48 @@ export const useVfsPersistence = (
     hasOutlineConversation?: boolean;
   }> => {
     try {
-      const indexes = await vfsStoreRef.current.listSnapshots(id, 0);
-      const latest = indexes[indexes.length - 1];
-      if (latest) {
-        const snapshot = await vfsStoreRef.current.loadSnapshot(
-          latest.saveId,
-          latest.forkId,
-          latest.turn,
+      const latestMeta = await loadMetadata<{
+        forkId?: unknown;
+        turn?: unknown;
+      }>(`vfs_latest:${id}`);
+
+      let snapshot = null as Awaited<
+        ReturnType<typeof vfsStoreRef.current.loadSnapshot>
+      >;
+
+      if (
+        latestMeta &&
+        typeof latestMeta.forkId === "number" &&
+        typeof latestMeta.turn === "number"
+      ) {
+        snapshot = await vfsStoreRef.current.loadSnapshot(
+          id,
+          latestMeta.forkId,
+          latestMeta.turn,
         );
-        if (snapshot) {
-          restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
-          const derived = deriveGameStateFromVfs(
-            vfsSessionRef.current.snapshot(),
-          );
-          setGameState((prev) =>
-            mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+      }
+
+      // Fallback for older saves: default to fork-0 latest.
+      if (!snapshot) {
+        const indexes = await vfsStoreRef.current.listSnapshots(id, 0);
+        const latest = indexes[indexes.length - 1];
+        if (latest) {
+          snapshot = await vfsStoreRef.current.loadSnapshot(
+            latest.saveId,
+            latest.forkId,
+            latest.turn,
           );
         }
+      }
+
+      if (snapshot) {
+        restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
+        const derived = deriveGameStateFromVfs(
+          vfsSessionRef.current.snapshot(),
+        );
+        setGameState((prev) =>
+          mergeDerivedViewState(prev, derived, { resetRuntime: true }),
+        );
       }
       setCurrentSlotId(id);
       return { success: true };
@@ -253,13 +332,15 @@ export const useVfsPersistence = (
     });
   };
 
-  const clearAllSaves = async () => {
+  const clearAllSaves = async (): Promise<boolean> => {
     try {
       await clearDatabase();
       setSaveSlots([]);
       setCurrentSlotId(null);
+      return true;
     } catch (error) {
       console.error("Failed to clear saves:", error);
+      return false;
     }
   };
 
@@ -306,5 +387,6 @@ export const useVfsPersistence = (
     vfsSession: vfsSessionRef.current,
     latestSlotId,
     seedFromDefaults: () => seedVfsSessionFromDefaults(vfsSessionRef.current),
+    restoreVfsToTurn,
   };
 };

@@ -42,7 +42,6 @@ Your goal is to translate the narrative into high-fidelity visual instructions.
 <tools>
 You have the following tools:
 1. \`submit_visual_result\`: Submit the final visual results.
-2. Game state query tools (\`query_inventory\`, \`query_npcs\`, \`query_locations\`, \`query_quests\`, \`query_knowledge\`, \`query_timeline\`, \`query_global\`, \`query_character_profile\`, \`query_character_attributes\`, \`query_character_skills\`, \`query_character_conditions\`): Use these to inspect the current game state if you need more details about entities, location, or protagonist status.
 </tools>
 
 <critical_rules>

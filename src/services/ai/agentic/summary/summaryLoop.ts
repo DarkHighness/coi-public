@@ -99,7 +99,7 @@ export async function runSummaryLoopRefactored(
     // Inject budget status
     conversationHistory.push(
       createUserMessage(
-        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState)}`,
+        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState, "finish_summary")}`,
       ),
     );
 
@@ -138,7 +138,7 @@ export async function runSummaryLoopRefactored(
           incrementRetries(loopState.budgetState);
           conversationHistory.push(
             createUserMessage(
-              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState)}`,
+              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, "finish_summary")}`,
             ),
           );
         },

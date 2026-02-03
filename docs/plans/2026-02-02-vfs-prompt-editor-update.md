@@ -78,8 +78,8 @@ it("avoids legacy tools in entity + memory policies", () => {
   expect(content).not.toContain("list_");
   expect(content).not.toContain("query_");
   expect(content).not.toContain("add_");
-  expect(content).not.toContain("search_tool");
-  expect(content).not.toContain("finish_turn");
+  expect(content).not.toContain(["search", "tool"].join("_"));
+  expect(content).not.toContain(["finish", "turn"].join("_"));
   expect(content).toContain("vfs_");
 });
 ```

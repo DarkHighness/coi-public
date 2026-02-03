@@ -277,19 +277,10 @@ class SkillRegistry implements ISkillRegistry {
     }
 
     if (lazyAvailable.length > 0) {
-      parts.push('  <available_skills hint="Use load_skill to activate">');
+      parts.push('  <available_skills hint="Available (not loaded)">');
       parts.push(lazyAvailable.map(formatEntry).join("\n"));
       parts.push("  </available_skills>");
     }
-
-    parts.push("");
-    parts.push("  <activate_skill_instruction>");
-    parts.push("    To load additional skills, use the activate_skill tool:");
-    parts.push('    activate_skill({ skillIds: ["<skill_id>", ...] })');
-    parts.push(
-      '    Example: activate_skill({ skillIds: ["combat", "mystery"] })',
-    );
-    parts.push("  </activate_skill_instruction>");
     parts.push("</skill_manifest>");
 
     return parts.join("\n");

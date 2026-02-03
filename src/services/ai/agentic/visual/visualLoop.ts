@@ -17,8 +17,6 @@ import {
   getVisualSystemInstruction,
 } from "./visualContext";
 import { visualTools } from "./visualToolHandler";
-import { GameDatabase } from "../../../gameDatabase";
-import { dispatchToolCallAsync } from "../../../tools/toolHandlerRegistry";
 
 export interface VisualProgress {
   status: string;
@@ -132,21 +130,14 @@ export async function runVisualLoop(
           });
           finished = true;
         } else {
-          // Generic tool execution
-          const context = {
-            db: new GameDatabase(gameState),
-            gameState,
-            settings: (gameState as any)._settings || {},
-          };
-          const output = await dispatchToolCallAsync(
-            call.name,
-            call.args,
-            context as any,
-          );
           toolResponses.push({
             toolCallId: call.id,
             name: call.name,
-            content: output,
+            content: {
+              success: false,
+              error: `Unknown tool: ${call.name}`,
+              code: "UNKNOWN_TOOL",
+            },
           });
         }
       }

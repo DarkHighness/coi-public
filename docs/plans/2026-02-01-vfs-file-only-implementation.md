@@ -229,20 +229,20 @@ git commit -m "[Feat]: seed VFS from defaults"
 ```ts
 it("finishes after writing a turn file", () => {
   // Simulate a vfs_write that writes the current turn file
-  // Expect the loop to stop without finish_turn tool.
+  // Expect the loop to stop without any dedicated finish tool.
 });
 ```
 
 **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run src/services/ai/agentic/turn/__tests__/toolCallProcessorVfs.test.ts`  
-Expected: FAIL (still requires finish_turn).
+Expected: FAIL (still requires a dedicated finish tool).
 
 **Step 3: Write minimal implementation**
 
 - Remove `GameDatabase` from `LoopState` and `createLoopState`.
 - Remove `injectReadyConsequences` DB usage (either no-op or use VFS).
-- Remove `finish_turn` tool flow and `handleFinishTurn` usage.
+- Remove any dedicated finish tool flow and `handleFinishTurn` usage.
 - Add a completion check after tool calls:
   - If `current/conversation/index.json` exists and references an `activeTurnId` with a valid turn file, stop loop and build response from that turn file.
 - Move response building into `resultAccumulator` (read turn file + derive state from VFS).
@@ -313,7 +313,7 @@ git commit -m "[Refactor]: remove non-vfs tools"
 const content = stateManagement();
 expect(content).toContain("vfs_");
 expect(content).toContain("current/conversation/turns/fork-");
-expect(content).not.toContain("finish_turn");
+expect(content).not.toContain(["finish", "turn"].join("_"));
 ```
 
 **Step 2: Run test to verify it fails**

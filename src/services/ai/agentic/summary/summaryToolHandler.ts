@@ -5,14 +5,8 @@
  * Stage-less design: only query/list tools + finish_summary.
  */
 
-import type { UnifiedMessage } from "../../../../types";
 import type { SummaryLoopInput } from "./summary";
 import type { SummaryLoopState } from "./summaryInitializer";
-import {
-  hasHandler,
-  dispatchToolCall,
-  type ToolContext,
-} from "../../../tools/toolHandlerRegistry";
 
 // ============================================================================
 // Tool Execution
@@ -24,7 +18,7 @@ export function executeSummaryToolCall(
   input: SummaryLoopInput,
   loopState: SummaryLoopState,
 ): unknown {
-  const { db } = loopState;
+  void loopState;
   const { segmentsToSummarize, nodeRange } = input;
 
   // Handle segment queries with redundancy check
@@ -34,21 +28,12 @@ export function executeSummaryToolCall(
 
   // Handle state queries
   if (name === "summary_query_state") {
-    return handleQueryState(args, db);
+    return handleQueryState(args, input.gameState);
   }
 
   // Handle finish summary
   if (name === "finish_summary") {
     return handleFinishSummary(args, input);
-  }
-
-  // Delegate to handler registry for any other query tools
-  if (hasHandler(name)) {
-    const ctx: ToolContext = {
-      db,
-      gameState: input.gameState,
-    };
-    return dispatchToolCall(name, args, ctx);
   }
 
   return { success: false, error: `Unknown tool: ${name}` };
@@ -154,7 +139,7 @@ function handleQuerySegments(
  */
 function handleQueryState(
   args: Record<string, unknown>,
-  db: SummaryLoopState["db"],
+  gameState: SummaryLoopInput["gameState"],
 ): unknown {
   const entities = args.entities as string[];
   const result: Record<string, unknown> = { success: true };
@@ -162,26 +147,22 @@ function handleQueryState(
   for (const entity of entities) {
     switch (entity) {
       case "inventory":
-        result.inventory = db.query("inventory");
+        result.inventory = gameState.inventory ?? [];
         break;
       case "npcs":
-        result.npcs = db.query("npc");
+        result.npcs = gameState.npcs ?? [];
         break;
       case "locations":
-        result.locations = db.query("location");
+        result.locations = gameState.locations ?? [];
         break;
       case "quests":
-        result.quests = db.query("quest");
+        result.quests = gameState.quests ?? [];
         break;
       case "knowledge":
-        result.knowledge = db.query("knowledge");
+        result.knowledge = gameState.knowledge ?? [];
         break;
       case "character":
-        result.character = {
-          profile: db.query("character", "profile"),
-          attributes: db.query("character", "attributes"),
-          conditions: db.query("character", "conditions"),
-        };
+        result.character = gameState.character ?? null;
         break;
     }
   }

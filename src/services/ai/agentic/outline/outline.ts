@@ -59,9 +59,6 @@ import { OUTLINE_PHASE_TOOLS } from "./outlineTools";
 import { getPhasePrompt } from "./outlinePrompts";
 import { mergeOutlinePhases } from "./outlinePhaseHandler";
 
-// @ts-ignore
-import promptInjectionData from "@/prompt/prompt.toml";
-
 // ============================================================================
 // Phased Story Outline Generation
 // ============================================================================
@@ -171,24 +168,19 @@ export const generateStoryOutlinePhased = async (
     theme, // themeKey - NEW: for theme-based atom specialization
   );
 
-  // Inject custom prompts if needed
-  const promptInjectionEnabled = settings.extra?.promptInjectionEnabled;
-  const customPromptInjection = settings.extra?.customPromptInjection?.trim();
+  // Optional user-provided prompt prefix (typically used for language/style preferences).
+  const customInstructionRaw = settings.extra?.customInstruction;
+  const customInstruction =
+    typeof customInstructionRaw === "string" ? customInstructionRaw : "";
+  const customInstructionEnabled =
+    settings.extra?.customInstructionEnabled ??
+    Boolean(customInstruction.trim());
 
-  if (customPromptInjection) {
-    systemInstruction = `${customPromptInjection}\n\n${systemInstruction}`;
+  if (customInstruction.trim() && customInstructionEnabled) {
+    systemInstruction = `${customInstruction}\n\n${systemInstruction}`;
     console.warn(
-      `[OutlineAgentic] Injecting custom prompt (${customPromptInjection.length} chars)`,
+      `[CustomInstruction] Prepended custom instruction (${customInstruction.length} chars)`,
     );
-  } else if (promptInjectionEnabled && promptInjectionData) {
-    const loweredModelId = modelId.toLowerCase();
-    const matchedPrompt = promptInjectionData.prompts.find((p) =>
-      p.keywords.some((k) => loweredModelId.includes(k.toLowerCase())),
-    );
-    if (matchedPrompt) {
-      systemInstruction = `${matchedPrompt.prompt}\n\n${systemInstruction}`;
-      console.warn(`[OutlineAgentic] Injecting prompt for model ${modelId}`);
-    }
   }
 
   // Initialize or restore from checkpoint

@@ -430,10 +430,10 @@ export const weatherEffectSchema = z.enum([
 /** 氛围对象 - 包含视觉主题、音频氛围和天气特效 */
 export const atmosphereSchema = z.object({
   envTheme: envThemeSchema.describe(
-    "Visual theme (colors/fonts). If unsure about available values, use 'query_atmosphere_enums' and 'query_atmosphere_enum_description'.",
+    "Visual theme (colors/fonts). Must be one of the envTheme enum values.",
   ),
   ambience: ambienceSchema.describe(
-    "Audio background/environment. If unsure about available values, use 'query_atmosphere_enums' and 'query_atmosphere_enum_description'.",
+    "Audio background/environment. Must be one of the ambience enum values.",
   ),
   weather: weatherEffectSchema
     .nullish()
@@ -1976,14 +1976,16 @@ export const gameResponseSchema = z.object({
 });
 
 // ============================================================================
-// finish_turn Schema (独立的回合结束响应 Schema)
+// Turn Assistant Schema (VFS-backed turn file)
 // ============================================================================
 
 /**
- * finish_turn 响应 Schema
- * RAG queries and entity preloading are now handled via dedicated tools, not finish_turn
+ * Assistant section schema for a completed turn.
+ *
+ * Note: The runtime no longer uses a dedicated "finish" tool. Turns are finalized
+ * by writing the VFS conversation files (index + turn file).
  */
-export function buildFinishTurnSchema() {
+export function buildTurnAssistantSchema() {
   const baseFields = {
     narrative: z.string().describe(
       `The final story text to present to the player as **Markdown formatted text**. Write in a vivid, engaging style. Show, don't tell. Focus on sensory details and character emotions.
@@ -2115,9 +2117,9 @@ In settings with magic, superpowers, or similar systems where "incantations", "c
 }
 
 /**
- * Default finish_turn schema
+ * Default turn assistant schema
  */
-export const finishTurnSchema = buildFinishTurnSchema();
+export const turnAssistantSchema = buildTurnAssistantSchema();
 
 /**
  * force_update 响应 Schema
@@ -2241,10 +2243,9 @@ export const overrideOutlineSchema = z.object({
 
 export type OverrideOutlineParams = z.infer<typeof overrideOutlineSchema>;
 
-// ============================================================================\n// finish_turn / force_update Response Types\n// ============================================================================
+// ============================================================================\n// Response Types\n// ============================================================================
 
-/** finish_turn 响应类型 */
-export type FinishTurnResponse = z.infer<typeof finishTurnSchema>;
+export type TurnAssistantResponse = z.infer<typeof turnAssistantSchema>;
 export type ForceUpdateResponse = z.infer<typeof forceUpdateSchema>;
 
 // ============================================================================

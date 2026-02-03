@@ -40,8 +40,12 @@ export function createBudgetState(settings: AISettings): BudgetState {
 /** Generate budget management XML section for prompt injection */
 export function generateBudgetPrompt(
   state: BudgetState,
-  finishToolName: string = "finish_turn",
+  finishToolName?: string,
 ): string {
+  const finishAction = finishToolName
+    ? `\`${finishToolName}\``
+    : "the finish tool for this loop";
+
   const toolCallsRemaining = state.toolCallsMax - state.toolCallsUsed;
   const retriesRemaining = state.retriesMax - state.retriesUsed;
   const iterationsRemaining =
@@ -111,17 +115,23 @@ export function generateBudgetPrompt(
   > = {
     LAST_CHANCE: {
       warning: `🚨 LAST CHANCE: Only ${toolCallsRemaining} tool call(s) OR ${iterationsRemaining} iteration(s) remaining!`,
-      action: `YOU MUST CALL \`${finishToolName}\` RIGHT NOW. No other tool calls allowed.`,
+      action: finishToolName
+        ? `YOU MUST CALL ${finishAction} RIGHT NOW. No other tool calls allowed.`
+        : `YOU MUST FINISH RIGHT NOW. No other tool calls allowed.`,
       color: "red",
     },
     CRITICAL: {
       warning: `⛔ CRITICAL: Budget at ${Math.min(toolCallsPercent, iterationsPercent)}%! Exhaustion imminent.`,
-      action: `STOP all queries/updates. Call \`${finishToolName}\` immediately with your current information.`,
+      action: finishToolName
+        ? `STOP all queries/updates. Call ${finishAction} immediately with your current information.`
+        : `STOP all queries/updates. Finish immediately with your current information.`,
       color: "red",
     },
     SEVERE: {
       warning: `⚠️ SEVERE: Budget at ${Math.min(toolCallsPercent, iterationsPercent)}%. Running dangerously low.`,
-      action: `Complete ONLY essential updates. Prepare to call \`${finishToolName}\` on next turn.`,
+      action: finishToolName
+        ? `Complete ONLY essential updates. Prepare to call ${finishAction} on next turn.`
+        : `Complete ONLY essential updates. Prepare to finish on next turn.`,
       color: "orange",
     },
     WARNING: {
@@ -160,7 +170,7 @@ export function generateBudgetPrompt(
   // Add explicit rules for critical levels
   if (overallLevel === "LAST_CHANCE" || overallLevel === "CRITICAL") {
     parts.push(`  <forced_action>`);
-    parts.push(`    Your ONLY allowed tool call is: \`${finishToolName}\``);
+    parts.push(`    Your ONLY allowed tool call is: ${finishAction}`);
     parts.push(`    Any other tool call will waste precious budget.`);
     parts.push(`  </forced_action>`);
   }

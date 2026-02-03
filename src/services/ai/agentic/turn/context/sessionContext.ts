@@ -12,6 +12,11 @@ import type { UnifiedMessage } from "@/services/messageTypes";
 import { fromGeminiFormat, toGeminiFormat } from "@/services/messageTypes";
 import { sessionManager, SessionConfig } from "@/services/ai/sessionManager";
 import { buildCacheHint } from "@/services/ai/provider/cacheHint";
+import type { VfsSession } from "@/services/vfs/vfsSession";
+import {
+  checkpointVfsSession,
+  rollbackVfsSessionToCheckpoint,
+} from "@/services/vfs/runtimeCheckpoints";
 
 // ============================================================================
 // Types
@@ -194,6 +199,7 @@ export function handleRetryDetection(
   activeHistory: UnifiedMessage[],
   userAction: string,
   protocol: ProviderProtocol,
+  vfsSession?: VfsSession,
 ): UnifiedMessage[] {
   if (activeHistory.length === 0) return activeHistory;
 
@@ -221,6 +227,7 @@ export function handleRetryDetection(
       `[SessionContext] Retry detected! Rolling back to last checkpoint.`,
     );
     sessionManager.rollbackToLastCheckpoint(sessionId);
+    rollbackVfsSessionToCheckpoint(sessionId, vfsSession);
 
     // Refresh history after rollback
     return getActiveHistory(sessionId, protocol);
@@ -232,8 +239,12 @@ export function handleRetryDetection(
 /**
  * Create checkpoint before new turn
  */
-export function createCheckpoint(sessionId: string): void {
+export function createCheckpoint(
+  sessionId: string,
+  vfsSession?: VfsSession,
+): void {
   sessionManager.checkpoint(sessionId);
+  checkpointVfsSession(sessionId, vfsSession);
 }
 
 /**

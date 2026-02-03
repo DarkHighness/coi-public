@@ -402,12 +402,6 @@ export const GamePage: React.FC<GamePageProps> = ({
       return;
     }
 
-    // --- Rebuild Session on Retry ---
-    // If not first turn, we should invalidate the current provider session
-    // to ensure the next turn starts with a clean slate from the last valid summary.
-    console.log("[GamePage] Invalidating session before retry...");
-    await invalidateSession();
-
     // Find the last user segment to retry from
     const lastSegment = [...currentHistory]
       .reverse()

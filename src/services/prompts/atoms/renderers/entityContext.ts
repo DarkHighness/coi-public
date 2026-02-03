@@ -1,10 +1,10 @@
 /**
  * ============================================================================
- * Turn Atom: Entity Context
+ * Context Rendering Atom: Entity Context
  * ============================================================================
  *
  * Lists all current entities in the game world by type using TOON format.
- * Injected as the first user message to provide AI with entity reference.
+ * Intended for context injection (not player-facing narrative).
  */
 
 import type { Atom } from "../types";
@@ -28,7 +28,7 @@ export interface EntityEntry {
 export interface NpcEntry {
   id: string;
   name: string;
-  trueName?: string; // hidden.trueName if different from visible.name
+  trueName?: string;
 }
 
 export interface EntityContextInput {
@@ -46,18 +46,9 @@ export interface EntityContextInput {
 // TOON Rendering
 // ============================================================================
 
-/**
- * Entity Context Atom
- *
- * Generates a structured list of all current entities for AI reference.
- * Uses TOON format for compact, readable output.
- *
- * NPC entries include both visible name and true name (if different).
- */
-export const entityContext: Atom<EntityContextInput> = (input) => {
+export const renderEntityContext: Atom<EntityContextInput> = (input) => {
   const entityData: Record<string, unknown> = {};
 
-  // NPCs with dual-name support
   if (input.npcs && input.npcs.length > 0) {
     entityData.npcs = input.npcs.map((n) =>
       n.trueName && n.trueName !== n.name
@@ -66,7 +57,6 @@ export const entityContext: Atom<EntityContextInput> = (input) => {
     );
   }
 
-  // Standard entities
   if (input.items && input.items.length > 0) {
     entityData.items = input.items.map((e) => ({ id: e.id, name: e.name }));
   }
@@ -112,8 +102,9 @@ export const entityContext: Atom<EntityContextInput> = (input) => {
 
   return `<current_entities>
 This section lists all currently tracked entities in the game world.
-Use these IDs when referencing entities in tool calls (e.g., update_npc, update_inventory).
-If you need to create a new entity, generate a new unique ID.
+Use these IDs when editing the corresponding JSON files under \`current/world/\`
+(via \`vfs_read\`/\`vfs_edit\`/\`vfs_write\`). If you need to create a new entity,
+generate a new unique ID and write a new file in the appropriate folder.
 
 For NPCs: "name" is what player knows, "trueName" is the hidden true name (GM only).
 
@@ -121,10 +112,7 @@ ${toToon(entityData)}
 </current_entities>`;
 };
 
-/**
- * Compact version for lite mode - just entity counts
- */
-export const entityContextLite: Atom<EntityContextInput> = (input) => {
+export const renderEntityContextLite: Atom<EntityContextInput> = (input) => {
   const counts = [
     input.npcs?.length ? `NPCs: ${input.npcs.length}` : null,
     input.items?.length ? `Items: ${input.items.length}` : null,
@@ -139,4 +127,3 @@ export const entityContextLite: Atom<EntityContextInput> = (input) => {
   return `<entity_summary>${counts || "No entities"}</entity_summary>`;
 };
 
-export default entityContext;

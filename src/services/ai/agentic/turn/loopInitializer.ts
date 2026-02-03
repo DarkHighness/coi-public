@@ -60,7 +60,7 @@ export function createLoopState(
   const accumulatedResponse = createEmptyResponse();
   const isRAGEnabled = settings.embedding?.enabled ?? false;
   const activeTools = createInitialTools(isSudoMode, isRAGEnabled);
-  const finishToolName = "vfs_write";
+  const finishToolName = "vfs_commit_turn";
   const conversationMarker = getConversationMarker(vfsSession);
 
   return {
@@ -104,7 +104,9 @@ export function createInitialTools(
 ): ZodToolDefinition[] {
   void isSudoMode;
   void isRAGEnabled;
-  return [...ALL_DEFINED_TOOLS];
+  // VFS-only: the turn loop is file-backed, and completion is detected by
+  // `current/conversation/*` writes (see buildResponseFromVfs).
+  return ALL_DEFINED_TOOLS.filter((tool) => tool.name.startsWith("vfs_"));
 }
 
 /**

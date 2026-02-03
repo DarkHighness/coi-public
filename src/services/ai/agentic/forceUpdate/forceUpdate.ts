@@ -27,7 +27,7 @@ export interface ForceUpdateResult {
  *
  * Design: Force Update is just a normal turn with:
  * 1. User action prefixed with [SUDO] to signal force update mode
- * 2. complete_force_update tool available instead of finish_turn
+ * 2. Standard VFS-only tools (no dedicated finish tool)
  *
  * Note: This does NOT modify godMode. godMode is a permanent player state (/god),
  * while force update is a one-time GM command (/sudo).
@@ -41,9 +41,8 @@ export const generateForceUpdate = async (
   context: TurnContext,
 ): Promise<ForceUpdateResult> => {
   // Create a modified context for SUDO mode
-  // The [SUDO] prefix tells the agentic loop to:
-  // 1. Use complete_force_update instead of finish_turn
-  // 2. Apply force update rules (bypass simulation logic)
+  // The [SUDO] prefix tells the agentic loop to apply force update rules
+  // (bypass simulation logic).
   const sudoContext: TurnContext = {
     ...context,
     userAction: `[SUDO] ${prompt}`,
@@ -62,7 +61,7 @@ export const generateForceUpdate = async (
     finalState?: unknown;
   };
 
-  // If no finalState was set by complete_force_update, create one from current state
+  // If no finalState was set by the agent, create one from current state
   if (!extendedResponse.finalState) {
     extendedResponse.finalState = inputState;
   }

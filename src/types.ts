@@ -1214,8 +1214,8 @@ export interface AISettings {
     detailedDescription?: boolean;
     nsfw?: boolean; // Enable NSFW/adult content generation
     genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
-    promptInjectionEnabled?: boolean;
-    customPromptInjection?: string; // Custom prompt injection (overrides model-based injection)
+    customInstructionEnabled?: boolean;
+    customInstruction?: string; // Prepended to system instruction
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"

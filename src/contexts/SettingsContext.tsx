@@ -49,6 +49,28 @@ export const useSettingsContext = () => {
  * Merge saved settings with defaults to ensure all fields exist
  */
 function mergeSettings(parsed: Partial<AISettings>): AISettings {
+  const legacyExtra = (parsed.extra || {}) as Record<string, unknown>;
+  const migratedExtra: Record<string, unknown> = {
+    ...DEFAULTS.extra,
+    ...legacyExtra,
+  };
+
+  // Migrate legacy prompt injection fields -> custom instruction.
+  if (
+    migratedExtra.customInstruction == null &&
+    typeof migratedExtra.customPromptInjection === "string"
+  ) {
+    migratedExtra.customInstruction = migratedExtra.customPromptInjection;
+  }
+  if (
+    migratedExtra.customInstructionEnabled == null &&
+    typeof migratedExtra.promptInjectionEnabled === "boolean"
+  ) {
+    migratedExtra.customInstructionEnabled = migratedExtra.promptInjectionEnabled;
+  }
+  delete migratedExtra.customPromptInjection;
+  delete migratedExtra.promptInjectionEnabled;
+
   return {
     ...DEFAULTS,
     ...parsed,
@@ -78,10 +100,7 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
         ...(parsed.embedding?.lru || {}),
       },
     },
-    extra: {
-      ...DEFAULTS.extra,
-      ...(parsed.extra || {}),
-    },
+    extra: migratedExtra as any,
   };
 }
 

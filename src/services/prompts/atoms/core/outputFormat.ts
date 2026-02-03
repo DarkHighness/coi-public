@@ -34,7 +34,9 @@ export const outputFormat: Atom<OutputFormatInput> = ({
     - Every turn MUST end by writing:
       • \`current/conversation/turns/fork-<id>/turn-<n>.json\`
       • \`current/conversation/index.json\`
-    - Use \`vfs_write\` (or \`vfs_edit\` if replacing).
+    - Prefer \`vfs_commit_turn\` (fast path).
+    - If you need to bundle state updates + turn commit in one call, use \`vfs_tx\` with \`commit_turn\` as the LAST op.
+    - Otherwise write both files via \`vfs_write\`/\`vfs_edit\`.
     - This write MUST be your LAST tool call of the turn.
   </vfs_turn_files>
 
@@ -51,7 +53,7 @@ export const outputFormat: Atom<OutputFormatInput> = ({
     <rule>Inspect with \`vfs_ls\`/\`vfs_read\` before edits.</rule>
     <rule>Use \`vfs_write\`/\`vfs_merge\`/\`vfs_edit\` for all state updates under \`current/world/\`.</rule>
     <rule>Deletions use JSON Patch \`remove\` via \`vfs_edit\` (never \`vfs_merge\`).</rule>
-    <rule>\`vfs_write\` for conversation files MUST be your LAST tool call.</rule>
+    <rule>\`vfs_commit_turn\` (or conversation writes) MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>
 </output_format>
