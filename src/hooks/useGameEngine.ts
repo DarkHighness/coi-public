@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -1584,6 +1584,158 @@ export const useGameEngine = () => {
     }));
   };
 
+  type HighlightTarget =
+    | {
+        kind:
+          | "inventory"
+          | "npcs"
+          | "locations"
+          | "knowledge"
+          | "quests"
+          | "factions"
+          | "timeline";
+        id: string;
+      }
+    | {
+        kind: "characterSkills" | "characterConditions" | "characterTraits";
+        id?: string;
+        name?: string;
+      };
+
+  const clearHighlight = useCallback(
+    (target: HighlightTarget) => {
+      const applyEntityHighlightClear = (dir: string, id: string) => {
+        const filePath = `world/${dir}/${id}.json`;
+        try {
+          if (!vfsSession.readFile(filePath)) {
+            return;
+          }
+          vfsSession.mergeJson(filePath, { highlight: false });
+        } catch (error) {
+          console.warn("[UI] Failed to clear highlight in VFS:", filePath, error);
+        }
+      };
+
+      const applyCharacterHighlightClear = (
+        section: "skills" | "conditions" | "hiddenTraits",
+        match: { id?: string; name?: string },
+      ) => {
+        const current = gameStateRef.current.character;
+        if (!current) {
+          return;
+        }
+
+        const list = (current as any)[section] as Array<any> | undefined;
+        if (!Array.isArray(list) || list.length === 0) {
+          return;
+        }
+
+        const matches = (entry: any): boolean => {
+          if (match.id && entry?.id && entry.id === match.id) return true;
+          if (match.name && entry?.name && entry.name === match.name) return true;
+          return false;
+        };
+
+        const updated = list.map((entry) =>
+          matches(entry) ? { ...entry, highlight: false } : entry,
+        );
+
+        try {
+          if (vfsSession.readFile("world/character.json")) {
+            vfsSession.mergeJson("world/character.json", { [section]: updated });
+          }
+        } catch (error) {
+          console.warn(
+            "[UI] Failed to clear highlight in VFS: world/character.json",
+            error,
+          );
+        }
+
+        setGameState((prev) => {
+          if (!prev.character) {
+            return prev;
+          }
+          const prevList = (prev.character as any)[section] as Array<any> | undefined;
+          if (!Array.isArray(prevList) || prevList.length === 0) {
+            return prev;
+          }
+          const nextList = prevList.map((entry) =>
+            matches(entry) ? { ...entry, highlight: false } : entry,
+          );
+          return {
+            ...prev,
+            character: {
+              ...prev.character,
+              [section]: nextList,
+            },
+          };
+        });
+      };
+
+      if (
+        target.kind === "inventory" ||
+        target.kind === "npcs" ||
+        target.kind === "locations" ||
+        target.kind === "knowledge" ||
+        target.kind === "quests" ||
+        target.kind === "factions" ||
+        target.kind === "timeline"
+      ) {
+        const dirMap: Record<string, string> = {
+          inventory: "inventory",
+          npcs: "npcs",
+          locations: "locations",
+          knowledge: "knowledge",
+          quests: "quests",
+          factions: "factions",
+          timeline: "timeline",
+        };
+
+        const dir = dirMap[target.kind];
+        applyEntityHighlightClear(dir, target.id);
+
+        setGameState((prev) => {
+          const list = (prev as any)[target.kind] as Array<any> | undefined;
+          if (!Array.isArray(list) || list.length === 0) {
+            return prev;
+          }
+          const updated = list.map((entry) =>
+            entry?.id === target.id ? { ...entry, highlight: false } : entry,
+          );
+          return {
+            ...prev,
+            [target.kind]: updated,
+          };
+        });
+
+        triggerSave();
+        return;
+      }
+
+      if (target.kind === "characterSkills") {
+        applyCharacterHighlightClear("skills", { id: target.id, name: target.name });
+        triggerSave();
+        return;
+      }
+
+      if (target.kind === "characterConditions") {
+        applyCharacterHighlightClear("conditions", { id: target.id, name: target.name });
+        triggerSave();
+        return;
+      }
+
+      if (target.kind === "characterTraits") {
+        applyCharacterHighlightClear("hiddenTraits", {
+          id: target.id,
+          name: target.name,
+        });
+        triggerSave();
+        return;
+      }
+    },
+    [setGameState, triggerSave, vfsSession],
+  );
+
   /**
    * Handle Force Update Command (/sudo)
    */
@@ -1993,5 +2145,6 @@ export const useGameEngine = () => {
     failedImageNodes,
     refreshSlots,
     vfsSession,
+    clearHighlight,
   };
 };

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TimelineEvent } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
@@ -12,8 +13,14 @@ interface TimelineEventsPanelProps {
 // Sub-component for individual timeline events
 const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
   const { t } = useTranslation();
+  const engine = useOptionalGameEngineContext();
+  const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(event.highlight || false);
+
+  useEffect(() => {
+    setIsHighlight(event.highlight || false);
+  }, [event.highlight]);
 
   const handleClick = () => {
     if (event.unlocked) {
@@ -21,6 +28,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
     }
     if (isHighlight) {
       setIsHighlight(false);
+      clearHighlight?.({ kind: "timeline", id: event.id });
     }
   };
 
