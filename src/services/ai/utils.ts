@@ -872,6 +872,36 @@ export function resolvePlayerMaliceProfile(input: {
   return `${presetText}\n${intensityLine}`;
 }
 
+export type ModelPromptEntry = {
+  keywords: string[];
+  prompt: string;
+};
+
+export function pickModelMatchedPrompt(
+  entries: ModelPromptEntry[] | undefined,
+  modelId: string,
+): string | undefined {
+  if (!entries || entries.length === 0) return undefined;
+  const loweredModelId = (modelId || "").toLowerCase();
+  if (!loweredModelId) return undefined;
+
+  for (const entry of entries) {
+    const keywords = Array.isArray(entry?.keywords) ? entry.keywords : [];
+    const prompt = typeof entry?.prompt === "string" ? entry.prompt : "";
+    if (!prompt.trim() || keywords.length === 0) continue;
+    if (
+      keywords.some((k) => {
+        const kw = (k || "").toLowerCase().trim();
+        return kw ? loweredModelId.includes(kw) : false;
+      })
+    ) {
+      return prompt.trim();
+    }
+  }
+
+  return undefined;
+}
+
 export function resolveNarrativeStyle(
   input: {
     themeStyle?: string;
