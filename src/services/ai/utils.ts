@@ -720,6 +720,33 @@ export type PlayerMalicePreset =
   | "manipulation"
   | "sabotage";
 
+export type PlayerMaliceIntensity = "light" | "standard" | "heavy";
+
+export function getPlayerMaliceIntensityText(
+  intensity: PlayerMaliceIntensity,
+  language: string,
+): string {
+  const isZh = language?.toLowerCase().startsWith("zh");
+  if (isZh) {
+    switch (intensity) {
+      case "light":
+        return "强度：轻（Trace/Heat 积累更慢；反制升级更慢；更容易周旋与试错，但仍要讲机制）。";
+      case "heavy":
+        return "强度：重（Trace/Heat 积累更快；更快被盯上；更快升级到有组织反制；失误代价更大）。";
+      default:
+        return "强度：标准（Trace/Heat 与反制升级为常规速度）。";
+    }
+  }
+  switch (intensity) {
+    case "light":
+      return "Intensity: Light (slower Trace/Heat; slower escalation; more room to maneuver and test, but still mechanism-driven).";
+    case "heavy":
+      return "Intensity: Heavy (faster Trace/Heat; faster scrutiny; faster organized counterplay; mistakes cost more).";
+    default:
+      return "Intensity: Standard (baseline Trace/Heat and escalation speed).";
+  }
+}
+
 export function getPlayerMalicePresetText(
   preset: PlayerMalicePreset,
   language: string,
@@ -797,8 +824,26 @@ export function getPlayerMalicePresetText(
   }
 }
 
+export function resolvePlayerMaliceIntensity(input: {
+  intensity?: PlayerMaliceIntensity;
+  language: string;
+  customContext?: string;
+}): PlayerMaliceIntensity {
+  const fromCustomContext = extractXmlTagValue(
+    input.customContext,
+    "player_malice_intensity",
+  )?.toLowerCase();
+
+  if (fromCustomContext === "light") return "light";
+  if (fromCustomContext === "heavy") return "heavy";
+  if (fromCustomContext === "standard") return "standard";
+
+  return input.intensity ?? "standard";
+}
+
 export function resolvePlayerMaliceProfile(input: {
   preset?: PlayerMalicePreset;
+  intensity?: PlayerMaliceIntensity;
   language: string;
   customContext?: string;
 }): string | undefined {
@@ -806,10 +851,25 @@ export function resolvePlayerMaliceProfile(input: {
     input.customContext,
     "player_malice_profile",
   );
-  if (fromCustomContext) return fromCustomContext;
+  const resolvedIntensity = resolvePlayerMaliceIntensity({
+    intensity: input.intensity,
+    language: input.language,
+    customContext: input.customContext,
+  });
+  const intensityLine = getPlayerMaliceIntensityText(
+    resolvedIntensity,
+    input.language,
+  );
+
+  if (fromCustomContext) {
+    const base = fromCustomContext.trim();
+    return base ? `${base}\n${intensityLine}` : intensityLine;
+  }
 
   if (!input.preset) return undefined;
-  return getPlayerMalicePresetText(input.preset, input.language);
+  const presetText = getPlayerMalicePresetText(input.preset, input.language);
+  if (!presetText) return undefined;
+  return `${presetText}\n${intensityLine}`;
 }
 
 export function resolveNarrativeStyle(

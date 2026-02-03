@@ -174,6 +174,7 @@ export const generateStoryOutlinePhased = async (
 
   const playerMaliceProfile = resolvePlayerMaliceProfile({
     preset: settings.extra?.playerMalicePreset,
+    intensity: settings.extra?.playerMaliceIntensity,
     language,
     customContext,
   });
@@ -196,6 +197,7 @@ export const generateStoryOutlinePhased = async (
     settings.extra?.worldDispositionPreset,
     playerMaliceProfile,
     settings.extra?.playerMalicePreset,
+    settings.extra?.playerMaliceIntensity,
   );
 
   // Inject custom prompts if needed

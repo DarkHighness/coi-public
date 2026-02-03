@@ -103,6 +103,7 @@ export const generateAdventureTurn = async (
 
   const playerMaliceProfile = resolvePlayerMaliceProfile({
     preset: settings.extra?.playerMalicePreset,
+    intensity: settings.extra?.playerMaliceIntensity,
     language: context.language,
     customContext: gameState.customContext,
   });
@@ -133,6 +134,7 @@ export const generateAdventureTurn = async (
     worldDispositionPreset: settings.extra?.worldDispositionPreset,
     playerMaliceProfile,
     playerMalicePreset: settings.extra?.playerMalicePreset,
+    playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
     customRules: gameState.customRules,
     isNSFW: settings.extra?.nsfw,
     isLiteMode: settings.extra?.liteMode,

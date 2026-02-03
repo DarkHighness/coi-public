@@ -534,6 +534,13 @@
         "manipulation": "Emotional Manipulation",
         "sabotage": "Sabotage / Chaos"
       },
+      "playerMaliceIntensity": "Malice Intensity",
+      "playerMaliceIntensityHelp": "Controls Trace/Heat accumulation and how quickly counterplay escalates. Light = more room to maneuver; Heavy = faster scrutiny and escalation. Per-game <player_malice_intensity> in custom context overrides this.",
+      "playerMaliceIntensityOptions": {
+        "light": "Light (Slow Heat)",
+        "standard": "Standard",
+        "heavy": "Heavy (Fast Heat)"
+      },
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "genderPreference": "Gender Preference",

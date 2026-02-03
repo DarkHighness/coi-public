@@ -507,6 +507,13 @@
         "manipulation": "情感操控",
         "sabotage": "纯破坏/搅局"
       },
+      "playerMaliceIntensity": "恶意玩法强度",
+      "playerMaliceIntensityHelp": "控制 Trace/Heat 的积累速度与世界反制升级频率。轻=更容易周旋；重=更快被盯上、更快升级。若自定义上下文包含 <player_malice_intensity>，将优先生效。",
+      "playerMaliceIntensityOptions": {
+        "light": "轻（慢热度）",
+        "standard": "标准",
+        "heavy": "重（快热度）"
+      },
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
       "genderPreference": "性别偏好",

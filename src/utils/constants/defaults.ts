@@ -151,5 +151,6 @@ export const DEFAULTS: AISettings = {
     narrativeStylePreset: "theme",
     worldDispositionPreset: "theme",
     playerMalicePreset: "theme",
+    playerMaliceIntensity: "standard",
   },
 };
