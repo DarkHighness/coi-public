@@ -152,5 +152,6 @@ export const DEFAULTS: AISettings = {
     customInstruction: "",
     narrativeStylePreset: "theme",
     worldDispositionPreset: "theme",
+    playerMalicePreset: "theme",
   },
 };

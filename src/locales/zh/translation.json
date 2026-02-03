@@ -498,6 +498,15 @@
         "mixed": "善恶并存",
         "cynical": "交易社会"
       },
+      "playerMalicePreset": "恶意玩法策略包",
+      "playerMalicePresetHelp": "为“恶意/犯罪/操控”等玩法增加可执行的机制偏好（证据链、热度、反制、升级节奏）。这是补充，不强制玩家必须这么玩。若自定义上下文包含 <player_malice_profile>，将优先生效。",
+      "playerMalicePresetOptions": {
+        "theme": "题材默认",
+        "intimidation": "暴力威慑",
+        "bureaucratic": "制度钻空子",
+        "manipulation": "情感操控",
+        "sabotage": "纯破坏/搅局"
+      },
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
       "genderPreference": "性别偏好",

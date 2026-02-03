@@ -33,6 +33,7 @@ import {
   IMAGE_BASED_THEME,
   resolveNarrativeStyle,
   resolveWorldDisposition,
+  resolvePlayerMaliceProfile,
 } from "../../utils";
 
 import {
@@ -168,6 +169,12 @@ export const generateStoryOutlinePhased = async (
     customContext,
   });
 
+  const playerMaliceProfile = resolvePlayerMaliceProfile({
+    preset: settings.extra?.playerMalicePreset,
+    language,
+    customContext,
+  });
+
   let systemInstruction = getOutlineSystemInstruction(
     language,
     isRestricted,
@@ -184,6 +191,8 @@ export const generateStoryOutlinePhased = async (
     themeConfig?.categories?.[0], // themeCategory
     theme, // themeKey - NEW: for theme-based atom specialization
     settings.extra?.worldDispositionPreset,
+    playerMaliceProfile,
+    settings.extra?.playerMalicePreset,
   );
 
   // Optional user-provided prompt prefix (typically used for language/style preferences).

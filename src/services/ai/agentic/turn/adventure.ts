@@ -24,6 +24,7 @@ import {
   resolveThemeConfig,
   resolveNarrativeStyle,
   resolveWorldDisposition,
+  resolvePlayerMaliceProfile,
 } from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
@@ -97,6 +98,12 @@ export const generateAdventureTurn = async (
     customContext: gameState.customContext,
   });
 
+  const playerMaliceProfile = resolvePlayerMaliceProfile({
+    preset: settings.extra?.playerMalicePreset,
+    language: context.language,
+    customContext: gameState.customContext,
+  });
+
   const backgroundTemplate =
     resolvedThemeConfig?.backgroundTemplate || fallbackThemeConfig.backgroundTemplate;
   const example = resolvedThemeConfig?.example || fallbackThemeConfig.example;
@@ -121,6 +128,8 @@ export const generateAdventureTurn = async (
     worldSetting,
     worldDisposition,
     worldDispositionPreset: settings.extra?.worldDispositionPreset,
+    playerMaliceProfile,
+    playerMalicePreset: settings.extra?.playerMalicePreset,
     customRules: gameState.customRules,
     isNSFW: settings.extra?.nsfw,
     isLiteMode: settings.extra?.liteMode,

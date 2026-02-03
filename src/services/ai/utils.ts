@@ -713,6 +713,105 @@ export function resolveWorldDisposition(input: {
   return getWorldDispositionPresetText(input.preset, input.language);
 }
 
+export type PlayerMalicePreset =
+  | "theme"
+  | "intimidation"
+  | "bureaucratic"
+  | "manipulation"
+  | "sabotage";
+
+export function getPlayerMalicePresetText(
+  preset: PlayerMalicePreset,
+  language: string,
+): string | undefined {
+  if (preset === "theme") return undefined;
+
+  const isZh = language?.toLowerCase().startsWith("zh");
+
+  if (isZh) {
+    switch (preset) {
+      case "intimidation":
+        return [
+          "暴力威慑：把暴力当成谈判工具。",
+          "- 强调：恐惧如何在短期奏效（沉默、配合、让路），以及它留下的痕迹（目击、血迹、复仇链）。",
+          "- 反制：人群抱团、守卫增援、伏击、赏金、报复；不是天降报应，而是“有人开始认真对付你”。",
+          "- 玩法：给玩家明确可操作的窗口（无人处、遮蔽、伪装、收买目击者）与明确代价。",
+        ].join("\n");
+      case "bureaucratic":
+        return [
+          "制度钻空子：用流程、纸面、漏洞、关系网去做坏事。",
+          "- 强调：印章/许可证/账本/收据/监控/口供/流程卡点；“合法”的外壳与真实伤害并存。",
+          "- 反制：稽查、审计、对账、冷处理、黑名单、冻结、选择性执法；对手也会用规则。",
+          "- 玩法：允许灰色操作，但要有证据链、时间成本与可追查的纸面痕迹。",
+        ].join("\n");
+      case "manipulation":
+        return [
+          "情感操控：用承诺、亲密、羞辱、孤立、PUA、三角关系去控制他人。",
+          "- 强调：言语与行为的不一致、边界推进、互相试探；不要替主角写心理，只写“对方怎么被影响”。",
+          "- 反制：朋友提醒、旁观者介入、NPC 自尊/底线爆发、反向操控、揭穿与社会性死亡。",
+          "- 玩法：给“可证伪的细节”（聊天记录、目击、礼物、谎言被对上账）让剧情可落地。",
+        ].join("\n");
+      case "sabotage":
+        return [
+          "纯破坏/搅局：目标不是获利，而是让系统失灵、让别人难受、让局势变烂。",
+          "- 强调：连锁反应（供应断裂、信任崩坏、秩序失控）、以及“无辜波及”的现实代价。",
+          "- 反制：封锁、宵禁、搜捕、集体惩罚、结社自保；世界会收紧而不是陪你玩花活。",
+          "- 玩法：每次破坏都要留下“Trace/Heat”（痕迹/热度），并把后续压力持续带回场景。",
+        ].join("\n");
+      default:
+        return undefined;
+    }
+  }
+
+  switch (preset) {
+    case "intimidation":
+      return [
+        "Violent intimidation: treat violence as negotiation.",
+        "- Emphasize how fear works short-term (silence, compliance, doors opening) and what it leaves behind (witnesses, traces, vendettas).",
+        "- Counterplay: groups, backup, ambush, warrants/bounties—mechanisms, not moral thunderbolts.",
+        "- Playability: give clear windows (privacy, disguise, payoff) and clear costs.",
+      ].join("\n");
+    case "bureaucratic":
+      return [
+        "Rules-lawyer crime: harm via paperwork, process, loopholes, and networks.",
+        "- Emphasize permits, ledgers, receipts, CCTV, testimony, audits; legality-as-mask.",
+        "- Counterplay: inspections, audits, freezes, blacklists, selective enforcement; opponents use rules too.",
+        "- Playability: allow gray moves, but require traceable evidence chains and time costs.",
+      ].join("\n");
+    case "manipulation":
+      return [
+        "Emotional manipulation: control through promises, intimacy, shame, isolation, triangles.",
+        "- Emphasize inconsistency, boundary-pushing, leverage; never narrate the protagonist's inner life—show who is influenced and how.",
+        "- Counterplay: friends intervene, NPC boundaries, backlash, exposure, social fallout.",
+        "- Playability: anchor twists in checkable details (messages, witnesses, gifts, contradictions).",
+      ].join("\n");
+    case "sabotage":
+      return [
+        "Sabotage / chaos: goal is dysfunction, not profit.",
+        "- Emphasize cascades (supply breaks, trust collapses, order tightens) and collateral cost.",
+        "- Counterplay: lockdowns, curfews, searches, mutual-aid groups; the world tightens.",
+        "- Playability: every act leaves Trace/Heat and the pressure persists across scenes.",
+      ].join("\n");
+    default:
+      return undefined;
+  }
+}
+
+export function resolvePlayerMaliceProfile(input: {
+  preset?: PlayerMalicePreset;
+  language: string;
+  customContext?: string;
+}): string | undefined {
+  const fromCustomContext = extractXmlTagValue(
+    input.customContext,
+    "player_malice_profile",
+  );
+  if (fromCustomContext) return fromCustomContext;
+
+  if (!input.preset) return undefined;
+  return getPlayerMalicePresetText(input.preset, input.language);
+}
+
 export function resolveNarrativeStyle(
   input: {
     themeStyle?: string;
