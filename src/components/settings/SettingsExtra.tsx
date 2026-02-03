@@ -2,6 +2,54 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
 
+type SliderOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function DiscreteSlider(props: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<SliderOption<string>>;
+}): JSX.Element {
+  const { id, value, onChange, options } = props;
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((o) => o.value === value),
+  );
+
+  const datalistId = `${id}-ticks`;
+
+  return (
+    <div className="flex flex-col items-end gap-1 min-w-[220px]">
+      <div className="text-[10px] text-theme-muted">
+        {options[selectedIndex]?.label || value}
+      </div>
+      <input
+        aria-label={id}
+        type="range"
+        min={0}
+        max={Math.max(0, options.length - 1)}
+        step={1}
+        value={selectedIndex}
+        onChange={(e) => {
+          const idx = Number(e.target.value);
+          const next = options[idx]?.value;
+          if (next) onChange(next);
+        }}
+        list={datalistId}
+        className="w-[220px] accent-theme-primary"
+      />
+      <datalist id={datalistId}>
+        {options.map((_, idx) => (
+          <option key={idx} value={idx} />
+        ))}
+      </datalist>
+    </div>
+  );
+}
+
 export const SettingsExtra: React.FC = () => {
   const { t } = useTranslation();
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
@@ -70,55 +118,59 @@ export const SettingsExtra: React.FC = () => {
                 "Adds a concise narrative style add-on to the theme default. Per-game <narrative_style> in custom context overrides this."}
             </div>
           </div>
-          <select
+          <DiscreteSlider
+            id="narrativeStylePreset"
             value={extra.narrativeStylePreset || "theme"}
-            onChange={(e) =>
-              updateExtra(
-                "narrativeStylePreset",
-                e.target.value as
-                  | "theme"
-                  | "cinematic"
-                  | "literary"
-                  | "noir"
-                  | "brutal"
-                  | "cozy"
-                  | "cdrama"
-                  | "minimal",
-              )
-            }
-            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
-          >
-            <option value="theme">
-              {t("settings.extra.narrativeStylePresetOptions.theme") ||
-                "Theme Default"}
-            </option>
-            <option value="cinematic">
-              {t("settings.extra.narrativeStylePresetOptions.cinematic") ||
-                "Cinematic"}
-            </option>
-            <option value="literary">
-              {t("settings.extra.narrativeStylePresetOptions.literary") ||
-                "Literary"}
-            </option>
-            <option value="noir">
-              {t("settings.extra.narrativeStylePresetOptions.noir") || "Noir"}
-            </option>
-            <option value="brutal">
-              {t("settings.extra.narrativeStylePresetOptions.brutal") ||
-                "Brutal"}
-            </option>
-            <option value="cozy">
-              {t("settings.extra.narrativeStylePresetOptions.cozy") || "Cozy"}
-            </option>
-            <option value="cdrama">
-              {t("settings.extra.narrativeStylePresetOptions.cdrama") ||
-                "C-Drama"}
-            </option>
-            <option value="minimal">
-              {t("settings.extra.narrativeStylePresetOptions.minimal") ||
-                "Minimal"}
-            </option>
-          </select>
+            onChange={(v) => updateExtra("narrativeStylePreset", v)}
+            options={[
+              {
+                value: "theme",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.theme") ||
+                  "Theme Default",
+              },
+              {
+                value: "cinematic",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.cinematic") ||
+                  "Cinematic",
+              },
+              {
+                value: "literary",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.literary") ||
+                  "Literary",
+              },
+              {
+                value: "noir",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.noir") || "Noir",
+              },
+              {
+                value: "brutal",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.brutal") ||
+                  "Brutal",
+              },
+              {
+                value: "cozy",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.cozy") || "Cozy",
+              },
+              {
+                value: "cdrama",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.cdrama") ||
+                  "C-Drama",
+              },
+              {
+                value: "minimal",
+                label:
+                  t("settings.extra.narrativeStylePresetOptions.minimal") ||
+                  "Minimal",
+              },
+            ]}
+          />
         </div>
 
         {/* World Disposition Preset */}
@@ -132,37 +184,38 @@ export const SettingsExtra: React.FC = () => {
                 "Adds a small, explicit baseline for human nature and social tone. Per-game <world_disposition> in custom context overrides this."}
             </div>
           </div>
-          <select
+          <DiscreteSlider
+            id="worldDispositionPreset"
             value={extra.worldDispositionPreset || "theme"}
-            onChange={(e) =>
-              updateExtra(
-                "worldDispositionPreset",
-                e.target.value as
-                  | "theme"
-                  | "benevolent"
-                  | "mixed"
-                  | "cynical",
-              )
-            }
-            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
-          >
-            <option value="theme">
-              {t("settings.extra.worldDispositionPresetOptions.theme") ||
-                "Theme Default"}
-            </option>
-            <option value="benevolent">
-              {t("settings.extra.worldDispositionPresetOptions.benevolent") ||
-                "Benevolent"}
-            </option>
-            <option value="mixed">
-              {t("settings.extra.worldDispositionPresetOptions.mixed") ||
-                "Mixed"}
-            </option>
-            <option value="cynical">
-              {t("settings.extra.worldDispositionPresetOptions.cynical") ||
-                "Cynical"}
-            </option>
-          </select>
+            onChange={(v) => updateExtra("worldDispositionPreset", v)}
+            options={[
+              {
+                value: "theme",
+                label:
+                  t("settings.extra.worldDispositionPresetOptions.theme") ||
+                  "Theme Default",
+              },
+              {
+                value: "benevolent",
+                label:
+                  t(
+                    "settings.extra.worldDispositionPresetOptions.benevolent",
+                  ) || "Benevolent",
+              },
+              {
+                value: "mixed",
+                label:
+                  t("settings.extra.worldDispositionPresetOptions.mixed") ||
+                  "Mixed",
+              },
+              {
+                value: "cynical",
+                label:
+                  t("settings.extra.worldDispositionPresetOptions.cynical") ||
+                  "Cynical",
+              },
+            ]}
+          />
         </div>
 
         {/* Player Malice Playstyle Preset */}
@@ -176,42 +229,43 @@ export const SettingsExtra: React.FC = () => {
                 "Adds a concrete, playable bias for malicious/criminal play. Supplement only; per-game <player_malice_profile> overrides this."}
             </div>
           </div>
-          <select
+          <DiscreteSlider
+            id="playerMalicePreset"
             value={extra.playerMalicePreset || "theme"}
-            onChange={(e) =>
-              updateExtra(
-                "playerMalicePreset",
-                e.target.value as
-                  | "theme"
-                  | "intimidation"
-                  | "bureaucratic"
-                  | "manipulation"
-                  | "sabotage",
-              )
-            }
-            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
-          >
-            <option value="theme">
-              {t("settings.extra.playerMalicePresetOptions.theme") ||
-                "Theme Default"}
-            </option>
-            <option value="intimidation">
-              {t("settings.extra.playerMalicePresetOptions.intimidation") ||
-                "Violent Intimidation"}
-            </option>
-            <option value="bureaucratic">
-              {t("settings.extra.playerMalicePresetOptions.bureaucratic") ||
-                "Rules-Lawyer Crime"}
-            </option>
-            <option value="manipulation">
-              {t("settings.extra.playerMalicePresetOptions.manipulation") ||
-                "Emotional Manipulation"}
-            </option>
-            <option value="sabotage">
-              {t("settings.extra.playerMalicePresetOptions.sabotage") ||
-                "Sabotage / Chaos"}
-            </option>
-          </select>
+            onChange={(v) => updateExtra("playerMalicePreset", v)}
+            options={[
+              {
+                value: "theme",
+                label:
+                  t("settings.extra.playerMalicePresetOptions.theme") ||
+                  "Theme Default",
+              },
+              {
+                value: "intimidation",
+                label:
+                  t("settings.extra.playerMalicePresetOptions.intimidation") ||
+                  "Violent Intimidation",
+              },
+              {
+                value: "bureaucratic",
+                label:
+                  t("settings.extra.playerMalicePresetOptions.bureaucratic") ||
+                  "Rules-Lawyer Crime",
+              },
+              {
+                value: "manipulation",
+                label:
+                  t("settings.extra.playerMalicePresetOptions.manipulation") ||
+                  "Emotional Manipulation",
+              },
+              {
+                value: "sabotage",
+                label:
+                  t("settings.extra.playerMalicePresetOptions.sabotage") ||
+                  "Sabotage / Chaos",
+              },
+            ]}
+          />
         </div>
 
         {/* Player Malice Intensity */}
@@ -225,29 +279,31 @@ export const SettingsExtra: React.FC = () => {
                 "Controls Trace/Heat accumulation and escalation speed."}
             </div>
           </div>
-          <select
+          <DiscreteSlider
+            id="playerMaliceIntensity"
             value={extra.playerMaliceIntensity || "standard"}
-            onChange={(e) =>
-              updateExtra(
-                "playerMaliceIntensity",
-                e.target.value as "light" | "standard" | "heavy",
-              )
-            }
-            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
-          >
-            <option value="light">
-              {t("settings.extra.playerMaliceIntensityOptions.light") ||
-                "Light"}
-            </option>
-            <option value="standard">
-              {t("settings.extra.playerMaliceIntensityOptions.standard") ||
-                "Standard"}
-            </option>
-            <option value="heavy">
-              {t("settings.extra.playerMaliceIntensityOptions.heavy") ||
-                "Heavy"}
-            </option>
-          </select>
+            onChange={(v) => updateExtra("playerMaliceIntensity", v)}
+            options={[
+              {
+                value: "light",
+                label:
+                  t("settings.extra.playerMaliceIntensityOptions.light") ||
+                  "Light",
+              },
+              {
+                value: "standard",
+                label:
+                  t("settings.extra.playerMaliceIntensityOptions.standard") ||
+                  "Standard",
+              },
+              {
+                value: "heavy",
+                label:
+                  t("settings.extra.playerMaliceIntensityOptions.heavy") ||
+                  "Heavy",
+              },
+            ]}
+          />
         </div>
 
         {/* NSFW Toggle */}
@@ -340,26 +396,28 @@ export const SettingsExtra: React.FC = () => {
                 "Force the protagonist's gender when generating stories."}
             </div>
           </div>
-          <select
+          <DiscreteSlider
+            id="genderPreference"
             value={extra.genderPreference || "none"}
-            onChange={(e) =>
-              updateExtra(
-                "genderPreference",
-                e.target.value as "male" | "female" | "none",
-              )
-            }
-            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
-          >
-            <option value="none">
-              {t("settings.extra.genderPreferences.none") || "No Preference"}
-            </option>
-            <option value="male">
-              {t("settings.extra.genderPreferences.male") || "Male"}
-            </option>
-            <option value="female">
-              {t("settings.extra.genderPreferences.female") || "Female"}
-            </option>
-          </select>
+            onChange={(v) => updateExtra("genderPreference", v)}
+            options={[
+              {
+                value: "none",
+                label:
+                  t("settings.extra.genderPreferences.none") ||
+                  "No Preference",
+              },
+              {
+                value: "male",
+                label: t("settings.extra.genderPreferences.male") || "Male",
+              },
+              {
+                value: "female",
+                label:
+                  t("settings.extra.genderPreferences.female") || "Female",
+              },
+            ]}
+          />
         </div>
 
         {/* Lite Mode Toggle */}
