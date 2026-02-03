@@ -5,6 +5,7 @@
   "apparentAge": "Apparent Age",
   "titlePart1": "Chronicles",
   "titlePart2": "of Infinity",
+  "titleShort": "CoI",
   "time": {
     "full": "Year {{year}}, Month {{month}}, Day {{day}}, {{hour}}:{{minute}}"
   },
