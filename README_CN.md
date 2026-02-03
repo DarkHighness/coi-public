@@ -109,6 +109,12 @@
 
 欢迎提交 Pull Request 来改进这个项目！
 
+## 📚 项目文档
+
+- `docs/ui_vn_style.md`：UI 设计思路（现代视觉小说 / Scroll-First）
+- `docs/how_to_add_story_theme.md`：如何新增故事主题
+- `docs/SCHEMA_DOCS.md`：Schema 文档
+
 ## 📄 许可证
 
 本项目采用 MIT 许可证。
