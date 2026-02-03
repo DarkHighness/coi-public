@@ -1216,6 +1216,11 @@ export interface AISettings {
     genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
     customInstructionEnabled?: boolean;
     customInstruction?: string; // Prepended to system instruction
+    /**
+     * Enable per-model system default injection from `src/prompt/prompt.toml` (`[[system_prompts]]`).
+     * When enabled, injection is prepended to SystemInstruction (after user custom instruction).
+     */
+    systemDefaultInjectionEnabled?: boolean;
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"

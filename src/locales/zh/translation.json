@@ -529,6 +529,8 @@
       "customPromptInjectionHelp": "在这里写语言风格/语气/表达偏好等。",
       "customPromptInjectionPlaceholder": "例如：用简洁的中文叙述，语气冷峻，避免长句……",
       "customPromptInjectionWarning": "自定义指令已启用。",
+      "systemDefaultInjectionEnabled": "模型默认注入",
+      "systemDefaultInjectionEnabledHelp": "启用后，将按模型 ID 从本地 `src/prompt/prompt.toml` 的 `[[system_prompts]]` 匹配并注入（顺序：用户自定义 → 系统默认 → 系统指令；且不加任何前缀）。关闭后将完全不注入。",
       "liteMode": "精简模式",
       "liteModeHelp": "减少 prompt 开销，适用于上下文有限的模型",
       "forceAutoToolChoice": "强制自动工具选择",

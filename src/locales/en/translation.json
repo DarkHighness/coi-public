@@ -556,6 +556,8 @@
       "customPromptInjectionHelp": "Write style/tone/language requirements here.",
       "customPromptInjectionPlaceholder": "e.g., Use concise modern Chinese; keep a noir tone; avoid long lists.",
       "customPromptInjectionWarning": "Custom instruction is active.",
+      "systemDefaultInjectionEnabled": "Model Default Injection",
+      "systemDefaultInjectionEnabledHelp": "When enabled, a matched `[[system_prompts]]` entry from local `src/prompt/prompt.toml` is prepended (order: user custom → system default → system instruction; with no prefixes). When disabled, nothing is injected.",
       "liteMode": "Lite Mode",
       "liteModeHelp": "Reduce prompt overhead for models with limited context",
       "forceAutoToolChoice": "Force Auto Tool Choice",

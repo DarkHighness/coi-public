@@ -150,6 +150,7 @@ export const DEFAULTS: AISettings = {
     forceAutoToolChoice: false,
     customInstructionEnabled: false,
     customInstruction: "",
+    systemDefaultInjectionEnabled: true,
     narrativeStylePreset: "theme",
     worldDispositionPreset: "theme",
     playerMalicePreset: "theme",
