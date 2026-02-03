@@ -18,6 +18,19 @@ export type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
 // Story Themes (Static Genres)
 export const THEMES: Record<string, StoryThemeConfig> = {
+  custom: {
+    themeParams: {
+      physicsHarshness: "standard",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "standard",
+      economicComplexity: "standard",
+    },
+    envTheme: "fantasy",
+    defaultAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
+    icon: "🛠️",
+    categories: ["game"],
+  },
   time_travel: {
     themeParams: {
       physicsHarshness: "cinematic",

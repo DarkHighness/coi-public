@@ -273,6 +273,54 @@
   "validate-connection": "Validating connections...",
   "customContext": "Custom Story Background (Optional)",
   "customContextPlaceholder": "E.g., 'I am a detective in 1920s Shanghai' or 'A dragon reborn as a human'.",
+  "customGame": {
+    "open": "Custom Game",
+    "title": "Custom Game",
+    "subtitle": "Fill in your world and rules (optional), then start immediately.",
+    "modes": {
+      "structured": "Structured",
+      "text": "Free Text (Legacy)"
+    },
+    "advanced": "Advanced (Optional)",
+    "start": "Start Custom Game",
+    "tip": "Leave anything blank — the AI will fill gaps and keep it consistent.",
+    "fields": {
+      "title": "Adventure Title (Optional)",
+      "worldSetting": "World Setting (Optional)",
+      "protagonistRole": "Protagonist Role (Optional)",
+      "premise": "Premise / Setup (Optional)",
+      "narrativeStyle": "Narrative Style (Optional)",
+      "gameplayFocus": "Gameplay Focus Weights (Optional)",
+      "contentBoundaries": "Content Boundaries (Optional)",
+      "rules": "Rules / Constraints (Optional)",
+      "openingScene": "Opening Scene (Optional)"
+    },
+    "placeholders": {
+      "title": "e.g., Echoes of the Clockwork City",
+      "worldSetting": "Where/when is this? What powers, factions, and taboos exist?",
+      "protagonistRole": "e.g., exiled prince, street mage, rookie detective...",
+      "premise": "What kicks off the story? What do you want to chase or protect?",
+      "narrativeStyle": "e.g., gritty noir, lyrical epic, comedic and fast-paced...",
+      "gameplayFocus": "Add details: exploration-heavy, tactical combat, political intrigue, slow-burn romance...",
+      "contentBoundaries": "Avoid list + boundaries: e.g., no sexual violence, no harm to children, no torture; fade-to-black for explicit content...",
+      "rules": "Any hard rules, limits, or special mechanics? (Optional)",
+      "openingScene": "Describe the very first scene you want to start with. (Optional)"
+    },
+    "gameplay": {
+      "hint": "Set weights (0–100). Higher means stronger focus. Total doesn't need to be 100.",
+      "total": "Total",
+      "reset": "Reset weights",
+      "presets": {
+        "exploration": "Exploration",
+        "combat": "Combat",
+        "mystery": "Mystery",
+        "intrigue": "Intrigue",
+        "romance": "Romance",
+        "horror": "Horror",
+        "sliceOfLife": "Slice of Life"
+      }
+    }
+  },
   "imageUpload": {
     "title": "Start from Image",
     "subtitle": "Upload an image to inspire your story world",

@@ -240,6 +240,54 @@
   "start": "开始",
   "customContext": "自定义故事背景 (可选)",
   "customContextPlaceholder": "例如：'我是1920年上海的一名侦探' 或 '重生为人的巨龙'。",
+  "customGame": {
+    "open": "自定义游戏",
+    "title": "自定义游戏",
+    "subtitle": "按需填写世界观与规则（可留空），然后直接开始。",
+    "modes": {
+      "structured": "结构化",
+      "text": "自由文本（兼容旧版）"
+    },
+    "advanced": "高级（可选）",
+    "start": "开始自定义游戏",
+    "tip": "可留空任意字段——AI 会自动补全并保持一致。",
+    "fields": {
+      "title": "冒险标题（可选）",
+      "worldSetting": "世界观 / 设定（可选）",
+      "protagonistRole": "主角身份（可选）",
+      "premise": "开局 / 主线目标（可选）",
+      "narrativeStyle": "叙事风格（可选）",
+      "gameplayFocus": "玩法侧重权重（可选）",
+      "contentBoundaries": "内容边界 / 避雷（可选）",
+      "rules": "规则 / 限制（可选）",
+      "openingScene": "开场场景（可选）"
+    },
+    "placeholders": {
+      "title": "例如：齿轮城回声",
+      "worldSetting": "这是哪里/何时？有哪些势力、力量体系与禁忌？",
+      "protagonistRole": "例如：被流放的王子、街头术士、新人侦探...",
+      "premise": "故事因何开始？你想追逐/守护什么？",
+      "narrativeStyle": "例如：冷硬黑色、史诗抒情、轻松搞笑快节奏...",
+      "gameplayFocus": "补充偏好：重探索、强战斗、解谜、权谋、慢热恋爱、轻松日常...",
+      "contentBoundaries": "写清避雷与边界：例如不出现性暴力/儿童伤害/酷刑；露骨内容一律淡出（fade-to-black）...",
+      "rules": "有没有硬规则、限制或特殊机制？（可选）",
+      "openingScene": "描述你希望从哪个画面开场。（可选）"
+    },
+    "gameplay": {
+      "hint": "设置权重（0–100）。数值越高越偏向；总和不必等于100。",
+      "total": "合计",
+      "reset": "重置权重",
+      "presets": {
+        "exploration": "探索",
+        "combat": "战斗",
+        "mystery": "推理",
+        "intrigue": "权谋",
+        "romance": "恋爱",
+        "horror": "恐怖",
+        "sliceOfLife": "日常"
+      }
+    }
+  },
   "imageUpload": {
     "title": "以图启程",
     "subtitle": "上传一张图片，AI 将据此构建故事世界",

@@ -1,4 +1,12 @@
 {
+  "custom": {
+    "name": "Custom",
+    "narrativeStyle": "User-defined. Treat the user's custom game setup as the primary source of truth. If any details are missing, invent them in a coherent, consistent way.",
+    "backgroundTemplate": "In a world defined by the player's setup, you are a [Protagonist Role] caught in [Central Conflict]. Your objective is to [Goal], but [Constraint] stands in your way.",
+    "example": "You pause at the threshold, letting the rules of this world settle into your bones. Somewhere ahead, the first consequence is already waiting.",
+    "worldSetting": "A world defined by the player's custom setup. Derive the setting, factions, power systems, and constraints from the custom game details provided at the start.",
+    "protagonist_preference": []
+  },
   "fantasy": {
     "name": "Fantasy",
     "narrativeStyle": "Epic, high-fantasy tone. Use archaic but accessible language. Focus on magic, destiny, and grand landscapes. Describe combat with flair.",

@@ -333,11 +333,15 @@ export const useGameEngine = () => {
       // Image-based start: keep theme empty for Phase 0 to handle
       selectedTheme = "";
     } else {
+      const selectableThemeKeys = Object.keys(THEMES).filter(
+        (key) => key !== "custom",
+      );
       selectedTheme =
         initialTheme ||
-        Object.keys(THEMES)[
-          Math.floor(Math.random() * Object.keys(THEMES).length)
-        ];
+        selectableThemeKeys[
+          Math.floor(Math.random() * selectableThemeKeys.length)
+        ] ||
+        "fantasy";
     }
 
     // Preload audio in background if not muted (Mobile optimization: trigger on user click)

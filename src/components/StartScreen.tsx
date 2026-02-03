@@ -1,8 +1,16 @@
-import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { THEMES, ENV_THEMES } from "../utils/constants";
 import { ThemeSelector } from "./ThemeSelector";
+import { CustomGameModal } from "./CustomGameModal";
 import { CustomContextModal } from "./CustomContextModal";
 import { ImageUploadModal } from "./ImageUploadModal";
 import { SaveSlot, ImportResult } from "../types";
@@ -108,7 +116,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [customContext, setCustomContext] = useState("");
-  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isCustomGameModalOpen, setIsCustomGameModalOpen] = useState(false);
+  const [isCustomContextModalOpen, setIsCustomContextModalOpen] =
+    useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [seedImage, setSeedImage] = useState<Blob | null>(null);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
@@ -119,6 +129,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { settings, updateSettings } = useSettings();
   const tutorial = useTutorialContextOptional();
+  const selectableThemes = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(THEMES).filter(([key]) => key !== "custom"),
+      ),
+    [],
+  );
 
   // Tutorial target refs
   const settingsButtonRef =
@@ -342,6 +359,27 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 </svg>
               </button>
 
+              {/* Custom Game Button */}
+              <button
+                onClick={() => setIsCustomGameModalOpen(true)}
+                className="w-full py-3 border border-theme-border hover:border-theme-primary/50 text-theme-muted hover:text-theme-text font-medium text-sm uppercase tracking-wider hover:bg-theme-surface-highlight/50 transition-all rounded-sm flex items-center justify-center gap-2 group"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                  />
+                </svg>
+                <span>{t("customGame.open")}</span>
+              </button>
+
               {/* Start from Image Button */}
               <button
                 onClick={() => setIsImageUploadOpen(true)}
@@ -454,7 +492,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                 {/* Customize Button */}
                 <button
-                  onClick={() => setIsCustomModalOpen(true)}
+                  onClick={() => setIsCustomContextModalOpen(true)}
                   className="relative px-3 py-2 border border-theme-border hover:border-theme-primary text-theme-muted hover:text-theme-primary transition-all rounded-lg text-xs uppercase tracking-wider font-bold flex items-center gap-2"
                 >
                   <svg
@@ -480,7 +518,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               <div className="flex-1 relative min-h-0">
                 {!isDesktop && (
                   <ThemeSelector
-                    themes={THEMES}
+                    themes={selectableThemes}
                     onSelect={(theme, role) =>
                       handleStart(theme, customContext, role)
                     }
@@ -503,7 +541,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       {isDesktop && mode === "theme_select" && (
         <div className="absolute inset-0 z-50 animate-fade-in">
           <ThemeSelector
-            themes={THEMES}
+            themes={selectableThemes}
             onSelect={(theme, role) => handleStart(theme, customContext, role)}
             onPreviewTheme={onThemePreview}
             onBack={exitThemeSelect}
@@ -519,10 +557,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         onChange={handleFileChange}
       />
 
-      {/* Custom Context Modal */}
+      {/* Custom Game Modal */}
+      <CustomGameModal
+        isOpen={isCustomGameModalOpen}
+        onClose={() => setIsCustomGameModalOpen(false)}
+        onStart={({ customContext, protagonistRole }) => {
+          setIsCustomGameModalOpen(false);
+          handleStart("custom", customContext, protagonistRole);
+        }}
+      />
+
+      {/* Custom Context Modal (Legacy-compatible) */}
       <CustomContextModal
-        isOpen={isCustomModalOpen}
-        onClose={() => setIsCustomModalOpen(false)}
+        isOpen={isCustomContextModalOpen}
+        onClose={() => setIsCustomContextModalOpen(false)}
         customContext={customContext}
         setCustomContext={setCustomContext}
       />
