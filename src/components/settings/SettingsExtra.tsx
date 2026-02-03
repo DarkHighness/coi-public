@@ -535,6 +535,41 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Model Default Injection Toggle */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.systemDefaultInjectionEnabled") ||
+                "Model Default Injection"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.systemDefaultInjectionEnabledHelp") ||
+                "When enabled, a matched system default prompt is prepended (no prefixes)."}
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              updateExtra(
+                "systemDefaultInjectionEnabled",
+                !(extra.systemDefaultInjectionEnabled ?? true),
+              )
+            }
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              (extra.systemDefaultInjectionEnabled ?? true)
+                ? "bg-green-500"
+                : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                (extra.systemDefaultInjectionEnabled ?? true)
+                  ? "translate-x-5"
+                  : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Custom Instruction */}
         <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-2">
           <div>

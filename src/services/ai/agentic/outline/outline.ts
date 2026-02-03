@@ -202,10 +202,11 @@ export const generateStoryOutlinePhased = async (
 
   // System default model-specific injection (for consistent style across models).
   // Required order at the very front of systemInstruction: (1) user custom instruction, (2) system default injection, then base.
-  const systemDefaultInjection = pickModelMatchedPrompt(
-    (promptToml as any)?.system_prompts,
-    modelId,
-  );
+  const systemDefaultInjectionEnabled =
+    settings.extra?.systemDefaultInjectionEnabled ?? true;
+  const systemDefaultInjection = systemDefaultInjectionEnabled
+    ? pickModelMatchedPrompt((promptToml as any)?.system_prompts, modelId)
+    : undefined;
 
   // Optional user-provided prompt prefix (typically used for language/style preferences).
   const customInstructionRaw = settings.extra?.customInstruction;
