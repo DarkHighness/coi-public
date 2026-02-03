@@ -48,6 +48,11 @@ export const seedVfsSessionFromGameState = (
     forkId: state.forkId,
   });
 
+  writeJson(session, "summary/state.json", {
+    summaries: state.summaries ?? [],
+    lastSummarizedIndex: state.lastSummarizedIndex ?? 0,
+  });
+
   if (state.character) {
     writeJson(session, "world/character.json", state.character);
   }
@@ -88,6 +93,11 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     atmosphere: { envTheme: "fantasy", ambience: "quiet" },
     turnNumber: 0,
     forkId: 0,
+  });
+
+  writeJson(session, "summary/state.json", {
+    summaries: [],
+    lastSummarizedIndex: 0,
   });
 
   writeJson(session, "world/character.json", DEFAULT_CHARACTER);
@@ -149,6 +159,11 @@ export const seedVfsSessionFromOutline = (
     customContext: options.customContext,
     seedImageId: options.seedImageId,
     narrativeScale: options.narrativeScale,
+  });
+
+  writeJson(session, "summary/state.json", {
+    summaries: [],
+    lastSummarizedIndex: 0,
   });
 
   writeForkTree(session, {

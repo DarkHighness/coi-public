@@ -49,8 +49,8 @@ export const mergeDerivedViewState = (
     nodes: mergedNodes,
     currentFork: activeNodeId ? deriveHistory(mergedNodes, activeNodeId) : [],
     uiState: base.uiState,
-    summaries: base.summaries,
-    lastSummarizedIndex: base.lastSummarizedIndex,
+    summaries: derived.summaries,
+    lastSummarizedIndex: derived.lastSummarizedIndex,
     outline: derived.outline ?? base.outline,
     outlineConversation:
       derived.outlineConversation ?? base.outlineConversation,

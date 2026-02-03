@@ -278,6 +278,20 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
+    if (pathWithoutCurrent === "summary/state.json") {
+      const summaryData = data as {
+        summaries?: GameState["summaries"];
+        lastSummarizedIndex?: number;
+      };
+      if (Array.isArray(summaryData.summaries)) {
+        state.summaries = summaryData.summaries;
+      }
+      if (typeof summaryData.lastSummarizedIndex === "number") {
+        state.lastSummarizedIndex = summaryData.lastSummarizedIndex;
+      }
+      continue;
+    }
+
     if (pathWithoutCurrent === "world/character.json") {
       state.character = data as CharacterStatus;
       continue;
@@ -355,6 +369,45 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   }
   if (conversation.latestTurnNumber !== null) {
     state.turnNumber = conversation.latestTurnNumber;
+  }
+
+  // Restore summary snapshot markers for UI (divider + card) based on persisted ranges.
+  if (state.summaries.length > 0 && Object.keys(state.nodes).length > 0) {
+    const nodeIdBySegmentIdx = new Map<number, string>();
+    const modelNodeIdBySegmentIdx = new Map<number, string>();
+
+    for (const node of Object.values(state.nodes)) {
+      if (typeof node.segmentIdx !== "number") continue;
+      nodeIdBySegmentIdx.set(node.segmentIdx, node.id);
+      if (node.role === "model" || node.role === "system") {
+        modelNodeIdBySegmentIdx.set(node.segmentIdx, node.id);
+      }
+    }
+
+    for (const summary of state.summaries) {
+      const nodeRange = summary.nodeRange;
+      if (!nodeRange || typeof nodeRange.toIndex !== "number") {
+        continue;
+      }
+      const preferredIdx = nodeRange.toIndex + 1;
+      const fallbackIdx = nodeRange.toIndex;
+
+      const targetId =
+        modelNodeIdBySegmentIdx.get(preferredIdx) ??
+        nodeIdBySegmentIdx.get(preferredIdx) ??
+        modelNodeIdBySegmentIdx.get(fallbackIdx) ??
+        nodeIdBySegmentIdx.get(fallbackIdx);
+
+      if (!targetId) continue;
+      const existing = state.nodes[targetId];
+      if (!existing) continue;
+      state.nodes[targetId] = { ...existing, summarySnapshot: summary };
+    }
+  }
+
+  // Keep derived history in sync if we updated node markers above.
+  if (state.activeNodeId) {
+    state.currentFork = deriveHistory(state.nodes, state.activeNodeId);
   }
 
   const outlineProgress = readOutlineProgress(files);

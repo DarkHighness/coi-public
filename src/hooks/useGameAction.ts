@@ -153,8 +153,12 @@ export const useGameAction = ({
       // Use effectiveParentId for context
       if (effectiveParentId && gameStateRef.current.nodes[effectiveParentId]) {
         const pNode = gameStateRef.current.nodes[effectiveParentId];
-        baseSummaries = pNode.summaries || [];
-        baseIndex = pNode.summarizedIndex || 0;
+        baseSummaries = pNode.summaries ?? gameStateRef.current.summaries ?? [];
+        baseIndex =
+          pNode.summarizedIndex ?? gameStateRef.current.lastSummarizedIndex ?? 0;
+      } else {
+        baseSummaries = gameStateRef.current.summaries ?? [];
+        baseIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
       }
       // -----------------------------------
 
@@ -234,6 +238,18 @@ export const useGameAction = ({
           aiSettings,
           language,
         );
+
+        // Persist summary state into VFS so it survives reloads and fork restores.
+        if (summarySnapshot && vfsSession) {
+          try {
+            vfsSession.mergeJson("summary/state.json", {
+              summaries: effectiveSummaries,
+              lastSummarizedIndex: lastIndex,
+            });
+          } catch (error) {
+            console.warn("[Summary] Failed to persist summary state to VFS", error);
+          }
+        }
 
         // Update logs if summarization occurred
         if (summaryLogs && summaryLogs.length > 0) {
@@ -681,8 +697,9 @@ export const useGameAction = ({
       if (!parentId) throw new Error("No active node to rebuild context from");
 
       const pNode = gameStateRef.current.nodes[parentId];
-      const baseSummaries = pNode.summaries || [];
-      const baseIndex = pNode.summarizedIndex || 0;
+      const baseSummaries = pNode.summaries ?? gameStateRef.current.summaries ?? [];
+      const baseIndex =
+        pNode.summarizedIndex ?? gameStateRef.current.lastSummarizedIndex ?? 0;
 
       const { effectiveSummaries, lastIndex, summarySnapshot, logs } =
         await handleSummarization(
@@ -738,6 +755,18 @@ export const useGameAction = ({
       }
 
       if (summarySnapshot) {
+        // Persist summary state into VFS so it survives reloads.
+        if (vfsSession) {
+          try {
+            vfsSession.mergeJson("summary/state.json", {
+              summaries: effectiveSummaries,
+              lastSummarizedIndex: lastIndex,
+            });
+          } catch (error) {
+            console.warn("[Summary] Failed to persist summary state to VFS", error);
+          }
+        }
+
         // Update the active node to become a node WITH the summary attached
         // The summary covers all content from the previous summary to this node
         // The active node (last model/command output) gets the summarySnapshot
@@ -817,6 +846,7 @@ export const useGameAction = ({
     showToast,
     setGameState,
     triggerSave,
+    vfsSession,
   ]);
 
   return { handleAction, handleRebuildContext, handleInvalidateSession };

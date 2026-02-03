@@ -21,4 +21,11 @@ describe("vfs schemas", () => {
   it("rejects unknown paths", () => {
     expect(() => getSchemaForPath("world/unknown/foo.json")).toThrow();
   });
+
+  it("matches summary state paths to summary schema", () => {
+    const schema = getSchemaForPath("summary/state.json");
+    expect(() =>
+      schema.parse({ summaries: [], lastSummarizedIndex: 0 }),
+    ).not.toThrow();
+  });
 });
