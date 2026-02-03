@@ -525,6 +525,15 @@
         "mixed": "Mixed",
         "cynical": "Cynical"
       },
+      "playerMalicePreset": "Malice Playstyle",
+      "playerMalicePresetHelp": "Add a concrete, playable bias for malicious/criminal play (trace, heat, counterplay, escalation). Supplement only; does not force the player. Per-game <player_malice_profile> in custom context overrides this.",
+      "playerMalicePresetOptions": {
+        "theme": "Theme Default",
+        "intimidation": "Violent Intimidation",
+        "bureaucratic": "Rules-Lawyer Crime",
+        "manipulation": "Emotional Manipulation",
+        "sabotage": "Sabotage / Chaos"
+      },
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "genderPreference": "Gender Preference",

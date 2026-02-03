@@ -1241,6 +1241,18 @@ export interface AISettings {
      * If customContext includes <world_disposition>, that takes priority.
      */
     worldDispositionPreset?: "theme" | "benevolent" | "mixed" | "cynical";
+    /**
+     * Player malice playstyle preset. Biases how the simulation supports malicious play
+     * (crime, coercion, manipulation) with clear mechanisms and believable counterplay.
+     * This is a supplement, not a forced role: the player may still act otherwise.
+     * If customContext includes <player_malice_profile>, that takes priority.
+     */
+    playerMalicePreset?:
+      | "theme"
+      | "intimidation"
+      | "bureaucratic"
+      | "manipulation"
+      | "sabotage";
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed

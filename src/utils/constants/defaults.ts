@@ -150,5 +150,6 @@ export const DEFAULTS: AISettings = {
     forceAutoToolChoice: false,
     narrativeStylePreset: "theme",
     worldDispositionPreset: "theme",
+    playerMalicePreset: "theme",
   },
 };

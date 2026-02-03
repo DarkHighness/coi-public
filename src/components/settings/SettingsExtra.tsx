@@ -165,6 +165,55 @@ export const SettingsExtra: React.FC = () => {
           </select>
         </div>
 
+        {/* Player Malice Playstyle Preset */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.playerMalicePreset") || "Malice Playstyle"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.playerMalicePresetHelp") ||
+                "Adds a concrete, playable bias for malicious/criminal play. Supplement only; per-game <player_malice_profile> overrides this."}
+            </div>
+          </div>
+          <select
+            value={extra.playerMalicePreset || "theme"}
+            onChange={(e) =>
+              updateExtra(
+                "playerMalicePreset",
+                e.target.value as
+                  | "theme"
+                  | "intimidation"
+                  | "bureaucratic"
+                  | "manipulation"
+                  | "sabotage",
+              )
+            }
+            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+          >
+            <option value="theme">
+              {t("settings.extra.playerMalicePresetOptions.theme") ||
+                "Theme Default"}
+            </option>
+            <option value="intimidation">
+              {t("settings.extra.playerMalicePresetOptions.intimidation") ||
+                "Violent Intimidation"}
+            </option>
+            <option value="bureaucratic">
+              {t("settings.extra.playerMalicePresetOptions.bureaucratic") ||
+                "Rules-Lawyer Crime"}
+            </option>
+            <option value="manipulation">
+              {t("settings.extra.playerMalicePresetOptions.manipulation") ||
+                "Emotional Manipulation"}
+            </option>
+            <option value="sabotage">
+              {t("settings.extra.playerMalicePresetOptions.sabotage") ||
+                "Sabotage / Chaos"}
+            </option>
+          </select>
+        </div>
+
         {/* NSFW Toggle */}
         <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
           <div>
