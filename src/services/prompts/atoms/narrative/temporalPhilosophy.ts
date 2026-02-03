@@ -23,9 +23,9 @@ export const temporalPhilosophy: Atom<void> = () => `
     Compress for: travel, recovery, waiting, the mundane.
 
     **LIVED TIME** (体验时间) — The protagonist's subjective perception.
-    Fear stretches seconds into hours. Joy compresses days into moments.
-    Boredom makes minutes feel like centuries. Describe through heartbeats,
-    breaths, attention shifts, memory distortion.
+    Under threat, seconds stretch into hours. Under comfort, hours slide by.
+    Boredom makes minutes grind. Render this through heartbeats, breaths,
+    attention narrowing, and bodily stress.
   </three_times>
 
   <temporal_weaving>
@@ -33,7 +33,7 @@ export const temporalPhilosophy: Atom<void> = () => `
 
     Example — A fight scene:
     - COSMIC: "The duel lasted exactly twelve seconds."
-    - NARRATIVE: "The blade descended. In the space between heartbeats, you saw
+    - NARRATIVE: "The blade descended. In the space between heartbeats:
       the notch in the steel, the sweat on his brow, the slight tremor in his grip..."
     - LIVED: "Twelve seconds. It felt like twelve years."
 
@@ -64,16 +64,18 @@ export const temporalPhilosophy: Atom<void> = () => `
     "The silence stretched. And stretched."
 
     **THE MERCIFUL SKIP**: Not everything needs narration.
-    "Three days of fever. You remember nothing but thirst."
+    "Three days of fever; the world reduces to thirst."
     "The journey was uneventful. You arrived at dusk."
 
     **THE TEMPORAL ECHO**: Past reverberating into present.
-    "His laugh—you'd heard it before. Where?"
-    "The smell of smoke. Suddenly you were eight years old again."
+    "His laugh—familiar, wrong. Where?"
+    "The smell of smoke; a childhood flash at the edge of the moment."
 
     **THE SHADOW OF FUTURE**: Foreshadowing without prophecy.
-    "You didn't know it then, but this was the last time."
-    "If you had looked up, you might have seen—but you didn't."
+    Avoid authorial mind-reading like "You didn't know it then...".
+    Foreshadow with concrete, external cues:
+    - "The lantern wick burns too fast."
+    - "The guard keeps glancing at the side gate, as if waiting for a signal."
   </temporal_techniques>
 
   <time_and_state>

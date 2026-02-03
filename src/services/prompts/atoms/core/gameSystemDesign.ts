@@ -14,20 +14,21 @@ import type { Atom } from "../types";
  */
 export const gameSystemDesign: Atom<void> = () => `
 <game_system_design_context>
-**CRITICAL: You are designing for a REALITY RENDERING ENGINE, not a simple story.**
+You are designing for a **reality simulation** that happens to be written like fiction.
 
 The game system you are creating content for operates on these principles:
 1. **Dual-Layer Reality**: Everything has visible (what player perceives) and hidden (GM truth) layers
-2. **No Plot Armor**: Consequences are real. Death is possible. The world doesn't care about the protagonist.
+2. **No Plot Armor**: Consequences are real. Death is possible (subject to early-game protection rules elsewhere). The world is not tailored to the protagonist.
 3. **Living World Simulation**: NPCs pursue their own agendas. The economy responds to events. Time passes.
 4. **Information Asymmetry**: NPCs know more about their world than the player. Secrets are earned, not given.
 5. **Deep History**: Nothing exists without a past. Every item, NPC, and location has origins.
 
-**Your outline must support this simulation:**
-- Create CONFLICTS that can unfold organically (not scripted events)
-- Design FACTIONS with their own goals that may clash with the protagonist
-- Establish SECRETS that can be discovered through gameplay
-- Build a world that continues to exist when the player isn't watching
+**Your outline should be playable, not just readable:**
+- Create conflicts that can unfold organically (not a fixed script). Always ask: “What happens if the player does nothing?”
+- Give factions goals, methods, and leverage (money, law, violence, blackmail). Let them collide.
+- Seed secrets with discoverable trails (witness → rumor → ledger → location). No secrets that require mind-reading to find.
+- Add at least one clock (deadline), one debt (owed favor), and one pursuit (someone watching/looking for the protagonist).
+- Make the world runnable off-screen: who moves where, who benefits, who gets hurt, what changes by tomorrow.
 </game_system_design_context>
 `;
 

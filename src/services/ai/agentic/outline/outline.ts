@@ -31,6 +31,8 @@ import {
   createLogEntry,
   createThemeConfig,
   IMAGE_BASED_THEME,
+  resolveNarrativeStyle,
+  resolveWorldDisposition,
 } from "../../utils";
 
 import {
@@ -152,13 +154,28 @@ export const generateStoryOutlinePhased = async (
   }
 
   // Build system instruction
+  const resolvedNarrativeStyle =
+    resolveNarrativeStyle({
+      themeStyle: themeDataNarrativeStyle,
+      preset: settings.extra?.narrativeStylePreset,
+      language,
+      customContext,
+    }) || themeDataNarrativeStyle;
+
+  const worldDisposition = resolveWorldDisposition({
+    preset: settings.extra?.worldDispositionPreset,
+    language,
+    customContext,
+  });
+
   let systemInstruction = getOutlineSystemInstruction(
     language,
     isRestricted,
-    themeDataNarrativeStyle,
+    resolvedNarrativeStyle,
     themeDataBackgroundTemplate,
     themeDataExample,
     themeDataWorldSetting,
+    worldDisposition,
     settings.extra?.liteMode,
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
@@ -166,6 +183,7 @@ export const generateStoryOutlinePhased = async (
     options.protagonistFeature,
     themeConfig?.categories?.[0], // themeCategory
     theme, // themeKey - NEW: for theme-based atom specialization
+    settings.extra?.worldDispositionPreset,
   );
 
   // Optional user-provided prompt prefix (typically used for language/style preferences).

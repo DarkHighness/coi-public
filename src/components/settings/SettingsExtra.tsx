@@ -1,6 +1,5 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { AISettings } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 
 export const SettingsExtra: React.FC = () => {
@@ -63,6 +62,112 @@ export const SettingsExtra: React.FC = () => {
               }`}
             />
           </button>
+        </div>
+
+        {/* Narrative Style Preset */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.narrativeStylePreset") || "Narrative Style"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.narrativeStylePresetHelp") ||
+                "Adds a concise narrative style add-on to the theme default. Per-game <narrative_style> in custom context overrides this."}
+            </div>
+          </div>
+          <select
+            value={extra.narrativeStylePreset || "theme"}
+            onChange={(e) =>
+              updateExtra(
+                "narrativeStylePreset",
+                e.target.value as
+                  | "theme"
+                  | "cinematic"
+                  | "literary"
+                  | "noir"
+                  | "brutal"
+                  | "cozy"
+                  | "cdrama"
+                  | "minimal",
+              )
+            }
+            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+          >
+            <option value="theme">
+              {t("settings.extra.narrativeStylePresetOptions.theme") ||
+                "Theme Default"}
+            </option>
+            <option value="cinematic">
+              {t("settings.extra.narrativeStylePresetOptions.cinematic") ||
+                "Cinematic"}
+            </option>
+            <option value="literary">
+              {t("settings.extra.narrativeStylePresetOptions.literary") ||
+                "Literary"}
+            </option>
+            <option value="noir">
+              {t("settings.extra.narrativeStylePresetOptions.noir") || "Noir"}
+            </option>
+            <option value="brutal">
+              {t("settings.extra.narrativeStylePresetOptions.brutal") ||
+                "Brutal"}
+            </option>
+            <option value="cozy">
+              {t("settings.extra.narrativeStylePresetOptions.cozy") || "Cozy"}
+            </option>
+            <option value="cdrama">
+              {t("settings.extra.narrativeStylePresetOptions.cdrama") ||
+                "C-Drama"}
+            </option>
+            <option value="minimal">
+              {t("settings.extra.narrativeStylePresetOptions.minimal") ||
+                "Minimal"}
+            </option>
+          </select>
+        </div>
+
+        {/* World Disposition Preset */}
+        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.worldDispositionPreset") || "World Disposition"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.worldDispositionPresetHelp") ||
+                "Adds a small, explicit baseline for human nature and social tone. Per-game <world_disposition> in custom context overrides this."}
+            </div>
+          </div>
+          <select
+            value={extra.worldDispositionPreset || "theme"}
+            onChange={(e) =>
+              updateExtra(
+                "worldDispositionPreset",
+                e.target.value as
+                  | "theme"
+                  | "benevolent"
+                  | "mixed"
+                  | "cynical",
+              )
+            }
+            className="px-2 py-1 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+          >
+            <option value="theme">
+              {t("settings.extra.worldDispositionPresetOptions.theme") ||
+                "Theme Default"}
+            </option>
+            <option value="benevolent">
+              {t("settings.extra.worldDispositionPresetOptions.benevolent") ||
+                "Benevolent"}
+            </option>
+            <option value="mixed">
+              {t("settings.extra.worldDispositionPresetOptions.mixed") ||
+                "Mixed"}
+            </option>
+            <option value="cynical">
+              {t("settings.extra.worldDispositionPresetOptions.cynical") ||
+                "Cynical"}
+            </option>
+          </select>
         </div>
 
         {/* NSFW Toggle */}

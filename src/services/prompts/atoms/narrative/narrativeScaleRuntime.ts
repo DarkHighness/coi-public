@@ -112,7 +112,7 @@ export const narrativeScaleEpic: Atom<void> = () => `
     **LAYERED CONFLICTS**:
     - Personal struggles intersect with world-level threats
     - Factions vie for power; alliances shift
-    - The antagonist has understandable (if terrible) motivations
+    - The antagonist's motivations are concrete (greed, fear, ideology, pleasure, hunger for power). They do NOT need to be sympathetic.
     - Sacrifice is meaningful; victory has costs
   </conflict_design>
 

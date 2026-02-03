@@ -44,13 +44,22 @@ const hiddenNarration = `
     - **NPC Secret Names**: NEVER directly reveal hidden identities or organizations.
 
     **ALLOWED REVELATION METHODS**:
-    1. **Vague/Suggestive Language**: "You feel a dark presence stirring within..."
+    1. **Vague/Suggestive Surface Clues**: "The candle gutters. The air goes thin. Your shadow doesn't match your movements."
     2. **Through Other NPCs**: An old sage whispers the secret...
     3. **Environmental Clues**: A scroll with your family name circled...
     4. **Visions/Hallucinations**: Ancestral spirits showing fragments...
     5. **Physical Manifestations**: Black veins forming ancient runes...
 
     **EXCEPTION**: Directly mention hidden names ONLY AFTER setting \`unlocked: true\` in the same turn.
+  </rule>
+`;
+
+const noProtagonistMindReading = `
+  <rule name="NO PROTAGONIST MIND-READING (PLAYER = PROTAGONIST)">
+    - NEVER narrate what the protagonist thinks, feels (emotion), believes, wants, remembers, suspects, or decides.
+    - DO NOT write internal monologue for the protagonist.
+    - Instead: describe sensory data, bodily reactions, actions, dialogue, and observable tells.
+    - If intent/emotion is needed, ask the player (choices) or infer ONLY from explicit [PLAYER_ACTION].
   </rule>
 `;
 
@@ -66,7 +75,7 @@ const formatting = `
   <rule name="FORMATTING">
     - **MARKDOWN ALLOWED**: You MAY use Markdown formatting in \`description\`, \`truth\`, \`secrets\`, \`notes\`, and other text fields.
     - **Bold**: Use **bold** for emphasis or key terms.
-    - **Italic**: Use *italics* for internal thoughts or whispers.
+    - **Italic**: Use *italics* for whispers, emphasis, foreign/archaic words. DO NOT use italics to narrate the protagonist's inner thoughts.
     - **Lists**: Use bullet points for lists of features or secrets.
     - **NO COMPLEX BLOCKS**: Avoid code blocks or complex HTML in descriptions.
   </rule>
@@ -87,6 +96,7 @@ export const narrativePolicy: Atom<void> = () => `
 ${unlockVsHighlight}
 ${hiddenNarration}
 ${npcObservation}
+${noProtagonistMindReading}
 ${formatting}
 ${systemRules}
 `;
@@ -94,5 +104,7 @@ ${systemRules}
 export const unlockVsHighlightAtom: Atom<void> = () => unlockVsHighlight;
 export const hiddenNarrationAtom: Atom<void> = () => hiddenNarration;
 export const npcObservationAtom: Atom<void> = () => npcObservation;
+export const noProtagonistMindReadingAtom: Atom<void> = () =>
+  noProtagonistMindReading;
 export const formattingAtom: Atom<void> = () => formatting;
 export const systemRulesAtom: Atom<void> = () => systemRules;

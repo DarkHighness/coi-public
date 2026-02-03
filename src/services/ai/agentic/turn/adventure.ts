@@ -19,7 +19,12 @@ import { registerAllSkills } from "../../../prompts/skills/definitions";
 // Explicitly register skills to ensure they are available
 registerAllSkills();
 
-import { getProviderConfig, resolveThemeConfig } from "../../utils";
+import {
+  getProviderConfig,
+  resolveThemeConfig,
+  resolveNarrativeStyle,
+  resolveWorldDisposition,
+} from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
 import type { VfsSession } from "../../../vfs/vfsSession";
@@ -64,17 +69,41 @@ export const generateAdventureTurn = async (
     throw new Error("Story provider not configured");
   }
   const { instance, modelId } = providerInfo;
-  const {
-    narrativeStyle,
-    backgroundTemplate,
-    example,
-    worldSetting,
-    isRestricted,
-  } = resolveThemeConfig(
+  const fallbackThemeConfig = resolveThemeConfig(
     context.themeKey,
     context.language,
     context.tFunc as (key: string, options?: Record<string, unknown>) => string,
   );
+  const resolvedThemeConfig = gameState.themeConfig;
+
+  const narrativeStyleOverride = (gameState.outline as any)?.narrativeStyle;
+  const baseNarrativeStyle =
+    typeof narrativeStyleOverride === "string" &&
+    narrativeStyleOverride.trim()
+      ? narrativeStyleOverride.trim()
+      : resolvedThemeConfig?.narrativeStyle || fallbackThemeConfig.narrativeStyle;
+
+  const narrativeStyle =
+    resolveNarrativeStyle({
+      themeStyle: baseNarrativeStyle,
+      preset: settings.extra?.narrativeStylePreset,
+      language: context.language,
+      customContext: gameState.customContext,
+    }) || baseNarrativeStyle;
+
+  const worldDisposition = resolveWorldDisposition({
+    preset: settings.extra?.worldDispositionPreset,
+    language: context.language,
+    customContext: gameState.customContext,
+  });
+
+  const backgroundTemplate =
+    resolvedThemeConfig?.backgroundTemplate || fallbackThemeConfig.backgroundTemplate;
+  const example = resolvedThemeConfig?.example || fallbackThemeConfig.example;
+  const worldSetting =
+    resolvedThemeConfig?.worldSetting || fallbackThemeConfig.worldSetting;
+  const isRestricted =
+    resolvedThemeConfig?.isRestricted ?? fallbackThemeConfig.isRestricted;
 
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
@@ -90,6 +119,8 @@ export const generateAdventureTurn = async (
     backgroundTemplate,
     example,
     worldSetting,
+    worldDisposition,
+    worldDispositionPreset: settings.extra?.worldDispositionPreset,
     customRules: gameState.customRules,
     isNSFW: settings.extra?.nsfw,
     isLiteMode: settings.extra?.liteMode,

@@ -150,5 +150,7 @@ export const DEFAULTS: AISettings = {
     forceAutoToolChoice: false,
     customInstructionEnabled: false,
     customInstruction: "",
+    narrativeStylePreset: "theme",
+    worldDispositionPreset: "theme",
   },
 };

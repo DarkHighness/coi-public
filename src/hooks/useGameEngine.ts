@@ -10,6 +10,7 @@ import {
   Location as GameLocation,
   OutlineConversationState,
   TurnContext,
+  ResolvedThemeConfig,
 } from "../types";
 import { useGameState } from "./useGameState";
 import { useVfsPersistence } from "./useVfsPersistence";
@@ -93,6 +94,29 @@ async function updateRAGDocumentsBackground(
   } catch (error) {
     console.error("[RAG Update] Failed:", error);
   }
+}
+
+function extractXmlTagValue(
+  input: string | undefined,
+  tagName: string,
+): string | undefined {
+  if (!input) return undefined;
+  const re = new RegExp(`<${tagName}>\\s*([\\s\\S]*?)\\s*<\\/${tagName}>`, "i");
+  const match = input.match(re);
+  const value = match?.[1]?.trim();
+  return value ? value : undefined;
+}
+
+function applyCustomContextThemeOverrides(
+  themeConfig: ResolvedThemeConfig,
+  customContext?: string,
+): ResolvedThemeConfig {
+  const narrativeStyleOverride = extractXmlTagValue(
+    customContext,
+    "narrative_style",
+  );
+  if (!narrativeStyleOverride) return themeConfig;
+  return { ...themeConfig, narrativeStyle: narrativeStyleOverride };
 }
 
 /**
@@ -460,7 +484,10 @@ export const useGameEngine = () => {
 
       outline = result.outline;
       logs = result.logs;
-      themeConfig = result.themeConfig;
+      themeConfig = applyCustomContextThemeOverrides(
+        result.themeConfig,
+        customContext,
+      );
       console.log("[StartNewGame] Outline generated (phased)", outline);
     } catch (outlineError) {
       // Outline generation failed - prompt user to retry
@@ -944,6 +971,10 @@ export const useGameEngine = () => {
       );
 
       console.log("[ResumeOutline] Outline generation completed", outline);
+      const resolvedThemeConfig = applyCustomContextThemeOverrides(
+        themeConfig,
+        customContext,
+      );
 
       const accumulatedTokens = logs.reduce(
         (acc, log) => ({
@@ -966,7 +997,7 @@ export const useGameEngine = () => {
       const nextState = {
         ...gameStateRef.current,
         outline,
-        themeConfig, // Store resolved theme config
+        themeConfig: resolvedThemeConfig, // Store resolved theme config
         outlineConversation: undefined,
         character: {
           ...outline.character,

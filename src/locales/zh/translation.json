@@ -478,6 +478,26 @@
       "description": "其他配置选项",
       "detailedDescription": "详细描述",
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
+      "narrativeStylePreset": "叙事风格",
+      "narrativeStylePresetHelp": "在题材默认风格上追加一个简明的风格补充。若自定义上下文包含 <narrative_style>，将优先生效。",
+      "narrativeStylePresetOptions": {
+        "theme": "题材默认",
+        "cinematic": "电影感",
+        "literary": "文学向",
+        "noir": "黑色/侦探",
+        "brutal": "冷硬残酷",
+        "cozy": "温情日常",
+        "cdrama": "中式短剧/简单恋爱",
+        "minimal": "极简"
+      },
+      "worldDispositionPreset": "世界人性基线",
+      "worldDispositionPresetHelp": "为“人性/社会氛围”增加一个明确的基线补充（不替换题材设定）。若自定义上下文包含 <world_disposition>，将优先生效。",
+      "worldDispositionPresetOptions": {
+        "theme": "题材默认",
+        "benevolent": "人性本善",
+        "mixed": "善恶并存",
+        "cynical": "交易社会"
+      },
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
       "genderPreference": "性别偏好",

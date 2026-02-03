@@ -27,7 +27,7 @@ Quests are NOT what they seem. The visible layer is bait; the hidden layer is th
 |---------|--------|
 | "Rescue the kidnapped princess" | "The princess staged her own kidnapping to escape an arranged marriage" |
 | "Kill the monster terrorizing the village" | "The 'monster' is protecting the village from a worse threat" |
-| "Find the cure for the plague" | "The cure requires harvesting organs from living children" |
+| "Find the cure for the plague" | "The cure exists, but it's hoarded and weaponized by the people in power—getting it means becoming their tool or making enemies you can't outrun" |
 
 **TIME PRESSURE EXAMPLES:**
 - "The ritual completes in 3 days. After that, the portal opens permanently."
@@ -45,6 +45,23 @@ What happens if the protagonist fails or delays?
 - **Personal Stakes**: What does the protagonist lose if they fail? (Not just "the world ends" - something CLOSE to them)
 - **Time Pressure**: Why can't this wait? What ticking clock forces action?
 - **Impossible Choice**: The best outcome should require sacrificing something the protagonist values.
+
+<quest_playability>
+**MAKE QUESTS PLAYABLE (NOT JUST COOL)**
+
+Every quest should have:
+- **A clear entry point**: who asks, where, what immediate proof exists.
+- **A lead chain** (3–5 steps): each lead is something you can DO (talk/search/tail/bribe/break in), and each step produces a concrete artifact:
+  * a name, a place, a document, a physical trace, a time window, or a leverage point.
+- **At least two approaches** to progress:
+  * social (talk/bribe/threaten), physical (sneak/break/steal), procedural (paperwork/permits/records), violent (raid/ambush).
+- **A “what if you do nothing” outcome**: by tomorrow, something changes (deadline passes, target moves, evidence destroyed, someone is arrested).
+
+Avoid:
+- “Find the truth” with no actionable steps.
+- Clues that require mind-reading (“You sense he’s lying”).
+- Single-point-of-failure design (one roll/NPC or nothing).
+</quest_playability>
 </game_system_context>
 `;
 

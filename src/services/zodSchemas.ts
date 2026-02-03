@@ -173,12 +173,14 @@ export const npcVisibleSchema = z.object({
   impression: z
     .string()
     .nullish()
-    .describe("The protagonist's current impression/feeling about this NPC."),
+    .describe(
+      "Player-facing impression of this NPC, written as observable descriptors (no protagonist mind-reading).",
+    ),
   status: z
     .string()
     .nullish()
     .describe(
-      "What the protagonist BELIEVES this NPC is currently doing (e.g., 'shopping in market', 'guarding the gate', 'traveling to the capital'). This is the protagonist's PERCEPTION, not necessarily the truth. Must be in target language.",
+      "Player-facing working assumption about what this NPC is currently doing (e.g., 'shopping in market', 'guarding the gate', 'traveling to the capital'). Base it on evidence, not mind-reading. Must be in target language.",
     ),
   personality: z
     .string()

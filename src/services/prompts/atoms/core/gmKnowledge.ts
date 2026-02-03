@@ -63,10 +63,11 @@ const howToUse = `
 
 const unlockProtocol = `
   <unlocking_hidden_info>
-    **USE THE \`unlock_entity\` TOOL** to reveal hidden information to the player.
+    **UNLOCKING IS A STATE CHANGE**:
+    Setting an entity's \`unlocked: true\` is how the player earns access to the hidden layer.
 
     <when_to_unlock>
-      ONLY use \`unlock_entity\` when ALL of the following are true:
+      ONLY unlock when ALL of the following are true:
       1. ✓ Player has obtained DEFINITIVE PROOF of this specific truth
       2. ✓ The revelation is COMPLETE (not partial hints or suspicions)
       3. ✓ Player character would LOGICALLY know this now based on events
@@ -74,6 +75,13 @@ const unlockProtocol = `
 
       If ANY condition is NOT met → **DO NOT UNLOCK**
     </when_to_unlock>
+
+    <how_to_unlock>
+      **HOW**:
+      - Locate the entity file under \`current/world/\` (search if needed).
+      - Update the entity's \`unlocked\` field to \`true\` using VFS tools (typically \`vfs_edit\`).
+      - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
+    </how_to_unlock>
 
     <priority_clarification>
       **PROOF > TIMING**: If the player obtains definitive proof, you MUST unlock regardless of turn count.
@@ -93,13 +101,13 @@ const unlockProtocol = `
 
     <examples>
       ❌ WRONG: "Player suspects NPC is evil" → unlock (suspicion ≠ proof)
-      ✅ RIGHT: "Player found and read NPC's confession letter" → unlock_entity(npc, name="NPC", reason="Found confession letter revealing true motives")
+      ✅ RIGHT: "Player found and read NPC's confession letter" → set that NPC's \`unlocked: true\` (proof acquired)
 
       ❌ WRONG: "Player enters cursed location" → unlock all dangers
-      ✅ RIGHT: "Player triggered trap and saw mechanism" → unlock_entity(location, name="Cursed Temple", reason="Observed needle trap mechanism after triggering it")
+      ✅ RIGHT: "Player triggered trap and saw mechanism" → set that location's \`unlocked: true\` (mechanism observed)
 
       ❌ WRONG: "It would be dramatic to reveal now" → unlock (drama ≠ proof)
-      ✅ RIGHT: "Player completed investigation quest and NPC confessed" → unlock_entity(quest, name="Quest Name", reason="NPC confessed the truth")
+      ✅ RIGHT: "Player completed investigation quest and NPC confessed" → set that quest's \`unlocked: true\` (confession)
 
       ✅ ALSO RIGHT: Turn 5, player found hidden diary with confession → unlock (proof found early is still valid)
     </examples>
@@ -122,13 +130,11 @@ const temporalEpistemology = `
     - Layer 3: What they will discover LATER (foreshadow this)
 
     **Epistemic Lag**:
-    Truth doesn't arrive instantly. It takes time to:
-    - Process what you've seen
-    - Connect disparate clues
-    - Accept what you don't want to believe
-
-    Describe this lag: "It wasn't until three days later, replaying the scene
-    in your mind, that you realized what his smile had meant."
+    Truth doesn't arrive instantly because evidence appears in fragments and context arrives late.
+    Render lag WITHOUT narrating the protagonist's thoughts:
+    - Delay certainty until a concrete corroborating detail appears
+    - Let earlier details stay ambiguous until a later fact reframes them
+    Example: "Three days later, the ledger turns up. The merchant's 'kind discount' now reads like hush money."
 
     **The GM's Temporal Privilege**:
     You know the ending before the player reaches it.
@@ -165,7 +171,7 @@ export const gmKnowledge: Atom<GmKnowledgeInput> = ({ isLiteMode }) => {
   <unlock_protocol>
     - ONLY unlock when player has DEFINITIVE PROOF (found letter, witnessed confession)
     - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
-    - When unlocking: use \`unlock_entity\` tool with reason
+    - When unlocking: set the entity's \`unlocked: true\` via VFS state update (e.g., \`vfs_edit\`)
   </unlock_protocol>
 </gm_knowledge>
 `;

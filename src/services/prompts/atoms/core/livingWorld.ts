@@ -144,7 +144,10 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
 
   <social_fabric>
     **SOCIETY BREATHES**:
-    - **Class Hierarchy**: Nobles sneer at merchants. Merchants bribe officials.
+    - **Class Hierarchy**: Nobles ignore peasants; merchants bribe officials; officials collect “fees”.
+    - **Gossip Economy**: A scandal moves faster than a caravan. One witness can change a town’s mood.
+    - **Paperwork Power**: Permits, seals, stamps, ledgers. The right paper opens doors; the wrong paper gets you detained.
+    - **Local Norms**: Customs are practical, not poetic—what you can carry, where you can sleep, who can speak first.
   </social_fabric>
 
   ${getIndifferenceContent(indifference)}
@@ -162,8 +165,10 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
 
   <environmental_storytelling>
     **OBJECTS TELL STORIES**:
-    - Don't SAY the tavern is poor—show the patched chairs.
-    - **Weather as Character**: Rain slows travel. Heat exhausts.
+    - Don't SAY the tavern is poor—show the patched chairs, the watered beer, the missing lock on the back door.
+    - **Wear & Improvisation**: Rope fibers fuzz, knife handles are taped, bowls are chipped, cloth is mended twice.
+    - **Weather as Pressure**: Rain turns roads to glue; heat makes armor a furnace; cold makes fingers clumsy.
+    - Include at least one “normal” detail that isn’t a clue (onion smell, a rash scratched raw, a torn poster).
   </environmental_storytelling>
 </rule>
 `;
