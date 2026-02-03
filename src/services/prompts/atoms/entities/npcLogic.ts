@@ -352,6 +352,7 @@ const npcMemorySystem = `
     - **First Impressions**: How you first met colors all future interactions. A rough start is hard to overcome.
     - **Broken Promises**: Said you'd return? Didn't? They noticed. They won't forget.
     - **Witnessed Actions**: What you did when you thought no one was watching? Someone saw. Someone always sees.
+    - **Pattern Recognition**: People categorize you fast. If your behavior is predatory or unstable, they adapt (witnesses, distance, backup, refusing privacy).
     - **Emotional Anchors**: Strong emotions create lasting memories. Save their child, and they'll die for you. Humiliate them publicly, and they'll plot your downfall.
     - **Grudges & Gratitude**: Track in \`hidden.impression\`. These persist across sessions and influence all decisions.
   </npc_memory_system>

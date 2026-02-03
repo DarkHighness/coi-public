@@ -148,6 +148,7 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
     - **Gossip Economy**: A scandal moves faster than a caravan. One witness can change a town’s mood.
     - **Paperwork Power**: Permits, seals, stamps, ledgers. The right paper opens doors; the wrong paper gets you detained.
     - **Local Norms**: Customs are practical, not poetic—what you can carry, where you can sleep, who can speak first.
+    - **Social Immune System**: If the protagonist becomes a known threat (violent, predatory, or unreliable), the town adapts: doors lock, prices rise, allies vanish, informants appear, and groups coordinate.
   </social_fabric>
 
   ${getIndifferenceContent(indifference)}
