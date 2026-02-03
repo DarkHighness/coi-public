@@ -192,7 +192,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
       {isOpen && (
         <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
           {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+            <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
               {t("emptyInventory")}
             </div>
           ) : (

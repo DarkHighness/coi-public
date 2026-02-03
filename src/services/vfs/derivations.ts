@@ -239,14 +239,17 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         seedImageId?: string;
         narrativeScale?: GameState["narrativeScale"];
       };
-      if (typeof globalData.time === "string") {
-        state.time = globalData.time;
+      if (typeof globalData.time === "string" && globalData.time.trim() !== "") {
+        state.time = globalData.time.trim();
       }
-      if (typeof globalData.theme === "string") {
-        state.theme = globalData.theme;
+      if (typeof globalData.theme === "string" && globalData.theme.trim() !== "") {
+        state.theme = globalData.theme.trim();
       }
-      if (typeof globalData.currentLocation === "string") {
-        state.currentLocation = globalData.currentLocation;
+      if (
+        typeof globalData.currentLocation === "string" &&
+        globalData.currentLocation.trim() !== ""
+      ) {
+        state.currentLocation = globalData.currentLocation.trim();
       }
       if (globalData.atmosphere) {
         state.atmosphere = globalData.atmosphere;
@@ -257,8 +260,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       if (typeof globalData.forkId === "number") {
         state.forkId = globalData.forkId;
       }
-      if (typeof globalData.language === "string") {
-        state.language = globalData.language;
+      if (
+        typeof globalData.language === "string" &&
+        globalData.language.trim() !== ""
+      ) {
+        state.language = globalData.language.trim();
       }
       if (typeof globalData.customContext === "string") {
         state.customContext = globalData.customContext;
@@ -367,6 +373,61 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     state.outline = outline;
     if ((outline as any).narrativeScale) {
       state.narrativeScale = (outline as any).narrativeScale;
+    }
+  }
+
+  // Fallback: if the save has an outline but no conversation index/turns,
+  // synthesize the opening narrative as the first model segment so the UI
+  // doesn't get stuck on "journey not started".
+  if (state.outline) {
+    const hasAnyNodes = state.nodes && Object.keys(state.nodes).length > 0;
+    const opening = (state.outline as any).openingNarrative;
+    const hasOpening = opening && typeof opening.narrative === "string";
+
+    if (!hasAnyNodes && hasOpening) {
+      const firstNodeId = "model-fork-0/turn-0";
+      state.nodes = {
+        [firstNodeId]: {
+          id: firstNodeId,
+          parentId: null,
+          text: opening.narrative,
+          choices: Array.isArray(opening.choices)
+            ? opening.choices.map((c: any) =>
+                typeof c === "string"
+                  ? c
+                  : {
+                      text: c?.text ?? "",
+                      consequence: c?.consequence,
+                    },
+              )
+            : [],
+          imagePrompt: opening.imagePrompt || "",
+          role: "model",
+          timestamp: Date.now(),
+          segmentIdx: 0,
+          atmosphere: opening.atmosphere,
+          narrativeTone: opening.narrativeTone,
+          ending: opening.ending || "continue",
+          forceEnd: opening.forceEnd,
+        },
+      } as any;
+      state.activeNodeId = firstNodeId;
+      state.rootNodeId = firstNodeId;
+      state.currentFork = [state.nodes[firstNodeId]] as any;
+      state.forkId = 0;
+      state.turnNumber = 0;
+    } else if (hasAnyNodes && !state.activeNodeId) {
+      // If nodes exist but active pointer is missing, pick the latest model segment.
+      const modelSegments = Object.values(state.nodes).filter(
+        (seg: any) => seg && seg.role === "model",
+      ) as any[];
+      if (modelSegments.length > 0) {
+        modelSegments.sort((a, b) => (a.segmentIdx ?? 0) - (b.segmentIdx ?? 0));
+        const last = modelSegments[modelSegments.length - 1];
+        state.activeNodeId = last.id;
+        state.rootNodeId = state.rootNodeId || modelSegments[0].id;
+        state.currentFork = deriveHistory(state.nodes as any, last.id) as any;
+      }
     }
   }
 

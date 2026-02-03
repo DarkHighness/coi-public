@@ -284,10 +284,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           <button
             type="button"
             onClick={() => toggleFolder(node.path)}
-            className={`w-full flex items-center gap-2 px-2 py-1 text-left text-xs rounded transition-colors ${
+            className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
               isRoot
-                ? "text-theme-muted font-semibold"
-                : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+                ? "text-theme-muted font-semibold border-transparent"
+                : "text-theme-muted hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-border/60"
             }`}
             style={padding}
           >
@@ -314,10 +314,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         key={node.path}
         type="button"
         onClick={() => setSelectedPath(node.path)}
-        className={`w-full flex items-center gap-2 px-2 py-1 text-left text-xs rounded transition-colors ${
+        className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
           isSelected
-            ? "bg-theme-primary/20 text-theme-primary"
-            : "text-theme-muted hover:text-theme-text hover:bg-theme-surface/50"
+            ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
+            : "text-theme-muted hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-border/60"
         }`}
         style={padding}
       >
@@ -333,19 +333,19 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+      <div className="vn-scroll-surface vn-scroll-edge border border-theme-border/70 rounded-none sm:rounded-lg shadow-none w-full max-w-6xl h-full sm:h-[85vh] flex flex-col overflow-hidden bg-theme-bg">
         {/* Header */}
-        <div className="flex-none p-4 border-b border-theme-border flex items-center justify-between bg-theme-bg/50">
+        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-border/60 flex items-center justify-between bg-transparent">
           <div className="flex items-center gap-3">
             <span className="text-2xl" aria-hidden="true">
               🛠️
             </span>
             <div>
-              <h2 className="text-xl font-bold text-theme-primary">
+              <h2 className="text-lg sm:text-xl font-[var(--font-fantasy)] tracking-[0.18em] uppercase text-theme-primary">
                 {t("stateEditor.title") || "State Editor"}
               </h2>
-              <p className="text-xs text-theme-muted">
+              <p className="text-[11px] sm:text-xs text-theme-muted">
                 {t("stateEditor.subtitle") ||
                   "Direct editing of game state (Developer Tool)"}
               </p>
@@ -353,7 +353,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-surface rounded-lg transition-colors"
+            className="p-3 -m-1 text-theme-muted hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
           >
             <svg
               className="w-6 h-6"
@@ -374,15 +374,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Body */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* File Tree */}
-          <div className="w-full md:w-72 flex-none border-b md:border-b-0 md:border-r border-theme-border bg-theme-bg/30 flex flex-col">
-            <div className="p-3 border-b border-theme-border">
+          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-border/60 bg-transparent flex flex-col">
+            <div className="p-3 border-b border-theme-border/50">
               <div className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-2">
                 {t("stateEditor.fileTree") || "File Tree"}
               </div>
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded bg-theme-bg border border-theme-border text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
+                className="w-full text-xs px-3 py-2 rounded-md bg-theme-bg/30 border border-theme-border/60 text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
                 placeholder={
                   t("stateEditor.searchPlaceholder") || "Search files..."
                 }
@@ -402,7 +402,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           {/* Editor Area */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* Toolbar */}
-            <div className="flex-none px-4 py-2 border-b border-theme-border bg-theme-bg/20 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex-none px-4 py-2.5 border-b border-theme-border/50 bg-transparent flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
                 <span className="font-mono text-xs text-theme-muted">
                   {selectedPath || t("stateEditor.noSelection") || "No file"}
@@ -411,19 +411,19 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
                 {hasChanges && !isReadOnly && (
-                  <span className="px-2 py-0.5 bg-theme-warning/20 text-theme-warning text-xs rounded-full">
+                  <span className="px-2 py-0.5 bg-theme-warning/15 text-theme-warning text-[11px] rounded-full border border-theme-warning/20">
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
                 {isReadOnly && (
-                  <span className="px-2 py-0.5 bg-theme-info/20 text-theme-info text-xs rounded-full">
+                  <span className="px-2 py-0.5 bg-theme-info/15 text-theme-info text-[11px] rounded-full border border-theme-info/20">
                     {t("stateEditor.readOnly") || "Read Only"}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 flex-wrap text-xs text-theme-muted">
+              <div className="flex items-center gap-3 flex-wrap text-[11px] sm:text-xs text-theme-muted">
                 {!gameState.godMode && (
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 select-none">
                     <input
                       type="checkbox"
                       checked={allowOutlineEdit}
@@ -436,7 +436,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     </span>
                   </label>
                 )}
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 select-none">
                   <input
                     type="checkbox"
                     checked={allowConversationEdit}
@@ -457,7 +457,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 value={fileContent}
                 onChange={(e) => handleContentChange(e.target.value)}
                 readOnly={isReadOnly}
-                className={`w-full h-full p-4 bg-theme-bg text-theme-text font-mono text-sm resize-none focus:outline-none ${
+                className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none ${
                   error ? "border-2 border-theme-error/50" : ""
                 } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
                 spellCheck={false}
@@ -471,33 +471,33 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="flex-none p-4 border-t border-theme-border bg-theme-bg/50 flex items-center justify-between">
-              <div className="text-xs text-theme-muted">
+            <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-border/60 bg-transparent flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
+              <div className="text-[11px] sm:text-xs text-theme-muted">
                 <span aria-hidden="true">!</span>{" "}
                 {t("stateEditor.warning") ||
                   "Changes are applied immediately. Be careful!"}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 justify-end flex-wrap">
                 <button
                   onClick={handleFormat}
-                  className="px-3 py-2 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
+                  className="px-3 py-2.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-border/60"
                   disabled={isReadOnly}
                 >
                   {t("stateEditor.format") || "Format"}
                 </button>
                 <button
                   onClick={handleReset}
-                  className="px-3 py-2 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-surface rounded transition-colors"
+                  className="px-3 py-2.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-border/60"
                 >
                   {t("stateEditor.reset") || "Reset"}
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!!error || !hasChanges || isReadOnly}
-                  className={`px-6 py-2 rounded-lg font-bold transition-colors ${
+                  className={`px-6 py-2.5 rounded-md font-bold transition-colors ${
                     error || !hasChanges || isReadOnly
                       ? "bg-theme-muted/20 text-theme-muted cursor-not-allowed"
-                      : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg"
+                      : "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg shadow-[0_0_18px_rgba(var(--theme-primary-rgb),0.18)]"
                   }`}
                 >
                   {t("stateEditor.save") || "Save"}

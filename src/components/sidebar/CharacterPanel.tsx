@@ -44,7 +44,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-purple-500",
+        accentText: "text-purple-400",
+        accentBorder: "border-l-purple-400/60",
       };
     case "wound":
     case "debuff":
@@ -64,7 +65,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-red-500",
+        accentText: "text-red-400",
+        accentBorder: "border-l-red-400/60",
       };
     case "normal":
       return {
@@ -83,7 +85,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-emerald-500",
+        accentText: "text-emerald-400",
+        accentBorder: "border-l-emerald-400/60",
       };
     case "buff":
       return {
@@ -102,7 +105,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-amber-500",
+        accentText: "text-amber-400",
+        accentBorder: "border-l-amber-400/60",
       };
     case "dead":
     case "unconscious":
@@ -122,7 +126,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-gray-500",
+        accentText: "text-gray-400",
+        accentBorder: "border-l-gray-400/50",
       };
     case "tired":
       return {
@@ -141,7 +146,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-orange-500",
+        accentText: "text-orange-400",
+        accentBorder: "border-l-orange-400/60",
       };
     case "mental":
       return {
@@ -166,7 +172,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-theme-primary border-theme-muted/20",
+        accentText: "text-theme-primary",
+        accentBorder: "border-l-theme-primary/60",
       };
     case "curse":
       return {
@@ -185,7 +192,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-pink-400",
+        accentText: "text-pink-400",
+        accentBorder: "border-l-pink-400/60",
       };
     case "stun":
       return {
@@ -204,7 +212,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style: "text-yellow-500",
+        accentText: "text-yellow-400",
+        accentBorder: "border-l-yellow-400/60",
       };
     default:
       // Default generic
@@ -224,8 +233,8 @@ const getStatusConfig = (condition: CharacterCondition) => {
             ></path>
           </svg>
         ),
-        style:
-          "bg-theme-surface-highlight text-theme-primary border-theme-border",
+        accentText: "text-theme-primary",
+        accentBorder: "border-l-theme-border/40",
       };
   }
 };
@@ -245,39 +254,61 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
   return (
     <div
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer group w-full mb-3
-        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 group w-full cursor-pointer
+        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"}
+        ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
     >
-      <div className="flex justify-between items-center px-3 py-2.5">
-        <span className="text-xs text-theme-text font-medium flex items-center gap-2">
-          <span className="mr-1 text-base">
-            {getValidIcon(skill.icon, "⭐")}
-          </span>
-          {skill.name}
-          {skill.unlocked && (
-            <svg
-              className="w-3.5 h-3.5 text-theme-primary"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-            </svg>
-          )}
-        </span>
-        <div className="flex items-center gap-2">
+      <div className="py-2 pl-2 pr-1 flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base leading-none shrink-0">
+              {getValidIcon(skill.icon, "⭐")}
+            </span>
+            <span className="text-xs text-theme-text font-bold break-words whitespace-normal">
+              {skill.name}
+            </span>
+            {skill.unlocked && (
+              <span
+                className="text-theme-primary shrink-0"
+                title={t("unlocked") || "Unlocked"}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                </svg>
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           {skill.category && (
-            <span className="text-[10px] text-theme-muted bg-theme-bg/50 px-1.5 py-0.5 rounded border border-theme-border/30 whitespace-nowrap">
+            <span className="text-[10px] text-theme-muted uppercase tracking-wider whitespace-nowrap">
               {skill.category}
             </span>
           )}
           {skill.level && (
-            <span className="text-xs text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
+            <span className="text-[10px] text-theme-primary uppercase tracking-wider whitespace-nowrap">
               {skill.level}
             </span>
           )}
+          <svg
+            className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
         </div>
       </div>
 
@@ -287,7 +318,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-3 pb-3 pt-0 space-y-3">
+          <div className="pl-3 pr-2 pb-3 pt-0 space-y-3">
             <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
               <MarkdownText
                 content={
@@ -301,7 +332,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
             {/* Unlocked Hidden Truth - Outer Layer */}
             {skill.unlocked && skill.hidden?.trueDescription && (
-              <div className="pt-2">
+              <div className="pt-2 border-l border-theme-border/25 pl-3">
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                   <svg
                     className="w-3 h-3"
@@ -377,7 +408,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
 
-  const { icon, style } = getStatusConfig(condition);
+  const { icon, accentBorder, accentText } = getStatusConfig(condition);
 
   const handleClick = () => {
     setIsExpanded(!isExpanded);
@@ -388,48 +419,62 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 
   return (
     <div
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer mb-3
-        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
-        ${style}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 cursor-pointer
+        ${accentBorder} ${accentText}
+        ${isExpanded ? "bg-theme-surface-highlight/15" : "hover:bg-theme-surface-highlight/20"}
+        ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
     >
-      <div className="p-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-bold flex items-center gap-2 text-xs">
+      <div className="py-2 pl-2 pr-1">
+        <div className="flex justify-between items-start gap-2">
+          <span className="font-bold flex items-center gap-2 text-xs text-theme-text">
             {condition.icon && getValidIcon(condition.icon, "") ? (
               <span className="mr-1 text-base">
                 {getValidIcon(condition.icon, "")}
               </span>
             ) : (
-              icon
+              <span className="opacity-90">{icon}</span>
             )}
             {condition.name}
             {condition.unlocked && (
-              <svg
-                className="w-3.5 h-3.5 text-theme-primary"
-                fill="currentColor"
-                viewBox="0 0 20 20"
+              <span
+                className="text-theme-primary shrink-0"
+                title={t("unlocked") || "Unlocked"}
               >
-                <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-              </svg>
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                </svg>
+              </span>
             )}
           </span>
-          {condition.startTime && (
-            <span className="text-xs opacity-80 text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
-              {condition.startTime}
-            </span>
-          )}
-          {condition.severity && (
-            <span className="text-xs opacity-80 text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded border border-theme-primary/20 whitespace-nowrap">
-              {condition.severity}
-            </span>
-          )}
+
+          <div className="flex items-center gap-2 text-[10px] text-theme-muted uppercase tracking-wider whitespace-nowrap shrink-0">
+            {condition.duration && <span>{condition.duration}</span>}
+            {condition.startTime && <span>{condition.startTime}</span>}
+            {condition.severity && <span>{condition.severity}</span>}
+            <svg
+              className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
         </div>
 
         {condition.visible?.description && (
-          <div className="text-xs leading-relaxed opacity-90">
+          <div className="text-xs leading-relaxed opacity-90 text-theme-muted mt-1">
             <MarkdownText
               content={condition.visible.description}
               indentSize={2}
@@ -444,7 +489,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="pt-3 border-t border-current/20 mt-3 space-y-3">
+            <div className="pt-2 border-t border-theme-border/30 mt-2 space-y-3 pl-3 border-l border-theme-border/25">
               {condition.visible?.perceivedSeverity && (
                 <p className="text-xs opacity-80">
                   <span className="font-semibold uppercase tracking-wider text-[10px]">
@@ -577,24 +622,24 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
   return (
     <div
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 cursor-pointer mb-3
-        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 cursor-pointer
+        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"}
+        ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
     >
-      <div className="p-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-bold flex items-center gap-2 text-xs text-theme-text">
+      <div className="py-2 pl-2 pr-1">
+        <div className="flex justify-between items-start gap-2">
+          <span className="font-bold flex items-center gap-2 text-xs text-theme-text min-w-0">
             {trait.icon && (
               <span className="mr-1 text-base">
                 {getValidIcon(trait.icon, "🧩")}
               </span>
             )}
-            {trait.name}
+            <span className="break-words whitespace-normal">{trait.name}</span>
           </span>
           <svg
-            className={`w-3.5 h-3.5 text-theme-primary transition-transform duration-300 ${
+            className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${
               isExpanded ? "rotate-180" : ""
             }`}
             fill="none"
@@ -611,7 +656,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
         </div>
 
         {trait.description && (
-          <div className="text-xs text-theme-muted leading-relaxed">
+          <div className="text-xs text-theme-muted leading-relaxed mt-1">
             <MarkdownText content={trait.description} indentSize={2} />
           </div>
         )}
@@ -622,7 +667,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
           }`}
         >
           <div className="overflow-hidden">
-            <div className="pt-3 border-t border-theme-primary/20 mt-3 space-y-3">
+            <div className="pt-2 border-t border-theme-border/30 mt-2 space-y-3 pl-3 border-l border-theme-border/25">
               {trait.effects && trait.effects.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
@@ -694,7 +739,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               ></path>
             </svg>
-            {t("character.title") || "Character"}
+            {t("gameViewer.character") || "Character"}
           </span>
         </div>
 
@@ -721,126 +766,144 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       {expanded && (
         <div className="space-y-6 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
-          <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3
-                  className={`text-xl font-bold text-theme-primary ${themeFont}`}
-                >
-                  {character.name}
-                </h3>
-              </div>
-              {character.race && (
-                <span className="text-xs px-2.5 py-1 rounded-full bg-theme-bg border border-theme-border text-theme-text-secondary">
-                  {character.race}
-                </span>
-              )}
-            </div>
+          <div className="border-l-2 border-theme-border/50 border-b border-theme-border/25 pb-2">
+            <div className="py-3 pl-2 pr-1 space-y-3">
+              <h3
+                className={`text-sm font-bold text-theme-text leading-snug break-words whitespace-normal ${themeFont}`}
+              >
+                {character.name}
+              </h3>
 
-            {/* Status & Profession */}
-            <div className="flex flex-col gap-2 text-xs mt-2">
-              {character.profession && (
-                <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-16">
-                    {t("role") || "Role"}:
+              <div className="border-t border-theme-border/25 divide-y divide-theme-border/20">
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    {t("gameViewer.titleLabel") || "Title"}
                   </span>
-                  <span>{character.profession}</span>
+                  <span className="text-xs text-theme-primary font-semibold text-right break-words whitespace-normal">
+                    {character.title}
+                  </span>
                 </div>
-              )}
-              {character.age && (
-                <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-16">
-                    {t("age") || "Age"}:
+
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    {t("gameViewer.profession") || t("role") || "Role"}
                   </span>
-                  <span>{character.age}</span>
+                  <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                    {character.profession}
+                  </span>
                 </div>
-              )}
-              {character.status && (
-                <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-16">
-                    {t("status") || "Status"}:
+
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    {t("gameViewer.race") || t("race") || "Race"}
                   </span>
-                  <span className="text-theme-primary font-medium">
+                  <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                    {character.race}
+                  </span>
+                </div>
+
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    {t("gameViewer.age") || t("age") || "Age"}
+                  </span>
+                  <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                    {character.age}
+                  </span>
+                </div>
+
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    {t("gameViewer.status") || t("status") || "Status"}
+                  </span>
+                  <span className="text-xs text-theme-primary font-medium text-right break-words whitespace-normal">
                     {character.status}
                   </span>
                 </div>
-              )}
-              {character.currentLocation && (
-                <div className="flex items-center gap-2 text-theme-text">
-                  <span className="text-theme-muted w-16">
-                    {t("location.current") || "Location"}:
-                  </span>
-                  <span className="text-theme-text font-medium flex items-center gap-1">
-                    <svg
-                      className="w-3 h-3 text-theme-primary"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    {character.currentLocation}
-                  </span>
-                </div>
-              )}
+
+                {character.currentLocation && (
+                  <div className="py-2 flex items-start justify-between gap-3">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                      {t("gameViewer.currentLocation") || "Location"}
+                    </span>
+                    <span className="text-xs text-theme-text text-right break-words whitespace-normal inline-flex items-center justify-end gap-1.5">
+                      <svg
+                        className="w-3.5 h-3.5 text-theme-primary shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      {character.currentLocation}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Attributes Grid */}
           {character.attributes && character.attributes.length > 0 && (
-            <div className="grid grid-cols-1 gap-3">
-              {character.attributes.map((attr, idx) => (
-                <div
-                  key={attr.label || `attr-${idx}`}
-                  className="bg-theme-surface-highlight/20 p-3 rounded border border-theme-border/50 flex flex-col"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-theme-muted uppercase tracking-wider truncate">
-                      <span className="mr-1.5 text-xs">
-                        {getValidIcon(attr.icon, "📊")}
-                      </span>
-                      {attr.label}
+            <div className="pt-4 border-t border-theme-border/25">
+              <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-2 font-bold">
+                {t("gameViewer.attributes") || t("attributes") || "Attributes"}
+              </h4>
+              <div className="border-t border-theme-border/25">
+                {character.attributes.map((attr, idx) => (
+                  <div
+                    key={attr.label || `attr-${idx}`}
+                    className="py-2.5 flex items-center gap-3 border-b border-theme-border/25"
+                  >
+                    <span className="text-sm leading-none shrink-0 w-4 text-center opacity-90">
+                      {getValidIcon(attr.icon, "📊")}
                     </span>
-                    <span className="text-xs font-bold text-theme-text">
-                      {attr.value}
-                      {attr.maxValue ? `/${attr.maxValue}` : ""}
-                    </span>
-                  </div>
-                  {attr.maxValue && (
-                    <div className="h-1.5 w-full bg-theme-bg rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${
-                          colorMap[attr.color || "gray"]
-                            ? `bg-linear-to-r ${colorMap[attr.color || "gray"]}`
-                            : "bg-gray-500"
-                        }`}
-                        style={{
-                          width: `${Math.min(100, Math.max(0, (attr.value / attr.maxValue) * 100))}%`,
-                        }}
-                      ></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-theme-muted uppercase tracking-wider truncate">
+                          {attr.label}
+                        </span>
+                        <span className="text-xs font-bold text-theme-text whitespace-nowrap">
+                          {attr.value}
+                          {attr.maxValue ? `/${attr.maxValue}` : ""}
+                        </span>
+                      </div>
+                      {attr.maxValue && (
+                        <div className="mt-1 h-1 w-full bg-theme-border/20 overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              colorMap[attr.color || "gray"]
+                                ? `bg-linear-to-r ${colorMap[attr.color || "gray"]}`
+                                : "bg-gray-500"
+                            }`}
+                            style={{
+                              width: `${Math.min(100, Math.max(0, (attr.value / attr.maxValue) * 100))}%`,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Skills List */}
           {character.skills && character.skills.length > 0 && (
-            <div>
+            <div className="pt-4 border-t border-theme-border/25">
               <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold">
-                {t("skills")}
+                {t("gameViewer.skills") || t("skills")}
               </h4>
               <div className="flex flex-col">
                 {character.skills.map((skill, idx) => (
@@ -854,9 +917,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           )}
 
           {/* Conditions List */}
-          <div>
-            <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold mt-4">
-              {t("conditions") || "Conditions"}
+          <div className="pt-4 border-t border-theme-border/25">
+            <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold">
+              {t("gameViewer.conditions") || t("conditions") || "Conditions"}
             </h4>
             {character.conditions && character.conditions.length > 0 ? (
               <div className="flex flex-col">
@@ -868,7 +931,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+              <div className="text-theme-muted text-xs italic py-2 pl-2 pr-1 border-t border-theme-border/25">
                 {t("noConditions") || "No active conditions."}
               </div>
             )}
@@ -878,8 +941,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           {character.hiddenTraits &&
             character.hiddenTraits.length > 0 &&
             character.hiddenTraits.some((t) => t.unlocked) && (
-              <div>
-                <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-3 font-bold mt-4 flex items-center gap-1.5">
+              <div className="pt-4 border-t border-theme-border/25">
+                <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-3 font-bold flex items-center gap-1.5">
                   <svg
                     className="w-4 h-4 shrink-0"
                     fill="none"
@@ -916,7 +979,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Appearance (Collapsible) */}
           {character.appearance && (
-            <details className="group text-xs">
+            <details className="group text-xs pt-4 border-t border-theme-border/25">
               <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
                 <span className="uppercase tracking-wider text-xs font-bold">
                   🧐 {t("appearance") || "Appearance"}
@@ -943,7 +1006,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Psychology (Collapsible) - Always visible as it's a top-level field */}
           {character.psychology && (
-            <details className="group text-xs mt-4">
+            <details className="group text-xs pt-4 border-t border-theme-border/25">
               <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
                 <span className="uppercase tracking-wider text-xs font-bold">
                   🧠 {t("gameViewer.psychology") || "Psychology"}

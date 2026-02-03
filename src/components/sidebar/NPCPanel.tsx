@@ -85,10 +85,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
   return (
     <div
       key={rel.id}
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 ease-in-out mb-3 group/item
-        ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
-        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2 group/item
+        ${isDragging ? "opacity-60" : "opacity-100"}
+        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
       `}
       draggable={isEditMode}
       onDragStart={isEditMode ? (e) => onDragStart(e, rel.id) : undefined}
@@ -98,7 +98,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
       onDrop={isEditMode ? (e) => onDrop(e, rel.id) : undefined}
       onClick={handleToggle}
     >
-      <div className="flex-1 min-w-0 p-3 cursor-pointer">
+      <div className="flex-1 min-w-0 py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors">
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <svg
@@ -135,7 +135,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
               )}
             </span>
             <span
-              className="text-[10px] uppercase tracking-wider bg-theme-bg px-2 py-0.5 rounded text-theme-primary border border-theme-border max-w-[120px] truncate cursor-help"
+              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-border/40 max-w-[120px] truncate cursor-help"
               title={rel.visible?.npcType || "Unknown"}
             >
               {rel.visible?.npcType || "Unknown"}
@@ -149,8 +149,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="px-3 pb-3 pt-0 space-y-3">
-              <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
+            <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
+              <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/25 pt-2">
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("description") || "Description"}
@@ -243,7 +243,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                 {/* Location Display */}
                 <div className="mt-2">
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("location.current") || "Location"}
+                    {t("gameViewer.currentLocation") || "Location"}
                   </span>
                   <p className="text-theme-muted/80">
                     {getLocationName(rel.currentLocation)}
@@ -755,9 +755,9 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-4 pt-1">
+          <div className="space-y-2 pt-1">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
                 {t("emptyNpcs")}
               </div>
             ) : (

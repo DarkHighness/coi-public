@@ -16,10 +16,9 @@ import type {
   ImportResult,
   ImportValidation,
   StorySegment,
-  CURRENT_EXPORT_VERSION,
   GameStateSnapshot,
 } from "../types";
-import { CURRENT_SAVE_VERSION } from "../types";
+import { CURRENT_EXPORT_VERSION, CURRENT_SAVE_VERSION } from "../types";
 import {
   loadGameState,
   saveGameState,

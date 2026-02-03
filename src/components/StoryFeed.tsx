@@ -627,33 +627,50 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           onScroll={handleScroll}
           className={`flex-1 overflow-y-auto scroll-smooth relative transition-all duration-300 ${containerPadding} ${textScaleClass}`}
         >
+          {/* Subtle vignette + theme glow (game vibe, keeps text readable) */}
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(1200px_circle_at_50%_0%,rgba(var(--theme-primary-rgb,245_158_11),0.12),transparent_60%)]"></div>
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-theme-bg/60"></div>
+
           <div ref={contentRef} className="flex flex-col min-h-full">
             {/* Outline Display */}
             {gameState.outline && (
-              <div
-                className={`mb-8 p-6 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in transition-all duration-300`}
+              <section
+                className={`mb-10 mx-auto ${contentMaxWidth} animate-fade-in transition-all duration-300`}
               >
-                <h3 className="text-theme-primary font-fantasy text-xl mb-2">
+                <div className="flex items-center justify-center gap-4 mb-5 opacity-70">
+                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted">
+                    {t("outline.title", "Story Outline")}
+                  </span>
+                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                </div>
+
+                <h3 className="text-theme-primary font-fantasy text-2xl leading-tight text-center">
                   {gameState.outline.title}
                 </h3>
-                <div className="text-theme-muted text-sm italic">
-                  <MarkdownText
-                    content={gameState.outline.premise}
-                    disableIndent
-                  />
+
+                <div className="mt-4 text-theme-muted text-sm md:text-[15px] leading-7 text-center italic">
+                  <MarkdownText content={gameState.outline.premise} disableIndent />
                 </div>
+
                 {gameState.outline.mainGoal?.visible?.description && (
-                  <div className="text-theme-text text-sm mt-4 border-t border-theme-border/30 pt-2">
-                    <strong className="text-theme-primary block mb-1">
-                      {t("outline.currentGoal")}:
-                    </strong>
-                    <MarkdownText
-                      content={gameState.outline.mainGoal.visible.description}
-                      disableIndent
-                    />
+                  <div className="mt-6 pt-6 border-t border-theme-border/40">
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-theme-muted text-center">
+                      {t("outline.currentGoal")}
+                    </div>
+                    <div className="mt-2 text-theme-text text-sm md:text-[15px] leading-7 text-center">
+                      <MarkdownText
+                        content={gameState.outline.mainGoal.visible.description}
+                        disableIndent
+                      />
+                    </div>
                   </div>
                 )}
-              </div>
+
+                <div className="mt-8 flex items-center justify-center gap-4 opacity-70">
+                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                </div>
+              </section>
             )}
 
             {/* Empty History State - Show retry when outline exists but no story generated yet */}
@@ -661,10 +678,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               currentHistory.length === 0 &&
               !gameState.isProcessing &&
               !gameState.error && (
-                <div
-                  className={`mb-8 p-6 bg-theme-surface border border-theme-border rounded-lg mx-auto ${contentMaxWidth} text-center animate-fade-in`}
-                >
-                  <p className="text-theme-muted mb-4">
+                <div className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}>
+                  <p className="text-theme-muted mb-5 text-sm md:text-[15px] leading-7">
                     {t(
                       "storyNotStarted",
                       "The story hasn't started yet. Click below to begin your adventure.",
@@ -672,7 +687,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                   </p>
                   <button
                     onClick={onRetry}
-                    className="px-6 py-2 bg-theme-primary text-theme-surface rounded-lg hover:bg-theme-primary-muted transition-colors"
+                    className="px-6 py-2 bg-theme-primary text-theme-surface rounded-xl hover:bg-theme-primary-muted transition-colors shadow-sm"
                   >
                     {t("startAdventure", "Start Adventure")}
                   </button>
@@ -687,21 +702,11 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                     segment.id,
                   );
                   const shouldAnimate = !isAlreadyPlayed;
+                  const isLastSegment = index === currentHistory.length - 1;
 
                   return (
                     <React.Fragment key={segment.id}>
-                      {segment.summarySnapshot && (
-                        <div
-                          className="flex items-center justify-center my-8 opacity-50 hover:opacity-100 transition-opacity group"
-                          title={t("summary.divider")}
-                        >
-                          <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                          <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">
-                            {t("summary.divider")}
-                          </span>
-                          <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                        </div>
-                      )}
+                      {/* SummarySnapshot renders its own divider/title; avoid duplicate headers */}
                       <div
                         className="relative group/wrapper story-card-wrapper"
                         data-segment-id={segment.id}
@@ -730,27 +735,30 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                                 e.stopPropagation();
                                 onFork(segment.id);
                               }}
-                              className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
+                              className="absolute -left-4 md:-left-8 top-4 z-30 px-2 py-2 text-theme-muted hover:text-theme-primary transition-all duration-200 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
                               title={t("tree.fork")}
                             >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                ></path>
-                              </svg>
+                              <span className="flex items-center gap-2">
+                                <span className="h-8 w-px bg-theme-border/50 group-hover/wrapper:bg-theme-primary/60 transition-colors" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                  ></path>
+                                </svg>
+                              </span>
                             </button>
                           )}
                         <StoryCard
                           segment={segment}
-                          isLast={index === currentHistory.length - 1}
+                          isLast={isLastSegment}
                           isGenerating={
                             gameState.isImageGenerating &&
                             gameState.generatingNodeId === segment.id
@@ -808,17 +816,21 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                   >
                     {/* Outline Display in Stack Mode - Controlled by setting */}
                     {stackShowOutline && gameState.outline && (
-                      <div className="p-4 bg-theme-surface-highlight/20 border border-theme-primary/30 rounded-lg text-center animate-fade-in">
-                        <h3 className="text-theme-primary font-fantasy text-lg mb-2">
+                      <section className="text-center animate-fade-in">
+                        <div className="flex items-center justify-center gap-4 mb-4 opacity-70">
+                          <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32" />
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted">
+                            {t("outline.title", "Story Outline")}
+                          </span>
+                          <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32" />
+                        </div>
+                        <h3 className="text-theme-primary font-fantasy text-xl leading-tight">
                           {gameState.outline.title}
                         </h3>
-                        <div className="text-theme-muted text-sm italic">
-                          <MarkdownText
-                            content={gameState.outline.premise}
-                            disableIndent
-                          />
+                        <div className="mt-3 text-theme-muted text-sm italic leading-7">
+                          <MarkdownText content={gameState.outline.premise} disableIndent />
                         </div>
-                      </div>
+                      </section>
                     )}
 
                     {/* Intro Segment - Always shown at top of first page */}
@@ -865,7 +877,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                     {safeCurrentPage > 0 && (
                       <div className="flex items-center justify-center gap-4 py-4">
                         <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32"></div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-theme-surface/60 border border-theme-border rounded-full">
+                        <div className="flex items-center gap-2 px-2">
                           <svg
                             className="w-4 h-4 text-theme-muted"
                             fill="none"
@@ -879,7 +891,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                             />
                           </svg>
-                          <span className="text-xs text-theme-muted uppercase tracking-widest font-medium">
+                          <span className="text-[11px] text-theme-muted uppercase tracking-[0.28em] font-medium">
                             {t("stackPagination.page") || "Page"}{" "}
                             {safeCurrentPage + 1}
                           </span>
@@ -896,19 +908,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
                       return (
                         <React.Fragment key={segment.id}>
-                          {/* Summary divider */}
-                          {segment.summarySnapshot && (
-                            <div
-                              className="flex items-center justify-center my-4 opacity-50 hover:opacity-100 transition-opacity group"
-                              title={t("summary.divider")}
-                            >
-                              <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                              <span className="mx-4 text-xs text-theme-muted uppercase tracking-widest border border-theme-border rounded px-2 py-1 group-hover:text-theme-primary group-hover:border-theme-primary">
-                                {t("summary.divider")}
-                              </span>
-                              <div className="h-[1px] bg-theme-border flex-1 max-w-xs"></div>
-                            </div>
-                          )}
+                          {/* SummarySnapshot renders its own divider/title; avoid duplicate headers */}
 
                           <div
                             className="relative group/wrapper story-card-wrapper"
@@ -923,8 +923,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                                     e.stopPropagation();
                                     onFork(segment.id);
                                   }}
-                                  className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface border border-theme-border rounded-full shadow-lg transition-all duration-300 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
+                                  className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface/80 backdrop-blur-sm border border-theme-border rounded-full shadow-lg transition-opacity duration-200 cursor-pointer opacity-60 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
                                   title={t("tree.fork")}
+                                  aria-label={t("tree.fork")}
                                 >
                                   <svg
                                     className="w-5 h-5"

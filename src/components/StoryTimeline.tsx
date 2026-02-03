@@ -95,58 +95,79 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
   return (
     <>
-      <div className="h-full flex flex-col p-2 md:p-6 bg-theme-surface/60 backdrop-blur-md w-full relative">
-        <h2
-          className={`w-full text-theme-primary uppercase text-xs font-bold tracking-widest mb-6 mt-2 ${currentThemeConfig.fontClass} flex items-center justify-center gap-2 relative group`}
-        >
-          <span className="w-8 h-px bg-theme-primary/50"></span>
-          {t("timeline.title")}
-          <span className="w-8 h-px bg-theme-primary/50"></span>
+      <div className="h-full flex flex-col p-3 md:p-6 w-full relative">
+        <div className="mb-4 mt-1">
+          {(title || subtitle) && (
+            <div className="mb-3 space-y-1">
+              {title && (
+                <div
+                  className={`text-sm text-theme-text font-serif leading-snug line-clamp-2 ${currentThemeConfig.fontClass}`}
+                >
+                  {title}
+                </div>
+              )}
+              {subtitle && (
+                <div className="text-xs text-theme-muted italic leading-relaxed line-clamp-2">
+                  <MarkdownText content={subtitle} disableIndent />
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Export Button */}
-          <button
-            onClick={handleExportClick}
-            disabled={isExporting}
-            className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-theme-muted hover:text-theme-primary transition-colors disabled:opacity-50"
-            title={t("timeline.export") || "Export Timeline"}
-          >
-            {isExporting ? (
-              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
+          <div className="relative flex items-center justify-center gap-3">
+            <span className="h-px w-10 bg-theme-border/50"></span>
+            <h2
+              className={`text-[11px] text-theme-primary tracking-[0.28em] uppercase font-semibold ${currentThemeConfig.fontClass}`}
+            >
+              {t("timeline.title")}
+            </h2>
+            <span className="h-px w-10 bg-theme-border/50"></span>
+
+            {/* Export Button */}
+            <button
+              onClick={handleExportClick}
+              disabled={isExporting}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-theme-muted hover:text-theme-primary transition-colors disabled:opacity-50"
+              title={t("timeline.export") || "Export Timeline"}
+            >
+              {isExporting ? (
+                <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              ) : (
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            ) : (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                ></path>
-              </svg>
-            )}
-          </button>
-        </h2>
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  ></path>
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
 
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto space-y-0 px-1 scroll-smooth pt-1 pb-24 md:pb-0"
+          className="flex-1 overflow-y-auto px-1 scroll-smooth pt-1 pb-24 md:pb-0 divide-y divide-theme-border/25"
         >
           <AnimatePresence initial={false}>
             {narrativeSegments.map((seg, index) => {
@@ -176,6 +197,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                     isLast={isLast}
                     isExpanded={isExpanded}
                     isHovered={isHovered}
+                    fallbackTime={gameState.time}
                     onToggle={toggleItem}
                     onHover={setHoveredSegment}
                     onImageClick={setSelectedImage}

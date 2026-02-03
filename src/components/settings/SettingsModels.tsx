@@ -122,7 +122,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     <div className="space-y-6 animate-slide-in">
       {/* Warning: No available providers */}
       {hasNoAvailableProviders && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded p-4 flex items-start gap-3">
+        <div className="border-l-2 border-red-500/60 pl-3 py-2 flex items-start gap-3">
           <svg
             className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
             fill="none"
@@ -152,7 +152,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         <button
           onClick={() => onLoadModels(true)}
           disabled={loadingModels || hasNoAvailableProviders}
-          className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-1 py-1 text-xs font-bold uppercase tracking-widest text-theme-primary hover:text-theme-primary-hover border-b border-transparent hover:border-theme-primary/60 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loadingModels ? (
             <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -190,12 +190,12 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
       </div>
 
       {/* Disable Model Filter Toggle */}
-      <div className="flex items-center justify-between p-3 bg-theme-bg border border-yellow-500/30 rounded">
+      <div className="flex items-center justify-between gap-4 py-4 border-b border-theme-border/25">
         <div>
           <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
             {t("models.disableFilter") || "Disable Model Filter"}
           </div>
-          <div className="text-[10px] text-theme-muted mt-1">
+          <div className="text-[10px] text-theme-muted mt-1 story-text">
             {t("models.disableFilterHelp") ||
               "Show all models, bypassing capability detection. Use with caution."}
           </div>

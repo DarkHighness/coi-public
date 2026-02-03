@@ -174,11 +174,11 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center ui-overlay backdrop-blur-sm animate-fade-in p-4"
       onClick={onClose}
     >
       <div
-        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90vh]"
+        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -193,7 +193,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-theme-muted hover:text-theme-text transition-colors rounded-full hover:bg-theme-surface-highlight shrink-0"
+            className="p-2.5 text-theme-muted hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60 shrink-0"
             aria-label={t("close", "Close")}
           >
             <svg

@@ -49,8 +49,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in">
-        <div className="bg-theme-surface border border-theme-border rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+      <div className="fixed inset-0 z-60 flex items-center justify-center ui-overlay backdrop-blur-md p-4 animate-fade-in">
+        <div className="bg-theme-surface border border-theme-border rounded-2xl max-w-3xl w-full max-h-[85dvh] flex flex-col shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-theme-border flex justify-between items-center bg-gradient-to-r from-theme-surface-highlight/50 to-theme-surface-highlight/30">
             <div>
@@ -63,7 +63,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-theme-surface-highlight rounded-full transition-colors"
+              className="p-2.5 hover:bg-theme-surface-highlight/60 rounded-xl transition-colors"
+              aria-label={t("close")}
             >
               <svg
                 className="w-6 h-6 text-theme-muted hover:text-theme-text"
@@ -82,7 +83,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
             {slots.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <svg

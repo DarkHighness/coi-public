@@ -248,7 +248,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     <div className="space-y-6 animate-slide-in">
       {/* Warning: No available providers */}
       {hasNoAvailableProviders && isEnabled && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded p-4 flex items-start gap-3">
+        <div className="border-l-2 border-red-500/60 pl-3 py-2 flex items-start gap-3">
           <svg
             className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
             fill="none"

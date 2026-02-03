@@ -57,9 +57,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded w-full max-w-2xl shadow-[0_0_40px_rgba(var(--theme-primary),0.2)] relative overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-6 border-b border-theme-border bg-theme-surface-highlight/50 flex justify-between items-center relative z-10">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center ui-overlay backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-theme-bg border border-theme-border/25 w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90dvh]">
+        <div className="p-5 sm:p-6 border-b border-theme-border/25 flex justify-between items-center relative z-10">
           <h2 className={`text-2xl font-bold text-theme-primary ${themeFont}`}>
             {t("settings.title")}
           </h2>
@@ -67,7 +67,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             ref={closeButtonRef}
             onClick={handleClose}
             data-tutorial-id="settings-close-button"
-            className="text-theme-muted hover:text-theme-text"
+            className="p-2.5 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors"
+            aria-label={t("close")}
           >
             <svg
               className="w-6 h-6"
@@ -90,7 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div
-          className="p-6 space-y-6 overflow-y-auto flex-1"
+          className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar"
           data-tutorial-id="settings-modal-content"
         >
           {activeTab === "providers" && (
@@ -119,10 +120,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === "extra" && <SettingsExtra />}
         </div>
 
-        <div className="p-4 border-t border-theme-border bg-theme-surface/50 flex justify-end items-center">
+        <div className="p-4 border-t border-theme-border/25 flex justify-end items-center">
           <button
             onClick={handleClose}
-            className="px-6 py-2 bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors font-bold text-sm"
+            className="px-2 py-1 text-theme-muted hover:text-theme-text text-sm font-bold uppercase tracking-widest border-b border-transparent hover:border-theme-muted transition-colors"
           >
             {t("close")}
           </button>

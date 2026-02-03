@@ -54,7 +54,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         {gameState.tokenUsage && (
           <div className="mt-3 pt-3 border-t border-theme-border/30">
             <SubsectionLabel>{t("token.tokens")}</SubsectionLabel>
-            <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg/30 p-2 rounded border border-theme-border/30">
+            <div className="text-xs font-mono text-theme-text/80 grid grid-cols-2 gap-3 bg-theme-bg p-3 rounded-none border border-theme-border/30">
               <div>
                 {t("token.totalTokens")}:{" "}
                 {gameState.tokenUsage.totalTokens.toLocaleString()}
@@ -105,7 +105,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               {char.attributes.map((attr, idx) => (
                 <div
                   key={attr.label || idx}
-                  className="flex items-center justify-between p-2 bg-theme-bg/30 rounded border border-theme-border/30 text-sm"
+                  className="flex items-center justify-between p-2 bg-theme-bg rounded-none border border-theme-border/30 text-sm"
                 >
                   <span className="text-theme-muted">{attr.label}:</span>
                   <span className="text-theme-text font-medium">
@@ -135,13 +135,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               .map((quest, idx) => (
                 <div
                   key={quest.id || idx}
-                  className="p-3 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                  className="p-3 bg-theme-bg rounded-none border border-theme-border/40"
                 >
                   <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-1">
                     <span>{getValidIcon(quest.icon, "📜")}</span>
                     {quest.title}
                   </div>
-                  <div className="text-theme-text/90 text-sm pl-6 border-l-2 border-theme-border/50 ml-1">
+                  <div className="story-text text-theme-text/90 text-sm pl-6 border-l-2 border-theme-border/50 ml-1 leading-relaxed">
                     <MarkdownText content={quest.visible.description} />
                   </div>
                 </div>

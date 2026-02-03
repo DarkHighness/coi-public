@@ -76,8 +76,8 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-sm max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center ui-overlay backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl max-w-2xl w-full max-h-[90dvh] flex flex-col shadow-2xl relative overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-theme-border flex justify-between items-center bg-theme-surface-highlight/50">
           <h2 className={`text-2xl text-theme-primary ${themeFont}`}>
@@ -85,7 +85,8 @@ export const VeoScriptModal: React.FC<VeoScriptModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="text-theme-muted hover:text-theme-text transition-colors"
+            className="p-2.5 -m-2.5 rounded-xl text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/60 transition-colors"
+            aria-label={t("close")}
           >
             <svg
               className="w-6 h-6"

@@ -70,7 +70,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   const displayedText = text.slice(0, displayedLength);
 
   return (
-    <div className="story-text text-lg leading-relaxed text-theme-text">
+    <div className="story-text text-theme-text">
       {enableMarkdown ? (
         <MarkdownText content={displayedText} />
       ) : (

@@ -189,7 +189,13 @@ export const StoryImage: React.FC<StoryImageProps> = ({
   // 1. We have an image
   // 2. We have a prompt
   // 3. We have high-level generation handlers (on-demand mode)
-  const canShowActionButtons = !!(onGeneratePrompt || onGenerateImageFull);
+  // 4. We have manual upload/delete actions (user-attached images)
+  const canShowActionButtons = !!(
+    onGeneratePrompt ||
+    onGenerateImageFull ||
+    onUpload ||
+    onDelete
+  );
   if (!hasPrompt && !hasImage && !canShowActionButtons) return null;
 
   // Transient failure state detection (passed via props or inferred)
@@ -220,10 +226,17 @@ export const StoryImage: React.FC<StoryImageProps> = ({
     onRegenerate?.();
   };
 
+  const isUploadOnly =
+    !!onUpload &&
+    !hasImage &&
+    !hasPrompt &&
+    !onGeneratePrompt &&
+    !onGenerateImageFull;
+
   // Render content
   return (
     <>
-      <div className="relative w-full aspect-video rounded-sm overflow-hidden shadow-2xl border-2 border-theme-border bg-black group">
+      <div className="relative w-full aspect-video border-b border-theme-border/25 bg-theme-surface/5 group">
         {hasImage ? (
           // Image Display
           <div
@@ -233,12 +246,13 @@ export const StoryImage: React.FC<StoryImageProps> = ({
             <img
               src={displayUrl}
               alt={t("storyImage.sceneVisualization")}
-              className="w-full h-full object-cover transition-transform duration-[2000ms] ease-in-out group-hover:scale-105 opacity-90 hover:opacity-100 animate-[blur-in_1s_ease-out]"
+              className="w-full h-full object-cover transition-transform duration-[1800ms] ease-in-out group-hover:scale-[1.02] opacity-95 hover:opacity-100 animate-[blur-in_1s_ease-out]"
               style={{
                 animation: "blur-in 1s ease-out forwards",
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent opacity-30 pointer-events-none"></div>
+            <div className="absolute inset-0 pointer-events-none border-t border-theme-border/15"></div>
           </div>
         ) : (
           // Placeholder Display
@@ -250,17 +264,53 @@ export const StoryImage: React.FC<StoryImageProps> = ({
               }
             }}
           >
-            <ImagePlaceholder
-              isGenerating={shouldShowGenerating}
-              hasFailed={actuallyFailed}
-              labelVision={labelVision}
-              labelUnavailable={labelUnavailable}
-              themeFont={themeFont}
-              onRegenerate={canRegenerate ? handleRegenerate : undefined}
-              onGenerateImageFull={
-                imageGenerationEnabled ? onGenerateImageFull : undefined
-              }
-            />
+            {isUploadOnly ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center px-6">
+                  <div
+                    className={`text-[10px] uppercase tracking-wider text-theme-muted ${themeFont || ""}`}
+                  >
+                    {t("uploadImage", "Upload Image")}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUpload();
+                    }}
+                    className="mt-3 inline-flex items-center gap-2 px-3 py-2 border-l-2 border-b border-theme-border/25 border-l-theme-primary/50 hover:bg-theme-surface-highlight/15 transition-colors text-theme-text text-xs"
+                  >
+                    <svg
+                      className="w-4 h-4 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      />
+                    </svg>
+                    <span className="uppercase tracking-wider text-[10px]">
+                      {t("uploadImage", "Upload Image")}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <ImagePlaceholder
+                isGenerating={shouldShowGenerating}
+                hasFailed={actuallyFailed}
+                labelVision={labelVision}
+                labelUnavailable={labelUnavailable}
+                themeFont={themeFont}
+                onRegenerate={canRegenerate ? handleRegenerate : undefined}
+                onGenerateImageFull={
+                  imageGenerationEnabled ? onGenerateImageFull : undefined
+                }
+              />
+            )}
           </div>
         )}
 
@@ -273,11 +323,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                 e.stopPropagation();
                 onUpload();
               }}
-              className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              className="h-9 w-9 grid place-items-center border-l border-b border-theme-border/25 bg-theme-bg/30 text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors opacity-90 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-6px] md:group-hover:translate-y-0 duration-300 z-10"
               title={t("uploadImage", "Upload Image")}
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -299,11 +349,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="bg-black/60 hover:bg-theme-error text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              className="h-9 w-9 grid place-items-center border-l border-b border-theme-border/25 bg-theme-bg/30 text-theme-text hover:text-theme-error hover:bg-theme-surface-highlight/15 transition-colors opacity-90 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-6px] md:group-hover:translate-y-0 duration-300 z-10"
               title={t("deleteImage", "Delete Image")}
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -322,7 +372,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
           {hasPrompt && (
             <button
               onClick={handleCopyPrompt}
-              className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10"
+              className="h-9 w-9 grid place-items-center border-l border-b border-theme-border/25 bg-theme-bg/30 text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors opacity-90 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-6px] md:group-hover:translate-y-0 duration-300 z-10"
               title={
                 copied
                   ? t("storyImage.promptCopied")
@@ -331,7 +381,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
             >
               {copied ? (
                 <svg
-                  className="w-5 h-5 text-green-400"
+                  className="w-4 h-4 text-theme-success"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -345,7 +395,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                 </svg>
               ) : (
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -383,7 +433,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                     e.stopPropagation();
                     onGeneratePrompt();
                   }}
-                  className="bg-black/60 hover:bg-theme-primary text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10 flex items-center gap-1.5"
+                  className="h-9 w-9 grid place-items-center border-l border-b border-theme-border/25 bg-theme-bg/30 text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors opacity-90 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-6px] md:group-hover:translate-y-0 duration-300 z-10"
                   title={
                     hasPrompt
                       ? t("visual.regeneratePrompt")
@@ -391,7 +441,7 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                   }
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -411,11 +461,11 @@ export const StoryImage: React.FC<StoryImageProps> = ({
                     e.stopPropagation();
                     onGenerateImageFull();
                   }}
-                  className="bg-black/60 hover:bg-theme-accent text-white p-2 rounded backdrop-blur-md border border-white/10 transition-all opacity-80 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-10px] md:group-hover:translate-y-0 duration-500 shadow-lg z-10 flex items-center gap-1.5"
+                  className="h-9 w-9 grid place-items-center border-l border-b border-theme-border/25 bg-theme-bg/30 text-theme-text hover:text-theme-accent hover:bg-theme-surface-highlight/15 transition-colors opacity-90 md:opacity-0 md:group-hover:opacity-100 md:translate-y-[-6px] md:group-hover:translate-y-0 duration-300 z-10"
                   title={t("visual.generateImageFull")}
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

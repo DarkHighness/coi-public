@@ -41,7 +41,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
               .map((rel, idx) => (
                 <div
                   key={rel.id || idx}
-                  className="p-4 bg-theme-surface-highlight/30 rounded border border-theme-border/50"
+                  className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-theme-primary text-base flex items-center gap-2">
@@ -62,7 +62,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                         : "?"}
                     </span>
                   </div>
-                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                  <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                     <MarkdownText content={rel.visible.description} />
                   </div>
                   {/* Visible Fields - Player's Perception */}

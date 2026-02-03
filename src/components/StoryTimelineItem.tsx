@@ -12,6 +12,7 @@ interface StoryTimelineItemProps {
   isLast: boolean;
   isExpanded: boolean;
   isHovered: boolean;
+  fallbackTime?: string;
   onToggle: (id: string) => void;
   onHover: (id: string | null) => void;
   onImageClick: (url: string) => void;
@@ -29,6 +30,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
   isLast,
   isExpanded,
   isHovered,
+  fallbackTime,
   onToggle,
   onHover,
   onImageClick,
@@ -101,7 +103,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           y: { type: "spring", stiffness: 300, damping: 25 },
           scale: { duration: 0.35, ease: "easeOut" },
         }}
-        className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
+        className={`relative pl-8 py-4 group ${isLast ? "pb-2" : ""} ${isLongPressing ? "opacity-70" : ""}`}
         onMouseEnter={() => onHover(segment.id)}
         onMouseLeave={() => onHover(null)}
         onTouchStart={handleTouchStart}
@@ -113,7 +115,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           className={`absolute left-2 w-px transition-colors
        ${isFirst ? "top-2" : "top-0"}
        ${isLast ? "h-2" : "bottom-0"}
-       ${isHovered ? "bg-theme-muted/60" : "bg-theme-border"}
+       ${isHovered ? "bg-theme-muted/60" : "bg-theme-border/50"}
     `}
           style={{
             backgroundImage:
@@ -144,9 +146,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         )}
 
         {/* System Content - Inline compact style */}
-        <div
-          className={`text-xs transition-colors relative top-1 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-muted"}`}
-        >
+        <div className="text-xs transition-colors relative top-0.5 min-w-0">
           {/* Compact Header */}
           <div
             className={`flex items-center gap-1.5 mb-1 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-80"}`}
@@ -233,7 +233,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         y: { type: "spring", stiffness: 300, damping: 25 },
         scale: { duration: 0.35, ease: "easeOut" },
       }}
-      className={`relative pl-8 pb-6 group ${isLast ? "pb-0" : ""} ${isLongPressing ? "opacity-70" : ""}`}
+      className={`relative pl-8 py-4 group ${isLast ? "pb-2" : ""} ${isLongPressing ? "opacity-70" : ""}`}
       onMouseEnter={() => onHover(segment.id)}
       onMouseLeave={() => onHover(null)}
       onTouchStart={handleTouchStart}
@@ -245,7 +245,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         className={`absolute left-2 w-px transition-colors
      ${isFirst ? "top-2" : "top-0"}
      ${isLast ? "h-2" : "bottom-0"}
-     ${isHovered ? "bg-theme-primary/50" : "bg-theme-border"}
+     ${isHovered ? "bg-theme-primary/50" : "bg-theme-border/50"}
   `}
       ></div>
 
@@ -255,7 +255,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           e.stopPropagation();
           onToggle(segment.id);
         }}
-        className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 shadow-sm cursor-pointer
+        className={`absolute left-1 top-1 w-2.5 h-2.5 rounded-full border-2 transition-all z-10 cursor-pointer
       ${isLast ? "animate-pulse" : ""}
       ${
         isExpanded
@@ -272,24 +272,25 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
 
       {/* Content */}
       <div
-        className={`text-xs transition-colors relative top-1 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
+        className={`text-xs transition-colors relative top-0.5 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
       >
         {/* Time and Location Metadata */}
         <div
-          className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-100 md:opacity-60"}`}
+          className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-100 md:opacity-70"}`}
         >
-          <span className="font-mono text-theme-primary/70 shrink-0">
+          <span className="font-mono text-theme-muted shrink-0">
             {segment.stateSnapshot?.time ||
+              fallbackTime ||
               t("timeline.unknown_time") ||
               "Unknown Time"}
           </span>
           {segment.stateSnapshot?.currentLocation && (
             <>
               <span className="text-theme-muted/50">•</span>
-              <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold">
+              <span className="text-[10px] uppercase tracking-wider text-theme-muted font-semibold">
                 {t("timeline.turn")} {segment.stateSnapshot.turnNumber}
               </span>
-              <span className="text-theme-muted/80">
+              <span className="text-theme-text/70 font-serif italic">
                 {segment.stateSnapshot.currentLocation}
               </span>
             </>
@@ -299,7 +300,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         {/* Image - Always visible */}
         {displayUrl && (
           <div
-            className={`mb-2 w-full aspect-video rounded overflow-hidden transition-opacity border cursor-zoom-in ${isHovered ? "opacity-100 border-theme-primary/30" : "opacity-100 md:opacity-60 border-theme-border"}`}
+            className={`mb-2 w-full aspect-video overflow-hidden transition-opacity border cursor-zoom-in ${isHovered ? "opacity-100 border-theme-primary/30" : "opacity-100 md:opacity-70 border-theme-border/50"}`}
             onClick={(e) => {
               e.stopPropagation();
               onImageClick(displayUrl);

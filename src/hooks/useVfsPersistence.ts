@@ -6,6 +6,8 @@ import {
   loadMetadata,
   getStorageEstimate,
   clearDatabase,
+  getAllSaveIds,
+  getAllVfsSaveIds,
 } from "../utils/indexedDB";
 import { sessionManager } from "../services/ai/sessionManager";
 import { VfsSession } from "../services/vfs/vfsSession";
@@ -66,8 +68,54 @@ export const useVfsPersistence = (
         turn,
         updatedAt: Date.now(),
       });
+
+      // Update slots metadata so StartScreen "Continue" reflects real progress.
+      // Keep it best-effort and lightweight.
+      try {
+        const now = Date.now();
+        const snapshotState = state ?? gameState;
+        const currentFork = snapshotState.currentFork ?? [];
+        const lastModel = [...currentFork]
+          .reverse()
+          .find((seg) => seg.role === "model");
+
+        const rawSummary =
+          snapshotState.outline?.premise ||
+          lastModel?.text ||
+          snapshotState.outline?.openingNarrative?.narrative ||
+          "";
+
+        const normalizedFull = rawSummary.replace(/\s+/g, " ").trim();
+        const truncated = normalizedFull.slice(0, 160);
+        const summary = truncated
+          ? `${truncated}${normalizedFull.length > 160 ? "…" : ""}`
+          : "";
+
+        setSaveSlots((prev) => {
+          const updated = prev.map((slot) =>
+            slot.id === slotId
+              ? {
+                  ...slot,
+                  timestamp: now,
+                  theme: slot.theme || snapshotState.theme || "fantasy",
+                  summary: summary || slot.summary,
+                  previewImage:
+                    slot.previewImage ||
+                    snapshotState.seedImageId ||
+                    snapshotState.nodes?.[snapshotState.activeNodeId || ""]?.imageId,
+                }
+              : slot,
+          );
+          saveMetadata("slots", updated).catch((err) => {
+            console.warn("[VFS Persistence] Failed to persist updated slots:", err);
+          });
+          return updated;
+        });
+      } catch (error) {
+        console.warn("[VFS Persistence] Failed to update slot summary:", error);
+      }
     },
-    [gameState.forkId, gameState.turnNumber],
+    [gameState.forkId, gameState.turnNumber, gameState],
   );
 
   const saveToSlot = useCallback(
@@ -110,7 +158,96 @@ export const useVfsPersistence = (
       try {
         await sessionManager.initialize();
 
-        const slots = await loadMetadata("slots");
+        const inferSlotsIfMissing = async (): Promise<SaveSlot[]> => {
+          const candidateIds = Array.from(
+            new Set([
+              ...(await getAllVfsSaveIds()),
+              ...(await getAllSaveIds()),
+            ]),
+          );
+          if (candidateIds.length === 0) return [];
+
+          const inferred: SaveSlot[] = [];
+
+          for (const saveId of candidateIds) {
+            try {
+              const latestMeta = await loadMetadata<{
+                forkId?: unknown;
+                turn?: unknown;
+              }>(`vfs_latest:${saveId}`);
+
+              let snapshot = null as Awaited<
+                ReturnType<typeof vfsStoreRef.current.loadSnapshot>
+              >;
+
+              if (
+                latestMeta &&
+                typeof latestMeta.forkId === "number" &&
+                typeof latestMeta.turn === "number"
+              ) {
+                snapshot = await vfsStoreRef.current.loadSnapshot(
+                  saveId,
+                  latestMeta.forkId,
+                  latestMeta.turn,
+                );
+              }
+
+              if (!snapshot) {
+                const indexes = await vfsStoreRef.current.listSnapshots(saveId, 0);
+                const latest = indexes[indexes.length - 1];
+                if (latest) {
+                  snapshot = await vfsStoreRef.current.loadSnapshot(
+                    latest.saveId,
+                    latest.forkId,
+                    latest.turn,
+                  );
+                }
+              }
+
+              const derived =
+                snapshot ? deriveGameStateFromVfs(snapshot.files) : null;
+
+              const theme = derived?.theme || "fantasy";
+              const title =
+                derived?.outline?.title ||
+                derived?.currentLocation ||
+                t("saves.title", "Save");
+
+              const summary =
+                derived?.outline?.premise ||
+                (derived?.outline?.openingNarrative?.narrative
+                  ? derived.outline.openingNarrative.narrative.slice(0, 120)
+                  : t("continueLastAdventure", "Continue your adventure"));
+
+              inferred.push({
+                id: saveId,
+                name: title,
+                timestamp: snapshot?.createdAt || Date.now(),
+                theme,
+                summary,
+                previewImage: derived?.seedImageId,
+              });
+            } catch (error) {
+              console.warn("[VFS Persistence] Failed to infer slot:", saveId, error);
+            }
+          }
+
+          inferred.sort((a, b) => b.timestamp - a.timestamp);
+          if (inferred.length > 0) {
+            try {
+              await saveMetadata("slots", inferred);
+            } catch (error) {
+              console.warn("[VFS Persistence] Failed to persist inferred slots:", error);
+            }
+          }
+          return inferred;
+        };
+
+        let slots = await loadMetadata("slots");
+        if (!slots || !Array.isArray(slots) || slots.length === 0) {
+          slots = await inferSlotsIfMissing();
+        }
+
         if (slots && Array.isArray(slots)) {
           setSaveSlots(slots);
 
@@ -167,6 +304,67 @@ export const useVfsPersistence = (
                 mergeDerivedViewState(prev, derived, { resetRuntime: true }),
               );
               setCurrentSlotId(lastSlotId);
+
+              // Refresh slot metadata from actual derived state (covers cases where
+              // a slot was created with placeholder summary like "旅程尚未开始...").
+              try {
+                const currentFork = derived.currentFork ?? [];
+                const lastModel = [...currentFork]
+                  .reverse()
+                  .find((seg) => seg.role === "model");
+
+                const rawSummary =
+                  derived.outline?.premise ||
+                  lastModel?.text ||
+                  derived.outline?.openingNarrative?.narrative ||
+                  derived.outline?.title ||
+                  "";
+
+                const normalizedFull = rawSummary.replace(/\s+/g, " ").trim();
+                const truncated = normalizedFull.slice(0, 160);
+                const summary = truncated
+                  ? `${truncated}${normalizedFull.length > 160 ? "…" : ""}`
+                  : "";
+
+                if (summary) {
+                  const now = Date.now();
+                  setSaveSlots((prev) => {
+                    const updated = prev.map((slot) =>
+                      slot.id === lastSlotId
+                        ? {
+                            ...slot,
+                            timestamp: snapshot.createdAt || slot.timestamp || now,
+                            theme: slot.theme || derived.theme || "fantasy",
+                            name:
+                              slot.name ||
+                              derived.outline?.title ||
+                              derived.currentLocation ||
+                              t("saves.title", "Save"),
+                            summary,
+                            previewImage:
+                              slot.previewImage ||
+                              derived.seedImageId ||
+                              derived.nodes?.[derived.activeNodeId || ""]?.imageId,
+                          }
+                        : slot,
+                    );
+
+                    saveMetadata("slots", updated).catch((err) => {
+                      console.warn(
+                        "[VFS Persistence] Failed to persist refreshed slots:",
+                        err,
+                      );
+                    });
+
+                    return updated;
+                  });
+                }
+              } catch (error) {
+                console.warn(
+                  "[VFS Persistence] Failed to refresh slot metadata:",
+                  error,
+                );
+              }
             }
           }
         }

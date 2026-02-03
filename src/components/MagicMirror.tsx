@@ -139,7 +139,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(var(--theme-primary),0.15)] flex flex-col relative transition-colors duration-500">
+      <div className="bg-theme-surface border border-theme-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(var(--theme-primary-rgb),0.15)] flex flex-col relative transition-colors duration-500">
         {/* Decorative Corners - Themed */}
         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-theme-primary/60"></div>
         <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-theme-primary/60"></div>
@@ -160,8 +160,9 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-theme-muted hover:text-theme-primary transition-colors"
+            className="p-2.5 -m-2.5 rounded-xl text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight/50 transition-colors"
             title={t("close")}
+            aria-label={t("close")}
           >
             <svg
               className="w-8 h-8"
@@ -234,7 +235,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
               >
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-theme-surface/80 hover:bg-theme-surface-highlight text-theme-text px-6 py-3 border border-theme-border flex items-center gap-3 shadow-lg hover:shadow-[0_0_25px_rgba(var(--theme-primary),0.3)] transition-all font-bold uppercase text-sm"
+                  className="bg-theme-surface/80 hover:bg-theme-surface-highlight text-theme-text px-6 py-3 border border-theme-border flex items-center gap-3 shadow-lg hover:shadow-[0_0_25px_rgba(var(--theme-primary-rgb),0.3)] transition-all font-bold uppercase text-sm"
                 >
                   <svg
                     className="w-5 h-5 text-theme-primary"
@@ -333,7 +334,7 @@ export const MagicMirror: React.FC<MagicMirrorProps> = ({
                 className={`w-full py-4 font-bold transition-all flex items-center justify-center gap-3 relative overflow-hidden group border ${
                   !image || loading
                     ? "bg-theme-surface border-theme-border text-theme-muted cursor-not-allowed"
-                    : "bg-theme-primary hover:bg-theme-primary-hover border-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary),0.2)] hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.4)]"
+                    : "bg-theme-primary hover:bg-theme-primary-hover border-theme-primary text-theme-bg shadow-[0_0_20px_rgba(var(--theme-primary-rgb),0.2)] hover:shadow-[0_0_30px_rgba(var(--theme-primary-rgb),0.4)]"
                 }`}
               >
                 <div

@@ -85,8 +85,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-slide-in">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center ui-overlay backdrop-blur-sm animate-fade-in">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90dvh] overflow-hidden flex flex-col animate-slide-in">
         {/* Header */}
         <div className="p-6 border-b border-theme-border flex items-center justify-between">
           <div>
@@ -99,7 +99,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-theme-muted hover:text-theme-text transition-colors rounded-full hover:bg-theme-surface-highlight"
+            className="p-2.5 text-theme-muted hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60"
+            aria-label={t("close", "Close")}
           >
             <svg
               className="w-6 h-6"

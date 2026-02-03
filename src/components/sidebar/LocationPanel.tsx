@@ -68,11 +68,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
   return (
     <div
       key={item.id}
-      className={`relative rounded-r-md border-y border-r border-l-4 bg-theme-surface/30 transition-all duration-300 ease-in-out mb-3
-        ${isDragging ? "opacity-50 scale-95" : "opacity-100 scale-100"}
-        ${isExpanded ? "border-l-theme-primary border-y-theme-border border-r-theme-border" : "border-l-theme-border/50 border-y-theme-border/30 border-r-theme-border/30 hover:border-l-theme-primary/50"}
-        ${isHighlight ? "animate-pulse ring-2 ring-theme-primary/50" : ""}
-        ${isCurrent ? "border-l-theme-primary bg-theme-surface-highlight/10" : ""}
+      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2
+        ${isDragging ? "opacity-60" : "opacity-100"}
+        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
+        ${isCurrent ? "border-l-theme-primary/70" : ""}
       `}
       draggable={isEditMode}
       onDragStart={isEditMode ? (e) => onDragStart(e, item.id) : undefined}
@@ -83,7 +83,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
       <div className="flex-1 min-w-0">
         <button
           onClick={handleToggle}
-          className="w-full text-left px-3 py-2.5 flex justify-between items-center focus:outline-none"
+          className={`w-full text-left pl-2 pr-1 py-2 flex justify-between items-center focus:outline-none hover:bg-theme-surface-highlight/20 transition-colors ${
+            isCurrent ? "text-theme-primary" : ""
+          }`}
         >
           <div className="flex items-center gap-2 min-w-0">
             {isCurrent && (
@@ -118,7 +120,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="px-3 pb-3 pt-0 space-y-3">
+            <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
               {locationData ? (
                 <div className="text-xs animate-fade-in border-t border-theme-border/30 pt-2">
                   <div>
@@ -696,9 +698,9 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-4">
+          <div className="space-y-2">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic p-3 border border-dashed border-theme-border/50 rounded text-center bg-theme-surface-highlight/10">
+              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
                 {t("noKnownLocations")}
               </div>
             ) : (

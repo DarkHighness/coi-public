@@ -114,7 +114,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[80px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.2)] flex items-center gap-4 animate-slide-in"
+                  className="relative w-full h-[80px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary-rgb),0.2)] flex items-center gap-4 animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
                   <div className="w-12 h-12 rounded-full bg-theme-primary/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">

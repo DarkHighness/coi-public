@@ -103,7 +103,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         {onBack && (
           <button
             onClick={onBack}
-            className="flex p-2 rounded-full hover:bg-theme-surface-highlight text-theme-muted hover:text-theme-text transition-colors"
+            className="flex p-2.5 rounded-xl hover:bg-theme-surface-highlight/60 text-theme-muted hover:text-theme-text transition-colors"
+            aria-label={t("back", "Back")}
           >
             <svg
               className="w-6 h-6"
@@ -145,7 +146,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[250px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary),0.2)] flex flex-col items-start justify-between animate-slide-in"
+                  className="relative w-full h-[250px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary-rgb),0.2)] flex flex-col items-start justify-between animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
                   <div className="w-16 h-16 rounded-full bg-theme-primary/10 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform shrink-0">
@@ -199,7 +200,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
             {/* Close Button */}
             <button
               onClick={closePreview}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+              className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-theme-bg/30 hover:bg-theme-bg/50 text-theme-text border border-theme-border/50 backdrop-blur-sm transition-colors"
+              aria-label={t("close")}
             >
               <svg
                 className="w-6 h-6"
@@ -338,7 +340,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                   setRoleSelectionTheme(previewTheme);
                   setShowRoleSelection(true);
                 }}
-                className="w-full py-4 rounded-xl bg-theme-primary text-theme-bg font-bold text-lg uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(var(--theme-primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--theme-primary),0.5)]"
+                className="w-full py-4 rounded-xl bg-theme-primary text-theme-bg font-bold text-lg uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(var(--theme-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--theme-primary-rgb),0.5)]"
               >
                 {t("startAdventure")}
               </button>
@@ -347,7 +349,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
 
           {/* Desktop Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-300"
+            className="fixed inset-0 ui-overlay backdrop-blur-sm z-40 animate-in fade-in duration-300"
             onClick={closePreview}
           />
         </>

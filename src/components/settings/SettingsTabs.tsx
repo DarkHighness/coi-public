@@ -35,7 +35,7 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
 
   return (
     <div
-      className="flex border-b border-theme-border bg-theme-bg overflow-x-auto scrollbar-hide"
+      className="flex border-b border-theme-border/25 bg-transparent overflow-x-auto scrollbar-hide"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       <style>{`
@@ -48,10 +48,10 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
           key={tab}
           onClick={() => handleTabClick(tab)}
           data-tutorial-id={tab === "models" ? "models-tab-button" : undefined}
-          className={`flex-1 min-w-max py-3 px-2 text-sm font-bold uppercase tracking-widest transition-colors ${
+          className={`flex-1 min-w-max py-3 px-3 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
             activeTab === tab
-              ? "bg-theme-surface text-theme-primary border-b-2 border-theme-primary"
-              : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight"
+              ? "text-theme-primary border-theme-primary"
+              : "text-theme-muted border-transparent hover:text-theme-text hover:border-theme-border/40"
           }`}
         >
           {t(`tabs.${tab}`) || tab.charAt(0).toUpperCase() + tab.slice(1)}

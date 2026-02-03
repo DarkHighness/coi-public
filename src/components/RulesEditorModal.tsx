@@ -182,25 +182,25 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 md:p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl w-full max-w-5xl h-[95vh] md:h-[85vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+      <div className="vn-scroll-surface vn-scroll-edge border border-theme-border/70 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-none p-3 md:p-4 border-b border-theme-border flex items-center justify-between gap-2">
+        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-border/60 flex items-center justify-between gap-2 bg-transparent">
           <div className="min-w-0">
-            <h2 className="text-lg md:text-xl font-bold text-theme-text truncate">
+            <h2 className="text-base sm:text-lg font-[var(--font-fantasy)] tracking-[0.18em] uppercase text-theme-primary truncate">
               {t("rules.title")}
             </h2>
-            <p className="text-xs md:text-sm text-theme-muted mt-0.5 hidden sm:block">
+            <p className="text-[11px] sm:text-xs text-theme-muted mt-1 hidden sm:block">
               {t("rules.subtitle")}
             </p>
             {/* Mobile: show active rules count */}
-            <p className="text-xs text-theme-primary mt-0.5 sm:hidden">
+            <p className="text-[11px] text-theme-primary mt-1 sm:hidden">
               {t("rules.activeCount", { count: totalRulesCount })}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-theme-hover rounded-lg transition-colors text-theme-muted hover:text-theme-text flex-none"
+            className="p-3 -m-1 hover:bg-theme-bg/15 rounded-md transition-colors text-theme-muted hover:text-theme-text flex-none"
             aria-label={t("close")}
           >
             <svg
@@ -220,28 +220,28 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
         </div>
 
         {/* Mobile: Horizontal Category Tabs */}
-        <div className="md:hidden flex-none border-b border-theme-border overflow-x-auto scrollbar-hide">
-          <div className="flex p-2 gap-2 min-w-max">
+        <div className="md:hidden flex-none border-b border-theme-border/50 overflow-x-auto scrollbar-hide bg-transparent">
+          <div className="flex px-3 py-2 gap-4 min-w-max">
             {RULE_CATEGORIES.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-2 px-1.5 py-2 whitespace-nowrap transition-colors border-b-2 ${
                   selectedCategory === category
-                    ? "bg-theme-primary text-theme-primary-contrast"
-                    : "bg-theme-surface-highlight text-theme-text"
+                    ? "border-theme-primary text-theme-primary"
+                    : "border-transparent text-theme-muted hover:text-theme-text"
                 }`}
               >
                 <span>{CATEGORY_ICONS[category]}</span>
-                <span className="text-sm">
+                <span className="text-sm font-bold uppercase tracking-wider">
                   {t(`rules.category.${category}`)}
                 </span>
                 {categoryRuleCounts[category] > 0 && (
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    className={`text-[11px] px-1.5 py-0.5 rounded-full border ${
                       selectedCategory === category
-                        ? "bg-white/20"
-                        : "bg-theme-primary/20 text-theme-primary"
+                        ? "border-theme-primary/40 bg-theme-primary/10 text-theme-primary"
+                        : "border-theme-border/60 bg-theme-bg/20 text-theme-muted"
                     }`}
                   >
                     {categoryRuleCounts[category]}
@@ -255,15 +255,15 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
         {/* Body */}
         <div className="flex-1 flex overflow-hidden">
           {/* Desktop: Category Sidebar */}
-          <div className="hidden md:block w-48 flex-none border-r border-theme-border overflow-y-auto bg-theme-bg/50">
+          <div className="hidden md:block w-56 flex-none border-r border-theme-border/60 overflow-y-auto bg-transparent">
             {RULE_CATEGORIES.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`w-full text-left px-4 py-3 flex items-center gap-2 transition-colors ${
+                className={`w-full text-left px-4 py-3 flex items-center gap-2 transition-colors border-l-2 ${
                   selectedCategory === category
-                    ? "bg-theme-primary/20 text-theme-primary border-r-2 border-theme-primary"
-                    : "text-theme-text hover:bg-theme-hover"
+                    ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
+                    : "text-theme-text hover:bg-theme-bg/10 border-transparent"
                 }`}
               >
                 <span>{CATEGORY_ICONS[category]}</span>
@@ -271,7 +271,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                   {t(`rules.category.${category}`)}
                 </span>
                 {categoryRuleCounts[category] > 0 && (
-                  <span className="text-xs bg-theme-primary/20 text-theme-primary px-1.5 py-0.5 rounded-full">
+                  <span className="text-[11px] bg-theme-primary/10 text-theme-primary px-1.5 py-0.5 rounded-full border border-theme-primary/20">
                     {categoryRuleCounts[category]}
                   </span>
                 )}
@@ -282,13 +282,13 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
           {/* Rules Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Category Description - Desktop only */}
-            <div className="hidden md:block flex-none p-4 bg-theme-bg/30 border-b border-theme-border">
+            <div className="hidden md:block flex-none p-4 bg-transparent border-b border-theme-border/50">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">
                   {CATEGORY_ICONS[selectedCategory]}
                 </span>
                 <div>
-                  <h3 className="font-medium text-theme-text">
+                  <h3 className="font-[var(--font-fantasy)] tracking-[0.12em] uppercase text-theme-text text-sm">
                     {t(`rules.category.${selectedCategory}`)}
                   </h3>
                   <p className="text-xs text-theme-muted">
@@ -299,7 +299,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
             </div>
 
             {/* Rules List */}
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto px-4 py-3 md:p-4">
               {filteredRules.length === 0 && !isEditing ? (
                 <div className="text-center py-8 text-theme-muted">
                   <div className="text-4xl mb-3">
@@ -308,7 +308,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                   <p className="text-sm">{t("rules.noRules")}</p>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="mt-4 px-4 py-2 bg-theme-primary text-theme-primary-contrast rounded-lg hover:opacity-90 transition-opacity text-sm"
+                    className="mt-4 px-4 py-2.5 bg-theme-primary text-theme-primary-contrast rounded-md hover:bg-theme-primary-hover transition-colors text-sm font-bold shadow-[0_0_18px_rgba(var(--theme-primary-rgb),0.18)]"
                   >
                     {t("rules.add")}
                   </button>
@@ -318,10 +318,10 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                   {filteredRules.map((rule) => (
                     <div
                       key={rule.id}
-                      className={`p-3 md:p-4 rounded-lg border transition-all ${
+                      className={`py-4 border-b border-theme-border/40 transition-opacity ${
                         rule.enabled
-                          ? "bg-theme-bg border-theme-border"
-                          : "bg-theme-bg/50 border-theme-border/50 opacity-60"
+                          ? "opacity-100"
+                          : "opacity-60"
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -344,10 +344,10 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-theme-text text-sm md:text-base">
+                          <h4 className="font-bold text-theme-text text-sm md:text-base leading-snug">
                             {rule.title}
                           </h4>
-                          <p className="text-xs md:text-sm text-theme-muted mt-1 whitespace-pre-wrap line-clamp-3">
+                          <p className="story-text text-xs md:text-sm text-theme-text/85 mt-1 whitespace-pre-wrap line-clamp-3 leading-relaxed">
                             {rule.content}
                           </p>
                         </div>
@@ -356,7 +356,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                         <div className="flex gap-1 flex-none">
                           <button
                             onClick={() => startEditRule(rule)}
-                            className="p-2 hover:bg-theme-hover rounded-lg text-theme-muted hover:text-theme-text transition-colors"
+                            className="p-2 hover:bg-theme-bg/10 rounded-md text-theme-muted hover:text-theme-text transition-colors"
                             title={t("rules.edit")}
                             aria-label={t("rules.edit")}
                           >
@@ -376,7 +376,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
                           </button>
                           <button
                             onClick={() => handleDeleteRule(rule.id)}
-                            className="p-2 hover:bg-red-500/10 rounded-lg text-theme-muted hover:text-red-500 transition-colors"
+                            className="p-2 hover:bg-red-500/10 rounded-md text-theme-muted hover:text-red-500 transition-colors"
                             title={t("rules.delete")}
                             aria-label={t("rules.delete")}
                           >
@@ -403,31 +403,31 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
               {/* Add/Edit Form */}
               {isEditing && (
-                <div className="p-3 md:p-4 rounded-lg border border-theme-primary bg-theme-primary/5 space-y-3">
+                <div className="mt-4 p-3 md:p-4 rounded-none border border-theme-border/60 bg-theme-bg space-y-3">
                   <input
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder={t("rules.titlePlaceholder")}
-                    className="w-full px-3 py-2.5 bg-theme-bg border border-theme-border rounded-lg text-theme-text placeholder-theme-muted focus:outline-none focus:border-theme-primary text-sm"
+                    className="w-full px-3 py-2.5 bg-transparent border border-theme-border/70 rounded-md text-theme-text placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/40 text-sm"
                   />
                   <textarea
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
                     placeholder={t("rules.contentPlaceholder")}
                     rows={4}
-                    className="w-full px-3 py-2.5 bg-theme-bg border border-theme-border rounded-lg text-theme-text placeholder-theme-muted focus:outline-none focus:border-theme-primary resize-none text-sm"
+                    className="w-full px-3 py-2.5 bg-transparent border border-theme-border/70 rounded-md text-theme-text placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/40 resize-none text-sm story-text leading-relaxed"
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       onClick={cancelEdit}
-                      className="px-4 py-2.5 text-theme-muted hover:text-theme-text transition-colors text-sm"
+                      className="px-4 py-2.5 text-theme-muted hover:text-theme-text transition-colors text-sm border border-transparent hover:border-theme-border/60 rounded-md"
                     >
                       {t("cancel")}
                     </button>
                     <button
                       onClick={editingRule ? handleUpdateRule : handleAddRule}
-                      className="px-4 py-2.5 bg-theme-primary text-theme-primary-contrast rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+                      className="px-4 py-2.5 bg-theme-primary text-theme-primary-contrast rounded-md hover:bg-theme-primary-hover transition-colors text-sm font-bold shadow-[0_0_18px_rgba(var(--theme-primary-rgb),0.18)]"
                     >
                       {editingRule ? t("rules.save") : t("rules.add")}
                     </button>
@@ -438,10 +438,10 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
             {/* Footer - Add button */}
             {!isEditing && filteredRules.length > 0 && (
-              <div className="flex-none p-3 md:p-4 border-t border-theme-border">
+              <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-border/60 bg-transparent pb-[calc(12px+env(safe-area-inset-bottom))]">
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="w-full md:w-auto px-4 py-2.5 bg-theme-primary text-theme-primary-contrast rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+                  className="w-full md:w-auto px-4 py-2.5 bg-theme-primary text-theme-primary-contrast rounded-md hover:bg-theme-primary-hover transition-colors text-sm font-bold shadow-[0_0_18px_rgba(var(--theme-primary-rgb),0.18)]"
                 >
                   {t("rules.add")}
                 </button>

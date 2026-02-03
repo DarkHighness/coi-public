@@ -93,7 +93,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   return (
     <div className="space-y-6 animate-slide-in">
       {/* Storage Statistics */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
             {t("data.storageInfo")}
@@ -169,7 +169,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* Image Storage Statistics */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
             {t("data.imageStorageInfo", "Image Storage")}
@@ -209,7 +209,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* Reset Settings */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
           {t("data.resetSettings")}
         </h3>
@@ -242,7 +242,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
         </button>
       </div>
 
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
           {t("data.clearSaves")}
         </h3>
@@ -287,7 +287,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* Clear Images */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
           {t("data.clearImages")}
         </h3>
@@ -330,7 +330,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* Clear Session Cache */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
             {t("data.sessionCache", "AI Context Cache")}
@@ -411,7 +411,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* Clear RAG */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest mb-2">
           {t("data.clearRag")}
         </h3>
@@ -451,7 +451,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
       </div>
 
       {/* RAG Statistics */}
-      <div className="bg-theme-surface-highlight/30 p-4 rounded border border-theme-border">
+      <div className="pb-6 border-b border-theme-border/25">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold text-theme-text uppercase tracking-widest">
             {t("data.ragStats")}

@@ -57,7 +57,8 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-theme-muted hover:text-theme-text rounded-full hover:bg-theme-surface-highlight/50 transition-all"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-theme-muted hover:text-theme-text rounded-xl hover:bg-theme-surface-highlight/60 transition-all"
+              aria-label={t("clear", "Clear")}
             >
               <svg
                 className="w-4 h-4"
@@ -82,9 +83,9 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all border flex-shrink-0 ${
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all border flex-shrink-0 ${
                 selectedCategory === cat
-                  ? "bg-theme-primary text-theme-bg border-theme-primary shadow-[0_0_10px_rgba(var(--theme-primary),0.3)]"
+                  ? "bg-theme-primary text-theme-bg border-theme-primary shadow-[0_0_10px_rgba(var(--theme-primary-rgb),0.3)]"
                   : "bg-theme-surface-highlight/30 text-theme-muted border-transparent hover:border-theme-border hover:text-theme-text hover:bg-theme-surface-highlight/50"
               }`}
             >

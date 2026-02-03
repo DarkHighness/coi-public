@@ -40,7 +40,7 @@ export const SettingsExtra: React.FC = () => {
 
       <div className="space-y-4">
         {/* Detailed Description Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.detailedDescription")}
@@ -66,7 +66,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* NSFW Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.nsfw")}
@@ -90,7 +90,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Player Profiling Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.disablePlayerProfiling") ||
@@ -121,7 +121,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Reset Player Profile Button */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.resetPlayerProfile") || "Reset Player Profile"}
@@ -145,7 +145,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Gender Preference */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.genderPreference") || "Gender Preference"}
@@ -178,7 +178,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Lite Mode Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.liteMode") || "Lite Mode"}
@@ -203,7 +203,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Force Auto Tool Choice Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.forceAutoToolChoice") ||
@@ -231,7 +231,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Clearer Search Tool Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.clearerSearchTool") || "Clearer Search Tool"}
@@ -258,7 +258,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Custom Instruction Toggle */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.promptInjection") || "Custom Instruction"}
@@ -288,7 +288,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Custom Instruction */}
-        <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-2">
+        <div className="py-4 border-b border-theme-border/25 space-y-2">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.customPromptInjection") ||
@@ -319,7 +319,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Agentic Loop Settings */}
-        <div className="p-3 bg-theme-bg border border-theme-border rounded space-y-4">
+        <div className="py-4 border-b border-theme-border/25 space-y-4">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.agenticLoop") || "Agentic Loop Settings"}
@@ -410,7 +410,7 @@ export const SettingsExtra: React.FC = () => {
         </div>
 
         {/* Reset Tutorials */}
-        <div className="flex items-center justify-between p-3 bg-theme-bg border border-theme-border rounded">
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
               {t("settings.extra.resetTutorials") || "Reset Tutorials"}
