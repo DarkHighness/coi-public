@@ -842,6 +842,7 @@ export const summarizeContext = async (
     language: string;
     settings: AISettings;
     pendingPlayerAction?: { segmentIdx: number; text: string } | null;
+    mode?: import("../summary/summaryLoop").SummaryLoopMode;
   },
 ): Promise<{
   summary: StorySummary | null;
@@ -861,7 +862,7 @@ export const summarizeContext = async (
       language: input.language,
       settings: input.settings,
       pendingPlayerAction: input.pendingPlayerAction,
-    });
+    }, { mode: input.mode });
 
     // Check for null summary (failure)
     if (!result.summary) {

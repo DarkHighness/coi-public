@@ -22,6 +22,73 @@ import {
   type NpcEntry,
 } from "../../../../prompts/atoms/renderers";
 
+function buildLatestSummaryContext(gameState: GameState): string {
+  const summaries = (gameState as any).summaries as
+    | Array<{
+        id?: number | null;
+        createdAt?: number | null;
+        displayText?: string;
+        visible?: {
+          narrative?: string;
+          majorEvents?: string[];
+          characterDevelopment?: string;
+          worldState?: string;
+        };
+        hidden?: {
+          truthNarrative?: string;
+          hiddenPlots?: string[];
+          npcActions?: string[];
+          worldTruth?: string;
+          unrevealed?: string[];
+        };
+        nodeRange?: { fromIndex: number; toIndex: number };
+      }>
+    | undefined;
+
+  if (!summaries || summaries.length === 0) return "";
+  const latest = summaries[summaries.length - 1];
+  if (!latest) return "";
+
+  const lastSummarizedIndex =
+    typeof (gameState as any).lastSummarizedIndex === "number"
+      ? ((gameState as any).lastSummarizedIndex as number)
+      : null;
+
+  const escape = (value: unknown): string =>
+    typeof value === "string"
+      ? value.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  const json = (value: unknown): string => {
+    try {
+      return JSON.stringify(value ?? null);
+    } catch {
+      return "null";
+    }
+  };
+
+  return `<latest_summary>
+  <id>${escape(String(latest.id ?? ""))}</id>
+  <created_at>${escape(String(latest.createdAt ?? ""))}</created_at>
+  <display_text>${escape(latest.displayText)}</display_text>
+  <visible>
+    <narrative>${escape(latest.visible?.narrative)}</narrative>
+    <major_events>${escape(json(latest.visible?.majorEvents ?? []))}</major_events>
+    <character_development>${escape(latest.visible?.characterDevelopment)}</character_development>
+    <world_state>${escape(latest.visible?.worldState)}</world_state>
+  </visible>
+  <hidden>
+    <truth_narrative>${escape(latest.hidden?.truthNarrative)}</truth_narrative>
+    <hidden_plots>${escape(json(latest.hidden?.hiddenPlots ?? []))}</hidden_plots>
+    <npc_actions>${escape(json(latest.hidden?.npcActions ?? []))}</npc_actions>
+    <world_truth>${escape(latest.hidden?.worldTruth)}</world_truth>
+    <unrevealed>${escape(json(latest.hidden?.unrevealed ?? []))}</unrevealed>
+  </hidden>
+  <node_range>${escape(json(latest.nodeRange ?? null))}</node_range>
+  <last_summarized_index>${escape(String(lastSummarizedIndex ?? ""))}</last_summarized_index>
+</latest_summary>`;
+}
+
 /**
  * Build entity entries from game state for context injection
  */
@@ -117,6 +184,18 @@ export function buildInitialContext(gameState: GameState): UnifiedMessage[] {
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[Entity context acknowledged.]" }],
+    });
+  }
+
+  // === Summary Context (Latest) ===
+  // After a summary/compaction, the story session is reset. The latest summary becomes
+  // the primary narrative memory injected into the new session prefix.
+  const latestSummary = buildLatestSummaryContext(gameState);
+  if (latestSummary) {
+    messages.push(createUserMessage(`[CONTEXT: Story Summary]\n${latestSummary}`));
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[Story summary acknowledged.]" }],
     });
   }
 

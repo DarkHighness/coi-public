@@ -173,6 +173,7 @@ export async function getModels(
       return {
         id: m.id || m.slug,
         name: m.name || m.id || m.slug,
+        contextLength: m.context_length || m.contextLength,
         capabilities,
       };
     });

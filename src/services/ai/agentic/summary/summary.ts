@@ -21,8 +21,8 @@ import {
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 
-// Import refactored loop
-import { runSummaryLoopRefactored } from "./summaryLoop";
+import type { SummaryLoopMode } from "./summaryLoop";
+import { runSummaryLoop } from "./summaryLoop";
 
 // ============================================================================
 // Types
@@ -69,7 +69,7 @@ export interface SummaryLoopInput {
  */
 export const runSummaryAgenticLoop = async (
   input: SummaryLoopInput,
+  options?: { mode?: SummaryLoopMode },
 ): Promise<SummaryAgenticLoopResult> => {
-  // Delegate to refactored loop
-  return runSummaryLoopRefactored(input);
+  return runSummaryLoop(input, options?.mode ?? "auto");
 };

@@ -11,6 +11,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useSettingsContext } from "../contexts/SettingsContext";
 
 interface ActionPanelProps {
   onAction: (action: string) => void;
@@ -52,8 +53,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onJumpToSegment,
 }) => {
   const { state, actions } = useGameEngineContext();
-  const { gameState, currentHistory, isTranslating } = state;
+  const { gameState, currentHistory, isTranslating, aiSettings } = state;
   const { setGameState } = actions;
+  const { providerModels } = useSettingsContext();
   const [isJumpOpen, setIsJumpOpen] = useState(false);
   const [jumpInputValue, setJumpInputValue] = useState("");
   const [customInput, setCustomInput] = useState("");
@@ -77,6 +79,80 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const hasChoices = availableChoices.length > 0;
   const customChoiceIndex = availableChoices.length + 1;
   const showCommandHints = customInput.startsWith("/");
+
+  const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
+  const contextWindowTokens = (() => {
+    if (typeof aiSettings.maxContextTokens === "number" && aiSettings.maxContextTokens > 0) {
+      return aiSettings.maxContextTokens;
+    }
+    const models = providerModels?.[aiSettings.story.providerId];
+    const ctx = models?.find((m) => m.id === aiSettings.story.modelId)?.contextLength;
+    return typeof ctx === "number" && ctx > 0 ? ctx : DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+  })();
+  const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
+  const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;
+
+  const thresholdTokens = Math.max(
+    1,
+    Math.floor(contextWindowTokens * autoCompactThreshold),
+  );
+
+  const lastPromptTokens = (() => {
+    for (let i = currentHistory.length - 1; i >= 0; i--) {
+      const seg = currentHistory[i];
+      if (seg?.role === "model" && typeof seg.usage?.promptTokens === "number") {
+        return seg.usage.promptTokens;
+      }
+    }
+    return null;
+  })();
+
+  const usageRatio =
+    typeof lastPromptTokens === "number" && lastPromptTokens > 0
+      ? lastPromptTokens / contextWindowTokens
+      : null;
+
+  const tokensToThreshold =
+    autoCompactEnabled && typeof lastPromptTokens === "number" && lastPromptTokens > 0
+      ? Math.max(0, thresholdTokens - lastPromptTokens)
+      : null;
+
+  const latestSummary: any =
+    Array.isArray(gameState.summaries) && gameState.summaries.length > 0
+      ? gameState.summaries[gameState.summaries.length - 1]
+      : null;
+  const lastCompactId =
+    latestSummary && typeof latestSummary.id === "number"
+      ? latestSummary.id
+      : null;
+  const lastCompactAt =
+    latestSummary && typeof latestSummary.createdAt === "number"
+      ? latestSummary.createdAt
+      : null;
+
+  const formatTokens = (n: number, style: "full" | "compact"): string => {
+    if (!Number.isFinite(n)) return "—";
+    if (style === "full") return n.toLocaleString();
+    if (n >= 1000) {
+      const k = Math.round((n / 1000) * 10) / 10;
+      return `${k}k`;
+    }
+    return String(n);
+  };
+
+  const formatAgo = (ts: number): string => {
+    const deltaMs = Date.now() - ts;
+    if (!Number.isFinite(deltaMs) || deltaMs < 0) return "—";
+    const sec = Math.floor(deltaMs / 1000);
+    const nowLabel = t("timeNow") || "now";
+    if (sec < 60) return nowLabel;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h`;
+    const day = Math.floor(hr / 24);
+    return `${day}d`;
+  };
 
   const openCustomChoice = useCallback(() => {
     setIsCustomChoiceOpen(true);
@@ -484,6 +560,75 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       <div className="bg-theme-bg/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-4 border-t border-theme-divider/60">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-4">
+          <div className="flex justify-center">
+            <div
+              className={[
+                "text-[10px] uppercase tracking-widest font-bold select-none",
+                usageRatio !== null && usageRatio >= autoCompactThreshold
+                  ? "text-theme-warning"
+                  : "text-theme-muted",
+              ].join(" ")}
+              title={
+                usageRatio !== null
+                  ? [
+                      `${t("contextUsage") || "Context"}: ${lastPromptTokens?.toLocaleString()}/${contextWindowTokens.toLocaleString()} (${Math.round(
+                        usageRatio * 100,
+                      )}%)`,
+                      autoCompactEnabled
+                        ? `Auto: ${Math.round(autoCompactThreshold * 100)}% (${thresholdTokens.toLocaleString()})`
+                        : "Auto: off",
+                      tokensToThreshold !== null
+                        ? `${t("tokensToCompact") || "To compact"}: ${tokensToThreshold.toLocaleString()}`
+                        : "",
+                      lastCompactId !== null
+                        ? `${t("lastCompact") || "Last"}: #${lastCompactId}${lastCompactAt ? ` (${new Date(lastCompactAt).toLocaleString()})` : ""}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join("\n")
+                  : `${t("contextUsage") || "Context"}: —`
+              }
+            >
+              {/* Mobile: short + glanceable */}
+              <span className="sm:hidden">
+                {t("contextUsage") || "Context"}:{" "}
+                {usageRatio === null
+                  ? "—"
+                  : [
+                      `${Math.round(usageRatio * 100)}%`,
+                      tokensToThreshold !== null
+                        ? `${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "compact")}`
+                        : "",
+                      lastCompactId !== null ? `#${lastCompactId}` : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}
+              </span>
+
+              {/* Desktop: full breakdown */}
+              <span className="hidden sm:inline">
+                {t("contextUsage") || "Context"}:{" "}
+                {usageRatio === null
+                  ? "—"
+                  : `${formatTokens(lastPromptTokens!, "full")}/${formatTokens(contextWindowTokens, "full")} (${Math.round(
+                      usageRatio * 100,
+                    )}%)`}
+                {"  "}
+                {autoCompactEnabled
+                  ? `• auto ${Math.round(autoCompactThreshold * 100)}% (${formatTokens(thresholdTokens, "full")})`
+                  : "• auto off"}
+                {"  "}
+                {tokensToThreshold !== null
+                  ? `• ${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "full")}`
+                  : ""}
+                {"  "}
+                {lastCompactId !== null
+                  ? `• ${t("lastCompact") || "Last"} #${lastCompactId}${lastCompactAt ? ` ${formatAgo(lastCompactAt)}` : ""}`
+                  : ""}
+              </span>
+            </div>
+          </div>
+
           {/* Action Controls - Always show retry/jump buttons when not processing */}
           {!gameState.isProcessing && !isTranslating && (
             <div className="animate-fade-in-up">

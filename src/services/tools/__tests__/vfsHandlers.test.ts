@@ -135,27 +135,29 @@ describe("VFS handlers", () => {
     expect(result.data?.extracts?.[0]?.json).toBe("\"Bob\"");
   });
 
-  it("describes schemas via vfs_schema", () => {
-    const session = new VfsSession();
-    const ctx = { vfsSession: session };
+	  it("describes schemas via vfs_schema", () => {
+	    const session = new VfsSession();
+	    const ctx = { vfsSession: session };
 
-    const result = dispatchToolCall(
-      "vfs_schema",
-      { paths: ["world/global.json", "current/world/npcs/npc:1.json"] },
-      ctx,
-    ) as {
-      success: boolean;
-      data?: { schemas?: Array<{ path: string; hint: string }>; missing?: any[] };
-    };
+	    const result = dispatchToolCall(
+	      "vfs_schema",
+	      { paths: ["world/global.json", "world/characters/char:npc_1/profile.json"] },
+	      ctx,
+	    ) as {
+	      success: boolean;
+	      data?: { schemas?: Array<{ path: string; hint: string }>; missing?: any[] };
+	    };
 
-    expect(result.success).toBe(true);
-    expect(result.data?.missing).toEqual([]);
-    expect(result.data?.schemas?.[0]?.path).toBe("current/world/global.json");
-    expect(result.data?.schemas?.[0]?.hint).toContain("time");
-    expect(result.data?.schemas?.[1]?.path).toBe("current/world/npcs/npc:1.json");
-    expect(result.data?.schemas?.[1]?.hint).toContain("visible");
-    expect(result.data?.schemas?.[1]?.hint).toContain("id");
-  });
+	    expect(result.success).toBe(true);
+	    expect(result.data?.missing).toEqual([]);
+	    expect(result.data?.schemas?.[0]?.path).toBe("current/world/global.json");
+	    expect(result.data?.schemas?.[0]?.hint).toContain("time");
+	    expect(result.data?.schemas?.[1]?.path).toBe(
+	      "current/world/characters/char:npc_1/profile.json",
+	    );
+	    expect(result.data?.schemas?.[1]?.hint).toContain("visible");
+	    expect(result.data?.schemas?.[1]?.hint).toContain("id");
+	  });
 
   it("stats files and directories via vfs_stat", () => {
     const session = new VfsSession();

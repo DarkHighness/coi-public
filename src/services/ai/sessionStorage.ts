@@ -30,6 +30,12 @@ export interface StoredSession {
   id: string;
   slotId: string;
   config: SessionConfig;
+  /**
+   * The provider system instruction used for this session.
+   * Stored so we can later run session-native compaction using the exact same
+   * system prompt (prefix-cache friendly).
+   */
+  systemInstruction?: string | null;
   nativeHistory: unknown[];
   lastSummaryId: string | null;
   createdAt: number;
@@ -46,7 +52,7 @@ export interface StoredSession {
 
 const DB_NAME = "coi-session-cache";
 // NOTE: 彻底重构后，不做迁移；升级版本并在 onupgradeneeded 中重建 store 来清空旧数据。
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = "sessions";
 const MAX_SESSIONS = 100;
 

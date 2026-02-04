@@ -1165,9 +1165,7 @@ export interface AISettings {
   // Multi-Provider Management
   providers: ProviderManagement;
 
-  contextLen: number; // Max conversation turns before summarization (fallback)
-  maxContextTokens?: number; // Max estimated tokens before summarization (overrides contextLen)
-  freshSegmentCount: number; // Number of fresh segments to keep alongside summary for narrative continuity
+  maxContextTokens?: number; // Optional override for model context window (tokens)
 
   story: FunctionConfig;
   lore: FunctionConfig;
@@ -1267,6 +1265,22 @@ export interface AISettings {
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed
     // Player Psychology System
     disablePlayerProfiling?: boolean; // Disable cross-save player psychology tracking
+
+    // ======================================================================
+    // Auto-Compaction / Summary
+    // ======================================================================
+    /**
+     * Enable automatic session compaction (summary) based on context window usage.
+     * When enabled, the system will attempt session-native compaction first and
+     * fall back to query-based summary on overflow.
+     */
+    autoCompactEnabled?: boolean;
+    /**
+     * Context window usage threshold (0.5 - 0.95) to trigger auto-compaction.
+     * Usage is computed from the last API call's promptTokens divided by the
+     * selected model's context length.
+     */
+    autoCompactThreshold?: number;
   };
 
   // Player Psychology System - cross-save player portrait
@@ -1382,6 +1396,8 @@ export interface ThemeData {
 export interface ModelInfo {
   id: string;
   name?: string;
+  /** Optional context window length (tokens), if provided by the provider. */
+  contextLength?: number;
   capabilities?: {
     image?: boolean;
     video?: boolean;
