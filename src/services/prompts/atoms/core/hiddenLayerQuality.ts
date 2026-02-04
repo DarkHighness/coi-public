@@ -50,7 +50,9 @@ export const hiddenLayerQuality: Atom<void> = () => `
     - **CAUSALITY IS KING**: Explain WHY things are the way they are.
     - **SPECIFICITY**: Use names, dates, numbers, specific locations.
     - **INTERCONNECTION**: Connect secrets to other entities.
-    - **UNLOCKED IS RUNTIME STATE**: Default to \`unlocked: false\` on creation. Only flip to \`true\` when the player has definitive proof, via a normal VFS state update.
+    - **UNLOCKED IS RUNTIME STATE**: Default to locked on creation. Only flip to unlocked when the player has definitive proof, via a VFS state update:
+      * World entities → set \`current/world/characters/char:player/views/**.unlocked=true\` (+ unlockReason)
+      * Actors/relations/items/traits → set the entity's own \`unlocked=true\`
   </minimum_standards>
 
   <quality_check>
