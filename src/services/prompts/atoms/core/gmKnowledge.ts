@@ -28,6 +28,11 @@ const visibilityStructure = `
     3. **\`unlocked\` flag** (Discovery State):
        - \`false\` = Player does NOT know the hidden truth → Use ONLY \`visible\` in narrative
        - \`true\` = Player HAS discovered the truth → You MAY reference \`hidden\` info
+
+    **IMPORTANT (CURRENT ARCHITECTURE)**:
+    - For **world entities** (quests/knowledge/timeline/locations/factions/causal_chains/world_info), the unlock/progress state is stored per-actor under:
+      - \`current/world/characters/<actorId>/views/**\` (usually \`char:player\` for UI)
+    - For **actors/relations** and **physical items**, \`unlocked\` remains stored on the entity itself (e.g. actor profile, relation edge, inventory item file).
   </visibility_layer_structure>
 `;
 
@@ -78,8 +83,14 @@ const unlockProtocol = `
 
     <how_to_unlock>
       **HOW**:
-      - Locate the entity file under \`current/world/\` (search if needed).
-      - Update the entity's \`unlocked\` field to \`true\` using VFS tools (typically \`vfs_edit\`).
+      - First decide which storage applies:
+        1) **World entities (canonical truth + per-actor views)**:
+           - Canonical truth: \`current/world/<type>/<id>.json\`
+           - Protagonist view: \`current/world/characters/char:player/views/<type>/<id>.json\`
+           - **DO NOT** write \`unlocked\` into canonical world entity files.
+           - **DO** set \`views/**.unlocked=true\` + \`unlockReason\` (create the view file if missing).
+        2) **Actors / Relations / Physical Items**:
+           - Update the entity file itself (e.g. \`current/world/characters/<id>/profile.json\`, \`profile.relations[]\`, inventory item files).
       - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
     </how_to_unlock>
 
@@ -101,13 +112,13 @@ const unlockProtocol = `
 
     <examples>
       ❌ WRONG: "Player suspects NPC is evil" → unlock (suspicion ≠ proof)
-      ✅ RIGHT: "Player found and read NPC's confession letter" → set that NPC's \`unlocked: true\` (proof acquired)
+      ✅ RIGHT: "Player found and read NPC's confession letter" → set that NPC's \`profile.unlocked: true\` (proof acquired)
 
       ❌ WRONG: "Player enters cursed location" → unlock all dangers
-      ✅ RIGHT: "Player triggered trap and saw mechanism" → set that location's \`unlocked: true\` (mechanism observed)
+      ✅ RIGHT: "Player triggered trap and saw mechanism" → set \`current/world/characters/char:player/views/locations/<locId>.json\` \`unlocked: true\` (mechanism observed)
 
       ❌ WRONG: "It would be dramatic to reveal now" → unlock (drama ≠ proof)
-      ✅ RIGHT: "Player completed investigation quest and NPC confessed" → set that quest's \`unlocked: true\` (confession)
+      ✅ RIGHT: "Player completed investigation quest and NPC confessed" → set \`current/world/characters/char:player/views/quests/<questId>.json\` \`unlocked: true\` (confession)
 
       ✅ ALSO RIGHT: Turn 5, player found hidden diary with confession → unlock (proof found early is still valid)
     </examples>
@@ -171,7 +182,9 @@ export const gmKnowledge: Atom<GmKnowledgeInput> = ({ isLiteMode }) => {
   <unlock_protocol>
     - ONLY unlock when player has DEFINITIVE PROOF (found letter, witnessed confession)
     - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
-    - When unlocking: set the entity's \`unlocked: true\` via VFS state update (e.g., \`vfs_edit\`)
+    - When unlocking:
+      * World entities → set protagonist view \`current/world/characters/char:player/views/**.unlocked=true\` via VFS
+      * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS
   </unlock_protocol>
 </gm_knowledge>
 `;

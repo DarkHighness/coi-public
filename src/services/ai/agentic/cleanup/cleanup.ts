@@ -155,8 +155,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
 - **DUAL LAYER RULE**: If merging duplicates where one is Unlocked (known) and one is Locked (hidden):
     1. PREFER keeping the Locked entity (it often contains full GM truth).
     2. MUST merge the Unlocked entity's visible info into the Kept entity's separate 'visible' layer.
-    3. MUST set the Kept entity to 'unlocked: true' if the player knew the removed one.
-    4. NEVER lose player knowledge (unlocked status) during a merge.
+    3. MUST preserve player knowledge (unlock state) when deleting the duplicate:
+       - World entities (quests/knowledge/timeline/locations/factions/causal_chains/world_info) → ensure \`current/world/characters/char:player/views/**.unlocked=true\` on the kept entity.
+       - Actors/relations/items/traits → ensure the kept entity itself has \`unlocked: true\` if the player knew the removed one.
+    4. NEVER lose player knowledge during a merge.
 - If no duplicates found, still write a minimal narrative like "No duplicates found"
 </rules>
 

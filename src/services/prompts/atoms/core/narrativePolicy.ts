@@ -15,6 +15,9 @@ const unlockVsHighlight = `
        - **Effect**: Hidden info becomes visible in player's knowledge
        - **Irreversible**: Once unlocked, stays unlocked (knowledge cannot be un-learned)
        - **GM Role**: You always see hidden info; \`unlocked\` only affects what PLAYER knows
+       - **Storage (CURRENT ARCHITECTURE)**:
+         * World entities (quests/knowledge/timeline/locations/factions/causal_chains/world_info) → unlock state lives in \`current/world/characters/char:player/views/**\` (do NOT write canonical unlocked).
+         * Actors/relations/items/traits → unlock state lives on the entity file itself.
 
     2. **\`highlight: true\`** - UI NOTIFICATION SYSTEM
        - **Purpose**: Draw player's attention to a CHANGE in the UI

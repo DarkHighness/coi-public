@@ -28,6 +28,8 @@ const globalNotes = `
       - Use \`current/world/knowledge/<id>.json\` to persist global memory.
       - Write with \`vfs_write\` (create/replace) or \`vfs_edit\` (patch fields).
       - Remove obsolete entries with \`vfs_delete\`.
+      - **CURRENT ARCHITECTURE**: discovery/unlock/UI fields for knowledge are per-actor:
+        - \`current/world/characters/char:player/views/knowledge/<id>.json\` (e.g. \`unlocked\`, discovery time, highlight)
     </storage_rules>
 
     <search_strategy>
