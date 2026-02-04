@@ -162,11 +162,11 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
 
           // Determine if we need a turn separator for tool logs
           // Show separator when turnNumber or forkId changes between consecutive logs
-          // Handle Phase 10 outline as Turn 1 for consistent separation
+          // Handle Phase 9 opening narrative outline as Turn 1 for consistent separation
           const getLogTurn = (l: typeof log | null) => {
             if (!l) return undefined;
             if (l.type === "tool") return l.turnNumber;
-            if (l.type === "outline" && l.phase === 10) return 1;
+            if (l.type === "outline" && l.phase === 9) return 1;
             return undefined;
           };
 

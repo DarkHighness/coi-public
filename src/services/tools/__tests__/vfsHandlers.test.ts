@@ -47,8 +47,15 @@ describe("VFS handlers", () => {
             contentType: "application/json",
           },
           {
-            path: "current/world/character/profile.json",
-            content: JSON.stringify({ name: "Hero" }),
+            path: "current/world/characters/char:player/profile.json",
+            content: JSON.stringify({
+              id: "char:player",
+              kind: "player",
+              currentLocation: "loc:1",
+              knownBy: ["char:player"],
+              visible: { name: "Hero" },
+              relations: [],
+            }),
             contentType: "application/json",
           },
         ],
@@ -63,7 +70,7 @@ describe("VFS handlers", () => {
       {
         paths: [
           "current/world/global.json",
-          "current/world/character/profile.json",
+          "current/world/characters/char:player/profile.json",
           "current/world/missing.json",
         ],
         maxChars: 10,
@@ -89,28 +96,42 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     session.writeFile(
-      "world/inventory/inv:1.json",
-      JSON.stringify({ id: "inv:1", name: "Rusty Key", unlocked: true }),
-      "application/json",
-    );
-    session.writeFile(
-      "world/npcs/npc:1.json",
+      "world/characters/char:player/inventory/inv:1.json",
       JSON.stringify({
-        id: "npc:1",
-        currentLocation: "loc:1",
-        visible: { name: "Bob", description: "x", npcType: "Friend", affinity: 50 },
-        hidden: { realPersonality: "y", realMotives: "z", npcType: "Tool", impression: "neutral", status: "idle" },
-        unlocked: false,
+        id: "inv:1",
+        knownBy: ["char:player"],
+        name: "Rusty Key",
+        visible: { description: "x" },
+        unlocked: true,
       }),
       "application/json",
     );
     session.writeFile(
-      "world/character/profile.json",
-      JSON.stringify({ name: "Hero", title: "Wanderer", attributes: [] }),
+      "world/characters/char:npc_1/profile.json",
+      JSON.stringify({
+        id: "char:npc_1",
+        kind: "npc",
+        currentLocation: "loc:1",
+        knownBy: ["char:player"],
+        visible: { name: "Bob", description: "x", roleTag: "Friend" },
+        relations: [],
+      }),
       "application/json",
     );
     session.writeFile(
-      "world/character/skills/skill:1.json",
+      "world/characters/char:player/profile.json",
+      JSON.stringify({
+        id: "char:player",
+        kind: "player",
+        currentLocation: "loc:1",
+        knownBy: ["char:player"],
+        visible: { name: "Hero", title: "Wanderer", attributes: [] },
+        relations: [],
+      }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/characters/char:player/skills/skill:1.json",
       JSON.stringify({
         id: "skill:1",
         name: "Tracking",
@@ -152,13 +173,13 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     session.writeFile(
-      "world/inventory/inv:1.json",
-      JSON.stringify({ id: "inv:1", name: "Rusty Key" }),
+      "world/characters/char:player/inventory/inv:1.json",
+      JSON.stringify({ id: "inv:1", knownBy: ["char:player"], name: "Rusty Key", visible: { description: "x" } }),
       "application/json",
     );
     session.writeFile(
-      "world/inventory/inv:2.json",
-      JSON.stringify({ id: "inv:2", name: "Rusted Key" }),
+      "world/characters/char:player/inventory/inv:2.json",
+      JSON.stringify({ id: "inv:2", knownBy: ["char:player"], name: "Rusted Key", visible: { description: "x" } }),
       "application/json",
     );
 
@@ -354,23 +375,14 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     session.writeFile(
-      "world/npcs/npc:1.json",
+      "world/characters/char:npc_1/profile.json",
       JSON.stringify({
-        id: "npc:1",
+        id: "char:npc_1",
+        kind: "npc",
         currentLocation: "loc:1",
-        visible: {
-          name: "A",
-          description: "x",
-          npcType: "Friend",
-          affinity: 50,
-        },
-        hidden: {
-          realPersonality: "y",
-          realMotives: "z",
-          npcType: "Tool",
-          impression: "neutral",
-          status: "idle",
-        },
+        knownBy: ["char:player"],
+        visible: { name: "A", description: "x", roleTag: "Friend" },
+        relations: [],
       }),
       "application/json",
     );
@@ -380,7 +392,7 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/npcs/npc:1.json",
+            path: "current/world/characters/char:npc_1/profile.json",
             content: { visible: { name: "B" } },
           },
         ],
@@ -391,7 +403,7 @@ describe("VFS handlers", () => {
     expect(mergeResult.success).toBe(true);
 
     const updated = JSON.parse(
-      session.readFile("world/npcs/npc:1.json")!.content,
+      session.readFile("world/characters/char:npc_1/profile.json")!.content,
     );
     expect(updated.visible.name).toBe("B");
     expect(updated.visible.description).toBe("x");

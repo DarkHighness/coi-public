@@ -23,6 +23,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Auto-generated build info
-src/utils/constants/buildInfo.ts

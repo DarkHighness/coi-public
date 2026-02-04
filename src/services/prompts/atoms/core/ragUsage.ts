@@ -24,7 +24,7 @@ export const ragUsage: Atom<RAGUsageInput> = ({ ragEnabled }) => {
   <instruction>
     **HOW TO USE**:
     - **Query**: Use specific, natural language queries.
-    - **Scope**: Narrow by \`path\` (e.g., \`current/world/npcs\`, \`current/world/quests\`).
+    - **Scope**: Narrow by \`path\` (e.g., \`current/world/characters\`, \`current/world/quests\`, \`current/world/locations\`).
     - **Semantic**: Set \`semantic: true\` when available; fall back to plain text search automatically.
     - **Verify**: After finding candidate files, use \`vfs_read\`/\`vfs_read_many\` for exact details.
     - **Do NOT** use retrieval for immediate context (recent turns are already in your input).

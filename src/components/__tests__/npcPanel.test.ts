@@ -3,16 +3,15 @@ import { buildNpcList } from "../sidebar/NPCPanel";
 
 const createNpc = (overrides: Record<string, unknown> = {}) =>
   ({
-    id: "npc-1",
-    known: true,
+    id: "char:npc_1",
+    kind: "npc",
+    knownBy: ["char:player"],
     currentLocation: "loc:1",
     visible: {
       name: "NPC One",
-      npcType: "Stranger",
-      affinity: 0,
-      affinityKnown: false,
       description: "A mysterious stranger.",
     },
+    relations: [],
     hidden: {},
     ...overrides,
   }) as any;
@@ -20,23 +19,23 @@ const createNpc = (overrides: Record<string, unknown> = {}) =>
 describe("NPCPanel helpers", () => {
   it("filters unknown NPCs when unlockMode is false", () => {
     const npcs = [
-      createNpc({ id: "npc-1", known: false }),
-      createNpc({ id: "npc-2", known: true }),
+      createNpc({ id: "char:npc_1", knownBy: [] }),
+      createNpc({ id: "char:npc_2", knownBy: ["char:player"] }),
     ];
 
-    const result = buildNpcList(npcs, false);
+    const result = buildNpcList(npcs, "char:player", false);
 
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("npc-2");
+    expect(result[0].id).toBe("char:npc_2");
   });
 
   it("includes unknown NPCs when unlockMode is true", () => {
     const npcs = [
-      createNpc({ id: "npc-1", known: false }),
-      createNpc({ id: "npc-2", known: true }),
+      createNpc({ id: "char:npc_1", knownBy: [] }),
+      createNpc({ id: "char:npc_2", knownBy: ["char:player"] }),
     ];
 
-    const result = buildNpcList(npcs, true);
+    const result = buildNpcList(npcs, "char:player", true);
 
     expect(result).toHaveLength(2);
   });

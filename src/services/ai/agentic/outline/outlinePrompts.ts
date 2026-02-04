@@ -15,7 +15,6 @@ import {
   getOutlinePhase7Prompt,
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
-  getOutlinePhase10Prompt,
 } from "../../../prompts/index";
 
 /**
@@ -55,9 +54,7 @@ export function getPhasePrompt(
     case 8:
       return getOutlinePhase8Prompt();
     case 9:
-      return getOutlinePhase9Prompt();
-    case 10:
-      return getOutlinePhase10Prompt(hasImageContext);
+      return getOutlinePhase9Prompt(hasImageContext);
     default:
       return null;
   }

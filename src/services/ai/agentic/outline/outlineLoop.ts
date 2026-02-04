@@ -107,7 +107,7 @@ export async function runOutlineLoopRefactored(
   const hasImage = !!seedImageBase64;
 
   // Main phase loop
-  while (loopState.currentPhase <= 10) {
+  while (loopState.currentPhase <= 9) {
     const budgetCheck = checkBudgetExhaustion(loopState.budgetState);
     if (budgetCheck.exhausted) {
       throw new Error(budgetCheck.message);

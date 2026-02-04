@@ -16,7 +16,6 @@ import {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
-  outlinePhase10Schema,
 } from "../../../schemas";
 
 /**
@@ -38,7 +37,8 @@ export const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
   },
   {
     name: "submit_phase2_character",
-    description: "Submit Phase 2: Protagonist character details",
+    description:
+      "Submit Phase 2: Player actor bundle (profile + skills/conditions/traits + inventory)",
     parameters: outlinePhase2Schema,
   },
   {
@@ -53,33 +53,29 @@ export const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
   },
   {
     name: "submit_phase5_npcs",
-    description: "Submit Phase 5: NPCs",
+    description:
+      "Submit Phase 5: NPC actor bundles (with inventories) + placeholders + relationships",
     parameters: outlinePhase5Schema,
   },
   {
-    name: "submit_phase6_inventory",
-    description: "Submit Phase 6: Initial inventory items",
+    name: "submit_phase6_quests",
+    description: "Submit Phase 6: Available quests",
     parameters: outlinePhase6Schema,
   },
   {
-    name: "submit_phase7_quests",
-    description: "Submit Phase 7: Available quests",
+    name: "submit_phase7_knowledge",
+    description: "Submit Phase 7: Initial knowledge",
     parameters: outlinePhase7Schema,
   },
   {
-    name: "submit_phase8_knowledge",
-    description: "Submit Phase 8: Initial knowledge",
+    name: "submit_phase8_timeline",
+    description: "Submit Phase 8: Timeline events and initial atmosphere",
     parameters: outlinePhase8Schema,
   },
   {
-    name: "submit_phase9_timeline",
-    description: "Submit Phase 9: Timeline events and initial atmosphere",
+    name: "submit_phase9_opening_narrative",
+    description: "Submit Phase 9: Opening narrative that starts the story",
     parameters: outlinePhase9Schema,
-  },
-  {
-    name: "submit_phase10_opening_narrative",
-    description: "Submit Phase 10: Opening narrative that starts the story",
-    parameters: outlinePhase10Schema,
   },
 ];
 
@@ -87,7 +83,7 @@ export const OUTLINE_PHASE_TOOLS: ZodToolDefinition[] = [
  * Get tool definition for a specific phase
  */
 export function getOutlinePhaseTool(phase: number): ZodToolDefinition {
-  if (phase < 0 || phase > 10) {
+  if (phase < 0 || phase > 9) {
     throw new Error(`Invalid outline phase: ${phase}`);
   }
   return OUTLINE_PHASE_TOOLS[phase];
@@ -99,13 +95,12 @@ export function getOutlinePhaseTool(phase: number): ZodToolDefinition {
 export const OUTLINE_PHASE_NAMES: Record<number, string> = {
   0: "Image Interpretation",
   1: "World Foundation",
-  2: "Character",
+  2: "Player Actor",
   3: "Locations",
   4: "Factions",
-  5: "NPCs",
-  6: "Inventory",
-  7: "Quests",
-  8: "Knowledge",
-  9: "Timeline",
-  10: "Opening Narrative",
+  5: "NPCs & Relationships",
+  6: "Quests",
+  7: "Knowledge",
+  8: "Timeline",
+  9: "Opening Narrative",
 };

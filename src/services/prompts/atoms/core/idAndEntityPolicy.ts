@@ -14,8 +14,8 @@ const idUsage = `
     - IDs are **backend identifiers**, NOT player-facing information.
 
     **WHERE IDs BELONG (ONLY THESE PLACES)**:
-    ✅ VFS file paths: \`vfs_write({ files: [{ path: "current/world/inventory/inv_sword_of_kings.json", ... }] })\`
-    ✅ VFS file edits: \`vfs_edit({ edits: [{ path: "current/world/npcs/npc_marcus.json", patch: [...] }] })\`
+    ✅ VFS file paths: \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
+    ✅ VFS file edits: \`vfs_edit({ edits: [{ path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
 
     **WHERE IDs MUST NEVER APPEAR**:
@@ -46,9 +46,9 @@ const idGeneration = `
 
     **BEST PRACTICES**:
     1. **Be Descriptive**: \`"sword_of_kings"\` is better than \`"item_42"\`
-    2. **Use Prefixes**: Start with entity type (\`inv_\`, \`npc_\`, \`loc_\`, \`quest_\`, etc.)
+    2. **Use Prefixes**: Start with entity type (Actors: \`char:\`, items: \`inv_\`, locations: \`loc_\`, quests: \`quest_\`, etc.)
     3. **Use snake_case**: \`"ancient_temple"\` not \`"AncientTemple"\`
-    4. **Be Consistent**: If you use \`"npc_marcus"\`, continue with \`"npc_sara"\`, not \`"sara"\`
+    4. **Be Consistent**: If you use \`"char:marcus"\`, continue with \`"char:sara"\`, not \`"sara"\`
 
     **ID IMMUTABILITY**:
     - \`action: "update"\` uses \`id\` for IDENTIFICATION ONLY
@@ -59,7 +59,7 @@ const idGeneration = `
     ✅ CORRECT:
     \`\`\`json
     { "id": "inv_healing_potion", "name": "Minor Healing Potion", "visible": { "description": "A small vial of red liquid." } }
-    { "id": "npc_marcus", "visible": { "name": "Marcus", "description": "A grizzled veteran with a scar across his left eye." } }
+    { "id": "char:marcus", "kind": "npc", "currentLocation": "loc_tavern", "visible": { "name": "Marcus", "description": "A grizzled veteran with a scar across his left eye." } }
     \`\`\`
 
     ❌ INCORRECT:
@@ -103,12 +103,12 @@ const minimalEntity = `
     - **NPCs**:
       * **MUST HAVE**: A proper Name (not just "Guard") AND (Speaking Role OR Combat Role).
       * **NARRATIVE ONLY**: Crowds, background villagers, unnamed guards, servants causing no consequence.
-      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write({ files: [{ path: "current/world/npcs/npc_captain_vance.json", ... }] })\`
+      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write({ files: [{ path: "current/world/characters/char:captain_vance/profile.json", ... }] })\`
 
     - **Items**:
       * **MUST BE**: Added to Player/NPC Inventory OR Key Quest Object.
       * **NARRATIVE ONLY**: Flavor objects, furniture, food eaten immediately, debris.
-      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write({ files: [{ path: "current/world/inventory/inv_iron_key.json", ... }] })\`
+      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_iron_key.json", ... }] })\`
 
     - **Locations**:
       * **MUST BE**: Named, distinct, and revisit-able (e.g., "The Blue Dragon Inn").
@@ -139,7 +139,7 @@ const minimalEntity = `
       * **MUST BE**: Complex logic tracking consequences >3 turns away or involving off-screen NPCs.
       * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
 
-    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_delete({ paths: ["current/world/inventory/inv_apple.json"] })\`). Do not keep quantity 0.
+    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_delete({ paths: ["current/world/characters/char:player/inventory/inv_apple.json"] })\`). Do not keep quantity 0.
 
     <realism_vs_bloat_prevention>
       ⚠️ **CRITICAL: REALISM DOES NOT EQUAL ENTITY BLOAT**
@@ -149,11 +149,11 @@ const minimalEntity = `
 
       - **Mud/Blood on Clothes**:
         * ❌ Create a new condition entry for \`cond_muddy\` -> Bloat.
-        * ✅ Narrative only OR \`vfs_edit({ edits: [{ path: "current/world/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
+        * ✅ Narrative only OR \`vfs_edit({ edits: [{ path: "current/world/characters/char:player/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
 
       - **NPC Fatigue/Hunger**:
         * ❌ Create a new condition entry for \`cond_tired_guard\` -> Bloat.
-        * ✅ \`vfs_edit({ edits: [{ path: "current/world/npcs/npc_guard.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
+        * ✅ \`vfs_edit({ edits: [{ path: "current/world/characters/char:guard/profile.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
 
       - **Transient Atmosphere**:
         * ❌ Create a new item file for \`item_fog\` -> Absurd.

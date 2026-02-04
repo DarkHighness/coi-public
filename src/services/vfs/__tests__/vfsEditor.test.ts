@@ -37,13 +37,13 @@ describe("vfs editor helper", () => {
   it("replaces inventory files from list", () => {
     const session = new VfsSession();
     session.writeFile(
-      "world/inventory/old.json",
+      "world/characters/char:player/inventory/old.json",
       json({ id: "old" }),
       "application/json",
     );
     applySectionEdit(session, "inventory", [{ id: "inv_1", name: "Item" }]);
-    expect(session.readFile("world/inventory/old.json")).toBeNull();
-    expect(session.readFile("world/inventory/inv_1.json")).toBeTruthy();
+    expect(session.readFile("world/characters/char:player/inventory/old.json")).toBeNull();
+    expect(session.readFile("world/characters/char:player/inventory/inv_1.json")).toBeTruthy();
   });
 
   it("blocks outline edits unless allowed", () => {

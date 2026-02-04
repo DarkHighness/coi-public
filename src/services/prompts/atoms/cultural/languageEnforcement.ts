@@ -41,9 +41,9 @@ const getExamples = (language: string) => {
       locationWrong1: `"name": "黑龙潭 (Black Dragon Pool)"`,
       locationWrong2: `"name": "Black Dragon Pool / 黑龙潭"`,
       locationCorrect: `"name": "黑龙潭"`,
-      npcTypeWrong1: `"npcType": "引导者 / Mentor"`,
-      npcTypeWrong2: `"npcType": "Guide / 向导"`,
-      npcTypeCorrect: `"npcType": "引导者"`,
+      roleTagWrong1: `"roleTag": "引导者 / Mentor"`,
+      roleTagWrong2: `"roleTag": "Guide / 向导"`,
+      roleTagCorrect: `"roleTag": "引导者"`,
       statusWrong: `"status": "虚弱 (Weakened)"`,
       statusCorrect: `"status": "虚弱"`,
       raceWrong: `"race": "黑龙族 男性 (Black Dragon Male)"`,
@@ -56,8 +56,8 @@ const getExamples = (language: string) => {
       inlineWrong: `"他是战士 - He is a warrior"`,
       inlineCorrect: `"他是战士"`,
       // Lite version examples
-      liteForbidden: `"法海 (Fahai)", "黑龙潭 (Black Dragon Pool)", "npcType: 引导者/Guide"`,
-      liteCorrect: `"法海", "黑龙潭", "npcType: 引导者"`,
+      liteForbidden: `"法海 (Fahai)", "黑龙潭 (Black Dragon Pool)", "roleTag: 引导者/Guide"`,
+      liteCorrect: `"法海", "黑龙潭", "roleTag: 引导者"`,
     };
   }
 
@@ -72,9 +72,9 @@ const getExamples = (language: string) => {
     locationWrong1: `"name": "Black Pool (黒い池)"`,
     locationWrong2: `"name": "黑龙潭 / Black Dragon Pool"`,
     locationCorrect: `"name": "Black Dragon Pool"`,
-    npcTypeWrong1: `"npcType": "Mentor / 导师"`,
-    npcTypeWrong2: `"npcType": "导师 / Mentor"`,
-    npcTypeCorrect: `"npcType": "Mentor"`,
+    roleTagWrong1: `"roleTag": "Mentor / 导师"`,
+    roleTagWrong2: `"roleTag": "导师 / Mentor"`,
+    roleTagCorrect: `"roleTag": "Mentor"`,
     statusWrong: `"status": "Weakened (虚弱)"`,
     statusCorrect: `"status": "Weakened"`,
     raceWrong: `"race": "Dragon Male (龙族男性)"`,
@@ -87,8 +87,8 @@ const getExamples = (language: string) => {
     inlineWrong: `"He is a warrior - 他是战士"`,
     inlineCorrect: `"He is a warrior"`,
     // Lite version examples
-    liteForbidden: `"John (约翰)", "Black Pool (黒池)", "npcType: Mentor/导师"`,
-    liteCorrect: `"John", "Black Pool", "npcType: Mentor"`,
+    liteForbidden: `"John (约翰)", "Black Pool (黒池)", "roleTag: Mentor/导师"`,
+    liteCorrect: `"John", "Black Pool", "roleTag: Mentor"`,
   };
 };
 
@@ -113,14 +113,16 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
     - "name" fields: PURE ${language} only
     - "title" fields: PURE ${language} only
     - "description" fields: PURE ${language} only
-    - "npcType" fields: PURE ${language} only
+    - "roleTag" fields: PURE ${language} only
     - "status" fields: PURE ${language} only
     - "appearance" fields: PURE ${language} only
+    - "voice" fields: PURE ${language} only
+    - "mannerism" fields: PURE ${language} only
+    - "mood" fields: PURE ${language} only
     - "choices" text: PURE ${language} only
     - "lore" fields: PURE ${language} only
     - "background" fields: PURE ${language} only
     - "profession" fields: PURE ${language} only
-    - "dialogueStyle" fields: PURE ${language} only
     - "narrative" fields: PURE ${language} only
     - "objectives" fields: PURE ${language} only
     - ALL other narrative content: PURE ${language} only
@@ -144,10 +146,10 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
     ❌ WRONG: ${ex.locationWrong2}
     ✅ CORRECT: ${ex.locationCorrect}
 
-    **NPC Types:**
-    ❌ WRONG: ${ex.npcTypeWrong1}
-    ❌ WRONG: ${ex.npcTypeWrong2}
-    ✅ CORRECT: ${ex.npcTypeCorrect}
+    **Role Tags:**
+    ❌ WRONG: ${ex.roleTagWrong1}
+    ❌ WRONG: ${ex.roleTagWrong2}
+    ✅ CORRECT: ${ex.roleTagCorrect}
 
     **Status Fields:**
     ❌ WRONG: ${ex.statusWrong}

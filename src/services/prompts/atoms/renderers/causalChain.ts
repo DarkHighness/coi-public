@@ -16,6 +16,8 @@
 
 import type { Atom, CausalChain } from "../types";
 
+const PLAYER_ID = "char:player";
+
 export type RenderCausalChainInput = {
   chain: CausalChain;
 };
@@ -35,9 +37,10 @@ export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({
     lines.push(`rootCause: ${chain.rootCause.description}`);
   }
 
-  // Only show known consequences
+  // Only show consequences the protagonist knows exist
   const knownConsequences =
-    chain.pendingConsequences?.filter((c) => c.known) || [];
+    chain.pendingConsequences?.filter((c) => c.knownBy?.includes(PLAYER_ID)) ||
+    [];
   if (knownConsequences.length > 0) {
     const conseqStrs = knownConsequences.map(
       (c) => `[${c.id}] ${c.description}${c.triggered ? " (triggered)" : ""}`,
@@ -67,7 +70,9 @@ export const renderCausalChainHidden: Atom<RenderCausalChainInput> = ({
   if (chain.pendingConsequences?.length) {
     const conseqStrs = chain.pendingConsequences.map(
       (c) =>
-        `[${c.id}] ${c.description} | trigger: ${c.triggerCondition || "none"} | severity: ${c.severity || "normal"} | known: ${c.known} | triggered: ${c.triggered}`,
+        `[${c.id}] ${c.description} | trigger: ${c.triggerCondition || "none"} | severity: ${c.severity || "normal"} | knownBy: ${JSON.stringify(
+          c.knownBy || [],
+        )} | triggered: ${c.triggered}`,
     );
     lines.push(`allConsequences:\n  ${conseqStrs.join("\n  ")}`);
   }

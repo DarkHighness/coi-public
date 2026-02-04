@@ -11,7 +11,7 @@ export const stateManagement: Atom<void> = () => `
       * When a character gains/loses an item → update inventory in the SAME turn.
       * When an NPC moves or changes status → update their currentLocation/status in the SAME turn.
       * When time passes → update time in the SAME turn.
-      * When npcs change (affinity, impression) → update npcs in the SAME turn.
+      * When relationships change (signals, revealed truths) → update relations in the SAME turn.
       * When world events happen → update worldEvents/factions in the SAME turn.
       * **NEVER** rely on future turns to "catch up" on state changes. State must reflect reality at ALL times.
     - **CASCADE EFFECTS**: When one state changes, consider what else MUST change:
@@ -22,7 +22,7 @@ export const stateManagement: Atom<void> = () => `
     - **UPDATE PRIORITY** (when multiple changes occur):
       1. Life-threatening changes (death, severe injury)
       2. Location changes (who is where)
-      3. NPC changes (affinity, status)
+      3. Relationship changes (signals, revelations)
       4. Inventory changes
       5. Knowledge updates
       6. Time and atmosphere
@@ -31,15 +31,30 @@ export const stateManagement: Atom<void> = () => `
       * Is the change logically possible? (Dead NPCs can't move)
       * **Trait Continuity**: Does this action contradict a physical trait? (A mute NPC cannot "shout")
       * Does this contradict recent events? (Can't find an item you just lost)
-    - **Inventory**: Add/Remove/Update. Use \`sensory\` (texture, weight, smell) and \`condition\` for physical depth. Always include \`hidden.truth\` for items with secrets.
-    - **NPCs**: Track affinity, impression, location, and status.
-      * **ALWAYS include**: visible.npcType, hidden.npcType, hidden.status, visible.status, visible.affinity, visible.age, hidden.realAge, description, personality, currentLocation.
-      * **Immersive Fields**: Use \`visible.voice\`, \`visible.mannerism\`, \`visible.mood\` to bring NPCs to life.
-      * **Inner Life**: Use \`hidden.currentThought\` to track their internal monologue.
-      * **visible.status**: What the protagonist BELIEVES the NPC is doing (their perception).
-      * **hidden.status**: What the NPC is ACTUALLY doing (the truth).
-      * **currentLocation**: The location ID where this NPC is currently located. ALWAYS UPDATE THIS when NPC moves.
-      * **Distinction**: visible.personality (reputation) vs hidden.realPersonality (true nature).
+    - **Actors (Player + NPCs)**:
+      * Actors are stored under \`current/world/characters/<charId>/profile.json\` with optional subfolders:
+        - \`inventory/\`, \`skills/\`, \`conditions/\`, \`traits/\`
+      * **currentLocation MUST be a location.id** and updated immediately when an actor moves.
+      * **Player psychology ban**: NEVER write player hidden monologue or inner motives. Do not invent player thoughts.
+
+    - **Inventory (Actor-owned, NOT global)**:
+      * An item belongs to an actor by its path:
+        - Player inventory: \`current/world/characters/char:player/inventory/<itemId>.json\`
+        - NPC inventory: \`current/world/characters/<npcId>/inventory/<itemId>.json\`
+      * Dropped/placed items belong to a location:
+        - \`current/world/locations/<locId>/items/<itemId>.json\`
+      * Transfer an item by moving the file (\`vfs_move\`), not by duplicating.
+      * Use \`visible.sensory\` (texture/weight/smell) and \`condition\` for physical depth. Put secrets in \`hidden.truth\` and gate revelation via \`unlocked\`.
+
+    - **Relations (Dual Layer, STRICT)**:
+      * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
+      * **Player → NPC** MUST be \`kind="perception"\`: objective, evidence-based, NO affinity numbers.
+      * **NPC → Player / NPC → NPC** MUST be \`kind="attitude"\`:
+        - \`visible\`: ONLY observable surface signals and public stance (no numeric affinity).
+        - \`hidden.affinity\` (0-100): TRUE attitude score, DEFAULT HIDDEN.
+      * Two independent switches:
+        - \`knownBy\`: who knows this relation/entity exists
+        - \`unlocked\`: whether the player has definitive proof and may see hidden truth in UI
     - **Time**: Always update time if it passes.
     - **World Events**: Record significant off-screen events.
     - **Factions**: Update agendas/reputations.
@@ -57,7 +72,7 @@ export const stateManagement: Atom<void> = () => `
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ files: [{ path: "current/world/inventory/inv_key.json", content: "{...}", contentType: "application/json" }] })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}", contentType: "application/json" }] })\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
       * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_edit({ edits: [{ path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
 
@@ -69,7 +84,7 @@ export const stateManagement: Atom<void> = () => `
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * Inspect before you change: \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`.
-      * Always reference explicit file paths under \`current/\` (e.g., \`current/world/npcs/npc:1.json\`).
+      * Always reference explicit file paths under \`current/\` (e.g., \`current/world/characters/char:someone/profile.json\`).
       * After each turn, write BOTH:
         - \`current/conversation/turns/fork-<id>/turn-<n>.json\` (full snapshot)
         - \`current/conversation/index.json\` (active turn + ordering)

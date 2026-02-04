@@ -91,10 +91,16 @@ const extractContextFromGameState = (
   });
 
   // Resolve location details (case-insensitive) - now with full details
-  const currentLoc = stateSnapshot.locations?.find(
-    (l: GameLocation) =>
-      l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
-  );
+  const currentLoc =
+    stateSnapshot.locations?.find(
+      (l: GameLocation) =>
+        String(l.id).toLowerCase() ===
+        String(stateSnapshot.currentLocation).toLowerCase(),
+    ) ||
+    stateSnapshot.locations?.find(
+      (l: GameLocation) =>
+        l.name?.toLowerCase() === stateSnapshot.currentLocation?.toLowerCase(),
+    );
 
   // Resolve atmosphere details
   const atmosphere = gameState.atmosphere || {

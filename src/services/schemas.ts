@@ -22,6 +22,11 @@ export {
   ambienceSchema,
   forceUpdateSchema,
   turnAssistantSchema,
+  // Actor/relationship schemas
+  actorProfileSchema,
+  placeholderSchema,
+  relationEdgeSchema,
+  actorBundleSchema,
   // Schema builders
   buildTurnAssistantSchema,
   buildForceUpdateSchema,
@@ -36,7 +41,6 @@ export {
   outlinePhase7Schema,
   outlinePhase8Schema,
   outlinePhase9Schema,
-  outlinePhase10Schema,
 } from "./zodSchemas";
 
 // ============================================================================
@@ -46,6 +50,10 @@ export {
 export type {
   InventoryItem,
   NPC,
+  ActorProfile,
+  Placeholder,
+  RelationEdge,
+  ActorBundle,
   Location,
   Quest,
   Skill,
@@ -76,7 +84,6 @@ export type {
   OutlinePhase7,
   OutlinePhase8,
   OutlinePhase9,
-  OutlinePhase10,
 } from "./zodSchemas";
 
 // PartialStoryOutline is now defined in types.ts for GameState integration

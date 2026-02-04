@@ -48,7 +48,7 @@ function buildCleanupPrompt(state: GameState): string {
 </workflow>
 
 <recommended_categories>
-inventory, npcs, locations, quests, knowledge, factions, timeline, causal_chains,
+inventory, location_items, npcs, placeholders, locations, quests, knowledge, factions, timeline, causal_chains,
 character_profile, character_skills, character_conditions, character_traits
 </recommended_categories>
 
@@ -62,9 +62,9 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls_entries({ categories: ["inventory"] })
       2. vfs_suggest_duplicates({ category: "inventory" })
-      3. vfs_read({ path: "current/world/inventory/<id>.json" }) to compare details
+      3. vfs_read({ path: "current/world/characters/char:player/inventory/<id>.json" }) to compare details
       4. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      5. vfs_delete({ paths: ["current/world/inventory/<duplicate>.json"] }) to delete the redundant file
+      5. vfs_delete({ paths: ["current/world/characters/char:player/inventory/<duplicate>.json"] }) to delete the redundant file
     </action>
   </example>
 
@@ -113,7 +113,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls_entries({ categories: ["character_skills"] })
       2. vfs_suggest_duplicates({ category: "character_skills" })
-      3. vfs_read_many(["current/world/character/skills/<id>.json", ...]) to verify
+      3. vfs_read_many(["current/world/characters/char:player/skills/<id>.json", ...]) to verify
       4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
@@ -143,7 +143,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. PREFER keeping "gandalf" (The Truth).
       2. vfs_read both NPC files, then vfs_merge(...) or vfs_edit(...) to merge visible info into the kept file and set unlocked=true if needed.
-      3. vfs_delete({ paths: ["current/world/npcs/old_man.json"] }) to remove the fragment.
+      3. vfs_delete({ paths: ["current/world/characters/char:old_man/profile.json"] }) to remove the fragment.
     </action>
   </example>
 </deduplication_examples>

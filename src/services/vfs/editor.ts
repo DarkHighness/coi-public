@@ -45,12 +45,57 @@ const clearDir = (session: VfsSession, prefix: string): void => {
   }
 };
 
+const PLAYER_ID = "char:player";
+
+const writeActorBundle = (session: VfsSession, bundle: any): void => {
+  const profile = bundle?.profile;
+  if (!profile || typeof profile !== "object") return;
+  const actorId = (profile as any).id;
+  if (typeof actorId !== "string" || actorId.trim().length === 0) return;
+
+  const id = actorId.trim();
+  writeJson(session, `world/characters/${id}/profile.json`, profile);
+
+  const writeSub = (subPath: string, items: any[] | undefined) => {
+    if (!Array.isArray(items)) return;
+    clearDir(session, `world/characters/${id}/${subPath}`);
+    for (const item of items) {
+      if (!item || typeof item !== "object") continue;
+      const itemId = (item as any).id;
+      if (typeof itemId !== "string" || itemId.trim().length === 0) continue;
+      writeJson(
+        session,
+        `world/characters/${id}/${subPath}/${itemId.trim()}.json`,
+        item,
+      );
+    }
+  };
+
+  writeSub("skills", bundle?.skills);
+  writeSub("conditions", bundle?.conditions);
+  writeSub("traits", bundle?.traits);
+  writeSub("inventory", bundle?.inventory);
+};
+
+const deleteActorBundle = (session: VfsSession, actorId: string): void => {
+  const id = actorId.trim();
+  if (!id) return;
+  const profilePath = `world/characters/${id}/profile.json`;
+  if (session.readFile(profilePath)) {
+    session.deleteFile(profilePath);
+  }
+  clearDir(session, `world/characters/${id}/skills`);
+  clearDir(session, `world/characters/${id}/conditions`);
+  clearDir(session, `world/characters/${id}/traits`);
+  clearDir(session, `world/characters/${id}/inventory`);
+};
+
 const listSections: Record<
-  Exclude<SectionName, "global" | "character" | "outline">,
+  Exclude<SectionName, "global" | "character" | "outline" | "npcs">,
   { prefix: string; idField: "id" | "chainId" }
 > = {
-  inventory: { prefix: "world/inventory", idField: "id" },
-  npcs: { prefix: "world/npcs", idField: "id" },
+  inventory: { prefix: `world/characters/${PLAYER_ID}/inventory`, idField: "id" },
+  // Note: "npcs" is handled explicitly below (actor bundles under world/characters/*).
   locations: { prefix: "world/locations", idField: "id" },
   quests: { prefix: "world/quests", idField: "id" },
   knowledge: { prefix: "world/knowledge", idField: "id" },
@@ -79,60 +124,96 @@ export const applySectionEdit = (
   }
 
   if (section === "character") {
-    if (session.readFile("world/character.json")) {
-      throw new Error(
-        "SAVE_INCOMPATIBLE_CHARACTER_LAYOUT: Found world/character.json. Expected world/character/profile.json + world/character/{skills,conditions,traits}/<id>.json files.",
-      );
-    }
-
     if (!data || typeof data !== "object" || Array.isArray(data)) {
       throw new Error("Character edits must be an object.");
     }
 
+    const maybeBundle = data as any;
+    if (maybeBundle.profile && typeof maybeBundle.profile === "object") {
+      writeActorBundle(session, maybeBundle);
+      return;
+    }
+
+    // Back-compat for editor panels: treat as CharacterStatus-like object and
+    // map to the player actor bundle layout.
     const {
       skills,
       conditions,
       hiddenTraits,
-      ...profile
-    } = data as Record<string, unknown> as any;
+      currentLocation,
+      name,
+      title,
+      status,
+      attributes,
+      appearance,
+      age,
+      profession,
+      background,
+      race,
+    } = data as any;
 
-    writeJson(session, "world/character/profile.json", profile);
+    const profile = {
+      id: PLAYER_ID,
+      kind: "player",
+      currentLocation: typeof currentLocation === "string" ? currentLocation : "Unknown",
+      knownBy: [PLAYER_ID],
+      visible: {
+        name: typeof name === "string" ? name : "Player",
+        title: typeof title === "string" ? title : undefined,
+        status: typeof status === "string" ? status : undefined,
+        attributes: Array.isArray(attributes) ? attributes : [],
+        appearance: typeof appearance === "string" ? appearance : undefined,
+        age: typeof age === "string" ? age : undefined,
+        profession: typeof profession === "string" ? profession : undefined,
+        background: typeof background === "string" ? background : undefined,
+        race: typeof race === "string" ? race : undefined,
+      },
+      relations: [],
+    };
 
-    clearDir(session, "world/character/skills");
-    clearDir(session, "world/character/conditions");
-    clearDir(session, "world/character/traits");
+    writeActorBundle(session, {
+      profile,
+      skills: Array.isArray(skills) ? skills : [],
+      conditions: Array.isArray(conditions) ? conditions : [],
+      traits: Array.isArray(hiddenTraits) ? hiddenTraits : [],
+      inventory: undefined,
+    });
+    return;
+  }
 
-    if (Array.isArray(skills)) {
-      for (const skill of skills) {
-        if (!skill || typeof skill !== "object") continue;
-        const id = (skill as any).id;
-        if (typeof id !== "string" || id.trim().length === 0) {
-          throw new Error(`Missing id for character skill entry.`);
-        }
-        writeJson(session, `world/character/skills/${id}.json`, skill);
+  if (section === "npcs") {
+    if (!Array.isArray(data)) {
+      throw new Error(`Section "${section}" expects an array.`);
+    }
+
+    // Remove existing NPC actors (preserve the player).
+    const actorIds = session.list("world/characters");
+    for (const actorId of actorIds) {
+      if (actorId === PLAYER_ID) continue;
+      const profile = readJson(session, `world/characters/${actorId}/profile.json`) as any;
+      if (profile && typeof profile === "object" && profile.kind === "npc") {
+        deleteActorBundle(session, actorId);
       }
     }
 
-    if (Array.isArray(conditions)) {
-      for (const condition of conditions) {
-        if (!condition || typeof condition !== "object") continue;
-        const id = (condition as any).id;
-        if (typeof id !== "string" || id.trim().length === 0) {
-          throw new Error(`Missing id for character condition entry.`);
-        }
-        writeJson(session, `world/character/conditions/${id}.json`, condition);
+    // Write new NPCs. Accept either actor bundles or plain actor profiles.
+    for (const entry of data as any[]) {
+      if (!entry || typeof entry !== "object") continue;
+      if (entry.profile && typeof entry.profile === "object") {
+        writeActorBundle(session, entry);
+        continue;
       }
-    }
-
-    if (Array.isArray(hiddenTraits)) {
-      for (const trait of hiddenTraits) {
-        if (!trait || typeof trait !== "object") continue;
-        const id = (trait as any).id;
-        if (typeof id !== "string" || id.trim().length === 0) {
-          throw new Error(`Missing id for character trait entry.`);
-        }
-        writeJson(session, `world/character/traits/${id}.json`, trait);
+      const id = (entry as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) {
+        throw new Error("Missing id for npc entry.");
       }
+      writeActorBundle(session, {
+        profile: { ...entry, id: id.trim(), kind: "npc" },
+        skills: [],
+        conditions: [],
+        traits: [],
+        inventory: [],
+      });
     }
     return;
   }

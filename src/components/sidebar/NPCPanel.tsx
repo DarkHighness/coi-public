@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import { NPC, ListState, Location } from "../../types";
+import { ActorBundle, NPC, ListState, Location, RelationEdge } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
@@ -10,6 +10,8 @@ import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 
 interface NpcPanelProps {
   npcs: NPC[];
+  actors?: ActorBundle[];
+  playerActorId?: string;
   locations?: Location[];
   themeFont: string;
   listState: ListState;
@@ -17,10 +19,19 @@ interface NpcPanelProps {
   unlockMode?: boolean;
 }
 
-export const buildNpcList = (npcs: NPC[], unlockMode?: boolean) => {
+export const buildNpcList = (
+  npcs: NPC[],
+  playerActorId: string,
+  unlockMode?: boolean,
+) => {
   const safeNpcs = Array.isArray(npcs) ? npcs : [];
   return safeNpcs
-    .filter((npc) => unlockMode || npc.known !== false)
+    .filter(
+      (npc) =>
+        unlockMode ||
+        !Array.isArray((npc as any).knownBy) ||
+        (npc as any).knownBy.includes(playerActorId),
+    )
     .map((npc, idx) => ({
       ...npc,
       id: npc.id || npc.visible?.name || `unknown-${idx}`,
@@ -29,6 +40,8 @@ export const buildNpcList = (npcs: NPC[], unlockMode?: boolean) => {
 
 interface NpcItemProps {
   npc: Omit<NPC, "id"> & { id: string | number };
+  playerActorId: string;
+  playerRelations: RelationEdge[];
   locations?: Location[];
   enableDrag: boolean;
   expandedItems: Set<string | number>;
@@ -42,12 +55,14 @@ interface NpcItemProps {
   onDrop: (e: React.DragEvent, id: string | number) => void;
   onTogglePin?: (id: string | number) => void;
   isPinned?: (id: string | number) => boolean;
-  getAffinityColor: (val: number) => string;
   t: TFunction;
+  unlockMode?: boolean;
 }
 
 const NpcItem: React.FC<NpcItemProps> = ({
   npc: rel,
+  playerActorId,
+  playerRelations,
   locations,
   enableDrag,
   expandedItems,
@@ -61,12 +76,11 @@ const NpcItem: React.FC<NpcItemProps> = ({
   onDrop,
   onTogglePin,
   isPinned,
-  getAffinityColor,
   t,
+  unlockMode,
 }) => {
   const engine = useOptionalGameEngineContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const isUnknown = rel.visible?.affinityKnown === false;
   const pinned = isPinned?.(rel.id) ?? false;
   const isDragging = draggedId === rel.id;
   const isExpanded = expandedItems.has(rel.id);
@@ -89,6 +103,27 @@ const NpcItem: React.FC<NpcItemProps> = ({
     const loc = locations?.find((l) => l.id === locId || l.name === locId);
     return loc ? loc.name : locId;
   };
+
+  const attitude = (Array.isArray((rel as any).relations)
+    ? ((rel as any).relations as any[])
+    : []
+  ).find(
+    (r) =>
+      r?.kind === "attitude" &&
+      r?.to?.kind === "character" &&
+      r?.to?.id === playerActorId,
+  ) as any | undefined;
+
+  const perception = (Array.isArray(playerRelations) ? playerRelations : []).find(
+    (r: any) =>
+      r?.kind === "perception" &&
+      r?.to?.kind === "character" &&
+      r?.to?.id === rel.id,
+  ) as any | undefined;
+
+  const showTrueAttitude = Boolean(unlockMode || attitude?.unlocked === true);
+  const trueAffinity =
+    typeof attitude?.hidden?.affinity === "number" ? attitude.hidden.affinity : null;
 
   return (
     <div
@@ -144,9 +179,17 @@ const NpcItem: React.FC<NpcItemProps> = ({
             </span>
             <span
               className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-border/40 max-w-[120px] truncate cursor-help"
-              title={rel.visible?.npcType || "Unknown"}
+              title={
+                rel.visible?.roleTag ||
+                rel.visible?.profession ||
+                rel.visible?.title ||
+                "Unknown"
+              }
             >
-              {rel.visible?.npcType || "Unknown"}
+              {rel.visible?.roleTag ||
+                rel.visible?.profession ||
+                rel.visible?.title ||
+                "Unknown"}
             </span>
           </div>
         </div>
@@ -195,16 +238,6 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <div className="text-theme-muted/80 text-xs">
                       {rel.visible.age}
                     </div>
-                  </div>
-                )}
-                {rel.visible?.dialogueStyle && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.npc.dialogueStyle")}
-                    </span>
-                    <span className="text-theme-muted/80 text-xs">
-                      {rel.visible.dialogueStyle}
-                    </span>
                   </div>
                 )}
                 {rel.visible.voice && (
@@ -258,8 +291,108 @@ const NpcItem: React.FC<NpcItemProps> = ({
                   </p>
                 </div>
 
+                {/* NPC -> Player attitude signals (surface, always visible) */}
+                {(attitude?.visible?.signals?.length ||
+                  attitude?.visible?.reputationTag ||
+                  attitude?.visible?.claimedIntent) && (
+                  <div className="mt-3">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("gameViewer.attitudeSignals", {
+                        defaultValue: "Attitude (Signals)",
+                      })}
+                    </span>
+                    <div className="text-theme-muted/80 text-xs space-y-1">
+                      {attitude?.visible?.reputationTag && (
+                        <div>
+                          <span className="uppercase tracking-wider text-[9px] opacity-70">
+                            {t("gameViewer.reputationTag", { defaultValue: "Tag" })}:
+                          </span>{" "}
+                          {attitude.visible.reputationTag}
+                        </div>
+                      )}
+                      {attitude?.visible?.claimedIntent && (
+                        <div>
+                          <span className="uppercase tracking-wider text-[9px] opacity-70">
+                            {t("gameViewer.claimedIntent", {
+                              defaultValue: "Claims",
+                            })}:
+                          </span>{" "}
+                          <MarkdownText content={attitude.visible.claimedIntent} inline />
+                        </div>
+                      )}
+                      {Array.isArray(attitude?.visible?.signals) &&
+                        attitude.visible.signals.length > 0 && (
+                          <ul className="list-disc list-inside space-y-0.5">
+                            {attitude.visible.signals.map((s: string, i: number) => (
+                              <li key={i}>
+                                <MarkdownText content={s} inline />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Player -> NPC perception (objective) */}
+                {perception?.visible?.description && (
+                  <div className="mt-3">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                      {t("gameViewer.myPerception", {
+                        defaultValue: "My Perception",
+                      })}
+                    </span>
+                    <div className="text-theme-muted/80 text-xs">
+                      <MarkdownText content={perception.visible.description} indentSize={2} />
+                      {Array.isArray(perception.visible.evidence) &&
+                        perception.visible.evidence.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/70 block mb-0.5">
+                              {t("gameViewer.evidence", {
+                                defaultValue: "Evidence",
+                              })}:
+                            </span>
+                            <ul className="list-disc list-inside space-y-0.5">
+                              {perception.visible.evidence.map((e: string, i: number) => (
+                                <li key={i}>
+                                  <MarkdownText content={e} inline />
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {/* True affinity (hidden by default; shown only if unlockMode or relation.unlocked) */}
+                <div className="mt-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    {t("affinity") || "Affinity"}
+                  </span>
+                  {showTrueAttitude && trueAffinity !== null ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-mono font-bold text-theme-text">
+                        {Math.round(trueAffinity)}/100
+                      </span>
+                      {attitude?.hidden?.impression && (
+                        <span className="text-theme-muted/80">
+                          <MarkdownText content={attitude.hidden.impression} inline />
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-theme-muted/70 text-xs italic">
+                      {t("gameViewer.affinityHidden", {
+                        defaultValue:
+                          "True attitude is hidden unless confirmed.",
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 {/* Unlocked Hidden Truth - Outer Layer */}
-                {rel.unlocked && (
+                {(unlockMode || rel.unlocked) && (
                   <div className="pt-2 mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                       <svg
@@ -338,7 +471,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     )}
 
                     <div className="space-y-2">
-                      {rel.hidden.currentThought && (
+                      {rel.hidden?.currentThought && (
                         <div className="mb-2 border-l-2 border-theme-primary/30 pl-2">
                           <div className="text-[10px] uppercase tracking-wider text-theme-primary/50 mb-0.5 flex items-center gap-1">
                             <span>💭</span> {t("sidebar.npc.currentThought")}
@@ -348,7 +481,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                           </div>
                         </div>
                       )}
-                      {rel.hidden.trueName && (
+                      {rel.hidden?.trueName && (
                         <div className="flex items-center gap-2 text-xs text-theme-unlocked">
                           <span className="uppercase tracking-wider text-[10px] opacity-70">
                             {t("sidebar.npc.trueName")}:
@@ -356,52 +489,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                           <span>{rel.hidden.trueName}</span>
                         </div>
                       )}
-                      {rel.hidden.realAge && (
-                        <div className="flex items-center gap-2 text-xs text-theme-unlocked">
-                          <span className="uppercase tracking-wider text-[10px] opacity-70">
-                            {t("realAge") || "Real Age"}:
-                          </span>
-                          <span>{rel.hidden.realAge}</span>
-                        </div>
-                      )}
                     </div>
-
-                    {rel.hidden?.trueAffinity !== undefined && (
-                      <div className="mt-2 text-[10px] flex items-center gap-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80">
-                          {t("hidden.affinity")}:
-                        </span>
-                        <span
-                          className={`font-mono font-bold ${
-                            (rel.hidden.trueAffinity || 0) >
-                            (rel.visible?.affinity || 0)
-                              ? "text-theme-success"
-                              : (rel.hidden.trueAffinity || 0) <
-                                  (rel.visible?.affinity || 0)
-                                ? "text-theme-error"
-                                : "text-theme-text"
-                          }`}
-                        >
-                          {rel.hidden.trueAffinity}%
-                        </span>
-                      </div>
-                    )}
-
-                    {rel.hidden?.impression && (
-                      <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.npcImpression") ||
-                            "NPC's Impression of You"}
-                          :
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.impression}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     {rel.hidden?.status && (
                       <div className="mb-2">
@@ -416,113 +504,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
                         </div>
                       </div>
                     )}
-
-                    {rel.hidden?.ambivalence && (
-                      <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-amber-500/80 block mb-0.5">
-                          💔 {t("gameViewer.ambivalence") || "Ambivalence"}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.ambivalence}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.transactionalBenefit && (
-                      <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-amber-500/80 block mb-0.5">
-                          🤝{" "}
-                          {t("gameViewer.transactionalBenefit") ||
-                            "Transactional Benefit"}
-                          :
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.transactionalBenefit}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.loveExpression && (
-                      <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-pink-500/80 block mb-0.5">
-                          💕{" "}
-                          {t("gameViewer.loveExpression") ||
-                            "How They Show Care"}
-                          :
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.loveExpression}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.unspokenSacrifice && (
-                      <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-purple-500/80 block mb-0.5">
-                          🎭{" "}
-                          {t("gameViewer.unspokenSacrifice") ||
-                            "Unspoken Sacrifice"}
-                          :
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.unspokenSacrifice}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.inventory &&
-                      rel.hidden.inventory.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                            {t("hidden.inventory") || "Possessions"}:
-                          </span>
-                          <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                            {rel.hidden.inventory.map((item, i) => (
-                              <li key={i}>
-                                <MarkdownText
-                                  content={item}
-                                  indentSize={2}
-                                  inline
-                                />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                   </div>
                 )}
-              </div>
-
-              {/* Affinity Bar */}
-              <div className="flex items-center gap-2 text-[10px] pt-2 border-t border-theme-border/30">
-                <span className="text-theme-muted font-bold">
-                  {t("affinity") || "Affinity"}
-                </span>
-                <div className="flex-1 h-1.5 bg-theme-bg rounded-full overflow-hidden border border-theme-border/50 relative">
-                  {isUnknown ? (
-                    <div className="w-full h-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-20"></div>
-                  ) : (
-                    <div
-                      className={`h-full ${getAffinityColor(rel.visible?.affinity || 0)} transition-all duration-500`}
-                      style={{ width: `${rel.visible?.affinity || 0}%` }}
-                    ></div>
-                  )}
-                </div>
-                <span className="text-theme-text w-8 text-right font-mono">
-                  {isUnknown ? t("unknown") : `${rel.visible?.affinity || 0}%`}
-                </span>
               </div>
             </div>
           </div>
@@ -558,6 +541,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
 export const NPCPanel: React.FC<NpcPanelProps> = ({
   npcs = [],
+  actors,
+  playerActorId,
   locations = [],
   themeFont,
   listState,
@@ -565,6 +550,14 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
   unlockMode = false,
 }) => {
   const { t } = useTranslation();
+  const resolvedPlayerActorId = playerActorId || "char:player";
+  const playerRelations = useMemo(() => {
+    const bundle = (actors || []).find(
+      (b) => b?.profile?.id === resolvedPlayerActorId,
+    );
+    const rels = (bundle?.profile as any)?.relations;
+    return Array.isArray(rels) ? (rels as RelationEdge[]) : [];
+  }, [actors, resolvedPlayerActorId]);
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(
@@ -583,8 +576,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
 
   // Map NPCs to include ID for useListManagement
   const npcsWithId = useMemo(() => {
-    return buildNpcList(npcs, unlockMode);
-  }, [npcs, unlockMode]);
+    return buildNpcList(npcs, resolvedPlayerActorId, unlockMode);
+  }, [npcs, resolvedPlayerActorId, unlockMode]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
@@ -598,14 +591,6 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
     isPinned,
     isHidden,
   } = useListManagement(npcsWithId, listState, onUpdateList);
-
-  const getAffinityColor = (val: number) => {
-    if (val >= 80) return "bg-green-500"; // Love/Loyal
-    if (val >= 60) return "bg-blue-400"; // Friendly
-    if (val >= 40) return "bg-yellow-500"; // Neutral
-    if (val >= 20) return "bg-orange-500"; // Dislike
-    return "bg-red-600"; // Hated/Enemy
-  };
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     setDraggedId(id);
@@ -773,6 +758,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
                 <NpcItem
                   key={rel.id}
                   npc={rel}
+                  playerActorId={resolvedPlayerActorId}
+                  playerRelations={playerRelations}
                   locations={locations}
                   enableDrag={true}
                   expandedItems={expandedItems}
@@ -784,8 +771,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
                   onDrop={handleDrop}
-                  getAffinityColor={getAffinityColor}
                   t={t}
+                  unlockMode={unlockMode}
                 />
               ))
             )}
@@ -816,6 +803,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
           <NpcItem
             key={item.id}
             npc={item}
+            playerActorId={resolvedPlayerActorId}
+            playerRelations={playerRelations}
             locations={locations}
             enableDrag={dragOptions?.isEditMode || false}
             expandedItems={expandedItems}
@@ -827,8 +816,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
             onDragOver={dragOptions?.onDragOver || (() => {})}
             onDragEnd={dragOptions?.onDragEnd || (() => {})}
             onDrop={dragOptions?.onDrop || (() => {})}
-            getAffinityColor={getAffinityColor}
             t={t}
+            unlockMode={unlockMode}
           />
         )}
       />

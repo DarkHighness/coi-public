@@ -1,10 +1,12 @@
 /**
- * NpcTab - Known characters and NPCs display
- * Shows npcs with affinity, impressions, and hidden info
+ * NpcsTab - Known characters and NPCs display
+ * Actor-first + Dual Layer:
+ * - NPC → Player true affinity is stored only in relation.attitude.hidden.affinity (default hidden)
+ * - Player → NPC perception is objective (relation.perception)
  */
 
 import React from "react";
-import { GameState } from "../../types";
+import { GameState, RelationEdge } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { Section, InfoRow, EmptyState, HiddenContent } from "./helpers";
@@ -16,12 +18,34 @@ interface NpcsTabProps {
   t: (key: string, options?: any) => string;
 }
 
+const getAffinityBadgeClass = (val: number): string => {
+  if (val >= 80) return "bg-green-500/20 text-green-400";
+  if (val >= 60) return "bg-blue-500/20 text-blue-400";
+  if (val >= 40) return "bg-yellow-500/20 text-yellow-400";
+  if (val >= 20) return "bg-orange-500/20 text-orange-400";
+  return "bg-red-500/20 text-red-400";
+};
+
 export const NPCsTab: React.FC<NpcsTabProps> = ({
   gameState,
   expandedSections,
   toggleSection,
   t,
 }) => {
+  const playerId = gameState.playerActorId || "char:player";
+  const playerProfile = gameState.actors.find((b) => b?.profile?.id === playerId)
+    ?.profile as any;
+  const playerRelations = (Array.isArray(playerProfile?.relations)
+    ? playerProfile.relations
+    : []) as RelationEdge[];
+
+  const visibleNpcs = (gameState.npcs || []).filter(
+    (npc: any) =>
+      gameState.unlockMode ||
+      !Array.isArray(npc.knownBy) ||
+      npc.knownBy.includes(playerId),
+  );
+
   return (
     <div className="space-y-4">
       <Section
@@ -31,306 +55,232 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
         isExpanded={expandedSections.has("npcs")}
         onToggle={toggleSection}
       >
-        {gameState.npcs.filter((r) => gameState.unlockMode || r.known !== false)
-          .length === 0 ? (
+        {visibleNpcs.length === 0 ? (
           <EmptyState message={t("gameViewer.noNpcs")} />
         ) : (
           <div className="space-y-3">
-            {gameState.npcs
-              .filter((r) => gameState.unlockMode || r.known !== false)
-              .map((rel, idx) => (
+            {visibleNpcs.map((npc: any) => {
+              const attitude = (Array.isArray(npc.relations) ? npc.relations : []).find(
+                (r: any) =>
+                  r?.kind === "attitude" &&
+                  r?.to?.kind === "character" &&
+                  r?.to?.id === playerId,
+              );
+              const showTrueAttitude = Boolean(
+                gameState.unlockMode || attitude?.unlocked === true,
+              );
+              const affinity =
+                showTrueAttitude && typeof attitude?.hidden?.affinity === "number"
+                  ? attitude.hidden.affinity
+                  : null;
+
+              const perception = playerRelations.find(
+                (r: any) =>
+                  r?.kind === "perception" &&
+                  r?.to?.kind === "character" &&
+                  r?.to?.id === npc.id,
+              ) as any;
+
+              return (
                 <div
-                  key={rel.id || idx}
+                  key={npc.id}
                   className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-theme-primary text-base flex items-center gap-2">
-                      <span>{getValidIcon(rel.icon, "👤")}</span>
-                      {rel.visible.name}
+                      <span>{getValidIcon(npc.icon, "👤")}</span>
+                      {npc.visible?.name || t("unknown")}
                     </span>
                     <span
                       className={`text-xs px-2 py-0.5 rounded font-bold ${
-                        rel.visible.affinity > 50
-                          ? "bg-green-500/20 text-green-400"
-                          : rel.visible.affinity < -50
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-theme-surface text-theme-muted"
+                        affinity === null
+                          ? "bg-theme-surface text-theme-muted"
+                          : getAffinityBadgeClass(affinity)
                       }`}
+                      title={
+                        affinity === null
+                          ? t(
+                              "gameViewer.affinityHidden",
+                              "True attitude is hidden unless confirmed.",
+                            )
+                          : undefined
+                      }
                     >
-                      {rel.visible.affinityKnown
-                        ? `${rel.visible.affinity > 0 ? "+" : ""}${rel.visible.affinity}`
-                        : "?"}
+                      {affinity === null ? "?" : `${Math.round(affinity)}/100`}
                     </span>
                   </div>
-                  <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
-                    <MarkdownText content={rel.visible.description} />
-                  </div>
-                  {/* Visible Fields - Player's Perception */}
+
+                  {npc.visible?.description && (
+                    <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
+                      <MarkdownText content={npc.visible.description} />
+                    </div>
+                  )}
+
                   <div className="mt-3 space-y-2 text-sm">
-                    {rel.visible.appearance && (
+                    {npc.currentLocation && (
+                      <InfoRow
+                        label={t("gameViewer.currentLocation") || "Location"}
+                        value={npc.currentLocation}
+                      />
+                    )}
+
+                    {npc.visible?.appearance && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
                           {t("gameViewer.appearance") || "Appearance"}:
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={rel.visible.appearance} />
+                          <MarkdownText content={npc.visible.appearance} />
                         </div>
                       </div>
                     )}
-                    {rel.visible.personality && (
+
+                    {npc.visible?.roleTag && (
+                      <InfoRow
+                        label={t("gameViewer.roleTag", { defaultValue: "Role" })}
+                        value={npc.visible.roleTag}
+                      />
+                    )}
+
+                    {(attitude?.visible?.reputationTag ||
+                      attitude?.visible?.claimedIntent ||
+                      (Array.isArray(attitude?.visible?.signals) &&
+                        attitude.visible.signals.length > 0)) && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.personality") || "Personality"}:
+                          {t("gameViewer.attitudeSignals", {
+                            defaultValue: "Attitude (Signals)",
+                          })}
+                          :
                         </span>
-                        <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={rel.visible.personality} />
+                        <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30 space-y-1">
+                          {attitude?.visible?.reputationTag && (
+                            <div>
+                              <span className="opacity-70">
+                                {t("gameViewer.reputationTag", {
+                                  defaultValue: "Tag",
+                                })}
+                                :
+                              </span>{" "}
+                              {attitude.visible.reputationTag}
+                            </div>
+                          )}
+                          {attitude?.visible?.claimedIntent && (
+                            <div>
+                              <span className="opacity-70">
+                                {t("gameViewer.claimedIntent", {
+                                  defaultValue: "Claims",
+                                })}
+                                :
+                              </span>{" "}
+                              <MarkdownText content={attitude.visible.claimedIntent} inline />
+                            </div>
+                          )}
+                          {Array.isArray(attitude?.visible?.signals) &&
+                            attitude.visible.signals.length > 0 && (
+                              <ul className="list-disc list-inside">
+                                {attitude.visible.signals.map((s: string, i: number) => (
+                                  <li key={i}>
+                                    <MarkdownText content={s} inline />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                         </div>
                       </div>
                     )}
-                    {rel.visible.impression && (
+
+                    {perception?.visible?.description && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.myImpression") || "My Impression"}:
-                        </span>
-                        <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={rel.visible.impression} />
-                        </div>
-                      </div>
-                    )}
-                    {rel.visible.status && (
-                      <div>
-                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.perceivedStatus") ||
-                            "Currently (Perceived)"}
+                          {t("gameViewer.myPerception", {
+                            defaultValue: "My Perception",
+                          })}
                           :
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={rel.visible.status} />
+                          <MarkdownText content={perception.visible.description} />
                         </div>
                       </div>
-                    )}
-                    {rel.visible.dialogueStyle && (
-                      <div>
-                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.dialogueStyle") || "Speech Style"}:
-                        </span>
-                        <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={rel.visible.dialogueStyle} />
-                        </div>
-                      </div>
-                    )}
-                    {rel.visible.voice && (
-                      <InfoRow
-                        label={t("gameViewer.voice") || "Voice"}
-                        value={rel.visible.voice}
-                      />
-                    )}
-                    {rel.visible.mannerism && (
-                      <InfoRow
-                        label={t("gameViewer.mannerism") || "Mannerism"}
-                        value={rel.visible.mannerism}
-                      />
-                    )}
-                    {rel.visible.mood && (
-                      <InfoRow
-                        label={t("gameViewer.mood") || "Mood"}
-                        value={rel.visible.mood}
-                      />
-                    )}
-                    {rel.visible.age && (
-                      <InfoRow
-                        label={t("gameViewer.age") || "Apparent Age"}
-                        value={rel.visible.age}
-                      />
                     )}
                   </div>
-                  {(rel.unlocked || gameState.unlockMode) && rel.hidden && (
+
+                  {(gameState.unlockMode || npc.unlocked) && npc.hidden && (
                     <HiddenContent
                       t={t}
                       content={
                         <div className="space-y-2">
-                          {rel.hidden.currentThought && (
-                            <div className="mb-2 italic text-theme-primary/70">
-                              "{rel.hidden.currentThought}"
-                            </div>
-                          )}
-                          {rel.hidden.trueName && (
+                          {npc.hidden.trueName && (
                             <InfoRow
-                              label={t("gameViewer.trueName") || "True Name"}
-                              value={rel.hidden.trueName}
+                              label={t("sidebar.npc.trueName")}
+                              value={npc.hidden.trueName}
                             />
                           )}
-                          {rel.hidden.realPersonality && (
+                          {npc.hidden.realPersonality && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.realPersonality")}:
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("hidden.personality")}:
                               </span>
-                              <MarkdownText
-                                content={rel.hidden.realPersonality}
-                              />
+                              <MarkdownText content={npc.hidden.realPersonality} />
                             </div>
                           )}
-                          {rel.hidden.realMotives && (
+                          {npc.hidden.realMotives && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.realMotives")}:
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("hidden.motives")}:
                               </span>
-                              <MarkdownText content={rel.hidden.realMotives} />
+                              <MarkdownText content={npc.hidden.realMotives} />
                             </div>
                           )}
-                          {rel.hidden.secrets &&
-                            rel.hidden.secrets.length > 0 && (
-                              <div>
-                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                  {t("gameViewer.secrets")}:
-                                </span>
-                                <ul className="list-disc list-inside pl-2">
-                                  {rel.hidden.secrets.map((secret, i) => (
-                                    <li key={i}>
-                                      <MarkdownText content={secret} inline />
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          {rel.hidden.trueAffinity !== undefined && (
+                          {npc.hidden.routine && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueAffinity") ||
-                                  "True Affinity"}
-                                :
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("hidden.routine", { defaultValue: "Routine" })}:
                               </span>
-                              <p className="pl-2">
-                                {rel.hidden.trueAffinity > 0 ? "+" : ""}
-                                {rel.hidden.trueAffinity}
-                              </p>
+                              <MarkdownText content={npc.hidden.routine} />
                             </div>
                           )}
-                          {rel.hidden.realAge && (
-                            <InfoRow
-                              label={t("gameViewer.realAge") || "Real Age"}
-                              value={rel.hidden.realAge}
-                            />
-                          )}
-                          {rel.hidden.npcType && (
+                          {npc.hidden.currentThought && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueNpcType") || "True Role"}:
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("sidebar.npc.currentThought")}:
                               </span>
-                              <MarkdownText content={rel.hidden.npcType} />
+                              <MarkdownText content={npc.hidden.currentThought} />
                             </div>
                           )}
-                          {rel.hidden.inventory &&
-                            rel.hidden.inventory.length > 0 && (
-                              <div>
-                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                  {t("gameViewer.hiddenInventory") ||
-                                    "Possessions"}
-                                  :
-                                </span>
-                                <ul className="list-disc list-inside pl-2">
-                                  {rel.hidden.inventory.map((item, i) => (
-                                    <li key={i}>
-                                      <MarkdownText content={item} inline />
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          {rel.hidden.status && (
+                          {Array.isArray(npc.hidden.secrets) && npc.hidden.secrets.length > 0 && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.trueStatus") || "True Status"}:
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("hidden.secrets")}:
                               </span>
-                              <MarkdownText content={rel.hidden.status} />
+                              <ul className="list-disc list-inside">
+                                {npc.hidden.secrets.map((s: string, i: number) => (
+                                  <li key={i}>
+                                    <MarkdownText content={s} inline />
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           )}
-                          {rel.hidden.impression && (
+                          {npc.hidden.status && (
                             <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.npcImpression") ||
-                                  "Their Impression of Me"}
-                                :
+                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                {t("hidden.actualStatus", { defaultValue: "Actually Doing" })}:
                               </span>
-                              <MarkdownText content={rel.hidden.impression} />
-                            </div>
-                          )}
-                          {rel.hidden.routine && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.routine") || "Daily Routine"}:
-                              </span>
-                              <MarkdownText content={rel.hidden.routine} />
-                            </div>
-                          )}
-                          {rel.hidden.ambivalence && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
-                                💔{" "}
-                                {t("gameViewer.ambivalence") || "Ambivalence"}:
-                              </span>
-                              <MarkdownText content={rel.hidden.ambivalence} />
-                            </div>
-                          )}
-                          {rel.hidden.transactionalBenefit && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
-                                🤝{" "}
-                                {t("gameViewer.transactionalBenefit") ||
-                                  "Transactional Benefit"}
-                                :
-                              </span>
-                              <MarkdownText
-                                content={rel.hidden.transactionalBenefit}
-                              />
-                            </div>
-                          )}
-                          {rel.hidden.loveExpression && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-pink-500/80 block mb-1">
-                                💕{" "}
-                                {t("gameViewer.loveExpression") ||
-                                  "How They Show Care"}
-                                :
-                              </span>
-                              <MarkdownText
-                                content={rel.hidden.loveExpression}
-                              />
-                            </div>
-                          )}
-                          {rel.hidden.unspokenSacrifice && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-purple-500/80 block mb-1">
-                                🎭{" "}
-                                {t("gameViewer.unspokenSacrifice") ||
-                                  "Unspoken Sacrifice"}
-                                :
-                              </span>
-                              <MarkdownText
-                                content={rel.hidden.unspokenSacrifice}
-                              />
+                              <MarkdownText content={npc.hidden.status} />
                             </div>
                           )}
                         </div>
                       }
                     />
                   )}
-                  <div className="flex flex-wrap gap-2 mt-3 text-xs pt-2 border-t border-theme-border/30">
-                    <span className="text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
-                      {rel.visible.npcType}
-                    </span>
-                    {rel.currentLocation &&
-                      rel.currentLocation !== "unknown" && (
-                        <span className="text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
-                          📍 {rel.currentLocation}
-                        </span>
-                      )}
-                  </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         )}
       </Section>
     </div>
   );
 };
+

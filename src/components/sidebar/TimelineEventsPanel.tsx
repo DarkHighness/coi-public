@@ -246,9 +246,13 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   // Show only the last 5 known events reversed (newest first)
+  const playerId = "char:player";
   const recentEvents = events
     ? [...events]
-        .filter((e) => e.known !== false)
+        .filter(
+          (e: any) =>
+            !Array.isArray(e.knownBy) || e.knownBy.includes(playerId),
+        )
         .reverse()
         .slice(0, 5)
     : [];

@@ -1,4 +1,5 @@
 import type {
+  ActorBundle,
   AtmosphereObject,
   CausalChain,
   CharacterStatus,
@@ -8,6 +9,7 @@ import type {
   KnowledgeEntry,
   Location,
   NPC,
+  Placeholder,
   Quest,
   TimelineEvent,
 } from "@/types";
@@ -42,6 +44,9 @@ const createBaseGameState = (): GameState => ({
   activeNodeId: null,
   rootNodeId: null,
   currentFork: [],
+  actors: [],
+  playerActorId: "char:player",
+  locationItemsByLocationId: {},
   inventory: [],
   npcs: [],
   quests: [],
@@ -218,10 +223,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     a.path.localeCompare(b.path),
   );
 
-  let characterProfile: Record<string, unknown> | null = null;
-  const characterSkills: unknown[] = [];
-  const characterConditions: unknown[] = [];
-  const characterTraits: unknown[] = [];
+  const actorProfiles = new Map<string, Record<string, unknown>>();
+  const actorSkills = new Map<string, unknown[]>();
+  const actorConditions = new Map<string, unknown[]>();
+  const actorTraits = new Map<string, unknown[]>();
+  const actorInventory = new Map<string, unknown[]>();
+  const placeholders: Placeholder[] = [];
+  const locationItemsByLocationId: Record<string, InventoryItem[]> = {};
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
@@ -297,29 +305,62 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
-    if (pathWithoutCurrent === "world/character.json") {
+    // No compatibility: reject legacy layouts immediately.
+    if (
+      pathWithoutCurrent === "world/character.json" ||
+      pathWithoutCurrent.startsWith("world/character/") ||
+      pathWithoutCurrent.startsWith("world/inventory/") ||
+      pathWithoutCurrent.startsWith("world/npcs/")
+    ) {
       throw new Error(
-        "SAVE_INCOMPATIBLE_CHARACTER_LAYOUT: Found world/character.json. Expected world/character/profile.json + world/character/{skills,conditions,traits}/<id>.json files.",
+        `SAVE_INCOMPATIBLE_LAYOUT: Found legacy path "${pathWithoutCurrent}". This build requires Actor-first VFS layout under world/characters/.`,
       );
     }
 
-    if (pathWithoutCurrent === "world/character/profile.json") {
-      characterProfile = data as Record<string, unknown>;
+    // Placeholders
+    if (pathWithoutCurrent.startsWith("world/placeholders/")) {
+      placeholders.push(data as Placeholder);
       continue;
     }
 
-    if (pathWithoutCurrent.startsWith("world/character/skills/")) {
-      characterSkills.push(data);
-      continue;
-    }
+    // Actor-first layout: world/characters/<id>/(profile.json|skills/*|conditions/*|traits/*|inventory/*)
+    if (pathWithoutCurrent.startsWith("world/characters/")) {
+      const parts = pathWithoutCurrent.split("/");
+      const actorId = parts[2];
+      if (!actorId) continue;
 
-    if (pathWithoutCurrent.startsWith("world/character/conditions/")) {
-      characterConditions.push(data);
-      continue;
-    }
+      // profile.json
+      if (parts.length === 4 && parts[3] === "profile.json") {
+        actorProfiles.set(actorId, data as Record<string, unknown>);
+        continue;
+      }
 
-    if (pathWithoutCurrent.startsWith("world/character/traits/")) {
-      characterTraits.push(data);
+      // subfolders
+      const sub = parts[3];
+      if (sub === "skills") {
+        const list = actorSkills.get(actorId) ?? [];
+        list.push(data);
+        actorSkills.set(actorId, list);
+        continue;
+      }
+      if (sub === "conditions") {
+        const list = actorConditions.get(actorId) ?? [];
+        list.push(data);
+        actorConditions.set(actorId, list);
+        continue;
+      }
+      if (sub === "traits") {
+        const list = actorTraits.get(actorId) ?? [];
+        list.push(data);
+        actorTraits.set(actorId, list);
+        continue;
+      }
+      if (sub === "inventory") {
+        const list = actorInventory.get(actorId) ?? [];
+        list.push(data);
+        actorInventory.set(actorId, list);
+        continue;
+      }
       continue;
     }
 
@@ -345,14 +386,16 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
-    if (pathWithoutCurrent.startsWith("world/inventory/")) {
-      state.inventory.push(data as InventoryItem);
-      continue;
-    }
-
-    if (pathWithoutCurrent.startsWith("world/npcs/")) {
-      state.npcs.push(data as NPC);
-      continue;
+    // Location dropped items: world/locations/<locId>/items/<itemId>.json
+    if (pathWithoutCurrent.startsWith("world/locations/")) {
+      const parts = pathWithoutCurrent.split("/");
+      if (parts.length >= 5 && parts[3] === "items") {
+        const locId = parts[2];
+        const list = locationItemsByLocationId[locId] ?? [];
+        list.push(data as InventoryItem);
+        locationItemsByLocationId[locId] = list;
+        continue;
+      }
     }
 
     if (pathWithoutCurrent.startsWith("world/quests/")) {
@@ -385,21 +428,56 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
   }
 
-  if (
-    characterProfile ||
-    characterSkills.length > 0 ||
-    characterConditions.length > 0 ||
-    characterTraits.length > 0
-  ) {
+  // Assemble actor bundles
+  const bundles: ActorBundle[] = [];
+  for (const [actorId, profile] of actorProfiles.entries()) {
+    bundles.push({
+      profile: profile as any,
+      skills: (actorSkills.get(actorId) ?? []) as any,
+      conditions: (actorConditions.get(actorId) ?? []) as any,
+      traits: (actorTraits.get(actorId) ?? []) as any,
+      inventory: (actorInventory.get(actorId) ?? []) as any,
+    } as any);
+  }
+  state.actors = bundles as any;
+  state.locationItemsByLocationId = locationItemsByLocationId;
+  state.placeholders = placeholders;
+
+  const playerBundle =
+    bundles.find((b) => (b?.profile as any)?.id === state.playerActorId) ?? null;
+  if (playerBundle) {
+    state.inventory = Array.isArray(playerBundle.inventory)
+      ? (playerBundle.inventory as InventoryItem[])
+      : [];
+
+    // Backfill CharacterStatus for legacy UI panels (CharacterPanel).
+    const visible = (playerBundle.profile as any)?.visible ?? {};
     const base = (state.character ?? DEFAULT_CHARACTER) as any;
     state.character = {
       ...base,
-      ...(characterProfile ?? {}),
-      skills: characterSkills,
-      conditions: characterConditions,
-      hiddenTraits: characterTraits,
-    } as CharacterStatus;
+      name: visible.name ?? base.name,
+      title: visible.title ?? base.title,
+      status: visible.status ?? base.status,
+      appearance: visible.appearance ?? base.appearance,
+      attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
+      skills: Array.isArray(playerBundle.skills) ? playerBundle.skills : [],
+      conditions: Array.isArray(playerBundle.conditions)
+        ? playerBundle.conditions
+        : [],
+      hiddenTraits: Array.isArray(playerBundle.traits) ? playerBundle.traits : [],
+      currentLocation:
+        (playerBundle.profile as any)?.currentLocation ?? state.currentLocation,
+      age: visible.age ?? "Unknown",
+      profession: visible.profession ?? "Unknown",
+      background: visible.background ?? "",
+      race: visible.race ?? "Unknown",
+    } as any;
   }
+
+  // Derive NPC list for sidebar panels from actor bundles.
+  state.npcs = bundles
+    .filter((b) => (b?.profile as any)?.kind === "npc")
+    .map((b) => b.profile) as any;
 
   const conversation = deriveConversationNodes(files);
   state.nodes = conversation.nodes;

@@ -594,48 +594,70 @@ export const useGameEngine = () => {
         },
       );
 
+      const now = Date.now();
+      const player = (outline as any).player;
+      const npcBundles: any[] = Array.isArray((outline as any).npcs)
+        ? ((outline as any).npcs as any[])
+        : [];
+      const placeholders: any[] = Array.isArray((outline as any).placeholders)
+        ? ((outline as any).placeholders as any[])
+        : [];
+      const visible = (player?.profile as any)?.visible ?? {};
+
       setGameState((prev) => ({
         ...prev,
         outline,
         themeConfig, // Store resolved theme config from outline generation
         // Clear conversation state after successful generation
         outlineConversation: undefined,
+        actors: [player, ...npcBundles].filter(Boolean),
+        playerActorId: (player?.profile as any)?.id ?? "char:player",
+        placeholders,
+        locationItemsByLocationId: {},
         character: {
-          ...outline.character,
-          conditions: (outline.character.conditions || []).map(
-            (c: any, i: number) => ({
-              ...c,
-            }),
-          ),
-          hiddenTraits: (outline.character.hiddenTraits || []).map(
-            (t: any, i: number) => ({
-              ...t,
-            }),
-          ),
+          ...prev.character,
+          name: visible.name ?? prev.character.name,
+          title: visible.title ?? prev.character.title,
+          status: visible.status ?? prev.character.status,
+          attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
+          appearance: visible.appearance ?? prev.character.appearance,
+          age: visible.age ?? prev.character.age ?? "Unknown",
+          profession: visible.profession ?? prev.character.profession ?? "Unknown",
+          background: visible.background ?? prev.character.background ?? "",
+          race: visible.race ?? prev.character.race ?? "Unknown",
+          currentLocation:
+            (player?.profile as any)?.currentLocation ?? prev.currentLocation,
+          skills: Array.isArray(player?.skills) ? player.skills : [],
+          conditions: Array.isArray(player?.conditions) ? player.conditions : [],
+          hiddenTraits: Array.isArray(player?.traits) ? player.traits : [],
         },
-        inventory: (outline.inventory || []).map(
-          (item: any, index: number) => ({
-            ...item,
-            createdAt: Date.now(),
-          }),
-        ),
-        npcs: (outline.npcs || []).map((rel: any, index: number) => ({
-          ...rel,
-          createdAt: Date.now(),
-        })),
+        inventory: Array.isArray(player?.inventory)
+          ? player.inventory.map((item: any) => ({
+              ...item,
+              createdAt: item.createdAt ?? now,
+              lastModified: item.lastModified ?? now,
+            }))
+          : [],
+        npcs: npcBundles.map((b) => b?.profile).filter(Boolean),
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           status: "active",
-          createdAt: Date.now(),
+          createdAt: q.createdAt ?? now,
+          lastModified: q.lastModified ?? now,
         })),
-        currentLocation: outline.locations?.[0]?.name || "Unknown",
+        currentLocation:
+          (player?.profile as any)?.currentLocation ||
+          outline.locations?.[0]?.id ||
+          "Unknown",
         locations: (outline.locations || []).map((loc: any, index: number) => ({
           ...loc,
           isVisited: index === 0,
-          createdAt: Date.now(),
+          createdAt: loc.createdAt ?? now,
         })),
-        knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
+        knowledge: (outline.knowledge || []).map((k: any) => ({
           ...k,
+          createdAt: k.createdAt ?? now,
+          lastModified: k.lastModified ?? now,
         })),
         factions: (outline.factions || []).map((f: any, index: number) => ({
           ...f,
@@ -686,7 +708,7 @@ export const useGameEngine = () => {
           seedVfsSessionFromOutline(vfsSession, outline, {
             theme: selectedTheme,
             time: outline.initialTime || "Day 1",
-            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            currentLocation: outline.locations?.[0]?.id || "Unknown",
             atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
             language,
             customContext,
@@ -712,10 +734,7 @@ export const useGameEngine = () => {
             assistant: {
               narrative: outline.openingNarrative?.narrative || "",
               choices: outline.openingNarrative?.choices || [],
-              narrativeTone: outline.openingNarrative?.narrativeTone,
               atmosphere: outline.openingNarrative?.atmosphere,
-              ending: outline.openingNarrative?.ending,
-              forceEnd: outline.openingNarrative?.forceEnd,
             },
           });
           await saveToSlot(slotId, nextState);
@@ -728,17 +747,17 @@ export const useGameEngine = () => {
       // Navigate to game immediately after outline is ready
       navigate("/game");
 
-      // Generate first turn from Phase 10 openingNarrative
+      // Generate first turn from Phase 9 openingNarrative
       setTimeout(async () => {
         try {
           // RAG initialization is now handled automatically by the SharedWorker
           // when documents are added. No manual initialization needed.
           // The RAG service should already be initialized via App.tsx
 
-          // Use Phase 10 openingNarrative directly instead of calling handleAction
+          // Use Phase 9 openingNarrative directly instead of calling handleAction
           const openingNarrative = outline.openingNarrative;
           if (!openingNarrative) {
-            throw new Error("Missing opening narrative from Phase 10");
+            throw new Error("Missing opening narrative from Phase 9");
           }
 
           // Create the first segment directly from openingNarrative
@@ -753,7 +772,7 @@ export const useGameEngine = () => {
           const stateSnapshot = createStateSnapshot(gameStateRef.current, {
             summaries: [],
             lastSummarizedIndex: 0,
-            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            currentLocation: gameStateRef.current.currentLocation || "Unknown",
             time: outline.initialTime || "Day 1",
             atmosphere: openingAtmosphere,
             veoScript: undefined,
@@ -768,7 +787,7 @@ export const useGameEngine = () => {
               text: c.text,
               consequence: c.consequence || undefined,
             })),
-            imagePrompt: openingNarrative.imagePrompt || "",
+            imagePrompt: "",
             // Use seed image if available, otherwise leave undefined for generation
             imageId: seedImageId || undefined,
             role: "model",
@@ -798,13 +817,8 @@ export const useGameEngine = () => {
           }));
 
           console.log(
-            "[StartNewGame] First segment created from Phase 10 openingNarrative",
+            "[StartNewGame] First segment created from Phase 9 openingNarrative",
           );
-
-          // Trigger image generation for the first node if enabled AND no seed image
-          if (openingNarrative.imagePrompt && !seedImageId) {
-            generateImageForNode(firstNodeId, firstNode);
-          }
 
           // === Auto-save after first segment is created ===
           setTimeout(async () => {
@@ -999,38 +1013,67 @@ export const useGameEngine = () => {
         outline,
         themeConfig: resolvedThemeConfig, // Store resolved theme config
         outlineConversation: undefined,
-        character: {
-          ...outline.character,
-          conditions: (outline.character.conditions || []).map(
-            (c: any, i: number) => ({ ...c }),
-          ),
-          hiddenTraits: (outline.character.hiddenTraits || []).map(
-            (t: any, i: number) => ({ ...t }),
-          ),
-        },
-        inventory: (outline.inventory || []).map(
-          (item: any, index: number) => ({
-            ...item,
-            createdAt: Date.now(),
-          }),
-        ),
-        npcs: (outline.npcs || []).map((rel: any, index: number) => ({
-          ...rel,
-          createdAt: Date.now(),
-        })),
+        actors: [
+          (outline as any).player,
+          ...(((outline as any).npcs as any[]) || []),
+        ].filter(Boolean),
+        playerActorId: ((outline as any).player?.profile as any)?.id ?? "char:player",
+        placeholders: Array.isArray((outline as any).placeholders)
+          ? ((outline as any).placeholders as any[])
+          : [],
+        locationItemsByLocationId: {},
+        character: (() => {
+          const player = (outline as any).player;
+          const v = (player?.profile as any)?.visible ?? {};
+          return {
+            ...gameStateRef.current.character,
+            name: v.name ?? gameStateRef.current.character.name,
+            title: v.title ?? gameStateRef.current.character.title,
+            status: v.status ?? gameStateRef.current.character.status,
+            attributes: Array.isArray(v.attributes) ? v.attributes : [],
+            appearance: v.appearance ?? gameStateRef.current.character.appearance,
+            age: v.age ?? gameStateRef.current.character.age ?? "Unknown",
+            profession:
+              v.profession ?? gameStateRef.current.character.profession ?? "Unknown",
+            background: v.background ?? gameStateRef.current.character.background ?? "",
+            race: v.race ?? gameStateRef.current.character.race ?? "Unknown",
+            currentLocation:
+              (player?.profile as any)?.currentLocation ??
+              gameStateRef.current.currentLocation,
+            skills: Array.isArray(player?.skills) ? player.skills : [],
+            conditions: Array.isArray(player?.conditions) ? player.conditions : [],
+            hiddenTraits: Array.isArray(player?.traits) ? player.traits : [],
+          };
+        })(),
+        inventory: Array.isArray((outline as any).player?.inventory)
+          ? ((outline as any).player.inventory as any[]).map((item: any) => ({
+              ...item,
+              createdAt: item.createdAt ?? Date.now(),
+              lastModified: item.lastModified ?? Date.now(),
+            }))
+          : [],
+        npcs: Array.isArray((outline as any).npcs)
+          ? ((outline as any).npcs as any[]).map((b) => b?.profile).filter(Boolean)
+          : [],
         quests: (outline.quests || []).map((q: any, index: number) => ({
           ...q,
           status: "active",
-          createdAt: Date.now(),
+          createdAt: q.createdAt ?? Date.now(),
+          lastModified: q.lastModified ?? Date.now(),
         })),
-        currentLocation: outline.locations?.[0]?.name || "Unknown",
+        currentLocation:
+          ((outline as any).player?.profile as any)?.currentLocation ||
+          outline.locations?.[0]?.id ||
+          "Unknown",
         locations: (outline.locations || []).map((loc: any, index: number) => ({
           ...loc,
           isVisited: index === 0,
-          createdAt: Date.now(),
+          createdAt: loc.createdAt ?? Date.now(),
         })),
-        knowledge: (outline.knowledge || []).map((k: any, index: number) => ({
+        knowledge: (outline.knowledge || []).map((k: any) => ({
           ...k,
+          createdAt: k.createdAt ?? Date.now(),
+          lastModified: k.lastModified ?? Date.now(),
         })),
         factions: (outline.factions || []).map((f: any, index: number) => ({
           ...f,
@@ -1074,7 +1117,7 @@ export const useGameEngine = () => {
         seedVfsSessionFromOutline(vfsSession, outline, {
           theme,
           time: outline.initialTime || "Day 1",
-          currentLocation: outline.locations?.[0]?.name || "Unknown",
+          currentLocation: outline.locations?.[0]?.id || "Unknown",
           atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
           language: savedConversation.language,
           customContext,
@@ -1099,10 +1142,7 @@ export const useGameEngine = () => {
           assistant: {
             narrative: outline.openingNarrative?.narrative || "",
             choices: outline.openingNarrative?.choices || [],
-            narrativeTone: outline.openingNarrative?.narrativeTone,
             atmosphere: outline.openingNarrative?.atmosphere,
-            ending: outline.openingNarrative?.ending,
-            forceEnd: outline.openingNarrative?.forceEnd,
           },
         });
         await saveToSlot(currentSlotId!, nextState);
@@ -1111,15 +1151,15 @@ export const useGameEngine = () => {
 
       navigate("/game");
 
-      // Generate first turn from Phase 10 openingNarrative
+      // Generate first turn from Phase 9 openingNarrative
       setTimeout(async () => {
         try {
           // RAG is now managed by the SharedWorker - no manual initialization needed
 
-          // Use Phase 10 openingNarrative directly instead of calling handleAction
+          // Use Phase 9 openingNarrative directly instead of calling handleAction
           const openingNarrative = outline.openingNarrative;
           if (!openingNarrative) {
-            throw new Error("Missing opening narrative from Phase 10");
+            throw new Error("Missing opening narrative from Phase 9");
           }
 
           // Create the first segment directly from openingNarrative
@@ -1134,7 +1174,7 @@ export const useGameEngine = () => {
           const stateSnapshot = createStateSnapshot(gameStateRef.current, {
             summaries: [],
             lastSummarizedIndex: 0,
-            currentLocation: outline.locations?.[0]?.name || "Unknown",
+            currentLocation: gameStateRef.current.currentLocation || "Unknown",
             time: outline.initialTime || "Day 1",
             atmosphere: openingAtmosphere,
             veoScript: undefined,
@@ -1180,7 +1220,7 @@ export const useGameEngine = () => {
           }));
 
           console.log(
-            "[ResumeOutline] First segment created from Phase 10 openingNarrative",
+            "[ResumeOutline] First segment created from Phase 9 openingNarrative",
           );
         } catch (error) {
           console.error("First segment creation error after resume", error);
@@ -1604,8 +1644,7 @@ export const useGameEngine = () => {
 
   const clearHighlight = useCallback(
     (target: HighlightTarget) => {
-      const applyEntityHighlightClear = (dir: string, id: string) => {
-        const filePath = `world/${dir}/${id}.json`;
+      const applyEntityHighlightClear = (filePath: string) => {
         try {
           if (!vfsSession.readFile(filePath)) {
             return;
@@ -1631,9 +1670,9 @@ export const useGameEngine = () => {
         }
 
         const sectionDir: Record<string, string> = {
-          skills: "world/character/skills",
-          conditions: "world/character/conditions",
-          hiddenTraits: "world/character/traits",
+          skills: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/skills`,
+          conditions: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/conditions`,
+          hiddenTraits: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/traits`,
         };
         const dir = sectionDir[section];
 
@@ -1690,18 +1729,21 @@ export const useGameEngine = () => {
         target.kind === "factions" ||
         target.kind === "timeline"
       ) {
-        const dirMap: Record<string, string> = {
-          inventory: "inventory",
-          npcs: "npcs",
-          locations: "locations",
-          knowledge: "knowledge",
-          quests: "quests",
-          factions: "factions",
-          timeline: "timeline",
+        const playerId = gameStateRef.current.playerActorId || "char:player";
+        const filePathByKind: Record<string, string> = {
+          inventory: `world/characters/${playerId}/inventory/${target.id}.json`,
+          npcs: `world/characters/${target.id}/profile.json`,
+          locations: `world/locations/${target.id}.json`,
+          knowledge: `world/knowledge/${target.id}.json`,
+          quests: `world/quests/${target.id}.json`,
+          factions: `world/factions/${target.id}.json`,
+          timeline: `world/timeline/${target.id}.json`,
         };
 
-        const dir = dirMap[target.kind];
-        applyEntityHighlightClear(dir, target.id);
+        const filePath = filePathByKind[target.kind];
+        if (filePath) {
+          applyEntityHighlightClear(filePath);
+        }
 
         setGameState((prev) => {
           const list = (prev as any)[target.kind] as Array<any> | undefined;

@@ -144,7 +144,6 @@ export function migrateFromLegacyTimestamp(
 
 import type {
   InventoryItem as ZodInventoryItem,
-  NPC as ZodNPC,
   Location as ZodLocation,
   Quest as ZodQuest,
   KnowledgeEntry as ZodKnowledgeEntry,
@@ -154,6 +153,10 @@ import type {
   CharacterAttribute as ZodCharacterAttribute,
   HiddenTrait as ZodHiddenTrait,
   CharacterStatus as ZodCharacterStatus,
+  ActorProfile as ZodActorProfile,
+  ActorBundle as ZodActorBundle,
+  Placeholder as ZodPlaceholder,
+  RelationEdge as ZodRelationEdge,
   StoryOutline as ZodStoryOutline,
   StorySummary as ZodStorySummary,
   GameResponse as ZodGameResponse,
@@ -194,7 +197,6 @@ type WithVersionedTimestamps<T> = T & {
 export type InventoryItem = WithRequiredId<
   WithVersionedTimestamps<ZodInventoryItem>
 >;
-export type NPC = WithRequiredId<WithVersionedTimestamps<ZodNPC>>;
 export type Location = WithRequiredId<ZodLocation> & {
   isVisited: boolean;
   createdAt: number;
@@ -207,6 +209,12 @@ export type KnowledgeEntry = WithRequiredId<
 export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
 export type Faction = WithRequiredId<ZodFaction>;
+export type ActorProfile = ZodActorProfile;
+export type RelationEdge = ZodRelationEdge;
+export type ActorBundle = ZodActorBundle;
+export type Placeholder = ZodPlaceholder;
+// Back-compat alias: UI and logs still use the name "NPC" for sidebar panels.
+export type NPC = ActorProfile;
 
 // 以下类型直接使用 Zod 类型（不需要额外的必需字段）
 export type CharacterAttribute = ZodCharacterAttribute;
@@ -230,7 +238,6 @@ export type {
 // 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
 export type {
   ZodInventoryItem,
-  ZodNPC,
   ZodLocation,
   ZodQuest,
   ZodKnowledgeEntry,
@@ -255,7 +262,7 @@ export type {
  * - visible.*: All visible layer content
  * - hidden.*: All hidden layer content (GM knowledge)
  * - unlocked: AI decides when hidden info is revealed (narrative judgment)
- * - known: Whether player knows this entity exists
+ * - knownBy: Existence visibility: which actors know this entity exists
  * - observation: NPC observations of player behavior
  * - highlight: Set true by AI when entity changes (cleared by UI after render)
 
@@ -316,6 +323,12 @@ export interface GameState {
   rootNodeId: string | null;
   currentFork: StorySegment[]; // The full segment list of the current fork
 
+  // Actor-first world state (VFS source-of-truth)
+  actors: ActorBundle[];
+  playerActorId: string;
+  placeholders?: Placeholder[];
+
+  // Derived convenience fields (player-centric)
   inventory: InventoryItem[];
   npcs: NPC[];
   quests: Quest[];
@@ -326,6 +339,7 @@ export interface GameState {
   // Location System
   currentLocation: string;
   locations: Location[];
+  locationItemsByLocationId: Record<string, InventoryItem[]>;
 
   // UI State (Persisted)
   uiState: UIState;
@@ -405,7 +419,7 @@ export interface OutlineConversationState {
   customContext?: string;
   conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
-  currentPhase: number; // 1-10, indicates which phase to resume from
+  currentPhase: number; // 1-9, indicates which phase to resume from
   /** Model ID used for this outline generation (for mismatch detection) */
   modelId?: string;
   /** Provider ID used for this outline generation (for mismatch detection) */
@@ -424,7 +438,6 @@ export interface PartialStoryOutline {
   phase7?: object;
   phase8?: object;
   phase9?: object;
-  phase10?: object; // Opening Narrative
 }
 
 // --- World System Interfaces ---
@@ -610,34 +623,6 @@ export interface SaveSlot {
 export type CharacterSkill = Skill;
 export type CharacterCondition = Condition;
 
-export interface NPCAction {
-  action: "add" | "update" | "remove";
-  id?: string;
-  known?: boolean; // Update known status
-  currentLocation?: string; // Update NPC's current location
-
-  visible?: {
-    name?: string; // Update visible name
-    description?: string;
-    appearance?: string;
-    npcType?: string;
-    impression?: string; // Protagonist's impression of this NPC
-    status?: string; // What protagonist BELIEVES NPC is doing
-    personality?: string;
-    dialogueStyle?: string;
-    affinity?: number;
-    affinityKnown?: boolean;
-    isDead?: boolean;
-  };
-  hidden?: {
-    realPersonality?: string;
-    realMotives?: string;
-    npcType?: string;
-    secrets?: string[];
-  };
-  highlight?: boolean;
-  unlocked?: boolean;
-}
 export interface ListState {
   pinnedIds: string[];
   customOrder: string[];
@@ -732,6 +717,12 @@ export interface TurnContext {
 }
 
 export interface GameStateSnapshot {
+  // Actor-first state (VFS source-of-truth)
+  actors: ActorBundle[];
+  playerActorId: string;
+  placeholders?: Placeholder[];
+  locationItemsByLocationId: Record<string, InventoryItem[]>;
+
   // Entity State (Dual-layer)
   inventory: InventoryItem[];
   npcs: NPC[];
@@ -809,8 +800,6 @@ export interface QuestAction {
   };
   unlocked?: boolean; // Set when true objectives should be revealed
 }
-
-// NPCAction definition was moved up to follow export type CharacterCondition = Condition;
 
 export interface LocationAction {
   type: "current" | "known";

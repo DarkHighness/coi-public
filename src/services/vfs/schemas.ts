@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  npcSchema,
   locationSchema,
   questSchema,
   inventoryItemSchema,
@@ -8,11 +7,12 @@ import {
   factionSchema,
   timelineEventSchema,
   causalChainSchema,
-  characterProfileSchema,
   skillSchema,
   conditionSchema,
   hiddenTraitSchema,
   atmosphereSchema,
+  actorProfileSchema,
+  placeholderSchema,
   storyOutlineSchema,
   storySummarySchema,
 } from "../zodSchemas";
@@ -47,18 +47,31 @@ const SummaryStateSchema = z.object({
 });
 
 const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
-  { pattern: /^world\/npcs\/[^/]+\.json$/, schema: npcSchema },
   { pattern: /^world\/locations\/[^/]+\.json$/, schema: locationSchema },
+  {
+    pattern: /^world\/locations\/[^/]+\/items\/[^/]+\.json$/,
+    schema: inventoryItemSchema,
+  },
   { pattern: /^world\/quests\/[^/]+\.json$/, schema: questSchema },
-  { pattern: /^world\/inventory\/[^/]+\.json$/, schema: inventoryItemSchema },
   { pattern: /^world\/knowledge\/[^/]+\.json$/, schema: knowledgeEntrySchema },
   { pattern: /^world\/factions\/[^/]+\.json$/, schema: factionSchema },
   { pattern: /^world\/timeline\/[^/]+\.json$/, schema: timelineEventSchema },
   { pattern: /^world\/causal_chains\/[^/]+\.json$/, schema: causalChainSchema },
-  { pattern: /^world\/character\/profile\.json$/, schema: characterProfileSchema },
-  { pattern: /^world\/character\/skills\/[^/]+\.json$/, schema: skillSchema },
-  { pattern: /^world\/character\/conditions\/[^/]+\.json$/, schema: conditionSchema },
-  { pattern: /^world\/character\/traits\/[^/]+\.json$/, schema: hiddenTraitSchema },
+  { pattern: /^world\/placeholders\/[^/]+\.json$/, schema: placeholderSchema },
+  {
+    pattern: /^world\/characters\/[^/]+\/profile\.json$/,
+    schema: actorProfileSchema,
+  },
+  { pattern: /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/, schema: skillSchema },
+  {
+    pattern: /^world\/characters\/[^/]+\/conditions\/[^/]+\.json$/,
+    schema: conditionSchema,
+  },
+  { pattern: /^world\/characters\/[^/]+\/traits\/[^/]+\.json$/, schema: hiddenTraitSchema },
+  {
+    pattern: /^world\/characters\/[^/]+\/inventory\/[^/]+\.json$/,
+    schema: inventoryItemSchema,
+  },
   { pattern: /^world\/global\.json$/, schema: GlobalSchema },
   { pattern: /^summary\/state\.json$/, schema: SummaryStateSchema },
   { pattern: /^outline\/outline\.json$/, schema: storyOutlineSchema },

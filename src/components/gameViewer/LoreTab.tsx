@@ -94,12 +94,22 @@ export const LoreTab: React.FC<LoreTabProps> = ({
         isExpanded={expandedSections.has("timeline")}
         onToggle={toggleSection}
       >
-        {gameState.timeline.filter((e) => e.known).length === 0 ? (
+        {gameState.timeline.filter(
+          (e: any) =>
+            gameState.unlockMode ||
+            !Array.isArray(e.knownBy) ||
+            e.knownBy.includes(gameState.playerActorId || "char:player"),
+        ).length === 0 ? (
           <EmptyState message={t("gameViewer.noEvents")} />
         ) : (
           <div className="space-y-3">
             {gameState.timeline
-              .filter((e) => e.known)
+              .filter(
+                (e: any) =>
+                  gameState.unlockMode ||
+                  !Array.isArray(e.knownBy) ||
+                  e.knownBy.includes(gameState.playerActorId || "char:player"),
+              )
               .sort(
                 (a, b) =>
                   new Date(b.gameTime).getTime() -

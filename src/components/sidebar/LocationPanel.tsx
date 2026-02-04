@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Location, ListState } from "../../types";
+import { InventoryItem, Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -10,6 +10,7 @@ import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
 interface LocationPanelProps {
   currentLocation: string;
   locations: Location[];
+  locationItemsByLocationId?: Record<string, InventoryItem[]>;
   themeFont: string;
   itemContext: string;
   listState: ListState;
@@ -22,11 +23,12 @@ interface LocationItemProps {
     name: string;
     isCurrent: boolean;
     data: Location;
+    itemsHere?: InventoryItem[];
   };
   expandedLocations: Set<string>;
   isEditMode: boolean;
   draggedId: string | null;
-  onLocationClick: (name: string) => void;
+  onLocationClick: (id: string) => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnter: (e: React.DragEvent, id: string) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -52,7 +54,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 }) => {
   const engine = useOptionalGameEngineContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const isExpanded = expandedLocations.has(item.name);
+  const isExpanded = expandedLocations.has(item.id);
   const locationData = item.data;
   const isCurrent = item.isCurrent;
   const pinned = isPinned?.(item.id) ?? false;
@@ -66,7 +68,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
   }, [locationData.highlight]);
 
   const handleToggle = () => {
-    onLocationClick(item.name);
+    onLocationClick(item.id);
     if (isHighlight) {
       setIsHighlight(false);
       clearHighlight?.({ kind: "locations", id: item.id });
@@ -271,6 +273,33 @@ const LocationItem: React.FC<LocationItemProps> = ({
                           </span>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Dropped/placed items in this location */}
+                  {Array.isArray(item.itemsHere) && item.itemsHere.length > 0 && (
+                    <div className="mt-3">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                        {t("sidebar.location.itemsHere", {
+                          defaultValue: "Items here",
+                        })}
+                      </span>
+                      <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                        {item.itemsHere.map((it) => (
+                          <li key={it.id}>
+                            <span className="mr-1">
+                              {getValidIcon(it.icon, "📦")}
+                            </span>
+                            <span className="font-semibold">{it.name}</span>
+                            {it.visible?.condition && (
+                              <span className="text-theme-muted/70">
+                                {" "}
+                                ({it.visible.condition})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 
@@ -508,6 +537,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 export const LocationPanel: React.FC<LocationPanelProps> = ({
   currentLocation,
   locations = [],
+  locationItemsByLocationId,
   themeFont,
   listState,
   onUpdateList,
@@ -529,10 +559,11 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     return locations.map((loc) => ({
       id: loc.id || loc.name, // Use ID, fallback to name for compatibility
       name: loc.name,
-      isCurrent: loc.name === currentLocation,
+      isCurrent: loc.id === currentLocation || loc.name === currentLocation,
       data: loc,
+      itemsHere: locationItemsByLocationId?.[loc.id] ?? [],
     }));
-  }, [currentLocation, locations]);
+  }, [currentLocation, locations, locationItemsByLocationId]);
 
   const {
     visibleItems,
@@ -544,14 +575,14 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     isHidden,
   } = useListManagement(locationItems, listState, onUpdateList);
 
-  const handleLocationClick = (locationName: string) => {
+  const handleLocationClick = (locationId: string) => {
     if (isEditMode) return;
     setExpandedLocations((prev) => {
       const next = new Set(prev);
-      if (next.has(locationName)) {
-        next.delete(locationName);
+      if (next.has(locationId)) {
+        next.delete(locationId);
       } else {
-        next.add(locationName);
+        next.add(locationId);
       }
       return next;
     });
@@ -757,13 +788,13 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             expandedLocations={modalExpandedLocations}
             isEditMode={dragOptions?.isEditMode || false}
             draggedId={dragOptions?.isDragging ? item.id : null}
-            onLocationClick={(name) => {
+            onLocationClick={(id) => {
               setModalExpandedLocations((prev) => {
                 const next = new Set(prev);
-                if (next.has(name)) {
-                  next.delete(name);
+                if (next.has(id)) {
+                  next.delete(id);
                 } else {
-                  next.add(name);
+                  next.add(id);
                 }
                 return next;
               });

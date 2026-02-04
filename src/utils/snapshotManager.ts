@@ -42,6 +42,12 @@ export function createStateSnapshot(
   metadata: SnapshotMetadata,
 ): GameStateSnapshot {
   return {
+    // Actor-first state
+    actors: gameState.actors,
+    playerActorId: gameState.playerActorId,
+    placeholders: gameState.placeholders,
+    locationItemsByLocationId: gameState.locationItemsByLocationId,
+
     // Entity State (Dual-layer)
     inventory: gameState.inventory,
     npcs: gameState.npcs,
@@ -87,6 +93,10 @@ export function restoreStateFromSnapshot(
 
   return {
     ...currentState,
+    actors: snapshot.actors,
+    playerActorId: snapshot.playerActorId,
+    placeholders: snapshot.placeholders,
+    locationItemsByLocationId: snapshot.locationItemsByLocationId,
     inventory: snapshot.inventory,
     npcs: snapshot.npcs,
     quests: snapshot.quests,

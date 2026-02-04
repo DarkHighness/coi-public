@@ -20,16 +20,23 @@ export const renderNpcVisible: Atom<RenderNpcInput> = ({ npc }) => {
   const v = npc.visible;
   const lines: string[] = [`id: ${npc.id}`, `name: ${v.name}`];
 
+  if (v.title) lines.push(`title: ${v.title}`);
+  if (v.age) lines.push(`age: ${v.age}`);
+  if (v.race) lines.push(`race: ${v.race}`);
+  if (v.profession) lines.push(`profession: ${v.profession}`);
+  if (v.background) lines.push(`background: ${v.background}`);
   if (v.description) lines.push(`description: ${v.description}`);
   if (v.appearance) lines.push(`appearance: ${v.appearance}`);
-  if (v.npcType) lines.push(`npcType: ${v.npcType}`);
-  if (v.impression) lines.push(`impression: ${v.impression}`);
   if (v.status) lines.push(`status: ${v.status}`);
-  if (v.personality) lines.push(`personality: ${v.personality}`);
-  if (v.dialogueStyle) lines.push(`dialogueStyle: ${v.dialogueStyle}`);
-  if (v.affinity !== undefined) lines.push(`affinity: ${v.affinity}`);
+  if (v.roleTag) lines.push(`roleTag: ${v.roleTag}`);
+  if (v.voice) lines.push(`voice: ${v.voice}`);
+  if (v.mannerism) lines.push(`mannerism: ${v.mannerism}`);
+  if (v.mood) lines.push(`mood: ${v.mood}`);
   if (npc.currentLocation)
     lines.push(`currentLocation: ${npc.currentLocation}`);
+  if (Array.isArray(npc.relations) && npc.relations.length > 0) {
+    lines.push(`relations: ${JSON.stringify(npc.relations)}`);
+  }
 
   return `<npc id="${npc.id}" layer="visible">
 ${lines.join("\n")}
@@ -49,15 +56,9 @@ export const renderNpcHidden: Atom<RenderNpcInput> = ({ npc }) => {
   if (h.realPersonality) lines.push(`realPersonality: ${h.realPersonality}`);
   if (h.realMotives) lines.push(`realMotives: ${h.realMotives}`);
   if (h.routine) lines.push(`routine: ${h.routine}`);
+  if (h.currentThought) lines.push(`currentThought: ${h.currentThought}`);
   if (h.secrets?.length) lines.push(`secrets: ${JSON.stringify(h.secrets)}`);
-  if (h.npcType) lines.push(`trueNpcType: ${h.npcType}`);
   if (h.status) lines.push(`trueStatus: ${h.status}`);
-  if (h.ambivalence) lines.push(`ambivalence: ${h.ambivalence}`);
-  if (h.transactionalBenefit)
-    lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
-  if (h.loveExpression) lines.push(`loveExpression: ${h.loveExpression}`);
-  if (h.unspokenSacrifice)
-    lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
 
   return `<npc id="${npc.id}" layer="hidden">
 ${lines.join("\n")}
@@ -88,14 +89,21 @@ const renderNpcVisibleContent: Atom<RenderNpcInput> = ({ npc }) => {
   const v = npc.visible;
   const lines: string[] = [`name: ${v.name}`];
 
+  if (v.title) lines.push(`title: ${v.title}`);
+  if (v.age) lines.push(`age: ${v.age}`);
+  if (v.race) lines.push(`race: ${v.race}`);
+  if (v.profession) lines.push(`profession: ${v.profession}`);
+  if (v.background) lines.push(`background: ${v.background}`);
   if (v.description) lines.push(`description: ${v.description}`);
   if (v.appearance) lines.push(`appearance: ${v.appearance}`);
-  if (v.npcType) lines.push(`npcType: ${v.npcType}`);
-  if (v.impression) lines.push(`impression: ${v.impression}`);
   if (v.status) lines.push(`status: ${v.status}`);
-  if (v.personality) lines.push(`personality: ${v.personality}`);
-  if (v.dialogueStyle) lines.push(`dialogueStyle: ${v.dialogueStyle}`);
-  if (v.affinity !== undefined) lines.push(`affinity: ${v.affinity}`);
+  if (v.roleTag) lines.push(`roleTag: ${v.roleTag}`);
+  if (v.voice) lines.push(`voice: ${v.voice}`);
+  if (v.mannerism) lines.push(`mannerism: ${v.mannerism}`);
+  if (v.mood) lines.push(`mood: ${v.mood}`);
+  if (Array.isArray(npc.relations) && npc.relations.length > 0) {
+    lines.push(`relations: ${JSON.stringify(npc.relations)}`);
+  }
 
   return lines.join("\n");
 };
@@ -110,15 +118,9 @@ const renderNpcHiddenContent: Atom<RenderNpcInput> = ({ npc }) => {
   if (h.realPersonality) lines.push(`realPersonality: ${h.realPersonality}`);
   if (h.realMotives) lines.push(`realMotives: ${h.realMotives}`);
   if (h.routine) lines.push(`routine: ${h.routine}`);
+  if (h.currentThought) lines.push(`currentThought: ${h.currentThought}`);
   if (h.secrets?.length) lines.push(`secrets: ${JSON.stringify(h.secrets)}`);
-  if (h.npcType) lines.push(`trueNpcType: ${h.npcType}`);
   if (h.status) lines.push(`trueStatus: ${h.status}`);
-  if (h.ambivalence) lines.push(`ambivalence: ${h.ambivalence}`);
-  if (h.transactionalBenefit)
-    lines.push(`transactionalBenefit: ${h.transactionalBenefit}`);
-  if (h.loveExpression) lines.push(`loveExpression: ${h.loveExpression}`);
-  if (h.unspokenSacrifice)
-    lines.push(`unspokenSacrifice: ${h.unspokenSacrifice}`);
 
   return lines.join("\n");
 };

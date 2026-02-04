@@ -194,6 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <LocationPanel
               currentLocation={gameState.currentLocation}
               locations={gameState.locations || []}
+              locationItemsByLocationId={gameState.locationItemsByLocationId}
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
               listState={gameState.uiState?.locations}
@@ -211,6 +212,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <section className="py-3">
             <NPCPanel
               npcs={gameState.npcs || []}
+              actors={gameState.actors || []}
+              playerActorId={gameState.playerActorId}
               locations={gameState.locations || []}
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.npcs}

@@ -16,7 +16,7 @@ const makeJsonFile = (path: string, data: unknown) => {
 };
 
 describe("deriveGameStateFromVfs", () => {
-  it("derives global, character, and inventory state", () => {
+  it("derives global, actors, and player inventory state", () => {
     const files: VfsFileMap = {
       "world/global.json": makeJsonFile("world/global.json", {
         time: "Day 2, 10:00",
@@ -26,22 +26,32 @@ describe("deriveGameStateFromVfs", () => {
         turnNumber: 3,
         forkId: 1,
       }),
-      "world/character/profile.json": makeJsonFile("world/character/profile.json", {
-        name: "Arin",
-        title: "Wanderer",
-        status: "Healthy",
-        attributes: [],
-        appearance: "Travel-worn",
-        age: "21",
-        profession: "Scout",
-        background: "Raised on the frontier.",
-        race: "Human Male",
-        currentLocation: "loc:inn",
-      }),
-      "world/inventory/inv_key.json": makeJsonFile(
-        "world/inventory/inv_key.json",
+      "world/characters/char:player/profile.json": makeJsonFile(
+        "world/characters/char:player/profile.json",
+        {
+          id: "char:player",
+          kind: "player",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player"],
+          visible: {
+            name: "Arin",
+            title: "Wanderer",
+            status: "Healthy",
+            attributes: [],
+            appearance: "Travel-worn",
+            age: "21",
+            profession: "Scout",
+            background: "Raised on the frontier.",
+            race: "Human Male",
+          },
+          relations: [],
+        },
+      ),
+      "world/characters/char:player/inventory/inv_key.json": makeJsonFile(
+        "world/characters/char:player/inventory/inv_key.json",
         {
           id: "inv_key",
+          knownBy: ["char:player"],
           name: "Rusty Key",
           visible: {
             description: "A rusted iron key.",
@@ -63,6 +73,7 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.character.conditions).toEqual([]);
     expect(state.inventory).toHaveLength(1);
     expect(state.inventory[0]?.id).toBe("inv_key");
+    expect(state.actors).toHaveLength(1);
   });
 
   it("throws on legacy world/character.json saves", () => {
@@ -72,9 +83,7 @@ describe("deriveGameStateFromVfs", () => {
       }),
     };
 
-    expect(() => deriveGameStateFromVfs(files)).toThrow(
-      /SAVE_INCOMPATIBLE_CHARACTER_LAYOUT/,
-    );
+    expect(() => deriveGameStateFromVfs(files)).toThrow(/SAVE_INCOMPATIBLE_LAYOUT/);
   });
 
   it("derives summary state and restores summary markers", () => {

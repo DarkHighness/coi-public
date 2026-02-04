@@ -3,10 +3,8 @@ import type {
   CausalChain,
   Faction,
   GameState,
-  InventoryItem,
   KnowledgeEntry,
   Location,
-  NPC,
   Quest,
   StoryOutline,
   TimelineEvent,
@@ -35,46 +33,33 @@ const writeEntities = <T extends { id?: string }>(
   }
 };
 
-const writeCharacter = (session: VfsSession, character: unknown): void => {
-  if (!character || typeof character !== "object") {
-    return;
-  }
+const writeActorBundle = (session: VfsSession, bundle: any): void => {
+  const profile = bundle?.profile;
+  if (!profile || typeof profile !== "object") return;
+  const actorId = (profile as any).id;
+  if (typeof actorId !== "string" || actorId.trim().length === 0) return;
 
-  const {
-    skills,
-    conditions,
-    hiddenTraits,
-    ...profile
-  } = character as Record<string, unknown> as any;
+  const id = actorId.trim();
+  writeJson(session, `world/characters/${id}/profile.json`, profile);
 
-  writeJson(session, "world/character/profile.json", profile);
-
-  if (Array.isArray(skills)) {
-    for (const skill of skills) {
-      if (!skill || typeof skill !== "object") continue;
-      const id = (skill as any).id;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
-      writeJson(session, `world/character/skills/${id}.json`, skill);
+  const writeSub = (subPath: string, items: any[] | undefined) => {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (!item || typeof item !== "object") continue;
+      const itemId = (item as any).id;
+      if (typeof itemId !== "string" || itemId.trim().length === 0) continue;
+      writeJson(
+        session,
+        `world/characters/${id}/${subPath}/${itemId.trim()}.json`,
+        item,
+      );
     }
-  }
+  };
 
-  if (Array.isArray(conditions)) {
-    for (const condition of conditions) {
-      if (!condition || typeof condition !== "object") continue;
-      const id = (condition as any).id;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
-      writeJson(session, `world/character/conditions/${id}.json`, condition);
-    }
-  }
-
-  if (Array.isArray(hiddenTraits)) {
-    for (const trait of hiddenTraits) {
-      if (!trait || typeof trait !== "object") continue;
-      const id = (trait as any).id;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
-      writeJson(session, `world/character/traits/${id}.json`, trait);
-    }
-  }
+  writeSub("skills", bundle?.skills);
+  writeSub("conditions", bundle?.conditions);
+  writeSub("traits", bundle?.traits);
+  writeSub("inventory", bundle?.inventory);
 };
 
 export const seedVfsSessionFromGameState = (
@@ -88,6 +73,10 @@ export const seedVfsSessionFromGameState = (
     atmosphere: state.atmosphere,
     turnNumber: state.turnNumber,
     forkId: state.forkId,
+    language: state.language,
+    customContext: state.customContext,
+    seedImageId: state.seedImageId,
+    narrativeScale: state.narrativeScale,
   });
 
   writeJson(session, "summary/state.json", {
@@ -95,8 +84,8 @@ export const seedVfsSessionFromGameState = (
     lastSummarizedIndex: state.lastSummarizedIndex ?? 0,
   });
 
-  if (state.character) {
-    writeCharacter(session, state.character);
+  for (const actor of state.actors) {
+    writeActorBundle(session, actor);
   }
 
   if (state.playerProfile) {
@@ -105,13 +94,20 @@ export const seedVfsSessionFromGameState = (
     });
   }
 
-  writeEntities(session, "world/inventory", state.inventory as InventoryItem[]);
-  writeEntities(session, "world/npcs", state.npcs as NPC[]);
   writeEntities(session, "world/quests", state.quests as Quest[]);
   writeEntities(session, "world/locations", state.locations as Location[]);
   writeEntities(session, "world/knowledge", state.knowledge as KnowledgeEntry[]);
   writeEntities(session, "world/factions", state.factions as Faction[]);
   writeEntities(session, "world/timeline", state.timeline as TimelineEvent[]);
+
+  for (const [locId, items] of Object.entries(state.locationItemsByLocationId)) {
+    if (!Array.isArray(items)) continue;
+    for (const item of items as any[]) {
+      const id = (item as any)?.id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/locations/${locId}/items/${id}.json`, item);
+    }
+  }
 
   if (state.causalChains) {
     for (const chain of state.causalChains as CausalChain[]) {
@@ -142,7 +138,26 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     lastSummarizedIndex: 0,
   });
 
-  writeCharacter(session, DEFAULT_CHARACTER);
+  writeActorBundle(session, {
+    profile: {
+      id: "char:player",
+      kind: "player",
+      currentLocation: "Unknown",
+      knownBy: ["char:player"],
+      visible: {
+        name: DEFAULT_CHARACTER.name,
+        title: DEFAULT_CHARACTER.title,
+        status: DEFAULT_CHARACTER.status,
+        appearance: DEFAULT_CHARACTER.appearance,
+        attributes: DEFAULT_CHARACTER.attributes,
+      },
+      relations: [],
+    },
+    skills: [],
+    conditions: [],
+    traits: [],
+    inventory: [],
+  });
 
   writeConversationIndex(session, {
     activeForkId: 0,
@@ -221,12 +236,23 @@ export const seedVfsSessionFromOutline = (
     nextForkId: 1,
   });
 
-  if (outline.character) {
-    writeCharacter(session, outline.character);
+  // Actor-first outline seeding
+  if ((outline as any).player) {
+    writeActorBundle(session, (outline as any).player);
   }
-
-  writeEntities(session, "world/inventory", outline.inventory as InventoryItem[]);
-  writeEntities(session, "world/npcs", outline.npcs as NPC[]);
+  if (Array.isArray((outline as any).npcs)) {
+    for (const npc of (outline as any).npcs as any[]) {
+      writeActorBundle(session, npc);
+    }
+  }
+  if (Array.isArray((outline as any).placeholders)) {
+    for (const placeholder of (outline as any).placeholders as any[]) {
+      if (!placeholder || typeof placeholder !== "object") continue;
+      const id = (placeholder as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/placeholders/${id.trim()}.json`, placeholder);
+    }
+  }
   writeEntities(session, "world/quests", outline.quests as Quest[]);
   writeEntities(session, "world/locations", outline.locations as Location[]);
   writeEntities(

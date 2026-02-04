@@ -3,7 +3,7 @@
  * Narrative Atom: Opening Scene Context
  * ============================================================================
  *
- * 开场场景上下文 - 用于 StoryOutline Phase 10。
+ * 开场场景上下文 - 用于 StoryOutline Phase 9。
  * 定义开场场景的设计原则：In Medias Res, NPC Presence, Environmental Storytelling, Choices.
  */
 

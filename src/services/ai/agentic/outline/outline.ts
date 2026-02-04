@@ -256,8 +256,8 @@ export const generateStoryOutlinePhased = async (
     currentPhase = hasImage ? 0 : 1;
 
     // Build initial task message
-    const totalPhases = hasImage ? 11 : 10; // Phase 0 + 1-10 or just 1-10
-    const phaseRange = hasImage ? "0-10" : "1-10";
+    const totalPhases = hasImage ? 10 : 9; // Phase 0 + 1-9 or just 1-9
+    const phaseRange = hasImage ? "0-9" : "1-9";
 
     // Create the initial task instruction
     const taskText = `[OUTLINE GENERATION TASK]
@@ -506,7 +506,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
 
   // Agentic loop for each phase
   // Phase 0 is at index 0, Phase 1 at index 1, etc.
-  while (currentPhase <= 10) {
+  while (currentPhase <= 9) {
     // Check budget exhaustion
     const budgetCheck = checkBudgetExhaustion(budgetState);
     if (budgetCheck.exhausted) {
@@ -733,7 +733,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
             {
               toolCallId: toolCall.id,
               name: toolCall.name,
-              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 10 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
+              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 9 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
             },
           ]),
         );

@@ -615,13 +615,31 @@ export function extractDocumentsFromState(
       }
 
       case "npc": {
-        const npc = state.npcs?.find((n) => n.id === entityId);
+        const npc =
+          state.npcs?.find((n) => n.id === entityId) ||
+          (id ? state.npcs?.find((n) => n.id === `char:${id}`) : undefined);
         if (npc) {
           documents.push({
             entityId,
             type: "npc",
             content: extractNPCContent(npc),
             importance: 0.9,
+          });
+        }
+        break;
+      }
+
+      case "char": {
+        const actorId = entityId;
+        const actorProfile =
+          state.actors?.find((b) => b?.profile?.id === actorId)?.profile ||
+          state.npcs?.find((n) => n.id === actorId);
+        if (actorProfile) {
+          documents.push({
+            entityId,
+            type: actorProfile.kind === "npc" ? "npc" : "outline",
+            content: extractNPCContent(actorProfile as any),
+            importance: actorProfile.kind === "npc" ? 0.9 : 0.7,
           });
         }
         break;
@@ -643,7 +661,11 @@ export function extractDocumentsFromState(
 
       case "inv":
       case "item": {
-        const item = state.inventory?.find((i) => i.id === entityId);
+        const item =
+          state.inventory?.find((i) => i.id === entityId) ||
+          Object.values(state.locationItemsByLocationId || {})
+            .flat()
+            .find((i) => i?.id === entityId);
         if (item) {
           documents.push({
             entityId,
@@ -842,30 +864,24 @@ function extractNPCContent(npc: NPC): string {
   if (npc.visible) {
     parts.push("  <visible>");
     if (npc.visible.name) parts.push(`    <name>${npc.visible.name}</name>`);
+    if (npc.visible.title) parts.push(`    <title>${npc.visible.title}</title>`);
+    if (npc.visible.roleTag)
+      parts.push(`    <role_tag>${npc.visible.roleTag}</role_tag>`);
+    if (npc.visible.profession)
+      parts.push(`    <profession>${npc.visible.profession}</profession>`);
+    if (npc.visible.race) parts.push(`    <race>${npc.visible.race}</race>`);
     if (npc.visible.description)
       parts.push(`    <description>${npc.visible.description}</description>`);
     if (npc.visible.appearance)
       parts.push(`    <appearance>${npc.visible.appearance}</appearance>`);
-    if (npc.visible.npcType)
-      parts.push(`    <npc_type>${npc.visible.npcType}</npc_type>`);
-    if (npc.visible.personality)
-      parts.push(`    <personality>${npc.visible.personality}</personality>`);
-    if (npc.visible.dialogueStyle)
-      parts.push(
-        `    <dialogue_style>${npc.visible.dialogueStyle}</dialogue_style>`,
-      );
-    if (npc.visible.impression)
-      parts.push(
-        `    <protagonist_impression>${npc.visible.impression}</protagonist_impression>`,
-      );
     if (npc.visible.status)
       parts.push(
         `    <perceived_status>${npc.visible.status}</perceived_status>`,
       );
-    if (npc.observation)
-      parts.push(
-        `    <npc_observation_about_player>${npc.observation}</npc_observation_about_player>`,
-      );
+    if (npc.visible.voice) parts.push(`    <voice>${npc.visible.voice}</voice>`);
+    if (npc.visible.mannerism)
+      parts.push(`    <mannerism>${npc.visible.mannerism}</mannerism>`);
+    if (npc.visible.mood) parts.push(`    <mood>${npc.visible.mood}</mood>`);
     parts.push("  </visible>");
   }
 
@@ -876,6 +892,8 @@ function extractNPCContent(npc: NPC): string {
   // Hidden info (Always visible to AI/GM)
   if (npc.hidden) {
     parts.push('  <hidden status="unlocked">');
+    if (npc.hidden.trueName)
+      parts.push(`    <true_name>${npc.hidden.trueName}</true_name>`);
     if (npc.hidden.realPersonality)
       parts.push(
         `    <true_personality>${npc.hidden.realPersonality}</true_personality>`,
@@ -884,15 +902,25 @@ function extractNPCContent(npc: NPC): string {
       parts.push(`    <true_motives>${npc.hidden.realMotives}</true_motives>`);
     if (npc.hidden.routine)
       parts.push(`    <routine>${npc.hidden.routine}</routine>`);
+    if (npc.hidden.currentThought)
+      parts.push(
+        `    <current_thought>${npc.hidden.currentThought}</current_thought>`,
+      );
     if (npc.hidden.secrets?.length)
       parts.push(`    <secrets>${npc.hidden.secrets.join("; ")}</secrets>`);
-    if (npc.hidden.impression)
-      parts.push(
-        `    <npc_impression_of_protagonist>${npc.hidden.impression}</npc_impression_of_protagonist>`,
-      );
     if (npc.hidden.status)
       parts.push(`    <actual_status>${npc.hidden.status}</actual_status>`);
     parts.push("  </hidden>");
+  }
+
+  if (Array.isArray(npc.relations) && npc.relations.length > 0) {
+    parts.push("  <relations>");
+    for (const rel of npc.relations) {
+      parts.push(
+        `    <relation kind="${(rel as any).kind}" to="${JSON.stringify((rel as any).to)}">${JSON.stringify(rel)}</relation>`,
+      );
+    }
+    parts.push("  </relations>");
   }
 
   parts.push("</npc>");
@@ -1179,16 +1207,12 @@ function extractOutlineContent(outline: StoryOutline, aspect: string): string {
 
     case "character": {
       parts.push(`Story: ${outline.title}`);
-      if (outline.character?.name)
-        parts.push(`Name: ${outline.character.name}`);
-      if (outline.character?.race)
-        parts.push(`Race: ${outline.character.race}`);
-      if (outline.character?.profession)
-        parts.push(`Profession: ${outline.character.profession}`);
-      if (outline.character?.background)
-        parts.push(`Background: ${outline.character.background}`);
-      if (outline.character?.appearance)
-        parts.push(`Appearance: ${outline.character.appearance}`);
+      const visible = outline.player?.profile?.visible;
+      if (visible?.name) parts.push(`Name: ${visible.name}`);
+      if (visible?.race) parts.push(`Race: ${visible.race}`);
+      if (visible?.profession) parts.push(`Profession: ${visible.profession}`);
+      if (visible?.background) parts.push(`Background: ${visible.background}`);
+      if (visible?.appearance) parts.push(`Appearance: ${visible.appearance}`);
       break;
     }
 
@@ -1204,9 +1228,10 @@ function extractOutlineContent(outline: StoryOutline, aspect: string): string {
       if (outline.mainGoal?.visible?.description) {
         parts.push(`Main Goal: ${outline.mainGoal.visible.description}`);
       }
-      if (outline.character?.name) {
+      const protagonist = outline.player?.profile?.visible;
+      if (protagonist?.name) {
         parts.push(
-          `Protagonist: ${outline.character.name}, ${outline.character.race} ${outline.character.profession}`,
+          `Protagonist: ${protagonist.name}, ${protagonist.race ?? ""} ${protagonist.profession ?? ""}`.trim(),
         );
       }
       break;

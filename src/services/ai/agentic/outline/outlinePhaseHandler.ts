@@ -21,7 +21,6 @@ import type {
   OutlinePhase7,
   OutlinePhase8,
   OutlinePhase9,
-  OutlinePhase10,
 } from "../../../schemas";
 
 // ============================================================================
@@ -110,6 +109,42 @@ function prepareEntities<T extends { id?: string; unlocked?: boolean }>(
   return result;
 }
 
+type ActorBundleShape = {
+  profile: { id?: string; kind?: string; relations?: unknown[] };
+  skills?: Array<{ id?: string; unlocked?: boolean }>;
+  conditions?: Array<{ id?: string; unlocked?: boolean }>;
+  traits?: Array<{ id?: string; unlocked?: boolean }>;
+  inventory?: Array<{ id?: string; unlocked?: boolean }>;
+};
+
+const prepareActorBundle = (
+  input: ActorBundleShape,
+  options: { requiredKind: "player" | "npc"; requiredId?: string; idPrefix: string },
+): ActorBundleShape => {
+  const profile = input.profile ?? ({} as any);
+  const id =
+    options.requiredId ??
+    (typeof profile.id === "string" && profile.id.trim()
+      ? profile.id.trim()
+      : `${options.idPrefix}:1`);
+
+  const kind = options.requiredKind;
+
+  return {
+    ...input,
+    profile: {
+      ...profile,
+      id,
+      kind,
+      relations: Array.isArray(profile.relations) ? profile.relations : [],
+    },
+    skills: prepareEntities(input.skills as any, "skill") as any,
+    conditions: prepareEntities(input.conditions as any, "cond") as any,
+    traits: prepareEntities(input.traits as any, "trait") as any,
+    inventory: prepareEntities(input.inventory as any, "inv") as any,
+  };
+};
+
 /**
  * Merge partial outline phases into a complete StoryOutline
  */
@@ -123,8 +158,7 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     !partial.phase6 ||
     !partial.phase7 ||
     !partial.phase8 ||
-    !partial.phase9 ||
-    !partial.phase10
+    !partial.phase9
   ) {
     throw new Error("Cannot merge incomplete outline phases");
   }
@@ -138,7 +172,26 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p7 = partial.phase7 as OutlinePhase7;
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
-  const p10 = partial.phase10 as OutlinePhase10;
+
+  const preparedPlayer = prepareActorBundle((p2 as any).player as any, {
+    requiredKind: "player",
+    requiredId: "char:player",
+    idPrefix: "char:player",
+  }) as any;
+
+  const playerPerceptions = Array.isArray((p5 as any).playerPerceptions)
+    ? ((p5 as any).playerPerceptions as any[])
+    : [];
+
+  if (playerPerceptions.length > 0) {
+    const existing = Array.isArray((preparedPlayer as any).profile?.relations)
+      ? (preparedPlayer as any).profile.relations
+      : [];
+    (preparedPlayer as any).profile = {
+      ...(preparedPlayer as any).profile,
+      relations: [...existing, ...playerPerceptions],
+    };
+  }
 
   const outline: StoryOutline = {
     // Phase 1: World Foundation
@@ -149,21 +202,10 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     worldSetting: p1.worldSetting as StoryOutline["worldSetting"],
     mainGoal: p1.mainGoal as StoryOutline["mainGoal"],
 
-    // Phase 2: Character
-    character: {
-      ...p2.character,
-      skills: p2.character.skills
-        ? prepareEntities(p2.character.skills, "skill")
-        : undefined,
-      conditions: p2.character.conditions
-        ? prepareEntities(p2.character.conditions, "cond")
-        : undefined,
-      hiddenTraits: p2.character.hiddenTraits
-        ? prepareEntities(p2.character.hiddenTraits, "trait")
-        : undefined,
-    } as StoryOutline["character"],
+    // Phase 2: Player actor bundle
+    player: preparedPlayer as any,
 
-    // Phase 3-9: Entities
+    // Phase 3-8: Entities
     locations: prepareEntities(
       p3.locations as StoryOutline["locations"],
       "loc",
@@ -172,31 +214,47 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
       p4.factions as StoryOutline["factions"],
       "fac",
     ) as StoryOutline["factions"],
-    npcs: prepareEntities(
-      p5.npcs as StoryOutline["npcs"],
-      "npc",
-    ) as StoryOutline["npcs"],
-    inventory: prepareEntities(
-      p6.inventory as StoryOutline["inventory"],
-      "inv",
-    ) as StoryOutline["inventory"],
     quests: prepareEntities(
-      p7.quests as StoryOutline["quests"],
+      (p6 as any).quests as StoryOutline["quests"],
       "quest",
     ) as StoryOutline["quests"],
     knowledge: prepareEntities(
-      p8.knowledge as StoryOutline["knowledge"],
+      (p7 as any).knowledge as StoryOutline["knowledge"],
       "know",
     ) as StoryOutline["knowledge"],
     timeline: prepareEntities(
-      p9.timeline as StoryOutline["timeline"],
+      (p8 as any).timeline as StoryOutline["timeline"],
       "evt",
     ) as StoryOutline["timeline"],
     initialAtmosphere:
-      p9.initialAtmosphere as StoryOutline["initialAtmosphere"],
+      (p8 as any).initialAtmosphere as StoryOutline["initialAtmosphere"],
 
-    // Phase 10: Opening Narrative
-    openingNarrative: p10.openingNarrative as StoryOutline["openingNarrative"],
+    // Phase 5: NPCs + placeholders
+    npcs: Array.isArray((p5 as any).npcs)
+      ? ((p5 as any).npcs as any[]).map((bundle, idx) =>
+          prepareActorBundle(bundle as any, {
+            requiredKind: "npc",
+            requiredId:
+              typeof bundle?.profile?.id === "string" && bundle.profile.id.trim()
+                ? bundle.profile.id.trim()
+                : `npc:${idx + 1}`,
+            idPrefix: "npc",
+          }),
+        )
+      : ([] as any),
+    placeholders: Array.isArray((p5 as any).placeholders)
+      ? ((p5 as any).placeholders as any[]).map((ph, idx) => ({
+          ...ph,
+          id:
+            typeof ph?.id === "string" && ph.id.trim()
+              ? ph.id.trim()
+              : `ph:${idx + 1}`,
+          unlocked: false,
+        }))
+      : [],
+
+    // Phase 9: Opening Narrative
+    openingNarrative: (p9 as any).openingNarrative as StoryOutline["openingNarrative"],
   };
 
   return outline;

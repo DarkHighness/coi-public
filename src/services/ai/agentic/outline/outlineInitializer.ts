@@ -77,8 +77,8 @@ function buildInitialHistory(
   seedImageBase64?: string,
 ): UnifiedMessage[] {
   const hasImage = !!seedImageBase64;
-  const totalPhases = hasImage ? 11 : 10;
-  const phaseRange = hasImage ? "0-10" : "1-10";
+  const totalPhases = hasImage ? 10 : 9;
+  const phaseRange = hasImage ? "0-9" : "1-9";
 
   const taskText = `[OUTLINE GENERATION TASK]
 Generate a story outline in ${totalPhases} phases (Phases ${phaseRange}).

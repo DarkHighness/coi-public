@@ -183,6 +183,8 @@ type VfsCatalogCategoryResult = {
 
 type DuplicateCandidate = VfsCatalogEntry & { matchText: string };
 
+const PLAYER_ID = "char:player";
+
 const safeParseJson = (input: string): unknown | null => {
   try {
     return JSON.parse(input) as unknown;
@@ -209,9 +211,35 @@ const listCatalogEntriesForCategory = (
       .filter(
         (file) =>
           file.contentType === "application/json" &&
-          file.path.startsWith("world/inventory/") &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/inventory/`) &&
           file.path.endsWith(".json"),
       )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "location_items") {
+    return Object.values(snapshot)
+      .filter((file) => {
+        if (file.contentType !== "application/json") return false;
+        if (!file.path.startsWith("world/locations/")) return false;
+        if (!file.path.includes("/items/")) return false;
+        return file.path.endsWith(".json");
+      })
       .map((file) => {
         const parsed = safeParseJson(file.content) as any;
         const id =
@@ -235,15 +263,19 @@ const listCatalogEntriesForCategory = (
       .filter(
         (file) =>
           file.contentType === "application/json" &&
-          file.path.startsWith("world/npcs/") &&
-          file.path.endsWith(".json"),
+          file.path.startsWith("world/characters/") &&
+          file.path.endsWith("/profile.json"),
       )
+      .filter((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        return parsed?.kind === "npc";
+      })
       .map((file) => {
         const parsed = safeParseJson(file.content) as any;
         const id =
           typeof parsed?.id === "string" && parsed.id.trim()
             ? parsed.id
-            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+            : file.path.split("/")[2] || file.path;
         const displayName = normalizeDisplayName(parsed?.visible?.name);
         const unlocked = parsed?.unlocked === true;
         const status =
@@ -436,15 +468,15 @@ const listCatalogEntriesForCategory = (
   }
 
   if (category === "character_profile") {
-    const file = snapshot["world/character/profile.json"];
+    const file = snapshot[`world/characters/${PLAYER_ID}/profile.json`];
     if (!file || file.contentType !== "application/json") {
       return [];
     }
     const parsed = safeParseJson(file.content) as any;
-    const displayName = normalizeDisplayName(parsed?.name);
+    const displayName = normalizeDisplayName(parsed?.visible?.name);
     const status =
-      typeof parsed?.status === "string" && parsed.status.trim()
-        ? parsed.status.trim()
+      typeof parsed?.visible?.status === "string" && parsed.visible.status.trim()
+        ? parsed.visible.status.trim()
         : undefined;
     return [
       {
@@ -462,7 +494,7 @@ const listCatalogEntriesForCategory = (
       .filter(
         (file) =>
           file.contentType === "application/json" &&
-          file.path.startsWith("world/character/skills/") &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/skills/`) &&
           file.path.endsWith(".json"),
       )
       .map((file) => {
@@ -486,7 +518,7 @@ const listCatalogEntriesForCategory = (
       .filter(
         (file) =>
           file.contentType === "application/json" &&
-          file.path.startsWith("world/character/conditions/") &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/conditions/`) &&
           file.path.endsWith(".json"),
       )
       .map((file) => {
@@ -515,7 +547,7 @@ const listCatalogEntriesForCategory = (
       .filter(
         (file) =>
           file.contentType === "application/json" &&
-          file.path.startsWith("world/character/traits/") &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/traits/`) &&
           file.path.endsWith(".json"),
       )
       .map((file) => {
@@ -525,6 +557,32 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "placeholders") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/placeholders/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.label);
         const unlocked = parsed?.unlocked === true;
         return {
           path: toCurrentPath(file.path),
@@ -915,7 +973,7 @@ const collectFuzzyMatches = (
   }));
 };
 
-const mapEntityIdToVfsPath = (entityId: string): string | null => {
+const mapEntityIdToVfsPath = (session: VfsSession, entityId: string): string | null => {
   const normalized = normalizeVfsPath(entityId);
   if (!normalized) {
     return null;
@@ -929,8 +987,14 @@ const mapEntityIdToVfsPath = (entityId: string): string | null => {
     return `conversation/turns/${nodeId}.json`;
   }
 
+  if (normalized.startsWith("char:")) {
+    const candidate = `world/characters/${normalized}/profile.json`;
+    return session.readFile(candidate) ? candidate : null;
+  }
+
   if (normalized.startsWith("npc:")) {
-    return `world/npcs/${normalized}.json`;
+    const candidate = `world/characters/${normalized}/profile.json`;
+    return session.readFile(candidate) ? candidate : null;
   }
 
   if (normalized.startsWith("loc:") || normalized.startsWith("location:")) {
@@ -938,7 +1002,19 @@ const mapEntityIdToVfsPath = (entityId: string): string | null => {
   }
 
   if (normalized.startsWith("inv:") || normalized.startsWith("item:")) {
-    return `world/inventory/${normalized}.json`;
+    const playerPath = `world/characters/${PLAYER_ID}/inventory/${normalized}.json`;
+    if (session.readFile(playerPath)) {
+      return playerPath;
+    }
+    // Location dropped items: world/locations/<locId>/items/<itemId>.json
+    const snapshot = session.snapshot();
+    const match = Object.keys(snapshot).find(
+      (p) =>
+        p.startsWith("world/locations/") &&
+        p.includes("/items/") &&
+        p.endsWith(`/${normalized}.json`),
+    );
+    return match ?? null;
   }
 
   if (normalized.startsWith("quest:")) {
@@ -965,15 +1041,15 @@ const mapEntityIdToVfsPath = (entityId: string): string | null => {
     normalized.startsWith("attribute:")
   ) {
     if (normalized.startsWith("skill:")) {
-      return `world/character/skills/${normalized}.json`;
+      return `world/characters/${PLAYER_ID}/skills/${normalized}.json`;
     }
     if (normalized.startsWith("condition:")) {
-      return `world/character/conditions/${normalized}.json`;
+      return `world/characters/${PLAYER_ID}/conditions/${normalized}.json`;
     }
     if (normalized.startsWith("trait:")) {
-      return `world/character/traits/${normalized}.json`;
+      return `world/characters/${PLAYER_ID}/traits/${normalized}.json`;
     }
-    return "world/character/profile.json";
+    return `world/characters/${PLAYER_ID}/profile.json`;
   }
 
   if (normalized.startsWith("outline:")) {
@@ -1029,7 +1105,7 @@ const searchSemanticWithRag = async (
     const mapped: VfsMatch[] = [];
 
     for (const result of results) {
-      const path = mapEntityIdToVfsPath(result.document.entityId);
+      const path = mapEntityIdToVfsPath(session, result.document.entityId);
       if (!path) {
         continue;
       }

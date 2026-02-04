@@ -27,13 +27,14 @@ export const getVeoScriptPrompt = (
     .join("\n");
 
   // Build detailed XML-formatted game state
-  const currentLocationName = gameState.currentLocation || "Unknown Location";
   const locationObj = gameState.locations?.find(
     (l) =>
       String(l.id).toLowerCase() ===
         String(gameState.currentLocation).toLowerCase() ||
       l.name?.toLowerCase() === gameState.currentLocation?.toLowerCase(),
   );
+  const currentLocationName =
+    locationObj?.name || gameState.currentLocation || "Unknown Location";
 
   // Character details
   const characterRace = gameState.character?.race || "Unknown";
@@ -67,12 +68,12 @@ export const getVeoScriptPrompt = (
             (r) =>
               `<npc>
                 <name>${r.visible.name}</name>
-                <true_name>${r.hidden.trueName}</true_name>
-                <description>${r.visible.description}</description>
+                <true_name>${r.hidden?.trueName || ""}</true_name>
+                <description>${r.visible.description || ""}</description>
                 <appearance>${r.visible.appearance || "Unknown appearance"}</appearance>
-                <status>${r.visible.npcType}</status>
+                <status>${r.visible.status || r.visible.roleTag || r.visible.profession || ""}</status>
                 <notes>${r.notes || ""}</notes>
-                <hidden_truth>Real Personality: ${r.hidden.realPersonality}; True Motives: ${r.hidden.realMotives}; True Status: ${r.hidden.npcType}</hidden_truth>
+                <hidden_truth>Real Personality: ${r.hidden?.realPersonality || ""}; True Motives: ${r.hidden?.realMotives || ""}; True Status: ${r.hidden?.status || ""}</hidden_truth>
               </npc>`,
           )
           .join("\n")

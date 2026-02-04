@@ -2,44 +2,46 @@ import { describe, it, expect } from "vitest";
 import { VfsSession } from "../vfsSession";
 
 const npcJson = JSON.stringify({
-  id: "npc:1",
+  id: "char:npc_1",
+  kind: "npc",
   currentLocation: "loc:1",
+  knownBy: ["char:player"],
   visible: {
     name: "A",
     description: "x",
-    npcType: "Friend",
-    affinity: 50,
   },
-  hidden: {
-    realPersonality: "y",
-    realMotives: "z",
-    npcType: "Tool",
-    impression: "neutral",
-    status: "idle",
-  },
+  relations: [],
 });
 
 describe("VfsSession patch", () => {
   it("applies JSON Patch and validates", () => {
     const session = new VfsSession();
-    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+    session.writeFile(
+      "world/characters/char:npc_1/profile.json",
+      npcJson,
+      "application/json",
+    );
 
-    session.applyJsonPatch("world/npcs/npc:1.json", [
+    session.applyJsonPatch("world/characters/char:npc_1/profile.json", [
       { op: "replace", path: "/visible/name", value: "B" },
     ]);
 
     const updated = JSON.parse(
-      session.readFile("world/npcs/npc:1.json")!.content,
+      session.readFile("world/characters/char:npc_1/profile.json")!.content,
     );
     expect(updated.visible.name).toBe("B");
   });
 
   it("rejects unknown keys under strict validation", () => {
     const session = new VfsSession();
-    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+    session.writeFile(
+      "world/characters/char:npc_1/profile.json",
+      npcJson,
+      "application/json",
+    );
 
     expect(() =>
-      session.applyJsonPatch("world/npcs/npc:1.json", [
+      session.applyJsonPatch("world/characters/char:npc_1/profile.json", [
         { op: "add", path: "/unknownKey", value: "nope" },
       ]),
     ).toThrow();
@@ -47,10 +49,14 @@ describe("VfsSession patch", () => {
 
   it("rejects unknown nested keys under strict validation", () => {
     const session = new VfsSession();
-    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+    session.writeFile(
+      "world/characters/char:npc_1/profile.json",
+      npcJson,
+      "application/json",
+    );
 
     expect(() =>
-      session.applyJsonPatch("world/npcs/npc:1.json", [
+      session.applyJsonPatch("world/characters/char:npc_1/profile.json", [
         { op: "add", path: "/visible/extra", value: "nope" },
       ]),
     ).toThrow();
@@ -58,10 +64,14 @@ describe("VfsSession patch", () => {
 
   it("rejects prototype-pollution keys under strict validation", () => {
     const session = new VfsSession();
-    session.writeFile("world/npcs/npc:1.json", npcJson, "application/json");
+    session.writeFile(
+      "world/characters/char:npc_1/profile.json",
+      npcJson,
+      "application/json",
+    );
 
     expect(() =>
-      session.applyJsonPatch("world/npcs/npc:1.json", [
+      session.applyJsonPatch("world/characters/char:npc_1/profile.json", [
         { op: "add", path: "/__proto__", value: { polluted: true } },
       ]),
     ).toThrow();
