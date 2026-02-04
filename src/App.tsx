@@ -134,11 +134,12 @@ function AppContent() {
     if (!legacySaveCount) return;
     if (legacySaveNoticeDismissed) return;
     showToast(
-      `检测到 ${legacySaveCount} 个旧版本存档（非 VFS）。当前版本不支持加载/迁移，它们不会显示在存档列表中。`,
+      t("saves.legacyNotice.short", { count: legacySaveCount }) ||
+        `Detected ${legacySaveCount} legacy saves (non-VFS). This version can't load or migrate them.`,
       "warning",
       8000,
     );
-  }, [legacySaveCount, legacySaveNoticeDismissed, showToast]);
+  }, [legacySaveCount, legacySaveNoticeDismissed, showToast, t]);
 
   // Track currently viewed segment for dynamic theme/background
   const [viewedSegment, setViewedSegmentLocal] = useState<any | null>(null);
@@ -633,8 +634,14 @@ function AppContent() {
       localError: storyLocalError,
     } = await validateConnection(aiSettings, storyProviderId);
     if (!storyValid && !storyLocalError) {
+      const featureLabel =
+        t("providers.features.story", "Story generation") || "Story generation";
       showToast(
-        `${storyProviderName}: ${storyError || "Connection Failed"} - Story generation is required`,
+        t("providers.errors.requiredFeatureUnavailable", {
+          feature: featureLabel,
+          provider: storyProviderName,
+          error: storyError || t("connectionFailed") || "Connection Failed",
+        }),
         "error",
       );
       setIsSettingsOpen(true);
@@ -652,8 +659,14 @@ function AppContent() {
       localError: loreLocalError,
     } = await validateConnection(aiSettings, loreProviderId);
     if (!loreValid && !loreLocalError) {
+      const featureLabel =
+        t("providers.features.lore", "Lore generation") || "Lore generation";
       showToast(
-        `${loreProviderName}: ${loreError || "Connection Failed"} - Lore generation is required`,
+        t("providers.errors.requiredFeatureUnavailable", {
+          feature: featureLabel,
+          provider: loreProviderName,
+          error: loreError || t("connectionFailed") || "Connection Failed",
+        }),
         "error",
       );
       setIsSettingsOpen(true);
@@ -699,9 +712,16 @@ function AppContent() {
         );
         if (!isValid && !localError) {
           console.warn(`${name} provider validation failed:`, error);
+          const featureKey = name.toLowerCase();
+          const featureLabel =
+            t(`providers.features.${featureKey}`, name) || name;
           showToast(
-            `Warning: ${name} (${providerName}) unavailable - ${error || "Connection failed"}. Story will continue without ${name.toLowerCase()}.`,
-            "error",
+            t("providers.errors.optionalFeatureUnavailable", {
+              feature: featureLabel,
+              provider: providerName,
+              error: error || t("connectionFailed") || "Connection failed",
+            }),
+            "warning",
           );
         }
       }

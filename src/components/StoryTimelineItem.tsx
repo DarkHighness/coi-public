@@ -367,7 +367,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-theme-primary font-bold mb-2 text-sm">
-                {t("timeline.forkConfirm") || "从此处分叉?"}
+                {t("timeline.forkConfirm") || "Fork here?"}
               </h3>
               <p className="text-theme-text-secondary text-xs mb-4 line-clamp-3">
                 {segment.text.slice(0, 150)}
@@ -378,7 +378,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                   onClick={() => setShowForkModal(false)}
                   className="px-3 py-1.5 text-xs text-theme-text-secondary hover:text-theme-text transition-colors"
                 >
-                  {t("cancel") || "取消"}
+                  {t("cancel") || "Cancel"}
                 </button>
                 <button
                   onClick={() => {
@@ -387,7 +387,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                   }}
                   className="px-3 py-1.5 text-xs bg-theme-primary text-theme-bg rounded hover:opacity-90 transition-opacity font-medium"
                 >
-                  {t("timeline.fork") || "分叉"}
+                  {t("timeline.fork") || "Fork"}
                 </button>
               </div>
             </motion.div>

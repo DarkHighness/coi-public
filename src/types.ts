@@ -1493,11 +1493,18 @@ export interface ExportManifest {
 }
 
 /** Result of import operation */
+export interface I18nMessage {
+  key: string;
+  params?: Record<string, unknown>;
+}
+
 export interface ImportResult {
   success: boolean;
   slotId?: string;
   error?: string;
+  errorI18n?: I18nMessage;
   warnings?: string[];
+  warningsI18n?: I18nMessage[];
   /** Was migration needed? */
   migrated?: boolean;
   /** Original version before migration */
@@ -1509,6 +1516,8 @@ export interface ImportValidation {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  errorsI18n?: I18nMessage[];
+  warningsI18n?: I18nMessage[];
   manifest?: ExportManifest;
   requiresMigration?: boolean;
 }

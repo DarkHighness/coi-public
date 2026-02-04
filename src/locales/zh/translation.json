@@ -195,7 +195,13 @@
     },
     "errors": {
       "retryWithProgress": "你已从第 {{phase}} 阶段保存了进度。是否要从中断处继续？",
-      "retryOutline": "是否要重新生成故事大纲？"
+      "retryOutline": "是否要重新生成故事大纲？",
+      "historyCacheCorrupted": "历史缓存已损坏，已清空缓存。请重试。",
+      "historyCacheCorruptedResume": "历史缓存已损坏，已清空缓存。请从头重试。",
+      "outlineGenerationFailed": "生成故事大纲失败。请重试。",
+      "firstSegmentFailed": "故事开始失败。请使用“重试”按钮再试一次。",
+      "postOutlineProcessingFailed": "初始化游戏状态失败。请重试。",
+      "resumeFailed": "恢复故事生成失败。请重试。"
     }
   },
   "translating": "正在翻译编年史...",
@@ -868,7 +874,12 @@
     "viewMap": "树状图",
     "subtitle": "命运地图 • {{count}} 个节点 • 拖动来移动 • 滚动来缩放",
     "goToStart": "回到开始",
-    "goToCurrent": "回到当前"
+    "goToCurrent": "回到当前",
+    "errors": {
+      "invalidNodeId": "无效的节点 ID：{{nodeId}}",
+      "noActiveSaveSlot": "没有激活的存档槽位。",
+      "navigateFailed": "无法跳转到时间线的该位置。"
+    }
   },
   "veoScriptModal": {
     "title": "Veo 脚本生成器",
@@ -883,7 +894,19 @@
     "delete": "删除",
     "load": "读取",
     "current": "当前",
-    "empty": "过往空无一物"
+    "empty": "过往空无一物",
+    "confirmDelete": "删除此存档？",
+    "countLabel_one": "{{count}} 个存档",
+    "countLabel_other": "{{count}} 个存档",
+    "legacyNotice": {
+      "title": "检测到 {{count}} 个旧版本存档（非 VFS）",
+      "short": "检测到 {{count}} 个旧版本存档（非 VFS）。当前版本不支持加载/迁移。",
+      "body": "当前版本不支持加载/迁移旧存档，它们不会显示在存档列表中。",
+      "details": "如需取回旧存档，请使用旧版本打开后导出为新版 .zip（包含 VFS 快照）再导入。",
+      "showDetails": "详情",
+      "hide": "收起",
+      "dismiss": "不再提示"
+    }
   },
   "visual": {
     "generatingPrompt": "正在生成提示词",
@@ -933,7 +956,8 @@
     "conditionChanged": "状态已变化",
     "secretUnlocked": "秘密已揭示",
     "autoSavedSettings": "设置已自动保存",
-    "stateUpdated": "状态已更新"
+    "stateUpdated": "状态已更新",
+    "singleItem": "{{action}}：{{item}}"
   },
   "showMore": "展开",
   "showLess": "收起",
@@ -943,6 +967,7 @@
   "testConnection": "测试连接",
   "audioSettings": {
     "environment": "环境音效",
+    "environmentChanged": "环境：{{env}}",
     "voice": "语音 / TTS",
     "volume": "音量",
     "muted": "已静音",
@@ -987,15 +1012,18 @@
     "clearImagesDesc": "删除所有缓存的图片数据。这将释放存储空间，但会导致历史记录中的图片丢失。",
     "confirmClearImages": "确定要清空所有图片缓存吗？此操作无法撤销。",
     "clearImagesSuccess": "图片缓存已清空。",
+    "clearImagesError": "清空图片缓存失败。",
     "clearRag": "清空 RAG 知识库",
     "clearRagDesc": "删除所有 RAG 索引和向量数据。下次加载存档时将重新构建索引。",
     "confirmClearRag": "确定要清空 RAG 知识库吗？这将需要重新处理文档。",
     "clearRagSuccess": "RAG 知识库已清空。",
+    "clearRagError": "清空 RAG 失败。",
     "cachedSessions": "缓存会话",
     "totalMessages": "总消息数",
     "clearSessionCache": "清空会话缓存",
     "sessionCache": "会话缓存",
-    "sessionCacheDesc": "缓存历史会话已在继续游戏时更好的命中前缀缓存"
+    "sessionCacheDesc": "缓存历史会话已在继续游戏时更好的命中前缀缓存",
+    "clearSessionCacheError": "清空会话缓存失败。"
   },
 
   "customTips": "添加细节以指导你的冒险故事",
@@ -1404,7 +1432,9 @@
     "location": "地点",
     "music": "音乐",
     "envThemeUnlocked": "环境主题已解锁",
-    "envThemeLocked": "环境主题已锁定"
+    "envThemeLocked": "环境主题已锁定",
+    "envThemeUnlockedHint": "环境主题跟随氛围（点击锁定）",
+    "envThemeLockedHint": "环境主题已锁定（点击解锁）"
   },
   "logPanel": {
     "phase": "阶段",
@@ -1505,7 +1535,7 @@
     "shortTitle": "导入",
     "title": "导入存档",
     "dropzone": "拖拽存档文件到此处，或点击选择文件",
-    "supportedFormats": "支持 .zip 和 .json 文件",
+    "supportedFormats": "支持 .zip 存档导出文件",
     "validating": "正在验证...",
     "preview": "导入预览",
     "saveName": "存档名称",
@@ -1518,7 +1548,27 @@
     "importing": "正在导入...",
     "importButton": "导入",
     "success": "存档导入成功！",
-    "error": "导入失败"
+    "error": "导入失败",
+    "errors": {
+      "unsupportedFormat": "不支持的文件格式。请导入 .zip 存档导出文件。",
+      "missingManifest": "导出文件缺少 manifest.json。",
+      "invalidManifest": "导出文件的 manifest.json 格式无效。",
+      "missingVfsIndex": "该导出文件缺少 VFS 快照历史（vfs/index.json）。请使用新版导出后再导入。",
+      "emptyVfsIndex": "该导出文件可能已损坏：VFS 快照索引为空（vfs/index.json）。",
+      "missingSnapshotFile": "该导出文件可能已损坏：缺少 VFS 快照文件（{{path}}）。",
+      "unreadableVfsIndex": "该导出文件可能已损坏：无法读取 VFS 快照索引（vfs/index.json）。",
+      "parseFailed": "读取导入文件失败。请尝试重新导出后再导入。",
+      "validationFailed": "验证失败。请尝试选择其他导出文件。",
+      "importFailed": "导入失败。请重试。",
+      "noSnapshotsImported": "未能导入任何 VFS 快照。导出文件可能已损坏。",
+      "vfsImportFailed": "导入 VFS 快照失败。导出文件可能已损坏。"
+    },
+    "warnings": {
+      "newerVersion": "导出版本 {{exportVersion}} 高于当前支持的 {{supportedVersion}}，部分功能可能不可用。",
+      "missingImagesFolder": "导出标记包含图片，但 images 文件夹缺失。",
+      "embeddingsSkipped": "已跳过嵌入向量导入（RAG 未初始化）。",
+      "embeddingsRegen": "导入嵌入向量失败，将在继续游戏时重新生成。"
+    }
   },
   "sidebar": {
     "tokens": "Token:",
@@ -1699,6 +1749,18 @@
     "disabled": "已禁用",
     "missingApiKey": "缺少 API Key",
     "inUse": "被以下功能使用: {{features}}",
+    "features": {
+      "story": "故事生成",
+      "lore": "设定生成",
+      "image": "图片生成",
+      "audio": "音频",
+      "video": "视频",
+      "script": "脚本"
+    },
+    "errors": {
+      "requiredFeatureUnavailable": "{{feature}} 需要可用的提供商。{{provider}} 连接失败：{{error}}",
+      "optionalFeatureUnavailable": "{{feature}} 不可用（{{provider}}）：{{error}}。游戏将继续运行，但该功能将不可用。"
+    },
     "validation": {
       "requiredFields": "名称、基础 URL 和 API 密钥为必填项",
       "apiKeyRequired": "API 密钥为必填项",
@@ -1781,7 +1843,19 @@
       "noNewNodesToSummarize": "没有显著的新事件需要总结。上下文已处于精简状态。"
     },
     "errors": {
-      "summaryFailed": "摘要生成失败"
+      "summaryFailed": "摘要生成失败",
+      "historyCacheCorrupted": "历史缓存已损坏，已清空缓存。请重试。",
+      "contextTooLong": "上下文过长。请创建总结以继续。",
+      "turnGenerationFailed": "生成下一回合失败。请重试。",
+      "contextRebuildFailed": "重建上下文失败。请重试。"
+    },
+    "unknown": {
+      "item": "未知物品",
+      "npc": "未知角色",
+      "quest": "未知任务",
+      "location": "未知地点",
+      "knowledge": "未知知识",
+      "systemAlert": "未知系统提示"
     }
   }
 }

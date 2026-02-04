@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { SaveSlot, ImportValidation, ImportResult } from "../types";
+import type { SaveSlot, ImportValidation, ImportResult, I18nMessage } from "../types";
 import { validateImport, importSave } from "../services/saveExportService";
 
 interface ImportSaveModalProps {
@@ -30,7 +30,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
   const [validation, setValidation] = useState<ImportValidation | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<I18nMessage | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
   // Auto-select initial file if provided
@@ -50,11 +50,16 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
     try {
       const result = await validateImport(file);
       setValidation(result);
-      if (!result.valid && result.errors.length > 0) {
-        setError(result.errors[0]);
+      if (!result.valid) {
+        if (result.errorsI18n && result.errorsI18n.length > 0) {
+          setError(result.errorsI18n[0]);
+        } else {
+          setError({ key: "import.errors.validationFailed" });
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Validation failed");
+      console.error("[ImportSaveModal] Validation failed:", err);
+      setError({ key: "import.errors.validationFailed" });
     } finally {
       setIsValidating(false);
     }
@@ -102,10 +107,11 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
       if (result.success) {
         onClose();
       } else {
-        setError(result.error || "Import failed");
+        setError(result.errorI18n || { key: "import.errors.importFailed" });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      console.error("[ImportSaveModal] Import failed:", err);
+      setError({ key: "import.errors.importFailed" });
     } finally {
       setIsImporting(false);
     }
@@ -290,9 +296,15 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
               )}
 
               {/* Warnings */}
-              {validation.warnings.length > 0 && (
+              {((validation.warningsI18n?.length ?? 0) > 0 ||
+                validation.warnings.length > 0) && (
                 <div className="space-y-2">
-                  {validation.warnings.map((warning, index) => (
+                  {(validation.warningsI18n && validation.warningsI18n.length > 0
+                    ? validation.warningsI18n.map((warning) =>
+                        t(warning.key, warning.params),
+                      )
+                    : validation.warnings.map((warning) => warning)
+                  ).map((warningText, index) => (
                     <div
                       key={index}
                       className="flex items-start gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
@@ -310,7 +322,9 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                         />
                       </svg>
-                      <p className="text-xs text-yellow-500/90">{warning}</p>
+                      <p className="text-xs text-yellow-500/90">
+                        {warningText}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -357,7 +371,9 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-xs text-red-500/90">{error}</p>
+              <p className="text-xs text-red-500/90">
+                {t(error.key, error.params)}
+              </p>
             </div>
           )}
 

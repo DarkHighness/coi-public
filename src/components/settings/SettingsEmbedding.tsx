@@ -344,7 +344,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                 ></path>
               </svg>
             )}
-            {t("refresh") || "刷新"}
+            {t("refresh") || "Refresh"}
           </button>
         </div>
         {/* Provider Selection */}

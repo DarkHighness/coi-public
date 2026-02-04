@@ -432,7 +432,7 @@ export const useGameAction = ({
           ?.filter((a) => a.unlocked === true && a.unlockReason)
           .forEach((a) => {
             unlockEvents.push({
-              name: a.title || "Unknown Quest",
+              name: a.title || t("game.unknown.quest"),
               reason: a.unlockReason || "",
             });
           });
@@ -442,7 +442,7 @@ export const useGameAction = ({
           ?.filter((a) => a.unlocked === true && a.unlockReason)
           .forEach((a) => {
             unlockEvents.push({
-              name: a.title || "Unknown Knowledge",
+              name: a.title || t("game.unknown.knowledge"),
               reason: a.unlockReason || "",
             });
           });
@@ -465,33 +465,37 @@ export const useGameAction = ({
           itemsAdded:
             response.inventoryActions
               ?.filter((a) => a.action === "add")
-              .map((a) => ({ name: a.name || "Unknown Item" })) || [],
+              .map((a) => ({ name: a.name || t("game.unknown.item") })) || [],
           itemsRemoved:
             response.inventoryActions
               ?.filter((a) => a.action === "remove")
-              .map((a) => ({ name: a.name || "Unknown Item" })) || [],
+              .map((a) => ({ name: a.name || t("game.unknown.item") })) || [],
           npcsAdded:
             response.npcActions
               ?.filter((a) => a.action === "add")
-              .map((a) => ({ name: a.visible?.name || "Unknown NPC" })) || [],
+              .map((a) => ({
+                name: a.visible?.name || t("game.unknown.npc"),
+              })) || [],
           questsAdded:
             response.questActions
               ?.filter((a) => a.action === "add")
-              .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
+              .map((a) => ({ name: a.title || t("game.unknown.quest") })) || [],
           questsCompleted:
             response.questActions
               ?.filter((a) => a.action === "complete")
-              .map((a) => ({ name: a.title || "Unknown Quest" })) || [],
+              .map((a) => ({ name: a.title || t("game.unknown.quest") })) || [],
           locationsDiscovered:
             response.locationActions
               ?.filter((a) => a.action === "add")
-              .map((a) => ({ name: a.name || "Unknown Location" })) || [],
+              .map((a) => ({
+                name: a.name || t("game.unknown.location"),
+              })) || [],
           entitiesUnlocked: unlockEvents.length > 0 ? unlockEvents : undefined,
           // NEW: System Toasts - Enforce required types
           systemToasts: [
-            ...(response.systemToasts?.map((t) => ({
-              message: t.message || "Unknown system alert",
-              type: (t.type || "info") as
+            ...(response.systemToasts?.map((toast) => ({
+              message: toast.message || t("game.unknown.systemAlert"),
+              type: (toast.type || "info") as
                 | "info"
                 | "warning"
                 | "error"
@@ -500,7 +504,7 @@ export const useGameAction = ({
             ...(summaryError
               ? [
                   {
-                    message: `${t("game.errors.summaryFailed")}: ${summaryError}`,
+                    message: t("game.errors.summaryFailed"),
                     type: "warning" as const,
                   },
                 ]
@@ -613,15 +617,15 @@ export const useGameAction = ({
         };
       } catch (error) {
         console.error("Game Loop Error:", error);
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
+        const debugErrorMsg =
+          error instanceof Error ? error.message : String(error);
 
         // Check for history corrupted error (e.g., invalid argument errors)
         const isHistoryCorrupted = error instanceof HistoryCorruptedError;
 
         // Check for context overflow
         if (
-          errorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
+          debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
           isHistoryCorrupted
         ) {
           console.log(
@@ -630,25 +634,31 @@ export const useGameAction = ({
           // Session manager handles history clearing on context overflow
           showToast(
             isHistoryCorrupted
-              ? "History cache corrupted. The cache has been cleared. Please retry."
-              : "Context too long. Please create a summary to continue.",
+              ? t("game.errors.historyCacheCorrupted")
+              : t("game.errors.contextTooLong"),
             "warning",
             5000,
           );
         } else {
-          showToast(errorMsg, "error", 5000);
+          showToast(t("game.errors.turnGenerationFailed"), "error", 5000);
         }
+
+        const userFacingErrorMessage = isHistoryCorrupted
+          ? t("game.errors.historyCacheCorrupted")
+          : debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED")
+            ? t("game.errors.contextTooLong")
+            : t("game.errors.turnGenerationFailed");
 
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: userFacingErrorMessage,
           // History clearing handled by session manager
         }));
         processingRef.current = false;
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: userFacingErrorMessage,
         };
       } finally {
         processingRef.current = false;
@@ -808,12 +818,12 @@ export const useGameAction = ({
       }
     } catch (error) {
       console.error("Rebuild context failed:", error);
-      const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      showToast(errorMsg, "error", 5000);
+      const message = t("game.errors.contextRebuildFailed");
+      showToast(message, "error", 5000);
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
-        error: errorMsg,
+        error: message,
       }));
     } finally {
       processingRef.current = false;

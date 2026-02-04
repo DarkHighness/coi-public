@@ -250,14 +250,17 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <div className="mx-auto w-full max-w-6xl border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-lg shadow-black/20">
             <div className="text-sm text-amber-100">
               <div className="font-semibold">
-                检测到 {legacySaveCount} 个旧版本存档（非 VFS）
+                {t("saves.legacyNotice.title", { count: legacySaveCount }) ||
+                  `Detected ${legacySaveCount} legacy saves (non-VFS)`}
               </div>
               <div className="text-xs text-amber-100/80 mt-1">
-                当前版本不支持加载/迁移旧存档，它们不会显示在存档列表中。
+                {t("saves.legacyNotice.body") ||
+                  "This version can't load or migrate legacy saves, so they won't appear in the save list."}
               </div>
               {showLegacySaveDetails && (
                 <div className="text-xs text-amber-100/80 mt-2">
-                  如需取回旧存档，请使用旧版本打开后导出为新版 .zip（包含 VFS 快照）再导入。
+                  {t("saves.legacyNotice.details") ||
+                    "To recover them, open the old version and export a new .zip (with VFS snapshots), then import it here."}
                 </div>
               )}
             </div>
@@ -266,13 +269,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 onClick={() => setShowLegacySaveDetails((v) => !v)}
                 className="px-3 py-2 text-xs font-bold rounded-lg border border-amber-400/30 text-amber-100 hover:bg-amber-400/10 transition-colors"
               >
-                {showLegacySaveDetails ? "收起" : "详情"}
+                {showLegacySaveDetails
+                  ? t("saves.legacyNotice.hide") || "Hide"
+                  : t("saves.legacyNotice.showDetails") || "Details"}
               </button>
               <button
                 onClick={() => onDismissLegacySaveNotice?.()}
                 className="px-3 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 transition-colors"
               >
-                不再提示
+                {t("saves.legacyNotice.dismiss") || "Don't show again"}
               </button>
             </div>
           </div>

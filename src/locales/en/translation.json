@@ -227,7 +227,13 @@
     },
     "errors": {
       "retryWithProgress": "You have progress saved from phase {{phase}}. Would you like to resume from where you left off?",
-      "retryOutline": "Would you like to retry generating the story outline?"
+      "retryOutline": "Would you like to retry generating the story outline?",
+      "historyCacheCorrupted": "History cache corrupted. The cache has been cleared. Please retry.",
+      "historyCacheCorruptedResume": "History cache corrupted. The cache has been cleared. Please retry from the beginning.",
+      "outlineGenerationFailed": "Failed to generate story outline. Please try again.",
+      "firstSegmentFailed": "Failed to start the story. Please try again using the retry button.",
+      "postOutlineProcessingFailed": "Failed to initialize game state. Please try again.",
+      "resumeFailed": "Failed to resume story generation. Please try again."
     }
   },
   "knownFeatures": "Features",
@@ -864,7 +870,12 @@
     "viewMap": "View Destiny Map",
     "subtitle": "Timeline Browser • {{count}} Moments • Drag to Pan • Scroll to Zoom",
     "goToStart": "Go to Start",
-    "goToCurrent": "Go to Current"
+    "goToCurrent": "Go to Current",
+    "errors": {
+      "invalidNodeId": "Invalid node id: {{nodeId}}",
+      "noActiveSaveSlot": "No active save slot.",
+      "navigateFailed": "Failed to navigate to that point in the timeline."
+    }
   },
   "saves": {
     "title": "Save Slots",
@@ -874,7 +885,18 @@
     "load": "Load",
     "current": "Current",
     "empty": "No chronicles found.",
-    "confirmDelete": "Delete this save?"
+    "confirmDelete": "Delete this save?",
+    "countLabel_one": "{{count}} save",
+    "countLabel_other": "{{count}} saves",
+    "legacyNotice": {
+      "title": "Detected {{count}} legacy saves (non-VFS)",
+      "short": "Detected {{count}} legacy saves (non-VFS). This version can't load or migrate them.",
+      "body": "This version can't load or migrate legacy saves, so they won't appear in the save list.",
+      "details": "To recover them, open the old version and export a new .zip (with VFS snapshots), then import it here.",
+      "showDetails": "Details",
+      "hide": "Hide",
+      "dismiss": "Don't show again"
+    }
   },
   "summary": {
     "divider": "Chronicles Summarized",
@@ -916,6 +938,7 @@
   },
   "audioSettings": {
     "environment": "Environment Audio",
+    "environmentChanged": "Environment: {{env}}",
     "muted": "Muted",
     "active": "Active",
     "volume": "Volume",
@@ -941,7 +964,8 @@
     "conditionChanged": "Condition Changed",
     "secretUnlocked": "Secret Unlocked",
     "autoSavedSettings": "Settings saved automatically",
-    "stateUpdated": "State Updated"
+    "stateUpdated": "State Updated",
+    "singleItem": "{{action}}: {{item}}"
   },
   "showMore": "Show More",
   "showLess": "Show Less",
@@ -977,10 +1001,12 @@
     "clearImagesDesc": "Delete all cached image data. This frees up storage but will remove images from history.",
     "confirmClearImages": "Are you sure you want to clear all image cache? This cannot be undone.",
     "clearImagesSuccess": "Image cache cleared.",
+    "clearImagesError": "Failed to clear images.",
     "clearRag": "Clear RAG Knowledge Base",
     "clearRagDesc": "Delete all RAG indices and vector data. Indices will be rebuilt on next load.",
     "confirmClearRag": "Are you sure you want to clear the RAG knowledge base? This will require reprocessing documents.",
     "clearRagSuccess": "RAG knowledge base cleared.",
+    "clearRagError": "Failed to clear RAG.",
     "export": "Export Data",
     "exportDesc": "Download all game data as a JSON file",
     "import": "Import Data",
@@ -991,7 +1017,8 @@
     "totalMessages": "Total Messages",
     "clearSessionCache": "Clear Session Cache",
     "sessionCache": "Session Cache",
-    "sessionCacheDesc": "Cached history sessions are better hit prefix cache when continuing the game"
+    "sessionCacheDesc": "Cached history sessions are better hit prefix cache when continuing the game",
+    "clearSessionCacheError": "Failed to clear session cache."
   },
   "customTips": "Add details to guide your adventure's story",
   "tip": "Tips",
@@ -1398,7 +1425,9 @@
     "location": "Location",
     "music": "Music",
     "envThemeUnlocked": "Environment Theme Unlocked",
-    "envThemeLocked": "Environment Theme Locked"
+    "envThemeLocked": "Environment Theme Locked",
+    "envThemeUnlockedHint": "Environment theme follows ambience (click to lock)",
+    "envThemeLockedHint": "Environment theme is locked (click to unlock)"
   },
 
   "logPanel": {
@@ -1502,7 +1531,7 @@
     "shortTitle": "Import",
     "title": "Import Save",
     "dropzone": "Drop a save file here or click to browse",
-    "supportedFormats": "Supports .zip and .json files",
+    "supportedFormats": "Supports .zip save exports",
     "validating": "Validating...",
     "preview": "Import Preview",
     "saveName": "Save Name",
@@ -1515,7 +1544,27 @@
     "importing": "Importing...",
     "importButton": "Import",
     "success": "Save imported successfully!",
-    "error": "Import failed"
+    "error": "Import failed",
+    "errors": {
+      "unsupportedFormat": "Unsupported file format. Please import a .zip save export.",
+      "missingManifest": "The export is missing manifest.json.",
+      "invalidManifest": "The export has an invalid manifest.json.",
+      "missingVfsIndex": "This export is missing VFS snapshot history (vfs/index.json). Please export again from a newer version.",
+      "emptyVfsIndex": "This export appears corrupted: VFS snapshot index is empty (vfs/index.json).",
+      "missingSnapshotFile": "This export appears corrupted: missing VFS snapshot file ({{path}}).",
+      "unreadableVfsIndex": "This export appears corrupted: unable to read VFS snapshot index (vfs/index.json).",
+      "parseFailed": "Failed to read the import file. Please try exporting again.",
+      "validationFailed": "Validation failed. Please try a different export file.",
+      "importFailed": "Import failed. Please try again.",
+      "noSnapshotsImported": "No VFS snapshots were imported. The export may be corrupted.",
+      "vfsImportFailed": "Failed to import VFS snapshots. The export may be corrupted."
+    },
+    "warnings": {
+      "newerVersion": "Export version {{exportVersion}} is newer than supported {{supportedVersion}}. Some features may not work.",
+      "missingImagesFolder": "Images were marked as included but the images folder is missing.",
+      "embeddingsSkipped": "Embeddings import skipped (RAG not initialized).",
+      "embeddingsRegen": "Failed to import embeddings. They will be regenerated."
+    }
   },
   "sidebar": {
     "tokens": "Tokens:",
@@ -1776,6 +1825,18 @@
     "disabled": "Disabled",
     "missingApiKey": "Missing API Key",
     "inUse": "In use: {{features}}",
+    "features": {
+      "story": "Story generation",
+      "lore": "Lore generation",
+      "image": "Image generation",
+      "audio": "Audio",
+      "video": "Video",
+      "script": "Script"
+    },
+    "errors": {
+      "requiredFeatureUnavailable": "{{feature}} requires a working provider. {{provider}} failed: {{error}}",
+      "optionalFeatureUnavailable": "{{feature}} is unavailable ({{provider}}): {{error}}. The game will continue without it."
+    },
     "validation": {
       "requiredFields": "Name, Base URL, and API Key are required",
       "apiKeyRequired": "API Key is required",
@@ -1871,7 +1932,19 @@
       "noNewNodesToSummarize": "No new events to summarize. Context is already up to date."
     },
     "errors": {
-      "summaryFailed": "Failed to generate summary"
+      "summaryFailed": "Failed to generate summary",
+      "historyCacheCorrupted": "History cache corrupted. The cache has been cleared. Please retry.",
+      "contextTooLong": "Context too long. Please create a summary to continue.",
+      "turnGenerationFailed": "Failed to generate the next turn. Please try again.",
+      "contextRebuildFailed": "Failed to rebuild context. Please try again."
+    },
+    "unknown": {
+      "item": "Unknown Item",
+      "npc": "Unknown NPC",
+      "quest": "Unknown Quest",
+      "location": "Unknown Location",
+      "knowledge": "Unknown Knowledge",
+      "systemAlert": "Unknown system alert"
     }
   }
 }
