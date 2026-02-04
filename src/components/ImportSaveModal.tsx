@@ -118,10 +118,10 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-lg max-w-md w-full shadow-2xl">
+    <div className="fixed inset-0 z-70 flex items-center justify-center ui-overlay backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-theme-surface border border-theme-divider/60 rounded-xl max-w-md w-full shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-theme-border flex justify-between items-center bg-gradient-to-r from-theme-surface-highlight/50 to-theme-surface-highlight/30">
+        <div className="p-4 border-b border-theme-divider/60 flex justify-between items-center">
           <h2 className="text-lg font-bold text-theme-primary">
             {t("import.title") || "Import Save"}
           </h2>
@@ -131,7 +131,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
             className="p-2 hover:bg-theme-surface-highlight rounded-full transition-colors disabled:opacity-50"
           >
             <svg
-              className="w-5 h-5 text-theme-muted hover:text-theme-text"
+              className="w-5 h-5 text-theme-text-secondary hover:text-theme-text"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -188,7 +188,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                 <div className="text-sm font-medium text-theme-text truncate px-4">
                   {selectedFile.name}
                 </div>
-                <div className="text-xs text-theme-muted">
+                <div className="text-xs text-theme-text-secondary">
                   {formatSize(selectedFile.size)}
                 </div>
               </div>
@@ -207,11 +207,11 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                <div className="text-sm text-theme-muted">
+                <div className="text-sm text-theme-text-secondary">
                   {t("import.dropzone") ||
                     "Drop a save file here or click to browse"}
                 </div>
-                <div className="text-xs text-theme-muted/70">
+                <div className="text-xs text-theme-text-secondary/80">
                   {t("import.supportedFormats") ||
                     "Supports .zip and .json files"}
                 </div>
@@ -223,7 +223,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
           {isValidating && (
             <div className="flex items-center justify-center gap-2 py-2">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-theme-primary" />
-              <span className="text-sm text-theme-muted">
+              <span className="text-sm text-theme-text-secondary">
                 {t("import.validating") || "Validating..."}
               </span>
             </div>
@@ -240,7 +240,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                   </h3>
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {t("import.saveName") || "Save Name"}
                       </span>
                       <span className="text-theme-text font-medium">
@@ -248,7 +248,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {t("import.theme") || "Theme"}
                       </span>
                       <span className="text-theme-text">
@@ -258,7 +258,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {t("import.nodes") || "Story Nodes"}
                       </span>
                       <span className="text-theme-text">
@@ -267,7 +267,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                     </div>
                     {validation.manifest.includes.images && (
                       <div className="flex justify-between">
-                        <span className="text-theme-muted">
+                        <span className="text-theme-text-secondary">
                           {t("import.images") || "Images"}
                         </span>
                         <span className="text-theme-text">
@@ -276,7 +276,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {t("import.exportDate") || "Export Date"}
                       </span>
                       <span className="text-theme-text">
@@ -363,9 +363,9 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
 
           {/* Embeddings Info */}
           {validation?.valid && (
-            <div className="flex items-start gap-2 p-2 bg-theme-bg/50 border border-theme-border rounded-lg">
+            <div className="flex items-start gap-2 p-2 bg-theme-bg/50 border border-theme-divider/60 rounded-lg">
               <svg
-                className="w-4 h-4 text-theme-muted shrink-0 mt-0.5"
+                className="w-4 h-4 text-theme-text-secondary shrink-0 mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -377,7 +377,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-xs text-theme-muted">
+              <p className="text-xs text-theme-text-secondary">
                 {t("import.embeddingsNote") ||
                   "RAG embeddings will be regenerated automatically when you continue playing."}
               </p>
@@ -386,11 +386,11 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-theme-border flex justify-end gap-3">
+        <div className="p-4 border-t border-theme-divider/60 flex justify-end gap-3">
           <button
             onClick={onClose}
             disabled={isImporting}
-            className="px-4 py-2 text-sm text-theme-muted hover:text-theme-text transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm text-theme-text-secondary hover:text-theme-text transition-colors disabled:opacity-50"
           >
             {t("common.cancel") || "Cancel"}
           </button>

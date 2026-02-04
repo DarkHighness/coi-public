@@ -107,7 +107,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
   const [legacyText, setLegacyText] = useState("");
 
   const fieldLabelClassName =
-    "block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2";
+    "block text-xs font-bold uppercase tracking-wider text-theme-text-secondary mb-2";
   const inputClassName =
     "w-full bg-theme-bg border border-theme-border/70 rounded-lg px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all";
   const textareaClassName =
@@ -185,22 +185,22 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-theme-surface border border-theme-border rounded-xl shadow-lg w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90dvh]"
+        className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-theme-border flex items-start justify-between gap-4">
+        <div className="p-6 border-b border-theme-divider/60 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-wider">
               {t("customGame.title")}
             </h2>
-            <p className="text-sm text-theme-muted mt-1">
+            <p className="text-sm text-theme-text-secondary mt-1">
               {t("customGame.subtitle")}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 text-theme-muted hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60 shrink-0"
+            className="p-2.5 text-theme-text-secondary hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60 shrink-0"
             aria-label={t("close", "Close")}
           >
             <svg
@@ -223,14 +223,14 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-5">
           {/* Mode Switch */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-xl border border-theme-border bg-theme-bg/30">
+            <div className="flex items-center gap-1 p-1 rounded-xl border border-theme-divider/60 bg-theme-bg/30">
               <button
                 type="button"
                 onClick={() => setMode("structured")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                   mode === "structured"
                     ? "bg-theme-primary text-theme-bg"
-                    : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/40"
+                    : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight/40"
                 }`}
               >
                 {t("customGame.modes.structured")}
@@ -241,7 +241,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                   mode === "text"
                     ? "bg-theme-primary text-theme-bg"
-                    : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight/40"
+                    : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight/40"
                 }`}
               >
                 {t("customGame.modes.text")}
@@ -330,14 +330,14 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
             <button
               type="button"
               onClick={() => setShowAdvanced((v) => !v)}
-              className="w-full flex items-center justify-between py-3 border-y border-theme-border/40 hover:bg-theme-surface-highlight/25 transition-colors"
+              className="w-full flex items-center justify-between py-3 border-y border-theme-divider/60 hover:bg-theme-surface-highlight/25 transition-colors"
               aria-expanded={showAdvanced}
             >
-              <span className="text-sm font-bold uppercase tracking-wider text-theme-muted">
+              <span className="text-sm font-bold uppercase tracking-wider text-theme-text-secondary">
                 {t("customGame.advanced")}
               </span>
               <svg
-                className={`w-5 h-5 text-theme-muted transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                className={`w-5 h-5 text-theme-text-secondary transition-transform ${showAdvanced ? "rotate-180" : ""}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -370,16 +370,16 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                 <label className={fieldLabelClassName}>
                   {t("customGame.fields.gameplayFocus")}
                 </label>
-                <div className="text-xs text-theme-muted mb-3">
+                <div className="text-xs text-theme-text-secondary mb-3">
                   {t("customGame.gameplay.hint")}
                 </div>
-                <div className="border-y border-theme-border/40 divide-y divide-theme-border/40">
+                <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
                   {GAMEPLAY_PRESET_KEYS.map((key) => (
                     <div
                       key={key}
                       className="flex items-center gap-3 px-2 py-2"
                     >
-                      <div className="w-28 shrink-0 text-xs font-bold uppercase tracking-wider text-theme-muted">
+                      <div className="w-28 shrink-0 text-xs font-bold uppercase tracking-wider text-theme-text-secondary">
                         {t(`customGame.gameplay.presets.${key}`)}
                       </div>
                       <input
@@ -406,7 +406,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-theme-muted">
+                <div className="flex items-center justify-between mt-2 text-xs text-theme-text-secondary">
                   <span>
                     {t("customGame.gameplay.total")}: {totalGameplayWeight}%
                   </span>
@@ -415,7 +415,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                     onClick={() =>
                       setGameplayWeights({ ...DEFAULT_GAMEPLAY_WEIGHTS })
                     }
-                    className="px-3 py-1.5 rounded-lg border border-theme-border hover:border-theme-muted hover:bg-theme-surface-highlight/40 transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-theme-divider/60 hover:border-theme-muted hover:bg-theme-surface-highlight/40 transition-colors"
                   >
                     {t("customGame.gameplay.reset")}
                   </button>
@@ -466,8 +466,8 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
             </div>
           )}
 
-          <div className="border-l-2 border-theme-border/40 pl-4 py-1">
-            <p className="text-xs text-theme-muted leading-relaxed">
+          <div className="border-l-2 border-theme-divider/60 pl-4 py-1">
+            <p className="text-xs text-theme-text-secondary leading-relaxed">
               <strong className="text-theme-primary">{t("tip")}:</strong>{" "}
               {mode === "text" ? t("customWritingTips") : t("customGame.tip")}
             </p>
@@ -475,10 +475,10 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-theme-border flex gap-3">
+        <div className="p-6 border-t border-theme-divider/60 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
+            className="flex-1 px-4 py-3 border border-theme-divider/60 text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
           >
             {t("cancel")}
           </button>

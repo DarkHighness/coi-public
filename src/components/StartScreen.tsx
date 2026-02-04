@@ -249,7 +249,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl xl:text-6xl font-scifi uppercase tracking-[0.15em] text-theme-primary/80 transition-all duration-300">
             {t("titlePart2")}
           </h2>
-          <p className="hidden lg:block text-lg text-theme-muted max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
+          <p className="hidden lg:block text-lg text-theme-text-secondary max-w-md border-l-4 border-theme-primary pl-6 italic mt-8">
             "{t("startQuote")}"
           </p>
         </div>
@@ -257,7 +257,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
       {/* Right Panel: Interaction */}
       <div
-        className={`relative z-20 lg:w-6/12 ${mode === "theme_select" ? "h-full w-full" : "h-2/3"} lg:h-full bg-theme-bg/85 backdrop-blur-lg border-t lg:border-t-0 lg:border-l border-theme-border/25 flex flex-col overflow-hidden transition-all duration-500`}
+        className={`relative z-20 lg:w-6/12 ${mode === "theme_select" ? "h-full w-full" : "h-2/3"} lg:h-full bg-theme-bg/85 backdrop-blur-lg border-t lg:border-t-0 lg:border-l border-theme-divider/60 flex flex-col overflow-hidden transition-all duration-500`}
       >
         {/* Save Preview Background */}
         {latestSave?.previewImage && (
@@ -280,7 +280,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               onSettings();
             }}
             data-tutorial-id="settings-button"
-            className="p-2.5 text-theme-muted hover:text-theme-primary transition-colors hover:bg-theme-surface/10"
+            className="p-2.5 text-theme-text-secondary hover:text-theme-text transition-colors hover:bg-theme-surface/10"
             title={t("settings.title")}
           >
             <svg
@@ -311,7 +311,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           {mode === "main" ? (
             <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full overflow-y-auto custom-scrollbar px-2">
               {latestSave && (
-                <div className="mb-2 border-y border-theme-border/20">
+                <div className="mb-2 border-y border-theme-divider/60">
                   <button
                     onClick={onContinue}
                     className="w-full py-5 px-2 text-left hover:bg-theme-surface/10 transition-colors"
@@ -320,7 +320,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       <span className="text-theme-primary font-bold uppercase tracking-widest text-sm">
                         {t("continueGame")}
                       </span>
-                      <span className="text-[11px] text-theme-muted/80 font-mono">
+                      <span className="text-[11px] text-theme-text-secondary font-mono">
                         {new Date(latestSave.timestamp).toLocaleString()}
                       </span>
                     </div>
@@ -330,7 +330,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         disableIndent
                       />
                     </div>
-                    <div className="mt-2 text-xs text-theme-muted uppercase tracking-wider">
+                    <div className="mt-2 text-xs text-theme-text-secondary tracking-wide">
                       {getThemeName(latestSave?.theme, t)}
                     </div>
                   </button>
@@ -341,7 +341,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 	                ref={startButtonRef}
 	                onClick={enterThemeSelect}
 	                data-tutorial-id="start-adventure-button"
-	                className={`w-full py-4 px-2 border-b border-theme-border/20 hover:border-theme-primary/30 font-bold text-lg tracking-wide transition-colors flex items-center justify-between group hover:bg-theme-surface/10 ${!latestSave ? "border-t text-theme-primary hover:text-theme-primary-hover" : "text-theme-text hover:text-theme-primary"}`}
+	                className={`w-full min-h-12 py-4 px-2 border-b border-theme-divider/60 hover:border-theme-primary/40 font-bold text-lg tracking-wide transition-colors flex items-center justify-between group hover:bg-theme-surface/10 ${!latestSave ? "border-t border-theme-divider/60 text-theme-primary hover:text-theme-primary-hover" : "text-theme-text hover:text-theme-primary"}`}
 	              >
 	                <span>{t("startTitle")}</span>
 	                <svg
@@ -362,10 +362,26 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               {/* Custom Game Button */}
               <button
                 onClick={() => setIsCustomGameModalOpen(true)}
-                className="w-full py-3 px-2 border-b border-theme-border/20 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors flex items-center justify-center gap-2"
+                className="w-full min-h-12 py-3 px-2 border-b border-theme-divider/60 text-theme-text hover:text-theme-primary hover:bg-theme-surface/10 transition-colors flex items-center justify-between gap-4"
               >
+                <span className="flex items-center gap-3">
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                    />
+                  </svg>
+                  <span>{t("customGame.open")}</span>
+                </span>
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 text-theme-text-secondary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -373,20 +389,35 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                    strokeWidth="2"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                <span>{t("customGame.open")}</span>
               </button>
 
               {/* Start from Image Button */}
               <button
                 onClick={() => setIsImageUploadOpen(true)}
-                className="w-full py-3 px-2 border-b border-theme-border/20 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors flex items-center justify-center gap-2"
+                className="w-full min-h-12 py-3 px-2 border-b border-theme-divider/60 text-theme-text hover:text-theme-primary hover:bg-theme-surface/10 transition-colors flex items-center justify-between gap-4"
               >
+                <span className="flex items-center gap-3">
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span>{t("startFromImage")}</span>
+                </span>
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 text-theme-text-secondary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -394,17 +425,16 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    strokeWidth="2"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                <span>{t("startFromImage")}</span>
               </button>
 
               <div className="pt-6 flex justify-center gap-6">
                 <button
                   onClick={() => setIsSaveManagerOpen(true)}
-                  className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
+                  className="text-theme-text-secondary hover:text-theme-text text-sm tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-divider/60"
                 >
                   <svg
                     className="w-4 h-4"
@@ -424,7 +454,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                 <button
                   onClick={() => setIsGalleryOpen(true)}
-                  className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
+                  className="text-theme-text-secondary hover:text-theme-text text-sm tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-divider/60"
                 >
                   <svg
                     className="w-4 h-4"
@@ -444,7 +474,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-theme-muted hover:text-theme-text text-sm uppercase tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-muted"
+                  className="text-theme-text-secondary hover:text-theme-text text-sm tracking-wide transition-colors flex items-center gap-2 border-b border-transparent hover:border-theme-divider/60"
                 >
                   <svg
                     className="w-4 h-4"
@@ -469,7 +499,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 <div className="flex items-center gap-4">
                   <button
                     onClick={exitThemeSelect}
-                    className="text-theme-muted hover:text-theme-text transition-colors"
+                    className="text-theme-text-secondary hover:text-theme-text transition-colors"
                   >
                     <svg
                       className="w-6 h-6"
@@ -485,7 +515,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       ></path>
                     </svg>
                   </button>
-                  <h3 className="text-sm uppercase tracking-widest text-theme-muted">
+                  <h3 className="text-sm uppercase tracking-widest text-theme-text-secondary">
                     {t("selectTheme")}
                   </h3>
                 </div>
@@ -493,7 +523,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 {/* Customize Button */}
                 <button
                   onClick={() => setIsCustomContextModalOpen(true)}
-                  className="relative px-1 py-2 text-theme-muted hover:text-theme-primary transition-colors text-xs uppercase tracking-wider font-bold flex items-center gap-2 border-b border-theme-border/25 hover:border-theme-primary/60"
+                  className="relative px-1 py-2 text-theme-text-secondary hover:text-theme-primary transition-colors text-xs uppercase tracking-wider font-bold flex items-center gap-2 border-b border-theme-divider/60 hover:border-theme-primary/60"
                 >
                   <svg
                     className="w-4 h-4"
@@ -532,7 +562,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="relative z-10 p-6 text-center text-xs text-theme-muted/50 uppercase tracking-widest shrink-0">
+        <div className="relative z-10 p-6 text-center text-xs text-theme-text-secondary/70 tracking-wide shrink-0">
           {t("version")} : {BUILD_INFO.buildTime} {BUILD_INFO.gitHash}
         </div>
       </div>

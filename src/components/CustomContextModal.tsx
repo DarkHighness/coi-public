@@ -30,18 +30,20 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center ui-overlay backdrop-blur-sm animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90dvh] overflow-hidden flex flex-col animate-slide-in">
+      <div className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg max-w-2xl w-full mx-4 max-h-[90dvh] overflow-hidden flex flex-col animate-slide-in">
         {/* Header */}
-        <div className="p-6 border-b border-theme-border flex items-center justify-between">
+        <div className="p-6 border-b border-theme-divider/60 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-theme-primary uppercase tracking-wider">
               {t("customContext")}
             </h2>
-            <p className="text-sm text-theme-muted mt-1">{t("customTips")}</p>
+            <p className="text-sm text-theme-text-secondary mt-1">
+              {t("customTips")}
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 text-theme-muted hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60"
+            className="p-2.5 text-theme-text-secondary hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60"
             aria-label={t("close", "Close")}
           >
             <svg
@@ -66,12 +68,12 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
             value={localContext}
             onChange={(e) => setLocalContext(e.target.value)}
             placeholder={t("customContextPlaceholder")}
-            className="w-full h-64 bg-theme-surface-highlight/30 border border-theme-border rounded-lg p-4 text-theme-text focus:border-theme-primary outline-none resize-none placeholder-theme-muted"
+            className="w-full h-64 bg-theme-bg border border-theme-divider/60 rounded-lg p-4 text-theme-text focus:border-theme-primary outline-none resize-none placeholder-theme-muted/60"
             autoFocus
           />
 
-          <div className="mt-4 p-4 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <p className="text-xs text-theme-muted leading-relaxed">
+          <div className="mt-4 border-l-2 border-theme-divider/60 pl-4 py-1">
+            <p className="text-xs text-theme-text-secondary leading-relaxed">
               <strong className="text-theme-primary">{t("tip")}:</strong>{" "}
               {t("customWritingTips")}
             </p>
@@ -79,22 +81,22 @@ export const CustomContextModal: React.FC<CustomContextModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-theme-border flex gap-3">
+        <div className="p-6 border-t border-theme-divider/60 flex gap-3">
           <button
             onClick={handleClear}
-            className="px-4 py-2 border border-theme-border text-theme-muted hover:text-theme-text hover:border-theme-muted transition-all rounded-lg"
+            className="px-4 py-2 border border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:border-theme-muted transition-all rounded-lg"
           >
             {t("clear")}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
+            className="flex-1 px-4 py-2 border border-theme-divider/60 text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
           >
             {t("cancel")}
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-3 bg-theme-primary text-theme-bg font-bold hover:bg-theme-primary-hover transition-all rounded-lg shadow-lg"
+            className="flex-1 px-4 py-3 bg-theme-primary text-theme-bg font-bold hover:bg-theme-primary-hover transition-all rounded-lg"
           >
             {t("saveApply")}
           </button>
