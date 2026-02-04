@@ -105,6 +105,10 @@ export const isReadonlyPath = (
 ): boolean => {
   const normalized = stripCurrentPrefix(path);
 
+  if (normalized === "skills" || normalized.startsWith("skills/")) {
+    return true;
+  }
+
   if (normalized === "outline/outline.json" && !allowOutlineEdit) {
     return true;
   }

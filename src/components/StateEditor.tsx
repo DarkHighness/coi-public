@@ -54,7 +54,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     if (!vfsSession) {
       return {};
     }
-    return vfsSession.snapshot();
+    return vfsSession.snapshotAll();
   }, [vfsSession, gameState]);
 
   const filteredSnapshot = useMemo<VfsFileMap>(() => {
@@ -279,6 +279,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
+      const readonly = isReadonlyPath(
+        node.path,
+        canEditOutline,
+        allowConversationEdit,
+      );
       return (
         <div key={node.path || "root"}>
           <button
@@ -294,7 +299,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             <span className="w-3 text-[10px] font-mono">
               {expanded ? "v" : ">"}
             </span>
-            <span className="truncate">{node.name}</span>
+            <span className="truncate flex-1">{node.name}</span>
+            {readonly && (
+              <span className="text-[10px] text-theme-info">
+                {t("stateEditor.readOnly") || "Read Only"}
+              </span>
+            )}
           </button>
           {expanded &&
             node.children?.map((child) => renderTreeNode(child, depth + 1))}

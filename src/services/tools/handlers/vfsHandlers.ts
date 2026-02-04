@@ -1003,6 +1003,9 @@ const withAtomicSession = <T>(
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (message.startsWith("Path is read-only:")) {
+      return createError(message, "INVALID_ACTION");
+    }
     return createError(message, "UNKNOWN");
   }
 };
@@ -1594,7 +1597,7 @@ registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_stat", args);
-  const snapshot = session.snapshot();
+  const snapshot = session.snapshotAll();
   const snapshotPaths = Object.keys(snapshot);
 
   const stats: Array<
@@ -1708,7 +1711,7 @@ registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
     }
   }
 
-  const snapshotPaths = Object.keys(session.snapshot());
+  const snapshotPaths = Object.keys(session.snapshotAll());
   const matched = new Set<string>();
 
   for (const path of snapshotPaths) {
@@ -1890,7 +1893,6 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_search", args);
-  const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
   if (limit <= 0) {
     return createSuccess({ results: [] }, "VFS search complete");
@@ -1902,6 +1904,7 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
     return resolvedPath.error;
   }
   const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
+  const files = session.snapshotAll();
   const regex = Boolean(typedArgs.regex);
   const fuzzy = Boolean(typedArgs.fuzzy);
   const semantic = Boolean(typedArgs.semantic);
@@ -1986,7 +1989,6 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   }
 
   const typedArgs = getTypedArgs("vfs_grep", args);
-  const files = session.snapshot();
   const limit = typedArgs.limit ?? 20;
   const resolvedPath = typedArgs.path
     ? resolveCurrentPath(typedArgs.path)
@@ -1995,6 +1997,7 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
     return resolvedPath.error;
   }
   const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
+  const files = session.snapshotAll();
 
   let regex: RegExp;
   try {
