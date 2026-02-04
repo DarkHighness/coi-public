@@ -551,10 +551,6 @@ export const useGameEngine = () => {
     } catch (outlineError) {
       // Outline generation failed - prompt user to retry
       console.error("Outline generation failed", outlineError);
-      const errorMessage =
-        outlineError instanceof Error
-          ? outlineError.message
-          : "Failed to generate story outline";
 
       // Check if history was corrupted - if so, clear the saved conversation
       const isHistoryCorrupted = outlineError instanceof HistoryCorruptedError;
@@ -569,10 +565,11 @@ export const useGameEngine = () => {
         }));
       }
 
+      const outlineFailedMessage = isHistoryCorrupted
+        ? t("initializing.errors.historyCacheCorrupted")
+        : t("initializing.errors.outlineGenerationFailed");
       showToast(
-        isHistoryCorrupted
-          ? "History cache corrupted. The cache has been cleared. Please retry."
-          : errorMessage,
+        outlineFailedMessage,
         "error",
         5000,
       );
@@ -596,8 +593,8 @@ export const useGameEngine = () => {
 
       // Show alert asking if user wants to retry
       const retryMessage = hasProgress
-        ? `${errorMessage}\n\n${t("initializing.errors.retryWithProgress", { phase: savedConversation.currentPhase })}`
-        : `${errorMessage}\n\n${t("initializing.errors.retryOutline")}`;
+        ? `${outlineFailedMessage}\n\n${t("initializing.errors.retryWithProgress", { phase: savedConversation.currentPhase })}`
+        : `${outlineFailedMessage}\n\n${t("initializing.errors.retryOutline")}`;
 
       const shouldRetry = window.confirm(retryMessage);
 
@@ -923,19 +920,15 @@ export const useGameEngine = () => {
             "Unexpected error during first segment creation",
             error,
           );
-          const errorMsg =
-            error instanceof Error
-              ? error.message
-              : "Unknown error during first segment";
-          showToast(errorMsg, "error", 5000);
+          const message = t("initializing.errors.firstSegmentFailed");
+          showToast(message, "error", 5000);
 
           // Don't delete save or navigate away - outline is still valid
           // Set error state so player can retry
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
-            error:
-              "Failed to start the story. Please try again using the retry button.",
+            error: message,
           }));
         }
       }, 100);
@@ -943,14 +936,13 @@ export const useGameEngine = () => {
       // This catch block now only handles errors AFTER outline generation
       // (e.g., state processing errors, navigation errors)
       console.error("Post-outline processing failed", e);
-      const postErrorMsg =
-        e instanceof Error ? e.message : "Failed to initialize game state";
-      showToast(postErrorMsg, "error", 5000);
+      const message = t("initializing.errors.postOutlineProcessingFailed");
+      showToast(message, "error", 5000);
       deleteSlot(slotId);
       setCurrentSlotId(null);
       setGameState((prev) => ({
         ...prev,
-        error: "Failed to initialize game state",
+        error: message,
         isProcessing: false,
       }));
       navigate("/");
@@ -1304,11 +1296,11 @@ export const useGameEngine = () => {
           );
         } catch (error) {
           console.error("First segment creation error after resume", error);
+          const message = t("initializing.errors.firstSegmentFailed");
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
-            error:
-              "Failed to start the story. Please try again using the retry button.",
+            error: message,
           }));
         }
       }, 100);
@@ -1325,10 +1317,8 @@ export const useGameEngine = () => {
       }
 
       const resumeErrorMsg = isHistoryCorrupted
-        ? "History cache corrupted. The cache has been cleared. Please retry from the beginning."
-        : e instanceof Error
-          ? e.message
-          : "Failed to resume story generation";
+        ? t("initializing.errors.historyCacheCorruptedResume")
+        : t("initializing.errors.resumeFailed");
       showToast(resumeErrorMsg, "error", 5000);
 
       setGameState((prev) => ({
@@ -1400,12 +1390,12 @@ export const useGameEngine = () => {
     const forkId = Number(match[1]);
     const turn = Number(match[2]);
     if (!Number.isFinite(forkId) || !Number.isFinite(turn)) {
-      showToast(`Invalid node id: ${nodeId}`, "error", 4000);
+      showToast(t("tree.errors.invalidNodeId", { nodeId }), "error", 4000);
       return;
     }
 
     if (!currentSlotId) {
-      showToast("No active save slot.", "error", 4000);
+      showToast(t("tree.errors.noActiveSaveSlot"), "error", 4000);
       return;
     }
 
@@ -1498,8 +1488,8 @@ export const useGameEngine = () => {
         }
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       console.error("[NavigateToNode] Failed:", error);
+      const message = t("tree.errors.navigateFailed");
       showToast(message, "error", 5000);
       setGameState((prev) => ({
         ...prev,

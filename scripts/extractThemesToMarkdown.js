@@ -37,8 +37,8 @@ function extractThemesToMarkdown() {
   const outputPath = path.join(__dirname, "../THEMES.md");
   fs.writeFileSync(outputPath, markdown, "utf-8");
 
-  console.log(`✅ 主题列表已生成: ${outputPath}`);
-  console.log(`📊 共提取 ${Object.keys(zhThemes).length} 个主题`);
+  console.log(`✅ Theme list generated: ${outputPath}`);
+  console.log(`📊 Extracted ${Object.keys(zhThemes).length} themes`);
 }
 
 // 执行脚本

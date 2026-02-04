@@ -306,7 +306,10 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                 fetchImageStats();
               } catch (error) {
                 console.error("Failed to clear images:", error);
-                showToast("Failed to clear images", "error");
+                showToast(
+                  t("data.clearImagesError", "Failed to clear images"),
+                  "error",
+                );
               }
             }
           }}
@@ -387,7 +390,13 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                 fetchSessionStats();
               } catch (error) {
                 console.error("Failed to clear session cache:", error);
-                showToast("Failed to clear session cache", "error");
+                showToast(
+                  t(
+                    "data.clearSessionCacheError",
+                    "Failed to clear session cache",
+                  ),
+                  "error",
+                );
               }
             }
           }}
@@ -427,7 +436,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                 fetchRagStats();
               } catch (error) {
                 console.error("Failed to clear RAG:", error);
-                showToast("Failed to clear RAG", "error");
+                showToast(t("data.clearRagError", "Failed to clear RAG"), "error");
               }
             }
           }}

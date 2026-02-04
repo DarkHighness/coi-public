@@ -15,6 +15,7 @@ import type {
   ExportStats,
   ImportResult,
   ImportValidation,
+  I18nMessage,
   StorySegment,
   GameStateSnapshot,
 } from "../types";
@@ -715,14 +716,36 @@ export function downloadExport(blob: Blob, slotName: string): void {
 export async function validateImport(file: File): Promise<ImportValidation> {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const errorsI18n: I18nMessage[] = [];
+  const warningsI18n: I18nMessage[] = [];
+
+  const pushError = (
+    key: string,
+    params?: Record<string, unknown>,
+    debugMessage?: string,
+  ) => {
+    errors.push(debugMessage ?? key);
+    errorsI18n.push({ key, params });
+  };
+
+  const pushWarning = (
+    key: string,
+    params?: Record<string, unknown>,
+    debugMessage?: string,
+  ) => {
+    warnings.push(debugMessage ?? key);
+    warningsI18n.push({ key, params });
+  };
 
   try {
     // Check file type
     if (!file.name.endsWith(".zip")) {
-      errors.push(
-        "存档格式/版本过旧：当前版本仅支持导入包含 VFS 快照的 .zip 存档。",
+      pushError(
+        "import.errors.unsupportedFormat",
+        undefined,
+        "Unsupported file format. Please import a .zip save export.",
       );
-      return { valid: false, errors, warnings };
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
     }
 
     // Parse ZIP
@@ -731,8 +754,12 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     // Check for manifest
     const manifestFile = zip.file("manifest.json");
     if (!manifestFile) {
-      errors.push("Missing manifest.json in export file.");
-      return { valid: false, errors, warnings };
+      pushError(
+        "import.errors.missingManifest",
+        undefined,
+        "Missing manifest.json in export file.",
+      );
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
     }
 
     const manifestJson = await manifestFile.async("text");
@@ -740,13 +767,22 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     try {
       manifest = JSON.parse(manifestJson);
     } catch {
-      errors.push("Invalid manifest.json format.");
-      return { valid: false, errors, warnings };
+      pushError(
+        "import.errors.invalidManifest",
+        undefined,
+        "Invalid manifest.json format.",
+      );
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
     }
 
     // Validate manifest version
     if (!manifest.version || manifest.version > EXPORT_FORMAT_VERSION) {
-      warnings.push(
+      pushWarning(
+        "import.warnings.newerVersion",
+        {
+          exportVersion: manifest.version,
+          supportedVersion: EXPORT_FORMAT_VERSION,
+        },
         `Export version ${manifest.version} is newer than supported ${EXPORT_FORMAT_VERSION}. Some features may not work.`,
       );
     }
@@ -755,7 +791,9 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     if (manifest.includes.images) {
       const imagesFolder = zip.folder("images");
       if (!imagesFolder) {
-        warnings.push(
+        pushWarning(
+          "import.warnings.missingImagesFolder",
+          undefined,
           "Images were marked as included but images folder is missing.",
         );
       }
@@ -765,10 +803,12 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     // If missing, we reject the import as "version too old".
     const vfsIndexFile = zip.file("vfs/index.json");
     if (!vfsIndexFile) {
-      errors.push(
-        "存档版本过旧：该导出文件不包含 VFS 快照历史（vfs/index.json）。请使用新版导出后再导入。",
+      pushError(
+        "import.errors.missingVfsIndex",
+        undefined,
+        "Missing VFS snapshot index (vfs/index.json).",
       );
-      return { valid: false, errors, warnings };
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
     }
 
     try {
@@ -776,10 +816,12 @@ export async function validateImport(file: File): Promise<ImportValidation> {
       const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
       const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
       if (snapshots.length === 0) {
-        errors.push(
-          "存档版本过旧或已损坏：VFS 快照索引为空（vfs/index.json）。",
+        pushError(
+          "import.errors.emptyVfsIndex",
+          undefined,
+          "VFS snapshot index is empty (vfs/index.json).",
         );
-        return { valid: false, errors, warnings };
+        return { valid: false, errors, warnings, errorsI18n, warningsI18n };
       }
 
       // Validate that at least the latest snapshot file exists.
@@ -794,31 +836,41 @@ export async function validateImport(file: File): Promise<ImportValidation> {
       ) {
         const snapshotPath = `vfs/snapshots/fork-${(latestEntry as any).forkId}/turn-${(latestEntry as any).turn}.json`;
         if (!zip.file(snapshotPath)) {
-          errors.push(
-            `存档已损坏：缺少 VFS 快照文件（${snapshotPath}）。`,
+          pushError(
+            "import.errors.missingSnapshotFile",
+            { path: snapshotPath },
+            `Missing VFS snapshot file (${snapshotPath}).`,
           );
-          return { valid: false, errors, warnings };
+          return { valid: false, errors, warnings, errorsI18n, warningsI18n };
         }
       }
     } catch (error) {
-      errors.push(
-        `存档已损坏：无法解析 VFS 索引（vfs/index.json）：${error instanceof Error ? error.message : "Unknown error"}`,
+      console.warn("[SaveImport] Failed to parse VFS index:", error);
+      pushError(
+        "import.errors.unreadableVfsIndex",
+        undefined,
+        "Failed to parse VFS index (vfs/index.json).",
       );
-      return { valid: false, errors, warnings };
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
     }
 
     return {
       valid: errors.length === 0,
       errors,
       warnings,
+      errorsI18n,
+      warningsI18n,
       manifest,
       requiresMigration: false,
     };
   } catch (error) {
-    errors.push(
-      `Failed to parse import file: ${error instanceof Error ? error.message : "Unknown error"}`,
+    console.warn("[SaveImport] Failed to parse import file:", error);
+    pushError(
+      "import.errors.parseFailed",
+      undefined,
+      "Failed to parse import file.",
     );
-    return { valid: false, errors, warnings };
+    return { valid: false, errors, warnings, errorsI18n, warningsI18n };
   }
 }
 
@@ -851,12 +903,15 @@ export async function importSave(
       return {
         success: false,
         error: validation.errors.join("; "),
+        errorI18n: validation.errorsI18n?.[0],
         warnings: validation.warnings,
+        warningsI18n: validation.warningsI18n,
       };
     }
 
     const manifest = validation.manifest!;
     const warnings = [...validation.warnings];
+    const warningsI18n = [...(validation.warningsI18n ?? [])];
 
     // Generate new slot ID with uniqueness guarantee
     const newSlotId = generateUniqueSlotId(existingSlots);
@@ -895,12 +950,14 @@ export async function importSave(
             warnings.push(
               "RAG service is not initialized. Embeddings import skipped.",
             );
+            warningsI18n.push({ key: "import.warnings.embeddingsSkipped" });
           }
         } catch (error) {
           console.warn("[SaveImport] Failed to import embeddings:", error);
           warnings.push(
             "Failed to import embeddings. They will be regenerated.",
           );
+          warningsI18n.push({ key: "import.warnings.embeddingsRegen" });
         }
       }
     }
@@ -916,8 +973,10 @@ export async function importSave(
       if (!vfsIndexFile) {
         return {
           success: false,
-          error:
-            "存档版本过旧：导入文件缺少 VFS 索引（vfs/index.json）。请使用新版导出后再导入。",
+          error: "Missing VFS snapshot index (vfs/index.json).",
+          errorI18n: { key: "import.errors.missingVfsIndex" },
+          warnings,
+          warningsI18n,
         };
       }
       const indexJson = await vfsIndexFile.async("text");
@@ -927,7 +986,10 @@ export async function importSave(
       if (snapshots.length === 0) {
         return {
           success: false,
-          error: "存档已损坏：VFS 快照索引为空（vfs/index.json）。",
+          error: "VFS snapshot index is empty (vfs/index.json).",
+          errorI18n: { key: "import.errors.emptyVfsIndex" },
+          warnings,
+          warningsI18n,
         };
       }
 
@@ -955,7 +1017,10 @@ export async function importSave(
       if (imported === 0) {
         return {
           success: false,
-          error: "存档已损坏：未能导入任何 VFS 快照。",
+          error: "No VFS snapshots were imported.",
+          errorI18n: { key: "import.errors.noSnapshotsImported" },
+          warnings,
+          warningsI18n,
         };
       }
 
@@ -1018,10 +1083,10 @@ export async function importSave(
       console.warn("[SaveImport] Failed to import/reconstruct VFS snapshots:", error);
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to import VFS snapshots",
+        error: "Failed to import VFS snapshots.",
+        errorI18n: { key: "import.errors.vfsImportFailed" },
+        warnings,
+        warningsI18n,
       };
     }
 
@@ -1031,7 +1096,7 @@ export async function importSave(
       name: generateUniqueName(derivedName || manifest.slot.name, existingSlots),
       timestamp: Date.now(),
       theme: derivedTheme || manifest.slot.theme,
-      summary: derivedSummary || manifest.slot.summary || "Imported save",
+      summary: derivedSummary || manifest.slot.summary || "",
       previewImage: derivedPreviewImage || manifest.slot.previewImage,
     };
 
@@ -1045,6 +1110,7 @@ export async function importSave(
       success: true,
       slotId: newSlotId,
       warnings,
+      warningsI18n,
       migrated: false,
     };
   } catch (error) {
@@ -1052,6 +1118,7 @@ export async function importSave(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown import error",
+      errorI18n: { key: "import.errors.importFailed" },
     };
   }
 }

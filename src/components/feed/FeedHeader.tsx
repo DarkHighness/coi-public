@@ -104,10 +104,10 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
                 className={`flex items-center space-x-1 min-w-0 hover:text-theme-primary transition-colors ${isEnvThemeLocked ? "opacity-50" : ""}`}
                 title={
                   isEnvThemeLocked
-                    ? t("feedHeader.envThemeLocked") ||
-                      "环境主题已锁定 (点击解锁)"
-                    : t("feedHeader.envThemeUnlocked") ||
-                      "环境主题跟随氛围 (点击锁定)"
+                    ? t("feedHeader.envThemeLockedHint") ||
+                      "Environment theme is locked (click to unlock)"
+                    : t("feedHeader.envThemeUnlockedHint") ||
+                      "Environment theme follows ambience (click to lock)"
                 }
               >
                 <span

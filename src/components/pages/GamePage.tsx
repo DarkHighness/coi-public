@@ -231,7 +231,10 @@ export const GamePage: React.FC<GamePageProps> = ({
       setCurrentAmbience(env);
       if (env !== lastPlayedEnvRef.current) {
         const envNameKey = "ambienceNames." + env;
-        showToast(`${t("audioSettings.environment")}: ${t(envNameKey)}`);
+        showToast(
+          t("audioSettings.environmentChanged", { env: t(envNameKey) }),
+          "info",
+        );
         lastPlayedEnvRef.current = env;
       }
     },

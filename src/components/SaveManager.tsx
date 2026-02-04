@@ -64,7 +64,8 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                 {t("saves.title")}
               </h2>
               <p className="text-xs text-theme-text-secondary mt-1">
-                {slots.length} {slots.length === 1 ? "save" : "saves"}
+                {t("saves.countLabel", { count: slots.length }) ||
+                  `${slots.length} ${slots.length === 1 ? "save" : "saves"}`}
               </p>
             </div>
             <button
@@ -93,13 +94,14 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
             {legacySaveCount > 0 && !legacySaveNoticeDismissed && (
               <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <div className="text-sm text-amber-100">
-                  检测到 {legacySaveCount} 个旧版本存档（非 VFS），当前版本不支持加载/迁移。
+                  {t("saves.legacyNotice.short", { count: legacySaveCount }) ||
+                    `Detected ${legacySaveCount} legacy saves (non-VFS). This version can't load or migrate them.`}
                 </div>
                 <button
                   onClick={() => onDismissLegacySaveNotice?.()}
                   className="px-3 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 transition-colors self-start sm:self-auto"
                 >
-                  不再提示
+                  {t("saves.legacyNotice.dismiss") || "Don't show again"}
                 </button>
               </div>
             )}

@@ -430,9 +430,9 @@ async function main(): Promise<void> {
     // ========================================================================
     // Step 3: Chinese Translation
     // ========================================================================
-    console.log("\n📋 STEP 3: Chinese Translation (中文翻译)\n");
+    console.log("\n📋 STEP 3: Chinese Translation\n");
 
-    let zhName = await prompt(rl, "Enter Chinese theme name (中文名称): ");
+    let zhName = await prompt(rl, "Enter theme name in Chinese: ");
     if (restricted && !zhName.startsWith("《")) {
       const wrapName = await promptYesNo(
         rl,
@@ -444,17 +444,22 @@ async function main(): Promise<void> {
       }
     }
 
-    console.log("\n输入叙事风格描述（AI写作指导）:");
-    const zhNarrativeStyle = await promptMultiline(rl, "叙事风格:");
+    console.log("\nEnter the narrative style description (in Chinese):");
+    const zhNarrativeStyle = await promptMultiline(rl, "Narrative style (ZH):");
 
-    console.log("\n输入背景模板（故事设定，可使用【地点】等占位符）:");
-    const zhBackgroundTemplate = await promptMultiline(rl, "背景模板:");
+    console.log(
+      "\nEnter the background template (in Chinese; you can use placeholders like [LOCATION]):",
+    );
+    const zhBackgroundTemplate = await promptMultiline(
+      rl,
+      "Background template (ZH):",
+    );
 
-    console.log("\n输入示例段落（展示写作风格）:");
-    const zhExample = await promptMultiline(rl, "示例:");
+    console.log("\nEnter an example paragraph (in Chinese):");
+    const zhExample = await promptMultiline(rl, "Example (ZH):");
 
-    console.log("\n输入世界设定描述:");
-    const zhWorldSetting = await promptMultiline(rl, "世界设定:");
+    console.log("\nEnter the world setting description (in Chinese):");
+    const zhWorldSetting = await promptMultiline(rl, "World setting (ZH):");
 
     const zhTranslation: ThemeTranslation = {
       name: zhName,

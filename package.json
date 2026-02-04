@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node scripts/generate-build-info.js && vite",
     "build": "node scripts/generate-build-info.js && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:i18n": "node scripts/lint-i18n.js",
+    "lint": "pnpm lint:i18n"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",

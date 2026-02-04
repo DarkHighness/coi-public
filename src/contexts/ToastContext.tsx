@@ -178,7 +178,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
           setTimeout(() => {
             if (change.items.length === 1) {
               // Single item: show name directly in message
-              showToast(`${change.msg}: ${change.items[0]}`, change.type, 3000);
+              showToast(
+                t("toast.singleItem", {
+                  action: change.msg,
+                  item: change.items[0],
+                }) || `${change.msg}: ${change.items[0]}`,
+                change.type,
+                3000,
+              );
             } else {
               // Multiple items: expandable toast
               showToast(change.msg, change.type, 4000, change.items);
