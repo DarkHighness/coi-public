@@ -46,6 +46,7 @@ const createBaseGameState = (): GameState => ({
   currentFork: [],
   actors: [],
   playerActorId: "char:player",
+  worldInfo: null,
   locationItemsByLocationId: {},
   inventory: [],
   npcs: [],
@@ -230,6 +231,21 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const actorInventory = new Map<string, unknown[]>();
   const placeholders: Placeholder[] = [];
   const locationItemsByLocationId: Record<string, InventoryItem[]> = {};
+  const questDefinitions: Quest[] = [];
+  const locationDefinitions: Location[] = [];
+  const knowledgeDefinitions: KnowledgeEntry[] = [];
+  const factionDefinitions: Faction[] = [];
+  const timelineDefinitions: TimelineEvent[] = [];
+  const causalChainDefinitions: CausalChain[] = [];
+
+  // Per-actor views (player only for UI derivation)
+  const playerQuestViews = new Map<string, any>();
+  const playerKnowledgeViews = new Map<string, any>();
+  const playerTimelineViews = new Map<string, any>();
+  const playerLocationViews = new Map<string, any>();
+  const playerFactionViews = new Map<string, any>();
+  const playerCausalChainViews = new Map<string, any>();
+  let playerWorldInfoView: any | null = null;
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
@@ -291,6 +307,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
+    if (pathWithoutCurrent === "world/world_info.json") {
+      state.worldInfo = data as any;
+      continue;
+    }
+
     if (pathWithoutCurrent === "summary/state.json") {
       const summaryData = data as {
         summaries?: GameState["summaries"];
@@ -337,6 +358,50 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
       // subfolders
       const sub = parts[3];
+      if (sub === "views") {
+        // views/world_info.json
+        if (parts.length === 5 && parts[4] === "world_info.json") {
+          if (actorId === state.playerActorId) {
+            playerWorldInfoView = data as any;
+          }
+          continue;
+        }
+
+        // views/<category>/<entityId>.json
+        const category = parts[4];
+        const filename = parts[5];
+        if (!category || !filename || !filename.endsWith(".json")) continue;
+        const entityId = filename.slice(0, -".json".length);
+        if (actorId !== state.playerActorId) {
+          continue;
+        }
+
+        if (category === "quests") {
+          playerQuestViews.set(entityId, data as any);
+          continue;
+        }
+        if (category === "knowledge") {
+          playerKnowledgeViews.set(entityId, data as any);
+          continue;
+        }
+        if (category === "timeline") {
+          playerTimelineViews.set(entityId, data as any);
+          continue;
+        }
+        if (category === "locations") {
+          playerLocationViews.set(entityId, data as any);
+          continue;
+        }
+        if (category === "factions") {
+          playerFactionViews.set(entityId, data as any);
+          continue;
+        }
+        if (category === "causal_chains") {
+          playerCausalChainViews.set(entityId, data as any);
+          continue;
+        }
+        continue;
+      }
       if (sub === "skills") {
         const list = actorSkills.get(actorId) ?? [];
         list.push(data);
@@ -399,33 +464,175 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent.startsWith("world/quests/")) {
-      state.quests.push(data as Quest);
+      questDefinitions.push(data as Quest);
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/locations/")) {
-      state.locations.push(data as Location);
+      locationDefinitions.push(data as Location);
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/knowledge/")) {
-      state.knowledge.push(data as KnowledgeEntry);
+      knowledgeDefinitions.push(data as KnowledgeEntry);
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/factions/")) {
-      state.factions.push(data as Faction);
+      factionDefinitions.push(data as Faction);
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/timeline/")) {
-      state.timeline.push(data as TimelineEvent);
+      timelineDefinitions.push(data as TimelineEvent);
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/causal_chains/")) {
-      state.causalChains.push(data as CausalChain);
+      causalChainDefinitions.push(data as CausalChain);
     }
+  }
+
+  // Merge canonical entities with player views into UI-friendly view models.
+  const playerId = state.playerActorId;
+  const hasKnownByPlayer = (entity: any): boolean =>
+    Array.isArray(entity?.knownBy) && entity.knownBy.includes(playerId);
+  const withDerivedKnownByPlayer = (entity: any, hasView: boolean): any => {
+    if (!hasView) return entity;
+    if (!Array.isArray(entity?.knownBy)) {
+      return { ...entity, knownBy: [playerId] };
+    }
+    if (entity.knownBy.includes(playerId)) return entity;
+    return { ...entity, knownBy: [...entity.knownBy, playerId] };
+  };
+
+  const mergeQuest = (q: any): any => {
+    const view = playerQuestViews.get(q.id);
+    const qWithKnown = withDerivedKnownByPlayer(q, Boolean(view));
+    if (view && !hasKnownByPlayer(q)) {
+      console.warn(
+        `[VFS] Quest view exists but canonical knownBy missing ${playerId}: ${q.id}`,
+      );
+    }
+    const status = view?.status ?? "active";
+    return {
+      ...qWithKnown,
+      status,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+    };
+  };
+
+  const mergeKnowledge = (k: any): any => {
+    const view = playerKnowledgeViews.get(k.id);
+    const kWithKnown = withDerivedKnownByPlayer(k, Boolean(view));
+    if (view && !hasKnownByPlayer(k)) {
+      console.warn(
+        `[VFS] Knowledge view exists but canonical knownBy missing ${playerId}: ${k.id}`,
+      );
+    }
+    return {
+      ...kWithKnown,
+      discoveredAt: view?.discoveredAtGameTime,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+    };
+  };
+
+  const mergeTimeline = (e: any): any => {
+    const view = playerTimelineViews.get(e.id);
+    const eWithKnown = withDerivedKnownByPlayer(e, Boolean(view));
+    if (view && !hasKnownByPlayer(e)) {
+      console.warn(
+        `[VFS] Timeline view exists but canonical knownBy missing ${playerId}: ${e.id}`,
+      );
+    }
+    return {
+      ...eWithKnown,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+    };
+  };
+
+  const mergeLocation = (loc: any): any => {
+    const view = playerLocationViews.get(loc.id);
+    const locWithKnown = withDerivedKnownByPlayer(loc, Boolean(view));
+    if (view && !hasKnownByPlayer(loc)) {
+      console.warn(
+        `[VFS] Location view exists but canonical knownBy missing ${playerId}: ${loc.id}`,
+      );
+    }
+    return {
+      ...locWithKnown,
+      isVisited: view?.isVisited ?? false,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      discoveredAt: view?.discoveredAtGameTime,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+    };
+  };
+
+  const mergeFaction = (f: any): any => {
+    const view = playerFactionViews.get(f.id);
+    const fWithKnown = withDerivedKnownByPlayer(f, Boolean(view));
+    if (view && !hasKnownByPlayer(f)) {
+      console.warn(
+        `[VFS] Faction view exists but canonical knownBy missing ${playerId}: ${f.id}`,
+      );
+    }
+    return {
+      ...fWithKnown,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+      standing: view?.standing,
+      standingTag: view?.standingTag,
+    };
+  };
+
+  const mergeCausalChain = (c: any): any => {
+    const view = playerCausalChainViews.get(c.chainId);
+    const cWithKnown = withDerivedKnownByPlayer(c, Boolean(view));
+    if (view && !hasKnownByPlayer(c)) {
+      console.warn(
+        `[VFS] Causal chain view exists but canonical knownBy missing ${playerId}: ${c.chainId}`,
+      );
+    }
+    return {
+      ...cWithKnown,
+      unlocked: view?.unlocked ?? false,
+      unlockReason: view?.unlockReason,
+      highlight: view?.highlight,
+      lastAccess: view?.lastAccess,
+      investigationNotes: view?.investigationNotes,
+      linkedEventIds: view?.linkedEventIds,
+    };
+  };
+
+  state.quests = questDefinitions.map(mergeQuest) as any;
+  state.locations = locationDefinitions.map(mergeLocation) as any;
+  state.knowledge = knowledgeDefinitions.map(mergeKnowledge) as any;
+  state.factions = factionDefinitions.map(mergeFaction) as any;
+  state.timeline = timelineDefinitions.map(mergeTimeline) as any;
+  state.causalChains = causalChainDefinitions.map(mergeCausalChain) as any;
+
+  // World info unlock flags (per-actor view)
+  if (playerWorldInfoView) {
+    (state.worldInfo as any) = {
+      ...(state.worldInfo as any),
+      worldSettingUnlocked: playerWorldInfoView.worldSettingUnlocked ?? false,
+      worldSettingUnlockReason: playerWorldInfoView.worldSettingUnlockReason,
+      mainGoalUnlocked: playerWorldInfoView.mainGoalUnlocked ?? false,
+      mainGoalUnlockReason: playerWorldInfoView.mainGoalUnlockReason,
+    };
   }
 
   // Assemble actor bundles

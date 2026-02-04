@@ -7,6 +7,14 @@ import {
   factionSchema,
   timelineEventSchema,
   causalChainSchema,
+  worldInfoSchema,
+  worldInfoViewSchema,
+  questViewSchema,
+  knowledgeEntryViewSchema,
+  timelineEventViewSchema,
+  locationViewSchema,
+  factionViewSchema,
+  causalChainViewSchema,
   skillSchema,
   conditionSchema,
   hiddenTraitSchema,
@@ -47,6 +55,7 @@ const SummaryStateSchema = z.object({
 });
 
 const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
+  { pattern: /^world\/world_info\.json$/, schema: worldInfoSchema },
   { pattern: /^world\/locations\/[^/]+\.json$/, schema: locationSchema },
   {
     pattern: /^world\/locations\/[^/]+\/items\/[^/]+\.json$/,
@@ -61,6 +70,34 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   {
     pattern: /^world\/characters\/[^/]+\/profile\.json$/,
     schema: actorProfileSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/world_info\.json$/,
+    schema: worldInfoViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/quests\/[^/]+\.json$/,
+    schema: questViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/knowledge\/[^/]+\.json$/,
+    schema: knowledgeEntryViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/timeline\/[^/]+\.json$/,
+    schema: timelineEventViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/locations\/[^/]+\.json$/,
+    schema: locationViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/factions\/[^/]+\.json$/,
+    schema: factionViewSchema,
+  },
+  {
+    pattern: /^world\/characters\/[^/]+\/views\/causal_chains\/[^/]+\.json$/,
+    schema: causalChainViewSchema,
   },
   { pattern: /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/, schema: skillSchema },
   {

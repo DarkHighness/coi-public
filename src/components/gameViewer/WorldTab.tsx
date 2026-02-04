@@ -29,7 +29,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   toggleSection,
   t,
 }) => {
-  const outline = gameState.outline;
+  const worldInfo = gameState.worldInfo;
 
   return (
     <div className="space-y-4">
@@ -41,46 +41,45 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         isExpanded={expandedSections.has("worldSetting")}
         onToggle={toggleSection}
       >
-        {outline?.worldSetting ? (
+        {worldInfo?.worldSetting ? (
           <>
             <div className="story-text text-theme-text text-sm leading-relaxed">
               <MarkdownText
-                content={outline.worldSetting.visible?.description || ""}
+                content={worldInfo.worldSetting.visible?.description || ""}
               />
-              {outline.worldSetting.visible?.rules && (
+              {worldInfo.worldSetting.visible?.rules && (
                 <div className="mt-3 pt-2 border-t border-theme-border/30">
                   <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("gameViewer.rules") || "Rules"}
                   </span>
-                  <MarkdownText content={outline.worldSetting.visible.rules} />
+                  <MarkdownText content={worldInfo.worldSetting.visible.rules} />
                 </div>
               )}
             </div>
-            {(gameState.outline?.worldSettingUnlocked ||
-              gameState.unlockMode) &&
-              outline.worldSetting.hidden && (
+            {(worldInfo.worldSettingUnlocked || gameState.unlockMode) &&
+              worldInfo.worldSetting.hidden && (
                 <HiddenContent
                   t={t}
                   content={
                     <div className="space-y-2">
-                      {outline.worldSetting.hidden.hiddenRules && (
+                      {worldInfo.worldSetting.hidden.hiddenRules && (
                         <div>
                           <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                             {t("gameViewer.hiddenRules") || "Hidden Rules"}:
                           </span>
                           <MarkdownText
-                            content={outline.worldSetting.hidden.hiddenRules}
+                            content={worldInfo.worldSetting.hidden.hiddenRules}
                           />
                         </div>
                       )}
-                      {outline.worldSetting.hidden.secrets &&
-                        outline.worldSetting.hidden.secrets.length > 0 && (
+                      {worldInfo.worldSetting.hidden.secrets &&
+                        worldInfo.worldSetting.hidden.secrets.length > 0 && (
                           <div>
                             <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                               {t("gameViewer.secrets")}:
                             </span>
                             <ul className="list-disc list-inside space-y-1 pl-2">
-                              {outline.worldSetting.hidden.secrets.map(
+                              {worldInfo.worldSetting.hidden.secrets.map(
                                 (secret, idx) => (
                                   <li key={idx}>
                                     <MarkdownText content={secret} inline />
@@ -94,15 +93,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   }
                 />
               )}
-            {(gameState.outline?.worldSettingUnlocked ||
-              gameState.unlockMode) &&
-              outline.worldSetting.history && (
+            {(worldInfo.worldSettingUnlocked || gameState.unlockMode) &&
+              worldInfo.worldSetting.history && (
                 <div className="mt-4 pt-3 border-t border-theme-border/30">
                   <SubsectionLabel>
                     {t("gameViewer.worldHistory")}:
                   </SubsectionLabel>
                   <ContentBlock>
-                    <MarkdownText content={outline.worldSetting.history} />
+                    <MarkdownText content={worldInfo.worldSetting.history} />
                   </ContentBlock>
                 </div>
               )}

@@ -607,6 +607,15 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         outline,
+        worldInfo: {
+          title: outline.title,
+          premise: outline.premise,
+          narrativeScale: outline.narrativeScale,
+          worldSetting: outline.worldSetting,
+          mainGoal: outline.mainGoal,
+          worldSettingUnlocked: false,
+          mainGoalUnlocked: false,
+        },
         themeConfig, // Store resolved theme config from outline generation
         // Clear conversation state after successful generation
         outlineConversation: undefined,
@@ -1011,6 +1020,15 @@ export const useGameEngine = () => {
       const nextState = {
         ...gameStateRef.current,
         outline,
+        worldInfo: {
+          title: outline.title,
+          premise: outline.premise,
+          narrativeScale: outline.narrativeScale,
+          worldSetting: outline.worldSetting,
+          mainGoal: outline.mainGoal,
+          worldSettingUnlocked: false,
+          mainGoalUnlocked: false,
+        },
         themeConfig: resolvedThemeConfig, // Store resolved theme config
         outlineConversation: undefined,
         actors: [
@@ -1733,11 +1751,12 @@ export const useGameEngine = () => {
         const filePathByKind: Record<string, string> = {
           inventory: `world/characters/${playerId}/inventory/${target.id}.json`,
           npcs: `world/characters/${target.id}/profile.json`,
-          locations: `world/locations/${target.id}.json`,
-          knowledge: `world/knowledge/${target.id}.json`,
-          quests: `world/quests/${target.id}.json`,
-          factions: `world/factions/${target.id}.json`,
-          timeline: `world/timeline/${target.id}.json`,
+          // Per-actor UI fields (highlight/unlocked/status/visited) live in views
+          locations: `world/characters/${playerId}/views/locations/${target.id}.json`,
+          knowledge: `world/characters/${playerId}/views/knowledge/${target.id}.json`,
+          quests: `world/characters/${playerId}/views/quests/${target.id}.json`,
+          factions: `world/characters/${playerId}/views/factions/${target.id}.json`,
+          timeline: `world/characters/${playerId}/views/timeline/${target.id}.json`,
         };
 
         const filePath = filePathByKind[target.kind];

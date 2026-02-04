@@ -362,38 +362,39 @@ export const locationSchema = z.object({
   visible: locationVisibleSchema,
   hidden: locationHiddenSchema.nullish(),
   lore: z.string().nullish().describe("Location history or lore."),
-  isVisited: z.boolean().nullish().describe("INVISIBLE to AI."),
-  unlocked: z
-    .boolean()
-    .nullish()
-    .describe(
-      "AI DECISION: Set true when story context reveals location's secrets.",
-    ),
-  unlockReason: z
-    .string()
-    .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why location secrets were revealed.",
-    ),
   icon: z
     .string()
     .nullish()
     .describe("A single emoji representing this location."),
-  highlight: z.boolean().nullish().describe("INVISIBLE to AI."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
-  discoveredAt: z.number().nullish(),
   modifiedAt: versionedTimestampSchema
     .nullish()
     .describe("Version-aware modification timestamp."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe("Last access timestamp. INVISIBLE to AI."),
   notes: z
     .string()
     .nullish()
     .describe(
       "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
     ),
+});
+
+/**
+ * Derived UI model for Location (canonical definition + per-actor view fields).
+ * NOTE: These fields MUST NOT be stored in `world/locations/*.json`.
+ */
+export const locationViewModelSchema = locationSchema.extend({
+  // Per-actor view fields
+  isVisited: z.boolean().nullish().describe("Per-actor view: visited flag."),
+  unlocked: z
+    .boolean()
+    .nullish()
+    .describe("Per-actor view: whether hidden truth is revealed."),
+  unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
+  discoveredAt: z.number().nullish().describe("Per-actor view: discovered time."),
+  highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+  lastAccess: accessTimestampSchema
+    .nullish()
+    .describe("UI-only last access timestamp."),
 });
 
 // ============================================================================
@@ -446,31 +447,16 @@ export const questSchema = z.object({
   ),
   title: z.string().describe("Quest title."),
   type: questTypeSchema.describe("Quest type: main, side, or hidden."),
-  status: questStatusSchema.nullish().default("active"),
   visible: questVisibleSchema,
   hidden: questHiddenSchema.nullish(),
-  unlocked: z
-    .boolean()
-    .nullish()
-    .describe("AI DECISION: Set true when quest's hidden purpose is revealed."),
-  unlockReason: z
-    .string()
-    .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why quest's hidden purpose was revealed.",
-    ),
   icon: z
     .string()
     .nullish()
     .describe("A single emoji representing this quest."),
-  highlight: z.boolean().nullish().describe("INVISIBLE to AI."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
     .describe("Version-aware modification timestamp."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe("Last access timestamp. INVISIBLE to AI."),
 
   notes: z
     .string()
@@ -478,6 +464,24 @@ export const questSchema = z.object({
     .describe(
       "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
     ),
+});
+
+/**
+ * Derived UI model for Quest (canonical definition + per-actor view fields).
+ * NOTE: These fields MUST NOT be stored in `world/quests/*.json`.
+ */
+export const questViewModelSchema = questSchema.extend({
+  // Per-actor view fields
+  status: questStatusSchema.nullish().default("active"),
+  unlocked: z
+    .boolean()
+    .nullish()
+    .describe("Per-actor view: whether hidden truth is revealed."),
+  unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
+  highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+  lastAccess: accessTimestampSchema
+    .nullish()
+    .describe("UI-only last access timestamp."),
 });
 
 // ============================================================================
@@ -677,39 +681,39 @@ export const knowledgeEntrySchema = z.object({
   category: knowledgeCategorySchema.describe("Category for organization."),
   visible: knowledgeVisibleSchema,
   hidden: knowledgeHiddenSchema.nullish(),
-  discoveredAt: z
-    .string()
-    .nullish()
-    .describe("When this knowledge was discovered."),
   relatedTo: z.array(z.string()).nullish().describe("Related entity IDs."),
-  unlocked: z
-    .boolean()
-    .nullish()
-    .describe("AI DECISION: Set true when full truth discovered."),
-  unlockReason: z
-    .string()
-    .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why full truth was discovered.",
-    ),
   icon: z
     .string()
     .nullish()
     .describe("A single emoji representing this knowledge entry."),
-  highlight: z.boolean().nullish().describe("INVISIBLE to AI."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
     .describe("Version-aware modification timestamp."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe("Last access timestamp. INVISIBLE to AI."),
   notes: z
     .string()
     .nullish()
     .describe(
       "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
     ),
+});
+
+/**
+ * Derived UI model for KnowledgeEntry (canonical definition + per-actor view fields).
+ * NOTE: These fields MUST NOT be stored in `world/knowledge/*.json`.
+ */
+export const knowledgeEntryViewModelSchema = knowledgeEntrySchema.extend({
+  // Per-actor view fields
+  discoveredAt: z.string().nullish().describe("Per-actor view: discovered time."),
+  unlocked: z
+    .boolean()
+    .nullish()
+    .describe("Per-actor view: whether hidden truth is revealed."),
+  unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
+  highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+  lastAccess: accessTimestampSchema
+    .nullish()
+    .describe("UI-only last access timestamp."),
 });
 
 // ============================================================================
@@ -765,38 +769,43 @@ export const timelineEventSchema = z.object({
     .nullish()
     .describe("IDs of involved entities."),
   chainId: z.string().nullish().describe("Link to a CausalChain."),
-  unlocked: z
-    .boolean()
-    .nullish()
-    .describe(
-      "AI DECISION: Set true when event's true cause/consequences uncovered.",
-    ),
-  unlockReason: z
-    .string()
-    .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why event's true cause/consequences were uncovered.",
-    ),
   icon: z
     .string()
     .nullish()
     .describe("A single emoji representing this event."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe("Last access timestamp. INVISIBLE to AI."),
   range: z
     .object({
       start: z.number(),
       end: z.number(),
     })
     .nullish(),
-  highlight: z.boolean().nullish(),
+  createdAt: z.number().nullish().describe("INVISIBLE to AI."),
+  modifiedAt: versionedTimestampSchema
+    .nullish()
+    .describe("Version-aware modification timestamp."),
   notes: z
     .string()
     .nullish()
     .describe(
       "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
     ),
+});
+
+/**
+ * Derived UI model for TimelineEvent (canonical definition + per-actor view fields).
+ * NOTE: These fields MUST NOT be stored in `world/timeline/*.json`.
+ */
+export const timelineEventViewModelSchema = timelineEventSchema.extend({
+  // Per-actor view fields
+  unlocked: z
+    .boolean()
+    .nullish()
+    .describe("Per-actor view: whether hidden truth is revealed."),
+  unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
+  highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+  lastAccess: accessTimestampSchema
+    .nullish()
+    .describe("UI-only last access timestamp."),
 });
 
 // ============================================================================
@@ -931,21 +940,10 @@ export const factionSchema = z.object({
   name: z.string().describe("Faction name."),
   visible: factionVisibleSchema,
   hidden: factionHiddenSchema,
-  unlocked: z
-    .boolean()
-    .nullish()
-    .describe("True when secret agenda is revealed."),
-  unlockReason: z
-    .string()
-    .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why faction's secret agenda was revealed.",
-    ),
   icon: z
     .string()
     .nullish()
     .describe("A single emoji representing this faction."),
-  highlight: z.boolean().nullish(),
   notes: z
     .string()
     .nullish()
@@ -953,6 +951,132 @@ export const factionSchema = z.object({
       "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
     ),
 });
+
+/**
+ * Derived UI model for Faction (canonical definition + per-actor view fields).
+ * NOTE: These fields MUST NOT be stored in `world/factions/*.json`.
+ */
+export const factionViewModelSchema = factionSchema.extend({
+  // Per-actor view fields
+  unlocked: z
+    .boolean()
+    .nullish()
+    .describe("Per-actor view: whether hidden truth is revealed."),
+  unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
+  highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+  lastAccess: accessTimestampSchema
+    .nullish()
+    .describe("UI-only last access timestamp."),
+});
+
+// ============================================================================
+// Perspective Views (stored per-actor under `world/characters/<id>/views/**`)
+// ============================================================================
+
+/**
+ * Base schema for per-actor entity views.
+ *
+ * IMPORTANT:
+ * - These files store per-actor progress / discovery / revelation and UI state.
+ * - Canonical entities (world truth) MUST NOT store these fields.
+ */
+export const actorEntityViewBaseSchema = z
+  .object({
+    entityId: z.string().describe("Canonical entity id (e.g. 'quest:foo' -> 'foo')."),
+    unlocked: z
+      .boolean()
+      .nullish()
+      .describe("Per-actor revelation: whether hidden truth is revealed."),
+    unlockReason: z
+      .string()
+      .nullish()
+      .describe("REQUIRED when unlocked=true."),
+    evidence: z
+      .array(z.string())
+      .nullish()
+      .describe("Evidence supporting unlocked or belief updates."),
+    notes: z
+      .string()
+      .nullish()
+      .describe("Per-actor notes (player view must be objective)."),
+    highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+    lastAccess: accessTimestampSchema
+      .nullish()
+      .describe("UI-only last access timestamp."),
+  })
+  .strict();
+
+const withUnlockReasonRequirement = <T extends z.ZodTypeAny>(schema: T): T =>
+  schema.superRefine((value: any, ctx: z.RefinementCtx) => {
+    if (value?.unlocked && !value?.unlockReason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "unlockReason is required when unlocked=true",
+        path: ["unlockReason"],
+      });
+    }
+  }) as unknown as T;
+
+export const questObjectiveStateSchema = z
+  .object({
+    text: z.string(),
+    state: z.enum(["open", "done", "blocked"]),
+  })
+  .strict();
+
+export const questViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    status: questStatusSchema.describe("Per-actor quest status."),
+    objectiveState: z.array(questObjectiveStateSchema).nullish(),
+    acceptedAtGameTime: z.string().nullish(),
+    completedAtGameTime: z.string().nullish(),
+  })
+  .strict());
+
+export const knowledgeEntryViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    discoveredAtGameTime: z.string().nullish(),
+    beliefSummary: z
+      .string()
+      .nullish()
+      .describe("Per-actor current understanding (may be wrong but coherent)."),
+  })
+  .strict());
+
+export const timelineEventViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    rememberedAs: z
+      .string()
+      .nullish()
+      .describe("Per-actor remembered narrative (may be biased)."),
+    suspicions: z
+      .array(z.string())
+      .nullish()
+      .describe("Per-actor suspicion links (entity ids only)."),
+  })
+  .strict());
+
+export const locationViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    isVisited: z.boolean().nullish(),
+    visitedCount: z.number().int().nonnegative().nullish(),
+    discoveredAtGameTime: z.string().nullish(),
+  })
+  .strict());
+
+export const factionViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    standing: z.number().int().min(-100).max(100).nullish(),
+    standingTag: z.string().nullish(),
+  })
+  .strict());
+
+export const causalChainViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
+  .extend({
+    investigationNotes: z.string().nullish(),
+    linkedEventIds: z.array(z.string()).nullish(),
+  })
+  .strict());
 
 // ============================================================================
 // 角色属性 Schemas
@@ -1387,6 +1511,74 @@ export const mainGoalSchema = z.object({
 });
 
 // ============================================================================
+// World Info (Canonical + per-actor view for unlock flags)
+// ============================================================================
+
+/**
+ * Canonical world information (world truth / GM truth).
+ * Stored at: `world/world_info.json`
+ *
+ * IMPORTANT: This file MUST NOT contain per-actor fields like `unlocked` or `highlight`.
+ */
+export const worldInfoSchema = z
+  .object({
+    title: z.string().describe("Adventure title."),
+    premise: z.string().describe("The inciting incident and setting setup."),
+    narrativeScale: z
+      .enum(["epic", "intimate", "balanced"])
+      .nullish()
+      .describe("Narrative scale decision captured at outline time."),
+    worldSetting: worldSettingSchema.describe("Dual-layer world setting."),
+    mainGoal: mainGoalSchema.describe("Dual-layer main goal."),
+  })
+  .strict();
+
+/**
+ * Per-actor unlock state for world info (player-facing revelation controls).
+ * Stored at: `world/characters/<actorId>/views/world_info.json`
+ */
+export const worldInfoViewSchema = z
+  .object({
+    worldSettingUnlocked: z
+      .boolean()
+      .nullish()
+      .describe("Per-actor: whether worldSetting.hidden is revealed."),
+    worldSettingUnlockReason: z
+      .string()
+      .nullish()
+      .describe("REQUIRED when worldSettingUnlocked=true."),
+    mainGoalUnlocked: z
+      .boolean()
+      .nullish()
+      .describe("Per-actor: whether mainGoal.hidden is revealed."),
+    mainGoalUnlockReason: z
+      .string()
+      .nullish()
+      .describe("REQUIRED when mainGoalUnlocked=true."),
+    highlight: z.boolean().nullish().describe("UI-only highlight flag."),
+    lastAccess: accessTimestampSchema
+      .nullish()
+      .describe("UI-only last access timestamp."),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.worldSettingUnlocked && !value.worldSettingUnlockReason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "worldSettingUnlockReason is required when worldSettingUnlocked=true",
+        path: ["worldSettingUnlockReason"],
+      });
+    }
+    if (value.mainGoalUnlocked && !value.mainGoalUnlockReason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "mainGoalUnlockReason is required when mainGoalUnlocked=true",
+        path: ["mainGoalUnlockReason"],
+      });
+    }
+  });
+
+// ============================================================================
 // 故事大纲 Schema
 // ============================================================================
 
@@ -1442,7 +1634,7 @@ export const storyOutlineSchema = z.object({
     .describe("Initial quests (at least one main quest is required)."),
   factions: z.array(factionSchema).describe("Major power groups or factions."),
   locations: z
-    .array(locationSchema.omit({ isVisited: true, createdAt: true }))
+    .array(locationSchema)
     .describe("Initial locations with full details."),
   knowledge: z
     .array(knowledgeEntrySchema)
@@ -1473,16 +1665,6 @@ export const storyOutlineSchema = z.object({
     })
     .nullish()
     .describe("Opening narrative generated in Phase 9."),
-
-  // Unlocked flags - set by AI when player discovers hidden info
-  worldSettingUnlocked: z
-    .boolean()
-    .nullish()
-    .describe("True when worldSetting.hidden is revealed."),
-  mainGoalUnlocked: z
-    .boolean()
-    .nullish()
-    .describe("True when mainGoal.hidden is revealed."),
 });
 
 // ============================================================================
@@ -1657,7 +1839,7 @@ export const outlinePhase2Schema = z.object({
  */
 export const outlinePhase3Schema = z.object({
   locations: z
-    .array(locationSchema.omit({ isVisited: true, createdAt: true }))
+    .array(locationSchema)
     .describe(
       "1-2 initial locations with detailed visible and hidden layers. Each MUST have a unique 'id' field.",
     ),
@@ -2433,13 +2615,27 @@ export type Placeholder = z.infer<typeof placeholderSchema>;
 export type RelationEdge = z.infer<typeof relationEdgeSchema>;
 export type ActorBundle = z.infer<typeof actorBundleSchema>;
 export type Location = z.infer<typeof locationSchema>;
+export type LocationViewModel = z.infer<typeof locationViewModelSchema>;
 export type Quest = z.infer<typeof questSchema>;
+export type QuestViewModel = z.infer<typeof questViewModelSchema>;
 export type Skill = z.infer<typeof skillSchema>;
 export type Condition = z.infer<typeof conditionSchema>;
 export type KnowledgeEntry = z.infer<typeof knowledgeEntrySchema>;
+export type KnowledgeEntryViewModel = z.infer<typeof knowledgeEntryViewModelSchema>;
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;
+export type TimelineEventViewModel = z.infer<typeof timelineEventViewModelSchema>;
 export type CausalChain = z.infer<typeof causalChainSchema>;
 export type Faction = z.infer<typeof factionSchema>;
+export type FactionViewModel = z.infer<typeof factionViewModelSchema>;
+export type WorldInfo = z.infer<typeof worldInfoSchema>;
+export type WorldInfoView = z.infer<typeof worldInfoViewSchema>;
+export type ActorEntityViewBase = z.infer<typeof actorEntityViewBaseSchema>;
+export type QuestView = z.infer<typeof questViewSchema>;
+export type KnowledgeEntryView = z.infer<typeof knowledgeEntryViewSchema>;
+export type TimelineEventView = z.infer<typeof timelineEventViewSchema>;
+export type LocationView = z.infer<typeof locationViewSchema>;
+export type FactionView = z.infer<typeof factionViewSchema>;
+export type CausalChainView = z.infer<typeof causalChainViewSchema>;
 export type CharacterAttribute = z.infer<typeof characterAttributeSchema>;
 export type HiddenTrait = z.infer<typeof hiddenTraitSchema>;
 export type CharacterProfile = z.infer<typeof characterProfileSchema>;

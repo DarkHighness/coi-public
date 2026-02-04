@@ -46,6 +46,32 @@ export const stateManagement: Atom<void> = () => `
       * Transfer an item by moving the file (\`vfs_move\`), not by duplicating.
       * Use \`visible.sensory\` (texture/weight/smell) and \`condition\` for physical depth. Put secrets in \`hidden.truth\` and gate revelation via \`unlocked\`.
 
+    - **Canonical vs Actor Views (MANDATORY BOUNDARY)**:
+      * **Canonical (world truth)** files contain definitions + GM truth only:
+        - \`current/world/world_info.json\`
+        - \`current/world/quests/<questId>.json\`
+        - \`current/world/knowledge/<entryId>.json\`
+        - \`current/world/timeline/<eventId>.json\`
+        - \`current/world/locations/<locId>.json\`
+        - \`current/world/factions/<factionId>.json\`
+        - \`current/world/causal_chains/<chainId>.json\`
+      * **Actor Views (perspective/progress/UI)** live under:
+        - \`current/world/characters/<actorId>/views/world_info.json\`
+        - \`current/world/characters/<actorId>/views/quests/<questId>.json\`
+        - \`current/world/characters/<actorId>/views/knowledge/<entryId>.json\`
+        - \`current/world/characters/<actorId>/views/timeline/<eventId>.json\`
+        - \`current/world/characters/<actorId>/views/locations/<locId>.json\`
+        - \`current/world/characters/<actorId>/views/factions/<factionId>.json\`
+        - \`current/world/characters/<actorId>/views/causal_chains/<chainId>.json\`
+      * **Write rule**:
+        - Discovery/progress/unlock/highlight/lastAccess/visited/status/standing → write the ACTOR VIEW (usually \`char:player\`).
+        - World changes / new facts / real truth updates → write the CANONICAL file.
+      * **knownBy is canonical**:
+        - When the protagonist first CONFIRMS an entity exists, add \`char:player\` to canonical \`knownBy\` AND create the corresponding player view file.
+      * **Unlock is view-only (non-actor entities)**:
+        - NEVER write \`unlocked/unlockReason\` to canonical quests/knowledge/timeline/locations/factions/causal_chains/world_info.
+        - Instead, set \`views/**.unlocked=true\` + \`unlockReason\`.
+
     - **Relations (Dual Layer, STRICT)**:
       * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
       * **Player → NPC** MUST be \`kind="perception"\`: objective, evidence-based, NO affinity numbers.

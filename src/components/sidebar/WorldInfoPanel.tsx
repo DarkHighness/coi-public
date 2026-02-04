@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Faction, StoryOutline } from "../../types";
+import { Faction, WorldInfo } from "../../types";
 import { MarkdownText } from "../render/MarkdownText";
 import { getValidIcon } from "../../utils/emojiValidator";
 
@@ -19,7 +19,7 @@ interface WorldInfoPanelProps {
     history?: string;
   };
   themeFont: string;
-  outline?: StoryOutline | null; // Full outline for hidden content
+  worldInfo?: WorldInfo | null; // Canonical world info + derived unlock flags
   unlockMode?: boolean; // Whether unlock mode is active
 }
 
@@ -28,7 +28,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
   factions = [],
   worldSetting,
   themeFont,
-  outline,
+  worldInfo,
   unlockMode,
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -36,8 +36,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 
   // Check if world info is unlocked (either via unlock mode or story progress)
   const isWorldSettingUnlocked =
-    unlockMode || outline?.worldSettingUnlocked || false;
-  const isMainGoalUnlocked = unlockMode || outline?.mainGoalUnlocked || false;
+    unlockMode || worldInfo?.worldSettingUnlocked || false;
+  const isMainGoalUnlocked = unlockMode || worldInfo?.mainGoalUnlocked || false;
 
   return (
     <div>

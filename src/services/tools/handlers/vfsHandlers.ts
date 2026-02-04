@@ -335,11 +335,218 @@ const normalizeDisplayName = (value: unknown): string => {
   return "Unknown";
 };
 
+const viewPathFor = (category: string, entityId: string): string =>
+  `world/characters/${PLAYER_ID}/views/${category}/${entityId}.json`;
+
+const tryReadViewJson = (
+  snapshot: VfsFileMap,
+  category: string,
+  entityId: string,
+): any | null => {
+  const file = snapshot[viewPathFor(category, entityId)];
+  if (!file || file.contentType !== "application/json") {
+    return null;
+  }
+  return safeParseJson(file.content) as any;
+};
+
 const listCatalogEntriesForCategory = (
   session: VfsSession,
   category: string,
 ): DuplicateCandidate[] => {
   const snapshot = session.snapshot();
+
+  if (category === "world_info") {
+    const file = snapshot["world/world_info.json"];
+    if (!file || file.contentType !== "application/json") {
+      return [];
+    }
+    const parsed = safeParseJson(file.content) as any;
+    const displayName = normalizeDisplayName(parsed?.title);
+    return [
+      {
+        path: toCurrentPath(file.path),
+        id: "world_info",
+        displayName,
+        matchText: `${displayName} ${normalizeDisplayName(parsed?.premise)}`.trim(),
+      },
+    ];
+  }
+
+  if (category === "quest_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/views/quests/`) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const quest = snapshot[`world/quests/${id}.json`];
+        const questParsed = quest ? (safeParseJson(quest.content) as any) : null;
+        const displayName = normalizeDisplayName(questParsed?.title ?? id);
+        const unlocked = parsed?.unlocked === true;
+        const status =
+          typeof parsed?.status === "string" && parsed.status.trim()
+            ? parsed.status.trim()
+            : undefined;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          status,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "knowledge_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/views/knowledge/`) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const entry = snapshot[`world/knowledge/${id}.json`];
+        const entryParsed = entry ? (safeParseJson(entry.content) as any) : null;
+        const displayName = normalizeDisplayName(entryParsed?.title ?? id);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "timeline_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/views/timeline/`) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const ev = snapshot[`world/timeline/${id}.json`];
+        const evParsed = ev ? (safeParseJson(ev.content) as any) : null;
+        const displayName = normalizeDisplayName(evParsed?.name ?? id);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "location_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/views/locations/`) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const loc = snapshot[`world/locations/${id}.json`];
+        const locParsed = loc ? (safeParseJson(loc.content) as any) : null;
+        const displayName = normalizeDisplayName(locParsed?.name ?? id);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "faction_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(`world/characters/${PLAYER_ID}/views/factions/`) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const fac = snapshot[`world/factions/${id}.json`];
+        const facParsed = fac ? (safeParseJson(fac.content) as any) : null;
+        const displayName = normalizeDisplayName(facParsed?.name ?? id);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "causal_chain_views") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith(
+            `world/characters/${PLAYER_ID}/views/causal_chains/`,
+          ) &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.entityId === "string" && parsed.entityId.trim()
+            ? parsed.entityId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const chain = snapshot[`world/causal_chains/${id}.json`];
+        const chainParsed = chain ? (safeParseJson(chain.content) as any) : null;
+        const displayName = normalizeDisplayName(chainParsed?.chainId ?? id);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
 
   if (category === "inventory") {
     return Object.values(snapshot)
@@ -450,7 +657,8 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.name);
-        const unlocked = parsed?.unlocked === true;
+        const view = tryReadViewJson(snapshot, "locations", id);
+        const unlocked = view?.unlocked === true;
         return {
           path: toCurrentPath(file.path),
           id,
@@ -476,10 +684,11 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.title);
-        const unlocked = parsed?.unlocked === true;
+        const view = tryReadViewJson(snapshot, "quests", id);
+        const unlocked = view?.unlocked === true;
         const status =
-          typeof parsed?.status === "string" && parsed.status.trim()
-            ? parsed.status.trim()
+          typeof view?.status === "string" && view.status.trim()
+            ? view.status.trim()
             : undefined;
         return {
           path: toCurrentPath(file.path),
@@ -507,7 +716,8 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.title);
-        const unlocked = parsed?.unlocked === true;
+        const view = tryReadViewJson(snapshot, "knowledge", id);
+        const unlocked = view?.unlocked === true;
         return {
           path: toCurrentPath(file.path),
           id,
@@ -533,7 +743,8 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.name);
-        const unlocked = parsed?.unlocked === true;
+        const view = tryReadViewJson(snapshot, "factions", id);
+        const unlocked = view?.unlocked === true;
         const status =
           typeof parsed?.status === "string" && parsed.status.trim()
             ? parsed.status.trim()
@@ -564,10 +775,13 @@ const listCatalogEntriesForCategory = (
             ? parsed.id
             : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
         const displayName = normalizeDisplayName(parsed?.event || parsed?.description);
+        const view = tryReadViewJson(snapshot, "timeline", id);
+        const unlocked = view?.unlocked === true;
         return {
           path: toCurrentPath(file.path),
           id,
           displayName,
+          unlocked,
           matchText: displayName,
         };
       });
@@ -593,10 +807,13 @@ const listCatalogEntriesForCategory = (
           `${cause} → ${effect}`.trim() !== "→"
             ? `${cause} → ${effect}`.trim()
             : id;
+        const view = tryReadViewJson(snapshot, "causal_chains", id);
+        const unlocked = view?.unlocked === true;
         return {
           path: toCurrentPath(file.path),
           id,
           displayName,
+          unlocked,
           matchText: displayName,
         };
       });

@@ -144,12 +144,13 @@ export function migrateFromLegacyTimestamp(
 
 import type {
   InventoryItem as ZodInventoryItem,
-  Location as ZodLocation,
-  Quest as ZodQuest,
-  KnowledgeEntry as ZodKnowledgeEntry,
-  TimelineEvent as ZodTimelineEvent,
+  LocationViewModel as ZodLocation,
+  QuestViewModel as ZodQuest,
+  KnowledgeEntryViewModel as ZodKnowledgeEntry,
+  TimelineEventViewModel as ZodTimelineEvent,
   CausalChain as ZodCausalChain,
-  Faction as ZodFaction,
+  FactionViewModel as ZodFaction,
+  WorldInfo as ZodWorldInfo,
   CharacterAttribute as ZodCharacterAttribute,
   HiddenTrait as ZodHiddenTrait,
   CharacterStatus as ZodCharacterStatus,
@@ -209,6 +210,13 @@ export type KnowledgeEntry = WithRequiredId<
 export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
 export type Faction = WithRequiredId<ZodFaction>;
+export type WorldInfo = ZodWorldInfo & {
+  // Derived per-actor unlock fields merged in derivation for UI convenience.
+  worldSettingUnlocked?: boolean;
+  worldSettingUnlockReason?: string;
+  mainGoalUnlocked?: boolean;
+  mainGoalUnlockReason?: string;
+};
 export type ActorProfile = ZodActorProfile;
 export type RelationEdge = ZodRelationEdge;
 export type ActorBundle = ZodActorBundle;
@@ -243,6 +251,7 @@ export type {
   ZodKnowledgeEntry,
   ZodTimelineEvent,
   ZodFaction,
+  ZodWorldInfo,
 };
 
 /**
@@ -335,6 +344,7 @@ export interface GameState {
   character: CharacterStatus;
   knowledge: KnowledgeEntry[]; // Player's accumulated knowledge about the world
   factions: Faction[]; // Major power groups
+  worldInfo: WorldInfo | null; // Canonical world info + derived per-actor unlock flags
 
   // Location System
   currentLocation: string;

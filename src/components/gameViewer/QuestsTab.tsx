@@ -108,7 +108,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
   return (
     <div className="space-y-4">
       {/* Main Goal */}
-      {gameState.outline?.mainGoal && (
+      {gameState.worldInfo?.mainGoal && (
         <Section
           id="mainGoal"
           title={t("gameViewer.mainGoal")}
@@ -118,42 +118,42 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
         >
           <div className="text-theme-text text-sm leading-relaxed">
             <MarkdownText
-              content={gameState.outline.mainGoal.visible?.description || ""}
+              content={gameState.worldInfo.mainGoal.visible?.description || ""}
             />
           </div>
-          {gameState.outline.mainGoal.visible?.conditions && (
+          {gameState.worldInfo.mainGoal.visible?.conditions && (
             <div className="mt-3 pt-2 border-t border-theme-border/30">
               <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                 {t("gameViewer.conditions") || "Conditions"}
               </span>
               <div className="text-theme-muted text-sm pl-2 border-l-2 border-theme-border/50">
                 <MarkdownText
-                  content={gameState.outline.mainGoal.visible.conditions}
+                  content={gameState.worldInfo.mainGoal.visible.conditions}
                 />
               </div>
             </div>
           )}
-          {(gameState.outline.mainGoalUnlocked || gameState.unlockMode) &&
-            gameState.outline.mainGoal.hidden && (
+          {(gameState.worldInfo.mainGoalUnlocked || gameState.unlockMode) &&
+            gameState.worldInfo.mainGoal.hidden && (
               <HiddenContent
                 t={t}
                 content={
                   <div className="space-y-2">
-                    {gameState.outline.mainGoal.hidden.trueDescription && (
+                    {gameState.worldInfo.mainGoal.hidden.trueDescription && (
                       <MarkdownText
                         content={
-                          gameState.outline.mainGoal.hidden.trueDescription
+                          gameState.worldInfo.mainGoal.hidden.trueDescription
                         }
                       />
                     )}
-                    {gameState.outline.mainGoal.hidden.trueConditions && (
+                    {gameState.worldInfo.mainGoal.hidden.trueConditions && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                           {t("gameViewer.trueConditions") || "True Conditions"}:
                         </span>
                         <MarkdownText
                           content={
-                            gameState.outline.mainGoal.hidden.trueConditions
+                            gameState.worldInfo.mainGoal.hidden.trueConditions
                           }
                         />
                       </div>

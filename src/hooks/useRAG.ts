@@ -723,7 +723,7 @@ export function extractDocumentsFromState(
       case "outline": {
         // Outline documents use special IDs like "outline:world", "outline:goal", etc.
         if (state.outline) {
-          const content = extractOutlineContent(state.outline, id);
+          const content = extractOutlineContent(state.outline, state.worldInfo, id);
           if (content) {
             documents.push({
               entityId,
@@ -1147,29 +1147,38 @@ function extractEventContent(event: TimelineEvent): string {
   return parts.join("\n");
 }
 
-function extractOutlineContent(outline: StoryOutline, aspect: string): string {
+function extractOutlineContent(
+  outline: StoryOutline,
+  worldInfo: any | null,
+  aspect: string,
+): string {
   const parts: string[] = [];
+
+  const effectiveWorldSetting = worldInfo?.worldSetting ?? outline.worldSetting;
+  const effectiveMainGoal = worldInfo?.mainGoal ?? outline.mainGoal;
+  const worldSettingUnlocked = Boolean(worldInfo?.worldSettingUnlocked);
+  const mainGoalUnlocked = Boolean(worldInfo?.mainGoalUnlocked);
 
   switch (aspect) {
     case "world": {
       parts.push(`Story: ${outline.title}`);
       if (outline.premise) parts.push(`Premise: ${outline.premise}`);
-      if (outline.worldSetting?.visible?.description) {
-        parts.push(`World: ${outline.worldSetting.visible.description}`);
+      if (effectiveWorldSetting?.visible?.description) {
+        parts.push(`World: ${effectiveWorldSetting.visible.description}`);
       }
-      if (outline.worldSetting?.visible?.rules) {
-        parts.push(`Rules: ${outline.worldSetting.visible.rules}`);
+      if (effectiveWorldSetting?.visible?.rules) {
+        parts.push(`Rules: ${effectiveWorldSetting.visible.rules}`);
       }
       // Hidden world setting (for GM knowledge)
-      if (outline.worldSettingUnlocked && outline.worldSetting?.hidden) {
-        if (outline.worldSetting.hidden.hiddenRules) {
+      if (worldSettingUnlocked && effectiveWorldSetting?.hidden) {
+        if (effectiveWorldSetting.hidden.hiddenRules) {
           parts.push(
-            `Hidden Rules: ${outline.worldSetting.hidden.hiddenRules}`,
+            `Hidden Rules: ${effectiveWorldSetting.hidden.hiddenRules}`,
           );
         }
-        if (outline.worldSetting.hidden.secrets?.length) {
+        if (effectiveWorldSetting.hidden.secrets?.length) {
           parts.push(
-            `World Secrets: ${outline.worldSetting.hidden.secrets.join(", ")}`,
+            `World Secrets: ${effectiveWorldSetting.hidden.secrets.join(", ")}`,
           );
         }
       }
@@ -1178,20 +1187,20 @@ function extractOutlineContent(outline: StoryOutline, aspect: string): string {
 
     case "goal": {
       parts.push(`Story: ${outline.title}`);
-      if (outline.mainGoal?.visible?.description) {
-        parts.push(`Main Goal: ${outline.mainGoal.visible.description}`);
+      if (effectiveMainGoal?.visible?.description) {
+        parts.push(`Main Goal: ${effectiveMainGoal.visible.description}`);
       }
-      if (outline.mainGoal?.visible?.conditions) {
-        parts.push(`Win Conditions: ${outline.mainGoal.visible.conditions}`);
+      if (effectiveMainGoal?.visible?.conditions) {
+        parts.push(`Win Conditions: ${effectiveMainGoal.visible.conditions}`);
       }
       // Hidden goal (for GM knowledge)
-      if (outline.mainGoalUnlocked && outline.mainGoal?.hidden) {
-        if (outline.mainGoal.hidden.trueDescription) {
-          parts.push(`True Goal: ${outline.mainGoal.hidden.trueDescription}`);
+      if (mainGoalUnlocked && effectiveMainGoal?.hidden) {
+        if (effectiveMainGoal.hidden.trueDescription) {
+          parts.push(`True Goal: ${effectiveMainGoal.hidden.trueDescription}`);
         }
-        if (outline.mainGoal.hidden.trueConditions) {
+        if (effectiveMainGoal.hidden.trueConditions) {
           parts.push(
-            `True Conditions: ${outline.mainGoal.hidden.trueConditions}`,
+            `True Conditions: ${effectiveMainGoal.hidden.trueConditions}`,
           );
         }
       }
@@ -1222,11 +1231,11 @@ function extractOutlineContent(outline: StoryOutline, aspect: string): string {
       parts.push(`Story: ${outline.title}`);
       if (outline.initialTime) parts.push(`Time: ${outline.initialTime}`);
       if (outline.premise) parts.push(`Premise: ${outline.premise}`);
-      if (outline.worldSetting?.visible?.description) {
-        parts.push(`World: ${outline.worldSetting.visible.description}`);
+      if (effectiveWorldSetting?.visible?.description) {
+        parts.push(`World: ${effectiveWorldSetting.visible.description}`);
       }
-      if (outline.mainGoal?.visible?.description) {
-        parts.push(`Main Goal: ${outline.mainGoal.visible.description}`);
+      if (effectiveMainGoal?.visible?.description) {
+        parts.push(`Main Goal: ${effectiveMainGoal.visible.description}`);
       }
       const protagonist = outline.player?.profile?.visible;
       if (protagonist?.name) {
