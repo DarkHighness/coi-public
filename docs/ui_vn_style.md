@@ -20,6 +20,7 @@
 ## 反模式（严格避免）
 
 - **卡片化**：明显的圆角盒子、厚边框、强阴影、强调色描边大面积包裹内容。
+- **在“开始/自定义游戏”页面套产品化容器**：把表单与选项做成一组组“卡片”，并叠加强阴影/高圆角，导致页面像仪表盘而不是“开篇页”。
 - **重复标题/重复分隔**：同一语义节点出现两个标题或两条线，产生割裂。
 - **过度透明**：Modal/编辑器/查看器内容容器使用 `.../10` 这类透明度，导致背景干扰阅读。
 - **桌面优先的交互**：重要功能只在 hover 才出现，移动端无法使用。
@@ -66,6 +67,15 @@
 - Overlay 可以半透明/模糊，但内容面板（surface）应为 `bg-theme-bg` 或 `bg-theme-surface`（不使用 `.../10`）。
 - Footer/Header 透明可以，但主体阅读区不透明。
 
+### 6) 开始界面 / 自定义游戏（StartScreen / CustomGameModal）
+
+原则：它是“开篇页/扉页”，不是“设置面板”。**单列阅读流优先**，结构来自标题层级、分组与分隔线，而不是一块块卡片。
+
+- 布局：优先单列（移动端与桌面一致），按“主信息 → 可选高级 → 提示/确认”顺序向下滚动。
+- 分组：用 section 标题 + `divide-y`/细分隔线表达结构；避免“section 外再包一层 rounded + shadow”的双层容器。
+- 表单控件：允许轻量边框与轻度圆角，但避免强阴影、厚边、强对比底色把每个字段做成独立卡片。
+- 提示块：更像旁注（轻背景/细边线/小字号），不要做成强调色卡片。
+
 ## 设计检查清单（改 UI 前/后）
 
 1. **是否引入卡片感？**（圆角/厚边/阴影/高对比底色包裹内容）
@@ -78,14 +88,14 @@
 ## 相关实现位置（便于定位）
 
 - 叙事排版：`src/components/render/StoryText.tsx`
-- 玩家抉择：`src/components/render/UserActionCard.tsx`
+- 玩家抉择（视觉上不要做成卡片）：`src/components/render/UserActionCard.tsx`
 - 选项/输入：`src/components/ActionPanel.tsx`
 - 侧边栏：`src/components/Sidebar.tsx`、`src/components/sidebar/*`
 - 时间轴：`src/components/StoryTimeline.tsx`、`src/components/StoryTimelineItem.tsx`
 - 编年史（Viewer）：`src/components/GameStateViewer.tsx`、`src/components/gameViewer/*`
 - 编辑器（Editor）：`src/components/StateEditor.tsx`
+- 开始界面 / 自定义游戏：`src/components/StartScreen.tsx`、`src/components/CustomGameModal.tsx`
 
 ## 英文简述（for contributors）
 
 We target a **modern visual novel** UI: typography-first, scroll/page feel, theme-token driven. Avoid card-like containers (rounded boxes, heavy borders/shadows). Keep structure readable via subtle but visible dividers, avoid double dividers/repeated headers, and ensure mobile usability without relying on hover. Modal/editor/viewer surfaces should be **opaque** for readability.
-

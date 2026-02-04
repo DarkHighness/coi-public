@@ -106,6 +106,13 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
   const [openingScene, setOpeningScene] = useState("");
   const [legacyText, setLegacyText] = useState("");
 
+  const fieldLabelClassName =
+    "block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2";
+  const inputClassName =
+    "w-full bg-theme-bg border border-theme-border/70 rounded-lg px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all";
+  const textareaClassName =
+    "w-full bg-theme-bg border border-theme-border/70 rounded-lg px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none";
+
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -178,7 +185,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90dvh]"
+        className="bg-theme-surface border border-theme-border rounded-xl shadow-lg w-full max-w-2xl overflow-hidden flex flex-col animate-slide-in-up max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -213,7 +220,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-5">
           {/* Mode Switch */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1 p-1 rounded-xl border border-theme-border bg-theme-bg/30">
@@ -243,78 +250,76 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
           </div>
 
           {mode === "structured" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+            <div className="space-y-4">
+              <div>
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.title")}
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={t("customGame.placeholders.title")}
-                  className="w-full bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all"
+                  className={inputClassName}
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+              <div>
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.worldSetting")}
                 </label>
                 <textarea
                   value={worldSetting}
                   onChange={(e) => setWorldSetting(e.target.value)}
                   placeholder={t("customGame.placeholders.worldSetting")}
-                  className="w-full h-28 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-28`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.protagonistRole")}
                 </label>
                 <input
                   value={protagonistRole}
                   onChange={(e) => setProtagonistRole(e.target.value)}
                   placeholder={t("customGame.placeholders.protagonistRole")}
-                  className="w-full bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all"
+                  className={inputClassName}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.premise")}
                 </label>
                 <textarea
                   value={premise}
                   onChange={(e) => setPremise(e.target.value)}
                   placeholder={t("customGame.placeholders.premise")}
-                  className="w-full h-[76px] bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-24`}
                 />
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.protagonistRole")}
                 </label>
                 <input
                   value={protagonistRole}
                   onChange={(e) => setProtagonistRole(e.target.value)}
                   placeholder={t("customGame.placeholders.protagonistRole")}
-                  className="w-full bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all"
+                  className={inputClassName}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
-                  {t("customContext")}
-                </label>
+                <label className={fieldLabelClassName}>{t("customContext")}</label>
                 <textarea
                   value={legacyText}
                   onChange={(e) => setLegacyText(e.target.value)}
                   placeholder={t("customContextPlaceholder")}
-                  className="w-full h-56 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-56`}
                   autoFocus
                 />
               </div>
@@ -325,7 +330,8 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
             <button
               type="button"
               onClick={() => setShowAdvanced((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-theme-border bg-theme-bg/30 hover:bg-theme-surface-highlight/40 transition-colors"
+              className="w-full flex items-center justify-between py-3 border-y border-theme-border/40 hover:bg-theme-surface-highlight/25 transition-colors"
+              aria-expanded={showAdvanced}
             >
               <span className="text-sm font-bold uppercase tracking-wider text-theme-muted">
                 {t("customGame.advanced")}
@@ -347,31 +353,31 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
           )}
 
           {mode === "structured" && showAdvanced && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4 animate-fade-in pt-1">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.narrativeStyle")}
                 </label>
                 <textarea
                   value={narrativeStyle}
                   onChange={(e) => setNarrativeStyle(e.target.value)}
                   placeholder={t("customGame.placeholders.narrativeStyle")}
-                  className="w-full h-24 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-24`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.gameplayFocus")}
                 </label>
                 <div className="text-xs text-theme-muted mb-3">
                   {t("customGame.gameplay.hint")}
                 </div>
-                <div className="space-y-2">
+                <div className="border-y border-theme-border/40 divide-y divide-theme-border/40">
                   {GAMEPLAY_PRESET_KEYS.map((key) => (
                     <div
                       key={key}
-                      className="flex items-center gap-3 bg-theme-bg/30 border border-theme-border rounded-xl px-3 py-2"
+                      className="flex items-center gap-3 px-2 py-2"
                     >
                       <div className="w-28 shrink-0 text-xs font-bold uppercase tracking-wider text-theme-muted">
                         {t(`customGame.gameplay.presets.${key}`)}
@@ -418,49 +424,49 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                   value={gameplayFocusNotes}
                   onChange={(e) => setGameplayFocusNotes(e.target.value)}
                   placeholder={t("customGame.placeholders.gameplayFocus")}
-                  className="mt-3 w-full bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all"
+                  className={`mt-3 ${inputClassName}`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.contentBoundaries")}
                 </label>
                 <textarea
                   value={contentBoundaries}
                   onChange={(e) => setContentBoundaries(e.target.value)}
                   placeholder={t("customGame.placeholders.contentBoundaries")}
-                  className="w-full h-24 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-24`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.rules")}
                 </label>
                 <textarea
                   value={rules}
                   onChange={(e) => setRules(e.target.value)}
                   placeholder={t("customGame.placeholders.rules")}
-                  className="w-full h-24 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-24`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-theme-muted mb-2">
+                <label className={fieldLabelClassName}>
                   {t("customGame.fields.openingScene")}
                 </label>
                 <textarea
                   value={openingScene}
                   onChange={(e) => setOpeningScene(e.target.value)}
                   placeholder={t("customGame.placeholders.openingScene")}
-                  className="w-full h-24 bg-theme-bg/50 border border-theme-border rounded-xl px-4 py-3 text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary/50 transition-all resize-none"
+                  className={`${textareaClassName} h-24`}
                 />
               </div>
             </div>
           )}
 
-          <div className="p-4 bg-theme-bg/50 rounded-xl border border-theme-border/50">
+          <div className="border-l-2 border-theme-border/40 pl-4 py-1">
             <p className="text-xs text-theme-muted leading-relaxed">
               <strong className="text-theme-primary">{t("tip")}:</strong>{" "}
               {mode === "text" ? t("customWritingTips") : t("customGame.tip")}
@@ -472,13 +478,13 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
         <div className="p-6 border-t border-theme-border flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-all rounded-xl"
+            className="flex-1 px-4 py-3 border border-theme-border text-theme-text hover:bg-theme-surface-highlight transition-all rounded-lg"
           >
             {t("cancel")}
           </button>
           <button
             onClick={handleStart}
-            className="flex-1 px-4 py-3 bg-theme-primary text-theme-bg font-bold hover:bg-theme-primary-hover transition-all rounded-xl shadow-lg"
+            className="flex-1 px-4 py-3 bg-theme-primary text-theme-bg font-bold hover:bg-theme-primary-hover transition-all rounded-lg"
           >
             {t("customGame.start")}
           </button>
