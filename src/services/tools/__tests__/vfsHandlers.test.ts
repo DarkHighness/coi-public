@@ -1051,6 +1051,12 @@ describe("VFS handlers", () => {
       "application/json",
     );
 
+    dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/characters/char:npc_1/profile.json" },
+      ctx,
+    );
+
     const mergeResult = dispatchToolCall(
       "vfs_merge",
       {
@@ -1088,6 +1094,12 @@ describe("VFS handlers", () => {
         toolCalls: ["a", "b"],
       }),
       "application/json",
+    );
+
+    dispatchToolCall(
+      "vfs_read",
+      { path: "current/conversation/turn.json" },
+      ctx,
     );
 
     const mergeResult = dispatchToolCall(
