@@ -132,7 +132,11 @@ export async function runAgenticLoopRefactored(
     if (isSudoMode) {
       injectSudoModeInstruction(conversationHistory);
     } else {
-      injectNormalTurnInstruction(conversationHistory, loopState.finishToolName);
+      injectNormalTurnInstruction(
+        conversationHistory,
+        loopState.finishToolName,
+        isCleanupMode,
+      );
     }
 
     // Main loop
@@ -167,8 +171,11 @@ export async function runAgenticLoopRefactored(
       const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 2;
 
       if (mustFinishNow) {
+        // Forced-finish mode should still allow batching via vfs_tx + commit_turn
+        // so the model can apply essential state updates and finish in one call.
         loopState.activeTools = loopState.activeTools.filter(
-          (tool) => tool.name === loopState.finishToolName,
+          (tool) =>
+            tool.name === loopState.finishToolName || tool.name === "vfs_tx",
         );
       }
 
@@ -181,7 +188,8 @@ export async function runAgenticLoopRefactored(
         loopState,
         settings,
         sessionId,
-        requiredToolName: mustFinishNow ? loopState.finishToolName : undefined,
+        // In forced-finish mode we allow either vfs_commit_turn or vfs_tx (with commit_turn as last op).
+        requiredToolName: undefined,
       });
 
       // Accumulate usage
@@ -308,17 +316,18 @@ async function processToolCalls(
 
   const finishToolName = loopState.finishToolName;
 
+  const isTxCommitTurnCall = (call: ToolCallResult): boolean => {
+    if (call.name !== "vfs_tx") return false;
+    const ops = (call.args as any)?.ops;
+    if (!Array.isArray(ops) || ops.length === 0) return false;
+    return ops[ops.length - 1]?.op === "commit_turn";
+  };
+
   const isFinishToolCall = (call: ToolCallResult): boolean => {
     if (call.name === finishToolName) {
       return true;
     }
-    if (call.name === "vfs_tx") {
-      const ops = (call.args as any)?.ops;
-      return (
-        Array.isArray(ops) &&
-        ops.some((op) => op && typeof op === "object" && (op as any).op === "commit_turn")
-      );
-    }
+    if (isTxCommitTurnCall(call)) return true;
     return false;
   };
 
@@ -433,14 +442,16 @@ async function processToolCalls(
   };
 
   const mustOnlyFinish =
-    loopState.activeTools.length === 1 &&
-    loopState.activeTools[0]?.name === finishToolName;
+    loopState.activeTools.length > 0 &&
+    loopState.activeTools.every(
+      (tool) => tool.name === finishToolName || tool.name === "vfs_tx",
+    );
 
   if (mustOnlyFinish) {
-    if (functionCalls.length !== 1 || functionCalls[0]?.name !== finishToolName) {
+    if (functionCalls.length !== 1 || !isFinishToolCall(functionCalls[0]!)) {
       const error = {
         success: false,
-        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
+        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}" (or one "vfs_tx" whose LAST op is commit_turn), and it must be the ONLY tool call in this response.`,
         code: "INVALID_ACTION",
       };
       return {
@@ -462,7 +473,7 @@ async function processToolCalls(
   if (finishCallIndices.length > 1) {
     const error = {
       success: false,
-      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}" (or one "vfs_tx" containing commit_turn), and it must be the LAST tool call.`,
+      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}" (or one "vfs_tx" whose LAST op is commit_turn), and it must be the LAST tool call.`,
       code: "INVALID_ACTION",
     };
     return {
@@ -481,7 +492,7 @@ async function processToolCalls(
   ) {
     const error = {
       success: false,
-      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}" (or "vfs_tx" containing commit_turn).`,
+      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}" (or "vfs_tx" whose LAST op is commit_turn).`,
       code: "INVALID_ACTION",
     };
     return {

@@ -58,7 +58,9 @@ export function generateBudgetPrompt(
   finishToolName?: string,
 ): string {
   const finishAction = finishToolName
-    ? `\`${finishToolName}\``
+    ? finishToolName === "vfs_commit_turn"
+      ? "`vfs_commit_turn` (or `vfs_tx` with `commit_turn` as the LAST op)"
+      : `\`${finishToolName}\``
     : "the finish tool for this loop";
 
   const toolCallsRemaining = state.toolCallsMax - state.toolCallsUsed;

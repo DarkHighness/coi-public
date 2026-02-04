@@ -15,6 +15,7 @@ import {
 } from "../../../prompts/atoms/core";
 import { narrativeCausality } from "../../../prompts/atoms/narrative";
 import { languageEnforcement } from "../../../prompts/atoms/cultural";
+import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
 
 // ============================================================================
 // System Instruction
@@ -46,13 +47,36 @@ You are the GM - you know everything. Your job is to:
 <tools>
 You have these tools available:
 
-1. \`vfs_ls_entries\` - Get a compact catalog of entities by category (read-only)
-2. \`vfs_read\` / \`vfs_read_many\` - Read specific VFS files for details
-3. \`vfs_search\` / \`vfs_grep\` - Find details in the VFS (read-only)
-4. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
+Tool allowlist for this loop:
+${formatVfsToolsForPrompt(VFS_TOOLSETS.summary.tools)}
+
+Read-only tools:
+1. \`vfs_ls\` / \`vfs_stat\` / \`vfs_glob\` - Locate files & check metadata without reading full content
+2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
+3. \`vfs_ls_entries\` - Get a compact catalog of entities by category (read-only)
+4. \`vfs_read\` / \`vfs_read_many\` / \`vfs_read_json\` - Read VFS files (or specific JSON pointers) for exact details
+5. \`vfs_search\` / \`vfs_grep\` - Find details in the VFS (read-only)
+
+Finish tool:
+6. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
 When you have enough information, call \`vfs_finish_summary\`.
 It MUST be your LAST tool call.
+
+<examples>
+- Example (read just fields, cheaper than full file):
+  Call \`vfs_read_json\` with:
+  - path: \`current/summary/state.json\`
+  - pointers: \`["/lastSummarizedIndex", "/summaries/-1/displayText"]\`
+
+- Example (finish):
+  Call \`vfs_finish_summary\` with:
+  - displayText: "..."
+  - visible: { narrative, majorEvents, characterDevelopment, worldState }
+  - hidden: { truthNarrative, hiddenPlots, npcActions, worldTruth, unrevealed }
+  - nodeRange: { fromIndex: X, toIndex: Y }
+  - lastSummarizedIndex: Y + 1
+</examples>
 </tools>
 
 <critical_rules>
