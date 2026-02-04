@@ -33,6 +33,39 @@ describe("VFS handlers", () => {
     expect(readResult.data?.content).toBe("{}");
   });
 
+  it("reads global skills via vfs_read and blocks writes", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const readResult = dispatchToolCall(
+      "vfs_read",
+      { path: "current/skills/README.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string; contentType?: string } };
+
+    expect(readResult.success).toBe(true);
+    expect(readResult.data?.contentType).toBe("text/plain");
+    expect(readResult.data?.content ?? "").toContain("read-only");
+
+    const writeResult = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/skills/custom.txt",
+            content: "x",
+            contentType: "text/plain",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(writeResult.success).toBe(false);
+    expect(writeResult.code).toBe("INVALID_ACTION");
+    expect(writeResult.error ?? "").toContain("read-only");
+  });
+
   it("supports truncation in vfs_read via maxChars", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };

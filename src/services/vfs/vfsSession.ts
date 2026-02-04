@@ -5,6 +5,7 @@ import { getSchemaForPath } from "./schemas";
 import { VfsFile, VfsFileMap, VfsContentType } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 import { deepMergeJson } from "./merge";
+import { buildGlobalVfsSkills } from "./globalSkills";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -12,6 +13,17 @@ const cloneFiles = (files: VfsFileMap): VfsFileMap => {
     cloned[path] = { ...file };
   }
   return cloned;
+};
+
+const mergeFiles = (a: VfsFileMap, b: VfsFileMap): VfsFileMap => {
+  const merged: VfsFileMap = {};
+  for (const [path, file] of Object.entries(a)) {
+    merged[path] = { ...file };
+  }
+  for (const [path, file] of Object.entries(b)) {
+    merged[path] = { ...file };
+  }
+  return merged;
 };
 
 const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
@@ -124,13 +136,27 @@ const collectMatches = (
 
 export class VfsSession {
   private files: VfsFileMap = {};
+  private readonlyFiles: VfsFileMap = buildGlobalVfsSkills();
   private semanticIndexer?: VfsSemanticIndexer;
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
     this.semanticIndexer = options?.semanticIndexer;
   }
 
+  private isReadOnlyPath(path: string): boolean {
+    const normalized = normalizeVfsPath(path);
+    return normalized === "skills" || normalized.startsWith("skills/");
+  }
+
+  private assertWritablePath(path: string): void {
+    const normalized = normalizeVfsPath(path);
+    if (this.isReadOnlyPath(normalized)) {
+      throw new Error(`Path is read-only: ${normalized}`);
+    }
+  }
+
   public writeFile(path: string, content: string, contentType: VfsContentType) {
+    this.assertWritablePath(path);
     const normalized = normalizeVfsPath(path);
     const hash = hashContent(content);
     this.files[normalized] = {
@@ -144,7 +170,8 @@ export class VfsSession {
   }
 
   public readFile(path: string): VfsFile | null {
-    const file = this.files[normalizeVfsPath(path)];
+    const normalized = normalizeVfsPath(path);
+    const file = this.files[normalized] ?? this.readonlyFiles[normalized];
     return file ? { ...file } : null;
   }
 
@@ -152,11 +179,27 @@ export class VfsSession {
     return cloneFiles(this.files);
   }
 
+  /**
+   * Returns a snapshot including read-only virtual files (e.g. `skills/**`).
+   * This is intended for read-only tooling (ls/stat/glob/search), NOT persistence.
+   */
+  public snapshotAll(): VfsFileMap {
+    return mergeFiles(this.readonlyFiles, this.files);
+  }
+
   public restore(snapshot: VfsFileMap): void {
-    this.files = cloneFiles(snapshot);
+    const next = cloneFiles(snapshot);
+    for (const path of Object.keys(next)) {
+      if (this.isReadOnlyPath(path)) {
+        delete next[path];
+      }
+    }
+    this.files = next;
   }
 
   public renameFile(from: string, to: string): void {
+    this.assertWritablePath(from);
+    this.assertWritablePath(to);
     const normalizedFrom = normalizeVfsPath(from);
     const normalizedTo = normalizeVfsPath(to);
     const file = this.files[normalizedFrom];
@@ -175,6 +218,7 @@ export class VfsSession {
   }
 
   public deleteFile(path: string): void {
+    this.assertWritablePath(path);
     const normalized = normalizeVfsPath(path);
     if (!this.files[normalized]) {
       throw new Error(`File not found: ${normalized}`);
@@ -183,6 +227,7 @@ export class VfsSession {
   }
 
   public applyJsonPatch(path: string, patchOps: Operation[]): void {
+    this.assertWritablePath(path);
     const file = this.readFile(path);
     if (!file) {
       throw new Error(`File not found: ${normalizeVfsPath(path)}`);
@@ -213,6 +258,7 @@ export class VfsSession {
   }
 
   public mergeJson(path: string, content: Record<string, unknown>): void {
+    this.assertWritablePath(path);
     if (Array.isArray(content) || content === null || typeof content !== "object") {
       throw new Error("Merge content must be a JSON object");
     }
@@ -251,12 +297,12 @@ export class VfsSession {
   public list(path: string): string[] {
     const normalized = normalizeVfsPath(path);
     if (normalized === "") {
-      const entries = Object.keys(this.files).map((p) => p.split("/")[0]);
+      const entries = Object.keys(this.snapshotAll()).map((p) => p.split("/")[0]);
       return Array.from(new Set(entries));
     }
 
     const prefix = normalized.replace(/\/$/, "");
-    const entries = Object.keys(this.files)
+    const entries = Object.keys(this.snapshotAll())
       .filter((p) => p.startsWith(prefix + "/"))
       .map((p) => p.slice(prefix.length + 1))
       .filter((p) => !p.includes("/"));
