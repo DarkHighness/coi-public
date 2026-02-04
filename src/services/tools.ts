@@ -155,7 +155,113 @@ export const VFS_READ_TOOL = defineTool({
   description: "Read a VFS file.",
   parameters: z.object({
     path: vfsFilePathSchema.describe("File path."),
+    start: z
+      .number()
+      .int()
+      .min(0)
+      .nullish()
+      .describe(
+        "Optional start character index (0-based). Prefer omitting; null is default.",
+      ),
+    offset: z
+      .number()
+      .int()
+      .positive()
+      .nullish()
+      .describe(
+        "Optional number of characters to read starting at start. Prefer omitting; null is default.",
+      ),
+    maxChars: z
+      .number()
+      .int()
+      .positive()
+      .nullish()
+      .describe(
+        "Optional max characters (truncate large files). Prefer omitting; null is treated as default (no truncation).",
+      ),
   }),
+});
+
+export const VFS_SCHEMA_TOOL = defineTool({
+  name: "vfs_schema",
+  description:
+    "Describe the expected JSON schema for a VFS path (Zod-based). Helps avoid invalid keys and missing fields.",
+  parameters: z
+    .object({
+      paths: z
+        .array(vfsPathSchema)
+        .min(1)
+        .describe(
+          "Paths to describe. Prefer paths under current/; if omitted, current/ is assumed.",
+        ),
+    })
+    .strict(),
+});
+
+export const VFS_STAT_TOOL = defineTool({
+  name: "vfs_stat",
+  description:
+    "Get VFS metadata for one or more paths (files or directories). Returns no file content.",
+  parameters: z
+    .object({
+      paths: z
+        .array(vfsPathSchema)
+        .min(1)
+        .describe(
+          "Paths to stat. Prefer paths under current/; if omitted, current/ is assumed.",
+        ),
+    })
+    .strict(),
+});
+
+export const VFS_GLOB_TOOL = defineTool({
+  name: "vfs_glob",
+  description:
+    "Find VFS files matching glob pattern(s) (supports **, *, ?). Prefer current/ prefix; if omitted, current/ is assumed.",
+  parameters: z
+    .object({
+      patterns: z
+        .array(z.string().min(1))
+        .min(1)
+        .describe(
+          'Glob patterns (e.g. "current/world/**/*.json" or "world/**/*.json").',
+        ),
+      excludePatterns: z
+        .array(z.string().min(1))
+        .min(1)
+        .nullish()
+        .describe(
+          'Optional exclude patterns (e.g. "world/**/tmp-*.json"). Prefer omitting; null is default.',
+        ),
+      ignoreCase: z
+        .boolean()
+        .nullish()
+        .describe(
+          "Optional case-insensitive matching. Prefer omitting; null is false.",
+        ),
+      returnMeta: z
+        .boolean()
+        .nullish()
+        .describe(
+          "When true, include per-file metadata (contentType/size/hash/updatedAt/totalChars) in the result. Prefer omitting; null is false.",
+        ),
+      metaFields: z
+        .array(
+          z.enum(["contentType", "size", "hash", "updatedAt", "totalChars"]),
+        )
+        .min(1)
+        .nullish()
+        .describe(
+          "Optional subset of metadata fields to include when returnMeta is enabled. If provided, returnMeta is implied. Prefer omitting; null is default (all fields).",
+        ),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe("Optional max matches. Default: 200. Prefer omitting; null is default."),
+    })
+    .strict(),
 });
 
 export const VFS_READ_MANY_TOOL = defineTool({
@@ -170,6 +276,29 @@ export const VFS_READ_MANY_TOOL = defineTool({
       .nullish()
       .describe(
         "Optional max characters per file (truncate large files). Prefer omitting; null is treated as default (no truncation).",
+      ),
+  }),
+});
+
+export const VFS_READ_JSON_TOOL = defineTool({
+  name: "vfs_read_json",
+  description:
+    "Read one or more JSON Pointer subpaths from a JSON VFS file (compact JSON, optionally truncated).",
+  parameters: z.object({
+    path: vfsFilePathSchema.describe("JSON file path."),
+    pointers: z
+      .array(z.string())
+      .min(1)
+      .describe(
+        "JSON Pointer paths to extract (e.g. '/visible/name'). Use '' or '/' for the root document.",
+      ),
+    maxChars: z
+      .number()
+      .int()
+      .positive()
+      .nullish()
+      .describe(
+        "Optional max characters per extracted value (after JSON.stringify). Default: 4000. Prefer omitting; null is default.",
       ),
   }),
 });
@@ -570,7 +699,11 @@ export const VFS_FINISH_SUMMARY_TOOL = defineTool({
 export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_LS_TOOL,
   VFS_READ_TOOL,
+  VFS_SCHEMA_TOOL,
+  VFS_STAT_TOOL,
+  VFS_GLOB_TOOL,
   VFS_READ_MANY_TOOL,
+  VFS_READ_JSON_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
   VFS_LS_ENTRIES_TOOL,
@@ -594,7 +727,11 @@ export const TOOLS = ALL_DEFINED_TOOLS;
 
 export type VfsLsParams = InferToolParams<typeof VFS_LS_TOOL>;
 export type VfsReadParams = InferToolParams<typeof VFS_READ_TOOL>;
+export type VfsSchemaParams = InferToolParams<typeof VFS_SCHEMA_TOOL>;
+export type VfsStatParams = InferToolParams<typeof VFS_STAT_TOOL>;
+export type VfsGlobParams = InferToolParams<typeof VFS_GLOB_TOOL>;
 export type VfsReadManyParams = InferToolParams<typeof VFS_READ_MANY_TOOL>;
+export type VfsReadJsonParams = InferToolParams<typeof VFS_READ_JSON_TOOL>;
 export type VfsSearchParams = InferToolParams<typeof VFS_SEARCH_TOOL>;
 export type VfsGrepParams = InferToolParams<typeof VFS_GREP_TOOL>;
 export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
@@ -615,7 +752,11 @@ export type VfsFinishSummaryParams = InferToolParams<
 export interface ToolParamsMap {
   vfs_ls: VfsLsParams;
   vfs_read: VfsReadParams;
+  vfs_schema: VfsSchemaParams;
+  vfs_stat: VfsStatParams;
+  vfs_glob: VfsGlobParams;
   vfs_read_many: VfsReadManyParams;
+  vfs_read_json: VfsReadJsonParams;
   vfs_search: VfsSearchParams;
   vfs_grep: VfsGrepParams;
   vfs_ls_entries: VfsLsEntriesParams;

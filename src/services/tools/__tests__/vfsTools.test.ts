@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   VFS_LS_TOOL,
   VFS_READ_TOOL,
+  VFS_SCHEMA_TOOL,
+  VFS_STAT_TOOL,
+  VFS_GLOB_TOOL,
   VFS_READ_MANY_TOOL,
+  VFS_READ_JSON_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
   VFS_WRITE_TOOL,
@@ -19,7 +23,11 @@ describe("VFS tools", () => {
   it("defines VFS tool names", () => {
     expect(VFS_LS_TOOL.name).toBe("vfs_ls");
     expect(VFS_READ_TOOL.name).toBe("vfs_read");
+    expect(VFS_SCHEMA_TOOL.name).toBe("vfs_schema");
+    expect(VFS_STAT_TOOL.name).toBe("vfs_stat");
+    expect(VFS_GLOB_TOOL.name).toBe("vfs_glob");
     expect(VFS_READ_MANY_TOOL.name).toBe("vfs_read_many");
+    expect(VFS_READ_JSON_TOOL.name).toBe("vfs_read_json");
     expect(VFS_SEARCH_TOOL.name).toBe("vfs_search");
     expect(VFS_GREP_TOOL.name).toBe("vfs_grep");
     expect(VFS_WRITE_TOOL.name).toBe("vfs_write");

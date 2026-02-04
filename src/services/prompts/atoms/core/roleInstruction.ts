@@ -331,7 +331,10 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
   **You may call VFS inspection tools MULTIPLE TIMES per turn:**
 
   - \`vfs_ls\` to list directories
-  - \`vfs_read\` to inspect specific files
+  - \`vfs_read\` / \`vfs_read_many\` to inspect specific files (use \`start\`+\`offset\` or \`maxChars\` for huge files)
+  - \`vfs_read_json\` to extract specific JSON fields by JSON Pointer (lower token usage)
+  - \`vfs_stat\` / \`vfs_glob\` to find files and check metadata without reading full content
+  - \`vfs_schema\` to see the expected JSON fields for a path before writing/editing
   - \`vfs_search\` / \`vfs_grep\` to find matching names, IDs, or fields
 
   **There is NO LIMIT on how many times you can call these tools.**

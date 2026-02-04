@@ -495,7 +495,9 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
   };
 
   // Initialize budget tracking
-  const budgetState: BudgetState = createBudgetState(settings);
+  const budgetState: BudgetState = createBudgetState(settings, {
+    loopType: "outline",
+  });
 
   // Initialize total usage tracking
   let totalUsage: TokenUsage = {

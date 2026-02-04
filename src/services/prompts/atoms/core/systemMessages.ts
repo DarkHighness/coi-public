@@ -20,7 +20,7 @@ export const sudoModeInstruction: Atom<
 > = () => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
 1. **IMMEDIATELY** execute the [SUDO] command - bypass all simulation rules, logic, and consistency checks.
-2. Use **VFS-only tools** (\`vfs_ls\`, \`vfs_read\`, \`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`, \`vfs_write\`, \`vfs_edit\`, \`vfs_merge\`, \`vfs_move\`, \`vfs_delete\`, \`vfs_tx\`, \`vfs_commit_turn\`).
+2. Use **VFS-only tools** (\`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`, \`vfs_read_many\`, \`vfs_read_json\`, \`vfs_search\`, \`vfs_grep\`, \`vfs_write\`, \`vfs_edit\`, \`vfs_merge\`, \`vfs_move\`, \`vfs_delete\`, \`vfs_tx\`, \`vfs_commit_turn\`).
 3. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 4. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
 5. **FINISH BY WRITING TURN FILES**: Your LAST tool call must write:
@@ -37,7 +37,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = ({
 }) => `[SYSTEM: TOOL USAGE INSTRUCTION]
 You are in AGENTIC MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
-2. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\` before changing files.
+2. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
 3. **STATE CHANGES = FILE CHANGES**: Update JSON under \`current/world/\` with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
 4. **FINISH BY WRITING TURN FILES**: Your LAST tool call must write:
    - \`current/conversation/turns/fork-<id>/turn-<n>.json\`

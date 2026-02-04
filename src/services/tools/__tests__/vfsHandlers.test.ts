@@ -33,6 +33,358 @@ describe("VFS handlers", () => {
     expect(readResult.data?.content).toBe("{}");
   });
 
+  it("supports truncation in vfs_read via maxChars", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: JSON.stringify({ big: "x".repeat(100) }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const readResult = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/global.json", maxChars: 20 },
+      ctx,
+    ) as { success: boolean; data?: { content?: string; truncated?: boolean } };
+
+    expect(readResult.success).toBe(true);
+    expect(readResult.data?.truncated).toBe(true);
+    expect((readResult.data?.content ?? "").length).toBe(20);
+  });
+
+  it("supports slicing in vfs_read via start+offset", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: "abcdefghijklmnopqrstuvwxyz",
+            contentType: "text/plain",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const readResult = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/global.json", start: 5, offset: 3 },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        content?: string;
+        truncated?: boolean;
+        sliceStart?: number;
+        sliceEndExclusive?: number;
+        totalChars?: number;
+      };
+    };
+
+    expect(readResult.success).toBe(true);
+    expect(readResult.data?.content).toBe("fgh");
+    expect(readResult.data?.truncated).toBe(true);
+    expect(readResult.data?.sliceStart).toBe(5);
+    expect(readResult.data?.sliceEndExclusive).toBe(8);
+    expect(readResult.data?.totalChars).toBe(26);
+  });
+
+  it("reads JSON subfields via vfs_read_json", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/npcs/npc:1.json",
+            content: JSON.stringify({ id: "npc:1", visible: { name: "Bob" } }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const result = dispatchToolCall(
+      "vfs_read_json",
+      { path: "current/world/npcs/npc:1.json", pointers: ["/visible/name"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { extracts?: Array<{ pointer: string; json: string }> };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.extracts?.[0]?.pointer).toBe("/visible/name");
+    expect(result.data?.extracts?.[0]?.json).toBe("\"Bob\"");
+  });
+
+  it("describes schemas via vfs_schema", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["world/global.json", "current/world/npcs/npc:1.json"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { schemas?: Array<{ path: string; hint: string }>; missing?: any[] };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.missing).toEqual([]);
+    expect(result.data?.schemas?.[0]?.path).toBe("current/world/global.json");
+    expect(result.data?.schemas?.[0]?.hint).toContain("time");
+    expect(result.data?.schemas?.[1]?.path).toBe("current/world/npcs/npc:1.json");
+    expect(result.data?.schemas?.[1]?.hint).toContain("visible");
+    expect(result.data?.schemas?.[1]?.hint).toContain("id");
+  });
+
+  it("stats files and directories via vfs_stat", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+          {
+            path: "current/world/npcs/npc:1.json",
+            content: JSON.stringify({ id: "npc:1" }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const statResult = dispatchToolCall(
+      "vfs_stat",
+      { paths: ["current/world/global.json", "current/world"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        stats?: Array<
+          | { kind: "file"; path: string; size: number; contentType: string }
+          | { kind: "dir"; path: string; fileCount: number; entries: string[] }
+        >;
+        missing?: string[];
+      };
+    };
+
+    expect(statResult.success).toBe(true);
+    expect(statResult.data?.missing).toEqual([]);
+    expect(statResult.data?.stats?.[0]).toMatchObject({
+      kind: "file",
+      path: "current/world/global.json",
+      contentType: "application/json",
+    });
+    expect(statResult.data?.stats?.[1]).toMatchObject({
+      kind: "dir",
+      path: "current/world",
+    });
+    const dir = statResult.data?.stats?.[1] as
+      | undefined
+      | { kind: "dir"; fileCount: number; entries: string[] };
+    expect((dir?.fileCount ?? 0) >= 2).toBe(true);
+    expect(dir?.entries?.includes("global.json")).toBe(true);
+  });
+
+  it("finds matches via vfs_glob", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/a.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+          {
+            path: "current/world/b.txt",
+            content: "x",
+            contentType: "text/plain",
+          },
+          {
+            path: "current/world/sub/c.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const globResult = dispatchToolCall(
+      "vfs_glob",
+      { patterns: ["world/**/*.json"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { matches?: string[]; truncated?: boolean; totalMatches?: number };
+    };
+
+    expect(globResult.success).toBe(true);
+    expect(globResult.data?.truncated).toBe(false);
+    expect(globResult.data?.totalMatches).toBe(2);
+    expect(globResult.data?.matches).toEqual([
+      "current/world/a.json",
+      "current/world/sub/c.json",
+    ]);
+  });
+
+  it("supports excludes in vfs_glob", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/a.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+          {
+            path: "current/world/sub/c.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const globResult = dispatchToolCall(
+      "vfs_glob",
+      {
+        patterns: ["world/**/*.json"],
+        excludePatterns: ["world/sub/**"],
+      },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { matches?: string[]; truncated?: boolean; totalMatches?: number };
+    };
+
+    expect(globResult.success).toBe(true);
+    expect(globResult.data?.totalMatches).toBe(1);
+    expect(globResult.data?.matches).toEqual(["current/world/a.json"]);
+  });
+
+  it("returns metadata via vfs_glob returnMeta", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/a.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const globResult = dispatchToolCall(
+      "vfs_glob",
+      { patterns: ["world/**/*.json"], returnMeta: true },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        matches?: string[];
+        entries?: Array<{
+          path: string;
+          contentType: string;
+          totalChars: number;
+          size: number;
+          hash: string;
+          updatedAt: number;
+        }>;
+      };
+    };
+
+    expect(globResult.success).toBe(true);
+    expect(globResult.data?.matches).toEqual(["current/world/a.json"]);
+    expect(globResult.data?.entries?.[0]).toMatchObject({
+      path: "current/world/a.json",
+      contentType: "application/json",
+      totalChars: 2,
+      size: 2,
+    });
+    expect(typeof globResult.data?.entries?.[0]?.hash).toBe("string");
+    expect(typeof globResult.data?.entries?.[0]?.updatedAt).toBe("number");
+  });
+
+  it("returns only selected metadata fields via vfs_glob metaFields", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/a.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const globResult = dispatchToolCall(
+      "vfs_glob",
+      { patterns: ["world/**/*.json"], metaFields: ["size"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { entries?: Array<Record<string, unknown>> };
+    };
+
+    expect(globResult.success).toBe(true);
+    const entry = globResult.data?.entries?.[0] ?? {};
+    expect(entry).toHaveProperty("path");
+    expect(entry).toHaveProperty("size");
+    expect(entry).not.toHaveProperty("hash");
+    expect(entry).not.toHaveProperty("updatedAt");
+    expect(entry).not.toHaveProperty("contentType");
+    expect(entry).not.toHaveProperty("totalChars");
+  });
+
   it("reads multiple files via dispatch", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };

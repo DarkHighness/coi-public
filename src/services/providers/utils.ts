@@ -197,6 +197,124 @@ const INTERNAL_FIELDS = new Set([
   "lastAccess",
 ]);
 
+const VFS_INTERNAL_FIELDS = new Set(["createdAt", "updatedAt", "modifiedAt", "lastAccess"]);
+
+function getGenericTypeHintVfs(schema: ZodTypeAny, indent: string = ""): string {
+  // Unwrap optional/nullable
+  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
+    return getGenericTypeHintVfs(schema._def.innerType, indent);
+  }
+
+  if (schema instanceof ZodString) return "string";
+  if (schema instanceof ZodNumber) return "number";
+  if (schema instanceof ZodBoolean) return "boolean";
+  if (schema instanceof ZodNull) return "null";
+  if (schema instanceof ZodLiteral) {
+    const value = schema._def.value;
+    return typeof value === "string" ? `"${value}"` : String(value);
+  }
+  if (schema instanceof ZodDiscriminatedUnion) {
+    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
+      .options as ZodObject<any>[];
+    return options
+      .map((opt) => getVfsSchemaHint(opt, indent + "  "))
+      .join(" | ");
+  }
+  if (schema instanceof ZodEnum) {
+    return (schema as ZodEnum<any>)._def.values
+      .map((v) => `"${v}"`)
+      .join(" | ");
+  }
+  if (schema instanceof ZodArray) {
+    const inner = schema._def.type;
+    if (inner instanceof ZodObject) {
+      return `Array<${getVfsSchemaHint(inner, indent + "  ")}>`;
+    }
+    return `Array<${getGenericTypeHintVfs(inner, indent)}>`;
+  }
+  if (schema instanceof ZodObject) {
+    return getVfsSchemaHint(schema, indent);
+  }
+  if (schema instanceof ZodUnion) {
+    return (schema as ZodUnion<any>)._def.options
+      .map((opt: ZodTypeAny) => getGenericTypeHintVfs(opt, indent))
+      .join(" | ");
+  }
+  if (schema instanceof ZodIntersection) {
+    return `${getGenericTypeHintVfs(schema._def.left, indent)} & ${getGenericTypeHintVfs(
+      schema._def.right,
+      indent,
+    )}`;
+  }
+  if (schema instanceof ZodRecord) {
+    return "Record<string, any>";
+  }
+
+  return "any";
+}
+
+/**
+ * Variant of getToolSchemaHint for VFS JSON schemas (keeps entity ids visible).
+ */
+export function getVfsSchemaHint(
+  schema: ZodTypeAny,
+  indent: string = "",
+): string {
+  if (schema instanceof ZodObject) {
+    const shape = schema.shape;
+    const lines = Object.entries(shape)
+      .filter(([key, value]) => {
+        if (VFS_INTERNAL_FIELDS.has(key)) return false;
+
+        const fieldSchema = value as ZodTypeAny;
+        const description = fieldSchema.description;
+        if (description && description.includes("INVISIBLE")) return false;
+
+        return true;
+      })
+      .map(([key, value]) => {
+        let fieldSchema = value as ZodTypeAny;
+        let isOptional = fieldSchema instanceof ZodOptional;
+        let description = fieldSchema.description;
+
+        let innerSchema = fieldSchema;
+        while (
+          innerSchema instanceof ZodOptional ||
+          innerSchema instanceof ZodNullable
+        ) {
+          if (innerSchema instanceof ZodOptional) isOptional = true;
+          innerSchema = innerSchema._def.innerType;
+        }
+
+        if (!description) description = innerSchema.description;
+
+        let typeStr = "";
+        if (innerSchema instanceof ZodObject) {
+          typeStr = getVfsSchemaHint(innerSchema, indent + "  ");
+        } else if (
+          innerSchema instanceof ZodArray &&
+          innerSchema._def.type instanceof ZodObject
+        ) {
+          typeStr = `Array<${getVfsSchemaHint(
+            innerSchema._def.type,
+            indent + "  ",
+          )}>`;
+        } else if (innerSchema instanceof ZodArray) {
+          typeStr = getGenericTypeHintVfs(innerSchema, indent);
+        } else {
+          typeStr = getGenericTypeHintVfs(innerSchema, indent);
+        }
+
+        const descComment = description ? ` // ${description}` : "";
+        return `${indent}  ${key}${isOptional ? "?" : ""}: ${typeStr};${descComment}`;
+      });
+
+    return `{\n${lines.join("\n")}\n${indent}}`;
+  }
+
+  return getGenericTypeHintVfs(schema, indent);
+}
+
 /**
  * Generate a simplified, JSON-like schema representation for the AI
  */

@@ -6,6 +6,10 @@ import {
   VFS_LS_TOOL,
   VFS_READ_TOOL,
   VFS_READ_MANY_TOOL,
+  VFS_READ_JSON_TOOL,
+  VFS_SCHEMA_TOOL,
+  VFS_STAT_TOOL,
+  VFS_GLOB_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
   VFS_LS_ENTRIES_TOOL,
@@ -29,6 +33,7 @@ import type { VfsFileMap } from "../../vfs/types";
 import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
 import { VfsSession } from "../../vfs/vfsSession";
+import { getSchemaForPath } from "../../vfs/schemas";
 import Fuse from "fuse.js";
 import { getRAGService } from "../../rag";
 import {
@@ -40,6 +45,7 @@ import {
   writeTurnFile,
 } from "../../vfs/conversation";
 import { registerToolHandler, type ToolContext } from "../toolHandlerRegistry";
+import { getVfsSchemaHint } from "../../providers/utils";
 
 interface VfsMatch {
   path: string;
@@ -66,6 +72,135 @@ const getSession = (ctx: ToolContext): VfsSession | null => {
 };
 
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
+
+type JsonPointerResolveResult =
+  | { ok: true; value: unknown }
+  | { ok: false; error: string };
+
+const decodeJsonPointerToken = (token: string): string =>
+  token.replace(/~1/g, "/").replace(/~0/g, "~");
+
+const resolveJsonPointer = (
+  document: unknown,
+  pointer: string,
+): JsonPointerResolveResult => {
+  // RFC 6901: empty string means the whole document.
+  // For ergonomics we also treat "/" as the root document (common user expectation).
+  if (pointer === "" || pointer === "/") {
+    return { ok: true, value: document };
+  }
+  if (!pointer.startsWith("/")) {
+    return {
+      ok: false,
+      error: `Invalid JSON Pointer (must start with "/" or be empty): ${pointer}`,
+    };
+  }
+
+  let current: unknown = document;
+  const tokens = pointer
+    .split("/")
+    .slice(1)
+    .map(decodeJsonPointerToken);
+
+  for (const token of tokens) {
+    if (Array.isArray(current)) {
+      if (!/^(0|[1-9]\d*)$/.test(token)) {
+        return {
+          ok: false,
+          error: `Pointer token "${token}" is not a valid array index`,
+        };
+      }
+      const index = Number(token);
+      if (!Number.isSafeInteger(index) || index < 0 || index >= current.length) {
+        return { ok: false, error: `Array index out of bounds: ${token}` };
+      }
+      current = current[index];
+      continue;
+    }
+
+    if (current && typeof current === "object") {
+      const record = current as Record<string, unknown>;
+      if (!(token in record)) {
+        return { ok: false, error: `Missing key "${token}"` };
+      }
+      current = record[token];
+      continue;
+    }
+
+    return {
+      ok: false,
+      error: `Cannot resolve "${token}" on a non-container value`,
+    };
+  }
+
+  return { ok: true, value: current };
+};
+
+const describeJsonValueType = (value: unknown): string => {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+};
+
+const escapeRegExpChar = (char: string): string => {
+  return char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const globToRegExp = (pattern: string, options?: { ignoreCase?: boolean }): RegExp => {
+  // Supports:
+  // - ** (any chars including '/')
+  // - *  (any chars except '/')
+  // - ?  (single char except '/')
+  // We intentionally keep this small + deterministic; no brace expansions.
+  let regex = "^";
+
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i] ?? "";
+
+    if (char === "*") {
+      const next = pattern[i + 1];
+      if (next === "*") {
+        const after = pattern[i + 2];
+        // Special-case "**/" so it can match "no directory" as well as "many directories".
+        // Example: "world/**/*.json" should match both "world/a.json" and "world/sub/a.json".
+        if (after === "/") {
+          regex += "(?:.*\\/)?";
+          i += 2;
+          continue;
+        }
+        regex += ".*";
+        i += 1;
+        continue;
+      }
+      regex += "[^/]*";
+      continue;
+    }
+
+    if (char === "?") {
+      regex += "[^/]";
+      continue;
+    }
+
+    regex += escapeRegExpChar(char);
+  }
+
+  regex += "$";
+  return new RegExp(regex, options?.ignoreCase ? "i" : undefined);
+};
+
+const resolveCurrentPathLoose = (
+  path?: string,
+): { ok: true; path: string } | { ok: false; error: ToolCallResult } => {
+  if (!path) {
+    return resolveCurrentPath(path);
+  }
+  const normalized = normalizeVfsPath(path);
+  const qualified =
+    normalized === "current" || normalized.startsWith("current/")
+      ? normalized
+      : `current/${normalized}`;
+  return resolveCurrentPath(qualified);
+};
 
 const deriveConversationIndexFromSnapshot = (
   snapshot: VfsFileMap,
@@ -1167,9 +1302,315 @@ registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
     return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
   }
 
+  const startRaw = typedArgs.start;
+  const offsetRaw = typedArgs.offset;
+  const maxChars = typedArgs.maxChars;
+
+  const start = typeof startRaw === "number" ? startRaw : 0;
+  const hasOffset = typeof offsetRaw === "number";
+  const hasMaxChars = typeof maxChars === "number";
+
+  if (start > 0 && !hasOffset && !hasMaxChars) {
+    return createError(
+      "vfs_read: when providing start, also provide offset (preferred) or maxChars to avoid huge reads",
+      "INVALID_DATA",
+    );
+  }
+
+  const length = hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
+  const totalChars = file.content.length;
+  const sliceStart = Math.min(Math.max(start, 0), totalChars);
+  const sliceEndExclusive =
+    typeof length === "number"
+      ? Math.min(sliceStart + Math.max(length, 0), totalChars)
+      : totalChars;
+
+  const content = file.content.slice(sliceStart, sliceEndExclusive);
+  const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;
+
   return createSuccess(
-    { ...file, path: toCurrentPath(file.path) },
+    {
+      ...file,
+      content,
+      truncated,
+      sliceStart,
+      sliceEndExclusive,
+      totalChars,
+      path: toCurrentPath(file.path),
+    },
     "VFS file read",
+  );
+});
+
+registerToolHandler(VFS_SCHEMA_TOOL, (args, ctx) => {
+  void ctx;
+  const typedArgs = getTypedArgs("vfs_schema", args);
+
+  const schemas: Array<{ path: string; hint: string }> = [];
+  const missing: Array<{ path: string; error: string }> = [];
+
+  for (const inputPath of typedArgs.paths) {
+    const resolved = resolveCurrentPathLoose(inputPath);
+    if (!resolved.ok) {
+      return resolved.error;
+    }
+
+    try {
+      const schema = getSchemaForPath(resolved.path);
+      schemas.push({
+        path: toCurrentPath(resolved.path),
+        hint: getVfsSchemaHint(schema),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      missing.push({ path: inputPath, error: message });
+    }
+  }
+
+  return createSuccess({ schemas, missing }, "VFS schema described");
+});
+
+registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_stat", args);
+  const snapshot = session.snapshot();
+  const snapshotPaths = Object.keys(snapshot);
+
+  const stats: Array<
+    | {
+        kind: "file";
+        path: string;
+        contentType: string;
+        totalChars: number;
+        size: number;
+        hash: string;
+        updatedAt: number;
+      }
+    | {
+        kind: "dir";
+        path: string;
+        fileCount: number;
+        entries: string[];
+      }
+  > = [];
+  const missing: string[] = [];
+
+  for (const inputPath of typedArgs.paths) {
+    const resolved = resolveCurrentPathLoose(inputPath);
+    if (!resolved.ok) {
+      return resolved.error;
+    }
+
+    const normalized = normalizeVfsPath(resolved.path);
+    const file = session.readFile(normalized);
+    if (file) {
+      stats.push({
+        kind: "file",
+        path: toCurrentPath(file.path),
+        contentType: file.contentType,
+        totalChars: file.content.length,
+        size: file.size,
+        hash: file.hash,
+        updatedAt: file.updatedAt,
+      });
+      continue;
+    }
+
+    const prefix = normalized.replace(/\/$/, "");
+    const isDir =
+      prefix === "" ||
+      snapshotPaths.some((path) => path.startsWith(prefix + "/"));
+    if (!isDir) {
+      missing.push(inputPath);
+      continue;
+    }
+
+    const fileCount =
+      prefix === ""
+        ? snapshotPaths.length
+        : snapshotPaths.filter((path) => path.startsWith(prefix + "/")).length;
+    const entries = session.list(prefix);
+    stats.push({
+      kind: "dir",
+      path: toCurrentPath(prefix),
+      fileCount,
+      entries,
+    });
+  }
+
+  return createSuccess({ stats, missing }, "VFS stat complete");
+});
+
+registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_glob", args);
+  const limit = typedArgs.limit ?? 200;
+  const ignoreCase = Boolean(typedArgs.ignoreCase);
+  const metaFields = typedArgs.metaFields ?? null;
+  const returnMeta = Boolean(typedArgs.returnMeta) || metaFields !== null;
+  if (limit <= 0) {
+    return createSuccess(
+      { matches: [], entries: returnMeta ? [] : undefined, truncated: false, totalMatches: 0 },
+      "VFS glob complete",
+    );
+  }
+
+  const regexes: RegExp[] = [];
+  for (const raw of typedArgs.patterns) {
+    const resolved = resolveCurrentPathLoose(raw);
+    if (!resolved.ok) return resolved.error;
+    const normalizedPattern = normalizeVfsPath(resolved.path);
+    try {
+      regexes.push(globToRegExp(normalizedPattern, { ignoreCase }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return createError(`Invalid glob: ${message}`, "INVALID_DATA");
+    }
+  }
+
+  const excludeRegexes: RegExp[] = [];
+  if (typedArgs.excludePatterns) {
+    for (const raw of typedArgs.excludePatterns) {
+      const resolved = resolveCurrentPathLoose(raw);
+      if (!resolved.ok) return resolved.error;
+      const normalizedPattern = normalizeVfsPath(resolved.path);
+      try {
+        excludeRegexes.push(globToRegExp(normalizedPattern, { ignoreCase }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return createError(`Invalid exclude glob: ${message}`, "INVALID_DATA");
+      }
+    }
+  }
+
+  const snapshotPaths = Object.keys(session.snapshot());
+  const matched = new Set<string>();
+
+  for (const path of snapshotPaths) {
+    if (excludeRegexes.some((re) => re.test(path))) {
+      continue;
+    }
+    for (const regex of regexes) {
+      if (regex.test(path)) {
+        matched.add(path);
+        break;
+      }
+    }
+  }
+
+  const allMatches = Array.from(matched).sort();
+  const truncated = allMatches.length > limit;
+  const selectedMatches = truncated ? allMatches.slice(0, limit) : allMatches;
+  const matches = selectedMatches.map((p) => toCurrentPath(p));
+
+  const entries = returnMeta
+    ? selectedMatches.flatMap((path) => {
+        const file = session.readFile(path);
+        if (!file) {
+          return [];
+        }
+        const entry: Record<string, unknown> = { path: toCurrentPath(file.path) };
+        const include = (field: string): boolean =>
+          metaFields === null ? true : metaFields.includes(field as any);
+
+        if (include("contentType")) entry.contentType = file.contentType;
+        if (include("totalChars")) entry.totalChars = file.content.length;
+        if (include("size")) entry.size = file.size;
+        if (include("hash")) entry.hash = file.hash;
+        if (include("updatedAt")) entry.updatedAt = file.updatedAt;
+
+        return [entry];
+      })
+    : undefined;
+
+  return createSuccess(
+    { matches, entries, truncated, totalMatches: allMatches.length },
+    "VFS glob complete",
+  );
+});
+
+registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_read_json", args);
+  const resolved = resolveCurrentPath(typedArgs.path);
+  if (!resolved.ok) {
+    return resolved.error;
+  }
+  const file = session.readFile(resolved.path);
+  if (!file) {
+    return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
+  }
+  if (file.contentType !== "application/json") {
+    return createError(`File is not JSON: ${typedArgs.path}`, "INVALID_DATA");
+  }
+
+  let document: unknown;
+  try {
+    document = JSON.parse(file.content);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
+  }
+
+  const maxChars = typedArgs.maxChars ?? 4000;
+  const extracts: Array<{
+    pointer: string;
+    type: string;
+    json: string;
+    truncated: boolean;
+    jsonChars: number;
+  }> = [];
+  const missing: Array<{ pointer: string; error: string }> = [];
+
+  for (const pointer of typedArgs.pointers) {
+    const resolvedPointer = resolveJsonPointer(document, pointer);
+    if (!resolvedPointer.ok) {
+      missing.push({ pointer, error: resolvedPointer.error });
+      continue;
+    }
+
+    const valueType = describeJsonValueType(resolvedPointer.value);
+    const jsonString = JSON.stringify(resolvedPointer.value);
+    const fullJson = typeof jsonString === "string" ? jsonString : "null";
+    let json = fullJson;
+    let truncated = false;
+    if (json.length > maxChars) {
+      json = json.slice(0, maxChars);
+      truncated = true;
+    }
+
+    extracts.push({
+      pointer,
+      type: valueType,
+      json,
+      truncated,
+      jsonChars: fullJson.length,
+    });
+  }
+
+  return createSuccess(
+    {
+      path: toCurrentPath(file.path),
+      contentType: file.contentType,
+      extracts,
+      missing,
+      size: file.size,
+      hash: file.hash,
+      updatedAt: file.updatedAt,
+    },
+    "VFS JSON subpaths read",
   );
 });
 

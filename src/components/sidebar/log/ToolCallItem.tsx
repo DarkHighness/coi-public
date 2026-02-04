@@ -11,7 +11,11 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const isQuery =
     call.name === "vfs_ls" ||
     call.name === "vfs_read" ||
+    call.name === "vfs_schema" ||
+    call.name === "vfs_stat" ||
+    call.name === "vfs_glob" ||
     call.name === "vfs_read_many" ||
+    call.name === "vfs_read_json" ||
     call.name === "vfs_search" ||
     call.name === "vfs_grep" ||
     call.name.startsWith("summary_query_");

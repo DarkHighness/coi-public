@@ -59,7 +59,9 @@ export function createLoopState(
   isCleanupMode: boolean = false,
   vfsSession?: VfsSession,
 ): LoopState {
-  const budgetState = createBudgetState(settings);
+  const budgetState = createBudgetState(settings, {
+    loopType: isCleanupMode ? "cleanup" : "turn",
+  });
   const accumulatedResponse = createEmptyResponse();
   const isRAGEnabled = settings.embedding?.enabled ?? false;
   const activeTools = createInitialTools({
@@ -123,7 +125,11 @@ export function createInitialTools(
   const allowed = new Set<string>([
     "vfs_ls",
     "vfs_read",
+    "vfs_schema",
     "vfs_read_many",
+    "vfs_read_json",
+    "vfs_stat",
+    "vfs_glob",
     "vfs_search",
     "vfs_grep",
     "vfs_write",

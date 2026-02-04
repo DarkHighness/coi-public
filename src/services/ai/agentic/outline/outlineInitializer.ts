@@ -45,7 +45,7 @@ export function createOutlineLoopState(
 ): OutlineLoopState {
   if (resumeFrom) {
     return {
-      budgetState: createBudgetState(settings),
+      budgetState: createBudgetState(settings, { loopType: "outline" }),
       totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       conversationHistory: [...resumeFrom.conversationHistory],
       partial: { ...resumeFrom.partial },
@@ -62,7 +62,7 @@ export function createOutlineLoopState(
   );
 
   return {
-    budgetState: createBudgetState(settings),
+    budgetState: createBudgetState(settings, { loopType: "outline" }),
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     conversationHistory,
     partial: {},

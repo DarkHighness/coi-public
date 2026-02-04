@@ -9,10 +9,21 @@
 
 import { AISettings } from "../../../types";
 
-// Default budget values
-const DEFAULT_MAX_TOOL_CALLS = 50;
-const DEFAULT_MAX_RETRIES = 3;
-const DEFAULT_MAX_ITERATIONS = 20;
+export type AgenticLoopType = "turn" | "cleanup" | "summary" | "outline";
+
+type BudgetDefaults = {
+  maxToolCalls: number;
+  maxErrorRetries: number;
+  maxAgenticRounds: number;
+};
+
+// Default budgets (only used when settings.extra does not override them)
+const DEFAULT_BUDGETS: Record<AgenticLoopType, BudgetDefaults> = {
+  turn: { maxToolCalls: 50, maxErrorRetries: 3, maxAgenticRounds: 20 },
+  cleanup: { maxToolCalls: 90, maxErrorRetries: 3, maxAgenticRounds: 25 },
+  summary: { maxToolCalls: 90, maxErrorRetries: 3, maxAgenticRounds: 25 },
+  outline: { maxToolCalls: 18, maxErrorRetries: 3, maxAgenticRounds: 18 },
+};
 
 /** Budget state for tracking tool calls, retries, and loop iterations */
 export interface BudgetState {
@@ -25,15 +36,19 @@ export interface BudgetState {
 }
 
 /** Create a new budget state from settings */
-export function createBudgetState(settings: AISettings): BudgetState {
+export function createBudgetState(
+  settings: AISettings,
+  options?: { loopType?: AgenticLoopType },
+): BudgetState {
+  const loopType: AgenticLoopType = options?.loopType ?? "turn";
+  const defaults = DEFAULT_BUDGETS[loopType];
   return {
     toolCallsUsed: 0,
-    toolCallsMax: settings.extra?.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS,
+    toolCallsMax: settings.extra?.maxToolCalls ?? defaults.maxToolCalls,
     retriesUsed: 0,
-    retriesMax: settings.extra?.maxErrorRetries ?? DEFAULT_MAX_RETRIES,
+    retriesMax: settings.extra?.maxErrorRetries ?? defaults.maxErrorRetries,
     loopIterationsUsed: 0,
-    loopIterationsMax:
-      settings.extra?.maxAgenticRounds ?? DEFAULT_MAX_ITERATIONS,
+    loopIterationsMax: settings.extra?.maxAgenticRounds ?? defaults.maxAgenticRounds,
   };
 }
 

@@ -32,7 +32,11 @@ export function createSummaryLoopState(
   const allowed = new Set<string>([
     "vfs_ls",
     "vfs_read",
+    "vfs_schema",
     "vfs_read_many",
+    "vfs_read_json",
+    "vfs_stat",
+    "vfs_glob",
     "vfs_search",
     "vfs_grep",
     "vfs_ls_entries",
@@ -40,7 +44,7 @@ export function createSummaryLoopState(
   ]);
 
   return {
-    budgetState: createBudgetState(settings),
+    budgetState: createBudgetState(settings, { loopType: "summary" }),
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     activeTools: ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name)),
   };
