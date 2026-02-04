@@ -95,9 +95,9 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="vn-scroll-surface vn-scroll-edge border border-theme-border/70 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden bg-theme-bg">
+      <div className="vn-scroll-surface vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden bg-theme-bg">
         {/* Header */}
-        <div className="flex-none px-4 py-3 sm:p-5 border-b border-theme-border/60 flex items-center justify-between bg-transparent">
+        <div className="flex-none px-4 py-3 sm:p-5 border-b border-theme-divider/60 flex items-center justify-between bg-transparent">
           <div className="flex items-center gap-3 sm:gap-4">
             <span className="text-2xl sm:text-3xl" aria-hidden="true">
               📖
@@ -106,14 +106,14 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
               <h2 className="text-base sm:text-2xl font-[var(--font-fantasy)] text-theme-primary uppercase tracking-[0.22em]">
                 {t("gameViewer.title") || "Chronicle"}
               </h2>
-              <p className="text-[11px] sm:text-xs text-theme-muted uppercase tracking-[0.18em] font-bold">
+              <p className="text-[11px] sm:text-xs text-theme-text-secondary uppercase tracking-[0.18em] font-bold">
                 {t("gameViewer.subtitle") || "Your story at a glance"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-3 -m-1 text-theme-muted hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
+            className="p-3 -m-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
           >
             <svg
               className="w-8 h-8"
@@ -132,7 +132,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Tab Bar */}
-        <div className="flex-none border-b border-theme-border/50 bg-transparent overflow-x-auto scrollbar-hide">
+        <div className="flex-none border-b border-theme-divider/60 bg-transparent overflow-x-auto scrollbar-hide">
           <div className="flex px-2 min-w-full">
             {(Object.keys(TAB_CONFIGS) as ViewTab[]).map((tab) => {
               const config = TAB_CONFIGS[tab];
@@ -144,7 +144,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
                   className={`flex-none px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-2 transition-colors whitespace-nowrap border-b-2 ${
                     isActive
                       ? "border-theme-primary text-theme-primary"
-                      : "border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-bg/10"
+                      : "border-transparent text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10"
                   }`}
                 >
                   <span className="text-base sm:text-lg">
@@ -165,14 +165,14 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-border/60 bg-transparent flex items-center justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
-          <div className="text-xs text-theme-muted font-mono">
+        <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-transparent flex items-center justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
+          <div className="text-xs text-theme-text-secondary font-mono">
             {t("gameViewer.turnInfo", { turn: gameState.turnNumber }) ||
               `Turn ${gameState.turnNumber}`}
           </div>
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-theme-border/50 hover:border-theme-border uppercase text-xs font-bold tracking-[0.18em]"
+            className="px-6 py-2.5 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-theme-divider/60 hover:border-theme-muted uppercase text-xs font-bold tracking-[0.18em]"
           >
             {t("close") || "Close"}
           </button>

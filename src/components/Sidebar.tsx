@@ -66,12 +66,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="px-4 py-3 md:px-5 md:py-4 border-b border-theme-border/50 bg-theme-surface/5 flex items-center justify-center relative shrink-0 min-h-[76px]">
+      <div className="px-4 py-3 md:px-5 md:py-4 border-b border-theme-divider/60 bg-theme-surface/5 flex items-center justify-center relative shrink-0 min-h-[76px]">
         <h1
           className={`text-xl md:text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider text-center leading-none`}
         >
           {t("titleShort")}
-          <div className="text-[11px] md:text-xs text-theme-muted/80 font-mono text-center mt-2 flex flex-col gap-0.5 max-w-[28ch] md:max-w-[36ch] mx-auto leading-snug">
+          <div className="text-[11px] md:text-xs text-theme-text-secondary font-mono text-center mt-2 flex flex-col gap-0.5 max-w-[28ch] md:max-w-[36ch] mx-auto leading-snug">
             {/* Mobile View (Stacked) */}
             <div className="md:hidden flex flex-col gap-0.5">
               <div className="truncate">{gameState.outline?.title}</div>
@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="truncate">{gameState.outline?.title}</div>
             </div>
           </div>
-          <div className="mt-3 h-px w-16 mx-auto bg-theme-border/35"></div>
+          <div className="mt-3 h-px w-16 mx-auto bg-theme-divider/70"></div>
         </h1>
 
         <div className="absolute right-4 top-3 hidden md:block">
@@ -93,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="absolute right-3 top-3 md:hidden flex items-center gap-1">
           <button
-            className="h-9 px-2.5 text-[10px] uppercase tracking-wider font-bold text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors flex items-center gap-1"
+            className="h-9 px-2.5 text-[11px] tracking-wide font-bold text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors flex items-center gap-1"
             onClick={onNewGame}
             title={t("mainMenu")}
           >
@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {t("mainMenu")}
           </button>
           <button
-            className="h-9 w-9 grid place-items-center text-theme-muted hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+            className="h-9 w-9 grid place-items-center text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
             onClick={onCloseMobile}
             title={t("close") || "Close"}
           >
@@ -135,13 +135,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto pb-32 md:pb-6 scroll-smooth custom-scrollbar">
-        <div className="px-4 pt-4 divide-y divide-theme-border/30">
+        <div className="px-4 pt-4 divide-y divide-theme-divider/60">
           {/* Time Display */}
           <div className="pb-3">
-            <div className="border-l-2 border-theme-border/50 border-b border-theme-border/25 pb-2">
+            <div className="border-l-2 border-theme-divider/60 border-b border-theme-divider/60 pb-2">
               <div className="py-2 pl-2 pr-1 flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider text-theme-muted">
+                  <div className="text-[11px] uppercase tracking-wide text-theme-text-secondary">
                     {t("gameViewer.time") || "Time"}
                   </div>
                   <div className="text-xs font-mono text-theme-text-secondary truncate flex items-center gap-1.5">
@@ -163,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-[10px] uppercase tracking-wider text-theme-muted">
+                  <div className="text-[11px] uppercase tracking-wide text-theme-text-secondary">
                     {t("turn")}
                   </div>
                   <div className="text-xs font-mono text-theme-text">
@@ -243,6 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <WorldInfoPanel
               history={gameState.worldInfo?.worldSetting?.history}
               factions={gameState.factions}
+              outline={gameState.outline}
               worldSetting={gameState.worldInfo?.worldSetting}
               themeFont={currentThemeConfig.fontClass}
               worldInfo={gameState.worldInfo}
@@ -260,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Token Usage Panel - Mobile Only */}
           <section className="py-3 md:hidden">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-widest text-theme-muted">
+              <span className="text-xs font-bold uppercase tracking-wide text-theme-text-secondary">
                 {t("sidebar.tokens")}
               </span>
               <span className="text-xs font-mono text-theme-text">
@@ -278,7 +279,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Status Bar */}
-      <div className="bg-theme-surface/10 text-[10px] text-theme-muted py-2 px-3 flex justify-between items-center border-t border-theme-border/50 font-mono">
+      <div className="bg-theme-surface/10 text-[11px] text-theme-text-secondary py-2 px-3 flex justify-between items-center border-t border-theme-divider/60 font-mono">
         <span>
           {t("sidebar.tokens")}{" "}
           {(gameState.tokenUsage?.totalTokens || 0).toLocaleString()}
@@ -289,26 +290,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           )}
         </span>
-        <div className="flex items-center divide-x divide-theme-border/25">
+        <div className="flex items-center divide-x divide-theme-divider/60">
           <button
             onClick={() =>
               onUpdateUIState("showSystemFooter", !showSystemFooter)
             }
-            className="px-3 py-2 text-[10px] uppercase tracking-wider font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+            className="px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
           >
             {showSystemFooter ? t("hideSystem") : t("showSystem")}
           </button>
           <button
             onClick={onOpenLogs}
-            className="px-3 py-2 text-[10px] uppercase tracking-wider font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+            className="px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
           >
             {t("viewLogs")}
           </button>
         </div>
       </div>
 
-      <div className="shrink-0 px-6 pt-3 pb-3 border-t border-theme-border/50 bg-theme-surface/10 hidden md:block">
-        <div className="border-t border-theme-border/25 divide-y divide-theme-border/20 mb-3">
+      <div className="shrink-0 px-6 pt-3 pb-3 border-t border-theme-divider/60 bg-theme-surface/10 hidden md:block">
+        <div className="border-t border-theme-divider/60 divide-y divide-theme-divider/60 mb-3">
           <button
             onClick={onOpenMap}
             data-tutorial-id="game-menu-button"
@@ -332,7 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="text-sm truncate">{t("tree.viewMap")}</span>
             </span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -371,7 +372,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </span>
               <svg
-                className="w-4 h-4 text-theme-muted shrink-0"
+                className="w-4 h-4 text-theme-text-secondary shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -409,7 +410,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-sm truncate">{t("gallery.title")}</span>
               </span>
               <svg
-                className="w-4 h-4 text-theme-muted shrink-0"
+                className="w-4 h-4 text-theme-text-secondary shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

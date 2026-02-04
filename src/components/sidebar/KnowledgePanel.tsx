@@ -83,7 +83,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2
         ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
         ${isDragging ? "opacity-60" : ""}
         ${isEditMode ? "cursor-grab active:cursor-grabbing" : ""}
@@ -109,7 +109,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             className={`p-1 rounded transition-colors shrink-0 ${
               isPinned
                 ? "text-theme-primary"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isPinned ? t("unpin") : t("pin")}
           >
@@ -150,7 +150,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
           </div>
         </div>
         <svg
-          className={`w-5 h-5 text-theme-muted transition-transform duration-300 ${
+          className={`w-5 h-5 text-theme-text-secondary transition-transform duration-300 ${
             expandedSet.has(k.id) ? "rotate-180" : ""
           }`}
           fill="none"
@@ -172,12 +172,12 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-muted/90 leading-relaxed border-t border-theme-border/25 mt-1">
+          <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
             <div className="mt-3">
               <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                 {t("description") || "Description"}
               </span>
-              <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
+              <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
                 <MarkdownText
                   content={k.visible?.description || ""}
                   indentSize={2}
@@ -186,11 +186,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             </div>
 
             {k.visible?.details && (
-              <div className="mt-4 pt-3 border-t border-theme-border/30">
+              <div className="mt-4 pt-3 border-t border-theme-divider/60">
                 <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                   {t("details") || "Details"}
                 </span>
-                <div className="pl-2 border-l-2 border-theme-border/50 text-theme-text/90">
+                <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
                   <MarkdownText content={k.visible.details} indentSize={2} />
                 </div>
               </div>
@@ -260,11 +260,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             )}
 
             {k.discoveredAt && (
-              <div className="mt-3 pt-2 border-t border-theme-border/30 flex justify-between items-center">
+              <div className="mt-3 pt-2 border-t border-theme-divider/60 flex justify-between items-center">
                 <span className="text-xs uppercase tracking-wider text-theme-primary font-bold">
                   {t("knowledgePanel.discovered") || "Discovered"}
                 </span>
-                <span className="text-xs text-theme-muted">
+                <span className="text-xs text-theme-text-secondary">
                   {k.discoveredAt}
                 </span>
               </div>
@@ -364,7 +364,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           <span className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-theme-primary rounded-full animate-pulse"></span>
             {t("knowledgePanel.title")}
-            <span className="ml-2 text-xs text-theme-muted bg-theme-surface-highlight px-2 py-0.5 rounded border border-theme-border">
+            <span className="ml-2 text-xs text-theme-text-secondary bg-theme-surface-highlight px-2 py-0.5 rounded border border-theme-divider/60">
               {knowledge.length}
             </span>
           </span>
@@ -379,7 +379,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             className={`p-1 rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
@@ -420,7 +420,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-muted hover:text-theme-primary p-1"
+              className="text-theme-text-secondary hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
               <svg
@@ -439,7 +439,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             </button>
           )}
 
-          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
@@ -462,7 +462,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
       {isOpen && (
         <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
           {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
+            <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("knowledgePanel.empty")}
             </div>
           ) : (

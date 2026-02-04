@@ -128,9 +128,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
   return (
     <div
       key={rel.id}
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2 group/item
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2 group/item
         ${isDragging ? "opacity-60" : "opacity-100"}
-        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
         ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
       `}
       draggable={isEditMode}
@@ -145,7 +145,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <svg
-              className={`w-3.5 h-3.5 text-theme-muted transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-theme-text-secondary transition-transform duration-200 ${
                 isExpanded ? "rotate-90" : ""
               }`}
               fill="none"
@@ -178,7 +178,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
               )}
             </span>
             <span
-              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-border/40 max-w-[120px] truncate cursor-help"
+              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-divider/60 max-w-[120px] truncate cursor-help"
               title={
                 rel.visible?.roleTag ||
                 rel.visible?.profession ||
@@ -201,7 +201,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
         >
           <div className="overflow-hidden">
             <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
-              <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/25 pt-2">
+              <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("description") || "Description"}
@@ -222,7 +222,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("appearance") || "Appearance"}
                     </span>
-                    <div className="text-theme-muted/80">
+                    <div className="text-theme-text/90">
                       <MarkdownText
                         content={rel.visible.appearance}
                         indentSize={2}
@@ -235,7 +235,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("apparentAge") || "Apparent Age"}
                     </span>
-                    <div className="text-theme-muted/80 text-xs">
+                    <div className="text-theme-text-secondary text-xs">
                       {rel.visible.age}
                     </div>
                   </div>
@@ -245,7 +245,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("sidebar.npc.voice")}
                     </span>
-                    <span className="text-theme-muted/80 text-xs">
+                    <span className="text-theme-text-secondary text-xs">
                       {rel.visible.voice}
                     </span>
                   </div>
@@ -255,7 +255,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("sidebar.npc.mannerism")}
                     </span>
-                    <span className="text-theme-muted/80 text-xs">
+                    <span className="text-theme-text-secondary text-xs">
                       {rel.visible.mannerism}
                     </span>
                   </div>
@@ -265,7 +265,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("sidebar.npc.mood")}
                     </span>
-                    <span className="text-theme-muted/80 text-xs">
+                    <span className="text-theme-text-secondary text-xs">
                       {rel.visible.mood}
                     </span>
                   </div>
@@ -277,7 +277,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("perceivedStatus") || "Currently (Your Perception)"}
                     </span>
-                    <p className="text-theme-muted/80">{rel.visible.status}</p>
+                    <p className="text-theme-text-secondary">{rel.visible.status}</p>
                   </div>
                 )}
 
@@ -286,7 +286,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("gameViewer.currentLocation") || "Location"}
                   </span>
-                  <p className="text-theme-muted/80">
+                  <p className="text-theme-text-secondary">
                     {getLocationName(rel.currentLocation)}
                   </p>
                 </div>
@@ -301,7 +301,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                         defaultValue: "Attitude (Signals)",
                       })}
                     </span>
-                    <div className="text-theme-muted/80 text-xs space-y-1">
+                    <div className="text-theme-text-secondary text-xs space-y-1">
                       {attitude?.visible?.reputationTag && (
                         <div>
                           <span className="uppercase tracking-wider text-[9px] opacity-70">
@@ -342,7 +342,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                         defaultValue: "My Perception",
                       })}
                     </span>
-                    <div className="text-theme-muted/80 text-xs">
+                    <div className="text-theme-text/90 text-xs">
                       <MarkdownText content={perception.visible.description} indentSize={2} />
                       {Array.isArray(perception.visible.evidence) &&
                         perception.visible.evidence.length > 0 && (
@@ -376,13 +376,13 @@ const NpcItem: React.FC<NpcItemProps> = ({
                         {Math.round(trueAffinity)}/100
                       </span>
                       {attitude?.hidden?.impression && (
-                        <span className="text-theme-muted/80">
+                        <span className="text-theme-text-secondary">
                           <MarkdownText content={attitude.hidden.impression} inline />
                         </span>
                       )}
                     </div>
                   ) : (
-                    <div className="text-theme-muted/70 text-xs italic">
+                    <div className="text-theme-text-secondary text-xs italic">
                       {t("gameViewer.affinityHidden", {
                         defaultValue:
                           "True attitude is hidden unless confirmed.",
@@ -514,7 +514,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
+          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-divider/60 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
           draggable={true}
           onDragStart={(e) => onDragStart(e, rel.id)}
@@ -648,7 +648,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
               ></path>
             </svg>
             {t("npcs") || "NPCs"}
-            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
               {npcsWithId.length}
             </span>
           </span>
@@ -663,7 +663,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
             className={`p-1 rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
@@ -704,7 +704,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-muted hover:text-theme-primary p-1"
+              className="text-theme-text-secondary hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
               <svg
@@ -723,7 +723,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
             </button>
           )}
 
-          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
@@ -750,7 +750,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
         <div className="overflow-hidden">
           <div className="space-y-2 pt-1">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
+              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
                 {t("emptyNpcs")}
               </div>
             ) : (

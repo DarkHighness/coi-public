@@ -286,8 +286,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             onClick={() => toggleFolder(node.path)}
             className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
               isRoot
-                ? "text-theme-muted font-semibold border-transparent"
-                : "text-theme-muted hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-border/60"
+                ? "text-theme-text-secondary font-semibold border-transparent"
+                : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
             }`}
             style={padding}
           >
@@ -317,7 +317,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
           isSelected
             ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
-            : "text-theme-muted hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-border/60"
+            : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
         }`}
         style={padding}
       >
@@ -334,9 +334,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="vn-scroll-surface vn-scroll-edge border border-theme-border/70 rounded-none sm:rounded-lg shadow-none w-full max-w-6xl h-full sm:h-[85vh] flex flex-col overflow-hidden bg-theme-bg">
+      <div className="vn-scroll-surface vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-6xl h-full sm:h-[85vh] flex flex-col overflow-hidden bg-theme-bg">
         {/* Header */}
-        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-border/60 flex items-center justify-between bg-transparent">
+        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-divider/60 flex items-center justify-between bg-transparent">
           <div className="flex items-center gap-3">
             <span className="text-2xl" aria-hidden="true">
               🛠️
@@ -345,7 +345,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               <h2 className="text-lg sm:text-xl font-[var(--font-fantasy)] tracking-[0.18em] uppercase text-theme-primary">
                 {t("stateEditor.title") || "State Editor"}
               </h2>
-              <p className="text-[11px] sm:text-xs text-theme-muted">
+              <p className="text-[11px] sm:text-xs text-theme-text-secondary">
                 {t("stateEditor.subtitle") ||
                   "Direct editing of game state (Developer Tool)"}
               </p>
@@ -353,7 +353,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-3 -m-1 text-theme-muted hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
+            className="p-3 -m-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
           >
             <svg
               className="w-6 h-6"
@@ -374,15 +374,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Body */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* File Tree */}
-          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-border/60 bg-transparent flex flex-col">
-            <div className="p-3 border-b border-theme-border/50">
-              <div className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-2">
+          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-transparent flex flex-col">
+            <div className="p-3 border-b border-theme-divider/60">
+              <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide mb-2">
                 {t("stateEditor.fileTree") || "File Tree"}
               </div>
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-md bg-theme-bg/30 border border-theme-border/60 text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
+                className="w-full text-xs px-3 py-2 rounded-md bg-theme-bg/30 border border-theme-divider/60 text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
                 placeholder={
                   t("stateEditor.searchPlaceholder") || "Search files..."
                 }
@@ -392,7 +392,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               {tree.children && tree.children.length > 0 ? (
                 renderTreeNode(tree)
               ) : (
-                <div className="text-xs text-theme-muted px-2 py-4">
+                <div className="text-xs text-theme-text-secondary px-2 py-4">
                   {t("stateEditor.emptyState") || "No files available"}
                 </div>
               )}
@@ -402,12 +402,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           {/* Editor Area */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* Toolbar */}
-            <div className="flex-none px-4 py-2.5 border-b border-theme-border/50 bg-transparent flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex-none px-4 py-2.5 border-b border-theme-divider/60 bg-transparent flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
-                <span className="font-mono text-xs text-theme-muted">
+                <span className="font-mono text-xs text-theme-text-secondary">
                   {selectedPath || t("stateEditor.noSelection") || "No file"}
                 </span>
-                <span className="text-xs text-theme-muted hidden sm:inline">
+                <span className="text-xs text-theme-text-secondary hidden sm:inline">
                   ({lineCount} {t("stateEditor.lines") || "lines"})
                 </span>
                 {hasChanges && !isReadOnly && (
@@ -421,7 +421,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 flex-wrap text-[11px] sm:text-xs text-theme-muted">
+              <div className="flex items-center gap-3 flex-wrap text-[11px] sm:text-xs text-theme-text-secondary">
                 {!gameState.godMode && (
                   <label className="flex items-center gap-2 select-none">
                     <input
@@ -471,8 +471,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-border/60 bg-transparent flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
-              <div className="text-[11px] sm:text-xs text-theme-muted">
+            <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-transparent flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
+              <div className="text-[11px] sm:text-xs text-theme-text-secondary">
                 <span aria-hidden="true">!</span>{" "}
                 {t("stateEditor.warning") ||
                   "Changes are applied immediately. Be careful!"}
@@ -480,14 +480,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               <div className="flex items-center gap-2 sm:gap-3 justify-end flex-wrap">
                 <button
                   onClick={handleFormat}
-                  className="px-3 py-2.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-border/60"
+                  className="px-3 py-2.5 text-xs text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-divider/60"
                   disabled={isReadOnly}
                 >
                   {t("stateEditor.format") || "Format"}
                 </button>
                 <button
                   onClick={handleReset}
-                  className="px-3 py-2.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-border/60"
+                  className="px-3 py-2.5 text-xs text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/15 rounded-md transition-colors border border-transparent hover:border-theme-divider/60"
                 >
                   {t("stateEditor.reset") || "Reset"}
                 </button>

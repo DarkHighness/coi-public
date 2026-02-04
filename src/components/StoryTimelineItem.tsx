@@ -115,11 +115,11 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           className={`absolute left-2 w-px transition-colors
        ${isFirst ? "top-2" : "top-0"}
        ${isLast ? "h-2" : "bottom-0"}
-       ${isHovered ? "bg-theme-muted/60" : "bg-theme-border/50"}
+       ${isHovered ? "bg-theme-muted/60" : "bg-theme-divider/70"}
     `}
           style={{
             backgroundImage:
-              "linear-gradient(to bottom, var(--theme-muted) 50%, transparent 50%)",
+              "linear-gradient(to bottom, var(--theme-divider) 50%, transparent 50%)",
             backgroundSize: "2px 6px",
           }}
         ></div>
@@ -152,7 +152,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
             className={`flex items-center gap-1.5 mb-1 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-80"}`}
           >
             <svg
-              className="w-3 h-3 text-theme-muted"
+              className="w-3 h-3 text-theme-text-secondary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -164,13 +164,13 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               ></path>
             </svg>
-            <span className="uppercase tracking-widest text-theme-muted font-medium shrink-0">
+            <span className="uppercase tracking-wide text-theme-text-secondary font-medium shrink-0">
               {t("timeline.stateChange") || "State Change"}
             </span>
             {segment.stateSnapshot?.time && (
               <>
-                <span className="text-theme-muted/40">•</span>
-                <span className="font-mono text-theme-muted/70">
+                <span className="text-theme-text-secondary/60">•</span>
+                <span className="font-mono text-theme-text-secondary">
                   {segment.stateSnapshot.time}
                 </span>
               </>
@@ -188,7 +188,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 e.stopPropagation();
                 onToggle(segment.id);
               }}
-              className="line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer text-theme-muted/80 border-l-2 border-theme-border pl-2"
+              className="line-clamp-2 leading-relaxed text-[11px] font-serif break-words cursor-pointer text-theme-text-secondary border-l-2 border-theme-divider/60 pl-2"
             >
               <MarkdownText content={segment.text} disableIndent />
             </motion.div>
@@ -205,7 +205,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 e.stopPropagation();
                 onToggle(segment.id);
               }}
-              className="leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer text-theme-muted/80 border-l-2 border-theme-muted/40 pl-2"
+              className="leading-relaxed text-[11px] font-serif [&_p]:mb-1 break-words overflow-hidden cursor-pointer text-theme-text-secondary border-l-2 border-theme-divider/60 pl-2"
             >
               <MarkdownText content={segment.text} disableIndent />
             </motion.div>
@@ -245,7 +245,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         className={`absolute left-2 w-px transition-colors
      ${isFirst ? "top-2" : "top-0"}
      ${isLast ? "h-2" : "bottom-0"}
-     ${isHovered ? "bg-theme-primary/50" : "bg-theme-border/50"}
+     ${isHovered ? "bg-theme-primary/50" : "bg-theme-divider/70"}
   `}
       ></div>
 
@@ -272,13 +272,13 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
 
       {/* Content */}
       <div
-        className={`text-xs transition-colors relative top-0.5 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-muted"}`}
+        className={`text-xs transition-colors relative top-0.5 min-w-0 ${isHovered ? "text-theme-text" : "text-theme-text md:text-theme-text-secondary"}`}
       >
         {/* Time and Location Metadata */}
         <div
           className={`flex items-center gap-2 mb-1.5 text-[10px] transition-opacity flex-wrap ${isHovered ? "opacity-100" : "opacity-100 md:opacity-70"}`}
         >
-          <span className="font-mono text-theme-muted shrink-0">
+          <span className="font-mono text-theme-text-secondary shrink-0">
             {segment.stateSnapshot?.time ||
               fallbackTime ||
               t("timeline.unknown_time") ||
@@ -286,11 +286,11 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
           </span>
           {segment.stateSnapshot?.currentLocation && (
             <>
-              <span className="text-theme-muted/50">•</span>
-              <span className="text-[10px] uppercase tracking-wider text-theme-muted font-semibold">
+              <span className="text-theme-text-secondary/60">•</span>
+              <span className="text-[10px] uppercase tracking-wide text-theme-text-secondary font-semibold">
                 {t("timeline.turn")} {segment.stateSnapshot.turnNumber}
               </span>
-              <span className="text-theme-text/70 font-serif italic">
+              <span className="text-theme-text-secondary font-serif italic">
                 {segment.stateSnapshot.currentLocation}
               </span>
             </>
@@ -300,7 +300,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
         {/* Image - Always visible */}
         {displayUrl && (
           <div
-            className={`mb-2 w-full aspect-video overflow-hidden transition-opacity border cursor-zoom-in ${isHovered ? "opacity-100 border-theme-primary/30" : "opacity-100 md:opacity-70 border-theme-border/50"}`}
+            className={`mb-2 w-full aspect-video overflow-hidden transition-opacity border cursor-zoom-in ${isHovered ? "opacity-100 border-theme-primary/30" : "opacity-100 md:opacity-70 border-theme-divider/60"}`}
             onClick={(e) => {
               e.stopPropagation();
               onImageClick(displayUrl);
@@ -356,27 +356,27 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center ui-overlay backdrop-blur-sm"
             onClick={() => setShowForkModal(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-theme-surface border border-theme-border rounded-lg p-4 mx-4 max-w-sm shadow-xl"
+              className="bg-theme-surface border border-theme-divider/60 rounded-lg p-4 mx-4 max-w-sm shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-theme-primary font-bold mb-2 text-sm">
                 {t("timeline.forkConfirm") || "从此处分叉?"}
               </h3>
-              <p className="text-theme-muted text-xs mb-4 line-clamp-3">
+              <p className="text-theme-text-secondary text-xs mb-4 line-clamp-3">
                 {segment.text.slice(0, 150)}
                 {segment.text.length > 150 ? "..." : ""}
               </p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setShowForkModal(false)}
-                  className="px-3 py-1.5 text-xs text-theme-muted hover:text-theme-text transition-colors"
+                  className="px-3 py-1.5 text-xs text-theme-text-secondary hover:text-theme-text transition-colors"
                 >
                   {t("cancel") || "取消"}
                 </button>

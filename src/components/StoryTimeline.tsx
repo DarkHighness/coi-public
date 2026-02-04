@@ -107,7 +107,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                 </div>
               )}
               {subtitle && (
-                <div className="text-xs text-theme-muted italic leading-relaxed line-clamp-2">
+                <div className="text-xs text-theme-text-secondary italic leading-relaxed line-clamp-2">
                   <MarkdownText content={subtitle} disableIndent />
                 </div>
               )}
@@ -115,19 +115,19 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           )}
 
           <div className="relative flex items-center justify-center gap-3">
-            <span className="h-px w-10 bg-theme-border/50"></span>
+            <span className="h-px w-10 bg-theme-divider/70"></span>
             <h2
               className={`text-[11px] text-theme-primary tracking-[0.28em] uppercase font-semibold ${currentThemeConfig.fontClass}`}
             >
               {t("timeline.title")}
             </h2>
-            <span className="h-px w-10 bg-theme-border/50"></span>
+            <span className="h-px w-10 bg-theme-divider/70"></span>
 
             {/* Export Button */}
             <button
               onClick={handleExportClick}
               disabled={isExporting}
-              className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-theme-muted hover:text-theme-primary transition-colors disabled:opacity-50"
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-theme-text-secondary hover:text-theme-primary transition-colors disabled:opacity-50"
               title={t("timeline.export") || "Export Timeline"}
             >
               {isExporting ? (
@@ -167,7 +167,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-1 scroll-smooth pt-1 pb-24 md:pb-0 divide-y divide-theme-border/25"
+          className="flex-1 overflow-y-auto px-1 scroll-smooth pt-1 pb-24 md:pb-0 divide-y divide-theme-divider/60"
         >
           <AnimatePresence initial={false}>
             {narrativeSegments.map((seg, index) => {
@@ -211,8 +211,8 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           </AnimatePresence>
 
           {narrativeSegments.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-theme-muted/30 space-y-2">
-              <div className="w-1 h-16 bg-linear-to-b from-transparent via-theme-muted/30 to-transparent"></div>
+            <div className="h-full flex flex-col items-center justify-center text-theme-text-secondary/50 space-y-2">
+              <div className="w-1 h-16 bg-linear-to-b from-transparent via-theme-divider/60 to-transparent"></div>
               <p className="text-xs italic">{t("timeline.empty")}</p>
             </div>
           )}

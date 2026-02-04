@@ -62,9 +62,9 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2 group
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2 group
         ${isDragging ? "opacity-60" : "opacity-100"}
-        ${isOpen ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isOpen ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
         ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
       `}
       onDragOver={onDragOver}
@@ -79,7 +79,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <svg
-            className={`w-3.5 h-3.5 text-theme-muted transition-transform duration-200 ${
+            className={`w-3.5 h-3.5 text-theme-text-secondary transition-transform duration-200 ${
               isOpen ? "rotate-90" : ""
             }`}
             fill="none"
@@ -111,7 +111,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               className={`p-1 rounded hover:bg-theme-surface-highlight/20 transition-colors ${
                 isPinned
                   ? "text-theme-primary"
-                  : "text-theme-muted hover:text-theme-text opacity-0 group-hover:opacity-100"
+                  : "text-theme-text-secondary hover:text-theme-text opacity-0 group-hover:opacity-100"
               }`}
               title={isPinned ? "Unpin" : "Pin to top"}
             >
@@ -140,18 +140,18 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
       >
         <div className="overflow-hidden">
           <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
-            <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/25 pt-2">
+            <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                   {t("description") || "Description"}
                 </span>
                 <div className="pl-1">
                   {item.visible?.description ? (
-                    <div className="text-xs text-theme-muted mt-2 pl-2 border-l-2 border-theme-border/30">
+                    <div className="text-xs text-theme-text/90 mt-2 pl-2 border-l-2 border-theme-divider/60">
                       <MarkdownText content={item.visible.description} />
                     </div>
                   ) : (
-                    <div className="text-xs text-theme-muted mt-2 pl-2 border-l-2 border-theme-border/30">
+                    <div className="text-xs text-theme-text-secondary mt-2 pl-2 border-l-2 border-theme-divider/60">
                       {t("noDescription") || "No description available."}
                     </div>
                   )}
@@ -160,13 +160,13 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
               {/* Sensory Details */}
               {item.visible?.sensory && (
-                <div className="mt-2 pl-2 border-l-2 border-theme-border/30 space-y-1">
+                <div className="mt-2 pl-2 border-l-2 border-theme-divider/60 space-y-1">
                   {item.visible.sensory.texture && (
                     <div className="flex gap-1 text-xs">
                       <span className="text-theme-primary/70">
                         {t("sidebar.inventory.texture")}:
                       </span>
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {item.visible.sensory.texture}
                       </span>
                     </div>
@@ -176,7 +176,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                       <span className="text-theme-primary/70">
                         {t("sidebar.inventory.weight")}:
                       </span>
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {item.visible.sensory.weight}
                       </span>
                     </div>
@@ -186,7 +186,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                       <span className="text-theme-primary/70">
                         {t("sidebar.inventory.smell")}:
                       </span>
-                      <span className="text-theme-muted">
+                      <span className="text-theme-text-secondary">
                         {item.visible.sensory.smell}
                       </span>
                     </div>
@@ -195,11 +195,11 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               )}
 
               {item.visible?.condition && (
-                <div className="mt-2 pl-2 border-l-2 border-theme-border/30 text-xs">
+                <div className="mt-2 pl-2 border-l-2 border-theme-divider/60 text-xs">
                   <span className="text-theme-primary/70">
                     {t("sidebar.inventory.condition")}:{" "}
                   </span>
-                  <span className="text-theme-muted">
+                  <span className="text-theme-text-secondary">
                     {item.visible.condition}
                   </span>
                 </div>
@@ -210,7 +210,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                   <div className="text-[10px] uppercase tracking-wider text-theme-primary/70 mb-1">
                     {t("sidebar.inventory.usage")}
                   </div>
-                  <div className="text-xs text-theme-muted pl-2 border-l-2 border-theme-border/30">
+                  <div className="text-xs text-theme-text/90 pl-2 border-l-2 border-theme-divider/60">
                     <MarkdownText content={item.visible.usage} />
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                   <div className="text-[10px] uppercase tracking-wider text-amber-500/70 mb-1">
                     ✨ {t("emotionalWeight") || "Significance"}
                   </div>
-                  <div className="text-xs text-theme-muted pl-2 border-l-2 border-amber-500/30">
+                  <div className="text-xs text-theme-text/90 pl-2 border-l-2 border-amber-500/30">
                     <MarkdownText content={item.emotionalWeight} />
                   </div>
                 </div>
@@ -269,11 +269,11 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                 )}
 
               {item.lore && (
-                <div className="pt-2 border-t border-theme-border/20 mt-2">
+                <div className="pt-2 border-t border-theme-divider/60 mt-2">
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("history")}
                   </span>
-                  <div className="text-theme-muted pl-1">
+                  <div className="text-theme-text-secondary pl-1">
                     <MarkdownText content={item.lore} />
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface/10 border-l border-theme-border/40 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
+          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 bg-theme-surface/10 border-l border-theme-divider/60 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
         >
           <svg

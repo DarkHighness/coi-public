@@ -639,7 +639,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               >
                 <div className="flex items-center justify-center gap-4 mb-5 opacity-70">
                   <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary">
                     {t("outline.title", "Story Outline")}
                   </span>
                   <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
@@ -649,13 +649,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                   {gameState.outline.title}
                 </h3>
 
-                <div className="mt-4 text-theme-muted text-sm md:text-[15px] leading-7 text-center italic">
+                <div className="mt-4 text-theme-text-secondary text-sm md:text-[15px] leading-7 text-center italic">
                   <MarkdownText content={gameState.outline.premise} disableIndent />
                 </div>
 
                 {gameState.outline.mainGoal?.visible?.description && (
-                  <div className="mt-6 pt-6 border-t border-theme-border/40">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-theme-muted text-center">
+                  <div className="mt-6 pt-6 border-t border-theme-divider/60">
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary text-center">
                       {t("outline.currentGoal")}
                     </div>
                     <div className="mt-2 text-theme-text text-sm md:text-[15px] leading-7 text-center">
@@ -679,7 +679,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               !gameState.isProcessing &&
               !gameState.error && (
                 <div className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}>
-                  <p className="text-theme-muted mb-5 text-sm md:text-[15px] leading-7">
+                  <p className="text-theme-text-secondary mb-5 text-sm md:text-[15px] leading-7">
                     {t(
                       "storyNotStarted",
                       "The story hasn't started yet. Click below to begin your adventure.",
@@ -735,11 +735,11 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                                 e.stopPropagation();
                                 onFork(segment.id);
                               }}
-                              className="absolute -left-4 md:-left-8 top-4 z-30 px-2 py-2 text-theme-muted hover:text-theme-primary transition-all duration-200 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
+                              className="absolute -left-4 md:-left-8 top-4 z-30 px-2 py-2 text-theme-text-secondary hover:text-theme-primary transition-all duration-200 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
                               title={t("tree.fork")}
                             >
                               <span className="flex items-center gap-2">
-                                <span className="h-8 w-px bg-theme-border/50 group-hover/wrapper:bg-theme-primary/60 transition-colors" />
+                                <span className="h-8 w-px bg-theme-divider/60 group-hover/wrapper:bg-theme-primary/60 transition-colors" />
                                 <svg
                                   className="w-4 h-4"
                                   fill="none"
@@ -819,7 +819,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                       <section className="text-center animate-fade-in">
                         <div className="flex items-center justify-center gap-4 mb-4 opacity-70">
                           <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32" />
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary">
                             {t("outline.title", "Story Outline")}
                           </span>
                           <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32" />
@@ -827,7 +827,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                         <h3 className="text-theme-primary font-fantasy text-xl leading-tight">
                           {gameState.outline.title}
                         </h3>
-                        <div className="mt-3 text-theme-muted text-sm italic leading-7">
+                        <div className="mt-3 text-theme-text-secondary text-sm italic leading-7">
                           <MarkdownText content={gameState.outline.premise} disableIndent />
                         </div>
                       </section>
@@ -879,7 +879,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                         <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-32"></div>
                         <div className="flex items-center gap-2 px-2">
                           <svg
-                            className="w-4 h-4 text-theme-muted"
+                            className="w-4 h-4 text-theme-text-secondary"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -891,7 +891,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                             />
                           </svg>
-                          <span className="text-[11px] text-theme-muted uppercase tracking-[0.28em] font-medium">
+                          <span className="text-[11px] text-theme-text-secondary uppercase tracking-[0.28em] font-medium">
                             {t("stackPagination.page") || "Page"}{" "}
                             {safeCurrentPage + 1}
                           </span>
@@ -923,7 +923,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                                     e.stopPropagation();
                                     onFork(segment.id);
                                   }}
-                                  className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-muted hover:text-theme-primary bg-theme-surface/80 backdrop-blur-sm border border-theme-border rounded-full shadow-lg transition-opacity duration-200 cursor-pointer opacity-60 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+                                  className="absolute -left-4 md:-left-8 top-4 z-30 p-2 text-theme-text-secondary hover:text-theme-primary bg-theme-surface/80 backdrop-blur-sm border border-theme-divider/60 rounded-full shadow-lg transition-opacity duration-200 cursor-pointer opacity-60 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
                                   title={t("tree.fork")}
                                   aria-label={t("tree.fork")}
                                 >
@@ -994,7 +994,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               <div className="flex justify-center py-8 animate-pulse flex-none">
                 <div className="flex flex-col items-center space-y-2">
                   <div className="w-2 h-2 bg-theme-primary rounded-full animate-bounce delay-75"></div>
-                  <div className="flex items-center gap-2 text-theme-muted text-xs uppercase tracking-widest">
+                  <div className="flex items-center gap-2 text-theme-text-secondary text-xs uppercase tracking-widest">
                     <span>
                       {gameState.outline
                         ? t("loading")

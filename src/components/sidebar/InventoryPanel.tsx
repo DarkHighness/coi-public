@@ -94,7 +94,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
               ></path>
             </svg>
             {t("inventory") || "Inventory"}
-            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
               {inventory.length}
             </span>
           </span>
@@ -109,7 +109,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             className={`p-1 rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
@@ -150,7 +150,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-muted hover:text-theme-primary p-1"
+              className="text-theme-text-secondary hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
               <svg
@@ -169,7 +169,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             </button>
           )}
 
-          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
@@ -192,7 +192,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
       {isOpen && (
         <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
           {visibleItems.length === 0 ? (
-            <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
+            <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("emptyInventory")}
             </div>
           ) : (
