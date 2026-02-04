@@ -78,9 +78,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
   return (
     <div
       key={item.id}
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors pb-2
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2
         ${isDragging ? "opacity-60" : "opacity-100"}
-        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-border/50 hover:border-l-theme-primary/40"}
+        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
         ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
         ${isCurrent ? "border-l-theme-primary/70" : ""}
       `}
@@ -132,7 +132,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
           <div className="overflow-hidden">
             <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
               {locationData ? (
-                <div className="text-xs animate-fade-in border-t border-theme-border/30 pt-2">
+                <div className="text-xs animate-fade-in border-t border-theme-divider/60 pt-2">
                   <div>
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("description") || "Description"}
@@ -292,7 +292,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             </span>
                             <span className="font-semibold">{it.name}</span>
                             {it.visible?.condition && (
-                              <span className="text-theme-muted/70">
+                              <span className="text-theme-text-secondary">
                                 {" "}
                                 ({it.visible.condition})
                               </span>
@@ -314,7 +314,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                           {locationData.visible.interactables.map((item, i) => (
                             <span
                               key={i}
-                              className="text-xs px-2 py-0.5 bg-theme-bg/50 rounded border border-theme-border/30 text-theme-muted"
+                              className="text-xs px-2 py-0.5 bg-theme-bg/50 rounded border border-theme-divider/60 text-theme-text-secondary"
                             >
                               {item}
                             </span>
@@ -470,11 +470,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   )}
 
                   {locationData.lore && (
-                    <div className="pt-2 border-t border-theme-border/20 mt-2">
+                    <div className="pt-2 border-t border-theme-divider/60 mt-2">
                       <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                         {t("history")}
                       </span>
-                      <div className="text-theme-muted pl-1">
+                      <div className="text-theme-text-secondary pl-1">
                         <MarkdownText
                           content={locationData.lore}
                           indentSize={2}
@@ -484,11 +484,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   )}
 
                   {/* {locationData.notes && (
-                    <div className="pt-2 border-t border-theme-border/20 mt-2">
-                      <span className="text-[10px] uppercase tracking-wider text-theme-muted font-bold block mb-1">
+                    <div className="pt-2 border-t border-theme-divider/60 mt-2">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary font-bold block mb-1">
                         {t("notes") || "Notes"}
                       </span>
-                      <div className="text-theme-muted/80 pl-1 italic">
+                      <div className="text-theme-text-secondary pl-1 italic">
                         <MarkdownText
                           content={locationData.notes}
                           indentSize={2}
@@ -498,7 +498,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   )} */}
                 </div>
               ) : (
-                <div className="text-xs text-theme-muted italic opacity-50">
+                <div className="text-xs text-theme-text-secondary italic opacity-70">
                   {t("noInfoAvailable")}
                 </div>
               )}
@@ -509,7 +509,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
       {isEditMode && (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-muted hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-border rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
+          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-divider/60 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
           draggable={true}
           onDragStart={(e) => onDragStart(e, item.id)}
@@ -648,7 +648,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             className={`p-1 rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
@@ -689,7 +689,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-muted hover:text-theme-primary p-1"
+              className="text-theme-text-secondary hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
               <svg
@@ -710,7 +710,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="text-theme-muted hover:text-theme-primary p-1"
+            className="text-theme-text-secondary hover:text-theme-primary p-1"
           >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${
@@ -739,7 +739,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
         <div className="overflow-hidden">
           <div className="space-y-2">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
+              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
                 {t("noKnownLocations")}
               </div>
             ) : (

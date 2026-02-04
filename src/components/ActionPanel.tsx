@@ -298,10 +298,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const customChoiceRow = (
     <form
       onSubmit={handleCustomSubmit}
-      className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-border/15 hover:bg-theme-surface/10 transition-colors"
+      className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 text-[11px] tabular-nums text-theme-muted/60 select-none w-5 text-right">
+        <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
           {customChoiceIndex}
         </div>
 
@@ -310,7 +310,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             <button
               type="button"
               onClick={openCustomChoice}
-              className="w-full text-left font-serif text-[15px] md:text-base text-theme-muted/70 italic py-0.5"
+              className="w-full text-left font-serif text-[15px] md:text-base text-theme-text-secondary italic py-0.5 hover:text-theme-text transition-colors"
             >
               {t("placeholder")}
             </button>
@@ -339,7 +339,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           )}
 
           {showCommandHints && hasChoices && (
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-theme-muted/70">
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-theme-text-secondary/80">
               {SUPPORTED_COMMANDS.map((cmd) => (
                 <button
                   key={cmd.cmd}
@@ -365,7 +365,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               type="button"
               onClick={(e) => handleRollClick(e, customInput)}
               disabled={isDisabled || !customInput.trim()}
-              className="p-1.5 text-theme-muted/70 hover:text-theme-primary disabled:opacity-30 transition-colors"
+              className="p-1.5 text-theme-text-secondary hover:text-theme-primary disabled:opacity-30 transition-colors"
               title={t("roll")}
             >
               <svg
@@ -425,14 +425,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Command Confirmation Modal */}
       {pendingCommand && (
         <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
+          <div className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg max-w-md w-full p-6 animate-fade-in-up">
             <div className="text-theme-text whitespace-pre-wrap text-sm mb-6">
               {pendingCommand.message}
             </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleCancelCommand}
-                className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+                className="px-4 py-2 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
               >
                 {t("cancel") || "Cancel"}
               </button>
@@ -450,7 +450,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Action Confirmation Modal */}
       {pendingAction && (
         <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-theme-surface border border-theme-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in-up">
+          <div className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg max-w-md w-full p-6 animate-fade-in-up">
             <div className="text-theme-text text-sm mb-6">
               {pendingAction === "retry" && t("confirmRetry")}
               {pendingAction === "rebuild" && t("confirmRebuildContext")}
@@ -459,7 +459,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setPendingAction(null)}
-                className="px-4 py-2 text-theme-muted hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+                className="px-4 py-2 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
               >
                 {t("cancel") || "Cancel"}
               </button>
@@ -482,7 +482,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Gradient fade to blend with content */}
       <div className="h-8 bg-linear-to-t from-theme-bg/80 to-transparent pointer-events-none backdrop-blur-md"></div>
 
-      <div className="bg-theme-bg/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-4 border-t border-theme-border/15">
+      <div className="bg-theme-bg/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-4 border-t border-theme-divider/60">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-4">
           {/* Action Controls - Always show retry/jump buttons when not processing */}
           {!gameState.isProcessing && !isTranslating && (
@@ -576,7 +576,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     {!isJumpOpen ? (
                       <button
                         onClick={() => setIsJumpOpen(true)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-muted uppercase tracking-widest border-b border-transparent hover:border-theme-primary/60 hover:bg-theme-surface/10 hover:text-theme-primary transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest border-b border-transparent hover:border-theme-primary/60 hover:bg-theme-surface/10 hover:text-theme-primary transition-colors"
                         title={t("jumpToSegment") || "Jump to Segment"}
                       >
                         <svg
@@ -594,7 +594,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         </svg>
                       </button>
                     ) : (
-                      <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface/20 border border-theme-border/25 px-2.5 py-1">
+                      <div className="flex items-center gap-1 animate-fade-in-right bg-theme-surface/20 border border-theme-divider/60 px-2.5 py-1">
                         <input
                           autoFocus
                           type="text"
@@ -624,13 +624,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         >
                           {t("jumpGo") || "Go"}
                         </button>
-                        <div className="w-px h-3 bg-theme-border mx-1" />
+                        <div className="w-px h-3 bg-theme-divider mx-1" />
                         <button
                           onClick={() => {
                             onJumpToSegment("start");
                             setIsJumpOpen(false);
                           }}
-                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-text-secondary hover:text-theme-primary transition-colors"
                         >
                           {t("jumpToStart") || "Top"}
                         </button>
@@ -639,13 +639,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                             onJumpToSegment("end");
                             setIsJumpOpen(false);
                           }}
-                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-muted hover:text-theme-primary transition-colors"
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-theme-text-secondary hover:text-theme-primary transition-colors"
                         >
                           {t("jumpToEnd") || "Bot"}
                         </button>
                         <button
                           onClick={() => setIsJumpOpen(false)}
-                          className="ml-1 p-1 text-theme-muted hover:text-theme-primary hover:bg-theme-muted/10 transition-colors"
+                          className="ml-1 p-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 transition-colors"
                         >
                           <svg
                             className="w-3 h-3"
@@ -722,10 +722,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                       return (
                         <div
                           key={idx}
-                          className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-border/15 hover:bg-theme-surface/10 transition-colors"
+                          className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-muted/60 select-none w-5 text-right">
+                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
                               {idx + 1}
                             </div>
 
@@ -753,7 +753,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                               </div>
                               {(rawChoice as any).consequence &&
                                 gameState.unlockMode && (
-                                  <div className="mt-1 text-[11px] text-theme-muted/75 italic">
+                                  <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
                                     {(rawChoice as any).consequence}
                                   </div>
                                 )}
@@ -761,7 +761,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
                             <button
                               onClick={(e) => handleRollClick(e, label)}
-                              className="flex-none mt-0.5 p-1.5 text-theme-muted/70 hover:text-theme-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
+                              className="flex-none mt-0.5 p-1.5 text-theme-text-secondary hover:text-theme-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
                               title={t("roll")}
                             >
                               <svg
@@ -792,7 +792,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {/* Command Hints - Only show when user starts with / */}
           {showCommandHints && !hasChoices && (
             <div
-              className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-muted/70 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
+              className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-text-secondary/80 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
             >
               {SUPPORTED_COMMANDS.map((cmd) => (
                 <button
@@ -813,14 +813,14 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             {hasChoices ? null : (
               <form
                 onSubmit={handleCustomSubmit}
-                className="relative flex items-end gap-2 bg-theme-bg/60 backdrop-blur-sm border border-theme-border/20 border-t border-t-theme-border/30 rounded-none px-1.5 py-2 transition-colors focus-within:border-t-theme-primary/50"
+                className="relative flex items-end gap-2 bg-theme-bg/60 backdrop-blur-sm border border-theme-divider/60 border-t border-t-theme-divider/60 rounded-none px-1.5 py-2 transition-colors focus-within:border-t-theme-primary/50"
               >
                 {/* Roll Button (Integrated) */}
                 <button
                   type="button"
                   onClick={(e) => handleRollClick(e, customInput)}
                   disabled={isDisabled || !customInput.trim()}
-                  className="p-2 mb-0.5 text-theme-muted/80 hover:text-theme-primary transition-colors disabled:opacity-30 flex-none"
+                  className="p-2 mb-0.5 text-theme-text-secondary hover:text-theme-primary transition-colors disabled:opacity-30 flex-none"
                   title={t("roll")}
                 >
                   <svg

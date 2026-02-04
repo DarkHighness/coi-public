@@ -58,8 +58,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center ui-overlay backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-theme-bg border border-theme-border/25 w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90dvh]">
-        <div className="p-5 sm:p-6 border-b border-theme-border/25 flex justify-between items-center relative z-10">
+      <div className="bg-theme-bg border border-theme-divider/60 rounded-xl shadow-lg w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90dvh]">
+        <div className="p-5 sm:p-6 border-b border-theme-divider/60 flex justify-between items-center relative z-10">
           <h2 className={`text-2xl font-bold text-theme-primary ${themeFont}`}>
             {t("settings.title")}
           </h2>
@@ -67,7 +67,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             ref={closeButtonRef}
             onClick={handleClose}
             data-tutorial-id="settings-close-button"
-            className="p-2.5 text-theme-muted hover:text-theme-text hover:bg-theme-surface/10 transition-colors"
+            className="p-2.5 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface/10 transition-colors"
             aria-label={t("close")}
           >
             <svg
@@ -120,10 +120,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === "extra" && <SettingsExtra />}
         </div>
 
-        <div className="p-4 border-t border-theme-border/25 flex justify-end items-center">
+        <div className="p-4 border-t border-theme-divider/60 flex justify-end items-center">
           <button
             onClick={handleClose}
-            className="px-2 py-1 text-theme-muted hover:text-theme-text text-sm font-bold uppercase tracking-widest border-b border-transparent hover:border-theme-muted transition-colors"
+            className="px-2 py-1 text-theme-text-secondary hover:text-theme-text text-sm font-bold uppercase tracking-widest border-b border-transparent hover:border-theme-divider/60 transition-colors"
           >
             {t("close")}
           </button>

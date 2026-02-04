@@ -266,8 +266,8 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 group w-full cursor-pointer
-        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"}
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 group w-full cursor-pointer
+        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-divider/60 hover:bg-theme-surface-highlight/20"}
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
@@ -299,7 +299,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {skill.category && (
-            <span className="text-[10px] text-theme-muted uppercase tracking-wider whitespace-nowrap">
+            <span className="text-[10px] text-theme-text-secondary uppercase tracking-wider whitespace-nowrap">
               {skill.category}
             </span>
           )}
@@ -309,7 +309,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
             </span>
           )}
           <svg
-            className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -331,7 +331,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
       >
         <div className="overflow-hidden">
           <div className="pl-3 pr-2 pb-3 pt-0 space-y-3">
-            <div className="text-xs text-theme-muted leading-relaxed border-t border-theme-border/30 pt-2">
+            <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
               <MarkdownText
                 content={
                   skill.visible?.description ||
@@ -344,7 +344,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
             {/* Unlocked Hidden Truth - Outer Layer */}
             {skill.unlocked && skill.hidden?.trueDescription && (
-              <div className="pt-2 border-l border-theme-border/25 pl-3">
+              <div className="pt-2 border-l border-theme-divider/60 pl-3">
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                   <svg
                     className="w-3 h-3"
@@ -442,7 +442,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 cursor-pointer
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 cursor-pointer
         ${accentBorder} ${accentText}
         ${isExpanded ? "bg-theme-surface-highlight/15" : "hover:bg-theme-surface-highlight/20"}
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
@@ -476,12 +476,12 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
             )}
           </span>
 
-          <div className="flex items-center gap-2 text-[10px] text-theme-muted uppercase tracking-wider whitespace-nowrap shrink-0">
+          <div className="flex items-center gap-2 text-[10px] text-theme-text-secondary uppercase tracking-wider whitespace-nowrap shrink-0">
             {condition.duration && <span>{condition.duration}</span>}
             {condition.startTime && <span>{condition.startTime}</span>}
             {condition.severity && <span>{condition.severity}</span>}
             <svg
-              className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
+              className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -497,7 +497,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
         </div>
 
         {condition.visible?.description && (
-          <div className="text-xs leading-relaxed opacity-90 text-theme-muted mt-1">
+          <div className="text-xs leading-relaxed opacity-90 text-theme-text-secondary mt-1">
             <MarkdownText
               content={condition.visible.description}
               indentSize={2}
@@ -512,7 +512,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="pt-2 border-t border-theme-border/30 mt-2 space-y-3 pl-3 border-l border-theme-border/25">
+            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
               {condition.visible?.perceivedSeverity && (
                 <p className="text-xs opacity-80">
                   <span className="font-semibold uppercase tracking-wider text-[10px]">
@@ -656,8 +656,8 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-border/25 transition-colors mb-2 pb-2 cursor-pointer
-        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-border/50 hover:bg-theme-surface-highlight/20"}
+      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 cursor-pointer
+        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-divider/60 hover:bg-theme-surface-highlight/20"}
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
@@ -673,7 +673,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
             <span className="break-words whitespace-normal">{trait.name}</span>
           </span>
           <svg
-            className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-0.5 ${
+            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${
               isExpanded ? "rotate-180" : ""
             }`}
             fill="none"
@@ -690,7 +690,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
         </div>
 
         {trait.description && (
-          <div className="text-xs text-theme-muted leading-relaxed mt-1">
+          <div className="text-xs text-theme-text-secondary leading-relaxed mt-1">
             <MarkdownText content={trait.description} indentSize={2} />
           </div>
         )}
@@ -701,7 +701,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
           }`}
         >
           <div className="overflow-hidden">
-            <div className="pt-2 border-t border-theme-border/30 mt-2 space-y-3 pl-3 border-l border-theme-border/25">
+            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
               {trait.effects && trait.effects.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
@@ -778,7 +778,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
                 expanded ? "rotate-180" : ""
@@ -800,7 +800,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       {expanded && (
         <div className="space-y-6 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
-          <div className="border-l-2 border-theme-border/50 border-b border-theme-border/25 pb-2">
+          <div className="border-l-2 border-theme-divider/60 border-b border-theme-divider/60 pb-2">
             <div className="py-3 pl-2 pr-1 space-y-3">
               <h3
                 className={`text-sm font-bold text-theme-text leading-snug break-words whitespace-normal ${themeFont}`}
@@ -808,9 +808,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 {character.name}
               </h3>
 
-              <div className="border-t border-theme-border/25 divide-y divide-theme-border/20">
+              <div className="border-t border-theme-divider/60 divide-y divide-theme-divider/60">
                 <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.titleLabel") || "Title"}
                   </span>
                   <span className="text-xs text-theme-primary font-semibold text-right break-words whitespace-normal">
@@ -819,7 +819,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </div>
 
                 <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.profession") || t("role") || "Role"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
@@ -828,7 +828,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </div>
 
                 <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.race") || t("race") || "Race"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
@@ -837,7 +837,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </div>
 
                 <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.age") || t("age") || "Age"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
@@ -846,7 +846,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 </div>
 
                 <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.status") || t("status") || "Status"}
                   </span>
                   <span className="text-xs text-theme-primary font-medium text-right break-words whitespace-normal">
@@ -856,7 +856,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
                 {character.currentLocation && (
                   <div className="py-2 flex items-start justify-between gap-3">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-muted shrink-0">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                       {t("gameViewer.currentLocation") || "Location"}
                     </span>
                     <span className="text-xs text-theme-text text-right break-words whitespace-normal inline-flex items-center justify-end gap-1.5">
@@ -889,22 +889,22 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Attributes Grid */}
           {character.attributes && character.attributes.length > 0 && (
-            <div className="pt-4 border-t border-theme-border/25">
-              <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-2 font-bold">
+            <div className="pt-4 border-t border-theme-divider/60">
+              <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-2 font-bold">
                 {t("gameViewer.attributes") || t("attributes") || "Attributes"}
               </h4>
-              <div className="border-t border-theme-border/25">
+              <div className="border-t border-theme-divider/60">
                 {character.attributes.map((attr, idx) => (
                   <div
                     key={attr.label || `attr-${idx}`}
-                    className="py-2.5 flex items-center gap-3 border-b border-theme-border/25"
+                    className="py-2.5 flex items-center gap-3 border-b border-theme-divider/60"
                   >
                     <span className="text-sm leading-none shrink-0 w-4 text-center opacity-90">
                       {getValidIcon(attr.icon, "📊")}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-theme-muted uppercase tracking-wider truncate">
+                        <span className="text-xs text-theme-text-secondary uppercase tracking-wider truncate">
                           {attr.label}
                         </span>
                         <span className="text-xs font-bold text-theme-text whitespace-nowrap">
@@ -913,7 +913,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                         </span>
                       </div>
                       {attr.maxValue && (
-                        <div className="mt-1 h-1 w-full bg-theme-border/20 overflow-hidden">
+                        <div className="mt-1 h-1 w-full bg-theme-divider/60 overflow-hidden">
                           <div
                             className={`h-full ${
                               colorMap[attr.color || "gray"]
@@ -935,8 +935,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Skills List */}
           {character.skills && character.skills.length > 0 && (
-            <div className="pt-4 border-t border-theme-border/25">
-              <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold">
+            <div className="pt-4 border-t border-theme-divider/60">
+              <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-3 font-bold">
                 {t("gameViewer.skills") || t("skills")}
               </h4>
               <div className="flex flex-col">
@@ -951,8 +951,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           )}
 
           {/* Conditions List */}
-          <div className="pt-4 border-t border-theme-border/25">
-            <h4 className="text-xs text-theme-muted uppercase tracking-wider mb-3 font-bold">
+          <div className="pt-4 border-t border-theme-divider/60">
+            <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-3 font-bold">
               {t("gameViewer.conditions") || t("conditions") || "Conditions"}
             </h4>
             {character.conditions && character.conditions.length > 0 ? (
@@ -965,7 +965,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="text-theme-muted text-xs italic py-2 pl-2 pr-1 border-t border-theme-border/25">
+              <div className="text-theme-text-secondary text-xs italic py-2 pl-2 pr-1 border-t border-theme-divider/60">
                 {t("noConditions") || "No active conditions."}
               </div>
             )}
@@ -975,7 +975,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           {character.hiddenTraits &&
             character.hiddenTraits.length > 0 &&
             character.hiddenTraits.some((t) => t.unlocked) && (
-              <div className="pt-4 border-t border-theme-border/25">
+              <div className="pt-4 border-t border-theme-divider/60">
                 <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-3 font-bold flex items-center gap-1.5">
                   <svg
                     className="w-4 h-4 shrink-0"
@@ -1013,8 +1013,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Appearance (Collapsible) */}
           {character.appearance && (
-            <details className="group text-xs pt-4 border-t border-theme-border/25">
-              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
+            <details className="group text-xs pt-4 border-t border-theme-divider/60">
+              <summary className="cursor-pointer text-theme-text-secondary hover:text-theme-primary transition-colors list-none flex items-center gap-2">
                 <span className="uppercase tracking-wider text-xs font-bold">
                   🧐 {t("appearance") || "Appearance"}
                 </span>
@@ -1032,7 +1032,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   />
                 </svg>
               </summary>
-              <div className="mt-3 text-theme-text-secondary leading-relaxed pl-3 border-l-2 border-theme-border">
+              <div className="mt-3 text-theme-text-secondary leading-relaxed pl-3 border-l-2 border-theme-divider/60">
                 <MarkdownText content={character.appearance} indentSize={2} />
               </div>
             </details>
@@ -1040,8 +1040,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
           {/* Psychology (Collapsible) - Always visible as it's a top-level field */}
           {character.psychology && (
-            <details className="group text-xs pt-4 border-t border-theme-border/25">
-              <summary className="cursor-pointer text-theme-muted hover:text-theme-primary transition-colors list-none flex items-center gap-2">
+            <details className="group text-xs pt-4 border-t border-theme-divider/60">
+              <summary className="cursor-pointer text-theme-text-secondary hover:text-theme-primary transition-colors list-none flex items-center gap-2">
                 <span className="uppercase tracking-wider text-xs font-bold">
                   🧠 {t("gameViewer.psychology") || "Psychology"}
                 </span>

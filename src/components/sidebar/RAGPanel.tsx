@@ -68,7 +68,7 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
             {t("rag.title", "RAG System")}
           </span>
         </div>
-        <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+        <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
           <svg
             className={`w-4 h-4 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
@@ -90,10 +90,10 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
       {isOpen && (
         <div className="space-y-3 animate-[fade-in_0.3s_ease-in]">
           {/* Status Info */}
-          <div className="border-l-2 border-b border-theme-border/25 pb-2 border-l-theme-border/50">
+          <div className="border-l-2 border-b border-theme-divider/60 pb-2 border-l-theme-divider/60">
             <div className="py-2 pl-2 pr-1">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-xs text-theme-muted uppercase tracking-wider font-bold">
+                <span className="text-xs text-theme-text-secondary uppercase tracking-wider font-bold">
                   {t("rag.status", "Status")}
                 </span>
                 {stats.isIndexing && (
@@ -123,16 +123,16 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="flex flex-col border-t border-theme-border/25 pt-2">
-                  <span className="text-[10px] text-theme-muted uppercase tracking-wider">
+                <div className="flex flex-col border-t border-theme-divider/60 pt-2">
+                  <span className="text-[10px] text-theme-text-secondary uppercase tracking-wider">
                     {t("rag.totalDocs", "Total Docs")}
                   </span>
                   <span className="font-mono text-theme-text font-bold text-xs mt-1">
                     {stats.totalDocs}
                   </span>
                 </div>
-                <div className="flex flex-col border-t border-theme-border/25 pt-2">
-                  <span className="text-[10px] text-theme-muted uppercase tracking-wider">
+                <div className="flex flex-col border-t border-theme-divider/60 pt-2">
+                  <span className="text-[10px] text-theme-text-secondary uppercase tracking-wider">
                     {t("rag.pending", "Pending")}
                   </span>
                   <span className="font-mono text-theme-text font-bold text-xs mt-1">
@@ -145,9 +145,9 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
 
           {/* Progress Bar */}
           {progress && (
-            <div className="border-l-2 border-b border-theme-border/25 pb-2 border-l-theme-primary/40">
+            <div className="border-l-2 border-b border-theme-divider/60 pb-2 border-l-theme-primary/40">
               <div className="py-2 pl-2 pr-1">
-                <div className="flex justify-between items-start gap-2 text-theme-muted mb-2">
+                <div className="flex justify-between items-start gap-2 text-theme-text-secondary mb-2">
                   <span className="text-[10px] uppercase tracking-wider">
                     {t(`embedding.phase.${progress.stage}`) || progress.stage}
                   </span>
@@ -155,14 +155,14 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
                     {progress.current} / {progress.total}
                   </span>
                 </div>
-                <div className="h-1 w-full bg-theme-border/20 overflow-hidden">
+                <div className="h-1 w-full bg-theme-divider/60 overflow-hidden">
                   <div
                     className="h-full bg-linear-to-r from-theme-primary to-theme-primary-hover transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
                 {progress.message && (
-                  <p className="text-xs text-theme-muted mt-2 leading-relaxed pl-2 border-l border-theme-border/25">
+                  <p className="text-xs text-theme-text-secondary mt-2 leading-relaxed pl-2 border-l border-theme-divider/60">
                     {progress.message}
                   </p>
                 )}

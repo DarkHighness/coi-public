@@ -10,6 +10,8 @@
 2. **可读性优先**
    - 字号、行距、段落间距、引用/强调样式一致；对比度足够。
    - 避免过浅的分隔线导致结构不清晰；避免同区域出现“双分隔线”。
+   - 文本层级要语义化：正文/按钮标题用 `text-theme-text`，说明/元信息用 `text-theme-text-secondary`，仅占位符/禁用态才用 `text-theme-muted`（避免 `text-theme-muted/50~80` 用作正文或核心动作）。
+   - 分隔线/结构线统一使用 `theme-divider`（`border-theme-divider` / `divide-theme-divider`），避免 `border-theme-border/15~25` 在 Light 模式几乎不可见。
 3. **主题一致性**
    - 一切颜色/强调/边界都从主题 token 派生（`text-theme-*`, `bg-theme-*`, `border-theme-*`）。
    - 让“主题”决定材质与气质，而不是在组件里硬编码视觉风格。
@@ -20,18 +22,29 @@
 ## 反模式（严格避免）
 
 - **卡片化**：明显的圆角盒子、厚边框、强阴影、强调色描边大面积包裹内容。
+- **在“开始/自定义游戏”页面套产品化容器**：把表单与选项做成一组组“卡片”，并叠加强阴影/高圆角，导致页面像仪表盘而不是“开篇页”。
 - **重复标题/重复分隔**：同一语义节点出现两个标题或两条线，产生割裂。
 - **过度透明**：Modal/编辑器/查看器内容容器使用 `.../10` 这类透明度，导致背景干扰阅读。
 - **桌面优先的交互**：重要功能只在 hover 才出现，移动端无法使用。
+- **Light 模式“越遮越白”的遮罩**：Overlay 使用 `rgba(var(--theme-bg-rgb), …)` 容易把背景洗白、反而更刺眼；Overlay 应优先保证聚焦与对比度（统一黑色遮罩或派生变量策略）。
 
 ## 视觉语言与组件落地
+
+### 0) 语义 Token（全局约定）
+
+这些 token 的目标是“语义稳定 + 主题可派生”，避免到处写 `/20`、`/50` 之类的微调：
+
+- **正文/核心信息**：`text-theme-text`
+- **说明/副标题/时间戳/次要信息**：`text-theme-text-secondary`
+- **占位符/禁用态/极次要元信息**：`text-theme-muted`（尽量不叠加低透明度）
+- **结构线/分隔线**：`theme-divider`（`border-theme-divider` / `divide-theme-divider` / `bg-theme-divider`）
 
 ### 1) 叙事区（Scroll）
 
 原则：**正文就是页面**。结构来自排版，而不是容器。
 
 - 正文排版：统一使用 `prose`（或等效排版约束），统一段落间距、blockquote、hr、链接样式。
-- 段落分隔：用 `hr` / `bg-gradient-to-r ... via-theme-border/...` 的细线，强度适中（建议 `border/25~50`）。
+- 段落分隔：优先使用 `theme-divider`（必要时叠加渐变），保证 Light/Dark 下结构可见且不抢戏。
 - 角色分区：
   - 讲述者与玩家抉择主要依靠 **对齐、宽度、留白、极淡材质渐变** 区分。
   - 避免气泡/对话卡片。
@@ -65,6 +78,16 @@
 
 - Overlay 可以半透明/模糊，但内容面板（surface）应为 `bg-theme-bg` 或 `bg-theme-surface`（不使用 `.../10`）。
 - Footer/Header 透明可以，但主体阅读区不透明。
+- Overlay 的职责是“压住背景 + 聚焦内容”：优先使用统一的黑色遮罩（或由派生变量决定），避免 Light 模式背景被洗白导致可读性更差。
+
+### 6) 开始界面 / 自定义游戏（StartScreen / CustomGameModal）
+
+原则：它是“开篇页/扉页”，不是“设置面板”。**单列阅读流优先**，结构来自标题层级、分组与分隔线，而不是一块块卡片。
+
+- 布局：优先单列（移动端与桌面一致），按“主信息 → 可选高级 → 提示/确认”顺序向下滚动。
+- 分组：用 section 标题 + `divide-y`/细分隔线表达结构；避免“section 外再包一层 rounded + shadow”的双层容器。
+- 表单控件：允许轻量边框与轻度圆角，但避免强阴影、厚边、强对比底色把每个字段做成独立卡片。
+- 提示块：更像旁注（轻背景/细边线/小字号），不要做成强调色卡片。
 
 ## 设计检查清单（改 UI 前/后）
 
@@ -74,18 +97,19 @@
 4. **移动端是否可用？**（关键按钮不依赖 hover；触控命中足够）
 5. **是否使用主题 token？**（避免硬编码颜色/透明度）
 6. **Modal/Editor/Viewer 内容是否不透明？**
+7. **文本语义层级是否正确？**（正文=text，说明=secondary，避免用 muted 当正文/主动作）
 
 ## 相关实现位置（便于定位）
 
 - 叙事排版：`src/components/render/StoryText.tsx`
-- 玩家抉择：`src/components/render/UserActionCard.tsx`
+- 玩家抉择（视觉上不要做成卡片）：`src/components/render/UserActionCard.tsx`
 - 选项/输入：`src/components/ActionPanel.tsx`
 - 侧边栏：`src/components/Sidebar.tsx`、`src/components/sidebar/*`
 - 时间轴：`src/components/StoryTimeline.tsx`、`src/components/StoryTimelineItem.tsx`
 - 编年史（Viewer）：`src/components/GameStateViewer.tsx`、`src/components/gameViewer/*`
 - 编辑器（Editor）：`src/components/StateEditor.tsx`
+- 开始界面 / 自定义游戏：`src/components/StartScreen.tsx`、`src/components/CustomGameModal.tsx`
 
 ## 英文简述（for contributors）
 
 We target a **modern visual novel** UI: typography-first, scroll/page feel, theme-token driven. Avoid card-like containers (rounded boxes, heavy borders/shadows). Keep structure readable via subtle but visible dividers, avoid double dividers/repeated headers, and ensure mobile usability without relying on hover. Modal/editor/viewer surfaces should be **opaque** for readability.
-

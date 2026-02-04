@@ -26,7 +26,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="shrink-0 px-4 pt-3 pb-4 border-t border-theme-border/50 bg-theme-surface/10 mt-auto space-y-4">
+    <div className="shrink-0 px-4 pt-3 pb-4 border-t border-theme-divider/60 bg-theme-surface/10 mt-auto space-y-4">
       <div>
         <h2
           className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-2 flex items-center ${themeFont}`}
@@ -53,7 +53,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           {t("system")}
         </h2>
 
-        <div className="border-t border-theme-border/25 divide-y divide-theme-border/20">
+        <div className="border-t border-theme-divider/60 divide-y divide-theme-divider/60">
           <button
             onClick={() => {
               onMagicMirror();
@@ -79,7 +79,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               <span className="text-sm truncate">{t("magicMirror.title")}</span>
             </span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -118,7 +118,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               <span className="text-sm truncate">{t("veoScript.title")}</span>
             </span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -141,7 +141,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           >
             <span className="text-sm">{t("mainMenu")}</span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -161,7 +161,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           >
             <span className="text-sm">{t("saveGame")}</span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -184,7 +184,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           >
             <span className="text-sm">{t("settings.title")}</span>
             <svg
-              className="w-4 h-4 text-theme-muted shrink-0"
+              className="w-4 h-4 text-theme-text-secondary shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -199,7 +199,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           </button>
         </div>
 
-        <div className="mt-3 pt-2 border-t border-theme-border/25 text-[10px] text-theme-muted text-center">
+        <div className="mt-3 pt-2 border-t border-theme-divider/60 text-[10px] text-theme-text-secondary text-center">
           {t("builtWith")}
           <div className="opacity-60 mt-1 font-mono">
             {BUILD_INFO.gitHash} ({BUILD_INFO.buildTime})

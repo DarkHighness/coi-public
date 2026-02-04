@@ -107,7 +107,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     return (
       <div
         key={q.id}
-        className={`relative border-l-2 border-theme-border/50 border-b border-theme-border/25 transition-colors mb-2 pb-2 ${
+        className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 ${
           q.type === "main" ? "border-l-theme-primary/70" : "border-l-theme-muted/60"
         } ${options?.isDragging ? "opacity-60" : ""} ${
           effectiveEditMode ? "cursor-grab active:cursor-grabbing" : ""
@@ -133,7 +133,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               className={`p-1 rounded transition-colors shrink-0 mt-0.5 ${
                 options?.isPinned
                   ? "text-theme-primary"
-                  : "text-theme-muted hover:text-theme-primary"
+                  : "text-theme-text-secondary hover:text-theme-primary"
               }`}
               title={options?.isPinned ? t("unpin") : t("pin")}
             >
@@ -196,7 +196,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             </div>
           </div>
           <svg
-            className={`w-4 h-4 text-theme-muted transition-transform duration-200 mt-1 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-1 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -218,11 +218,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-muted/90 italic leading-relaxed border-t border-theme-border/25 mt-1">
+            <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
                 {t("questPanel.description") || "Description"}
               </span>
-              <div className="pl-1 text-theme-muted/90">
+              <div className="pl-1 text-theme-text/90">
                 <MarkdownText
                   content={
                     q.visible?.description ||
@@ -336,7 +336,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 bg-theme-primary rounded-full animate-pulse"></span>
             {t("questPanel.title")}
-            <span className="ml-2 text-[10px] text-theme-muted bg-theme-surface-highlight px-1.5 rounded border border-theme-border">
+            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
               {allItems.length}
             </span>
           </span>
@@ -351,7 +351,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             className={`p-1 rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-muted hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
@@ -392,7 +392,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-muted hover:text-theme-primary p-1"
+              className="text-theme-text-secondary hover:text-theme-primary p-1"
               title={t("viewAll")}
             >
               <svg
@@ -410,7 +410,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               </svg>
             </button>
           )}
-          <div className="text-theme-muted group-hover:text-theme-primary p-1 transition-colors">
+          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
@@ -438,7 +438,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         <div className="overflow-hidden">
           <div className="space-y-3">
             {visibleItems.length === 0 ? (
-              <div className="text-theme-muted text-xs italic py-3 text-center border-t border-theme-border/30">
+              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
                 {t("questPanel.empty")}
               </div>
             ) : (

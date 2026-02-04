@@ -56,14 +56,14 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   return (
     <>
       <div className="fixed inset-0 z-60 flex items-center justify-center ui-overlay backdrop-blur-md p-4 animate-fade-in">
-        <div className="bg-theme-surface border border-theme-border rounded-2xl max-w-3xl w-full max-h-[85dvh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="bg-theme-surface border border-theme-divider/60 rounded-xl max-w-3xl w-full max-h-[85dvh] flex flex-col shadow-lg overflow-hidden">
           {/* Header */}
-          <div className="p-6 border-b border-theme-border flex justify-between items-center bg-gradient-to-r from-theme-surface-highlight/50 to-theme-surface-highlight/30">
+          <div className="p-6 border-b border-theme-divider/60 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-theme-primary">
                 {t("saves.title")}
               </h2>
-              <p className="text-xs text-theme-muted mt-1">
+              <p className="text-xs text-theme-text-secondary mt-1">
                 {slots.length} {slots.length === 1 ? "save" : "saves"}
               </p>
             </div>
@@ -73,7 +73,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
               aria-label={t("close")}
             >
               <svg
-                className="w-6 h-6 text-theme-muted hover:text-theme-text"
+                className="w-6 h-6 text-theme-text-secondary hover:text-theme-text"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -118,8 +118,10 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                     d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                   ></path>
                 </svg>
-                <p className="text-theme-muted text-lg">{t("saves.empty")}</p>
-                <div className="text-center py-8 text-theme-muted italic">
+                <p className="text-theme-text-secondary text-lg">
+                  {t("saves.empty")}
+                </p>
+                <div className="text-center py-8 text-theme-text-secondary italic">
                   {t("saveManager.startPrompt") ||
                     "Start a new game to create your first save"}
                 </div>
@@ -170,16 +172,16 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                               </span>
                             )}
                           </h3>
-                          <p className="text-xs text-theme-muted/80 mt-0.5">
+                          <p className="text-xs text-theme-text-secondary mt-0.5">
                             {getThemeName(slot.theme, t)}
                           </p>
-                          <div className="text-sm text-theme-muted mt-2 line-clamp-2 [&_p]:mb-0">
+                          <div className="text-sm text-theme-text-secondary mt-2 line-clamp-2 [&_p]:mb-0">
                             <MarkdownText
                               content={slot.summary}
                               disableIndent
                             />
                           </div>
-                          <div className="flex items-center gap-4 mt-3 text-[10px] text-theme-muted/60">
+                          <div className="flex items-center gap-4 mt-3 text-[11px] text-theme-text-secondary/80">
                             <span className="flex items-center gap-1">
                               <svg
                                 className="w-3 h-3"
@@ -218,7 +220,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                               e.stopPropagation();
                               handleExportClick(slot);
                             }}
-                            className="p-1.5 text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
+                            className="p-1.5 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
                             title={t("saveManager.export") || "Export"}
                           >
                             <svg
@@ -247,7 +249,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                                 onDelete(slot.id);
                               }
                             }}
-                            className="p-1.5 text-theme-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                            className="p-1.5 text-theme-text-secondary hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
                             title={t("saveManager.delete") || "Delete"}
                           >
                             <svg
@@ -274,13 +276,13 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
           </div>
 
           {/* Footer with Import Button */}
-          <div className="p-4 border-t border-theme-border flex justify-between items-center">
+          <div className="p-4 border-t border-theme-divider/60 flex justify-between items-center">
             <button
               onClick={() => {
                 setImportFile(undefined);
                 setIsImportModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-theme-muted hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-theme-text-secondary hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
             >
               <svg
                 className="w-5 h-5"
@@ -297,7 +299,7 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
               </svg>
               {t("saveManager.import") || "Import Save"}
             </button>
-            <div className="text-xs text-theme-muted">
+            <div className="text-xs text-theme-text-secondary">
               {t("saveManager.importHint") || "Import saves from .zip files"}
             </div>
           </div>
