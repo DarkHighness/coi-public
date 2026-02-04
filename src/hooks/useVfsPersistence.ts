@@ -4,10 +4,13 @@ import type { GameState, SaveSlot, EmbeddingIndex } from "../types";
 import {
   saveMetadata,
   loadMetadata,
+  deleteMetadata,
   getStorageEstimate,
   clearDatabase,
   getAllSaveIds,
   getAllVfsSaveIds,
+  deleteGameState,
+  deleteVfsSave,
 } from "../utils/indexedDB";
 import { sessionManager } from "../services/ai/sessionManager";
 import { VfsSession } from "../services/vfs/vfsSession";
@@ -19,6 +22,8 @@ import {
   saveVfsSessionSnapshot,
 } from "../services/vfs/persistence";
 import { seedVfsSessionFromDefaults } from "../services/vfs/seed";
+import { deleteImagesBySaveId } from "../utils/imageStorage";
+import { getRAGService } from "../services/rag";
 
 export const useVfsPersistence = (
   gameState: GameState,
@@ -598,22 +603,29 @@ export const useVfsPersistence = (
         }
       }
 
-      if (snapshot) {
-        restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
-        const derived = deriveGameStateFromVfs(
-          vfsSessionRef.current.snapshot(),
-        );
-        const storedUiState = await loadMetadata(`ui_state:${id}`);
-        setGameState((prev) =>
-          mergeDerivedViewState(
-            { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
-            derived,
-            { resetRuntime: true },
-          ),
-        );
+      if (!snapshot) {
+        console.warn("[VFS Persistence] No snapshot found for slot:", id);
+        return { success: false };
       }
+
+      restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
+      const derived = deriveGameStateFromVfs(vfsSessionRef.current.snapshot());
+      const storedUiState = await loadMetadata(`ui_state:${id}`);
+      setGameState((prev) =>
+        mergeDerivedViewState(
+          { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
+          derived,
+          { resetRuntime: true },
+        ),
+      );
+
       setCurrentSlotId(id);
-      return { success: true };
+      return {
+        success: true,
+        hasOutline: Boolean(derived.outline),
+        hasOutlineConversation: Boolean(derived.outlineConversation),
+        savedModelId: derived.outlineConversation?.modelId,
+      };
     } catch (error) {
       console.error("[VFS Persistence] Failed to load slot:", error);
       return { success: false };
@@ -624,13 +636,73 @@ export const useVfsPersistence = (
 
   const deleteSlot = async (id: string) => {
     const filteredSlots = saveSlots.filter((slot) => slot.id !== id);
+
+    // Optimistic UI update first.
     setSaveSlots(filteredSlots);
     if (currentSlotId === id) {
       setCurrentSlotId(null);
+      // Ensure persisted pointer doesn't keep referencing a deleted slot.
+      try {
+        await deleteMetadata("currentSlot");
+      } catch (err) {
+        console.warn('[VFS Persistence] Failed to delete metadata "currentSlot"', err);
+      }
     }
-    saveMetadata("slots", filteredSlots).catch((err) => {
-      console.error("Failed to update slots metadata:", err);
-    });
+
+    // Persist slots list update.
+    try {
+      await saveMetadata("slots", filteredSlots);
+    } catch (err) {
+      console.error("[VFS Persistence] Failed to update slots metadata:", err);
+    }
+
+    // Delete underlying data so the save doesn't reappear on reload.
+    try {
+      await deleteVfsSave(id);
+    } catch (err) {
+      console.warn("[VFS Persistence] Failed to delete VFS save:", err);
+    }
+
+    // Delete legacy save store entries if present (older builds may have both).
+    try {
+      await deleteGameState(id);
+    } catch (err) {
+      console.warn("[VFS Persistence] Failed to delete legacy save:", err);
+    }
+
+    // Cleanup per-save metadata keys.
+    const metaKeys = [`vfs_latest:${id}`, `ui_state:${id}`];
+    for (const key of metaKeys) {
+      try {
+        await deleteMetadata(key);
+      } catch (err) {
+        console.warn(`[VFS Persistence] Failed to delete metadata "${key}"`, err);
+      }
+    }
+
+    // Cleanup images for this save.
+    try {
+      await deleteImagesBySaveId(id);
+    } catch (err) {
+      console.warn("[VFS Persistence] Failed to delete images for save:", err);
+    }
+
+    // Cleanup session cache (outline + story sessions).
+    try {
+      await sessionManager.deleteSlotSessions(id);
+    } catch (err) {
+      console.warn("[VFS Persistence] Failed to delete slot sessions:", err);
+    }
+
+    // Cleanup RAG documents (best effort).
+    try {
+      const rag = getRAGService();
+      if (rag) {
+        await rag.deleteDocuments({ saveId: id });
+      }
+    } catch (err) {
+      console.warn("[VFS Persistence] Failed to delete RAG docs for save:", err);
+    }
   };
 
   const clearAllSaves = async (): Promise<boolean> => {

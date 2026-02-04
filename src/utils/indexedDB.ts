@@ -330,6 +330,74 @@ export const loadMetadata = async <T = any>(key: string): Promise<T | null> => {
 };
 
 /**
+ * Delete a metadata entry
+ */
+export const deleteMetadata = async (key: string): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([META_STORE], "readwrite");
+    const store = transaction.objectStore(META_STORE);
+    const request = store.delete(key);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Delete all VFS snapshots and metadata for a given saveId.
+ * This is required so deleted saves don't get re-inferred from VFS state on reload.
+ */
+export const deleteVfsSave = async (saveId: string): Promise<void> => {
+  const db = await openVfsDB();
+  const prefix = `${saveId}:`;
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(
+      [VFS_META_STORE, VFS_SNAPSHOTS_STORE],
+      "readwrite",
+    );
+    const metaStore = transaction.objectStore(VFS_META_STORE);
+    const snapshotsStore = transaction.objectStore(VFS_SNAPSHOTS_STORE);
+
+    // 1) Delete any rows we can identify via VFS meta records.
+    const metaCursorReq = metaStore.openCursor();
+    metaCursorReq.onsuccess = () => {
+      const cursor = metaCursorReq.result as IDBCursorWithValue | null;
+      if (!cursor) {
+        // 2) Also delete orphan snapshot rows (if any) by key prefix.
+        const snapCursorReq = snapshotsStore.openKeyCursor();
+        snapCursorReq.onsuccess = () => {
+          const snapCursor = snapCursorReq.result as IDBCursor | null;
+          if (!snapCursor) {
+            return;
+          }
+          const key = String(snapCursor.primaryKey ?? "");
+          if (key.startsWith(prefix)) {
+            snapshotsStore.delete(snapCursor.primaryKey);
+          }
+          snapCursor.continue();
+        };
+        snapCursorReq.onerror = () => reject(snapCursorReq.error);
+        return;
+      }
+
+      const row = cursor.value as any;
+      if (row && typeof row.saveId === "string" && row.saveId === saveId) {
+        const id = cursor.primaryKey;
+        metaStore.delete(id);
+        snapshotsStore.delete(id);
+      }
+      cursor.continue();
+    };
+    metaCursorReq.onerror = () => reject(metaCursorReq.error);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+};
+
+/**
  * Save audio blob
  */
 export const saveAudio = async (key: string, data: Blob): Promise<void> => {
