@@ -241,11 +241,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <section className="py-3">
             <WorldInfoPanel
-              history={gameState.outline?.worldSetting?.history}
+              history={gameState.worldInfo?.worldSetting?.history}
               factions={gameState.factions}
-              worldSetting={gameState.outline?.worldSetting}
+              worldSetting={gameState.worldInfo?.worldSetting}
               themeFont={currentThemeConfig.fontClass}
-              outline={gameState.outline}
+              worldInfo={gameState.worldInfo}
               unlockMode={gameState.unlockMode}
             />
           </section>

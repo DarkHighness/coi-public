@@ -33,6 +33,108 @@ const writeEntities = <T extends { id?: string }>(
   }
 };
 
+const writeWorldInfoAndView = (
+  session: VfsSession,
+  worldInfo: any,
+  playerActorId: string,
+): void => {
+  const {
+    worldSettingUnlocked,
+    worldSettingUnlockReason,
+    mainGoalUnlocked,
+    mainGoalUnlockReason,
+    highlight,
+    lastAccess,
+    ...definition
+  } = worldInfo as any;
+  writeJson(session, "world/world_info.json", definition);
+  writeJson(session, `world/characters/${playerActorId}/views/world_info.json`, {
+    worldSettingUnlocked,
+    worldSettingUnlockReason,
+    mainGoalUnlocked,
+    mainGoalUnlockReason,
+    highlight,
+    lastAccess,
+  });
+};
+
+const writeQuestDefinitionAndView = (
+  session: VfsSession,
+  quest: any,
+  playerActorId: string,
+): void => {
+  if (!quest?.id) return;
+  const { status, unlocked, unlockReason, highlight, lastAccess, ...definition } =
+    quest as any;
+  writeJson(session, `world/quests/${quest.id}.json`, definition);
+
+  const knownBy: string[] = Array.isArray(definition.knownBy) ? definition.knownBy : [];
+  if (!knownBy.includes(playerActorId)) return;
+
+  writeJson(
+    session,
+    `world/characters/${playerActorId}/views/quests/${quest.id}.json`,
+    {
+      entityId: quest.id,
+      status: status ?? "active",
+      unlocked,
+      unlockReason,
+      highlight,
+      lastAccess,
+      objectiveState: (quest as any).objectiveState,
+      acceptedAtGameTime: (quest as any).acceptedAtGameTime,
+      completedAtGameTime: (quest as any).completedAtGameTime,
+    },
+  );
+};
+
+const writeDefinitionAndView = (
+  session: VfsSession,
+  category:
+    | "knowledge"
+    | "timeline"
+    | "locations"
+    | "factions"
+    | "causal_chains",
+  entity: any,
+  playerActorId: string,
+  options?: { keyField?: string; viewExtra?: Record<string, unknown> },
+): void => {
+  const keyField = options?.keyField ?? "id";
+  const id = entity?.[keyField];
+  if (typeof id !== "string" || id.trim().length === 0) return;
+
+  const { unlocked, unlockReason, highlight, lastAccess, ...definition } = entity as any;
+
+  // Canonical write
+  const basePath =
+    category === "locations"
+      ? "world/locations"
+      : category === "factions"
+        ? "world/factions"
+        : category === "knowledge"
+          ? "world/knowledge"
+          : category === "timeline"
+            ? "world/timeline"
+            : "world/causal_chains";
+  writeJson(session, `${basePath}/${id}.json`, definition);
+
+  const knownBy: string[] = Array.isArray(definition.knownBy) ? definition.knownBy : [];
+  if (!knownBy.includes(playerActorId)) return;
+
+  // View write
+  const viewBase = `world/characters/${playerActorId}/views/${category}/${id}.json`;
+  const view: Record<string, unknown> = {
+    entityId: id,
+    unlocked,
+    unlockReason,
+    highlight,
+    lastAccess,
+    ...(options?.viewExtra ?? {}),
+  };
+  writeJson(session, viewBase, view);
+};
+
 const writeActorBundle = (session: VfsSession, bundle: any): void => {
   const profile = bundle?.profile;
   if (!profile || typeof profile !== "object") return;
@@ -94,11 +196,49 @@ export const seedVfsSessionFromGameState = (
     });
   }
 
-  writeEntities(session, "world/quests", state.quests as Quest[]);
-  writeEntities(session, "world/locations", state.locations as Location[]);
-  writeEntities(session, "world/knowledge", state.knowledge as KnowledgeEntry[]);
-  writeEntities(session, "world/factions", state.factions as Faction[]);
-  writeEntities(session, "world/timeline", state.timeline as TimelineEvent[]);
+  const playerActorId = state.playerActorId || "char:player";
+
+  if (state.worldInfo) {
+    writeWorldInfoAndView(session, state.worldInfo as any, playerActorId);
+  }
+
+  // Canonical + player views split
+  for (const q of (state.quests as any[]) ?? []) {
+    writeQuestDefinitionAndView(session, q, playerActorId);
+  }
+  for (const loc of (state.locations as any[]) ?? []) {
+    writeDefinitionAndView(session, "locations", loc, playerActorId, {
+      viewExtra: {
+        isVisited: (loc as any).isVisited,
+        visitedCount: (loc as any).visitedCount,
+        discoveredAtGameTime: (loc as any).discoveredAt,
+      },
+    });
+  }
+  for (const k of (state.knowledge as any[]) ?? []) {
+    writeDefinitionAndView(session, "knowledge", k, playerActorId, {
+      viewExtra: {
+        discoveredAtGameTime: (k as any).discoveredAt,
+        beliefSummary: (k as any).beliefSummary,
+      },
+    });
+  }
+  for (const f of (state.factions as any[]) ?? []) {
+    writeDefinitionAndView(session, "factions", f, playerActorId, {
+      viewExtra: {
+        standing: (f as any).standing,
+        standingTag: (f as any).standingTag,
+      },
+    });
+  }
+  for (const e of (state.timeline as any[]) ?? []) {
+    writeDefinitionAndView(session, "timeline", e, playerActorId, {
+      viewExtra: {
+        rememberedAs: (e as any).rememberedAs,
+        suspicions: (e as any).suspicions,
+      },
+    });
+  }
 
   for (const [locId, items] of Object.entries(state.locationItemsByLocationId)) {
     if (!Array.isArray(items)) continue;
@@ -114,11 +254,13 @@ export const seedVfsSessionFromGameState = (
       if (!chain || !chain.chainId) {
         continue;
       }
-      writeJson(
-        session,
-        `world/causal_chains/${chain.chainId}.json`,
-        chain,
-      );
+      writeDefinitionAndView(session, "causal_chains", chain, playerActorId, {
+        keyField: "chainId",
+        viewExtra: {
+          investigationNotes: (chain as any).investigationNotes,
+          linkedEventIds: (chain as any).linkedEventIds,
+        },
+      });
     }
   }
 };
@@ -236,6 +378,19 @@ export const seedVfsSessionFromOutline = (
     nextForkId: 1,
   });
 
+  // Canonical world info + per-actor unlock state
+  writeJson(session, "world/world_info.json", {
+    title: outline.title,
+    premise: outline.premise,
+    narrativeScale: (outline as any).narrativeScale,
+    worldSetting: outline.worldSetting,
+    mainGoal: outline.mainGoal,
+  });
+  writeJson(session, `world/characters/char:player/views/world_info.json`, {
+    worldSettingUnlocked: false,
+    mainGoalUnlocked: false,
+  });
+
   // Actor-first outline seeding
   if ((outline as any).player) {
     writeActorBundle(session, (outline as any).player);
@@ -253,13 +408,62 @@ export const seedVfsSessionFromOutline = (
       writeJson(session, `world/placeholders/${id.trim()}.json`, placeholder);
     }
   }
+  // Canonical entities (no per-actor fields)
   writeEntities(session, "world/quests", outline.quests as Quest[]);
   writeEntities(session, "world/locations", outline.locations as Location[]);
-  writeEntities(
-    session,
-    "world/knowledge",
-    outline.knowledge as KnowledgeEntry[],
-  );
+  writeEntities(session, "world/knowledge", outline.knowledge as KnowledgeEntry[]);
   writeEntities(session, "world/factions", outline.factions as Faction[]);
   writeEntities(session, "world/timeline", outline.timeline as TimelineEvent[]);
+
+  // Initial player views for all entities already known to the player.
+  const playerActorId = "char:player";
+  const gameTime = options.time;
+  const currentLocId = options.currentLocation;
+
+  for (const q of (outline.quests as any[]) ?? []) {
+    const knownBy: string[] = Array.isArray((q as any)?.knownBy) ? (q as any).knownBy : [];
+    if (!knownBy.includes(playerActorId)) continue;
+    writeJson(session, `world/characters/${playerActorId}/views/quests/${q.id}.json`, {
+      entityId: q.id,
+      status: "active",
+    });
+  }
+  for (const k of (outline.knowledge as any[]) ?? []) {
+    const knownBy: string[] = Array.isArray((k as any)?.knownBy) ? (k as any).knownBy : [];
+    if (!knownBy.includes(playerActorId)) continue;
+    writeJson(session, `world/characters/${playerActorId}/views/knowledge/${k.id}.json`, {
+      entityId: k.id,
+      discoveredAtGameTime: gameTime,
+    });
+  }
+  for (const e of (outline.timeline as any[]) ?? []) {
+    const knownBy: string[] = Array.isArray((e as any)?.knownBy) ? (e as any).knownBy : [];
+    if (!knownBy.includes(playerActorId)) continue;
+    writeJson(session, `world/characters/${playerActorId}/views/timeline/${e.id}.json`, {
+      entityId: e.id,
+    });
+  }
+  for (const f of (outline.factions as any[]) ?? []) {
+    const knownBy: string[] = Array.isArray((f as any)?.knownBy) ? (f as any).knownBy : [];
+    if (!knownBy.includes(playerActorId)) continue;
+    writeJson(session, `world/characters/${playerActorId}/views/factions/${f.id}.json`, {
+      entityId: f.id,
+    });
+  }
+  for (const loc of (outline.locations as any[]) ?? []) {
+    const knownBy: string[] = Array.isArray((loc as any)?.knownBy)
+      ? (loc as any).knownBy
+      : [];
+    if (!knownBy.includes(playerActorId)) continue;
+    writeJson(
+      session,
+      `world/characters/${playerActorId}/views/locations/${loc.id}.json`,
+      {
+        entityId: loc.id,
+        discoveredAtGameTime: gameTime,
+        isVisited: loc.id === currentLocId,
+        visitedCount: loc.id === currentLocId ? 1 : 0,
+      },
+    );
+  }
 };
