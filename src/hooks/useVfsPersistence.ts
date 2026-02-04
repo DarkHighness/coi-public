@@ -308,6 +308,28 @@ export const useVfsPersistence = (
           slots = await inferSlotsIfMissing();
         }
 
+        // Cleanup: remove ghost slots that have no backing data in either VFS or legacy save store.
+        if (slots && Array.isArray(slots) && slots.length > 0) {
+          try {
+            const existingIds = new Set<string>([
+              ...(await getAllVfsSaveIds()),
+              ...(await getAllSaveIds()),
+            ]);
+            const validSlots = slots.filter((slot: any) =>
+              slot && typeof slot.id === "string" && existingIds.has(slot.id),
+            );
+            if (validSlots.length !== slots.length) {
+              console.log(
+                `[VFS Persistence] Cleaned up ${slots.length - validSlots.length} ghost save slots`,
+              );
+              await saveMetadata("slots", validSlots);
+              slots = validSlots;
+            }
+          } catch (error) {
+            console.warn("[VFS Persistence] Failed to cleanup ghost slots:", error);
+          }
+        }
+
         if (slots && Array.isArray(slots)) {
           setSaveSlots(slots);
 
