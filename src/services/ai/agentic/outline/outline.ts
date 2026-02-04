@@ -126,13 +126,20 @@ export const generateStoryOutlinePhased = async (
   const { instance, modelId } = providerInfo;
   const logs: LogEntry[] = [];
 
-  // Check if this is an image-based start (no theme selected)
-  const isImageBasedStart = !!options?.seedImageBase64 && !theme;
+  // Image-based flow can be:
+  // - brand new start with seedImageBase64 (Phase 0)
+  // - resume from a checkpoint that already contains Phase 0 or is currently at Phase 0
+  const isImageBasedFlow = (() => {
+    if (options?.seedImageBase64 && !theme) return true;
+    const resume = options?.resumeFrom;
+    if (!resume) return false;
+    if (theme === IMAGE_BASED_THEME) return true;
+    if (theme) return false;
+    return resume.currentPhase === 0 || Boolean((resume.partial as any)?.phase0);
+  })();
 
-  // Get theme data (skip if image-based start - Phase 0 will generate context)
-  const themeConfig = isImageBasedStart
-    ? null
-    : THEMES[theme] || THEMES["fantasy"];
+  // Get theme data (skip if image-based flow - Phase 0 will generate context)
+  const themeConfig = isImageBasedFlow ? null : THEMES[theme] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
   let themeDataWorldSetting: string | undefined;
@@ -140,8 +147,8 @@ export const generateStoryOutlinePhased = async (
   let themeDataExample: string | undefined;
   let themeDataNarrativeStyle: string | undefined;
 
-  // Only load theme data if not image-based start
-  if (!isImageBasedStart) {
+  // Only load theme data if not image-based flow
+  if (!isImageBasedFlow) {
     if (tFunc) {
       themeDataWorldSetting = tFunc(`${theme}.worldSetting`, { ns: "themes" });
       themeDataBackgroundTemplate =
@@ -338,8 +345,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
     error?: string,
   ) => {
     if (options?.onPhaseProgress) {
-      const hasImage = !!options.seedImageBase64;
-      const totalPhases = hasImage ? 11 : 10;
+      const totalPhases = isImageBasedFlow ? 11 : 10;
       options.onPhaseProgress({
         phase,
         totalPhases,
@@ -412,6 +418,15 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
     initialPrefix,
   );
   sessionManager.setCacheHint(outlineSession.id, cacheHint);
+
+  // Save an initial checkpoint so "exit & re-enter" can resume even if Phase 1 fails
+  // before completing and producing a checkpoint.
+  if (!options.resumeFrom) {
+    console.log(
+      `[OutlineAgentic] Saving initial checkpoint at phase ${currentPhase}`,
+    );
+    saveCheckpoint(currentPhase);
+  }
 
   // Helper to make API call with retry
   const callAIWithRetry = async (

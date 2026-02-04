@@ -246,6 +246,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const playerFactionViews = new Map<string, any>();
   const playerCausalChainViews = new Map<string, any>();
   let playerWorldInfoView: any | null = null;
+  let hasGlobalTheme = false;
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
@@ -273,6 +274,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       }
       if (typeof globalData.theme === "string" && globalData.theme.trim() !== "") {
         state.theme = globalData.theme.trim();
+        hasGlobalTheme = true;
       }
       if (
         typeof globalData.currentLocation === "string" &&
@@ -740,6 +742,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const outlineProgress = readOutlineProgress(files);
   if (outlineProgress) {
     state.outlineConversation = outlineProgress;
+    if (
+      !hasGlobalTheme &&
+      typeof outlineProgress.theme === "string" &&
+      outlineProgress.theme.trim() !== ""
+    ) {
+      state.theme = outlineProgress.theme.trim();
+    }
     if (outlineProgress.language) {
       state.language = outlineProgress.language;
     }

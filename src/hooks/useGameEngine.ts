@@ -48,7 +48,10 @@ import {
   writeOutlineFile,
   writeOutlineProgress,
 } from "../services/vfs/outline";
-import { seedVfsSessionFromOutline } from "../services/vfs/seed";
+import {
+  seedVfsSessionFromDefaults,
+  seedVfsSessionFromOutline,
+} from "../services/vfs/seed";
 import {
   forkConversation,
   writeConversationIndex,
@@ -386,9 +389,59 @@ export const useGameEngine = () => {
 
     // For slot/UI operations, use a fallback theme; but keep selectedTheme for generation
     const displayTheme = selectedTheme || "ImageBased";
+    const persistedTheme = selectedTheme || "fantasy";
 
     const slotId = existingSlotId || createSaveSlot(displayTheme);
     setCurrentSlotId(slotId);
+
+    // Reset the VFS session at the start of a new game to avoid cross-save contamination.
+    // Also persist an initial snapshot immediately so a crash/error before phase checkpoints
+    // doesn't lead to "default fantasy + new save" on restart.
+    try {
+      vfsSession.restore({});
+      seedVfsSessionFromDefaults(vfsSession);
+      vfsSession.writeFile(
+        "world/global.json",
+        JSON.stringify({
+          time: "Day 1, 08:00",
+          theme: persistedTheme,
+          currentLocation: "Unknown",
+          atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+          turnNumber: 0,
+          forkId: 0,
+          language,
+          customContext,
+        }),
+        "application/json",
+      );
+
+      await saveToSlot(slotId, {
+        ...gameStateRef.current,
+        nodes: {},
+        activeNodeId: null,
+        rootNodeId: null,
+        currentFork: [],
+        actors: [],
+        inventory: [],
+        npcs: [],
+        quests: [],
+        factions: [],
+        knowledge: [],
+        locations: [],
+        locationItemsByLocationId: {},
+        outline: null,
+        summaries: [],
+        lastSummarizedIndex: 0,
+        logs: [],
+        turnNumber: 0,
+        forkId: 0,
+        theme: persistedTheme,
+        language,
+        customContext,
+      });
+    } catch (e) {
+      console.warn("[StartNewGame] Failed to persist initial save snapshot", e);
+    }
 
     // Note: RAG context switching is now handled automatically by the SharedWorker
     // when switching saves. No manual reset needed here.
@@ -562,6 +615,9 @@ export const useGameEngine = () => {
             customContext,
             onStream,
             onPhaseProgress,
+            slotId,
+            seedImage,
+            protagonistFeature,
           );
         }
       } else {

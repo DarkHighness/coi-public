@@ -209,7 +209,7 @@ describe("deriveGameStateFromVfs", () => {
         "current/outline/progress.json",
         {
           conversation: {
-            theme: "fantasy",
+            theme: "cyberpunk",
             language: "en",
             customContext: "test",
             conversationHistory: [],
@@ -232,6 +232,7 @@ describe("deriveGameStateFromVfs", () => {
 
     expect(state.outlineConversation?.currentPhase).toBe(3);
     expect(state.outline?.title).toBe("Outline Title");
+    expect(state.theme).toBe("cyberpunk");
     expect(state.language).toBe("en");
     expect(state.customContext).toBe("test");
   });

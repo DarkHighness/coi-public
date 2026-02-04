@@ -791,6 +791,7 @@ function AppContent() {
           gameState.customContext,
           (text) => setStreamedText((prev) => prev + text),
           (progress) => setPhaseProgress(progress),
+          currentSlotId || undefined,
         );
       } else {
         // No valid state to continue from - this shouldn't happen
