@@ -33,6 +33,283 @@ describe("VFS handlers", () => {
     expect(readResult.data?.content).toBe("{}");
   });
 
+  it("blocks overwriting an unseen file via vfs_write until it is read", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const overwriteResult = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/outline/progress.json",
+            content: JSON.stringify({ a: 2 }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(overwriteResult.success).toBe(false);
+    expect(overwriteResult.code).toBe("INVALID_ACTION");
+    expect(overwriteResult.error ?? "").toContain("must read file before overwrite");
+
+    const readResult = dispatchToolCall(
+      "vfs_read",
+      { path: "current/outline/progress.json" },
+      ctx,
+    ) as { success: boolean };
+
+    expect(readResult.success).toBe(true);
+
+    const overwriteOk = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/outline/progress.json",
+            content: JSON.stringify({ a: 2 }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(overwriteOk.success).toBe(true);
+  });
+
+  it("blocks vfs_edit until the file is read in this session", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const editBlocked = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(editBlocked.success).toBe(false);
+    expect(editBlocked.code).toBe("INVALID_ACTION");
+    expect(editBlocked.error ?? "").toContain("must read file before edit");
+
+    dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
+
+    const editOk = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(editOk.success).toBe(true);
+  });
+
+  it("blocks vfs_merge until the file is read", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const mergeBlocked = dispatchToolCall(
+      "vfs_merge",
+      {
+        files: [{ path: "current/outline/progress.json", content: { a: 2 } }],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(mergeBlocked.success).toBe(false);
+    expect(mergeBlocked.code).toBe("INVALID_ACTION");
+    expect(mergeBlocked.error ?? "").toContain("must read file before merge");
+
+    dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
+
+    const mergeOk = dispatchToolCall(
+      "vfs_merge",
+      {
+        files: [{ path: "current/outline/progress.json", content: { a: 2 } }],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(mergeOk.success).toBe(true);
+  });
+
+  it("blocks vfs_delete until the file is read", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const deleteBlocked = dispatchToolCall(
+      "vfs_delete",
+      { paths: ["current/outline/progress.json"] },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(deleteBlocked.success).toBe(false);
+    expect(deleteBlocked.code).toBe("INVALID_ACTION");
+    expect(deleteBlocked.error ?? "").toContain("must read file before delete");
+
+    dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
+
+    const deleteOk = dispatchToolCall(
+      "vfs_delete",
+      { paths: ["current/outline/progress.json"] },
+      ctx,
+    ) as { success: boolean };
+
+    expect(deleteOk.success).toBe(true);
+  });
+
+  it("enforces read-before-overwrite inside vfs_tx", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const txBlocked = dispatchToolCall(
+      "vfs_tx",
+      {
+        ops: [
+          {
+            op: "write",
+            path: "current/outline/progress.json",
+            content: JSON.stringify({ a: 2 }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(txBlocked.success).toBe(false);
+    expect(txBlocked.code).toBe("INVALID_ACTION");
+    expect(txBlocked.error ?? "").toContain("must read file before overwrite");
+  });
+
+  it("does not treat grep results as reading (still blocks edits)", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1, needle: "yes" }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const grepResult = dispatchToolCall(
+      "vfs_grep",
+      { pattern: "needle", flags: "", path: "current/outline/progress.json", limit: 5 },
+      ctx,
+    ) as { success: boolean; data?: { results?: Array<{ path: string }> } };
+
+    expect(grepResult.success).toBe(true);
+    expect(grepResult.data?.results?.[0]?.path).toBe("current/outline/progress.json");
+
+    const editBlocked = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(editBlocked.success).toBe(false);
+    expect(editBlocked.code).toBe("INVALID_ACTION");
+    expect(editBlocked.error ?? "").toContain("must read file before edit");
+
+    dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
+
+    const editOkAfterRead = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(editOkAfterRead.success).toBe(true);
+  });
+
+  it("does not treat search results as reading (still blocks edits)", async () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/progress.json",
+      JSON.stringify({ a: 1, needle: "yes" }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const searchResult = (await dispatchToolCallAsync(
+      "vfs_search",
+      { query: "needle", path: "current/outline/progress.json", limit: 5 },
+      ctx,
+    )) as { success: boolean; data?: { results?: Array<{ path: string }> } };
+
+    expect(searchResult.success).toBe(true);
+    expect(searchResult.data?.results?.[0]?.path).toBe("current/outline/progress.json");
+
+    const editBlocked = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(editBlocked.success).toBe(false);
+    expect(editBlocked.code).toBe("INVALID_ACTION");
+    expect(editBlocked.error ?? "").toContain("must read file before edit");
+
+    dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
+
+    const editOkAfterRead = dispatchToolCall(
+      "vfs_edit",
+      {
+        edits: [
+          { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(editOkAfterRead.success).toBe(true);
+  });
+
   it("reads global skills via vfs_read and blocks writes", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };

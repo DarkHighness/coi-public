@@ -60,15 +60,50 @@ interface FuseMatch extends VfsMatch {
 const cloneSession = (session: VfsSession): VfsSession => {
   const clone = new VfsSession();
   clone.restore(session.snapshot());
+  clone.restoreToolSeenPaths(session.snapshotToolSeenPaths());
   return clone;
 };
 
 const commitSession = (target: VfsSession, source: VfsSession): void => {
   target.restore(source.snapshot());
+  target.restoreToolSeenPaths(source.snapshotToolSeenPaths());
 };
 
 const getSession = (ctx: ToolContext): VfsSession | null => {
   return ctx.vfsSession ?? null;
+};
+
+const isReadOnlyToolPath = (path: string): boolean => {
+  const normalized = normalizeVfsPath(path);
+  return normalized === "skills" || normalized.startsWith("skills/");
+};
+
+const requireToolSeenForExistingFile = (
+  session: VfsSession,
+  path: string,
+  operation: "overwrite" | "edit" | "merge" | "delete",
+): ToolCallResult<never> | null => {
+  const normalized = normalizeVfsPath(path);
+
+  // Let the underlying VFS throw a read-only error so callers get the
+  // most accurate message.
+  if (isReadOnlyToolPath(normalized)) {
+    return null;
+  }
+
+  const existing = session.readFile(normalized);
+  if (!existing) {
+    return null;
+  }
+
+  if (session.hasToolSeen(normalized)) {
+    return null;
+  }
+
+  return createError(
+    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read first).`,
+    "INVALID_ACTION",
+  );
 };
 
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
@@ -1522,6 +1557,7 @@ registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
   if (!file) {
     return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
   }
+  session.noteToolSeen(resolved.path);
 
   const startRaw = typedArgs.start;
   const offsetRaw = typedArgs.offset;
@@ -1784,6 +1820,7 @@ registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
     const message = error instanceof Error ? error.message : String(error);
     return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
   }
+  session.noteToolSeen(resolved.path);
 
   const maxChars = typedArgs.maxChars ?? 4000;
   const extracts: Array<{
@@ -1865,6 +1902,7 @@ registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
       missing.push(inputPath);
       continue;
     }
+    session.noteToolSeen(resolved.path);
 
     let content = file.content;
     let truncated = false;
@@ -1919,12 +1957,16 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
       return createError(`Invalid regex: ${message}`, "INVALID_DATA");
     }
 
-    const results = collectMatches(
+    const rawResults = collectMatches(
       files,
       rootPath,
       makeRegexMatcher(regex),
       limit,
-    ).map((match) => ({ ...match, path: toCurrentPath(match.path) }));
+    );
+    const results = rawResults.map((match) => ({
+      ...match,
+      path: toCurrentPath(match.path),
+    }));
     return createSuccess({ results }, "VFS search complete");
   }
 
@@ -2013,9 +2055,10 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
     rootPath,
     makeRegexMatcher(regex),
     limit,
-  ).map((match) => ({ ...match, path: toCurrentPath(match.path) }));
+  );
+  const mapped = results.map((match) => ({ ...match, path: toCurrentPath(match.path) }));
 
-  return createSuccess({ results }, "VFS grep complete");
+  return createSuccess({ results: mapped }, "VFS grep complete");
 });
 
 registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
@@ -2028,6 +2071,10 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
       const resolved = resolveCurrentPath(file.path);
       if (!resolved.ok) {
         return resolved.error;
+      }
+      const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
+      if (seenError) {
+        return seenError;
       }
       draft.writeFile(resolved.path, file.content, file.contentType);
       written.push(toCurrentPath(resolved.path));
@@ -2048,6 +2095,14 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
       if (!resolved.ok) {
         return resolved.error;
       }
+      const existing = draft.readFile(resolved.path);
+      if (!existing) {
+        return createError(`File not found: ${edit.path}`, "NOT_FOUND");
+      }
+      const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
+      if (seenError) {
+        return seenError;
+      }
       draft.applyJsonPatch(resolved.path, edit.patch);
       edited.push(toCurrentPath(resolved.path));
     }
@@ -2066,6 +2121,10 @@ registerToolHandler(VFS_MERGE_TOOL, (args, ctx) => {
       const resolved = resolveCurrentPath(file.path);
       if (!resolved.ok) {
         return resolved.error;
+      }
+      const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
+      if (seenError) {
+        return seenError;
       }
       draft.mergeJson(resolved.path, file.content);
       merged.push(toCurrentPath(resolved.path));
@@ -2096,8 +2155,12 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
         draft.renameFile(from, to);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        if (message.startsWith("Path is read-only:")) {
+          return createError(message, "INVALID_ACTION");
+        }
         return createError(message, "NOT_FOUND");
       }
+      draft.renameToolSeenPath(from, to);
       moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
     }
 
@@ -2117,12 +2180,20 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
         return resolved.error;
       }
       const normalized = normalizeVfsPath(resolved.path);
+      const seenError = requireToolSeenForExistingFile(draft, normalized, "delete");
+      if (seenError) {
+        return seenError;
+      }
       try {
         draft.deleteFile(normalized);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        if (message.startsWith("Path is read-only:")) {
+          return createError(message, "INVALID_ACTION");
+        }
         return createError(message, "NOT_FOUND");
       }
+      draft.forgetToolSeenPath(normalized);
       deleted.push(toCurrentPath(normalized));
     }
 
@@ -2230,6 +2301,10 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (!resolved.ok) {
           return resolved.error;
         }
+        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
+        if (seenError) {
+          return seenError;
+        }
         draft.writeFile(resolved.path, op.content, op.contentType);
         written.push(toCurrentPath(resolved.path));
         continue;
@@ -2240,6 +2315,14 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (!resolved.ok) {
           return resolved.error;
         }
+        const existing = draft.readFile(resolved.path);
+        if (!existing) {
+          return createError(`File not found: ${op.path}`, "NOT_FOUND");
+        }
+        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
+        if (seenError) {
+          return seenError;
+        }
         draft.applyJsonPatch(resolved.path, op.patch);
         edited.push(toCurrentPath(resolved.path));
         continue;
@@ -2249,6 +2332,10 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         const resolved = resolveCurrentPath(op.path);
         if (!resolved.ok) {
           return resolved.error;
+        }
+        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
+        if (seenError) {
+          return seenError;
         }
         draft.mergeJson(resolved.path, op.content);
         merged.push(toCurrentPath(resolved.path));
@@ -2270,8 +2357,12 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
           draft.renameFile(from, to);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
+          if (message.startsWith("Path is read-only:")) {
+            return createError(message, "INVALID_ACTION");
+          }
           return createError(message, "NOT_FOUND");
         }
+        draft.renameToolSeenPath(from, to);
         moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
         continue;
       }
@@ -2282,12 +2373,20 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
           return resolved.error;
         }
         const normalized = normalizeVfsPath(resolved.path);
+        const seenError = requireToolSeenForExistingFile(draft, normalized, "delete");
+        if (seenError) {
+          return seenError;
+        }
         try {
           draft.deleteFile(normalized);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
+          if (message.startsWith("Path is read-only:")) {
+            return createError(message, "INVALID_ACTION");
+          }
           return createError(message, "NOT_FOUND");
         }
+        draft.forgetToolSeenPath(normalized);
         deleted.push(toCurrentPath(normalized));
         continue;
       }

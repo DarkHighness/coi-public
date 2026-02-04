@@ -6,18 +6,18 @@ import type { Atom } from "../types";
 
 export interface StyleGuideInput {
   themeStyle?: string;
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 export const styleGuide: Atom<StyleGuideInput> = ({
   themeStyle,
-  isLiteMode,
+  forSystemPrompt,
 }) => {
   const toneSection = themeStyle
     ? `<tone>${themeStyle}</tone>`
     : "<tone>Gritty, grounded, visceral.</tone>";
 
-  if (isLiteMode) {
+  if (forSystemPrompt) {
     return `
 <style>
 ${toneSection}

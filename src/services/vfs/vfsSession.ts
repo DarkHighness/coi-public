@@ -138,9 +138,46 @@ export class VfsSession {
   private files: VfsFileMap = {};
   private readonlyFiles: VfsFileMap = buildGlobalVfsSkills();
   private semanticIndexer?: VfsSemanticIndexer;
+  private toolSeenPaths = new Set<string>();
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
     this.semanticIndexer = options?.semanticIndexer;
+  }
+
+  public noteToolSeen(path: string): void {
+    this.toolSeenPaths.add(normalizeVfsPath(path));
+  }
+
+  public noteToolSeenMany(paths: string[]): void {
+    for (const path of paths) {
+      this.noteToolSeen(path);
+    }
+  }
+
+  public hasToolSeen(path: string): boolean {
+    return this.toolSeenPaths.has(normalizeVfsPath(path));
+  }
+
+  public snapshotToolSeenPaths(): string[] {
+    return Array.from(this.toolSeenPaths);
+  }
+
+  public restoreToolSeenPaths(paths: string[]): void {
+    this.toolSeenPaths = new Set(paths.map((path) => normalizeVfsPath(path)));
+  }
+
+  public renameToolSeenPath(from: string, to: string): void {
+    const normalizedFrom = normalizeVfsPath(from);
+    const normalizedTo = normalizeVfsPath(to);
+    if (!this.toolSeenPaths.has(normalizedFrom)) {
+      return;
+    }
+    this.toolSeenPaths.delete(normalizedFrom);
+    this.toolSeenPaths.add(normalizedTo);
+  }
+
+  public forgetToolSeenPath(path: string): void {
+    this.toolSeenPaths.delete(normalizeVfsPath(path));
   }
 
   private isReadOnlyPath(path: string): boolean {

@@ -9,16 +9,16 @@
  * They storm the gates together. Show SIMULTANEITY, not alternation.
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface ConflictingEmotionsInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 export const conflictingEmotions: Atom<ConflictingEmotionsInput> = ({
-  isLiteMode,
+  forSystemPrompt,
 }) => {
-  if (isLiteMode) {
+  if (forSystemPrompt) {
     return `
 <conflicting_emotions>
   **SIMULTANEITY, NOT ALTERNATION**:
@@ -235,3 +235,45 @@ export const conflictingEmotions: Atom<ConflictingEmotionsInput> = ({
 };
 
 export default conflictingEmotions;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const conflictingEmotionsSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: conflictingEmotions({ forSystemPrompt: false }),
+
+  quickStart: `
+1. Emotions happen SIMULTANEOUSLY, not in sequence
+2. Show conflict through contradictory body language
+3. Dialogue carries contradictions ("I love you. I can't stand you.")
+4. Physical tells reveal internal war
+`.trim(),
+
+  checklist: [
+    "Emotions shown simultaneously (not alternating)?",
+    "Body language shows contradiction (reach while retreating)?",
+    "Dialogue carries ambivalence?",
+    "Physical tells reveal internal conflict?",
+    "Avoiding simple emotional labels?",
+  ],
+
+  examples: [
+    {
+      scenario: "Simultaneity",
+      wrong: `"First he felt love. Then he felt hate."
+(Sequential, not simultaneous.)`,
+      right: `"He wanted to kiss her. He wanted to shake her.
+Both impulses lived in his hands at the same moment."
+(Both emotions present simultaneously.)`,
+    },
+    {
+      scenario: "Physical Tells",
+      wrong: `"She had mixed feelings."
+(Label, not shown.)`,
+      right: `"Her hand reached for him. Then pulled back.
+Then reached again, fingers stopping an inch from his face."
+(Body shows the internal war.)`,
+    },
+  ],
+});

@@ -2,7 +2,7 @@
  * Narrative Atom: Temporal Philosophy
  * Content from knowing/temporal.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const temporalPhilosophy: Atom<void> = () => `
 <temporal_philosophy>
@@ -107,3 +107,44 @@ export const temporalPhilosophyLite: Atom<void> = () => `
 `;
 
 export default temporalPhilosophy;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const temporalPhilosophySkill: SkillAtom<void> = (): SkillOutput => ({
+  main: temporalPhilosophy(),
+
+  quickStart: `
+1. Three times: Cosmic (world clock), Narrative (story rhythm), Lived (subjective)
+2. Expand for: combat, revelation, emotional climax
+3. Compress for: travel, recovery, waiting, mundane
+4. Time passes off-screen - world doesn't wait
+`.trim(),
+
+  checklist: [
+    "Tracking cosmic time (world events continue off-screen)?",
+    "Adjusting narrative time (expand/compress appropriately)?",
+    "Rendering lived time (subjective perception under stress)?",
+    "Not freezing world during player inaction?",
+    "Using temporal cues (meanwhile, later, while you slept)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Time Expansion",
+      wrong: `"You fight. You win."
+(Combat compressed into summary.)`,
+      right: `"The blade arcs. Time stretches. You see the edge catching light—
+the trajectory, the inevitable point of impact..."
+(Critical moment expanded, rendered in detail.)`,
+    },
+    {
+      scenario: "Time Compression",
+      wrong: `"Day 1 of travel... Day 2 of travel... Day 3 of travel..."
+(Routine given excessive detail.)`,
+      right: `"The journey took three days. By the end, your boots had worn thin."
+(Mundane compressed, one telling detail.)`,
+    },
+  ],
+});

@@ -12,11 +12,11 @@
 import type { Atom } from "../types";
 
 export interface DarkPsychologyInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
-export const darkPsychology: Atom<DarkPsychologyInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const darkPsychology: Atom<DarkPsychologyInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <dark_psychology>
   **HUMAN WEAKNESS CATALOG**:

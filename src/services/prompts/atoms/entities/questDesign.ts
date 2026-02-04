@@ -7,7 +7,7 @@
  * 定义创建 Quest 时的设计哲学和质量要求。
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 /**
  * Quest 设计上下文 - 完整版
@@ -80,3 +80,75 @@ export const questDesignLite: Atom<void> = () => `
 `;
 
 export default questDesign;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const questDesignSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: questDesign(),
+
+  quickStart: `
+1. Visible vs Hidden: Surface objective contradicts hidden truth
+2. Twist: Complication or moral dilemma (not just "there's a twist")
+3. Time Pressure: Deadline with specific consequences
+4. Failure Stakes: What happens if protagonist fails or delays
+5. Playability: Lead chain (3-5 steps), multiple approaches, entry point
+`.trim(),
+
+  checklist: [
+    "Visible layer contradicts hidden layer?",
+    "Twist is specific (not just 'plot twist')?",
+    "Time pressure has specific deadline?",
+    "Failure consequences are concrete (someone dies, opportunity closes)?",
+    "Clear entry point (who asks, where, what proof)?",
+    "Lead chain exists (3-5 actionable steps)?",
+    "At least two approaches to progress?",
+    "'Do nothing' outcome defined?",
+  ],
+
+  examples: [
+    {
+      scenario: "Visible vs Hidden",
+      wrong: `visible: "Rescue the princess"
+hidden: "There's a twist"
+(No actual contradiction defined.)`,
+      right: `visible: "Rescue the kidnapped princess"
+hidden: "The princess staged her own kidnapping to escape
+an arranged marriage. 'Rescuing' her means returning her to prison."
+(Surface objective contradicts moral reality.)`,
+    },
+    {
+      scenario: "Time Pressure",
+      wrong: `"You should hurry."
+(Vague, no stakes.)`,
+      right: `"The ritual completes in 3 days. After that, the portal opens permanently.
+The merchant caravan leaves at dawn. Miss it, and you're stranded for a month."
+(Specific deadline with specific consequence.)`,
+    },
+    {
+      scenario: "Lead Chain",
+      wrong: `"Find the truth about the murder."
+(No actionable steps defined.)`,
+      right: `Lead 1: Talk to the bartender (witnessed the argument)
+Lead 2: Search the victim's room (find the letter)
+Lead 3: Tail the suspect (observe meeting at warehouse)
+Lead 4: Bribe the dockworker (get shipping manifest)
+Lead 5: Confront the merchant (with evidence)
+(Each step produces artifact, leads to next.)`,
+    },
+    {
+      scenario: "Playability",
+      wrong: `"You sense something is wrong. Find out what."
+(Mind-reading, no concrete clues.)`,
+      right: `Entry: The widow hires you. She has her husband's last letter (physical artifact).
+Approaches:
+- Social: Interview the business partner
+- Physical: Break into the warehouse at night
+- Procedural: Check shipping records at the guild
+- Violent: Raid the smuggler's den
+(Multiple paths, concrete actions.)`,
+    },
+  ],
+});
+

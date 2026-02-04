@@ -2,7 +2,7 @@
  * Narrative Atom: Atmosphere Mechanics
  * Content from acting/mechanics.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const atmosphereMechanics: Atom<void> = () => `
 <rule name="ATMOSPHERE & MOOD">
@@ -40,3 +40,45 @@ export const atmosphereMechanics: Atom<void> = () => `
   </instruction>
 </rule>
 `;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const atmosphereMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: atmosphereMechanics(),
+
+  quickStart: `
+1. Show, don't tell - never say "creepy", describe the silence
+2. Dual-layer: textual descriptions must match atmosphere enums
+3. Small imperfections ground scenes (moss, cracks, flickers)
+4. Sensory texture: touch, smell, sound - prioritize uncomfortable
+`.trim(),
+
+  checklist: [
+    "Avoiding mood labels (creepy, majestic, ominous)?",
+    "Textual descriptions match atmosphere enums?",
+    "Including small imperfections in scenes?",
+    "Using multi-sensory descriptions (touch, smell, sound)?",
+    "Atmosphere affects characters (rain drowns conversation)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Show Don't Tell",
+      wrong: `"The room was creepy."
+(Label, not description.)`,
+      right: `"The silence pressed in. The air smelled of old dust and something else—
+something that had been dead a long time."
+(Sensory details create mood.)`,
+    },
+    {
+      scenario: "Small Imperfections",
+      wrong: `"A beautiful marble hall."
+(Too perfect, feels fake.)`,
+      right: `"Marble pillars rose to the vaulted ceiling. At the base of the third,
+a hairline crack ran through the stone—someone had tried to fill it with gold leaf."
+(Imperfection adds reality and story.)`,
+    },
+  ],
+});

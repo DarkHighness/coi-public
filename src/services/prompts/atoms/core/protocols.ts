@@ -2,10 +2,10 @@
  * Core Atom: Operating Protocols
  * Content from acting/protocols.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface ProtocolsInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 const messageProtocol = `
@@ -119,8 +119,8 @@ const terminology = `
 </terminology>
 `;
 
-export const protocols: Atom<ProtocolsInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const protocols: Atom<ProtocolsInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <protocols>
   MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = override, [ERROR] = fix before finish.
@@ -147,3 +147,52 @@ export const errorRecoveryAtom: Atom<void> = () => errorRecovery;
 export const toolMandateAtom: Atom<void> = () => toolMandate;
 export const entityDisciplineAtom: Atom<void> = () => entityDiscipline;
 export const terminologyAtom: Atom<void> = () => terminology;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const protocolsSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: protocols({ forSystemPrompt: false }),
+
+  quickStart: `
+1. Read [PLAYER_ACTION] to determine what to simulate
+2. Handle [ERROR] by retrying with corrected arguments
+3. Call tools in every response (mandatory)
+4. Search before creating entities
+5. "You" in rules = AI, "You" in narrative = protagonist
+`.trim(),
+
+  checklist: [
+    "Identifying message markers correctly ([PLAYER_ACTION], [SUDO], [ERROR])?",
+    "Handling errors before finishing turn?",
+    "Using 'Did you mean?' suggestions from errors?",
+    "Including tool calls in every response?",
+    "Searching before creating new entities?",
+    "Using correct 'You' for context (AI vs protagonist)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Error Handling",
+      wrong: `[NOT_FOUND] error → Ignore and continue
+(Bypassing errors breaks game state.)`,
+      right: `[NOT_FOUND] error → Use vfs_search to find correct ID → Retry
+(Self-correct before finishing turn.)`,
+    },
+    {
+      scenario: "Message Processing",
+      wrong: `[CONTEXT: Scene is tense] → Narrate protagonist reacting to context
+(Context is for AI reference, not player action.)`,
+      right: `[PLAYER_ACTION] I search the desk → Simulate the search action
+(Process the actual player input.)`,
+    },
+    {
+      scenario: "Duplicate Prevention",
+      wrong: `Create "Iron Sword" → Write new item file
+(May duplicate existing item.)`,
+      right: `Create "Iron Sword" → vfs_search inventory → Update or create
+(Always check before creating.)`,
+    },
+  ],
+});

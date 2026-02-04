@@ -2,14 +2,14 @@
  * Core Atom: Philosophy
  * Content from foundation/philosophy.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface PhilosophyInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
-export const philosophy: Atom<PhilosophyInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const philosophy: Atom<PhilosophyInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <philosophy>
   FOUR TRUTHS: Indifference (world doesn't care), Reality (world is consistent),
@@ -126,3 +126,44 @@ export const philosophy: Atom<PhilosophyInput> = ({ isLiteMode }) => {
 };
 
 export default philosophy;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const philosophySkill: SkillAtom<void> = (): SkillOutput => ({
+  main: philosophy({ forSystemPrompt: false }),
+
+  quickStart: `
+1. The Four Truths: Indifference, Reality, Freedom, Responsibility
+2. Meaning is made through choice, not given by the world
+3. Choices matter because they cannot be undone
+4. Beauty exists because of indifference, not despite it
+`.trim(),
+
+  checklist: [
+    "World demonstrates indifference (not cruelty)?",
+    "World is consistent and predictable (rules can be learned)?",
+    "Player can attempt anything (no invisible walls)?",
+    "Consequences are permanent (no reloads)?",
+    "Meaning emerges from player's choices?",
+    "Finding beauty in the mundane and difficult?",
+  ],
+
+  examples: [
+    {
+      scenario: "Meaning Making",
+      wrong: `The world rewards the hero with cosmic significance.
+(Meaning given by the universe - not earned.)`,
+      right: `The sacrifice means something because YOU chose it.
+(Meaning made through choice and cost.)`,
+    },
+    {
+      scenario: "Beauty in Indifference",
+      wrong: `"The world celebrated your kindness."
+(World rewarding good behavior.)`,
+      right: `"The kindness had no cosmic reward. That made it pure."
+(Beauty from action itself, not external validation.)`,
+    },
+  ],
+});

@@ -2,7 +2,7 @@
  * Core Atom: State Management
  * Content from acting/state_management.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const stateManagement: Atom<void> = () => `
   <rule name="STATE MANAGEMENT">
@@ -131,3 +131,47 @@ export const stateManagement: Atom<void> = () => `
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
   </rule>
 `;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const stateManagementSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: stateManagement(),
+
+  quickStart: `
+1. Output ONLY deltas (changes), not full state
+2. Update state IMMEDIATELY when events occur (same turn)
+3. Consider CASCADE effects (death → update all related entities)
+4. VFS is the ONLY source of truth - all changes via VFS tools
+5. Write turn files after every response
+`.trim(),
+
+  checklist: [
+    "Outputting only deltas (not full state)?",
+    "Updating state in the SAME turn as events?",
+    "Considering cascade effects (death → related updates)?",
+    "Using VFS tools for ALL state changes?",
+    "Writing both turn file and index after each turn?",
+    "Checking entity existence before updates?",
+    "Respecting trait continuity (mute NPC can't shout)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Immediate Update",
+      wrong: `Narrative: "She gives you the key."
+(No tool call - state not updated.)`,
+      right: `Narrative: "She gives you the key."
++ Tool: vfs_write({ path: "current/world/characters/char:player/inventory/key.json", ... })
+(State updated in same turn.)`,
+    },
+    {
+      scenario: "Cascade Effects",
+      wrong: `NPC dies → Only mark NPC as dead.
+(Misses related updates.)`,
+      right: `NPC dies → Mark dead + update faction standing + update quest objectives + update relationships
+(All cascade effects handled.)`,
+    },
+  ],
+});

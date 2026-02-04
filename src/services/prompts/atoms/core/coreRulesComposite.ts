@@ -22,14 +22,14 @@ import { livingWorld } from "./livingWorld";
 import { informationRevelation } from "./informationRevelation";
 
 export interface CoreRulesInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 /**
  * Full version of core rules - combines all world operation atoms
  */
 export function coreRulesComposite(input: CoreRulesInput = {}): string {
-  if (input.isLiteMode) {
+  if (input.forSystemPrompt) {
     return coreRulesLite();
   }
 

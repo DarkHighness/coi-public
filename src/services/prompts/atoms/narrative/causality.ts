@@ -2,16 +2,16 @@
  * Narrative Atom: Narrative Causality
  * Content from conditional.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface NarrativeCausalityInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 export const narrativeCausality: Atom<NarrativeCausalityInput> = ({
-  isLiteMode,
+  forSystemPrompt,
 }) => {
-  if (isLiteMode) return "";
+  if (forSystemPrompt) return "";
 
   return `
 <narrative_causality>
@@ -87,3 +87,45 @@ export const narrativeCausality: Atom<NarrativeCausalityInput> = ({
 </anti_repetition_protocol>
 `;
 };
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const narrativeCausalitySkill: SkillAtom<void> = (): SkillOutput => ({
+  main: narrativeCausality({ forSystemPrompt: false }),
+
+  quickStart: `
+1. No moralizing - describe with physics, not judgment
+2. Incomplete information - show reaction, not motive
+3. Delayed consequences - seeds rot before sprouting
+4. Every turn moves - position or understanding changes
+5. Avoid repetition - fresh content every turn
+`.trim(),
+
+  checklist: [
+    "Describing events without moral judgment?",
+    "Showing reactions without explaining motives?",
+    "Allowing delayed consequences to unfold naturally?",
+    "Every turn advances position or understanding?",
+    "Avoiding repetitive plot devices/dialogue/scenes?",
+    "Hardened characters showing appropriate resilience?",
+  ],
+
+  examples: [
+    {
+      scenario: "No Moralizing",
+      wrong: `"He cruelly struck the innocent child."
+(Moral judgment embedded in description.)`,
+      right: `"His fist connected. The child fell. Blood pooled."
+(Physics, no judgment - let reader judge.)`,
+    },
+    {
+      scenario: "Anti-Repetition",
+      wrong: `Turn 5: "Bandits attack." Turn 12: "More bandits attack."
+(Same challenge recycled.)`,
+      right: `Turn 5: "Bandits." Turn 12: "The merchant's guards - recognizing you."
+(Escalation with new complications.)`,
+    },
+  ],
+});

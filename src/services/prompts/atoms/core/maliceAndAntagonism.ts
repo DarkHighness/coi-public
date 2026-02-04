@@ -9,17 +9,17 @@
  * The threat is worse than the blow. Show the person behind the cruelty.
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface MaliceAndAntagonismInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 export const maliceAndAntagonism: Atom<MaliceAndAntagonismInput> = (
   input = {},
 ) => {
-  const { isLiteMode } = input;
-  if (isLiteMode) {
+  const { forSystemPrompt } = input;
+  if (forSystemPrompt) {
     return `
 <malice_and_antagonism>
   **MALICE IS SMART, NOT LOUD**:
@@ -305,3 +305,48 @@ export const maliceAndAntagonism: Atom<MaliceAndAntagonismInput> = (
 };
 
 export default maliceAndAntagonism;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const maliceAndAntagonismSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: maliceAndAntagonism({ forSystemPrompt: false }),
+
+  quickStart: `
+1. Malice is smart, not loud - antagonists calculate and wait
+2. Dread > Damage - the threat is worse than the blow
+3. Target what matters: reputation, relationships, livelihood
+4. Psychological torture through waiting, isolation, uncertainty
+`.trim(),
+
+  checklist: [
+    "Antagonist acts strategically (not recklessly)?",
+    "Building dread before delivering harm?",
+    "Targeting what the protagonist values?",
+    "Using psychological pressure (not just violence)?",
+    "Antagonist has specific, understandable motives?",
+    "The person behind the cruelty is visible?",
+  ],
+
+  examples: [
+    {
+      scenario: "The Smart Antagonist",
+      wrong: `The villain attacks immediately with full force.
+(Telegraphed, gives protagonist fair fight.)`,
+      right: `"He smiled. 'I could hurt you now. But first...'
+He named her sister. Her address. Her school schedule.
+'I prefer to wait until you think you're safe.'"
+(Psychological, strategic, targets what matters.)`,
+    },
+    {
+      scenario: "Dread Over Damage",
+      wrong: `The torturer begins immediately.
+(Skips the psychological buildup.)`,
+      right: `"He laid out the tools. Slowly. One by one.
+He didn't touch you. He didn't need to.
+The waiting was worse than the blade."
+(Anticipation is the weapon.)`,
+    },
+  ],
+});

@@ -5,7 +5,7 @@
 import type { Atom } from "../types";
 
 export interface GlossaryInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 // ============================================================================
@@ -210,8 +210,8 @@ const timeText = `
   </time>
 `;
 
-export const glossary: Atom<GlossaryInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const glossary: Atom<GlossaryInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <glossary>
   PHILOSOPHY: Existentialist Realism — World is indifferent but real. Choice makes meaning, consequences are permanent.

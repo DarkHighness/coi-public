@@ -7,7 +7,7 @@
  * 定义创建主角时的设计哲学和质量要求。
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export type CharacterDesignInput = {
   protagonistFeature?: string;
@@ -103,3 +103,68 @@ ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
 `;
 
 export default characterDesign;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const characterDesignSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: characterDesign({}),
+
+  quickStart: `
+1. Moral alignment is flexible (saint, sinner, or monster are all valid)
+2. Psychology fields: coreTrauma (specific), copingMechanism, internalContradiction
+3. Resilience tiers: Civilian (0-1) → Veteran (2-3) → Fanatic (4-5)
+4. Mundane flaws: petty human weaknesses (bad eyesight, can't cook, gambles)
+5. Narrative appearance: story behind the body, not feature lists
+6. Arc setup: Want vs Need, Fatal Flaw, The Lie They Believe
+`.trim(),
+
+  checklist: [
+    "coreTrauma is specific (not 'sad childhood' but exact event)?",
+    "copingMechanism is behavioral (not 'gets angry' but specific habit)?",
+    "internalContradiction has Want vs Need tension?",
+    "Resilience tier appropriate to character's history?",
+    "At least one mundane flaw (petty human weakness)?",
+    "Appearance is narrative (history visible on body)?",
+    "Fatal flaw will CAUSE problems (not just inconvenience)?",
+    "The Lie They Believe defined (false worldview to challenge)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Core Trauma",
+      wrong: `coreTrauma: "Had a sad childhood."
+(Vague, no specific event, no behavioral consequence.)`,
+      right: `coreTrauma: "Watched his sister drown while he stood frozen.
+Now freezes in any water-related danger."
+(Specific event, specific behavioral consequence.)`,
+    },
+    {
+      scenario: "Coping Mechanism",
+      wrong: `copingMechanism: "Gets angry sometimes."
+(Label, not behavior.)`,
+      right: `copingMechanism: "Obsessively counts things when stressed—
+coins, steps, breaths—until the panic subsides."
+(Specific behavioral response to stress.)`,
+    },
+    {
+      scenario: "Internal Contradiction",
+      wrong: `internalContradiction: "Wants to be good but sometimes does bad things."
+(No tension, no stakes.)`,
+      right: `internalContradiction: "WANTS revenge on the cult that killed his family.
+NEEDS to let go of hatred before it destroys him."
+(Clear Want vs Need conflict that drives story.)`,
+    },
+    {
+      scenario: "Narrative Appearance",
+      wrong: `"Height: 180cm, Hair: Black, Eyes: Brown"
+(Feature list, no story.)`,
+      right: `"Lean from years of hunger. Calloused hands from sword practice.
+A scar across the left eye—he says it was a duel, but the angle suggests
+someone struck him while he was down."
+(History visible on the body.)`,
+    },
+  ],
+});
+

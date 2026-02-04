@@ -34,6 +34,62 @@
  */
 export type Atom<TInput = void> = (input: TInput) => string;
 
+// ============================================================================
+// Skill Output Types - 用于 VFS skill 多文件生成
+// ============================================================================
+
+/**
+ * Before/After example for skills
+ */
+export interface SkillExample {
+  /** 场景描述 */
+  scenario?: string;
+  /** 错误做法 */
+  wrong: string;
+  /** 正确做法 */
+  right: string;
+}
+
+/**
+ * SkillOutput - Skill 的结构化输出
+ *
+ * 用于 VFS skill 生成器，产生多个文件：
+ * - SKILL.md (main content)
+ * - CHECKLIST.md (optional)
+ * - EXAMPLES.md (optional)
+ */
+export interface SkillOutput {
+  /** 主内容 - 用于 SKILL.md */
+  main: string;
+
+  /** Quick Start - 60秒工作流（可选，嵌入 SKILL.md） */
+  quickStart?: string;
+
+  /** 检查清单 - 用于 CHECKLIST.md（可选） */
+  checklist?: string[];
+
+  /** Before/After 示例 - 用于 EXAMPLES.md（可选） */
+  examples?: SkillExample[];
+
+  /** 参考资料 - 用于 references/*.md（可选） */
+  references?: Record<string, string>;
+}
+
+/**
+ * SkillAtom - 返回结构化输出的 Skill 原子
+ *
+ * @template TInput - 原子的输入类型
+ * @returns SkillOutput 结构化内容
+ *
+ * @example
+ * const gmKnowledgeSkill: SkillAtom<void> = () => ({
+ *   main: `# GM Knowledge Model\n...`,
+ *   checklist: ['Player has definitive proof?', 'Revelation is complete?'],
+ *   examples: [{ wrong: 'Unlock on suspicion', right: 'Unlock on proof' }]
+ * });
+ */
+export type SkillAtom<TInput = void> = (input: TInput) => SkillOutput;
+
 /**
  * AtomDefinition - 原子的元数据定义（用于注册和文档）
  *

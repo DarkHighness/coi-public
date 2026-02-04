@@ -2,7 +2,7 @@
  * Narrative Atom: Dialogue Mechanics
  * Content from acting/mechanics.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const dialogueMechanics: Atom<void> = () => `
 <rule name="DIALOGUE_MECHANICS">
@@ -32,3 +32,43 @@ export const dialogueMechanics: Atom<void> = () => `
   </micro_expressions_and_physiologoy>
 </rule>
 `;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const dialogueMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: dialogueMechanics(),
+
+  quickStart: `
+1. Show accent through syntax, not phonetic spelling
+2. Emotions are biological - describe the body's betrayal
+3. Active silence - never just "was silent"
+4. Body betrays words - "I'm fine" + white-knuckled grip
+`.trim(),
+
+  checklist: [
+    "Accents shown through syntax/grammar (not spelling)?",
+    "Silence is active (not passive 'was silent')?",
+    "Body language contradicts or supports words?",
+    "Using physiological tells (eyes, breath, hands)?",
+    "Each NPC has distinct speech patterns?",
+  ],
+
+  examples: [
+    {
+      scenario: "Active Silence",
+      wrong: `"He was silent."
+(Passive, unexpressive.)`,
+      right: `"He stared at the floor, jaw working."
+(Active, shows internal conflict.)`,
+    },
+    {
+      scenario: "Body Betrays Words",
+      wrong: `"I'm fine," she said.
+(Just words, no subtext.)`,
+      right: `"I'm fine," she said, gripping her sword hilt until her knuckles turned white.
+(Words say one thing, body says another.)`,
+    },
+  ],
+});

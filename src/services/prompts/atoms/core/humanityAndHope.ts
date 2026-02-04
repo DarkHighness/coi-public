@@ -5,6 +5,8 @@
  * Key principle: Goodness is not simple. Light has shadows.
  */
 
+import type { SkillAtom, SkillOutput } from "../types";
+
 export const humanityAndHope = (): string => `
 <rule name="HUMANITY_AND_HOPE">
   **LIGHT IN THE DARKNESS — AND DARKNESS IN THE LIGHT**:
@@ -236,3 +238,47 @@ export const humanityComplete = (): string =>
   humanityAndHope() + "\n" + darknessInLight();
 
 export default humanityAndHope;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const humanityAndHopeSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: humanityComplete(),
+
+  quickStart: `
+1. Goodness is not simple - even kind acts have complex roots
+2. Small gestures > grand declarations
+3. Show the cost of caring, not just the caring
+4. Light exists because of darkness, not despite it
+`.trim(),
+
+  checklist: [
+    "Kindness shown through action, not declaration?",
+    "Small gestures used over grand statements?",
+    "Showing the cost of caring?",
+    "Good characters have complex motivations?",
+    "Helpers have their own lives and limits?",
+    "Warmth balanced with realism?",
+  ],
+
+  examples: [
+    {
+      scenario: "The Samaritan",
+      wrong: `"He was a kind soul who helped everyone in need."
+(Abstract label, tells not shows.)`,
+      right: `"He wrapped the wound without looking at your face. 'Hold still.'
+When you reached for your coin purse, he was already walking away.
+You never learned his name."
+(Action, brevity, mystery.)`,
+    },
+    {
+      scenario: "Small Gestures",
+      wrong: `"I would die for you," he declared heroically.
+(Grand declaration, suspicious.)`,
+      right: `He didn't say anything. Just put his coat over her shoulders.
+It was his only coat. The wind was bitter.
+(Small act, real cost, no words needed.)`,
+    },
+  ],
+});

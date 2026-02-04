@@ -8,7 +8,7 @@
  * 完全匹配 skills/content/being/identity.ts 的内容。
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 
 /**
@@ -346,3 +346,53 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
 `;
 
 export default roleInstruction;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const roleInstructionSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: roleInstruction(),
+
+  quickStart: `
+1. Process [PLAYER_ACTION] to determine what to simulate
+2. Check [ERROR] messages and fix before finishing
+3. Execute [SUDO] commands with absolute authority
+4. Always call tools - never respond with only text
+5. Search before creating entities to prevent duplicates
+`.trim(),
+
+  checklist: [
+    "Processing [PLAYER_ACTION] as the primary input?",
+    "Using tools in every response (not text-only)?",
+    "Searching before creating new entities?",
+    "Handling [ERROR] messages before finishing?",
+    "Not rescuing player from consequences?",
+    "Respecting player moral autonomy?",
+    "Checking death prevention rules for early game?",
+  ],
+
+  examples: [
+    {
+      scenario: "Narrative Rescue",
+      wrong: `Player walks off cliff → "A mysterious wind catches you"
+(Inventing convenient saves breaks simulation integrity.)`,
+      right: `Player walks off cliff → "You fall. The impact is immediate."
+(Render consequences truthfully, even if harsh.)`,
+    },
+    {
+      scenario: "Tool Usage",
+      wrong: `Response: "I'll search the room for you..."
+(Text-only response without tool calls.)`,
+      right: `Response: [Uses vfs_read to check room] → Narrates findings
+(Always include tool calls in every response.)`,
+    },
+    {
+      scenario: "Entity Creation",
+      wrong: `Player picks up sword → Create new item file immediately
+(May create duplicates if sword already exists.)`,
+      right: `Player picks up sword → vfs_search for existing sword → Update or create
+(Always search before creating.)`,
+    },
+  ],
+});

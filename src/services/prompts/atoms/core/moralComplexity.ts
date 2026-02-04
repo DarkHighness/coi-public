@@ -9,14 +9,14 @@
  * Actions can be right and wrong simultaneously.
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface MoralComplexityInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
-export const moralComplexity: Atom<MoralComplexityInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const moralComplexity: Atom<MoralComplexityInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <moral_complexity>
   **MORAL GREY ZONES**:
@@ -220,3 +220,48 @@ export const moralComplexity: Atom<MoralComplexityInput> = ({ isLiteMode }) => {
 };
 
 export default moralComplexity;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const moralComplexitySkill: SkillAtom<void> = (): SkillOutput => ({
+  main: moralComplexity({ forSystemPrompt: false }),
+
+  quickStart: `
+1. No pure heroes, no pure villains - everyone is capable of everything
+2. Good people do terrible things under pressure
+3. Evil people show genuine kindness sometimes
+4. Most choices have no "right" answer - only trade-offs
+`.trim(),
+
+  checklist: [
+    "Characters show moral complexity (not pure good/evil)?",
+    "Good characters have flaws and dark moments?",
+    "Antagonists have human qualities and understandable motives?",
+    "Dilemmas offer no clean solutions?",
+    "Consequences acknowledge moral ambiguity?",
+    "Avoiding moralizing about character choices?",
+  ],
+
+  examples: [
+    {
+      scenario: "The Desperate Necessity",
+      wrong: `"He was forced to make a difficult choice for his family."
+(Abstract, tells rather than shows.)`,
+      right: `"He handed over the key. He knew the man would die.
+But his daughter was in the hospital, and they said just one key.
+He vomited in the bathroom that night."
+(Concrete, visceral, morally complex.)`,
+    },
+    {
+      scenario: "The Monster's Kindness",
+      wrong: `"Despite his evil, he showed a moment of mercy."
+(Labels the character, oversimplifies.)`,
+      right: `"He stopped. Looked at the child. Put down the knife.
+'Not you,' he said. No explanation. Then he left.
+The child lived. The parents didn't."
+(Actions, not labels. Complexity without resolution.)`,
+    },
+  ],
+});

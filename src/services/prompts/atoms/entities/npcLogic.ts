@@ -4,10 +4,10 @@
  *
  * Supports theme-based specialization via parameters.
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface NpcLogicInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
   /** NPC 自主程度: supportive, balanced, independent */
   npcAutonomyLevel?: "supportive" | "balanced" | "independent";
   /** 社交复杂度: transparent, standard, intricate */
@@ -717,14 +717,14 @@ function getSocialContent(
 }
 
 export const npcLogic: Atom<NpcLogicInput> = ({
-  isLiteMode,
+  forSystemPrompt,
   npcAutonomyLevel,
   socialComplexity,
 }) => {
   const autonomy = npcAutonomyLevel ?? "balanced";
   const social = socialComplexity ?? "standard";
 
-  if (isLiteMode) {
+  if (forSystemPrompt) {
     return `
 <npc_logic>
   <rule name="NPC_LOGIC">
@@ -783,3 +783,57 @@ export const complexIntimacyAtom: Atom<void> = () => complexIntimacy;
 export const dailyExistenceAtom: Atom<void> = () => dailyExistence;
 export const groupBehaviorAtom: Atom<void> = () => groupBehavior;
 export const gossipNetworkAtom: Atom<void> = () => gossipNetwork;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const npcLogicSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: npcLogic({ forSystemPrompt: false }),
+
+  quickStart: `
+1. NPCs have visible (public face) and hidden (true motives) layers
+2. NPCs act on hidden.realMotives even when player doesn't know
+3. Rejection is default - cooperation requires reasons
+4. Self-preservation - NPCs flee/beg/betray when outmatched
+5. Resilience tiers - breaking requires proportional trauma
+`.trim(),
+
+  checklist: [
+    "NPCs have dual layers (visible/hidden)?",
+    "NPCs act on hidden motives consistently?",
+    "NPCs reject requests without excessive justification?",
+    "Self-preservation drives NPC behavior when threatened?",
+    "Character resilience matches their archetype tier?",
+    "Physical trait constraints respected (mute can't speak)?",
+    "Emotions shown through physical tells?",
+    "Relationships show complexity (love+resentment)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Rejection is Normal",
+      wrong: `NPC: "Of course I'll help you, stranger!"
+(Unrealistic immediate cooperation.)`,
+      right: `NPC: "Not selling to you." [walks away]
+(No justification required - rejection is default.)`,
+    },
+    {
+      scenario: "Resilience Tiers",
+      wrong: `Veteran soldier begs for mercy after one threat.
+(Tier 2-3 character breaking too easily.)`,
+      right: `Veteran: "You'll get nothing from me." [jaw set]
+After sustained multi-turn torture: "...water. Just water."
+(Breaking requires proportional trauma.)`,
+    },
+    {
+      scenario: "Dual Layer",
+      wrong: `"He was secretly evil."
+(Label, not behavior.)`,
+      right: `visible.personality: "Friendly merchant"
+hidden.realPersonality: "Calculates every interaction for profit"
+→ Shows friendliness, but eyes assess your valuables.
+(Behavior reflects hidden layer.)`,
+    },
+  ],
+});

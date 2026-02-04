@@ -13,7 +13,7 @@ describe("core prompt hygiene", () => {
   it("removes deprecated tool references from core prompts", () => {
     const content = [
       roleInstruction(),
-      protocols({ isLiteMode: false }),
+      protocols({ forSystemPrompt: false }),
       outputFormat({ language: "en" }),
       styleGuide({ language: "en" }),
       toolUsage({}),

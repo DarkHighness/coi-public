@@ -7,7 +7,7 @@ import type { Atom } from "../types";
 export interface PlayerProfileInput {
   crossSaveProfile?: string;
   perSaveProfile?: string;
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 const observationProtocol = `
@@ -90,12 +90,12 @@ const criticalDistinction = `
 export const playerProfile: Atom<PlayerProfileInput> = ({
   crossSaveProfile,
   perSaveProfile,
-  isLiteMode,
+  forSystemPrompt,
 }) => {
   const csProfile = crossSaveProfile || "(Empty - begin observing)";
   const psProfile = perSaveProfile || "(Empty - begin observing)";
 
-  if (isLiteMode) {
+  if (forSystemPrompt) {
     return `
 <player_psychology>
   <two_layer_system>

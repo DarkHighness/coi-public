@@ -2,11 +2,11 @@
  * Narrative Atom: Writing Craft
  * Content from acting/writing_craft.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 
 export interface WritingCraftInput {
-  isLiteMode?: boolean;
+  forSystemPrompt?: boolean;
 }
 
 const showDontTell = `
@@ -813,8 +813,8 @@ const sceneEndings = `
   </scene_endings>
 `;
 
-export const writingCraft: Atom<WritingCraftInput> = ({ isLiteMode }) => {
-  if (isLiteMode) {
+export const writingCraft: Atom<WritingCraftInput> = ({ forSystemPrompt }) => {
+  if (forSystemPrompt) {
     return `
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
@@ -896,3 +896,55 @@ export const bannedPatternsAtom: Atom<void> = () => bans;
 export const dramaticPacingAtom: Atom<void> = () => dramaticPacing;
 export const crisisManagementAtom: Atom<void> = () => crisisManagement;
 export const sceneEndingsAtom: Atom<void> = () => sceneEndings;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const writingCraftSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: writingCraft({ forSystemPrompt: false }),
+
+  quickStart: `
+1. Show, don't tell - use action over adverbs
+2. Always second person ("You") - never use protagonist's name
+3. NO protagonist mind-reading - describe senses, not thoughts
+4. Vary sentence openings - max 40% starting with "You"
+5. Scene beats: Anchor → Objective → Pressure → Exchange → Cost → Hook
+`.trim(),
+
+  checklist: [
+    "Using 'You' (second person) for protagonist?",
+    "Not naming protagonist in narrative?",
+    "Showing emotions through body, not labels?",
+    "Varying sentence openings (not all starting with 'You')?",
+    "Each turn has concrete change + reason to continue?",
+    "Avoiding banned vocabulary (tapestry, symphony, etc.)?",
+    "Avoiding filter words ('You see', 'You hear')?",
+    "Ending scenes mid-breath (no summaries)?",
+  ],
+
+  examples: [
+    {
+      scenario: "Show Don't Tell",
+      wrong: `"He looked angrily at her."
+(Adverb tells emotion.)`,
+      right: `"He spat on the floor and stared."
+(Action shows emotion.)`,
+    },
+    {
+      scenario: "No Mind-Reading",
+      wrong: `"You feel dread creeping over you."
+(Dictating player emotion.)`,
+      right: `"The hair on your arms stands up."
+(Physical sensation - player interprets.)`,
+    },
+    {
+      scenario: "Varied Openings",
+      wrong: `"You enter. You see a table. You smell dust."
+(Monotonous 'You' repetition.)`,
+      right: `"The door swings shut. Dust hangs thick—old dust.
+A candle flickers, casting long shadows."
+(Environment first, varied structure.)`,
+    },
+  ],
+});

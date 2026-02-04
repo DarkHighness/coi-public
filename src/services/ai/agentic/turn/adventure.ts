@@ -13,10 +13,12 @@ import { isContextLengthError } from "../../contextCompressor";
 
 import { UnifiedMessage } from "../../../messageTypes";
 
-import { buildCoreSystemInstructionWithSkills } from "../../../prompts/skills";
-import { registerAllSkills } from "../../../prompts/skills/definitions";
+import {
+  buildCoreSystemInstructionWithSkills,
+  registerAllSkills,
+} from "../../../prompts/skills";
 
-// Explicitly register skills to ensure they are available
+// registerAllSkills is now a no-op (skills system simplified)
 registerAllSkills();
 
 import {

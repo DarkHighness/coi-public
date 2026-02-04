@@ -2,7 +2,7 @@
  * Narrative Atom: Combat Mechanics
  * Content from acting/mechanics.ts
  */
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const combatMechanics: Atom<void> = () => `
 <rule name="COMBAT & ACTION">
@@ -29,3 +29,45 @@ export const combatMechanics: Atom<void> = () => `
   </logic_enforcement>
 </rule>
 `;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const combatMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
+  main: combatMechanics(),
+
+  quickStart: `
+1. Combat is ugly - fast, confusing, exhausting (not choreographed)
+2. No exchanges - blur of action, not turn-based
+3. Pain is physical - describe the wound, not HP loss
+4. Injuries persist - broken leg means no running
+`.trim(),
+
+  checklist: [
+    "Combat feels chaotic (not choreographed)?",
+    "Using environmental chaos (mud, blood, overturned tables)?",
+    "Pain described physically (not abstractly)?",
+    "Injuries persist and affect subsequent actions?",
+    "Genre consistency maintained (no anachronisms)?",
+  ],
+
+  examples: [
+    {
+      scenario: "No Exchanges",
+      wrong: `"He attacks. You block. He attacks again."
+(Turn-based, mechanical.)`,
+      right: `"A blur of steel. The jar of impact travels up your arm.
+You are breathing hard. When did you start bleeding?"
+(Chaotic, visceral, disorienting.)`,
+    },
+    {
+      scenario: "Physical Pain",
+      wrong: `"You take 10 damage."
+(Abstract, gamified.)`,
+      right: `"The blade bites deep into your thigh. The leg buckles.
+Warmth spreads down your boot."
+(Physical, immediate, consequential.)`,
+    },
+  ],
+});
