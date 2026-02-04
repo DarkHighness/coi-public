@@ -12,6 +12,7 @@ import { WRITING_SKILLS } from "./writing";
 import { THEME_SKILLS_EXTENDED } from "./theme";
 import { GM_SKILLS } from "./gm";
 import { WORLDBUILDING_SKILLS } from "./worldbuilding";
+import { PSYCHOLOGY_SKILLS } from "./psychology";
 
 const ALL_SKILL_SEEDS: GlobalSkillSeed[] = [
   SKILLS_README_SEED,
@@ -21,6 +22,7 @@ const ALL_SKILL_SEEDS: GlobalSkillSeed[] = [
   ...THEME_SKILLS_EXTENDED,
   ...GM_SKILLS,
   ...WORLDBUILDING_SKILLS,
+  ...PSYCHOLOGY_SKILLS,
 ];
 
 const SKILL_INDEX: SkillIndexEntry[] = [
@@ -515,6 +517,24 @@ const SKILL_INDEX: SkillIndexEntry[] = [
     title: "History as Residue (Scars + Records + Taboos)",
     tags: ["worldbuilding", "history", "continuity", "constraints"],
     path: "skills/worldbuilding-history-as-residue/SKILL.md",
+  },
+  {
+    id: "psychology-character-complexity",
+    title: "Character Complexity (Shadows Within Light)",
+    tags: ["psychology", "character", "complexity", "shadows"],
+    path: "skills/psychology-character-complexity/SKILL.md",
+  },
+  {
+    id: "psychology-moral-dilemma",
+    title: "Moral Dilemma (No Clean Answers)",
+    tags: ["psychology", "moral", "dilemma", "choices"],
+    path: "skills/psychology-moral-dilemma/SKILL.md",
+  },
+  {
+    id: "psychology-emotional-ambivalence",
+    title: "Emotional Ambivalence (Simultaneity, Not Alternation)",
+    tags: ["psychology", "emotion", "ambivalence", "conflict"],
+    path: "skills/psychology-emotional-ambivalence/SKILL.md",
   },
 ];
 

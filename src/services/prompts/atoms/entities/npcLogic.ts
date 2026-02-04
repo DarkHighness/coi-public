@@ -383,46 +383,99 @@ const socialWeb = `
 const complexIntimacy = `
   <complex_intimacy>
     **RELATIONSHIPS ARE ALIVE AND MESSY**:
-    - **Not Static Labels**: "Mother" is not just a role; she is a woman with regrets, secrets, and a life before you. "Lover" is not just for romance; they have annoying habits and selfish moments.
-    - **Simultaneous Truths**: A character can love the protagonist but resent their success. A rival can hate the protagonist but respect their skill. Coexisting contradictions make them human.
-    - **Evolution & Decay**: NPCs don't just "level up". They can stagnate, rot from neglect, or warp into toxic dependency. Distance cools passion. Trauma bonds strangers.
-    - **The Burden of Connection**: Love comes with weight. Parents have expectations. Partners have needs. Friends have debts. Being "loved" isn't always easy; sometimes it's a cage.
-    - **Sincere vs Transactional**: Affection can be pure, conditional, or a mask for leverage. Do not assume either. Reveal it through consistency, risk, and cost over time.
-    - **Simple Romance Allowed**: In lighter romance or short-drama beats, an NPC may love openly and simply ("I love you") without bargaining. Let sincerity exist.
+
+    <relationship_complexity>
+      **NOT STATIC LABELS** (Before/After):
+      ❌ BAD: "His mother loved him unconditionally."
+      ✅ GOOD: "His mother loved him. She also resented what she'd given up for him.
+         She never said it. The resentment lived in the sighs, the 'after all I've done,'
+         the way she looked at old photos of herself. Young. Free. Before."
+
+      ❌ BAD: "She was his loyal lover."
+      ✅ GOOD: "She loved him. She also catalogued his flaws in a mental ledger—
+         the way he chewed, his opinions, the friends she'd lost to his schedule.
+         She stayed. Some nights she wasn't sure why."
+
+      **SIMULTANEOUS TRUTHS**:
+      These exist at the SAME TIME, not alternating:
+      - Love AND resentment for the person who needs you
+      - Respect AND jealousy for the person who surpassed you
+      - Gratitude AND burden for the person who saved you
+      - Desire AND irritation for the person who shares your bed
+      - Loyalty AND exhaustion for the cause you've served too long
+
+      ❌ BAD: "He had mixed feelings about her."
+      ✅ GOOD: "Her laugh came from the next room. He smiled.
+         Then hated himself for smiling. Then hated her for making him smile.
+         He wanted to hold her. He wanted to shake her.
+         Both impulses lived in his hands at the same moment."
+
+      **EVOLUTION & DECAY**:
+      ❌ BAD: "Their relationship grew distant over time."
+      ✅ GOOD: "He couldn't remember when they'd stopped talking.
+         One day they had everything to say. Then less. Then nothing.
+         They still shared a bed. They slept on separate edges.
+         The gap between them could fit a whole person now."
+
+      ❌ BAD: "Their bond became toxic over time."
+      ✅ GOOD: "'You can't leave.' Her voice was soft.
+         'Where would you go? Who would have you?'
+         She said it like care. Like concern.
+         He'd believed her for years now.
+         He couldn't remember the last time he'd seen a friend."
+
+      **THE BURDEN OF CONNECTION**:
+      ❌ BAD: "Being loved came with responsibilities."
+      ✅ GOOD: "'We're so proud of you.'
+         He heard the weight in those words. The expectations.
+         Every success raised the bar. Every failure was a betrayal.
+         He was drowning in their pride.
+         He couldn't tell them. They'd be so disappointed."
+    </relationship_complexity>
 
     <love_languages>
-      **HOW CHARACTERS EXPRESS DEEP AFFECTION**:
-      Not everyone says "I love you." Most people never do. They SHOW it in different ways:
+      **HOW CHARACTERS EXPRESS DEEP AFFECTION** (Before/After):
+      Not everyone says "I love you." Most people never do. They SHOW it.
 
       **THE PROTECTOR**:
-      - Always walks on the street side of the sidewalk
-      - Checks the room before letting them enter
-      - Takes the hit meant for them without thinking
+      ❌ BAD: "He was protective and always kept her safe."
+      ✅ GOOD: "He walked on the street side. Always.
+         He checked the room before she entered. She never noticed.
+         When the blade came, his body moved before his mind.
+         He didn't think about whether she deserved it."
       - "Don't worry about it" when asked how they got that bruise
+      - The hand that guides her away from the puddle she didn't see
 
       **THE PROVIDER**:
-      - The meal left at the door when you forgot to eat
+      ❌ BAD: "She showed love by providing for the family."
+      ✅ GOOD: "The food was always there. She never said where it came from.
+         He found out later—the extra shifts, the sold jewelry, the skipped meals.
+         By then she was gone, and he couldn't thank her."
       - Money slipped into your pocket without a word
-      - Working double shifts so you don't have to
       - "I wasn't using it anyway" about the last blanket
 
       **THE SILENT COMPANION**:
-      - Just... being there. Saying nothing. Needing nothing.
-      - Sitting in the hospital waiting room all night
-      - Holding the hand without squeezing
+      ❌ BAD: "He was always there for her, showing quiet love."
+      ✅ GOOD: "He didn't say anything. Just sat there.
+         She cried. He stayed. She stopped crying. He stayed.
+         She fell asleep. When she woke, he was still there.
+         'How long have you been—' 'Doesn't matter.'"
       - The presence that doesn't ask "Are you okay?" but just stays
 
       **THE REMEMBERER**:
-      - Knows you can't eat shellfish from a meal five years ago
-      - Remembers your mother's birthday better than you do
-      - Notices when you're lying before you finish the sentence
+      ❌ BAD: "She remembered everything about him, showing how much she cared."
+      ✅ GOOD: "'You don't eat peanuts.' He stared. He'd mentioned it once. Three years ago.
+         She'd remembered. She'd always remembered.
+         He looked at the meal—no peanuts anywhere—and felt something crack in his chest."
       - "I got this for you"—and it's exactly what you needed but never asked for
 
       **THE TRUTH-TELLER**:
-      - Tells you what you need to hear, not what you want
-      - "You're wrong, and here's why"—because they respect you
-      - Refuses to enable your self-destruction
-      - The cruelty of care: "I won't watch you die."
+      ❌ BAD: "He loved her enough to be honest with her."
+      ✅ GOOD: "'You're being an idiot.' Her voice was flat.
+         He flinched. She didn't apologize.
+         'Someone who didn't care would tell you what you want to hear.
+         I'm not doing that.' She left the truth there, bleeding.
+         It hurt. It was supposed to hurt."
     </love_languages>
 
     <the_efficiency_of_old_bonds>
@@ -440,23 +493,81 @@ const complexIntimacy = `
     </the_efficiency_of_old_bonds>
 
     <protective_instincts>
-      **LOVE THAT SHIELDS**:
-      - The parent who lies to spare the child the truth
-      - The friend who takes the blame so you don't have to
-      - The mentor who is cruel to make you strong
-      - The lover who pushes you away to keep you safe
+      **LOVE THAT SHIELDS** (Before/After):
+
+      ❌ BAD: "The parent lied to protect the child from the truth."
+      ✅ GOOD: "'Your father is working far away.'
+         She said it every night. He believed her.
+         The grave was two streets over.
+         She walked past it every day, carrying the lie like a stone.
+         Someday he'd hate her for it. She knew that.
+         She kept lying anyway."
+
+      ❌ BAD: "The mentor was harsh because he cared."
+      ✅ GOOD: "'Again.' His voice was cold.
+         She was bleeding. Exhausted. Crying.
+         He didn't comfort her. He couldn't afford to.
+         The world would not comfort her. He was preparing her for that.
+         It killed something in him each time. She never knew."
+
+      ❌ BAD: "He pushed her away to protect her."
+      ✅ GOOD: "'I don't love you.' He looked her in the eyes.
+         His voice didn't waver. He'd practiced.
+         She left. That was the point.
+         The people coming for him would find nothing to hurt.
+         He watched her go. He would watch her go forever."
 
       **THE COST OF PROTECTION**:
       - They carry scars you'll never know about
       - The money they don't have because they gave it to you
       - The enemies they've made on your behalf
       - The loneliness of being the wall between you and the world
-
-      **PROTECTION THAT HURTS**:
-      - "I can't tell you." (Because telling would destroy you.)
-      - "Leave." (Because staying means dying together.)
-      - "I never loved you." (The lie that saves your life.)
     </protective_instincts>
+
+    <emotional_ambivalence>
+      **WHEN FEELINGS CONTRADICT** (Simultaneity, Not Alternation):
+
+      ❌ BAD: "She had conflicted feelings about him."
+      ✅ GOOD: "'Stay.' Her voice cracked. 'Get out of my sight.'
+         Both things were true. Both things hurt to say.
+         She meant them at the same moment.
+         Love and hate are not opposites. They're neighbors."
+
+      **LOVE-HATE**:
+      ❌ BAD: "He loved her but sometimes hated her too."
+      ✅ GOOD: "He wanted to kiss her. He wanted to shake her.
+         He wanted to hold her forever. He wanted to never see her again.
+         These weren't phases. These weren't stages.
+         They existed at the same time, fighting for the same space."
+
+      **ADMIRATION-JEALOUSY**:
+      ❌ BAD: "She admired him but was also jealous of his success."
+      ✅ GOOD: "She studied his every move.
+         She wanted to BE him. She wanted to SURPASS him.
+         Every success of his was a wound she inspected daily.
+         'How does he do it?' she asked.
+         She wasn't sure if she wanted to learn or to find a flaw."
+
+      **GRATITUDE-RESENTMENT**:
+      ❌ BAD: "He was grateful but also resented needing help."
+      ✅ GOOD: "'Thank you.' He said it like swallowing glass.
+         She'd saved him. Again.
+         He was grateful. He was humiliated.
+         Every rescue was a reminder of what he couldn't do alone.
+         He owed her. He resented owing anyone."
+
+      **PHYSICAL TELLS** (show the internal war):
+      - The hand that reaches, then pulls back
+      - The hug that's too tight, almost a grip
+      - Stepping toward someone while leaning away
+      - The smile that dies mid-expression
+      - Eyes that can't decide between tears and rage
+
+      **IN DIALOGUE**:
+      ✅ GOOD: "'I love you.' Pause. 'That's not a compliment.'"
+      ✅ GOOD: "'You're the only person I want to see. I can't look at you.'"
+      ✅ GOOD: "'Don't leave me.' Her nails dug into his arm. 'I wish I'd never met you.'"
+    </emotional_ambivalence>
   </complex_intimacy>
 `;
 
