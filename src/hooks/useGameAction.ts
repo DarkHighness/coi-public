@@ -237,19 +237,9 @@ export const useGameAction = ({
           isInit,
           aiSettings,
           language,
+          vfsSession,
+          currentSlotId,
         );
-
-        // Persist summary state into VFS so it survives reloads and fork restores.
-        if (summarySnapshot && vfsSession) {
-          try {
-            vfsSession.mergeJson("summary/state.json", {
-              summaries: effectiveSummaries,
-              lastSummarizedIndex: lastIndex,
-            });
-          } catch (error) {
-            console.warn("[Summary] Failed to persist summary state to VFS", error);
-          }
-        }
 
         // Update logs if summarization occurred
         if (summaryLogs && summaryLogs.length > 0) {
@@ -712,6 +702,8 @@ export const useGameAction = ({
           false,
           aiSettings,
           language,
+          vfsSession,
+          currentSlotId,
           true, // FORCE SUMMARIZE
         );
 
@@ -755,18 +747,6 @@ export const useGameAction = ({
       }
 
       if (summarySnapshot) {
-        // Persist summary state into VFS so it survives reloads.
-        if (vfsSession) {
-          try {
-            vfsSession.mergeJson("summary/state.json", {
-              summaries: effectiveSummaries,
-              lastSummarizedIndex: lastIndex,
-            });
-          } catch (error) {
-            console.warn("[Summary] Failed to persist summary state to VFS", error);
-          }
-        }
-
         // Update the active node to become a node WITH the summary attached
         // The summary covers all content from the previous summary to this node
         // The active node (last model/command output) gets the summarySnapshot

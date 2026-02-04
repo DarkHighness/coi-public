@@ -423,12 +423,158 @@ export const VFS_TX_TOOL = defineTool({
   }),
 });
 
+// ============================================================================
+// VFS SHORTCUT TOOLS (loop-scoped allowlist)
+// ============================================================================
+
+export const VFS_CATALOG_CATEGORY_SCHEMA = z.enum([
+  "inventory",
+  "npcs",
+  "locations",
+  "quests",
+  "knowledge",
+  "factions",
+  "timeline",
+  "causal_chains",
+  "character_profile",
+  "character_skills",
+  "character_conditions",
+  "character_traits",
+  "summary",
+]);
+
+export type VfsCatalogCategory = z.infer<typeof VFS_CATALOG_CATEGORY_SCHEMA>;
+
+export const VFS_LS_ENTRIES_TOOL = defineTool({
+  name: "vfs_ls_entries",
+  description:
+    "List a compact catalog of important game files by category (read-only). Intended for Cleanup + Summary loops.",
+  parameters: z
+    .object({
+      categories: z
+        .array(VFS_CATALOG_CATEGORY_SCHEMA)
+        .min(1)
+        .describe("Categories to list."),
+      limitPerCategory: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe(
+          "Optional max entries per category. Prefer omitting; null means no limit.",
+        ),
+    })
+    .strict(),
+});
+
+export const VFS_SUGGEST_DUPLICATES_TOOL = defineTool({
+  name: "vfs_suggest_duplicates",
+  description:
+    "Suggest candidate duplicate groups within a category (read-only). Intended for Cleanup loop. Output must not reveal hidden NPC trueNames.",
+  parameters: z
+    .object({
+      category: VFS_CATALOG_CATEGORY_SCHEMA.describe("Category to analyze."),
+      threshold: z
+        .number()
+        .min(0)
+        .max(1)
+        .nullish()
+        .describe(
+          "Fuse.js threshold (lower is stricter). Prefer omitting; null uses default.",
+        ),
+      limitGroups: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe("Optional max groups returned. Prefer omitting; null is default."),
+      maxCandidatesPerGroup: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe(
+          "Optional max candidates returned per group. Prefer omitting; null is default.",
+        ),
+    })
+    .strict(),
+});
+
+const summaryVisibleToolSchema = z
+  .object({
+    narrative: z
+      .string()
+      .describe("What happened from the protagonist's perspective"),
+    majorEvents: z
+      .array(z.string())
+      .describe("Key events the protagonist witnessed/participated in"),
+    characterDevelopment: z.string().describe("How the protagonist changed"),
+    worldState: z
+      .string()
+      .describe("How the world changed from protagonist's view"),
+  })
+  .strict();
+
+const summaryHiddenToolSchema = z
+  .object({
+    truthNarrative: z.string().describe("What ACTUALLY happened (GM truth)"),
+    hiddenPlots: z
+      .array(z.string())
+      .describe("Plot threads player doesn't know about"),
+    npcActions: z.array(z.string()).describe("What NPCs did off-screen"),
+    worldTruth: z.string().describe("Real state of the world"),
+    unrevealed: z
+      .array(z.string())
+      .describe("Secrets not yet revealed to player"),
+  })
+  .strict();
+
+export const VFS_FINISH_SUMMARY_TOOL = defineTool({
+  name: "vfs_finish_summary",
+  description:
+    "Finish the summary loop by appending a StorySummary and updating current/summary/state.json. This tool MUST be your LAST tool call.",
+  parameters: z
+    .object({
+      id: z
+        .number()
+        .int()
+        .nullish()
+        .describe("Optional summary id. Ignored; the system will generate one."),
+      displayText: z
+        .string()
+        .describe(
+          "Concise 2-3 sentence summary for UI display. MUST be in story language.",
+        ),
+      visible: summaryVisibleToolSchema,
+      hidden: summaryHiddenToolSchema,
+      timeRange: z
+        .object({
+          from: z.string().describe("Start time in story"),
+          to: z.string().describe("End time in story"),
+        })
+        .nullish(),
+      nodeRange: z
+        .object({
+          fromIndex: z.number().int(),
+          toIndex: z.number().int(),
+        })
+        .describe("Node range covered by this summary."),
+      lastSummarizedIndex: z
+        .number()
+        .int()
+        .describe("MUST equal nodeRange.toIndex + 1."),
+    })
+    .strict(),
+});
+
 export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_LS_TOOL,
   VFS_READ_TOOL,
   VFS_READ_MANY_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
+  VFS_LS_ENTRIES_TOOL,
+  VFS_SUGGEST_DUPLICATES_TOOL,
   VFS_WRITE_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
@@ -436,124 +582,11 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
+  VFS_FINISH_SUMMARY_TOOL,
 ];
 
 // Legacy export name kept for compatibility (internal-only).
 export const TOOLS = ALL_DEFINED_TOOLS;
-
-// ============================================================================
-// SUMMARY TOOLS
-// ============================================================================
-
-export const SUMMARY_QUERY_SEGMENTS_TOOL = defineTool({
-  name: "summary_query_segments",
-  description: `Query specific segments from the story being summarized.
-
-Use this when you need MORE DETAIL about:
-- A specific turn or range of turns
-- What exactly happened in a scene
-- Exact dialogue or descriptions
-- Specific NPC interactions
-
-You already have the previous summary and current turn info. Use this to fill in gaps.`,
-  parameters: z.object({
-    turnRange: z
-      .object({
-        start: z.number().describe("Start turn number (inclusive)"),
-        end: z.number().describe("End turn number (inclusive)"),
-      })
-      .optional()
-      .describe(
-        "Get segments in this turn range. If omitted, returns all segments being summarized.",
-      ),
-    keyword: z
-      .string()
-      .optional()
-      .describe("Filter by keyword/regex in segment text"),
-  }),
-});
-
-export const SUMMARY_QUERY_STATE_TOOL = defineTool({
-  name: "summary_query_state",
-  description: `Query current game state entities.
-
-Use this when you need to know:
-- Current inventory items and their descriptions
-- NPC relationship statuses
-- Known locations
-- Active/completed quests
-- Character attributes/skills
-
-This helps you accurately describe state changes in the summary.`,
-  parameters: z.object({
-    entities: z
-      .array(
-        z.enum([
-          "inventory",
-          "npcs",
-          "locations",
-          "quests",
-          "knowledge",
-          "character",
-        ]),
-      )
-      .describe("Which entity types to query"),
-  }),
-});
-
-export const FINISH_SUMMARY_TOOL = defineTool({
-  name: "finish_summary",
-  description: `Complete the summarization with the final summary object.
-
-You MUST provide:
-- displayText: 2-3 sentence summary for UI (visible layer only, story language)
-- visible: What the PROTAGONIST knows/experienced
-- hidden: GM-only truth the protagonist does NOT know`,
-  parameters: z.object({
-    displayText: z
-      .string()
-      .describe(
-        "Concise 2-3 sentence summary for UI display. MUST be in story language.",
-      ),
-    visible: z.object({
-      narrative: z
-        .string()
-        .describe("What happened from the protagonist's perspective"),
-      majorEvents: z
-        .array(z.string())
-        .describe("Key events the protagonist witnessed/participated in"),
-      characterDevelopment: z.string().describe("How the protagonist changed"),
-      worldState: z
-        .string()
-        .describe("How the world changed from protagonist's view"),
-    }),
-    hidden: z.object({
-      truthNarrative: z.string().describe("What ACTUALLY happened (GM truth)"),
-      hiddenPlots: z
-        .array(z.string())
-        .describe("Plot threads player doesn't know about"),
-      npcActions: z.array(z.string()).describe("What NPCs did off-screen"),
-      worldTruth: z.string().describe("Real state of the world"),
-      unrevealed: z
-        .array(z.string())
-        .describe("Secrets not yet revealed to player"),
-    }),
-    timeRange: z
-      .object({
-        from: z.string().describe("Start time in story"),
-        to: z.string().describe("End time in story"),
-      })
-      .optional(),
-  }),
-});
-
-export function getSummaryTools(): ZodToolDefinition[] {
-  return [
-    SUMMARY_QUERY_SEGMENTS_TOOL,
-    SUMMARY_QUERY_STATE_TOOL,
-    FINISH_SUMMARY_TOOL,
-  ];
-}
 
 // ============================================================================
 // TOOL PARAMETER TYPE MAP (for getTypedArgs casting)
@@ -571,14 +604,13 @@ export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
 export type VfsDeleteParams = InferToolParams<typeof VFS_DELETE_TOOL>;
 export type VfsCommitTurnParams = InferToolParams<typeof VFS_COMMIT_TURN_TOOL>;
 export type VfsTxParams = InferToolParams<typeof VFS_TX_TOOL>;
-
-export type SummaryQuerySegmentsParams = InferToolParams<
-  typeof SUMMARY_QUERY_SEGMENTS_TOOL
+export type VfsLsEntriesParams = InferToolParams<typeof VFS_LS_ENTRIES_TOOL>;
+export type VfsSuggestDuplicatesParams = InferToolParams<
+  typeof VFS_SUGGEST_DUPLICATES_TOOL
 >;
-export type SummaryQueryStateParams = InferToolParams<
-  typeof SUMMARY_QUERY_STATE_TOOL
+export type VfsFinishSummaryParams = InferToolParams<
+  typeof VFS_FINISH_SUMMARY_TOOL
 >;
-export type FinishSummaryParams = InferToolParams<typeof FINISH_SUMMARY_TOOL>;
 
 export interface ToolParamsMap {
   vfs_ls: VfsLsParams;
@@ -586,6 +618,8 @@ export interface ToolParamsMap {
   vfs_read_many: VfsReadManyParams;
   vfs_search: VfsSearchParams;
   vfs_grep: VfsGrepParams;
+  vfs_ls_entries: VfsLsEntriesParams;
+  vfs_suggest_duplicates: VfsSuggestDuplicatesParams;
   vfs_write: VfsWriteParams;
   vfs_edit: VfsEditParams;
   vfs_merge: VfsMergeParams;
@@ -593,10 +627,7 @@ export interface ToolParamsMap {
   vfs_delete: VfsDeleteParams;
   vfs_commit_turn: VfsCommitTurnParams;
   vfs_tx: VfsTxParams;
-
-  summary_query_segments: SummaryQuerySegmentsParams;
-  summary_query_state: SummaryQueryStateParams;
-  finish_summary: FinishSummaryParams;
+  vfs_finish_summary: VfsFinishSummaryParams;
 }
 
 export type ToolName = keyof ToolParamsMap;

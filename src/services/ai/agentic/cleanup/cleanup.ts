@@ -23,180 +23,34 @@ export interface CleanupResult {
 }
 
 /**
- * Build XML entity section with tool hints
- */
-function buildEntityXml(state: GameState): string {
-  const sections: string[] = [];
-
-  // Inventory
-  if (state.inventory && state.inventory.length > 0) {
-    const items = state.inventory
-      .map(
-        (i) =>
-          `    <item id="${i.id}" path="current/world/inventory/${i.id}.json" unlocked="${!!i.unlocked}">${i.name}</item>`,
-      )
-      .join("\n");
-    sections.push(`<inventory count="${state.inventory.length}" dir="current/world/inventory">
-${items}
-  </inventory>`);
-  }
-
-  // Relationships (NPCs)
-  if (state.npcs && state.npcs.length > 0) {
-    const npcs = state.npcs
-      .map(
-        (r) =>
-          `    <npc id="${r.id}" path="current/world/npcs/${r.id}.json" unlocked="${!!r.unlocked}">${r.visible?.name || "Unknown"}</npc>`,
-      )
-      .join("\n");
-    sections.push(`<npcs count="${state.npcs.length}" dir="current/world/npcs">
-${npcs}
-  </npcs>`);
-  }
-
-  // Locations
-  if (state.locations && state.locations.length > 0) {
-    const locs = state.locations
-      .map(
-        (l) =>
-          `    <location id="${l.id}" path="current/world/locations/${l.id}.json" unlocked="${!!l.unlocked}">${l.name}</location>`,
-      )
-      .join("\n");
-    sections.push(`<locations count="${state.locations.length}" dir="current/world/locations">
-${locs}
-  </locations>`);
-  }
-
-  // Quests
-  if (state.quests && state.quests.length > 0) {
-    const quests = state.quests
-      .map(
-        (q) =>
-          `    <quest id="${q.id}" path="current/world/quests/${q.id}.json" status="${q.status}" unlocked="${!!q.unlocked}">${q.title}</quest>`,
-      )
-      .join("\n");
-    sections.push(`<quests count="${state.quests.length}" dir="current/world/quests">
-${quests}
-  </quests>`);
-  }
-
-  // Knowledge
-  if (state.knowledge && state.knowledge.length > 0) {
-    const knows = state.knowledge
-      .map(
-        (k) =>
-          `    <entry id="${k.id}" path="current/world/knowledge/${k.id}.json" unlocked="${!!k.unlocked}">${k.title}</entry>`,
-      )
-      .join("\n");
-    sections.push(`<knowledge count="${state.knowledge.length}" dir="current/world/knowledge">
-${knows}
-  </knowledge>`);
-  }
-  // Character Attributes
-  if (state.character?.attributes && state.character.attributes.length > 0) {
-    const attrs = state.character.attributes
-      .map(
-        (a: any) =>
-          `    <attribute id="${a.id || a.name}" value="${a.value}">${a.name}</attribute>`,
-      )
-      .join("\n");
-    sections.push(`<character_attributes count="${state.character.attributes.length}" file="current/world/character.json">
-${attrs}
-  </character_attributes>`);
-  }
-  // Character Skills
-  if (state.character?.skills && state.character.skills.length > 0) {
-    const skills = state.character.skills
-      .map((s: any) => `    <skill id="${s.id || s.name}">${s.name}</skill>`)
-      .join("\n");
-    sections.push(`<character_skills count="${state.character.skills.length}" file="current/world/character.json">
-${skills}
-  </character_skills>`);
-  }
-
-  // Character Conditions
-  if (state.character?.conditions && state.character.conditions.length > 0) {
-    const conds = state.character.conditions
-      .map(
-        (c: any) =>
-          `    <condition id="${c.id || c.name}">${c.name}</condition>`,
-      )
-      .join("\n");
-    sections.push(`<character_conditions count="${state.character.conditions.length}" file="current/world/character.json">
-${conds}
-  </character_conditions>`);
-  }
-
-  // Character Hidden Traits
-  if (
-    state.character?.hiddenTraits &&
-    state.character.hiddenTraits.length > 0
-  ) {
-    const traits = state.character.hiddenTraits
-      .map((t: any) => `    <trait id="${t.id || t.name}">${t.name}</trait>`)
-      .join("\n");
-    sections.push(`<hidden_traits count="${state.character.hiddenTraits.length}" file="current/world/character.json">
-${traits}
-  </hidden_traits>`);
-  }
-
-  // Factions
-  if (state.factions && state.factions.length > 0) {
-    const facs = state.factions
-      .map(
-        (f: any) =>
-          `    <faction id="${f.id}" path="current/world/factions/${f.id}.json" unlocked="${!!f.unlocked}">${f.name}</faction>`,
-      )
-      .join("\n");
-    sections.push(`<factions count="${state.factions.length}" dir="current/world/factions">
-${facs}
-  </factions>`);
-  }
-
-  // Timeline Events
-  if (state.timeline && state.timeline.length > 0) {
-    const events = state.timeline
-      .map(
-        (e: any) =>
-          `    <event id="${e.id || "no-id"}" time="${e.time || ""}">${e.event || e.description || ""}</event>`,
-      )
-      .join("\n");
-    sections.push(`<timeline count="${state.timeline.length}" dir="current/world/timeline">
-${events}
-  </timeline>`);
-  }
-
-  // Causal Chains
-  if (state.causalChains && state.causalChains.length > 0) {
-    const chains = state.causalChains
-      .map(
-        (c: any) => {
-          const chainId = c.chainId ?? c.chain_id ?? c.id ?? "no-id";
-          return `    <chain id="${chainId}" path="current/world/causal_chains/${chainId}.json" cause="${c.cause || ""}" effect="${c.effect || ""}"/>`;
-        },
-      )
-      .join("\n");
-    sections.push(`<causal_chains count="${state.causalChains.length}" dir="current/world/causal_chains">
-${chains}
-  </causal_chains>`);
-  }
-
-  return sections.length > 0
-    ? sections.join("\n\n  ")
-    : "<empty>No entities found.</empty>";
-}
-
-/**
  * Build the cleanup prompt with XML entity context and examples
  */
 function buildCleanupPrompt(state: GameState): string {
-  const entityXml = buildEntityXml(state);
+  void state;
+  return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
 
-  return `[CLEANUP] Analyze the current game state and perform entity cleanup.
+<workflow>
+  1) Use \`vfs_ls_entries\` to get a COMPLETE catalog by category (IDs + names + status).
+     This is more reliable than guessing IDs, and avoids missing "extra" objects.
 
-<current_entities HINT="Each section shows the current entity files. Use vfs_read/vfs_edit/vfs_write/vfs_delete to merge duplicates.">
-  ${entityXml}
-</current_entities>
+  2) Use \`vfs_suggest_duplicates\` per category to get candidate duplicate groups.
+     Then VERIFY candidates with \`vfs_read_many\` before merging.
+
+  3) Merge conservatively:
+     - Prefer keeping the most complete file.
+     - Update the kept file FIRST (\`vfs_merge\` / \`vfs_edit\`) before deleting duplicates (\`vfs_delete\`).
+     - If one copy is unlocked and the other is locked (hidden truth), prefer keeping the locked one,
+       but preserve player knowledge by merging visible info and ensuring unlocked=true when appropriate.
+
+  4) Re-run \`vfs_ls_entries\` to sanity-check counts after cleanup.
+
+  5) Finish with \`vfs_commit_turn\` (or \`vfs_tx\` with commit_turn as the LAST op). The finish tool must be LAST.
+</workflow>
+
+<recommended_categories>
+inventory, npcs, locations, quests, knowledge, factions, timeline, causal_chains,
+character_profile, character_skills, character_conditions, character_traits
+</recommended_categories>
 
 <task>
 Identify and merge duplicate or redundant entities. Prefer keeping the most complete/accurate entity file and removing redundant files.
@@ -206,77 +60,81 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="inventory">
     <duplicates>Two inventory item files that represent the same item</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/inventory" }) to list candidates
-      2. vfs_read({ path: "current/world/inventory/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/inventory/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["inventory"] })
+      2. vfs_suggest_duplicates({ category: "inventory" })
+      3. vfs_read({ path: "current/world/inventory/<id>.json" }) to compare details
+      4. vfs_write(...) or vfs_edit(...) to merge details into the kept file
+      5. vfs_delete({ paths: ["current/world/inventory/<duplicate>.json"] }) to delete the redundant file
     </action>
   </example>
 
   <example type="npc">
     <duplicates>Two NPC files that represent the same person</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/npcs" }) to list candidates
-      2. vfs_read({ path: "current/world/npcs/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/npcs/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["npcs"] })
+      2. vfs_suggest_duplicates({ category: "npcs" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="location">
     <duplicates>Two location files that refer to the same place</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/locations" }) to list candidates
-      2. vfs_read({ path: "current/world/locations/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/locations/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["locations"] })
+      2. vfs_suggest_duplicates({ category: "locations" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="quest">
     <duplicates>Two quest files that represent the same quest</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/quests" }) to list candidates
-      2. vfs_read({ path: "current/world/quests/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/quests/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["quests"] })
+      2. vfs_suggest_duplicates({ category: "quests" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="knowledge">
     <duplicates>Two knowledge files that represent the same knowledge</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/knowledge" }) to list candidates
-      2. vfs_read({ path: "current/world/knowledge/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/knowledge/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["knowledge"] })
+      2. vfs_suggest_duplicates({ category: "knowledge" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="character_skills">
-    <duplicates>Two skills inside current/world/character.json that represent the same skill</duplicates>
+    <duplicates>Two character skill files that represent the same skill</duplicates>
     <action>
-      1. vfs_read({ path: "current/world/character.json" }) to inspect the current skills list
-      2. vfs_edit(...) or vfs_write(...) to merge data and remove the duplicate entry from the skills array
+      1. vfs_ls_entries({ categories: ["character_skills"] })
+      2. vfs_suggest_duplicates({ category: "character_skills" })
+      3. vfs_read_many(["current/world/character/skills/<id>.json", ...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="faction">
     <duplicates>Two faction files that represent the same faction</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/factions" }) to list candidates
-      2. vfs_read({ path: "current/world/factions/<id>.json" }) to compare details
-      3. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      4. vfs_delete({ paths: ["current/world/factions/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["factions"] })
+      2. vfs_suggest_duplicates({ category: "factions" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
     </action>
   </example>
 
   <example type="timeline">
     <duplicates>Two timeline event files that represent the same event</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/timeline" }) to list candidates
-      2. vfs_read({ path: "current/world/timeline/<id>.json" }) to compare details
-      3. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls_entries({ categories: ["timeline"] })
+      2. vfs_suggest_duplicates({ category: "timeline" })
+      3. vfs_read_many([...]) to verify
+      4. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] }) to delete the redundant file
     </action>
   </example>
 
@@ -284,7 +142,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <duplicates>1. "old_man" (Unlocked: true, Visible: "Just an old man") AND 2. "gandalf" (Unlocked: false, Hidden: "Powerful Wizard")</duplicates>
     <action>
       1. PREFER keeping "gandalf" (The Truth).
-      2. vfs_read both NPC files, then vfs_write(...) or vfs_edit(...) to merge visible info into the kept file and set unlocked=true if needed.
+      2. vfs_read both NPC files, then vfs_merge(...) or vfs_edit(...) to merge visible info into the kept file and set unlocked=true if needed.
       3. vfs_delete({ paths: ["current/world/npcs/old_man.json"] }) to remove the fragment.
     </action>
   </example>
@@ -314,7 +172,7 @@ After cleanup, end the turn using the standard VFS workflow (write the new turn 
 
 Required fields:
 - narrative: Summary of cleanup actions (e.g., "Merged 2 duplicate items, consolidated 1 NPC")
-- choices: ["Continue your adventure"]
+- choices: Provide 2-4 safe player choices (e.g., "Continue", "Travel", "Rest", "Inspect inventory")
 </output>`;
 }
 
@@ -323,8 +181,8 @@ Required fields:
  *
  * Design: Entity Cleanup is a normal turn with:
  * 1. User action prefixed with [CLEANUP] to signal cleanup mode
- * 2. All entity IDs/names embedded in XML format with VFS file hints
- * 3. Deduplication examples for each entity type
+ * 2. VFS-only + tool-driven discovery (no entity XML enumeration)
+ * 3. Deduplication recipes that start from vfs_ls_entries/vfs_suggest_duplicates
  *
  * This ensures the same KV cache, same agentic loop, same tools system.
  */

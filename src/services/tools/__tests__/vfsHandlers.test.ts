@@ -47,7 +47,7 @@ describe("VFS handlers", () => {
             contentType: "application/json",
           },
           {
-            path: "current/world/character.json",
+            path: "current/world/character/profile.json",
             content: JSON.stringify({ name: "Hero" }),
             contentType: "application/json",
           },
@@ -63,7 +63,7 @@ describe("VFS handlers", () => {
       {
         paths: [
           "current/world/global.json",
-          "current/world/character.json",
+          "current/world/character/profile.json",
           "current/world/missing.json",
         ],
         maxChars: 10,
@@ -82,6 +82,169 @@ describe("VFS handlers", () => {
     expect(readMany.data?.files?.[0]?.path).toBe("current/world/global.json");
     expect(readMany.data?.files?.[0]?.truncated).toBe(true);
     expect(readMany.data?.missing).toEqual(["current/world/missing.json"]);
+  });
+
+  it("lists catalog entries via vfs_ls_entries", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    session.writeFile(
+      "world/inventory/inv:1.json",
+      JSON.stringify({ id: "inv:1", name: "Rusty Key", unlocked: true }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/npcs/npc:1.json",
+      JSON.stringify({
+        id: "npc:1",
+        currentLocation: "loc:1",
+        visible: { name: "Bob", description: "x", npcType: "Friend", affinity: 50 },
+        hidden: { realPersonality: "y", realMotives: "z", npcType: "Tool", impression: "neutral", status: "idle" },
+        unlocked: false,
+      }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/character/profile.json",
+      JSON.stringify({ name: "Hero", title: "Wanderer", attributes: [] }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/character/skills/skill:1.json",
+      JSON.stringify({
+        id: "skill:1",
+        name: "Tracking",
+        level: "Novice",
+        visible: { description: "Find tracks.", knownEffects: [] },
+      }),
+      "application/json",
+    );
+
+    const result = dispatchToolCall(
+      "vfs_ls_entries",
+      {
+        categories: ["inventory", "npcs", "character_profile", "character_skills"],
+        limitPerCategory: null,
+      },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        categories?: Record<string, { total: number; truncated: boolean; entries: any[] }>;
+      };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.categories?.inventory?.entries?.[0]?.displayName).toBe(
+      "Rusty Key",
+    );
+    expect(result.data?.categories?.npcs?.entries?.[0]?.displayName).toBe("Bob");
+    expect(result.data?.categories?.character_profile?.entries?.[0]?.displayName).toBe(
+      "Hero",
+    );
+    expect(result.data?.categories?.character_skills?.entries?.[0]?.displayName).toBe(
+      "Tracking",
+    );
+  });
+
+  it("suggests duplicate groups via vfs_suggest_duplicates", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    session.writeFile(
+      "world/inventory/inv:1.json",
+      JSON.stringify({ id: "inv:1", name: "Rusty Key" }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/inventory/inv:2.json",
+      JSON.stringify({ id: "inv:2", name: "Rusted Key" }),
+      "application/json",
+    );
+
+    const result = dispatchToolCall(
+      "vfs_suggest_duplicates",
+      { category: "inventory", threshold: 0.35, limitGroups: 5, maxCandidatesPerGroup: 5 },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { groups?: Array<{ candidates: Array<{ displayName: string }> }> };
+    };
+
+    expect(result.success).toBe(true);
+    const groupNames = (result.data?.groups?.[0]?.candidates || []).map(
+      (c) => c.displayName,
+    );
+    expect(groupNames).toEqual(expect.arrayContaining(["Rusty Key", "Rusted Key"]));
+  });
+
+  it("finishes summary via vfs_finish_summary and writes summary/state.json", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_finish_summary",
+      {
+        displayText: "Short summary.",
+        visible: {
+          narrative: "Visible summary.",
+          majorEvents: ["A"],
+          characterDevelopment: "Changed",
+          worldState: "World",
+        },
+        hidden: {
+          truthNarrative: "Truth",
+          hiddenPlots: [],
+          npcActions: [],
+          worldTruth: "Truth world",
+          unrevealed: [],
+        },
+        timeRange: { from: "t1", to: "t2" },
+        nodeRange: { fromIndex: 0, toIndex: 2 },
+        lastSummarizedIndex: 3,
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(result.success).toBe(true);
+
+    const file = session.readFile("summary/state.json");
+    expect(file).not.toBeNull();
+    const state = JSON.parse(file!.content);
+    expect(state.lastSummarizedIndex).toBe(3);
+    expect(state.summaries).toHaveLength(1);
+    expect(state.summaries[0].displayText).toBe("Short summary.");
+  });
+
+  it("rejects vfs_finish_summary when lastSummarizedIndex does not match nodeRange", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_finish_summary",
+      {
+        displayText: "Bad summary.",
+        visible: {
+          narrative: "Visible summary.",
+          majorEvents: [],
+          characterDevelopment: "Changed",
+          worldState: "World",
+        },
+        hidden: {
+          truthNarrative: "Truth",
+          hiddenPlots: [],
+          npcActions: [],
+          worldTruth: "Truth world",
+          unrevealed: [],
+        },
+        nodeRange: { fromIndex: 0, toIndex: 2 },
+        lastSummarizedIndex: 2,
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
   });
 
   it("falls back to text search for semantic queries", async () => {

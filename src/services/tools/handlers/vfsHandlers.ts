@@ -8,6 +8,8 @@ import {
   VFS_READ_MANY_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
+  VFS_LS_ENTRIES_TOOL,
+  VFS_SUGGEST_DUPLICATES_TOOL,
   VFS_WRITE_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
@@ -15,6 +17,7 @@ import {
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
+  VFS_FINISH_SUMMARY_TOOL,
   getTypedArgs,
 } from "../../tools";
 import {
@@ -164,6 +167,401 @@ const ensureConversationIndex = (
   return index;
 };
 
+type VfsCatalogEntry = {
+  path: string;
+  id: string;
+  displayName: string;
+  unlocked?: boolean;
+  status?: string;
+};
+
+type VfsCatalogCategoryResult = {
+  total: number;
+  truncated: boolean;
+  entries: VfsCatalogEntry[];
+};
+
+type DuplicateCandidate = VfsCatalogEntry & { matchText: string };
+
+const safeParseJson = (input: string): unknown | null => {
+  try {
+    return JSON.parse(input) as unknown;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeDisplayName = (value: unknown): string => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return "Unknown";
+};
+
+const listCatalogEntriesForCategory = (
+  session: VfsSession,
+  category: string,
+): DuplicateCandidate[] => {
+  const snapshot = session.snapshot();
+
+  if (category === "inventory") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/inventory/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "npcs") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/npcs/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.visible?.name);
+        const unlocked = parsed?.unlocked === true;
+        const status =
+          typeof parsed?.visible?.status === "string" && parsed.visible.status.trim()
+            ? parsed.visible.status.trim()
+            : undefined;
+
+        const trueName =
+          typeof parsed?.hidden?.trueName === "string" && parsed.hidden.trueName.trim()
+            ? parsed.hidden.trueName.trim()
+            : "";
+        const matchText = trueName ? `${displayName} ${trueName}` : displayName;
+
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          status,
+          matchText,
+        };
+      });
+  }
+
+  if (category === "locations") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/locations/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "quests") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/quests/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.title);
+        const unlocked = parsed?.unlocked === true;
+        const status =
+          typeof parsed?.status === "string" && parsed.status.trim()
+            ? parsed.status.trim()
+            : undefined;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          status,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "knowledge") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/knowledge/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.title);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "factions") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/factions/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        const status =
+          typeof parsed?.status === "string" && parsed.status.trim()
+            ? parsed.status.trim()
+            : undefined;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          status,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "timeline") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/timeline/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.event || parsed?.description);
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "causal_chains") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/causal_chains/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.chainId === "string" && parsed.chainId.trim()
+            ? parsed.chainId
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const cause = typeof parsed?.cause === "string" ? parsed.cause : "";
+        const effect = typeof parsed?.effect === "string" ? parsed.effect : "";
+        const displayName =
+          `${cause} → ${effect}`.trim() !== "→"
+            ? `${cause} → ${effect}`.trim()
+            : id;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "character_profile") {
+    const file = snapshot["world/character/profile.json"];
+    if (!file || file.contentType !== "application/json") {
+      return [];
+    }
+    const parsed = safeParseJson(file.content) as any;
+    const displayName = normalizeDisplayName(parsed?.name);
+    const status =
+      typeof parsed?.status === "string" && parsed.status.trim()
+        ? parsed.status.trim()
+        : undefined;
+    return [
+      {
+        path: toCurrentPath(file.path),
+        id: "character_profile",
+        displayName,
+        status,
+        matchText: displayName,
+      },
+    ];
+  }
+
+  if (category === "character_skills") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/character/skills/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "character_conditions") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/character/conditions/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const status =
+          typeof parsed?.status === "string" && parsed.status.trim()
+            ? parsed.status.trim()
+            : undefined;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          status,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "character_traits") {
+    return Object.values(snapshot)
+      .filter(
+        (file) =>
+          file.contentType === "application/json" &&
+          file.path.startsWith("world/character/traits/") &&
+          file.path.endsWith(".json"),
+      )
+      .map((file) => {
+        const parsed = safeParseJson(file.content) as any;
+        const id =
+          typeof parsed?.id === "string" && parsed.id.trim()
+            ? parsed.id
+            : file.path.split("/").pop()?.replace(/\.json$/, "") || file.path;
+        const displayName = normalizeDisplayName(parsed?.name);
+        const unlocked = parsed?.unlocked === true;
+        return {
+          path: toCurrentPath(file.path),
+          id,
+          displayName,
+          unlocked,
+          matchText: displayName,
+        };
+      });
+  }
+
+  if (category === "summary") {
+    const file = snapshot["summary/state.json"];
+    if (!file || file.contentType !== "application/json") {
+      return [];
+    }
+    const parsed = safeParseJson(file.content) as any;
+    const summaries = Array.isArray(parsed?.summaries) ? parsed.summaries : [];
+    return summaries.map((summary: any, idx: number) => {
+      const idRaw = summary?.id;
+      const id =
+        typeof idRaw === "number" && Number.isFinite(idRaw)
+          ? String(idRaw)
+          : `summary:${idx}`;
+      const displayName = normalizeDisplayName(summary?.displayText);
+      return {
+        path: "current/summary/state.json",
+        id,
+        displayName,
+        matchText: displayName,
+      };
+    });
+  }
+
+  return [];
+};
+
 const resolveCurrentPath = (
   path?: string,
 ): { ok: true; path: string } | { ok: false; error: ToolCallResult } => {
@@ -198,6 +596,227 @@ const withAtomicSession = <T>(
     return createError(message, "UNKNOWN");
   }
 };
+
+registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_ls_entries", args);
+  const limitPerCategory =
+    typeof typedArgs.limitPerCategory === "number"
+      ? typedArgs.limitPerCategory
+      : null;
+
+  const categories: Record<string, VfsCatalogCategoryResult> = {};
+
+  for (const category of typedArgs.categories) {
+    const candidates = listCatalogEntriesForCategory(session, category);
+
+    const total = candidates.length;
+    const entries: VfsCatalogEntry[] = candidates.map((entry) => {
+      const result: VfsCatalogEntry = {
+        path: entry.path,
+        id: entry.id,
+        displayName: entry.displayName,
+      };
+      if (typeof entry.unlocked === "boolean") {
+        result.unlocked = entry.unlocked;
+      }
+      if (typeof entry.status === "string" && entry.status.trim()) {
+        result.status = entry.status;
+      }
+      return result;
+    });
+
+    const limited =
+      limitPerCategory && total > limitPerCategory
+        ? entries.slice(0, limitPerCategory)
+        : entries;
+
+    categories[category] = {
+      total,
+      truncated: Boolean(limitPerCategory && total > limitPerCategory),
+      entries: limited,
+    };
+  }
+
+  return createSuccess({ categories }, "VFS catalog listed");
+});
+
+registerToolHandler(VFS_SUGGEST_DUPLICATES_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_suggest_duplicates", args);
+  const threshold =
+    typeof typedArgs.threshold === "number" ? typedArgs.threshold : 0.25;
+  const limitGroups =
+    typeof typedArgs.limitGroups === "number" ? typedArgs.limitGroups : 10;
+  const maxCandidatesPerGroup =
+    typeof typedArgs.maxCandidatesPerGroup === "number"
+      ? typedArgs.maxCandidatesPerGroup
+      : 8;
+
+  const candidates = listCatalogEntriesForCategory(session, typedArgs.category);
+  if (candidates.length < 2) {
+    return createSuccess(
+      { category: typedArgs.category, threshold, groups: [] },
+      "No candidates",
+    );
+  }
+
+  const fuse = new Fuse(candidates, {
+    keys: ["matchText"],
+    includeScore: true,
+    threshold,
+    ignoreLocation: true,
+    findAllMatches: false,
+  });
+
+  const parent = new Map<string, string>();
+  const minScore = new Map<string, number>();
+
+  for (const item of candidates) {
+    parent.set(item.path, item.path);
+    minScore.set(item.path, Number.POSITIVE_INFINITY);
+  }
+
+  const find = (x: string): string => {
+    const p = parent.get(x);
+    if (!p) return x;
+    if (p === x) return x;
+    const root = find(p);
+    parent.set(x, root);
+    return root;
+  };
+
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) {
+      parent.set(rb, ra);
+    }
+  };
+
+  for (const item of candidates) {
+    const results = fuse.search(item.matchText);
+    for (const result of results) {
+      const other = result.item;
+      if (!other || other.path === item.path) {
+        continue;
+      }
+      const score =
+        typeof result.score === "number" && Number.isFinite(result.score)
+          ? result.score
+          : null;
+      if (score === null || score > threshold) {
+        continue;
+      }
+
+      union(item.path, other.path);
+
+      const prevA = minScore.get(item.path) ?? Number.POSITIVE_INFINITY;
+      const prevB = minScore.get(other.path) ?? Number.POSITIVE_INFINITY;
+      minScore.set(item.path, Math.min(prevA, score));
+      minScore.set(other.path, Math.min(prevB, score));
+    }
+  }
+
+  const groupsByRoot = new Map<string, DuplicateCandidate[]>();
+  for (const item of candidates) {
+    const root = find(item.path);
+    const list = groupsByRoot.get(root) ?? [];
+    list.push(item);
+    groupsByRoot.set(root, list);
+  }
+
+  const groups = Array.from(groupsByRoot.values())
+    .filter((group) => group.length >= 2)
+    .map((group) => {
+      const scored = group
+        .map((candidate) => {
+          const score = minScore.get(candidate.path);
+          return {
+            path: candidate.path,
+            displayName: candidate.displayName,
+            score:
+              typeof score === "number" && Number.isFinite(score) ? score : 0,
+          };
+        })
+        .sort((a, b) => a.score - b.score);
+
+      return {
+        candidates: scored.slice(0, maxCandidatesPerGroup),
+      };
+    })
+    .sort(
+      (a, b) =>
+        (b.candidates?.length ?? 0) - (a.candidates?.length ?? 0) ||
+        (a.candidates?.[0]?.score ?? 0) - (b.candidates?.[0]?.score ?? 0),
+    )
+    .slice(0, limitGroups);
+
+  return createSuccess(
+    { category: typedArgs.category, threshold, groups },
+    "Duplicate suggestions ready",
+  );
+});
+
+registerToolHandler(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_finish_summary", args);
+  const nodeRange = typedArgs.nodeRange;
+
+  if (!nodeRange || typeof nodeRange.toIndex !== "number") {
+    return createError("vfs_finish_summary: missing nodeRange", "INVALID_DATA");
+  }
+
+  if (typedArgs.lastSummarizedIndex !== nodeRange.toIndex + 1) {
+    return createError(
+      `vfs_finish_summary: lastSummarizedIndex must equal nodeRange.toIndex + 1 (expected ${nodeRange.toIndex + 1}, got ${typedArgs.lastSummarizedIndex})`,
+      "INVALID_DATA",
+    );
+  }
+
+  return withAtomicSession(ctx, (draft) => {
+    const existingFile = draft.readFile("summary/state.json");
+    const parsed = existingFile ? safeParseJson(existingFile.content) : null;
+    const existingState = parsed as any;
+    const existingSummaries = Array.isArray(existingState?.summaries)
+      ? existingState.summaries
+      : [];
+
+    const maxId = existingSummaries.reduce((max: number, summary: any) => {
+      const id = summary?.id;
+      return typeof id === "number" && Number.isFinite(id) ? Math.max(max, id) : max;
+    }, -1);
+    const nextId = maxId + 1;
+
+    const summary = {
+      id: nextId,
+      displayText: typedArgs.displayText,
+      visible: typedArgs.visible,
+      hidden: typedArgs.hidden,
+      timeRange: typedArgs.timeRange ?? null,
+      nodeRange: typedArgs.nodeRange,
+    };
+
+    const nextSummaries = [...existingSummaries, summary];
+
+    draft.mergeJson("summary/state.json", {
+      summaries: nextSummaries,
+      lastSummarizedIndex: typedArgs.lastSummarizedIndex,
+    });
+
+    return createSuccess(
+      { summary, path: "current/summary/state.json" },
+      "Summary state updated",
+    );
+  });
+});
 
 const isInScope = (filePath: string, rootPath?: string): boolean => {
   if (!rootPath) {
@@ -345,7 +964,16 @@ const mapEntityIdToVfsPath = (entityId: string): string | null => {
     normalized.startsWith("attr:") ||
     normalized.startsWith("attribute:")
   ) {
-    return "world/character.json";
+    if (normalized.startsWith("skill:")) {
+      return `world/character/skills/${normalized}.json`;
+    }
+    if (normalized.startsWith("condition:")) {
+      return `world/character/conditions/${normalized}.json`;
+    }
+    if (normalized.startsWith("trait:")) {
+      return `world/character/traits/${normalized}.json`;
+    }
+    return "world/character/profile.json";
   }
 
   if (normalized.startsWith("outline:")) {

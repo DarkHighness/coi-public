@@ -70,4 +70,4 @@ export const budgetStatusMessage: Atom<SystemMessageInput> = ({
  * No Tool Call Error Message
  */
 export const noToolCallError: Atom<SystemMessageInput> = () =>
-  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` (preferred) or write the conversation files via \`vfs_write\`/\`vfs_edit\` (including \`current/conversation/index.json\` and the current turn file). Bare text is not allowed.`;
+  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op. Bare text is not allowed.`;

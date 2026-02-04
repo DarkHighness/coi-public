@@ -26,14 +26,11 @@ describe("deriveGameStateFromVfs", () => {
         turnNumber: 3,
         forkId: 1,
       }),
-      "world/character.json": makeJsonFile("world/character.json", {
+      "world/character/profile.json": makeJsonFile("world/character/profile.json", {
         name: "Arin",
         title: "Wanderer",
         status: "Healthy",
         attributes: [],
-        skills: [],
-        conditions: [],
-        hiddenTraits: [],
         appearance: "Travel-worn",
         age: "21",
         profession: "Scout",
@@ -62,8 +59,22 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.turnNumber).toBe(3);
     expect(state.forkId).toBe(1);
     expect(state.character.name).toBe("Arin");
+    expect(state.character.skills).toEqual([]);
+    expect(state.character.conditions).toEqual([]);
     expect(state.inventory).toHaveLength(1);
     expect(state.inventory[0]?.id).toBe("inv_key");
+  });
+
+  it("throws on legacy world/character.json saves", () => {
+    const files: VfsFileMap = {
+      "world/character.json": makeJsonFile("world/character.json", {
+        name: "Legacy Hero",
+      }),
+    };
+
+    expect(() => deriveGameStateFromVfs(files)).toThrow(
+      /SAVE_INCOMPATIBLE_CHARACTER_LAYOUT/,
+    );
   });
 
   it("derives summary state and restores summary markers", () => {

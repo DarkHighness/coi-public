@@ -35,6 +35,48 @@ const writeEntities = <T extends { id?: string }>(
   }
 };
 
+const writeCharacter = (session: VfsSession, character: unknown): void => {
+  if (!character || typeof character !== "object") {
+    return;
+  }
+
+  const {
+    skills,
+    conditions,
+    hiddenTraits,
+    ...profile
+  } = character as Record<string, unknown> as any;
+
+  writeJson(session, "world/character/profile.json", profile);
+
+  if (Array.isArray(skills)) {
+    for (const skill of skills) {
+      if (!skill || typeof skill !== "object") continue;
+      const id = (skill as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/character/skills/${id}.json`, skill);
+    }
+  }
+
+  if (Array.isArray(conditions)) {
+    for (const condition of conditions) {
+      if (!condition || typeof condition !== "object") continue;
+      const id = (condition as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/character/conditions/${id}.json`, condition);
+    }
+  }
+
+  if (Array.isArray(hiddenTraits)) {
+    for (const trait of hiddenTraits) {
+      if (!trait || typeof trait !== "object") continue;
+      const id = (trait as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/character/traits/${id}.json`, trait);
+    }
+  }
+};
+
 export const seedVfsSessionFromGameState = (
   session: VfsSession,
   state: GameState,
@@ -54,7 +96,7 @@ export const seedVfsSessionFromGameState = (
   });
 
   if (state.character) {
-    writeJson(session, "world/character.json", state.character);
+    writeCharacter(session, state.character);
   }
 
   if (state.playerProfile) {
@@ -100,7 +142,7 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     lastSummarizedIndex: 0,
   });
 
-  writeJson(session, "world/character.json", DEFAULT_CHARACTER);
+  writeCharacter(session, DEFAULT_CHARACTER);
 
   writeConversationIndex(session, {
     activeForkId: 0,
@@ -180,7 +222,7 @@ export const seedVfsSessionFromOutline = (
   });
 
   if (outline.character) {
-    writeJson(session, "world/character.json", outline.character);
+    writeCharacter(session, outline.character);
   }
 
   writeEntities(session, "world/inventory", outline.inventory as InventoryItem[]);

@@ -218,6 +218,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     a.path.localeCompare(b.path),
   );
 
+  let characterProfile: Record<string, unknown> | null = null;
+  const characterSkills: unknown[] = [];
+  const characterConditions: unknown[] = [];
+  const characterTraits: unknown[] = [];
+
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
     const pathWithoutCurrent = stripCurrentPrefix(normalizedPath);
@@ -293,7 +298,28 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent === "world/character.json") {
-      state.character = data as CharacterStatus;
+      throw new Error(
+        "SAVE_INCOMPATIBLE_CHARACTER_LAYOUT: Found world/character.json. Expected world/character/profile.json + world/character/{skills,conditions,traits}/<id>.json files.",
+      );
+    }
+
+    if (pathWithoutCurrent === "world/character/profile.json") {
+      characterProfile = data as Record<string, unknown>;
+      continue;
+    }
+
+    if (pathWithoutCurrent.startsWith("world/character/skills/")) {
+      characterSkills.push(data);
+      continue;
+    }
+
+    if (pathWithoutCurrent.startsWith("world/character/conditions/")) {
+      characterConditions.push(data);
+      continue;
+    }
+
+    if (pathWithoutCurrent.startsWith("world/character/traits/")) {
+      characterTraits.push(data);
       continue;
     }
 
@@ -357,6 +383,22 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     if (pathWithoutCurrent.startsWith("world/causal_chains/")) {
       state.causalChains.push(data as CausalChain);
     }
+  }
+
+  if (
+    characterProfile ||
+    characterSkills.length > 0 ||
+    characterConditions.length > 0 ||
+    characterTraits.length > 0
+  ) {
+    const base = (state.character ?? DEFAULT_CHARACTER) as any;
+    state.character = {
+      ...base,
+      ...(characterProfile ?? {}),
+      skills: characterSkills,
+      conditions: characterConditions,
+      hiddenTraits: characterTraits,
+    } as CharacterStatus;
   }
 
   const conversation = deriveConversationNodes(files);

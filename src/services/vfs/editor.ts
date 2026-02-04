@@ -79,7 +79,61 @@ export const applySectionEdit = (
   }
 
   if (section === "character") {
-    writeJson(session, "world/character.json", data);
+    if (session.readFile("world/character.json")) {
+      throw new Error(
+        "SAVE_INCOMPATIBLE_CHARACTER_LAYOUT: Found world/character.json. Expected world/character/profile.json + world/character/{skills,conditions,traits}/<id>.json files.",
+      );
+    }
+
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("Character edits must be an object.");
+    }
+
+    const {
+      skills,
+      conditions,
+      hiddenTraits,
+      ...profile
+    } = data as Record<string, unknown> as any;
+
+    writeJson(session, "world/character/profile.json", profile);
+
+    clearDir(session, "world/character/skills");
+    clearDir(session, "world/character/conditions");
+    clearDir(session, "world/character/traits");
+
+    if (Array.isArray(skills)) {
+      for (const skill of skills) {
+        if (!skill || typeof skill !== "object") continue;
+        const id = (skill as any).id;
+        if (typeof id !== "string" || id.trim().length === 0) {
+          throw new Error(`Missing id for character skill entry.`);
+        }
+        writeJson(session, `world/character/skills/${id}.json`, skill);
+      }
+    }
+
+    if (Array.isArray(conditions)) {
+      for (const condition of conditions) {
+        if (!condition || typeof condition !== "object") continue;
+        const id = (condition as any).id;
+        if (typeof id !== "string" || id.trim().length === 0) {
+          throw new Error(`Missing id for character condition entry.`);
+        }
+        writeJson(session, `world/character/conditions/${id}.json`, condition);
+      }
+    }
+
+    if (Array.isArray(hiddenTraits)) {
+      for (const trait of hiddenTraits) {
+        if (!trait || typeof trait !== "object") continue;
+        const id = (trait as any).id;
+        if (typeof id !== "string" || id.trim().length === 0) {
+          throw new Error(`Missing id for character trait entry.`);
+        }
+        writeJson(session, `world/character/traits/${id}.json`, trait);
+      }
+    }
     return;
   }
 

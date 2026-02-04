@@ -18,9 +18,8 @@ import {
   LogEntry,
   TokenUsage,
   StorySummary,
-  StorySegment,
-  GameState,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 // Import refactored loop
 import { runSummaryLoopRefactored } from "./summaryLoop";
@@ -36,18 +35,24 @@ export interface SummaryAgenticLoopResult {
 }
 
 export interface SummaryLoopInput {
-  /** Previous summary (the one before the segments being summarized) */
-  previousSummary: StorySummary | null;
-  /** Segments to be summarized */
-  segmentsToSummarize: StorySegment[];
-  /** Full game state for queries */
-  gameState: GameState;
-  /** Node index range being summarized */
+  /** VFS session for file-backed state + conversation reads */
+  vfsSession: VfsSession;
+  /** Slot id for session-scoped summary calls */
+  slotId: string;
+  /** Current fork id (for logging / diagnostics) */
+  forkId: number;
+  /** Node index range being summarized (segment indices) */
   nodeRange: { fromIndex: number; toIndex: number };
+  /** Fork-safe base summaries to reset summary state before running */
+  baseSummaries: StorySummary[];
+  /** Fork-safe base lastSummarizedIndex to reset summary state before running */
+  baseIndex: number;
   /** Language for output */
   language: string;
   /** AI Settings */
   settings: AISettings;
+  /** Optional pending player action not yet written to VFS */
+  pendingPlayerAction?: { segmentIdx: number; text: string } | null;
 }
 
 // ============================================================================
@@ -59,8 +64,8 @@ export interface SummaryLoopInput {
  *
  * Process:
  * 1. Start with minimal context (previous summary + turn overview)
- * 2. AI can query for more detail if needed
- * 3. AI produces final summary via finish_summary tool
+ * 2. AI can query VFS for more detail if needed
+ * 3. AI finishes via vfs_finish_summary (writes summary/state.json)
  */
 export const runSummaryAgenticLoop = async (
   input: SummaryLoopInput,

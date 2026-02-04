@@ -43,6 +43,7 @@ import {
   getBudgetSummary,
 } from "../budgetUtils";
 import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulator";
+import { normalizeVfsPath } from "../../../vfs/utils";
 
 // Import tool handling
 import {
@@ -65,6 +66,7 @@ export interface AgenticLoopConfig {
   generationDetails?: LogEntry["generationDetails"];
   settings: AISettings;
   isSudoMode?: boolean;
+  isCleanupMode?: boolean;
   sessionId?: string;
   vfsSession?: VfsSession;
 }
@@ -94,6 +96,7 @@ export async function runAgenticLoopRefactored(
     generationDetails,
     settings,
     isSudoMode = false,
+    isCleanupMode = false,
     sessionId,
   } = config;
 
@@ -114,6 +117,7 @@ export async function runAgenticLoopRefactored(
     gameState,
     settings,
     isSudoMode,
+    isCleanupMode,
     config.vfsSession,
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
@@ -155,6 +159,19 @@ export async function runAgenticLoopRefactored(
         `[AgenticLoop] Iteration: ${loopState.budgetState.loopIterationsUsed + 1}/${loopState.budgetState.loopIterationsMax}, Budget: ${getBudgetSummary(loopState.budgetState)}`,
       );
 
+      const toolCallsRemaining =
+        loopState.budgetState.toolCallsMax - loopState.budgetState.toolCallsUsed;
+      const iterationsRemaining =
+        loopState.budgetState.loopIterationsMax -
+        loopState.budgetState.loopIterationsUsed;
+      const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 2;
+
+      if (mustFinishNow) {
+        loopState.activeTools = loopState.activeTools.filter(
+          (tool) => tool.name === loopState.finishToolName,
+        );
+      }
+
       // Call AI
       const aiResult = await handleAICall({
         provider,
@@ -164,6 +181,7 @@ export async function runAgenticLoopRefactored(
         loopState,
         settings,
         sessionId,
+        requiredToolName: mustFinishNow ? loopState.finishToolName : undefined,
       });
 
       // Accumulate usage
@@ -287,6 +305,215 @@ async function processToolCalls(
     turnId,
     allLogs,
   } = params;
+
+  const finishToolName = loopState.finishToolName;
+
+  const isFinishToolCall = (call: ToolCallResult): boolean => {
+    if (call.name === finishToolName) {
+      return true;
+    }
+    if (call.name === "vfs_tx") {
+      const ops = (call.args as any)?.ops;
+      return (
+        Array.isArray(ops) &&
+        ops.some((op) => op && typeof op === "object" && (op as any).op === "commit_turn")
+      );
+    }
+    return false;
+  };
+
+  const isConversationPath = (path: string): boolean => {
+    const normalized = normalizeVfsPath(path);
+    if (!normalized) {
+      return false;
+    }
+    const stripped = normalized.startsWith("current/")
+      ? normalized.slice("current/".length)
+      : normalized;
+    return stripped === "conversation" || stripped.startsWith("conversation/");
+  };
+
+  const getConversationTouchedPaths = (call: ToolCallResult): string[] => {
+    const touched: string[] = [];
+
+    if (call.name === "vfs_write") {
+      const files = (call.args as any)?.files;
+      if (Array.isArray(files)) {
+        for (const file of files) {
+          if (typeof file?.path === "string" && isConversationPath(file.path)) {
+            touched.push(file.path);
+          }
+        }
+      }
+      return touched;
+    }
+
+    if (call.name === "vfs_edit") {
+      const edits = (call.args as any)?.edits;
+      if (Array.isArray(edits)) {
+        for (const edit of edits) {
+          if (typeof edit?.path === "string" && isConversationPath(edit.path)) {
+            touched.push(edit.path);
+          }
+        }
+      }
+      return touched;
+    }
+
+    if (call.name === "vfs_merge") {
+      const files = (call.args as any)?.files;
+      if (Array.isArray(files)) {
+        for (const file of files) {
+          if (typeof file?.path === "string" && isConversationPath(file.path)) {
+            touched.push(file.path);
+          }
+        }
+      }
+      return touched;
+    }
+
+    if (call.name === "vfs_move") {
+      const moves = (call.args as any)?.moves;
+      if (Array.isArray(moves)) {
+        for (const move of moves) {
+          if (typeof move?.from === "string" && isConversationPath(move.from)) {
+            touched.push(move.from);
+          }
+          if (typeof move?.to === "string" && isConversationPath(move.to)) {
+            touched.push(move.to);
+          }
+        }
+      }
+      return touched;
+    }
+
+    if (call.name === "vfs_delete") {
+      const paths = (call.args as any)?.paths;
+      if (Array.isArray(paths)) {
+        for (const path of paths) {
+          if (typeof path === "string" && isConversationPath(path)) {
+            touched.push(path);
+          }
+        }
+      }
+      return touched;
+    }
+
+    if (call.name === "vfs_tx") {
+      const ops = (call.args as any)?.ops;
+      if (Array.isArray(ops)) {
+        for (const op of ops) {
+          if (!op || typeof op !== "object") {
+            continue;
+          }
+          const kind = (op as any).op;
+          if (kind === "write" || kind === "edit" || kind === "merge" || kind === "delete") {
+            const path = (op as any).path;
+            if (typeof path === "string" && isConversationPath(path)) {
+              touched.push(path);
+            }
+            continue;
+          }
+          if (kind === "move") {
+            const from = (op as any).from;
+            const to = (op as any).to;
+            if (typeof from === "string" && isConversationPath(from)) {
+              touched.push(from);
+            }
+            if (typeof to === "string" && isConversationPath(to)) {
+              touched.push(to);
+            }
+          }
+        }
+      }
+      return touched;
+    }
+
+    return touched;
+  };
+
+  const mustOnlyFinish =
+    loopState.activeTools.length === 1 &&
+    loopState.activeTools[0]?.name === finishToolName;
+
+  if (mustOnlyFinish) {
+    if (functionCalls.length !== 1 || functionCalls[0]?.name !== finishToolName) {
+      const error = {
+        success: false,
+        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
+        code: "INVALID_ACTION",
+      };
+      return {
+        responses: functionCalls.map((call) => ({
+          toolCallId: call.id,
+          name: call.name,
+          content: error,
+        })),
+        turnFinished: false,
+      };
+    }
+  }
+
+  const finishCallIndices = functionCalls
+    .map((call, index) => ({ call, index }))
+    .filter(({ call }) => isFinishToolCall(call))
+    .map(({ index }) => index);
+
+  if (finishCallIndices.length > 1) {
+    const error = {
+      success: false,
+      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}" (or one "vfs_tx" containing commit_turn), and it must be the LAST tool call.`,
+      code: "INVALID_ACTION",
+    };
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: error,
+      })),
+      turnFinished: false,
+    };
+  }
+
+  if (
+    finishCallIndices.length === 1 &&
+    finishCallIndices[0] !== functionCalls.length - 1
+  ) {
+    const error = {
+      success: false,
+      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}" (or "vfs_tx" containing commit_turn).`,
+      code: "INVALID_ACTION",
+    };
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: error,
+      })),
+      turnFinished: false,
+    };
+  }
+
+  const conversationTouched = functionCalls.flatMap((call) =>
+    getConversationTouchedPaths(call),
+  );
+
+  if (conversationTouched.length > 0) {
+    const unique = Array.from(new Set(conversationTouched));
+    const error = {
+      success: false,
+      error: `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not write to current/conversation/* using generic VFS write/edit/merge/move/delete tools. End the turn ONLY via "${finishToolName}" (preferred) or "vfs_tx" with commit_turn as the LAST op. Forbidden paths: ${unique.join(", ")}`,
+      code: "INVALID_ACTION",
+    };
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: error,
+      })),
+      turnFinished: false,
+    };
+  }
 
   incrementToolCalls(loopState.budgetState, functionCalls.length);
   console.log(

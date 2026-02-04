@@ -1149,6 +1149,36 @@ export const hiddenTraitSchema = z.object({
   highlight: z.boolean().nullish(),
 });
 
+/** 角色档案（不包含 skills/conditions/hiddenTraits；它们以分文件形式存储） */
+export const characterProfileSchema = z.object({
+  name: z.string().describe("Name of the protagonist."),
+  title: z.string().describe("Starting Class/Role/Title."),
+  status: z.string().nullish().describe("Initial condition (e.g. Healthy, Amnesiac)."),
+  attributes: z.array(characterAttributeSchema).default([]).describe("Character attributes."),
+  appearance: z.string().nullish().describe("Detailed physical appearance."),
+  age: z.string().nullish().describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
+  profession: z.string().nullish().describe("Character's occupation or class."),
+  background: z.string().nullish().describe("Brief life story and background."),
+  race: z
+    .string()
+    .nullish()
+    .describe(
+      "The character's race AND gender combined (e.g. 'Human Male', 'Female Elf', 'Male Dwarf', 'Female Orc'). CRITICAL: Include gender to ensure consistent pronoun usage throughout the narrative.",
+    ),
+  psychology: z
+    .object({
+      coreTrauma: z.string().describe("Past failure/trauma driving them."),
+      copingMechanism: z.string().describe("How they deal with pain."),
+      internalContradiction: z.string().describe("Want vs Need conflict."),
+    })
+    .nullish()
+    .describe("Psychological depth profile."),
+  currentLocation: z
+    .string()
+    .nullish()
+    .describe("The protagonist's current location name."),
+});
+
 /** 完整角色状态 Schema */
 export const characterStatusSchema = z.object({
   name: z.string().describe("Name of the protagonist."),
@@ -2266,6 +2296,7 @@ export type CausalChain = z.infer<typeof causalChainSchema>;
 export type Faction = z.infer<typeof factionSchema>;
 export type CharacterAttribute = z.infer<typeof characterAttributeSchema>;
 export type HiddenTrait = z.infer<typeof hiddenTraitSchema>;
+export type CharacterProfile = z.infer<typeof characterProfileSchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type StoryOutline = z.infer<typeof storyOutlineSchema>;
 export type StorySummary = z.infer<typeof storySummarySchema>;

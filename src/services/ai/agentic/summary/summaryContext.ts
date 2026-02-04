@@ -5,6 +5,7 @@
  */
 
 import type { SummaryLoopInput } from "./summary";
+import { readConversationIndex, readForkTree, readTurnFile, buildTurnPath } from "../../../vfs/conversation";
 
 // Atoms
 import {
@@ -45,11 +46,13 @@ You are the GM - you know everything. Your job is to:
 <tools>
 You have these tools available:
 
-1. \`summary_query_segments\` - Examine specific turns in detail (use sparingly, segments already provided in context)
-2. \`summary_query_state\` - Check current entity states (inventory, npcs, etc.)
-3. \`finish_summary\` - Complete the summary with your results
+1. \`vfs_ls_entries\` - Get a compact catalog of entities by category (read-only)
+2. \`vfs_read\` / \`vfs_read_many\` - Read specific VFS files for details
+3. \`vfs_search\` / \`vfs_grep\` - Find details in the VFS (read-only)
+4. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
-When you have enough information, call \`finish_summary\` to complete the summary.
+When you have enough information, call \`vfs_finish_summary\`.
+It MUST be your LAST tool call.
 </tools>
 
 <critical_rules>
@@ -84,8 +87,36 @@ ${languageEnforcement({ language })}`;
  * Lists ALL segments with clear turn markers so AI doesn't need to query them
  */
 export function buildSummaryInitialContext(input: SummaryLoopInput): string {
-  const { previousSummary, segmentsToSummarize, nodeRange } = input;
+  const { baseSummaries, baseIndex, nodeRange, pendingPlayerAction, vfsSession } =
+    input;
   const parts: string[] = [];
+
+  const previousSummary =
+    baseSummaries.length > 0 ? baseSummaries[baseSummaries.length - 1] : null;
+
+  const snapshot = vfsSession.snapshot();
+  const index = readConversationIndex(snapshot);
+  const forkTree = readForkTree(snapshot);
+
+  const activeForkId =
+    typeof index?.activeForkId === "number" ? index.activeForkId : null;
+  const forkCount =
+    typeof forkTree?.nextForkId === "number" ? Math.max(forkTree.nextForkId - 1, 0) : null;
+  const activeTurnNumber =
+    activeForkId !== null
+      ? (index?.latestTurnNumberByFork?.[String(activeForkId)] ?? null)
+      : null;
+
+  const targetLastSummarizedIndex = nodeRange.toIndex + 1;
+
+  parts.push(`<runtime_meta
+  active_fork_id="${activeForkId ?? "unknown"}"
+  fork_count="${forkCount ?? "unknown"}"
+  active_turn_number="${activeTurnNumber ?? "unknown"}"
+  node_range="${nodeRange.fromIndex}-${nodeRange.toIndex}"
+  base_last_summarized_index="${baseIndex}"
+  target_last_summarized_index="${targetLastSummarizedIndex}"
+/>`);
 
   // Previous summary
   if (previousSummary) {
@@ -113,53 +144,74 @@ ${previousSummary.nodeRange ? `<node_range from="${previousSummary.nodeRange.fro
     );
   }
 
-  // Current segments to summarize - LIST ALL OF THEM
-  const segmentCount = segmentsToSummarize.length;
-  const firstSegment = segmentsToSummarize[0];
-  const lastSegment = segmentsToSummarize[segmentCount - 1];
+  const xmlEscapeAttr = (value: string): string =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/\r?\n/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  // Get time info from segments
-  const startTime = firstSegment?.stateSnapshot?.time || "Unknown";
-  const endTime = lastSegment?.stateSnapshot?.time || "Unknown";
-  const startLocation =
-    firstSegment?.stateSnapshot?.currentLocation || "Unknown";
-  const endLocation = lastSegment?.stateSnapshot?.currentLocation || "Unknown";
+  const excerpt = (value: unknown, maxChars: number): string => {
+    if (typeof value !== "string") return "";
+    const normalized = value.replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+    if (normalized.length <= maxChars) return normalized;
+    return `${normalized.slice(0, maxChars)}…`;
+  };
 
-  // Build segment list with clear markers
-  const segmentListItems: string[] = [];
-  for (let i = 0; i < segmentsToSummarize.length; i++) {
-    const seg = segmentsToSummarize[i];
-    const turnNum = seg.segmentIdx ?? nodeRange.fromIndex + i;
-    const roleLabel =
-      seg.role === "user"
-        ? "PLAYER_ACTION"
-        : seg.role === "model"
-          ? "NARRATIVE"
-          : "SYSTEM";
-    const location = seg.stateSnapshot?.currentLocation || "";
-    const time = seg.stateSnapshot?.time || "";
+  const turnItems: string[] = [];
+  const order =
+    activeForkId !== null ? (index?.turnOrderByFork?.[String(activeForkId)] ?? []) : [];
 
-    segmentListItems.push(`  <segment turn="${turnNum}" role="${roleLabel}"${location ? ` location="${location}"` : ""}${time ? ` time="${time}"` : ""}>
-${seg.text || "(empty)"}
-  </segment>`);
+  let segmentIdx = 0;
+  for (const turnId of order) {
+    const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
+    if (!match) continue;
+    const forkId = Number(match[1]);
+    const turnNumber = Number(match[2]);
+    if (!Number.isFinite(forkId) || !Number.isFinite(turnNumber)) continue;
+    const turn = readTurnFile(snapshot, forkId, turnNumber);
+    if (!turn) continue;
+
+    const hasUserAction =
+      typeof turn.userAction === "string" && turn.userAction.trim().length > 0;
+
+    const rangeStart = segmentIdx;
+    if (hasUserAction) {
+      segmentIdx += 1;
+    }
+    segmentIdx += 1; // model node always exists
+    const rangeEnd = segmentIdx - 1;
+
+    const intersects =
+      rangeEnd >= nodeRange.fromIndex && rangeStart <= nodeRange.toIndex;
+    if (!intersects) {
+      continue;
+    }
+
+    const userExcerpt = excerpt(turn.userAction, 220);
+    const assistantExcerpt = excerpt(turn.assistant?.narrative, 260);
+    turnItems.push(
+      `  <turn path="${buildTurnPath(forkId, turnNumber)}" segment_range="${rangeStart}-${rangeEnd}" user_excerpt="${xmlEscapeAttr(userExcerpt)}" assistant_excerpt="${xmlEscapeAttr(assistantExcerpt)}" />`,
+    );
   }
 
-  parts.push(`<segments_to_summarize count="${segmentCount}" node_range="${nodeRange.fromIndex}-${nodeRange.toIndex}">
-<metadata>
-  <time_range from="${startTime}" to="${endTime}" />
-  <location_change from="${startLocation}" to="${endLocation}" />
-</metadata>
+  parts.push(`<turn_files count="${turnItems.length}">
+${turnItems.join("\n")}
+</turn_files>`);
 
-<important_notice>
-⚠️ ALL ${segmentCount} segments are listed below in FULL. You already have complete context.
-DO NOT use summary_query_segments to query these turns - they are already provided!
-Only use summary_query_state if you need current entity states (inventory, npcs, etc.)
-</important_notice>
+  if (pendingPlayerAction && typeof pendingPlayerAction.text === "string") {
+    parts.push(`<pending_player_action segmentIdx="${pendingPlayerAction.segmentIdx}">
+${pendingPlayerAction.text}
+</pending_player_action>`);
+  }
 
-<segment_list>
-${segmentListItems.join("\n\n")}
-</segment_list>
-</segments_to_summarize>`);
+  parts.push(`<finish_rule>
+When ready, call vfs_finish_summary(...).
+It MUST be your LAST tool call.
+</finish_rule>`);
 
   return parts.join("\n\n");
 }

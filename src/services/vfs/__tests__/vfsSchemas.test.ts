@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { npcSchema, knowledgeEntrySchema } from "../../zodSchemas";
+import {
+  npcSchema,
+  knowledgeEntrySchema,
+  characterProfileSchema,
+  skillSchema,
+  conditionSchema,
+  hiddenTraitSchema,
+} from "../../zodSchemas";
 import { getSchemaForPath } from "../schemas";
 
 describe("vfs schemas", () => {
@@ -27,5 +34,29 @@ describe("vfs schemas", () => {
     expect(() =>
       schema.parse({ summaries: [], lastSummarizedIndex: 0 }),
     ).not.toThrow();
+  });
+
+  it("matches character profile paths to character profile schema", () => {
+    const schema = getSchemaForPath("world/character/profile.json");
+    expect(schema).toBe(characterProfileSchema);
+  });
+
+  it("matches character skill paths to skill schema", () => {
+    const schema = getSchemaForPath("world/character/skills/skill:1.json");
+    expect(schema).toBe(skillSchema);
+  });
+
+  it("matches character condition paths to condition schema", () => {
+    const schema = getSchemaForPath("world/character/conditions/condition:1.json");
+    expect(schema).toBe(conditionSchema);
+  });
+
+  it("matches character trait paths to hidden trait schema", () => {
+    const schema = getSchemaForPath("world/character/traits/trait:1.json");
+    expect(schema).toBe(hiddenTraitSchema);
+  });
+
+  it("rejects legacy world/character.json paths", () => {
+    expect(() => getSchemaForPath("world/character.json")).toThrow();
   });
 });

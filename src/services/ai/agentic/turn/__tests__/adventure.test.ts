@@ -34,6 +34,7 @@ describe("runAgenticLoop", () => {
       undefined,
       {} as any,
       false,
+      false,
       "session-1",
       vfsSession,
     );

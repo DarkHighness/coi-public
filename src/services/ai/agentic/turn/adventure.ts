@@ -248,6 +248,7 @@ export const generateAdventureTurn = async (
 
   // Detect SUDO mode
   const isSudoMode = context.userAction.startsWith("[SUDO]");
+  const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
 
   // Run agentic loop
   try {
@@ -261,6 +262,7 @@ export const generateAdventureTurn = async (
       generationDetails,
       context.settings,
       isSudoMode,
+      isCleanupMode,
       sessionId,
       context.vfsSession,
     );
@@ -297,6 +299,7 @@ export const runAgenticLoop = async (
   generationDetails: LogEntry["generationDetails"] | undefined,
   settings: AISettings,
   isSudoMode: boolean = false,
+  isCleanupMode: boolean = false,
   _sessionId?: string,
   vfsSession?: VfsSession,
 ): Promise<AgenticLoopResult> => {
@@ -311,6 +314,7 @@ export const runAgenticLoop = async (
     generationDetails,
     settings,
     isSudoMode,
+    isCleanupMode,
     sessionId: _sessionId,
     vfsSession,
   });

@@ -1630,25 +1630,34 @@ export const useGameEngine = () => {
           return;
         }
 
+        const sectionDir: Record<string, string> = {
+          skills: "world/character/skills",
+          conditions: "world/character/conditions",
+          hiddenTraits: "world/character/traits",
+        };
+        const dir = sectionDir[section];
+
         const matches = (entry: any): boolean => {
           if (match.id && entry?.id && entry.id === match.id) return true;
           if (match.name && entry?.name && entry.name === match.name) return true;
           return false;
         };
 
-        const updated = list.map((entry) =>
-          matches(entry) ? { ...entry, highlight: false } : entry,
-        );
-
-        try {
-          if (vfsSession.readFile("world/character.json")) {
-            vfsSession.mergeJson("world/character.json", { [section]: updated });
+        for (const entry of list) {
+          if (!matches(entry)) continue;
+          const id = entry?.id;
+          if (typeof id !== "string" || id.trim().length === 0) {
+            continue;
           }
-        } catch (error) {
-          console.warn(
-            "[UI] Failed to clear highlight in VFS: world/character.json",
-            error,
-          );
+          const filePath = `${dir}/${id}.json`;
+          try {
+            if (!vfsSession.readFile(filePath)) {
+              continue;
+            }
+            vfsSession.mergeJson(filePath, { highlight: false });
+          } catch (error) {
+            console.warn("[UI] Failed to clear highlight in VFS:", filePath, error);
+          }
         }
 
         setGameState((prev) => {

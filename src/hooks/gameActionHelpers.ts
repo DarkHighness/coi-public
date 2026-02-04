@@ -5,6 +5,7 @@ import {
   StorySummary,
   LanguageCode,
 } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
 import { getRAGService } from "../services/rag";
 import { deriveHistory } from "../utils/storyUtils";
@@ -176,6 +177,8 @@ export const handleSummarization = async (
   isInit: boolean,
   aiSettings: AISettings,
   language: LanguageCode,
+  vfsSession: VfsSession | undefined,
+  slotId: string | null,
   forceSummarize: boolean = false,
 ): Promise<{
   effectiveSummaries: StorySummary[];
@@ -228,14 +231,6 @@ export const handleSummarization = async (
   }
 
   if (shouldSummarize) {
-    const toSummarize = contextNodes.slice(lastIndex, totalLength);
-
-    // Get previous summary (null if none exists)
-    const lastSummary =
-      effectiveSummaries.length > 0
-        ? effectiveSummaries[effectiveSummaries.length - 1]
-        : null;
-
     // Node range being summarized
     const nodeRange = {
       fromIndex: lastIndex,
@@ -243,14 +238,33 @@ export const handleSummarization = async (
     };
 
     // Call Summary Service with agentic loop
-    const sumResult = await summarizeContext(
-      lastSummary,
-      toSummarize,
+    if (!vfsSession) {
+      return {
+        effectiveSummaries,
+        lastIndex: baseIndex, // RESET lastIndex so we retry next time
+        summarySnapshot: undefined,
+        contextNodes,
+        logs: [],
+        error: "VFS session is not available for summarization",
+      };
+    }
+
+    const pendingPlayerAction =
+      !isInit && typeof action === "string" && action.trim().length > 0
+        ? { segmentIdx: nodeRange.toIndex, text: action }
+        : null;
+
+    const sumResult = await summarizeContext({
+      vfsSession,
+      slotId: slotId || "default",
+      forkId: gameState.forkId ?? 0,
+      baseSummaries,
+      baseIndex,
       nodeRange,
-      LANG_MAP[language],
-      aiSettings,
-      gameState,
-    );
+      language: LANG_MAP[language],
+      settings: aiSettings,
+      pendingPlayerAction,
+    });
 
     // Push the new summary object if successful
     if (sumResult.summary) {

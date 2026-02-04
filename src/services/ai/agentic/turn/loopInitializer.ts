@@ -41,6 +41,8 @@ export interface LoopState {
   finishToolName: string;
   /** Whether RAG is enabled */
   isRAGEnabled: boolean;
+  /** Whether in CLEANUP mode */
+  isCleanupMode: boolean;
 }
 
 // ============================================================================
@@ -54,12 +56,17 @@ export function createLoopState(
   gameState: GameState,
   settings: AISettings,
   isSudoMode: boolean,
+  isCleanupMode: boolean = false,
   vfsSession?: VfsSession,
 ): LoopState {
   const budgetState = createBudgetState(settings);
   const accumulatedResponse = createEmptyResponse();
   const isRAGEnabled = settings.embedding?.enabled ?? false;
-  const activeTools = createInitialTools(isSudoMode, isRAGEnabled);
+  const activeTools = createInitialTools({
+    isSudoMode,
+    isRAGEnabled,
+    isCleanupMode,
+  });
   const finishToolName = "vfs_commit_turn";
   const conversationMarker = getConversationMarker(vfsSession);
 
@@ -72,6 +79,7 @@ export function createLoopState(
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     activeTools,
     isSudoMode,
+    isCleanupMode,
     finishToolName,
     isRAGEnabled,
   };
@@ -99,14 +107,40 @@ export function createEmptyResponse(): GameResponse {
  * Create initial tool set based on mode
  */
 export function createInitialTools(
-  isSudoMode: boolean,
-  isRAGEnabled: boolean,
+  options: {
+    isSudoMode: boolean;
+    isRAGEnabled: boolean;
+    isCleanupMode: boolean;
+  },
 ): ZodToolDefinition[] {
+  const { isSudoMode, isRAGEnabled, isCleanupMode } = options;
   void isSudoMode;
   void isRAGEnabled;
-  // VFS-only: the turn loop is file-backed, and completion is detected by
-  // `current/conversation/*` writes (see buildResponseFromVfs).
-  return ALL_DEFINED_TOOLS.filter((tool) => tool.name.startsWith("vfs_"));
+
+  // Loop-scoped allowlist:
+  // - Normal turns should NOT see summary/cleanup helper tools.
+  // - Cleanup turns additionally expose catalog + duplicate suggestion helpers.
+  const allowed = new Set<string>([
+    "vfs_ls",
+    "vfs_read",
+    "vfs_read_many",
+    "vfs_search",
+    "vfs_grep",
+    "vfs_write",
+    "vfs_edit",
+    "vfs_merge",
+    "vfs_move",
+    "vfs_delete",
+    "vfs_commit_turn",
+    "vfs_tx",
+  ]);
+
+  if (isCleanupMode) {
+    allowed.add("vfs_ls_entries");
+    allowed.add("vfs_suggest_duplicates");
+  }
+
+  return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name));
 }
 
 /**

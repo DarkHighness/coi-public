@@ -13,6 +13,7 @@ import {
   OutlineConversationState,
   ResolvedThemeConfig,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -814,12 +815,17 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
  * @param gameState 完整游戏状态（用于查询）
  */
 export const summarizeContext = async (
-  previousSummary: StorySummary | null,
-  segmentsToSummarize: StorySegment[],
-  nodeRange: { fromIndex: number; toIndex: number },
-  language: string,
-  settings: AISettings,
-  gameState: GameState,
+  input: {
+    vfsSession: VfsSession;
+    slotId: string;
+    forkId: number;
+    baseSummaries: StorySummary[];
+    baseIndex: number;
+    nodeRange: { fromIndex: number; toIndex: number };
+    language: string;
+    settings: AISettings;
+    pendingPlayerAction?: { segmentIdx: number; text: string } | null;
+  },
 ): Promise<{
   summary: StorySummary | null;
   logs: LogEntry[];
@@ -829,12 +835,15 @@ export const summarizeContext = async (
 
   try {
     const result = await runSummaryAgenticLoop({
-      previousSummary,
-      segmentsToSummarize,
-      gameState,
-      nodeRange,
-      language,
-      settings,
+      vfsSession: input.vfsSession,
+      slotId: input.slotId,
+      forkId: input.forkId,
+      nodeRange: input.nodeRange,
+      baseSummaries: input.baseSummaries,
+      baseIndex: input.baseIndex,
+      language: input.language,
+      settings: input.settings,
+      pendingPlayerAction: input.pendingPlayerAction,
     });
 
     // Check for null summary (failure)
@@ -854,7 +863,7 @@ export const summarizeContext = async (
     const error = e instanceof Error ? e : new Error(String(e));
     console.error("Summary agentic loop failed", error);
 
-    const providerInfo = getProviderConfig(settings, "story");
+    const providerInfo = getProviderConfig(input.settings, "story");
     return {
       summary: null,
       logs: [

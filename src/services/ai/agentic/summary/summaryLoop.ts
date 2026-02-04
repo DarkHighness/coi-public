@@ -1,8 +1,9 @@
 /**
  * Summary Loop - Refactored Main Loop
  *
- * Modular implementation of the summary agentic loop.
- * Stage-less design: AI has all tools available and calls finish_summary when ready.
+ * VFS-only summary agentic loop.
+ * - Read details via vfs_* tools (read-only subset)
+ * - Finish by calling vfs_finish_summary (MUST be last)
  */
 
 import type {
@@ -39,7 +40,8 @@ import {
   getSummarySystemInstruction,
   buildSummaryInitialContext,
 } from "./summaryContext";
-import { executeSummaryToolCall } from "./summaryToolHandler";
+import { dispatchToolCallAsync } from "../../../tools/handlers";
+import { readConversationIndex } from "../../../vfs/conversation";
 
 // ============================================================================
 // Main Loop
@@ -58,8 +60,8 @@ export async function runSummaryLoopRefactored(
   const { instance, modelId } = providerInfo;
 
   const summarySession = await sessionManager.getOrCreateSession({
-    slotId: "summary",
-    forkId: -2,
+    slotId: `${input.slotId}:summary`,
+    forkId: input.forkId,
     providerId: instance.id,
     modelId,
     protocol: instance.protocol,
@@ -75,7 +77,18 @@ export async function runSummaryLoopRefactored(
     settings.extra?.detailedDescription,
   );
 
-  // Build initial context - all segments provided upfront
+  // Fork-safe reset: restore baseline summaries for this branch before running.
+  try {
+    input.vfsSession.mergeJson("summary/state.json", {
+      summaries: input.baseSummaries,
+      lastSummarizedIndex: input.baseIndex,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`[SummaryLoop] Failed to reset summary/state.json: ${message}`);
+  }
+
+  // Build initial context (hybrid: index + per-turn excerpts)
   let conversationHistory: UnifiedMessage[] = [
     createUserMessage(
       `[CONTEXT: Summary Task]\n${buildSummaryInitialContext(input)}`,
@@ -96,10 +109,22 @@ export async function runSummaryLoopRefactored(
       break;
     }
 
+    const toolCallsRemaining =
+      loopState.budgetState.toolCallsMax - loopState.budgetState.toolCallsUsed;
+    const iterationsRemaining =
+      loopState.budgetState.loopIterationsMax - loopState.budgetState.loopIterationsUsed;
+    const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 2;
+
+    if (mustFinishNow) {
+      loopState.activeTools = loopState.activeTools.filter(
+        (tool) => tool.name === "vfs_finish_summary",
+      );
+    }
+
     // Inject budget status
     conversationHistory.push(
       createUserMessage(
-        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState, "finish_summary")}`,
+        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState, "vfs_finish_summary")}`,
       ),
     );
 
@@ -107,7 +132,7 @@ export async function runSummaryLoopRefactored(
       `[SummaryLoop] Iteration: ${loopState.budgetState.loopIterationsUsed + 1}, Budget: ${getBudgetSummary(loopState.budgetState)}`,
     );
 
-    // Call AI with all tools available
+    // Call AI
     const toolConfig = loopState.activeTools.map((t) => ({
       name: t.name,
       description: t.description,
@@ -133,12 +158,13 @@ export async function runSummaryLoopRefactored(
       conversationHistory,
       {
         maxRetries: loopState.budgetState.retriesMax,
+        requiredToolName: mustFinishNow ? "vfs_finish_summary" : undefined,
         onRetry: (msg, count) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
           incrementRetries(loopState.budgetState);
           conversationHistory.push(
             createUserMessage(
-              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, "finish_summary")}`,
+              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, "vfs_finish_summary")}`,
             ),
           );
         },
@@ -181,6 +207,83 @@ export async function runSummaryLoopRefactored(
         ),
       );
 
+      const mustOnlyFinish =
+        loopState.activeTools.length === 1 &&
+        loopState.activeTools[0]?.name === "vfs_finish_summary";
+
+      if (mustOnlyFinish) {
+        if (
+          functionCalls.length !== 1 ||
+          functionCalls[0]?.name !== "vfs_finish_summary"
+        ) {
+          const error = {
+            success: false,
+            error:
+              '[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "vfs_finish_summary", and it must be the ONLY tool call in this response.',
+            code: "INVALID_ACTION",
+          };
+          conversationHistory.push(
+            createToolResponseMessage(
+              functionCalls.map((call) => ({
+                toolCallId: call.id,
+                name: call.name,
+                content: error,
+              })),
+            ),
+          );
+          incrementIterations(loopState.budgetState);
+          continue;
+        }
+      }
+
+      const finishIndices = functionCalls
+        .map((call, index) => ({ call, index }))
+        .filter(({ call }) => call.name === "vfs_finish_summary")
+        .map(({ index }) => index);
+
+      if (finishIndices.length > 1) {
+        const error = {
+          success: false,
+          error:
+            '[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "vfs_finish_summary", and it must be the LAST tool call.',
+          code: "INVALID_ACTION",
+        };
+        conversationHistory.push(
+          createToolResponseMessage(
+            functionCalls.map((call) => ({
+              toolCallId: call.id,
+              name: call.name,
+              content: error,
+            })),
+          ),
+        );
+        incrementIterations(loopState.budgetState);
+        continue;
+      }
+
+      if (
+        finishIndices.length === 1 &&
+        finishIndices[0] !== functionCalls.length - 1
+      ) {
+        const error = {
+          success: false,
+          error:
+            '[ERROR: FINISH_NOT_LAST] "vfs_finish_summary" must be your LAST tool call. Reorder your tool calls and try again.',
+          code: "INVALID_ACTION",
+        };
+        conversationHistory.push(
+          createToolResponseMessage(
+            functionCalls.map((call) => ({
+              toolCallId: call.id,
+              name: call.name,
+              content: error,
+            })),
+          ),
+        );
+        incrementIterations(loopState.budgetState);
+        continue;
+      }
+
       incrementToolCalls(loopState.budgetState, functionCalls.length);
 
       const toolResponses: Array<{
@@ -190,20 +293,29 @@ export async function runSummaryLoopRefactored(
       }> = [];
       let loopFinished = false;
 
-      for (const call of functionCalls) {
-        const output = executeSummaryToolCall(
-          call.name,
-          call.args,
-          input,
-          loopState,
-        );
+      const snapshot = input.vfsSession.snapshot();
+      const index = readConversationIndex(snapshot);
+      const forkId =
+        typeof index?.activeForkId === "number" ? index.activeForkId : input.forkId;
+      const turnNumber =
+        typeof forkId === "number"
+          ? (index?.latestTurnNumberByFork?.[String(forkId)] ?? null)
+          : null;
 
-        if (
-          call.name === "finish_summary" &&
-          output &&
-          (output as any).success
-        ) {
-          finalSummary = (output as any).summary;
+      const toolCtx = {
+        vfsSession: input.vfsSession,
+        settings: input.settings,
+        gameState: {
+          forkId,
+          turnNumber: typeof turnNumber === "number" ? turnNumber : 0,
+        } as any,
+      };
+
+      for (const call of functionCalls) {
+        const output = await dispatchToolCallAsync(call.name, call.args, toolCtx);
+
+        if (call.name === "vfs_finish_summary" && output && (output as any).success) {
+          finalSummary = (output as any).data?.summary ?? null;
           loopFinished = true;
         }
 

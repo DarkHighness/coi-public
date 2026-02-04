@@ -32,6 +32,7 @@ export interface AICallParams {
   loopState: LoopState;
   settings: AISettings;
   sessionId?: string;
+  requiredToolName?: string;
 }
 
 export interface AICallResult {
@@ -55,6 +56,7 @@ export async function handleAICall(
     loopState,
     settings,
     sessionId,
+    requiredToolName,
   } = params;
 
   const toolConfig = loopState.activeTools.map((t) => ({
@@ -91,6 +93,7 @@ export async function handleAICall(
       conversationHistory,
       {
         maxRetries: loopState.budgetState.retriesMax,
+        requiredToolName,
         onRetry: (err, count) => {
           console.warn(
             `[AICall] Retry ${count}/${loopState.budgetState.retriesMax}: ${err}`,
