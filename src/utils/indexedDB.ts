@@ -1,24 +1,7 @@
-// Compression Helpers
-const compress = async (str: string): Promise<ArrayBuffer> => {
-  const stream = new Blob([str]).stream();
-  const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
-  return new Response(compressedStream).arrayBuffer();
-};
-
-const decompress = async (buffer: ArrayBuffer): Promise<string> => {
-  const stream = new Blob([buffer]).stream();
-  const decompressedStream = stream.pipeThrough(
-    new DecompressionStream("gzip"),
-  );
-  return new Response(decompressedStream).text();
-};
-
 /**
  * IndexedDB wrapper for game save data
  * Provides much larger storage capacity than localStorage
  */
-
-import { getMigrationManager } from "../services/migrationManager";
 
 const DB_NAME = "ChroniclesOfInfinity";
 const DB_VERSION = 4;
@@ -30,10 +13,6 @@ export const VFS_DB_NAME = "ChroniclesOfInfinityVFS";
 const VFS_DB_VERSION = 1;
 export const VFS_SNAPSHOTS_STORE = "vfs_snapshots";
 export const VFS_META_STORE = "vfs_meta";
-
-interface DBConnection {
-  db: IDBDatabase;
-}
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 let vfsDbPromise: Promise<IDBDatabase> | null = null;
@@ -142,136 +121,6 @@ export const openVfsDB = (): Promise<IDBDatabase> => {
   });
 
   return vfsDbPromise;
-};
-
-/**
- * Save game state to IndexedDB
- */
-export const saveGameState = async <T>(id: string, data: T): Promise<void> => {
-  // Compress BEFORE opening transaction to prevent auto-commit during async compression
-  const jsonString = JSON.stringify(data);
-  const compressed = await compress(jsonString);
-
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], "readwrite");
-    const store = transaction.objectStore(SAVES_STORE);
-
-    const request = store.put({
-      id,
-      data: compressed,
-      isCompressed: true,
-      compressionMethod: "gzip",
-      timestamp: Date.now(),
-    });
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
-
-/**
- * Load game state from IndexedDB
- * Automatically applies version migrations if needed
- */
-export const loadGameState = async <T = any>(
-  id: string,
-  options?: { skipMigration?: boolean },
-): Promise<T | null> => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], "readonly");
-    const store = transaction.objectStore(SAVES_STORE);
-    const request = store.get(id);
-
-    request.onsuccess = async () => {
-      const result = request.result;
-      if (!result) {
-        resolve(null);
-        return;
-      }
-
-      try {
-        let finalData = result.data;
-
-        // Handle compression
-        if (result.isCompressed) {
-          // Method 1: Native GZIP (ArrayBuffer)
-          if (
-            result.data instanceof ArrayBuffer ||
-            (result.data && result.data.byteLength !== undefined)
-          ) {
-            try {
-              const json = await decompress(result.data);
-              finalData = JSON.parse(json);
-            } catch (e) {
-              console.error("GZIP Decompression failed", e);
-              resolve(null);
-              return;
-            }
-          } else if (typeof result.data === "string") {
-            finalData = JSON.parse(result.data);
-          }
-        }
-
-        // Apply version migrations if needed
-        if (!options?.skipMigration && finalData) {
-          const migrationManager = getMigrationManager();
-          if (migrationManager.needsMigration(finalData)) {
-            console.log(`[IndexedDB] Save ${id} needs migration`);
-            try {
-              finalData = await migrationManager.migrate(finalData);
-              // Auto-save the migrated state
-              await saveGameState(id, finalData);
-              console.log(`[IndexedDB] Save ${id} migrated and saved`);
-            } catch (migrationError) {
-              console.error(
-                `[IndexedDB] Migration failed for ${id}:`,
-                migrationError,
-              );
-              // Continue with unmigrated data
-            }
-          }
-        }
-
-        resolve(finalData);
-      } catch (e) {
-        console.error("Error parsing save data:", e);
-        resolve(null);
-      }
-    };
-    request.onerror = () => reject(request.error);
-  });
-};
-
-/**
- * Delete a save from IndexedDB
- */
-export const deleteGameState = async (id: string): Promise<void> => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], "readwrite");
-    const store = transaction.objectStore(SAVES_STORE);
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};
-
-/**
- * Get all save IDs
- */
-export const getAllSaveIds = async (): Promise<string[]> => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SAVES_STORE], "readonly");
-    const store = transaction.objectStore(SAVES_STORE);
-    const request = store.getAllKeys();
-
-    request.onsuccess = () => resolve(request.result as string[]);
-    request.onerror = () => reject(request.error);
-  });
 };
 
 /**

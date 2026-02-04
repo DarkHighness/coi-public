@@ -1,7 +1,7 @@
 /**
  * Import Save Modal
  *
- * Handles importing saves from ZIP or legacy JSON files
+ * Handles importing saves from ZIP files
  * with validation and preview
  */
 
@@ -165,7 +165,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".zip,.json"
+              accept=".zip"
               onChange={handleInputChange}
               className="hidden"
             />
@@ -213,7 +213,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                 </div>
                 <div className="text-xs text-theme-muted/70">
                   {t("import.supportedFormats") ||
-                    "Supports .zip and .json files"}
+                    "Supports .zip files"}
                 </div>
               </div>
             )}

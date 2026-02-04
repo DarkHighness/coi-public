@@ -2,7 +2,7 @@
  * Save Export/Import Service
  *
  * Handles exporting and importing game saves in ZIP format
- * with optional images, embeddings, and proper version migration
+ * with optional images and embeddings.
  */
 
 import JSZip from "jszip";
@@ -20,8 +20,6 @@ import type {
 } from "../types";
 import { CURRENT_EXPORT_VERSION, CURRENT_SAVE_VERSION } from "../types";
 import {
-  loadGameState,
-  saveGameState,
   saveMetadata,
   loadMetadata,
   openVfsDB,
@@ -30,10 +28,7 @@ import {
 import {
   getImagesBySaveId,
   saveImage,
-  StoredImage,
-  deleteImagesBySaveId,
 } from "../utils/imageStorage";
-import { getMigrationManager } from "./migrationManager";
 import { getRAGService } from "./rag";
 import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
@@ -453,10 +448,7 @@ export async function getExportStats(
 ): Promise<ExportStats | null> {
   try {
     const derived = await loadDerivedStateFromLatestVfsSnapshot(slotId);
-    let gameState = derived?.state ?? null;
-    if (!gameState) {
-      gameState = await loadGameState<VersionedGameState>(slotId);
-    }
+    const gameState = derived?.state ?? null;
     if (!gameState) return null;
 
     const nodeCount = Object.keys(gameState.nodes || {}).length;
@@ -471,9 +463,12 @@ export async function getExportStats(
     // Get RAG document count for this save
     let embeddingCount = 0;
     try {
-      const saveStats = await getRAGService().getSaveStats(slotId);
-      if (saveStats) {
-        embeddingCount = saveStats.totalDocuments;
+      const ragService = getRAGService();
+      if (ragService) {
+        const saveStats = await ragService.getSaveStats(slotId);
+        if (saveStats) {
+          embeddingCount = saveStats.totalDocuments;
+        }
       }
     } catch (e) {
       // RAG might not be initialized, ignore
@@ -552,12 +547,11 @@ export async function exportSave(
 
     // Load the full game state
     const derived = await loadDerivedStateFromLatestVfsSnapshot(slotId);
-    let gameState = derived?.state ?? null;
+    const gameState = derived?.state ?? null;
     if (!gameState) {
-      gameState = await loadGameState<VersionedGameState>(slotId);
-    }
-    if (!gameState) {
-      console.error("[SaveExport] Failed to load game state (legacy + VFS)");
+      console.error(
+        "[SaveExport] Export blocked: save has no VFS snapshots (unsupported legacy save)",
+      );
       return null;
     }
 
@@ -724,14 +718,11 @@ export async function validateImport(file: File): Promise<ImportValidation> {
 
   try {
     // Check file type
-    if (!file.name.endsWith(".zip") && !file.name.endsWith(".json")) {
-      errors.push("Invalid file type. Expected .zip or .json file.");
+    if (!file.name.endsWith(".zip")) {
+      errors.push(
+        "存档格式/版本过旧：当前版本仅支持导入包含 VFS 快照的 .zip 存档。",
+      );
       return { valid: false, errors, warnings };
-    }
-
-    // Handle legacy JSON format
-    if (file.name.endsWith(".json")) {
-      return validateLegacyJson(file);
     }
 
     // Parse ZIP
@@ -760,48 +751,6 @@ export async function validateImport(file: File): Promise<ImportValidation> {
       );
     }
 
-    // Check for save.json
-    const saveFile = zip.file("save.json");
-    if (!saveFile) {
-      errors.push("Missing save.json in export file.");
-      return { valid: false, errors, warnings };
-    }
-
-    // Validate save data
-    const saveJson = await saveFile.async("text");
-    let saveData: VersionedGameState;
-    try {
-      saveData = JSON.parse(saveJson);
-    } catch {
-      errors.push("Invalid save.json format.");
-      return { valid: false, errors, warnings };
-    }
-
-    // Check checksum if present
-    if (manifest.checksum) {
-      const actualChecksum = await computeChecksum(saveJson);
-      if (actualChecksum !== manifest.checksum) {
-        warnings.push("Checksum mismatch. Save data may have been modified.");
-      }
-    }
-
-    // Check if migration is needed
-    const migrationManager = getMigrationManager();
-    const requiresMigration = migrationManager.needsMigration(saveData);
-    if (requiresMigration) {
-      warnings.push(
-        `Save requires migration from version ${migrationManager.getSaveVersion(saveData)} to ${CURRENT_SAVE_VERSION}.`,
-      );
-    }
-
-    // Validate required fields
-    const validation = migrationManager.validateState(saveData);
-    if (!validation.valid) {
-      for (const err of validation.errors) {
-        errors.push(`Save validation: ${err}`);
-      }
-    }
-
     // Check if images folder exists if images were included
     if (manifest.includes.images) {
       const imagesFolder = zip.folder("images");
@@ -813,12 +762,49 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     }
 
     // VFS snapshots are required for correct restore/fork behavior in newer builds.
-    // If missing, we'll attempt to reconstruct from save.json during import.
-    const hasVfsIndex = !!zip.file("vfs/index.json");
-    if (!hasVfsIndex) {
-      warnings.push(
-        "This export does not include VFS snapshot history. The app will reconstruct VFS state from save.json during import; advanced restore/fork features may be limited.",
+    // If missing, we reject the import as "version too old".
+    const vfsIndexFile = zip.file("vfs/index.json");
+    if (!vfsIndexFile) {
+      errors.push(
+        "存档版本过旧：该导出文件不包含 VFS 快照历史（vfs/index.json）。请使用新版导出后再导入。",
       );
+      return { valid: false, errors, warnings };
+    }
+
+    try {
+      const indexJson = await vfsIndexFile.async("text");
+      const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
+      const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+      if (snapshots.length === 0) {
+        errors.push(
+          "存档版本过旧或已损坏：VFS 快照索引为空（vfs/index.json）。",
+        );
+        return { valid: false, errors, warnings };
+      }
+
+      // Validate that at least the latest snapshot file exists.
+      const latest = bundle?.latest ?? null;
+      const latestEntry = isValidLatestMeta(latest)
+        ? latest
+        : snapshots[snapshots.length - 1];
+      if (
+        latestEntry &&
+        typeof (latestEntry as any).forkId === "number" &&
+        typeof (latestEntry as any).turn === "number"
+      ) {
+        const snapshotPath = `vfs/snapshots/fork-${(latestEntry as any).forkId}/turn-${(latestEntry as any).turn}.json`;
+        if (!zip.file(snapshotPath)) {
+          errors.push(
+            `存档已损坏：缺少 VFS 快照文件（${snapshotPath}）。`,
+          );
+          return { valid: false, errors, warnings };
+        }
+      }
+    } catch (error) {
+      errors.push(
+        `存档已损坏：无法解析 VFS 索引（vfs/index.json）：${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      return { valid: false, errors, warnings };
     }
 
     return {
@@ -826,82 +812,12 @@ export async function validateImport(file: File): Promise<ImportValidation> {
       errors,
       warnings,
       manifest,
-      requiresMigration,
+      requiresMigration: false,
     };
   } catch (error) {
     errors.push(
       `Failed to parse import file: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
-    return { valid: false, errors, warnings };
-  }
-}
-
-/**
- * Validate legacy JSON format (from old broken export)
- */
-async function validateLegacyJson(file: File): Promise<ImportValidation> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-
-    // Check if it's a SaveSlot (old broken format)
-    if (data.id && data.name && data.timestamp && data.theme && !data.nodes) {
-      errors.push(
-        "This appears to be an old metadata-only export. It does not contain actual game data and cannot be imported.",
-      );
-      return { valid: false, errors, warnings };
-    }
-
-    // Check if it's a full game state
-    if (data.nodes && data.inventory) {
-      warnings.push(
-        "This is a legacy JSON export. Some features may be missing.",
-      );
-
-      const migrationManager = getMigrationManager();
-      const requiresMigration = migrationManager.needsMigration(data);
-
-      // Create a pseudo-manifest for legacy format
-      const manifest: ExportManifest = {
-        version: 1,
-        exportDate: new Date().toISOString(),
-        appVersion: "legacy",
-        saveVersion: migrationManager.getSaveVersion(data),
-        slot: {
-          id: Date.now().toString(),
-          name: "Imported Save",
-          timestamp: Date.now(),
-          theme: data.theme || "unknown",
-          summary: "Imported from legacy format",
-        },
-        includes: {
-          images: false,
-          embeddings: false,
-          logs: false,
-        },
-        stats: {
-          nodeCount: Object.keys(data.nodes || {}).length,
-          imageCount: 0,
-          embeddingCount: 0,
-        },
-      };
-
-      return {
-        valid: true,
-        errors,
-        warnings,
-        manifest,
-        requiresMigration,
-      };
-    }
-
-    errors.push("Unrecognized file format.");
-    return { valid: false, errors, warnings };
-  } catch {
-    errors.push("Failed to parse JSON file.");
     return { valid: false, errors, warnings };
   }
 }
@@ -946,108 +862,15 @@ export async function importSave(
     const newSlotId = generateUniqueSlotId(existingSlots);
     console.log(`[SaveImport] Generated unique slot ID: ${newSlotId}`);
 
-    // Handle legacy JSON format
-    if (file.name.endsWith(".json")) {
-      const text = await file.text();
-      let saveData = JSON.parse(text);
-
-      // Apply migrations if needed
-      if (validation.requiresMigration) {
-        const migrationManager = getMigrationManager();
-        saveData = await migrationManager.migrate(saveData);
-      }
-
-      // Clean the state
-      saveData = cleanupImportedState(saveData);
-
-      // Add version info if missing
-      if (!saveData._saveVersion) {
-        saveData._saveVersion = {
-          version: CURRENT_SAVE_VERSION,
-          createdAt: Date.now(),
-        };
-      }
-
-      // Save to IndexedDB
-      await saveGameState(newSlotId, saveData);
-
-      // Seed VFS so the save works with VFS-based persistence.
-      try {
-        const store = new IndexedDbVfsStore();
-        const { snapshotCount, latest } = await createVfsSnapshotsFromLegacyState(
-          store,
-          newSlotId,
-          saveData,
-        );
-        if (latest) {
-          await saveMetadata(`vfs_latest:${newSlotId}`, {
-            ...latest,
-            updatedAt: Date.now(),
-          });
-        }
-        console.log(`[SaveImport] Seeded ${snapshotCount} VFS snapshots from legacy JSON`);
-      } catch (error) {
-        console.warn("[SaveImport] Failed to seed VFS snapshots from legacy JSON:", error);
-      }
-
-      // Create new slot metadata
-      const newSlot: SaveSlot = {
-        id: newSlotId,
-        name: generateUniqueName(manifest.slot.name, existingSlots),
-        timestamp: Date.now(),
-        theme: saveData.theme || manifest.slot.theme,
-        summary: manifest.slot.summary || "Imported save",
-      };
-
-      // Update slots metadata
-      const updatedSlots = [...existingSlots, newSlot];
-      await saveMetadata("slots", updatedSlots);
-
-      return {
-        success: true,
-        slotId: newSlotId,
-        warnings,
-        migrated: validation.requiresMigration,
-        originalVersion: validation.requiresMigration
-          ? getMigrationManager().getSaveVersion(JSON.parse(text))
-          : undefined,
-      };
-    }
-
     // Handle ZIP format
     const zip = await JSZip.loadAsync(file);
-
-    // Load save data
-    const saveFile = zip.file("save.json");
-    if (!saveFile) {
-      return { success: false, error: "Missing save.json" };
-    }
-
-    let saveData = JSON.parse(
-      await saveFile.async("text"),
-    ) as VersionedGameState;
-
-    // Apply migrations if needed
-    if (validation.requiresMigration) {
-      const migrationManager = getMigrationManager();
-      saveData = await migrationManager.migrate(saveData);
-    }
-
-    // Clean the state
-    saveData = cleanupImportedState(saveData);
 
     // Import images if present
     if (manifest.includes.images) {
       const imagesFolder = zip.folder("images");
       if (imagesFolder) {
-        const imageMapping = await importImages(imagesFolder, newSlotId);
-
-        // Update node image references
-        updateImageReferences(saveData, imageMapping);
+        await importImages(imagesFolder, newSlotId);
       }
-    } else {
-      // Clear any existing image references since images weren't exported
-      clearImageReferences(saveData);
     }
 
     // Import embeddings if present
@@ -1059,13 +882,20 @@ export async function importSave(
           const embeddingsData: RAGExportData = JSON.parse(embeddingsJson);
 
           // Import to RAG service with new save ID
-          const importResult = await getRAGService().importSaveData(
-            embeddingsData,
-            newSlotId,
-          );
-          console.log(
-            `[SaveImport] Imported ${importResult.imported} RAG documents`,
-          );
+          const ragService = getRAGService();
+          if (ragService) {
+            const importResult = await ragService.importSaveData(
+              embeddingsData,
+              newSlotId,
+            );
+            console.log(
+              `[SaveImport] Imported ${importResult.imported} RAG documents`,
+            );
+          } else {
+            warnings.push(
+              "RAG service is not initialized. Embeddings import skipped.",
+            );
+          }
         } catch (error) {
           console.warn("[SaveImport] Failed to import embeddings:", error);
           warnings.push(
@@ -1075,107 +905,134 @@ export async function importSave(
       }
     }
 
-    // Add version info if missing
-    if (!saveData._saveVersion) {
-      saveData._saveVersion = {
-        version: CURRENT_SAVE_VERSION,
-        createdAt: Date.now(),
-      };
-    }
-
-    // Add import metadata
-    saveData._saveVersion.migratedFrom = validation.requiresMigration
-      ? getMigrationManager().getSaveVersion(saveData)
-      : undefined;
-
-    // Save to IndexedDB
-    await saveGameState(newSlotId, saveData);
-
-    // Import VFS snapshot history (preferred) or reconstruct it from save.json (fallback).
+    // Import VFS snapshot history (required).
+    let derivedTheme: string | undefined;
+    let derivedSummary: string | undefined;
+    let derivedName: string | undefined;
+    let derivedPreviewImage: string | undefined;
     try {
       const store = new IndexedDbVfsStore();
       const vfsIndexFile = zip.file("vfs/index.json");
-      if (vfsIndexFile) {
-        const indexJson = await vfsIndexFile.async("text");
-        const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
-        const latestMeta = bundle?.latest ?? null;
-        const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
-
-        let imported = 0;
-        for (const entry of snapshots) {
-          if (
-            !entry ||
-            typeof entry.forkId !== "number" ||
-            typeof entry.turn !== "number"
-          ) {
-            continue;
-          }
-          const snapshotFile = zip.file(
-            `vfs/snapshots/fork-${entry.forkId}/turn-${entry.turn}.json`,
-          );
-          if (!snapshotFile) continue;
-          const snapshotJson = await snapshotFile.async("text");
-          const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
-          if (!snapshot || typeof snapshot !== "object") continue;
-          snapshot.saveId = newSlotId;
-          await store.saveSnapshot(snapshot);
-          imported += 1;
-        }
-
-        if (latestMeta && isValidLatestMeta(latestMeta)) {
-          await saveMetadata(`vfs_latest:${newSlotId}`, {
-            forkId: latestMeta.forkId,
-            turn: latestMeta.turn,
-            updatedAt: Date.now(),
-          });
-        } else if (imported > 0) {
-          // Best-effort: use the latest by createdAt.
-          const indexes = await listVfsSnapshotIndexEntries(newSlotId);
-          const best = indexes.reduce((acc, item) => {
-            if (!acc) return item;
-            return item.createdAt > acc.createdAt ? item : acc;
-          }, null as VfsExportIndexEntry | null);
-          if (best) {
-            await saveMetadata(`vfs_latest:${newSlotId}`, {
-              forkId: best.forkId,
-              turn: best.turn,
-              updatedAt: Date.now(),
-            });
-          }
-        }
-
-        console.log(`[SaveImport] Imported ${imported} VFS snapshots`);
-      } else {
-        const { snapshotCount, latest } = await createVfsSnapshotsFromLegacyState(
-          store,
-          newSlotId,
-          saveData,
-        );
-        if (latest) {
-          await saveMetadata(`vfs_latest:${newSlotId}`, {
-            ...latest,
-            updatedAt: Date.now(),
-          });
-        }
-        console.log(
-          `[SaveImport] Reconstructed ${snapshotCount} VFS snapshots from save.json`,
-        );
+      if (!vfsIndexFile) {
+        return {
+          success: false,
+          error:
+            "存档版本过旧：导入文件缺少 VFS 索引（vfs/index.json）。请使用新版导出后再导入。",
+        };
       }
+      const indexJson = await vfsIndexFile.async("text");
+      const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
+      const latestMeta = bundle?.latest ?? null;
+      const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+      if (snapshots.length === 0) {
+        return {
+          success: false,
+          error: "存档已损坏：VFS 快照索引为空（vfs/index.json）。",
+        };
+      }
+
+      let imported = 0;
+      for (const entry of snapshots) {
+        if (
+          !entry ||
+          typeof entry.forkId !== "number" ||
+          typeof entry.turn !== "number"
+        ) {
+          continue;
+        }
+        const snapshotFile = zip.file(
+          `vfs/snapshots/fork-${entry.forkId}/turn-${entry.turn}.json`,
+        );
+        if (!snapshotFile) continue;
+        const snapshotJson = await snapshotFile.async("text");
+        const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
+        if (!snapshot || typeof snapshot !== "object") continue;
+        snapshot.saveId = newSlotId;
+        await store.saveSnapshot(snapshot);
+        imported += 1;
+      }
+
+      if (imported === 0) {
+        return {
+          success: false,
+          error: "存档已损坏：未能导入任何 VFS 快照。",
+        };
+      }
+
+      let latestForkId: number | null = null;
+      let latestTurn: number | null = null;
+      if (latestMeta && isValidLatestMeta(latestMeta)) {
+        latestForkId = latestMeta.forkId;
+        latestTurn = latestMeta.turn;
+      } else {
+        const indexes = await listVfsSnapshotIndexEntries(newSlotId);
+        const best = indexes.reduce((acc, item) => {
+          if (!acc) return item;
+          return item.createdAt > acc.createdAt ? item : acc;
+        }, null as VfsExportIndexEntry | null);
+        if (best) {
+          latestForkId = best.forkId;
+          latestTurn = best.turn;
+        }
+      }
+
+      if (latestForkId !== null && latestTurn !== null) {
+        await saveMetadata(`vfs_latest:${newSlotId}`, {
+          forkId: latestForkId,
+          turn: latestTurn,
+          updatedAt: Date.now(),
+        });
+
+        // Derive lightweight slot info from latest snapshot for nicer UI.
+        try {
+          const latestSnapshot = await store.loadSnapshot(
+            newSlotId,
+            latestForkId,
+            latestTurn,
+          );
+          if (latestSnapshot) {
+            const session = new VfsSession();
+            restoreVfsSessionFromSnapshot(session, latestSnapshot);
+            const derived = deriveGameStateFromVfs(session.snapshot()) as any;
+            derivedTheme = typeof derived?.theme === "string" ? derived.theme : undefined;
+            derivedName =
+              typeof derived?.outline?.title === "string"
+                ? derived.outline.title
+                : undefined;
+            derivedSummary =
+              typeof derived?.outline?.premise === "string"
+                ? derived.outline.premise
+                : typeof derived?.outline?.openingNarrative?.narrative === "string"
+                  ? derived.outline.openingNarrative.narrative.slice(0, 160)
+                  : undefined;
+            derivedPreviewImage =
+              typeof derived?.seedImageId === "string" ? derived.seedImageId : undefined;
+          }
+        } catch (err) {
+          console.warn("[SaveImport] Failed to derive slot info from VFS snapshot:", err);
+        }
+      }
+
+      console.log(`[SaveImport] Imported ${imported} VFS snapshots`);
     } catch (error) {
       console.warn("[SaveImport] Failed to import/reconstruct VFS snapshots:", error);
-      warnings.push(
-        "VFS snapshots failed to import. Restore/fork features may not work for this save until it is re-saved.",
-      );
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to import VFS snapshots",
+      };
     }
 
     // Create new slot metadata
     const newSlot: SaveSlot = {
       id: newSlotId,
-      name: generateUniqueName(manifest.slot.name, existingSlots),
+      name: generateUniqueName(derivedName || manifest.slot.name, existingSlots),
       timestamp: Date.now(),
-      theme: saveData.theme || manifest.slot.theme,
-      summary: manifest.slot.summary || "Imported save",
-      previewImage: manifest.slot.previewImage,
+      theme: derivedTheme || manifest.slot.theme,
+      summary: derivedSummary || manifest.slot.summary || "Imported save",
+      previewImage: derivedPreviewImage || manifest.slot.previewImage,
     };
 
     // Update slots metadata
@@ -1188,10 +1045,7 @@ export async function importSave(
       success: true,
       slotId: newSlotId,
       warnings,
-      migrated: validation.requiresMigration,
-      originalVersion: validation.requiresMigration
-        ? validation.manifest?.saveVersion
-        : undefined,
+      migrated: false,
     };
   } catch (error) {
     console.error("[SaveImport] Import failed:", error);
@@ -1200,26 +1054,6 @@ export async function importSave(
       error: error instanceof Error ? error.message : "Unknown import error",
     };
   }
-}
-
-/**
- * Clean up imported state
- */
-function cleanupImportedState(state: VersionedGameState): VersionedGameState {
-  // Reset transient fields
-  state.isProcessing = false;
-  state.isImageGenerating = false;
-  state.generatingNodeId = null;
-  state.error = null;
-
-  // Clear embedding index (will be regenerated)
-  delete state._embeddingIndex;
-
-  // Repair any missing fields
-  const migrationManager = getMigrationManager();
-  const repairedState = migrationManager.repairState(state);
-
-  return repairedState;
 }
 
 /**

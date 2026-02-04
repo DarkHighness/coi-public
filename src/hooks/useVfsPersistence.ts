@@ -7,9 +7,7 @@ import {
   deleteMetadata,
   getStorageEstimate,
   clearDatabase,
-  getAllSaveIds,
   getAllVfsSaveIds,
-  deleteGameState,
   deleteVfsSave,
 } from "../utils/indexedDB";
 import { sessionManager } from "../services/ai/sessionManager";
@@ -222,7 +220,6 @@ export const useVfsPersistence = (
           const candidateIds = Array.from(
             new Set([
               ...(await getAllVfsSaveIds()),
-              ...(await getAllSaveIds()),
             ]),
           );
           if (candidateIds.length === 0) return [];
@@ -308,13 +305,10 @@ export const useVfsPersistence = (
           slots = await inferSlotsIfMissing();
         }
 
-        // Cleanup: remove ghost slots that have no backing data in either VFS or legacy save store.
+        // Cleanup: remove ghost slots that have no backing data in VFS.
         if (slots && Array.isArray(slots) && slots.length > 0) {
           try {
-            const existingIds = new Set<string>([
-              ...(await getAllVfsSaveIds()),
-              ...(await getAllSaveIds()),
-            ]);
+            const existingIds = new Set<string>(await getAllVfsSaveIds());
             const validSlots = slots.filter((slot: any) =>
               slot && typeof slot.id === "string" && existingIds.has(slot.id),
             );
@@ -683,13 +677,6 @@ export const useVfsPersistence = (
       await deleteVfsSave(id);
     } catch (err) {
       console.warn("[VFS Persistence] Failed to delete VFS save:", err);
-    }
-
-    // Delete legacy save store entries if present (older builds may have both).
-    try {
-      await deleteGameState(id);
-    } catch (err) {
-      console.warn("[VFS Persistence] Failed to delete legacy save:", err);
     }
 
     // Cleanup per-save metadata keys.
