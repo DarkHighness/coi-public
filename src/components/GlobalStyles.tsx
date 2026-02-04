@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { deriveThemeVars } from "@/utils/theme/deriveThemeVars";
 
 interface GlobalStylesProps {
   themeConfig: {
@@ -19,7 +20,8 @@ export const GlobalStyles: React.FC<GlobalStylesProps> = ({ themeConfig }) => {
     // Debounce the CSS variable updates
     timeoutRef.current = setTimeout(() => {
       const root = document.documentElement;
-      Object.entries(themeConfig.vars).forEach(([key, value]) => {
+      const derivedVars = deriveThemeVars(themeConfig.vars);
+      Object.entries(derivedVars).forEach(([key, value]) => {
         root.style.setProperty(key, value);
 
         // Convert hex colors to RGB channels for effects using rgba(var(--*-rgb), a)

@@ -26,6 +26,7 @@ import {
 } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { THEMES, ENV_THEMES, LANG_MAP } from "../utils/constants";
+import { deriveThemeVars } from "../utils/theme/deriveThemeVars";
 import {
   createStateSnapshot,
   restoreStateFromSnapshot,
@@ -285,8 +286,10 @@ export const useGameEngine = () => {
         ? themeConfig.dayVars
         : themeConfig.vars;
 
+    const derivedVars = deriveThemeVars(targetVars);
+
     // Apply Colors
-    Object.entries(targetVars).forEach(([key, value]) => {
+    Object.entries(derivedVars).forEach(([key, value]) => {
       // Set the raw color value (for standard CSS usage)
       root.style.setProperty(key, value);
 

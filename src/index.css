@@ -6,6 +6,7 @@
   --color-theme-surface: var(--theme-surface);
   --color-theme-surface-highlight: var(--theme-surface-highlight);
   --color-theme-border: var(--theme-border);
+  --color-theme-divider: var(--theme-divider, var(--theme-border));
   --color-theme-primary: var(--theme-primary);
   --color-theme-primary-hover: var(--theme-primary-hover);
   --color-theme-text: var(--theme-text);
@@ -65,7 +66,24 @@ body {
   overscroll-behavior: none;
 }
 body {
-  font-family: "Lato", sans-serif;
+  font-family:
+    "Lato",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Noto Sans",
+    "Noto Sans SC",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    "Helvetica Neue",
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    sans-serif;
   background-color: var(--theme-bg, #0f172a);
   color: var(--theme-text, #e2e8f0);
   -webkit-font-smoothing: antialiased;
@@ -92,7 +110,7 @@ input:disabled {
 
 /* Theme-aware overlay for modals/menus (pairs well with Tailwind backdrop-blur-*) */
 .ui-overlay {
-  background-color: rgba(var(--theme-bg-rgb, 15 23 42), 0.72);
+  background-color: rgba(0, 0, 0, 0.66);
 }
 
 /* Global focus ring for keyboard navigation */
@@ -112,7 +130,14 @@ input:disabled {
 } */
 
 .story-text {
-  font-family: "Merriweather", serif;
+  font-family:
+    "Merriweather",
+    "Noto Serif",
+    "Noto Serif SC",
+    "Source Han Serif SC",
+    "Songti SC",
+    "STSong",
+    serif;
 }
 
 /* Custom Scrollbar */
