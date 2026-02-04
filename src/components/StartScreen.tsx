@@ -98,6 +98,9 @@ interface StartScreenProps {
   onSwitchSlot?: (id: string) => void;
   onDeleteSlot?: (id: string) => void;
   onRefreshSlots?: () => Promise<SaveSlot[]>;
+  legacySaveCount?: number;
+  legacySaveNoticeDismissed?: boolean;
+  onDismissLegacySaveNotice?: () => void | Promise<void>;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
@@ -113,6 +116,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   onSwitchSlot,
   onDeleteSlot,
   onRefreshSlots,
+  legacySaveCount = 0,
+  legacySaveNoticeDismissed = false,
+  onDismissLegacySaveNotice,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
   const [customContext, setCustomContext] = useState("");
@@ -124,6 +130,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [originalTheme, setOriginalTheme] = useState<string | null>(null);
+  const [showLegacySaveDetails, setShowLegacySaveDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, i18n } = useTranslation();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -237,6 +244,40 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       ></div>
       <div className="absolute inset-0 z-0 bg-[url('/img/stardust.png')] opacity-10 animate-pulse"></div>
       <ButterflyBackground />
+
+      {legacySaveCount > 0 && !legacySaveNoticeDismissed && (
+        <div className="absolute top-0 left-0 right-0 z-30 p-3 pointer-events-auto">
+          <div className="mx-auto w-full max-w-6xl border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-lg shadow-black/20">
+            <div className="text-sm text-amber-100">
+              <div className="font-semibold">
+                检测到 {legacySaveCount} 个旧版本存档（非 VFS）
+              </div>
+              <div className="text-xs text-amber-100/80 mt-1">
+                当前版本不支持加载/迁移旧存档，它们不会显示在存档列表中。
+              </div>
+              {showLegacySaveDetails && (
+                <div className="text-xs text-amber-100/80 mt-2">
+                  如需取回旧存档，请使用旧版本打开后导出为新版 .zip（包含 VFS 快照）再导入。
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => setShowLegacySaveDetails((v) => !v)}
+                className="px-3 py-2 text-xs font-bold rounded-lg border border-amber-400/30 text-amber-100 hover:bg-amber-400/10 transition-colors"
+              >
+                {showLegacySaveDetails ? "收起" : "详情"}
+              </button>
+              <button
+                onClick={() => onDismissLegacySaveNotice?.()}
+                className="px-3 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 transition-colors"
+              >
+                不再提示
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Left Panel: Branding & Atmosphere - Hidden on mobile when in theme select mode to give space */}
       <div
@@ -567,7 +608,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         }}
       />
 
-      {/* Custom Context Modal (Legacy-compatible) */}
+      {/* Custom Context Modal */}
       <CustomContextModal
         isOpen={isCustomContextModalOpen}
         onClose={() => setIsCustomContextModalOpen(false)}
@@ -605,6 +646,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 await onRefreshSlots();
               }
             }}
+            legacySaveCount={legacySaveCount}
+            legacySaveNoticeDismissed={legacySaveNoticeDismissed}
+            onDismissLegacySaveNotice={onDismissLegacySaveNotice}
           />
         </Suspense>
       )}

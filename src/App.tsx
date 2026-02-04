@@ -89,6 +89,8 @@ function AppContent() {
     persistenceError,
     failedImageNodes,
     isSettingsOpen,
+    legacySaveCount,
+    legacySaveNoticeDismissed,
   } = engineState;
   const {
     setLanguage,
@@ -109,6 +111,7 @@ function AppContent() {
     triggerSave,
     handleForceUpdate,
     setIsSettingsOpen,
+    dismissLegacySavesNotice,
   } = engineActions;
 
   const { t } = useTranslation();
@@ -124,6 +127,18 @@ function AppContent() {
 
   // Use Toast Context
   const { showToast } = useToast();
+
+  // Non-blocking warning for legacy (non-VFS) saves.
+  // These saves cannot be loaded or migrated in this version.
+  useEffect(() => {
+    if (!legacySaveCount) return;
+    if (legacySaveNoticeDismissed) return;
+    showToast(
+      `检测到 ${legacySaveCount} 个旧版本存档（非 VFS）。当前版本不支持加载/迁移，它们不会显示在存档列表中。`,
+      "warning",
+      8000,
+    );
+  }, [legacySaveCount, legacySaveNoticeDismissed, showToast]);
 
   // Track currently viewed segment for dynamic theme/background
   const [viewedSegment, setViewedSegmentLocal] = useState<any | null>(null);
@@ -963,6 +978,9 @@ function AppContent() {
                   onSwitchSlot={handleLoadSlot}
                   onDeleteSlot={deleteSlot}
                   onRefreshSlots={refreshSlots}
+                  legacySaveCount={legacySaveCount}
+                  legacySaveNoticeDismissed={legacySaveNoticeDismissed}
+                  onDismissLegacySaveNotice={dismissLegacySavesNotice}
                 />
               </SectionErrorBoundary>
             }
@@ -1024,6 +1042,9 @@ function AppContent() {
               }
             }}
             initialImportFile={importFile || undefined}
+            legacySaveCount={legacySaveCount}
+            legacySaveNoticeDismissed={legacySaveNoticeDismissed}
+            onDismissLegacySaveNotice={dismissLegacySavesNotice}
           />
         )}
       </Suspense>

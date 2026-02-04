@@ -16,6 +16,9 @@ interface SaveManagerProps {
   onImportComplete?: (result: ImportResult) => void;
   /** Pre-selected file to import - opens ImportSaveModal automatically */
   initialImportFile?: File;
+  legacySaveCount?: number;
+  legacySaveNoticeDismissed?: boolean;
+  onDismissLegacySaveNotice?: () => void | Promise<void>;
 }
 
 export const SaveManager: React.FC<SaveManagerProps> = ({
@@ -26,6 +29,9 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   onClose,
   onImportComplete,
   initialImportFile,
+  legacySaveCount = 0,
+  legacySaveNoticeDismissed = false,
+  onDismissLegacySaveNotice,
 }) => {
   const { t } = useTranslation();
   const [exportingSlot, setExportingSlot] = useState<SaveSlot | null>(null);
@@ -84,6 +90,19 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
 
           {/* Content */}
           <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
+            {legacySaveCount > 0 && !legacySaveNoticeDismissed && (
+              <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div className="text-sm text-amber-100">
+                  检测到 {legacySaveCount} 个旧版本存档（非 VFS），当前版本不支持加载/迁移。
+                </div>
+                <button
+                  onClick={() => onDismissLegacySaveNotice?.()}
+                  className="px-3 py-2 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 transition-colors self-start sm:self-auto"
+                >
+                  不再提示
+                </button>
+              </div>
+            )}
             {slots.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <svg

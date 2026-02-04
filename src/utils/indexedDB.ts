@@ -179,6 +179,21 @@ export const loadMetadata = async <T = any>(key: string): Promise<T | null> => {
 };
 
 /**
+ * Count legacy (non-VFS) saves in the deprecated SAVES_STORE.
+ * These saves are no longer supported for loading/migration.
+ */
+export const getLegacySaveCount = async (): Promise<number> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([SAVES_STORE], "readonly");
+    const store = transaction.objectStore(SAVES_STORE);
+    const request = store.count();
+    request.onsuccess = () => resolve(Number(request.result || 0));
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
  * Delete a metadata entry
  */
 export const deleteMetadata = async (key: string): Promise<void> => {

@@ -219,6 +219,9 @@ export const useGameEngine = () => {
     triggerSave,
     refreshSlots,
     vfsSession,
+    legacySaveCount,
+    legacySaveNoticeDismissed,
+    dismissLegacySavesNotice,
     seedFromDefaults,
     restoreVfsToTurn,
   } = useVfsPersistence(gameState, setGameState, view);
@@ -2272,5 +2275,8 @@ export const useGameEngine = () => {
     refreshSlots,
     vfsSession,
     clearHighlight,
+    legacySaveCount,
+    legacySaveNoticeDismissed,
+    dismissLegacySavesNotice,
   };
 };
