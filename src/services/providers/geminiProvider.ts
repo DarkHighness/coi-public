@@ -124,6 +124,8 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
       models.push({
         id: model.name.replace("models/", ""),
         name: model.displayName || model.name,
+        // Best-effort: Gemini model metadata sometimes includes input token limit.
+        contextLength: (model as any).inputTokenLimit || (model as any).input_token_limit,
         capabilities,
       });
     }
@@ -195,6 +197,7 @@ async function fetchModelsViaRestApi(
     .map((model: any) => ({
       id: model.name.replace("models/", ""),
       name: model.displayName || model.name,
+      contextLength: model.inputTokenLimit || model.input_token_limit,
       capabilities: inferModelCapabilities(model.name),
     }));
 

@@ -55,6 +55,11 @@ interface Session {
   config: SessionConfig;
   /** Provider 原生格式的对话历史 */
   nativeHistory: unknown[];
+  /**
+   * System instruction used for this session (provider-level system prompt).
+   * Stored to enable session-native compaction using the exact same prefix.
+   */
+  systemInstruction: string | null;
   /** 最后一次 Summary 的 ID（用于检测变更） */
   lastSummaryId: string | null;
   /** 创建时间 */
@@ -212,6 +217,10 @@ class HistorySessionManager {
         nativeHistory: sanitizedHistory,
         dirty: wasSanitized, // Mark dirty if changed so we save the clean version later
         cacheHint: stored.cacheHint ?? null,
+        systemInstruction:
+          typeof (stored as any).systemInstruction === "string"
+            ? (stored as any).systemInstruction
+            : null,
         // Upgrade legacy session: init checkpoints
         checkpoints: (stored as any).checkpoints || [],
       };
@@ -243,6 +252,7 @@ class HistorySessionManager {
       id: newSessionId,
       config: { ...config },
       nativeHistory: [],
+      systemInstruction: null,
       lastSummaryId: null,
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
@@ -671,6 +681,34 @@ class HistorySessionManager {
     this.currentSession.dirty = true;
     this.schedulePersist();
   }
+
+  // ===========================================================================
+  // System Instruction Management
+  // ===========================================================================
+
+  getSystemInstruction(sessionId: string): string | null {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      return null;
+    }
+    return this.currentSession.systemInstruction;
+  }
+
+  setSystemInstruction(sessionId: string, instruction: string | null): void {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      console.warn(
+        `[SessionManager] Cannot set system instruction: session not current: ${sessionId}`,
+      );
+      return;
+    }
+
+    const old = this.currentSession.systemInstruction;
+    const next = instruction;
+    if (old === next) return;
+
+    this.currentSession.systemInstruction = next;
+    this.currentSession.dirty = true;
+    this.schedulePersist();
+  }
   // Private Methods
   // ===========================================================================
 
@@ -714,6 +752,7 @@ class HistorySessionManager {
       id: this.currentSession.id,
       slotId: this.currentSession.config.slotId,
       config: this.currentSession.config,
+      systemInstruction: this.currentSession.systemInstruction,
       nativeHistory: this.currentSession.nativeHistory,
       lastSummaryId: this.currentSession.lastSummaryId,
       createdAt: this.currentSession.createdAt,

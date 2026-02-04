@@ -127,6 +127,11 @@ export async function getModels(config: ClaudeConfig): Promise<ModelInfo[]> {
     return response.data.map((model) => ({
       id: model.id,
       name: model.display_name,
+      contextLength:
+        (model as any).context_window ||
+        (model as any).contextWindow ||
+        (model as any).input_token_limit ||
+        (model as any).inputTokenLimit,
       capabilities: {
         text: true,
         image: false, // Claude API currently doesn't support image generation

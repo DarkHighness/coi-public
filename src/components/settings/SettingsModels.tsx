@@ -233,62 +233,118 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </button>
       </div>
 
-      {/* Context Length Slider */}
-      <div className="space-y-2 pb-4 border-b border-theme-border">
-        <div className="flex justify-between">
-          <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
-            {t("models.contextLen")}
-          </label>
-          <span className="text-theme-text font-mono">
-            {currentSettings.contextLen || 16} {t("turn")}
-          </span>
+      {/* Auto Compaction */}
+      <div className="space-y-3 pb-4 border-b border-theme-border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+              {t("models.autoCompactEnabled")}
+            </label>
+            <p className="text-xs text-theme-muted italic mt-1">
+              {t("models.autoCompactEnabledHelp")}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              const next = !(currentSettings.extra?.autoCompactEnabled ?? true);
+              onUpdateSettings({
+                ...currentSettings,
+                extra: {
+                  ...currentSettings.extra,
+                  autoCompactEnabled: next,
+                },
+              });
+            }}
+            className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${
+              currentSettings.extra?.autoCompactEnabled ?? true
+                ? "bg-theme-primary"
+                : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                currentSettings.extra?.autoCompactEnabled ?? true
+                  ? "translate-x-5"
+                  : ""
+              }`}
+            />
+          </button>
         </div>
-        <input
-          type="range"
-          min="4"
-          max="50"
-          step="2"
-          value={currentSettings.contextLen || 16}
-          onChange={(e) =>
-            onUpdateSettings({
-              ...currentSettings,
-              contextLen: parseInt(e.target.value),
-            })
-          }
-          className="w-full accent-theme-primary"
-        />
-        <p className="text-xs text-theme-muted italic">
-          {t("models.contextLenHelp")}
-        </p>
-      </div>
 
-      {/* Fresh Segment Count Slider */}
-      <div className="space-y-2 pb-4 border-b border-theme-border">
-        <div className="flex justify-between">
-          <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
-            {t("models.freshSegmentCount")}
-          </label>
-          <span className="text-theme-text font-mono">
-            {currentSettings.freshSegmentCount ?? 4} {t("turn")}
-          </span>
+        {/* Threshold Slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+              {t("models.autoCompactThreshold")}
+            </label>
+            <span className="text-theme-text font-mono">
+              {Math.round(
+                ((currentSettings.extra?.autoCompactThreshold ?? 0.7) as number) *
+                  100,
+              )}
+              %
+            </span>
+          </div>
+          <input
+            type="range"
+            min="50"
+            max="95"
+            step="1"
+            value={Math.round(
+              ((currentSettings.extra?.autoCompactThreshold ?? 0.7) as number) *
+                100,
+            )}
+            onChange={(e) => {
+              const pct = parseInt(e.target.value);
+              const next = Number.isFinite(pct) ? pct / 100 : 0.7;
+              onUpdateSettings({
+                ...currentSettings,
+                extra: {
+                  ...currentSettings.extra,
+                  autoCompactThreshold: next,
+                },
+              });
+            }}
+            className="w-full accent-theme-primary"
+            disabled={!(currentSettings.extra?.autoCompactEnabled ?? true)}
+          />
+          <p className="text-xs text-theme-muted italic">
+            {t("models.autoCompactThresholdHelp")}
+          </p>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="10"
-          step="1"
-          value={currentSettings.freshSegmentCount ?? 4}
-          onChange={(e) =>
-            onUpdateSettings({
-              ...currentSettings,
-              freshSegmentCount: parseInt(e.target.value),
-            })
-          }
-          className="w-full accent-theme-primary"
-        />
-        <p className="text-xs text-theme-muted italic">
-          {t("models.freshSegmentCountHelp")}
-        </p>
+
+        {/* Context Window Override */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center gap-3">
+            <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+              {t("models.maxContextTokens")}
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="256"
+              placeholder="auto"
+              value={currentSettings.maxContextTokens ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const next =
+                  raw.trim() === "" ? undefined : parseInt(raw, 10);
+                onUpdateSettings({
+                  ...currentSettings,
+                  maxContextTokens:
+                    typeof next === "number" && Number.isFinite(next) && next > 0
+                      ? next
+                      : undefined,
+                });
+              }}
+              className="w-32 bg-theme-bg border border-theme-border rounded px-2 py-1 text-theme-text font-mono text-sm"
+            />
+          </div>
+          <p className="text-xs text-theme-muted italic">
+            {t("models.maxContextTokensHelp")}
+          </p>
+        </div>
+
       </div>
 
       {(

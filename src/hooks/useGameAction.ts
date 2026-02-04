@@ -13,7 +13,7 @@ import type { VfsSession } from "../services/vfs/vfsSession";
 import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
-import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
+import { deriveHistory } from "../utils/storyUtils";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import {
   updateProviderStats,
@@ -287,17 +287,17 @@ export const useGameAction = ({
             aiSettings.story.providerId,
             aggregatedUsage,
           );
+        }
 
-          // Notify session manager that summary was created
-          // This clears the cached history so the next turn starts fresh
-          if (summarySnapshot) {
-            await notifySessionSummaryCreated(
-              aiSettings,
-              currentSlotId || "default",
-              currentForkId,
-              summarySnapshot.id || Date.now(),
-            );
-          }
+        // Notify session manager that summary was created
+        // This clears the cached history so the next turn starts fresh
+        if (summarySnapshot) {
+          await notifySessionSummaryCreated(
+            aiSettings,
+            currentSlotId || "default",
+            currentForkId,
+            summarySnapshot.id || Date.now(),
+          );
         }
 
         // Update the user node in state with the FINAL summary state for this turn
@@ -325,22 +325,17 @@ export const useGameAction = ({
           });
         }
 
-        // Apply freshSegmentCount overlap for narrative continuity
-        // [FIX] Derive history from PARENT node to avoid including the current optimistic user node
-        // This prevents double-submission of the user action (once in history, once as prompt)
-        const freshCount = aiSettings.freshSegmentCount ?? 4;
-
-        // We use the UPDATED nodes from gameStateRef (which includes the new node),
-        // but we start traversal from the PARENT to get "history before this turn"
-        const parentHistory = effectiveParentId
-          ? deriveHistory(gameStateRef.current.nodes, effectiveParentId)
-          : []; // If no parent (start of game), history is empty
-
-        const segmentsToSend = getSegmentsForAI(
-          parentHistory,
-          lastIndex,
-          freshCount,
-        );
+        // New Summary/Compact behavior: for each turn, only include the unsummarized
+        // portion of history (no “keep last N turns” overlap).
+        // [FIX] Traverse from the PARENT to avoid including the current optimistic user node.
+        const segmentsToSend = effectiveParentId
+          ? deriveHistory(
+              gameStateRef.current.nodes,
+              effectiveParentId,
+              true,
+              lastIndex,
+            )
+          : [];
 
         // Prepare state for generation
         // Note: History is now managed internally by session manager

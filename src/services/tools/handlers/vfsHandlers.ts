@@ -1207,6 +1207,7 @@ registerToolHandler(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
 
     const summary = {
       id: nextId,
+      createdAt: Date.now(),
       displayText: typedArgs.displayText,
       visible: typedArgs.visible,
       hidden: typedArgs.hidden,

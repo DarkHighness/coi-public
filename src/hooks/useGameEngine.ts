@@ -39,7 +39,7 @@ import {
 } from "../utils/constants/atmosphere";
 import { getRAGService } from "../services/rag";
 import { extractDocumentsFromState } from "./useRAG";
-import { deriveHistory, getSegmentsForAI } from "../utils/storyUtils";
+import { deriveHistory } from "../utils/storyUtils";
 import { useGameAction } from "./useGameAction";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import { saveImage } from "../utils/imageStorage";
@@ -1875,14 +1875,7 @@ export const useGameEngine = () => {
         true, // Truncate to last summary
       );
 
-      // Apply freshSegmentCount overlap for narrative continuity
-      const freshCount = aiSettings.freshSegmentCount ?? 4;
-      const lastSummarizedIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
-      const recentHistory = getSegmentsForAI(
-        fullHistory,
-        lastSummarizedIndex,
-        freshCount,
-      );
+      const recentHistory = fullHistory;
 
       const context: TurnContext = {
         recentHistory,
@@ -2074,13 +2067,7 @@ export const useGameEngine = () => {
         true,
       );
 
-      const freshCount = aiSettings.freshSegmentCount ?? 4;
-      const lastSummarizedIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
-      const recentHistory = getSegmentsForAI(
-        fullHistory,
-        lastSummarizedIndex,
-        freshCount,
-      );
+      const recentHistory = fullHistory;
 
       const context: TurnContext = {
         recentHistory,

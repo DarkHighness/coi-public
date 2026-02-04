@@ -49,6 +49,11 @@ export const useSettingsContext = () => {
  * Merge saved settings with defaults to ensure all fields exist
  */
 function mergeSettings(parsed: Partial<AISettings>): AISettings {
+  // Remove deprecated fields (kept for backward compatibility in saved JSON).
+  const sanitized = { ...(parsed as any) } as any;
+  delete sanitized.freshSegmentCount;
+  delete sanitized.contextLen;
+
   const legacyExtra = (parsed.extra || {}) as Record<string, unknown>;
   const migratedExtra: Record<string, unknown> = {
     ...DEFAULTS.extra,
@@ -73,31 +78,33 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
 
   return {
     ...DEFAULTS,
-    ...parsed,
+    ...sanitized,
     providers: {
       ...DEFAULTS.providers,
-      ...(parsed.providers || {}),
-      instances: parsed.providers?.instances || DEFAULTS.providers.instances,
-      nextId: parsed.providers?.nextId || DEFAULTS.providers.nextId,
+      ...(sanitized.providers || {}),
+      instances:
+        sanitized.providers?.instances || DEFAULTS.providers.instances,
+      nextId: sanitized.providers?.nextId || DEFAULTS.providers.nextId,
     },
-    story: { ...DEFAULTS.story, ...(parsed.story || {}) },
-    script: { ...DEFAULTS.script, ...(parsed.script || {}) },
-    image: { ...DEFAULTS.image, ...(parsed.image || {}) },
-    video: { ...DEFAULTS.video, ...(parsed.video || {}) },
-    audio: { ...DEFAULTS.audio, ...(parsed.audio || {}) },
+    story: { ...DEFAULTS.story, ...(sanitized.story || {}) },
+    script: { ...DEFAULTS.script, ...(sanitized.script || {}) },
+    image: { ...DEFAULTS.image, ...(sanitized.image || {}) },
+    video: { ...DEFAULTS.video, ...(sanitized.video || {}) },
+    audio: { ...DEFAULTS.audio, ...(sanitized.audio || {}) },
     audioVolume: {
       ...DEFAULTS.audioVolume,
-      ...(parsed.audioVolume || {}),
+      ...(sanitized.audioVolume || {}),
     },
-    typewriterSpeed: parsed.typewriterSpeed ?? DEFAULTS.typewriterSpeed,
-    stackItemsPerPage: parsed.stackItemsPerPage ?? DEFAULTS.stackItemsPerPage,
-    lore: { ...DEFAULTS.lore, ...(parsed.lore || {}) },
+    typewriterSpeed: sanitized.typewriterSpeed ?? DEFAULTS.typewriterSpeed,
+    stackItemsPerPage:
+      sanitized.stackItemsPerPage ?? DEFAULTS.stackItemsPerPage,
+    lore: { ...DEFAULTS.lore, ...(sanitized.lore || {}) },
     embedding: {
       ...DEFAULTS.embedding,
-      ...(parsed.embedding || {}),
+      ...(sanitized.embedding || {}),
       lru: {
         ...DEFAULTS.embedding.lru,
-        ...(parsed.embedding?.lru || {}),
+        ...(sanitized.embedding?.lru || {}),
       },
     },
     extra: migratedExtra as any,
@@ -266,7 +273,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       const isFullSettings = (
         s: AISettings | Partial<AISettings>,
       ): s is AISettings => {
-        return "providers" in s && "contextLen" in s && "story" in s;
+        return (
+          "providers" in s &&
+          "story" in s &&
+          "audioVolume" in s &&
+          "language" in s
+        );
       };
 
       const mergedSettings = isFullSettings(resolvedSettings)

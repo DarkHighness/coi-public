@@ -1999,6 +1999,11 @@ export const summaryHiddenSchema = z.object({
 /** 故事摘要 Schema */
 export const storySummarySchema = z.object({
   id: z.number().int().nullish(),
+  createdAt: z
+    .number()
+    .int()
+    .nullish()
+    .describe("System timestamp (Date.now()) when this summary was created."),
   displayText: z
     .string()
     .describe(

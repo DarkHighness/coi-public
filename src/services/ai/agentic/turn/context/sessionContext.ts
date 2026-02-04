@@ -89,6 +89,7 @@ export async function setupSession(
     contextMessages,
   );
   sessionManager.setCacheHint(session.id, cacheHint);
+  sessionManager.setSystemInstruction(session.id, systemInstruction);
 
   // Initialize if empty
   if (sessionManager.isEmpty(session.id)) {
