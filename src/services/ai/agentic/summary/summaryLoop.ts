@@ -42,6 +42,7 @@ import {
 } from "./summaryContext";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
+import { VFS_TOOLSETS } from "../../../vfsToolsets";
 
 // ============================================================================
 // Main Loop
@@ -51,6 +52,7 @@ export async function runSummaryLoopRefactored(
   input: SummaryLoopInput,
 ): Promise<SummaryAgenticLoopResult> {
   const { settings, language } = input;
+  const finishToolName = VFS_TOOLSETS.summary.finishToolName;
 
   // Get provider
   const providerInfo = getProviderConfig(settings, "story");
@@ -117,14 +119,14 @@ export async function runSummaryLoopRefactored(
 
     if (mustFinishNow) {
       loopState.activeTools = loopState.activeTools.filter(
-        (tool) => tool.name === "vfs_finish_summary",
+        (tool) => tool.name === finishToolName,
       );
     }
 
     // Inject budget status
     conversationHistory.push(
       createUserMessage(
-        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState, "vfs_finish_summary")}`,
+        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(loopState.budgetState, finishToolName)}`,
       ),
     );
 
@@ -158,13 +160,13 @@ export async function runSummaryLoopRefactored(
       conversationHistory,
       {
         maxRetries: loopState.budgetState.retriesMax,
-        requiredToolName: mustFinishNow ? "vfs_finish_summary" : undefined,
+        requiredToolName: mustFinishNow ? finishToolName : undefined,
         onRetry: (msg, count) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
           incrementRetries(loopState.budgetState);
           conversationHistory.push(
             createUserMessage(
-              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, "vfs_finish_summary")}`,
+              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, finishToolName)}`,
             ),
           );
         },
@@ -209,17 +211,17 @@ export async function runSummaryLoopRefactored(
 
       const mustOnlyFinish =
         loopState.activeTools.length === 1 &&
-        loopState.activeTools[0]?.name === "vfs_finish_summary";
+        loopState.activeTools[0]?.name === finishToolName;
 
       if (mustOnlyFinish) {
         if (
           functionCalls.length !== 1 ||
-          functionCalls[0]?.name !== "vfs_finish_summary"
+          functionCalls[0]?.name !== finishToolName
         ) {
           const error = {
             success: false,
             error:
-              '[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "vfs_finish_summary", and it must be the ONLY tool call in this response.',
+              `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
             code: "INVALID_ACTION",
           };
           conversationHistory.push(
@@ -238,14 +240,14 @@ export async function runSummaryLoopRefactored(
 
       const finishIndices = functionCalls
         .map((call, index) => ({ call, index }))
-        .filter(({ call }) => call.name === "vfs_finish_summary")
+        .filter(({ call }) => call.name === finishToolName)
         .map(({ index }) => index);
 
       if (finishIndices.length > 1) {
         const error = {
           success: false,
           error:
-            '[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "vfs_finish_summary", and it must be the LAST tool call.',
+            `[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
           code: "INVALID_ACTION",
         };
         conversationHistory.push(
@@ -268,7 +270,7 @@ export async function runSummaryLoopRefactored(
         const error = {
           success: false,
           error:
-            '[ERROR: FINISH_NOT_LAST] "vfs_finish_summary" must be your LAST tool call. Reorder your tool calls and try again.',
+            `[ERROR: FINISH_NOT_LAST] "${finishToolName}" must be your LAST tool call. Reorder your tool calls and try again.`,
           code: "INVALID_ACTION",
         };
         conversationHistory.push(
@@ -314,7 +316,7 @@ export async function runSummaryLoopRefactored(
       for (const call of functionCalls) {
         const output = await dispatchToolCallAsync(call.name, call.args, toolCtx);
 
-        if (call.name === "vfs_finish_summary" && output && (output as any).success) {
+        if (call.name === finishToolName && output && (output as any).success) {
           finalSummary = (output as any).data?.summary ?? null;
           loopFinished = true;
         }

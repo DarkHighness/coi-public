@@ -42,6 +42,13 @@ Your goal is to translate the narrative into high-fidelity visual instructions.
 <tools>
 You have the following tools:
 1. \`submit_visual_result\`: Submit the final visual results.
+
+<examples>
+- Example:
+  Call \`submit_visual_result\` with:
+  - imagePrompt: "A cinematic description of the scene, composition, lighting, lens, style…"
+  - veoScript: "Shot-by-shot script with camera movement, beats, pacing…"
+</examples>
 </tools>
 
 <critical_rules>

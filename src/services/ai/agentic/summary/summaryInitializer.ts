@@ -8,6 +8,7 @@ import type { AISettings, TokenUsage } from "../../../../types";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
+import { VFS_TOOLSETS } from "../../../vfsToolsets";
 import type { SummaryLoopInput } from "./summary";
 
 // ============================================================================
@@ -29,19 +30,7 @@ export function createSummaryLoopState(
 ): SummaryLoopState {
   const { settings } = input;
 
-  const allowed = new Set<string>([
-    "vfs_ls",
-    "vfs_read",
-    "vfs_schema",
-    "vfs_read_many",
-    "vfs_read_json",
-    "vfs_stat",
-    "vfs_glob",
-    "vfs_search",
-    "vfs_grep",
-    "vfs_ls_entries",
-    "vfs_finish_summary",
-  ]);
+  const allowed = new Set<string>(VFS_TOOLSETS.summary.tools);
 
   return {
     budgetState: createBudgetState(settings, { loopType: "summary" }),

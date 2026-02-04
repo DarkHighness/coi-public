@@ -494,7 +494,7 @@ z.object({
 
 2. **tools.ts**:
    - VFS 文件工具（`vfs_*`）
-   - 总结工具（`summary_query_*` / `finish_summary`）
+   - 总结工具（`vfs_finish_summary`）
 
 3. **gameDatabase.ts**:
    - 完整的 CRUD 操作

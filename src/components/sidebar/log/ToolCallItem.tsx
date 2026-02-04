@@ -8,18 +8,30 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
 
-  const isQuery =
-    call.name === "vfs_ls" ||
-    call.name === "vfs_read" ||
-    call.name === "vfs_schema" ||
-    call.name === "vfs_stat" ||
-    call.name === "vfs_glob" ||
-    call.name === "vfs_read_many" ||
-    call.name === "vfs_read_json" ||
-    call.name === "vfs_search" ||
-    call.name === "vfs_grep" ||
-    call.name.startsWith("summary_query_");
-  const isFinish = call.name === "vfs_write" || call.name === "vfs_commit_turn";
+  const isTxCommitTurn =
+    call.name === "vfs_tx" &&
+    Array.isArray((call.input as any)?.ops) &&
+    (call.input as any).ops.length > 0 &&
+    (call.input as any).ops[(call.input as any).ops.length - 1]?.op ===
+      "commit_turn";
+
+  const isQuery = new Set([
+    "vfs_ls",
+    "vfs_read",
+    "vfs_schema",
+    "vfs_stat",
+    "vfs_glob",
+    "vfs_read_many",
+    "vfs_read_json",
+    "vfs_search",
+    "vfs_grep",
+    "vfs_ls_entries",
+    "vfs_suggest_duplicates",
+  ]).has(call.name);
+  const isFinish =
+    call.name === "vfs_commit_turn" ||
+    call.name === "vfs_finish_summary" ||
+    isTxCommitTurn;
   const isSuccess = !isError;
 
   const statusColor = isSuccess ? "text-theme-success" : "text-theme-error";

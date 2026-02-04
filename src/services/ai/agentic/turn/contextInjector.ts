@@ -10,6 +10,7 @@ import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
 import {
   sudoModeInstruction,
   normalTurnInstruction,
+  cleanupTurnInstruction,
   budgetStatusMessage,
   noToolCallError,
 } from "../../../prompts/atoms/core";
@@ -21,8 +22,10 @@ import {
 /**
  * Inject SUDO mode instruction
  */
-export function injectSudoModeInstruction(history: UnifiedMessage[]): void {
-  history.push(createUserMessage(sudoModeInstruction()));
+export function injectSudoModeInstruction(
+  history: UnifiedMessage[],
+): void {
+  history.push(createUserMessage(sudoModeInstruction({ toolsetId: "turn" })));
 }
 
 /**
@@ -31,8 +34,15 @@ export function injectSudoModeInstruction(history: UnifiedMessage[]): void {
 export function injectNormalTurnInstruction(
   history: UnifiedMessage[],
   finishToolName: string,
+  isCleanupMode: boolean = false,
 ): void {
-  history.push(createUserMessage(normalTurnInstruction({ finishToolName })));
+  history.push(
+    createUserMessage(
+      (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
+        finishToolName,
+      }),
+    ),
+  );
 }
 
 /**

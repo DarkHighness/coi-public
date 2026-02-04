@@ -14,6 +14,7 @@ import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
+import { VFS_TOOLSETS } from "../../../vfsToolsets";
 import { getConversationMarker, type ConversationMarker } from "./resultAccumulator";
 
 // ============================================================================
@@ -69,7 +70,7 @@ export function createLoopState(
     isRAGEnabled,
     isCleanupMode,
   });
-  const finishToolName = "vfs_commit_turn";
+  const finishToolName = VFS_TOOLSETS.turn.finishToolName;
   const conversationMarker = getConversationMarker(vfsSession);
 
   return {
@@ -119,32 +120,8 @@ export function createInitialTools(
   void isSudoMode;
   void isRAGEnabled;
 
-  // Loop-scoped allowlist:
-  // - Normal turns should NOT see summary/cleanup helper tools.
-  // - Cleanup turns additionally expose catalog + duplicate suggestion helpers.
-  const allowed = new Set<string>([
-    "vfs_ls",
-    "vfs_read",
-    "vfs_schema",
-    "vfs_read_many",
-    "vfs_read_json",
-    "vfs_stat",
-    "vfs_glob",
-    "vfs_search",
-    "vfs_grep",
-    "vfs_write",
-    "vfs_edit",
-    "vfs_merge",
-    "vfs_move",
-    "vfs_delete",
-    "vfs_commit_turn",
-    "vfs_tx",
-  ]);
-
-  if (isCleanupMode) {
-    allowed.add("vfs_ls_entries");
-    allowed.add("vfs_suggest_duplicates");
-  }
+  const toolset = isCleanupMode ? VFS_TOOLSETS.cleanup : VFS_TOOLSETS.turn;
+  const allowed = new Set<string>(toolset.tools);
 
   return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name));
 }
