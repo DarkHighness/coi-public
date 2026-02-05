@@ -704,6 +704,25 @@ export const VFS_FINISH_SUMMARY_TOOL = defineTool({
     .strict(),
 });
 
+export const VFS_SUBMIT_OUTLINE_PHASE_TOOL = defineTool({
+  name: "vfs_submit_outline_phase",
+  description:
+    "Submit a StoryOutline phase payload. Validates the phase schema and writes it to current/outline/phases/phase{N}.json (VFS).",
+  parameters: z
+    .object({
+      phase: z
+        .number()
+        .int()
+        .min(0)
+        .max(9)
+        .describe("Outline phase number (0-9)."),
+      data: z
+        .record(z.any())
+        .describe("Phase payload JSON object (must match that phase's schema)."),
+    })
+    .strict(),
+});
+
 export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_LS_TOOL,
   VFS_READ_TOOL,
@@ -724,6 +743,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
   VFS_FINISH_SUMMARY_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
 ];
 
 // Legacy export name kept for compatibility (internal-only).
@@ -756,6 +776,9 @@ export type VfsSuggestDuplicatesParams = InferToolParams<
 export type VfsFinishSummaryParams = InferToolParams<
   typeof VFS_FINISH_SUMMARY_TOOL
 >;
+export type VfsSubmitOutlinePhaseParams = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_TOOL
+>;
 
 export interface ToolParamsMap {
   vfs_ls: VfsLsParams;
@@ -777,6 +800,7 @@ export interface ToolParamsMap {
   vfs_commit_turn: VfsCommitTurnParams;
   vfs_tx: VfsTxParams;
   vfs_finish_summary: VfsFinishSummaryParams;
+  vfs_submit_outline_phase: VfsSubmitOutlinePhaseParams;
 }
 
 export type ToolName = keyof ToolParamsMap;

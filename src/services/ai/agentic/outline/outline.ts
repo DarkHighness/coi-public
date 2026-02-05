@@ -14,6 +14,7 @@ import {
   ResolvedThemeConfig,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
+import { writeOutlineProgress } from "../../../vfs/outline";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -26,6 +27,32 @@ import { OutlinePhase0 } from "../../../schemas";
 import { getOutlineSystemInstruction } from "../../../prompts/index";
 
 import { THEMES } from "../../../../utils/constants";
+
+import {
+  VFS_LS_TOOL,
+  VFS_STAT_TOOL,
+  VFS_GLOB_TOOL,
+  VFS_READ_TOOL,
+  VFS_READ_MANY_TOOL,
+  VFS_READ_JSON_TOOL,
+  VFS_SEARCH_TOOL,
+  VFS_GREP_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
+} from "../../../tools";
+import { dispatchToolCallAsync } from "../../../tools/handlers";
+import { normalizeVfsPath } from "../../../vfs/utils";
+import {
+  outlinePhase0Schema,
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
+} from "../../../schemas";
 
 import {
   getProviderConfig,
@@ -61,8 +88,18 @@ import {
   getBudgetSummary,
 } from "../budgetUtils";
 
-// Import extracted modules
-import { OUTLINE_PHASE_TOOLS } from "./outlineTools";
+const OUTLINE_PHASE_SCHEMAS = [
+  outlinePhase0Schema,
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
+] as const;
 import { getPhasePrompt } from "./outlinePrompts";
 import { mergeOutlinePhases } from "./outlinePhaseHandler";
 
@@ -86,8 +123,18 @@ export interface PhasedOutlineOptions {
   /** Resume from phase checkpoint */
   resumeFrom?: OutlineConversationState;
   /** Callback to save checkpoint after each phase */
-  onSaveCheckpoint?: (state: OutlineConversationState) => void;
+  onSaveCheckpoint?: (state: OutlineConversationState) => void | Promise<void>;
   settings: AISettings;
+  /** Optional VFS session (enables read-only VFS tools during outline generation). */
+  vfsSession?: VfsSession;
+  /** When true (default), allow read-only VFS tools if vfsSession is provided. */
+  enableReadOnlyVfsTools?: boolean;
+  /**
+   * Optional allowlist of read-only VFS path prefixes for outline generation.
+   * Paths are VFS-root relative (no leading slash), and should NOT include "current/".
+   * Example: ["skills/theme/fantasy", "refs/atmosphere"].
+   */
+  readOnlyVfsAllowPrefixes?: string[];
   /** Unique ID for the save slot to isolate sessions */
   slotId?: string;
   /** Base64 encoded image data URL for image-based story start (triggers Phase 0) */
@@ -95,6 +142,262 @@ export interface PhasedOutlineOptions {
   /** Optional protagonist feature/role selected by user */
   protagonistFeature?: string;
 }
+
+const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
+  VFS_LS_TOOL,
+  VFS_STAT_TOOL,
+  VFS_GLOB_TOOL,
+  VFS_READ_TOOL,
+  VFS_READ_MANY_TOOL,
+  VFS_READ_JSON_TOOL,
+  VFS_SEARCH_TOOL,
+  VFS_GREP_TOOL,
+];
+
+const READ_ONLY_VFS_TOOL_NAMES = new Set(
+  READ_ONLY_VFS_TOOL_DEFS.map((t) => t.name),
+);
+
+const stripOutlineCurrentPrefix = (path?: string): string => {
+  const normalized = normalizeVfsPath(path ?? "");
+  if (!normalized) return "";
+  if (normalized === "current") return "";
+  if (normalized.startsWith("current/")) return normalized.slice("current/".length);
+  return normalized;
+};
+
+const isAllowedOutlineReadOnlyPath = (
+  path: string,
+  allowPrefixes: string[],
+): boolean => {
+  const normalized = stripOutlineCurrentPrefix(path);
+  if (!normalized) return false;
+  return allowPrefixes.some((prefix) => {
+    const normalizedPrefix = normalizeVfsPath(prefix);
+    if (!normalizedPrefix) return false;
+    return normalized === normalizedPrefix || normalized.startsWith(`${normalizedPrefix}/`);
+  });
+};
+
+const getOutlineDefaultReadOnlyAllowPrefixes = (
+  theme: string,
+  isImageBasedFlow: boolean,
+): string[] => {
+  // Keep defaults simple and not overly strict:
+  // - `skills/**` is a built-in read-only library intended to improve generation quality.
+  // - `refs/**` is a read-only reference pack(s) seeded into VFS (e.g. atmosphere).
+  const prefixes: string[] = ["skills", "refs"];
+
+  // Theme skills are optional and only useful when we have a stable theme key.
+  if (!isImageBasedFlow && theme && theme !== IMAGE_BASED_THEME) {
+    prefixes.push(`skills/theme/${theme}`);
+  }
+
+  return prefixes;
+};
+
+const extractGlobRoot = (pattern: string): string => {
+  const normalized = stripOutlineCurrentPrefix(pattern);
+  if (!normalized) return "";
+  // Take the static prefix before any wildcard.
+  const wildcardIndex = normalized.search(/[*?]/);
+  const root = wildcardIndex === -1 ? normalized : normalized.slice(0, wildcardIndex);
+  return normalizeVfsPath(root);
+};
+
+const validateOutlineReadOnlyVfsArgs = (
+  toolName: string,
+  args: Record<string, unknown>,
+  allowPrefixes: string[],
+): string | null => {
+  const reject = (detail: string) =>
+    `Blocked read-only VFS access in outline generation: ${detail}. Allowed roots: ${allowPrefixes.map((p) => `"${normalizeVfsPath(p)}"`).join(", ")}`;
+
+  if (toolName === "vfs_ls") {
+    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    if (!path) return reject("vfs_ls requires a path (root listing is disabled)");
+    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
+      return reject(`vfs_ls path="${path}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_read") {
+    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    if (!path) return reject("vfs_read requires a path");
+    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
+      return reject(`vfs_read path="${path}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_read_many") {
+    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
+    if (paths.length === 0) return reject("vfs_read_many requires paths[]");
+    const bad = paths.find(
+      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
+    );
+    if (bad) {
+      return reject(`vfs_read_many includes disallowed path="${String(bad)}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_read_json") {
+    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    if (!path) return reject("vfs_read_json requires a path");
+    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
+      return reject(`vfs_read_json path="${path}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_stat") {
+    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
+    if (paths.length === 0) return reject("vfs_stat requires paths[]");
+    const bad = paths.find(
+      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
+    );
+    if (bad) {
+      return reject(`vfs_stat includes disallowed path="${String(bad)}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_search" || toolName === "vfs_grep") {
+    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    if (!path) return reject(`${toolName} requires a path (root search is disabled)`);
+    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
+      return reject(`${toolName} path="${path}"`);
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_glob") {
+    const patterns = Array.isArray((args as any)?.patterns) ? (args as any).patterns : [];
+    if (patterns.length === 0) return reject("vfs_glob requires patterns[]");
+    for (const pattern of patterns) {
+      if (typeof pattern !== "string") {
+        return reject("vfs_glob patterns[] must be strings");
+      }
+      const root = extractGlobRoot(pattern);
+      if (!root) return reject(`vfs_glob pattern="${pattern}" has no static root`);
+      if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
+        return reject(`vfs_glob pattern="${pattern}" (root="${root}")`);
+      }
+    }
+    const excludePatterns = Array.isArray((args as any)?.excludePatterns)
+      ? (args as any).excludePatterns
+      : null;
+    if (excludePatterns) {
+      for (const pattern of excludePatterns) {
+        if (typeof pattern !== "string") {
+          return reject("vfs_glob excludePatterns[] must be strings");
+        }
+        const root = extractGlobRoot(pattern);
+        if (!root) return reject(`vfs_glob excludePattern="${pattern}" has no static root`);
+        if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
+          return reject(`vfs_glob excludePattern="${pattern}" (root="${root}")`);
+        }
+      }
+    }
+    return null;
+  }
+
+  // Default: conservative deny.
+  return reject(`tool "${toolName}" is not allowed in outline read-only mode`);
+};
+
+const formatOutlineSubmitValidationError = (error: unknown): string => {
+  const err = error as any;
+  const issues = err?.issues;
+  if (!Array.isArray(issues)) {
+    return String(err?.message ?? error);
+  }
+  return issues
+    .slice(0, 8)
+    .map((issue: any) => {
+      const path = Array.isArray(issue?.path) ? issue.path.join(".") : "";
+      const message =
+        typeof issue?.message === "string" ? issue.message : "Invalid";
+      return path ? `${path}: ${message}` : message;
+    })
+    .join("; ");
+};
+
+const validateGenderPreferencePhase2 = (
+  phase2Data: unknown,
+  expectedGender: "male" | "female",
+): string | null => {
+  const playerVisible = (phase2Data as any)?.player?.profile?.visible ?? {};
+  const race = String(playerVisible?.race ?? "").toLowerCase();
+  const title = String(playerVisible?.title ?? "").toLowerCase();
+
+  const maleKeywords = [
+    "male",
+    "男",
+    "man",
+    "boy",
+    "他",
+    "先生",
+    "公子",
+    "少爷",
+    "王子",
+    "皇子",
+    "lord",
+    "prince",
+    "master",
+    "king",
+    "emperor",
+    "duke",
+    "sir",
+    "gentleman",
+  ];
+  const femaleKeywords = [
+    "female",
+    "女",
+    "woman",
+    "girl",
+    "她",
+    "小姐",
+    "夫人",
+    "姑娘",
+    "公主",
+    "皇后",
+    "lady",
+    "princess",
+    "queen",
+    "empress",
+    "duchess",
+    "miss",
+    "madam",
+    "mistress",
+  ];
+
+  const raceHasMale = maleKeywords.some((kw) => race.includes(kw));
+  const raceHasFemale = femaleKeywords.some((kw) => race.includes(kw));
+  const titleHasMale = maleKeywords.some((kw) => title.includes(kw));
+  const titleHasFemale = femaleKeywords.some((kw) => title.includes(kw));
+
+  const raceGender = raceHasFemale ? "female" : raceHasMale ? "male" : null;
+  const titleGender = titleHasFemale ? "female" : titleHasMale ? "male" : null;
+
+  if (raceGender !== null && raceGender !== expectedGender) {
+    return (
+      `Phase 2: Gender mismatch in race - protagonist must be ${expectedGender === "male" ? "male (男性)" : "female (女性)"}, ` +
+      `but visible.race is "${String(playerVisible?.race ?? "")}". Please resubmit Phase 2 with correct gender.`
+    );
+  }
+
+  if (titleGender !== null && titleGender !== expectedGender) {
+    return (
+      `Phase 2: Gender mismatch in title - visible.title "${String(playerVisible?.title ?? "")}" conflicts with required gender ` +
+      `${expectedGender === "male" ? "male (男性)" : "female (女性)"}. Please resubmit Phase 2 with a gender-appropriate title.`
+    );
+  }
+
+  return null;
+};
 
 /**
  * Generate story outline using agentic loop with phase tools
@@ -117,6 +420,9 @@ export const generateStoryOutlinePhased = async (
     throw new Error("settings is required in options");
   }
   const settings = options.settings;
+  const readOnlyVfsEnabled = Boolean(
+    options?.vfsSession && (options.enableReadOnlyVfsTools ?? true),
+  );
 
   // Use "lore" model config for outline generation
   const providerInfo = getProviderConfig(settings, "lore");
@@ -137,6 +443,10 @@ export const generateStoryOutlinePhased = async (
     if (theme) return false;
     return resume.currentPhase === 0 || Boolean((resume.partial as any)?.phase0);
   })();
+
+  const readOnlyVfsAllowPrefixes =
+    options?.readOnlyVfsAllowPrefixes ??
+    getOutlineDefaultReadOnlyAllowPrefixes(theme, isImageBasedFlow);
 
   // Get theme data (skip if image-based flow - Phase 0 will generate context)
   const themeConfig = isImageBasedFlow ? null : THEMES[theme] || THEMES["fantasy"];
@@ -205,6 +515,9 @@ export const generateStoryOutlinePhased = async (
     playerMaliceProfile,
     playerMalicePreset: settings.extra?.playerMalicePreset,
     playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
+    vfsReadOnly: readOnlyVfsEnabled
+      ? { enabled: true, allowedRoots: readOnlyVfsAllowPrefixes }
+      : undefined,
   });
 
   // System default model-specific injection (for consistent style across models).
@@ -265,6 +578,14 @@ export const generateStoryOutlinePhased = async (
     const totalPhases = hasImage ? 10 : 9; // Phase 0 + 1-9 or just 1-9
     const phaseRange = hasImage ? "0-9" : "1-9";
 
+    const allowedRootsForPrompt = readOnlyVfsAllowPrefixes
+      .map((p) => `  - current/${normalizeVfsPath(p)}`)
+      .join("\n");
+
+    const vfsReadOnlyHint = readOnlyVfsEnabled
+      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine \`vfs_submit_outline_phase\` with other tools in the same message. Use separate rounds: read first, then submit.\n`
+      : "";
+
     // Create the initial task instruction
     const taskText = `[OUTLINE GENERATION TASK]
 Generate a story outline in ${totalPhases} phases (Phases ${phaseRange}). Each phase builds upon the previous ones.
@@ -278,7 +599,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
 **PROCESS:**
 - You will receive one phase instruction at a time
 - For each phase, you MUST call the provided tool to submit your data
-- **CRITICAL**: You must invoke the tool function directly. Do NOT return the schema as a JSON text block.
+${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do NOT return the schema as a JSON text block.
 - After submitting, wait for the next phase instruction
 `;
 
@@ -322,18 +643,32 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
   }
 
   // Helper to save checkpoint
-  const saveCheckpoint = (phase: number) => {
+  const saveCheckpoint = async (phase: number) => {
+    const checkpoint: OutlineConversationState = {
+      theme,
+      language,
+      customContext,
+      conversationHistory: [...conversationHistory],
+      partial: { ...partial },
+      currentPhase: phase,
+      modelId, // Track which model was used
+      providerId: instance.id, // Track which provider was used
+    };
+
+    if (options?.vfsSession) {
+      try {
+        writeOutlineProgress(options.vfsSession, checkpoint);
+      } catch (e) {
+        console.warn("[OutlineAgentic] Failed to write outline progress to VFS", e);
+      }
+    }
+
     if (options.onSaveCheckpoint) {
-      options.onSaveCheckpoint({
-        theme,
-        language,
-        customContext,
-        conversationHistory: [...conversationHistory],
-        partial: { ...partial },
-        currentPhase: phase,
-        modelId, // Track which model was used
-        providerId: instance.id, // Track which provider was used
-      });
+      try {
+        await options.onSaveCheckpoint({ ...checkpoint });
+      } catch (e) {
+        console.warn("[OutlineAgentic] Failed to persist outline checkpoint", e);
+      }
     }
   };
 
@@ -424,13 +759,14 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
     console.log(
       `[OutlineAgentic] Saving initial checkpoint at phase ${currentPhase}`,
     );
-    saveCheckpoint(currentPhase);
+    await saveCheckpoint(currentPhase);
   }
 
   // Helper to make API call with retry
   const callAIWithRetry = async (
-    phaseTool: ZodToolDefinition,
     phaseNum: number,
+    tools: ZodToolDefinition[],
+    opts?: { requiredToolName?: string; endpointSuffix?: string },
   ) => {
     const provider = sessionManager.getProvider(outlineSession.id, instance);
     const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
@@ -445,13 +781,11 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
         modelId,
         systemInstruction,
         messages: [], // Will be overwritten by callWithAgenticRetry
-        tools: [
-          {
-            name: phaseTool.name,
-            description: phaseTool.description,
-            parameters: phaseTool.parameters,
-          },
-        ],
+        tools: tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+        })),
         toolChoice: effectiveToolChoice,
         mediaResolution: settings.story?.mediaResolution,
         temperature: settings.story?.temperature,
@@ -463,8 +797,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       conversationHistory,
       {
         maxRetries: budgetState.retriesMax,
-        requiredToolName: phaseTool.name,
-        schema: phaseTool.parameters,
+        requiredToolName: opts?.requiredToolName,
         onRetry: (err, count) => {
           console.warn(
             `[OutlineAgentic] Retry ${count}/${budgetState.retriesMax} due to: ${err}`,
@@ -483,12 +816,16 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       },
     );
 
+    const endpointSuffix = opts?.endpointSuffix
+      ? `-${opts.endpointSuffix}`
+      : "";
+
     const logEntry = createLogEntry({
       provider: instance.protocol,
       model: modelId,
-      endpoint: `outline-phase${phaseNum}`,
+      endpoint: `outline-phase${phaseNum}${endpointSuffix}`,
       phase: phaseNum,
-      toolName: phaseTool.name,
+      toolName: opts?.requiredToolName ?? tools[tools.length - 1]?.name ?? "unknown",
       response: resp.raw,
       usage: resp.usage,
       request: { retries: resp.retries },
@@ -500,10 +837,6 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       totalUsage.completionTokens += resp.usage.completionTokens || 0;
       totalUsage.totalTokens += resp.usage.totalTokens || 0;
     }
-
-    // Track tool call in budget
-    incrementToolCalls(budgetState, 1);
-    incrementIterations(budgetState);
 
     return { result: resp.result, log: logEntry, retries: resp.retries };
   };
@@ -523,27 +856,14 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
   // Agentic loop for each phase
   // Phase 0 is at index 0, Phase 1 at index 1, etc.
   while (currentPhase <= 9) {
-    // Check budget exhaustion
-    const budgetCheck = checkBudgetExhaustion(budgetState);
-    if (budgetCheck.exhausted) {
-      console.warn(`[OutlineAgentic] ${budgetCheck.message}`);
-      throw new Error(budgetCheck.message);
-    }
-
     const phaseNum = currentPhase;
-    // Tool index: Phase 0 -> index 0, Phase 1 -> index 1, etc.
-    const phaseTool = OUTLINE_PHASE_TOOLS[phaseNum];
+    const phaseSchema = OUTLINE_PHASE_SCHEMAS[phaseNum];
+    const submitTool = VFS_SUBMIT_OUTLINE_PHASE_TOOL;
 
     console.log(
       `[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`,
     );
     reportProgress(phaseNum, "starting");
-
-    // Inject budget status into conversation
-    const budgetPrompt = generateBudgetPrompt(budgetState);
-    conversationHistory.push(
-      createUserMessage(`[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`),
-    );
 
     // Add phase-specific prompt
     let phasePrompt = getPhasePrompt(
@@ -555,27 +875,80 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
       options.protagonistFeature,
     );
     if (phasePrompt) {
-      // Dynamically append tool usage emphasis
-      phasePrompt += `\n\nUse tool \`${phaseTool.name}\` to submit.`;
-      conversationHistory.push(createUserMessage(phasePrompt));
+      // Avoid duplicating the phase prompt on resume.
+      const marker = `[PHASE ${phaseNum} `;
+      const hasMarker = conversationHistory.some((msg) => {
+        if (msg.role !== "user") return false;
+        const content = (msg as any).content;
+        if (typeof content === "string") return content.includes(marker);
+        if (Array.isArray(content)) {
+          return content.some(
+            (c) =>
+              c?.type === "text" &&
+              typeof c?.text === "string" &&
+              c.text.includes(marker),
+          );
+        }
+        return false;
+      });
+      if (!hasMarker) {
+        // Phase prompts include the submission tool instructions.
+        conversationHistory.push(createUserMessage(phasePrompt));
+      }
     }
 
     try {
       reportProgress(phaseNum, "generating");
 
-      const { result, log } = await callAIWithRetry(phaseTool, phaseNum);
+      let phaseSubmitted = false;
 
-      if (log) logs.push(log);
+      while (!phaseSubmitted) {
+        const budgetCheck = checkBudgetExhaustion(budgetState);
+        if (budgetCheck.exhausted) {
+          console.warn(`[OutlineAgentic] ${budgetCheck.message}`);
+          throw new Error(budgetCheck.message);
+        }
 
-      // Check if we got the expected tool call
-      if (
-        result &&
-        typeof result === "object" &&
-        "functionCalls" in result &&
-        Array.isArray(result.functionCalls) &&
-        result.functionCalls.length > 0
-      ) {
-        const toolCalls = result.functionCalls as ToolCallResult[];
+        const toolCallsRemaining =
+          budgetState.toolCallsMax - budgetState.toolCallsUsed;
+        const iterationsRemaining =
+          budgetState.loopIterationsMax - budgetState.loopIterationsUsed;
+        const mustFinishNow =
+          toolCallsRemaining <= 2 || iterationsRemaining <= 2;
+
+        const activeTools: ZodToolDefinition[] = mustFinishNow
+          ? [submitTool]
+          : readOnlyVfsEnabled
+            ? [...READ_ONLY_VFS_TOOL_DEFS, submitTool]
+            : [submitTool];
+
+        // Inject budget status for this iteration
+        conversationHistory.push(
+          createUserMessage(
+            `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(budgetState, submitTool.name)}`,
+          ),
+        );
+
+        const { result, log } = await callAIWithRetry(phaseNum, activeTools, {
+          requiredToolName: mustFinishNow ? submitTool.name : undefined,
+          endpointSuffix: `iter-${budgetState.loopIterationsUsed + 1}`,
+        });
+
+        if (log) logs.push(log);
+
+        const toolCalls =
+          result &&
+          typeof result === "object" &&
+          "functionCalls" in result &&
+          Array.isArray((result as any).functionCalls)
+            ? ((result as any).functionCalls as ToolCallResult[])
+            : [];
+
+        const textContent = (result as { content?: string }).content;
+
+        if (!toolCalls || toolCalls.length === 0) {
+          throw new Error(`Phase ${phaseNum}: No function calls in response`);
+        }
 
         // Ensure all tool calls have IDs (OpenAI requirement)
         for (const tc of toolCalls) {
@@ -584,182 +957,196 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
           }
         }
 
-        const textContent = (result as { content?: string }).content;
+        // Budget accounting
+        incrementToolCalls(budgetState, toolCalls.length);
+        incrementIterations(budgetState);
 
-        const toolCall = toolCalls[0];
-        if (toolCall.name !== phaseTool.name) {
-          throw new Error(
-            `Phase ${phaseNum}: Expected ${phaseTool.name}, got ${toolCall.name}`,
-          );
-        }
-
-        // Validate the tool call arguments against the schema
-        try {
-          const validatedData = phaseTool.parameters.parse(toolCall.args);
-
-          // Phase 2: Additional gender validation
-          if (phaseNum === 2 && settings.extra?.genderPreference) {
-            const genderPref = settings.extra.genderPreference;
-            if (genderPref !== "none") {
-              const phase2Data = validatedData as {
-                character: { race?: string; title?: string };
-              };
-              const race = phase2Data.character?.race?.toLowerCase() || "";
-              const title = phase2Data.character?.title?.toLowerCase() || "";
-
-              // Check for gender keywords in the race field
-              const maleKeywords = [
-                "male",
-                "男",
-                "man",
-                "boy",
-                "他",
-                "先生",
-                "公子",
-                "少爷",
-                "王子",
-                "皇子",
-                "lord",
-                "prince",
-                "master",
-                "king",
-                "emperor",
-                "duke",
-                "sir",
-                "gentleman",
-              ];
-              const femaleKeywords = [
-                "female",
-                "女",
-                "woman",
-                "girl",
-                "她",
-                "小姐",
-                "夫人",
-                "姑娘",
-                "公主",
-                "皇后",
-                "lady",
-                "princess",
-                "queen",
-                "empress",
-                "duchess",
-                "miss",
-                "madam",
-                "mistress",
-              ];
-
-              // Check race field
-              const raceHasMale = maleKeywords.some((kw) => race.includes(kw));
-              const raceHasFemale = femaleKeywords.some((kw) =>
-                race.includes(kw),
-              );
-
-              // Check title field
-              const titleHasMale = maleKeywords.some((kw) =>
-                title.includes(kw),
-              );
-              const titleHasFemale = femaleKeywords.some((kw) =>
-                title.includes(kw),
-              );
-
-              const expectedGender = genderPref;
-              const raceGender = raceHasFemale
-                ? "female"
-                : raceHasMale
-                  ? "male"
-                  : null;
-              const titleGender = titleHasFemale
-                ? "female"
-                : titleHasMale
-                  ? "male"
-                  : null;
-
-              // Validate race field gender
-              if (raceGender !== null && raceGender !== expectedGender) {
-                console.warn(
-                  `[OutlineAgentic] Race gender mismatch: expected ${expectedGender}, got ${raceGender} (race: "${phase2Data.character?.race}")`,
-                );
-                throw new Error(
-                  `Phase 2: Gender mismatch in race - protagonist must be ${expectedGender === "male" ? "male (男性)" : "female (女性)"}, but race is "${phase2Data.character?.race}". Please regenerate with correct gender.`,
-                );
-              }
-
-              // Validate title field gender (e.g., 小姐 vs 少爷)
-              if (titleGender !== null && titleGender !== expectedGender) {
-                console.warn(
-                  `[OutlineAgentic] Title gender mismatch: expected ${expectedGender}, got ${titleGender} (title: "${phase2Data.character?.title}")`,
-                );
-                throw new Error(
-                  `Phase 2: Gender mismatch in title - protagonist title "${phase2Data.character?.title}" conflicts with required gender ${expectedGender === "male" ? "male (男性)" : "female (女性)"}. Please regenerate with correct gender-appropriate title.`,
-                );
-              }
-
-              // If neither race nor title indicates gender, warn but continue
-              if (raceGender === null) {
-                console.warn(
-                  `[OutlineAgentic] Race field "${phase2Data.character?.race}" does not contain clear gender indicator, but continuing...`,
-                );
-              }
-
-              console.log(
-                `[OutlineAgentic] Gender validated: ${expectedGender} matches race "${phase2Data.character?.race}" and title "${phase2Data.character?.title}"`,
-              );
-            }
-          }
-
-          // Store validated phase data
-          const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
-          (partial as any)[phaseKey] = validatedData;
-        } catch (validationError) {
-          const errorMsg =
-            validationError instanceof Error
-              ? validationError.message
-              : String(validationError);
-          console.error(
-            `[OutlineAgentic] Phase ${phaseNum} schema validation failed:`,
-            errorMsg,
-          );
-          throw new Error(
-            `Phase ${phaseNum}: Schema validation failed - ${errorMsg}`,
-          );
-        }
-
-        console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
-        reportProgress(phaseNum, "completed");
-
-        // Add assistant message with tool call (and text content if present)
+        // Record assistant tool calls (and any text content)
         conversationHistory.push(
           createToolCallMessage(
-            [
-              {
-                id: toolCall.id,
-                name: toolCall.name,
-                arguments: toolCall.args,
-                thoughtSignature: toolCall.thoughtSignature, // Include for Gemini 3 models
-              },
-            ],
+            toolCalls.map((tc) => ({
+              id: tc.id,
+              name: tc.name,
+              arguments: tc.args,
+              thoughtSignature: tc.thoughtSignature, // Include for Gemini 3 models
+            })),
             textContent,
           ),
         );
 
-        // Add tool response
-        conversationHistory.push(
-          createToolResponseMessage([
-            {
-              toolCallId: toolCall.id,
-              name: toolCall.name,
-              content: `Phase ${phaseNum} submitted successfully.${phaseNum < 9 ? ` Ready for phase ${phaseNum + 1}.` : " All phases complete!"}`,
-            },
-          ]),
-        );
+        const toolResponses: Array<{
+          toolCallId: string;
+          name: string;
+          content: unknown;
+        }> = [];
 
-        // Move to next phase and save checkpoint
-        currentPhase++;
-        saveCheckpoint(currentPhase);
-      } else {
-        throw new Error(`Phase ${phaseNum}: No function calls in response`);
+        const submitCalls = toolCalls.filter((tc) => tc.name === submitTool.name);
+        if (submitCalls.length > 1) {
+          for (const tc of submitCalls) {
+            toolResponses.push({
+              toolCallId: tc.id!,
+              name: tc.name,
+              content: {
+                success: false,
+                error: `[ERROR: MULTIPLE_SUBMITS] Call "${submitTool.name}" at most once per round.`,
+                code: "INVALID_ACTION",
+              },
+            });
+          }
+        }
+
+	        for (const tc of toolCalls) {
+	          if (tc.name === submitTool.name) {
+	            if (toolCalls.length !== 1) {
+              toolResponses.push({
+                toolCallId: tc.id!,
+                name: tc.name,
+                content: {
+                  success: false,
+                  error:
+                    `[ERROR: SUBMIT_MUST_BE_ALONE] Do not combine "${submitTool.name}" with other tools in the same message. ` +
+                    `Use read-only VFS tools in earlier rounds, then call "${submitTool.name}" alone to submit this phase.`,
+                  code: "INVALID_ACTION",
+                },
+              });
+	              continue;
+	            }
+
+	            const submitArgsParsed = submitTool.parameters.safeParse(tc.args);
+	            if (!submitArgsParsed.success) {
+	              toolResponses.push({
+	                toolCallId: tc.id!,
+	                name: tc.name,
+	                content: {
+	                  success: false,
+	                  error: `vfs_submit_outline_phase: invalid arguments`,
+	                  code: "INVALID_DATA",
+	                },
+	              });
+	              continue;
+	            }
+	            const submitArgs = submitArgsParsed.data;
+	            if (submitArgs.phase !== phaseNum) {
+	              toolResponses.push({
+	                toolCallId: tc.id!,
+	                name: tc.name,
+                content: {
+                  success: false,
+                  error: `vfs_submit_outline_phase: phase mismatch (expected ${phaseNum}, got ${submitArgs.phase})`,
+                  code: "INVALID_DATA",
+                },
+              });
+	              continue;
+	            }
+
+	            const validatedDataParsed = phaseSchema.safeParse(submitArgs.data);
+	            if (!validatedDataParsed.success) {
+	              toolResponses.push({
+	                toolCallId: tc.id!,
+	                name: tc.name,
+	                content: {
+	                  success: false,
+	                  error: `Phase ${phaseNum}: schema validation failed: ${formatOutlineSubmitValidationError(validatedDataParsed.error)}`,
+	                  code: "INVALID_DATA",
+	                },
+	              });
+	              continue;
+	            }
+
+	            const validatedData = validatedDataParsed.data;
+
+	            // Phase 2: Additional gender validation
+	            if (phaseNum === 2 && settings.extra?.genderPreference) {
+	              const genderPref = settings.extra.genderPreference;
+              if (genderPref === "male" || genderPref === "female") {
+                const genderError = validateGenderPreferencePhase2(
+                  validatedData,
+                  genderPref,
+                );
+                if (genderError) {
+                  toolResponses.push({
+                    toolCallId: tc.id!,
+                    name: tc.name,
+                    content: { success: false, error: genderError, code: "INVALID_DATA" },
+                  });
+                  continue;
+	                }
+	              }
+	            }
+
+	            const output = await dispatchToolCallAsync(tc.name, tc.args, {
+	              vfsSession: options?.vfsSession,
+	              settings,
+	              gameState: { forkId: -1, turnNumber: 0 } as any,
+	            });
+
+	            if ((output as any)?.success === true) {
+	              const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
+	              (partial as any)[phaseKey] = validatedData;
+	              phaseSubmitted = true;
+	            }
+	            toolResponses.push({
+	              toolCallId: tc.id!,
+	              name: tc.name,
+	              content: output,
+	            });
+	            continue;
+	          }
+
+          if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(tc.name)) {
+            const violation = validateOutlineReadOnlyVfsArgs(
+              tc.name,
+              tc.args as any,
+              readOnlyVfsAllowPrefixes,
+            );
+            if (violation) {
+              toolResponses.push({
+                toolCallId: tc.id!,
+                name: tc.name,
+                content: {
+                  success: false,
+                  error: violation,
+                  code: "INVALID_ACTION",
+                },
+              });
+              continue;
+            }
+            const output = await dispatchToolCallAsync(tc.name, tc.args, {
+              vfsSession: options?.vfsSession,
+              settings,
+              gameState: { forkId: -1, turnNumber: 0 } as any,
+            });
+            toolResponses.push({
+              toolCallId: tc.id!,
+              name: tc.name,
+              content: output,
+            });
+            continue;
+          }
+
+          toolResponses.push({
+            toolCallId: tc.id!,
+            name: tc.name,
+            content: {
+              success: false,
+              error: `Unknown or disallowed tool in outline generation: ${tc.name}`,
+              code: "UNKNOWN_TOOL",
+            },
+          });
+        }
+
+        conversationHistory.push(createToolResponseMessage(toolResponses));
+
+        // Persist progress for breakpoint-resume (mid-phase tool rounds).
+        await saveCheckpoint(phaseNum);
       }
+
+      console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
+      reportProgress(phaseNum, "completed");
+
+      // Move to next phase and save checkpoint
+      currentPhase++;
+      await saveCheckpoint(currentPhase);
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       console.error(`[OutlineAgentic] Phase ${phaseNum} failed:`, error);

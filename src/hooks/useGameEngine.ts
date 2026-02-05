@@ -515,6 +515,8 @@ export const useGameEngine = () => {
           resumeFrom: undefined,
           // Pass settings for the generation
           settings: aiSettings,
+          // Allow read-only VFS tools during outline generation (skills/** virtual files, etc.)
+          vfsSession,
           // Pass slotId for session isolation
           slotId,
           // Pass seed image for Phase 0 vision analysis
@@ -1031,6 +1033,8 @@ export const useGameEngine = () => {
           slotId: currentSlotId!,
           onPhaseProgress,
           resumeFrom: savedConversation,
+          // Allow read-only VFS tools during outline generation (skills/** virtual files, etc.)
+          vfsSession,
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
           ) => {

@@ -22,6 +22,7 @@ import {
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
   VFS_FINISH_SUMMARY_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
   getTypedArgs,
 } from "../../tools";
 import {
@@ -36,6 +37,18 @@ import { VfsSession } from "../../vfs/vfsSession";
 import { getSchemaForPath } from "../../vfs/schemas";
 import Fuse from "fuse.js";
 import { getRAGService } from "../../rag";
+import {
+  outlinePhase0Schema,
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
+} from "../../schemas";
 import {
   buildTurnId,
   type ConversationIndex,
@@ -1265,6 +1278,73 @@ registerToolHandler(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
       "Summary state updated",
     );
   });
+});
+
+const OUTLINE_PHASE_SCHEMAS = [
+  outlinePhase0Schema,
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
+] as const;
+
+const formatOutlineSubmitValidationError = (error: unknown): string => {
+  const err = error as any;
+  const issues = err?.issues;
+  if (!Array.isArray(issues)) {
+    return String(err?.message ?? error);
+  }
+  return issues
+    .slice(0, 8)
+    .map((issue: any) => {
+      const path = Array.isArray(issue?.path) ? issue.path.join(".") : "";
+      const message =
+        typeof issue?.message === "string" ? issue.message : "Invalid";
+      return path ? `${path}: ${message}` : message;
+    })
+    .join("; ");
+};
+
+registerToolHandler(VFS_SUBMIT_OUTLINE_PHASE_TOOL, (args, ctx) => {
+  const session = getSession(ctx);
+  if (!session) {
+    return createError("VFS session is not available", "INVALID_DATA");
+  }
+
+  const typedArgs = getTypedArgs("vfs_submit_outline_phase", args);
+  const phase = typedArgs.phase;
+  if (
+    typeof phase !== "number" ||
+    !Number.isInteger(phase) ||
+    phase < 0 ||
+    phase > 9
+  ) {
+    return createError(
+      `Invalid outline phase: ${String(typedArgs.phase)}`,
+      "INVALID_DATA",
+    );
+  }
+
+  const schema = OUTLINE_PHASE_SCHEMAS[phase];
+  const parsed = schema.safeParse(typedArgs.data);
+  if (!parsed.success) {
+    return createError(
+      `Outline phase ${phase} validation failed: ${formatOutlineSubmitValidationError(parsed.error)}`,
+      "INVALID_DATA",
+    );
+  }
+
+  const path = `outline/phases/phase${phase}.json`;
+  session.writeFile(path, JSON.stringify(parsed.data), "application/json");
+  return createSuccess(
+    { phase, path: toCurrentPath(path) },
+    "Outline phase submitted",
+  );
 });
 
 const isInScope = (filePath: string, rootPath?: string): boolean => {
