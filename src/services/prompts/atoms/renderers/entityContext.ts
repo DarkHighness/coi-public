@@ -112,7 +112,7 @@ ${toToon(entityData)}
 </current_entities>`;
 };
 
-export const renderEntityContextLite: Atom<EntityContextInput> = (input) => {
+export const renderEntityContextPrimer: Atom<EntityContextInput> = (input) => {
   const counts = [
     input.npcs?.length ? `NPCs: ${input.npcs.length}` : null,
     input.items?.length ? `Items: ${input.items.length}` : null,
@@ -126,4 +126,3 @@ export const renderEntityContextLite: Atom<EntityContextInput> = (input) => {
 
   return `<entity_summary>${counts || "No entities"}</entity_summary>`;
 };
-

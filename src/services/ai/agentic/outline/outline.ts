@@ -187,26 +187,25 @@ export const generateStoryOutlinePhased = async (
     customContext,
   });
 
-  let systemInstruction = getOutlineSystemInstruction(
+  let systemInstruction = getOutlineSystemInstruction({
     language,
     isRestricted,
-    resolvedNarrativeStyle,
-    themeDataBackgroundTemplate,
-    themeDataExample,
-    themeDataWorldSetting,
+    narrativeStyle: resolvedNarrativeStyle,
+    backgroundTemplate: themeDataBackgroundTemplate,
+    example: themeDataExample,
+    worldSetting: themeDataWorldSetting,
     worldDisposition,
-    settings.extra?.liteMode,
-    settings.extra?.nsfw,
-    settings.extra?.detailedDescription,
-    settings.extra?.genderPreference,
-    options.protagonistFeature,
-    themeConfig?.categories?.[0], // themeCategory
-    theme, // themeKey - NEW: for theme-based atom specialization
-    settings.extra?.worldDispositionPreset,
+    isNSFW: settings.extra?.nsfw,
+    isDetailedDescription: settings.extra?.detailedDescription,
+    genderPreference: settings.extra?.genderPreference,
+    protagonistFeature: options.protagonistFeature,
+    themeCategory: themeConfig?.categories?.[0],
+    themeKey: theme,
+    worldDispositionPreset: settings.extra?.worldDispositionPreset,
     playerMaliceProfile,
-    settings.extra?.playerMalicePreset,
-    settings.extra?.playerMaliceIntensity,
-  );
+    playerMalicePreset: settings.extra?.playerMalicePreset,
+    playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
+  });
 
   // System default model-specific injection (for consistent style across models).
   // Required order at the very front of systemInstruction: (1) user custom instruction, (2) system default injection, then base.

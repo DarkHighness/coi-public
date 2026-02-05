@@ -77,16 +77,30 @@ describe("VfsSession", () => {
     const indexContent = session.readFile("skills/index.json")?.content ?? "";
     const indexJson = JSON.parse(indexContent) as { skills?: Array<{ id?: string }> };
     const ids = new Set((indexJson.skills ?? []).map((s) => s.id).filter(Boolean));
+    
 
-    // Keep this test resilient to library evolution: assert a few stable,
-    // representative skill IDs across domains (core/gm/craft/theme).
-    expect(ids.has("core-identity")).toBe(true);
-    expect(ids.has("gm-core-rules")).toBe(true);
-    expect(ids.has("craft-dialogue")).toBe(true);
-    expect(ids.has("theme-fantasy")).toBe(true);
-    expect(ids.has("theme-cyberpunk")).toBe(true);
+    // Representative skill IDs across domains (keep this resilient to library evolution).
+    for (const id of [
+      "core-identity",
+      "gm-knowledge",
+      "gm-fail-forward",
+      "craft-writing",
+      "craft-scene-beats",
+      "craft-reveals-foreshadowing",
+      "npc-logic",
+      "worldbuilding-economy",
+      "worldbuilding-medicine-forensics",
+      "worldbuilding-espionage-counterintel",
+      "worldbuilding-finance-banking",
+      "worldbuilding-maritime-logistics",
+      "worldbuilding-media-propaganda",
+      "theme-fantasy",
+      "theme-element-media",
+    ]) {
+      expect(ids.has(id)).toBe(true);
+    }
 
-    expect(session.list("skills")).toEqual(
+expect(session.list("skills")).toEqual(
       expect.arrayContaining([
         "README.md",
         "index.json",
@@ -94,6 +108,7 @@ describe("VfsSession", () => {
         "TAXONOMY.md",
         "core",
         "gm",
+        "worldbuilding",
         "craft",
         "npc",
         "conditional",
@@ -101,17 +116,21 @@ describe("VfsSession", () => {
       ]),
     );
 
-    // Smoke-check a few representative directories/files.
-    expect(session.list("skills/core/identity")).toEqual(
-      expect.arrayContaining(["SKILL.md"]),
+    expect(session.list("skills/gm/state-management")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/gm/core-rules")).toEqual(
-      expect.arrayContaining(["SKILL.md"]),
+
+
+    expect(session.list("skills/gm/fail-forward")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/craft/dialogue")).toEqual(
-      expect.arrayContaining(["SKILL.md"]),
+    expect(session.list("skills/craft/scene-beats")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme/cyberpunk")).toEqual(
+    expect(session.list("skills/worldbuilding/medicine-forensics")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/theme/element-media")).toEqual(
       expect.arrayContaining(["SKILL.md"]),
     );
   });

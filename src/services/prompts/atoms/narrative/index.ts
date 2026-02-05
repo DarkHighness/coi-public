@@ -6,13 +6,13 @@
 
 export {
   narrativeScaleSelection,
-  narrativeScaleSelectionLite,
+  narrativeScaleSelectionPrimer,
   type NarrativeScaleSelectionInput,
 } from "./narrativeScaleSelection";
 
 export {
   narrativeScaleRuntime,
-  narrativeScaleRuntimeLite,
+  narrativeScaleRuntimePrimer,
   narrativeScaleIntimate,
   narrativeScaleEpic,
   narrativeScaleBalanced,
@@ -21,10 +21,10 @@ export {
 
 export {
   temporalPhilosophy,
-  temporalPhilosophyLite,
+  temporalPhilosophyPrimer,
 } from "./temporalPhilosophy";
 export { openingScene } from "./openingScene";
-export { narrativeCausality, type NarrativeCausalityInput } from "./causality";
+export { narrativeCausality } from "./causality";
 export { combatMechanics } from "./combat";
 export { dialogueMechanics } from "./dialogue";
 export { atmosphereMechanics } from "./atmosphere";

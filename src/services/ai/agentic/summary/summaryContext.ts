@@ -23,12 +23,10 @@ import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
 
 export function getSummarySystemInstruction(
   language: string,
-  liteMode?: boolean,
   nsfw?: boolean,
   detailedDescription?: boolean,
 ): string {
   return `You are a diligent chronicler tasked with summarizing story events in a world simulation.
-${liteMode ? "Focus on core facts and essential plot points only. Be concise." : ""}
 ${nsfw ? "Maintain neutrality even when summarizing mature or violent content." : ""}
 ${detailedDescription ? "Ensure key sensory details and character emotional shifts are captured in the summary." : ""}
 
@@ -88,16 +86,16 @@ It MUST be your LAST tool call.
 - Capture world state changes
 </critical_rules>
 
-${gmKnowledge({})}
+${gmKnowledge()}
 
 ${entityDefinitions()}
 
 <style_injection>
   You must capture the TONE of the story, not just the facts.
-  ${styleGuide({ isLiteMode: liteMode })}
+  ${styleGuide({})}
 </style_injection>
 
-${narrativeCausality({ isLiteMode: liteMode })}
+${narrativeCausality({})}
 
 ${languageEnforcement({ language })}`;
 }

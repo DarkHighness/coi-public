@@ -343,7 +343,7 @@ export class VfsSession {
       .filter((p) => p.startsWith(prefix + "/"))
       .map((p) => p.slice(prefix.length + 1))
       .map((p) => p.split("/")[0])
-      .filter((p) => p.length > 0);
+      .filter(Boolean);
     return Array.from(new Set(entries));
   }
 

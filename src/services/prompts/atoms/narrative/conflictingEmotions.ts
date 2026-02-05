@@ -12,14 +12,10 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface ConflictingEmotionsInput {
-  forSystemPrompt?: boolean;
+  // (no inputs yet)
 }
 
-export const conflictingEmotions: Atom<ConflictingEmotionsInput> = ({
-  forSystemPrompt,
-}) => {
-  if (forSystemPrompt) {
-    return `
+export const conflictingEmotionsPrimer: Atom<void> = () => `
 <conflicting_emotions>
   **SIMULTANEITY, NOT ALTERNATION**:
   - Emotions happen at the SAME TIME, not in sequence
@@ -28,9 +24,7 @@ export const conflictingEmotions: Atom<ConflictingEmotionsInput> = ({
   - Physical tells reveal internal war
 </conflicting_emotions>
 `;
-  }
-
-  return `
+export const conflictingEmotions: Atom<void> = () => `
 <rule name="CONFLICTING_EMOTIONS">
   **THE SIMULTANEITY OF FEELING**:
 
@@ -232,7 +226,6 @@ export const conflictingEmotions: Atom<ConflictingEmotionsInput> = ({
   </writing_guidelines>
 </rule>
 `;
-};
 
 export default conflictingEmotions;
 
@@ -241,7 +234,7 @@ export default conflictingEmotions;
 // ============================================================================
 
 export const conflictingEmotionsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: conflictingEmotions({ forSystemPrompt: false }),
+  main: conflictingEmotions(),
 
   quickStart: `
 1. Emotions happen SIMULTANEOUSLY, not in sequence

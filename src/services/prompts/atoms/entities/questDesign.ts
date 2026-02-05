@@ -68,7 +68,7 @@ Avoid:
 /**
  * Quest 设计上下文 - 精简版
  */
-export const questDesignLite: Atom<void> = () => `
+export const questDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **QUEST DESIGN**: Quests are not what they seem.
 - Visible vs hidden contradiction
@@ -151,4 +151,3 @@ Approaches:
     },
   ],
 });
-

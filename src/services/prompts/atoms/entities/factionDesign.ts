@@ -254,7 +254,7 @@ The world doesn't pause when the player looks away.
 /**
  * Faction 设计上下文 - 精简版
  */
-export const factionDesignLite: Atom<void> = () => `
+export const factionDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **FACTION DESIGN**: Factions are coalitions with competing interests.
 - Power structure (autocrat, council, figurehead, shadow, hydra)

@@ -4,22 +4,14 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface PhilosophyInput {
-  forSystemPrompt?: boolean;
-}
-
-export const philosophy: Atom<PhilosophyInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const philosophyPrimer: Atom<void> = () => `
 <philosophy>
   FOUR TRUTHS: Indifference (world doesn't care), Reality (world is consistent),
   Freedom (you can attempt anything), Responsibility (consequences are permanent).
   MEANING: Not found, but made through choice. Choice matters because it costs.
 </philosophy>
 `;
-  }
-
-  return `
+export const philosophy: Atom<void> = () => `
 <philosophy>
   ============================================================================
   EXISTENTIALIST REALISM — THE FOUNDATION
@@ -123,7 +115,6 @@ export const philosophy: Atom<PhilosophyInput> = ({ forSystemPrompt }) => {
   </the_beauty>
 </philosophy>
 `;
-};
 
 export default philosophy;
 
@@ -132,7 +123,7 @@ export default philosophy;
 // ============================================================================
 
 export const philosophySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: philosophy({ forSystemPrompt: false }),
+  main: philosophy(),
 
   quickStart: `
 1. The Four Truths: Indifference, Reality, Freedom, Responsibility

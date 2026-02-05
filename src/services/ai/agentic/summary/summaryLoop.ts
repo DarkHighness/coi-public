@@ -465,7 +465,6 @@ async function runQuerySummary(input: SummaryLoopInput): Promise<SummaryAgenticL
   const { getSummarySystemInstruction } = await import("./summaryContext");
   const systemInstruction = getSummarySystemInstruction(
     language,
-    settings.extra?.liteMode,
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
   );

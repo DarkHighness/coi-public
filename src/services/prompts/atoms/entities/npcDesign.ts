@@ -237,7 +237,7 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 /**
  * NPC 设计上下文 - 精简版
  */
-export const npcDesignLite: Atom<void> = () => `
+export const npcDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **NPC DESIGN**: NPCs are people, not quest dispensers.
 - Dual personality (visible vs hidden)
@@ -317,4 +317,3 @@ He felt guilty. He always felt guilty."
     },
   ],
 });
-

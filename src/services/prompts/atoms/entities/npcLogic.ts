@@ -7,7 +7,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface NpcLogicInput {
-  forSystemPrompt?: boolean;
   /** NPC 自主程度: supportive, balanced, independent */
   npcAutonomyLevel?: "supportive" | "balanced" | "independent";
   /** 社交复杂度: transparent, standard, intricate */
@@ -716,16 +715,11 @@ function getSocialContent(
   }
 }
 
-export const npcLogic: Atom<NpcLogicInput> = ({
-  forSystemPrompt,
-  npcAutonomyLevel,
-  socialComplexity,
-}) => {
-  const autonomy = npcAutonomyLevel ?? "balanced";
-  const social = socialComplexity ?? "standard";
+export const npcLogicPrimer: Atom<NpcLogicInput> = (input = {}) => {
+  const autonomy = input.npcAutonomyLevel ?? "balanced";
+  const social = input.socialComplexity ?? "standard";
 
-  if (forSystemPrompt) {
-    return `
+  return `
 <npc_logic>
   <rule name="NPC_LOGIC">
     - NPCs have \`visible\` (public face) and \`hidden\` (true motives) layers
@@ -736,7 +730,12 @@ export const npcLogic: Atom<NpcLogicInput> = ({
   </rule>
 </npc_logic>
 `;
-  }
+};
+
+export const npcLogic: Atom<NpcLogicInput> = (input = {}) => {
+  const { npcAutonomyLevel, socialComplexity } = input;
+  const autonomy = npcAutonomyLevel ?? "balanced";
+  const social = socialComplexity ?? "standard";
 
   return `
 <true_person_npc_logic>
@@ -789,7 +788,7 @@ export const gossipNetworkAtom: Atom<void> = () => gossipNetwork;
 // ============================================================================
 
 export const npcLogicSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: npcLogic({ forSystemPrompt: false }),
+  main: npcLogic({}),
 
   quickStart: `
 1. NPCs have visible (public face) and hidden (true motives) layers

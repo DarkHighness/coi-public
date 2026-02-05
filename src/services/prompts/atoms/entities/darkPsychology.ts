@@ -11,13 +11,7 @@
 
 import type { Atom } from "../types";
 
-export interface DarkPsychologyInput {
-  forSystemPrompt?: boolean;
-}
-
-export const darkPsychology: Atom<DarkPsychologyInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const darkPsychologyPrimer: Atom<void> = () => `
 <dark_psychology>
   **HUMAN WEAKNESS CATALOG**:
   - Cowardice: rationalization, freezing, strategic avoidance
@@ -28,9 +22,7 @@ export const darkPsychology: Atom<DarkPsychologyInput> = ({ forSystemPrompt }) =
   Express through BEHAVIOR, not labels.
 </dark_psychology>
 `;
-  }
-
-  return `
+export const darkPsychology: Atom<void> = () => `
 <rule name="DARK_PSYCHOLOGY">
   **THE SHADOW CATALOG**:
 
@@ -299,6 +291,5 @@ export const darkPsychology: Atom<DarkPsychologyInput> = ({ forSystemPrompt }) =
   </escapism_expressions>
 </rule>
 `;
-};
 
 export default darkPsychology;

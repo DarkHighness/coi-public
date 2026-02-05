@@ -6,7 +6,6 @@ import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 
 export interface WritingCraftInput {
-  forSystemPrompt?: boolean;
 }
 
 const showDontTell = `
@@ -27,7 +26,7 @@ const noProtagonistMindReading = `
   </no_protagonist_mind_reading>
 `;
 
-const storyEngineLite = `
+const storyEnginePrimer = `
   <story_engine>
     **DEPTH, BUT CLEAR (MODEL-ROBUST)**
     - Each turn must include: (1) an immediate objective, (2) a present pressure, (3) a concrete consequence + state delta,
@@ -35,7 +34,6 @@ const storyEngineLite = `
     - Avoid vague language. Always ground implications in at least one observable detail (who/what/where/how).
   </story_engine>
 `;
-
 const storyEngine = `
   <story_engine>
     **NOVEL-LEVEL DEPTH, MODEL-LEVEL CLARITY**
@@ -813,9 +811,7 @@ const sceneEndings = `
   </scene_endings>
 `;
 
-export const writingCraft: Atom<WritingCraftInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const writingCraftPrimer: Atom<void> = () => `
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
   <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
@@ -823,7 +819,7 @@ export const writingCraft: Atom<WritingCraftInput> = ({ forSystemPrompt }) => {
   <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < ${GAME_CONSTANTS.MAX_YOU_START_RATE}% "You" starts.</rule>
   <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
   <rule>Rhythm: Mix short, punchy sentences with longer, flowing descriptions.</rule>
-${storyEngineLite}
+${storyEnginePrimer}
 
   <prohibited_vocabulary>
     ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined".
@@ -838,9 +834,8 @@ ${storyEngineLite}
   </style_check>
 </writing_craft>
 `;
-  }
 
-  return `
+export const writingCraft: Atom<void> = () => `
 <writing_craft>
   **WRITE LIKE A NOVELIST, NOT AN AI**
 
@@ -871,7 +866,6 @@ ${dramaticPacing}
 ${crisisManagement}
 </writing_craft>
 `;
-};
 
 // Export individual components
 export const showDontTellAtom: Atom<void> = () => showDontTell;
@@ -902,7 +896,7 @@ export const sceneEndingsAtom: Atom<void> = () => sceneEndings;
 // ============================================================================
 
 export const writingCraftSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: writingCraft({ forSystemPrompt: false }),
+  main: writingCraft(),
 
   quickStart: `
 1. Show, don't tell - use action over adverbs

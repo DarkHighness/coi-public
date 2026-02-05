@@ -6,24 +6,24 @@ import type { Atom } from "../types";
 
 export interface StyleGuideInput {
   themeStyle?: string;
-  forSystemPrompt?: boolean;
 }
 
-export const styleGuide: Atom<StyleGuideInput> = ({
-  themeStyle,
-  forSystemPrompt,
-}) => {
+export const styleGuidePrimer: Atom<StyleGuideInput> = ({ themeStyle }) => {
   const toneSection = themeStyle
     ? `<tone>${themeStyle}</tone>`
     : "<tone>Gritty, grounded, visceral.</tone>";
 
-  if (forSystemPrompt) {
-    return `
+  return `
 <style>
 ${toneSection}
 </style>
 `;
-  }
+};
+
+export const styleGuide: Atom<StyleGuideInput> = ({ themeStyle }) => {
+  const toneSection = themeStyle
+    ? `<tone>${themeStyle}</tone>`
+    : "<tone>Gritty, grounded, visceral.</tone>";
 
   return `
 <style>

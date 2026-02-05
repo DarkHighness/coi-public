@@ -1219,7 +1219,6 @@ export interface AISettings {
      */
     systemDefaultInjectionEnabled?: boolean;
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
-    liteMode?: boolean; // Enable lite mode to reduce token overhead in prefill
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
     clearerSearchTool?: boolean; // Return detailed tool info (description, schema) in search results
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)

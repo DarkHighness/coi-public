@@ -189,9 +189,9 @@ export const narrativeScaleRuntime: Atom<NarrativeScaleRuntimeInput> = ({
 };
 
 /**
- * 精简版运行时指导
+ * Narrative scale runtime primer (system-prompt safe).
  */
-export const narrativeScaleRuntimeLite: Atom<NarrativeScaleRuntimeInput> = ({
+export const narrativeScaleRuntimePrimer: Atom<NarrativeScaleRuntimeInput> = ({
   scale,
 }) => {
   switch (scale) {

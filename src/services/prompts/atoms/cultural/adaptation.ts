@@ -143,9 +143,9 @@ Adapt cultural references appropriately:
 };
 
 /**
- * 文化适配指导 - 精简版
+ * Cultural adaptation primer (system-prompt safe).
  */
-export const culturalAdaptationLite: Atom<CulturalAdaptationInput> = ({
+export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> = ({
   language,
 }) => {
   const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(

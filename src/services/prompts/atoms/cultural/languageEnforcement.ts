@@ -55,7 +55,7 @@ const getExamples = (language: string) => {
       parenCorrect: `"一个战士"`,
       inlineWrong: `"他是战士 - He is a warrior"`,
       inlineCorrect: `"他是战士"`,
-      // Lite version examples
+      // Primer examples
       liteForbidden: `"法海 (Fahai)", "黑龙潭 (Black Dragon Pool)", "roleTag: 引导者/Guide"`,
       liteCorrect: `"法海", "黑龙潭", "roleTag: 引导者"`,
     };
@@ -86,7 +86,7 @@ const getExamples = (language: string) => {
     parenCorrect: `"a warrior"`,
     inlineWrong: `"He is a warrior - 他是战士"`,
     inlineCorrect: `"He is a warrior"`,
-    // Lite version examples
+    // Primer examples
     liteForbidden: `"John (约翰)", "Black Pool (黒池)", "roleTag: Mentor/导师"`,
     liteCorrect: `"John", "Black Pool", "roleTag: Mentor"`,
   };
@@ -195,9 +195,11 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
 };
 
 /**
- * 语言强制规则 - 精简版
+ * Language enforcement primer (system-prompt safe).
+ *
+ * This is intentionally short and non-optional. It replaces the old short-form export.
  */
-export const languageEnforcementLite: Atom<LanguageEnforcementInput> = ({
+export const languageEnforcementPrimer: Atom<LanguageEnforcementInput> = ({
   language,
 }) => {
   const ex = getExamples(language);

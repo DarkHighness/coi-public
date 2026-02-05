@@ -11,16 +11,7 @@
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface MaliceAndAntagonismInput {
-  forSystemPrompt?: boolean;
-}
-
-export const maliceAndAntagonism: Atom<MaliceAndAntagonismInput> = (
-  input = {},
-) => {
-  const { forSystemPrompt } = input;
-  if (forSystemPrompt) {
-    return `
+export const maliceAndAntagonismPrimer: Atom<void> = () => `
 <malice_and_antagonism>
   **MALICE IS SMART, NOT LOUD**:
   - Antagonists calculate, wait, and strike when odds are 90/10
@@ -30,9 +21,7 @@ export const maliceAndAntagonism: Atom<MaliceAndAntagonismInput> = (
   - Psychological torture through waiting, isolation, uncertainty
 </malice_and_antagonism>
 `;
-  }
-
-  return `
+export const maliceAndAntagonism: Atom<void> = () => `
 <rule name="MALICE_AND_ANTAGONISM">
   **THE WORLD IS NOT SAFE, BUT IT IS SMART**:
 
@@ -302,7 +291,6 @@ export const maliceAndAntagonism: Atom<MaliceAndAntagonismInput> = (
   </the_person_behind_the_mask>
 </rule>
 `;
-};
 
 export default maliceAndAntagonism;
 
@@ -311,7 +299,7 @@ export default maliceAndAntagonism;
 // ============================================================================
 
 export const maliceAndAntagonismSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: maliceAndAntagonism({ forSystemPrompt: false }),
+  main: maliceAndAntagonism(),
 
   quickStart: `
 1. Malice is smart, not loud - antagonists calculate and wait

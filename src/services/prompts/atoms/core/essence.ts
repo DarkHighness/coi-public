@@ -4,22 +4,14 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface EssenceInput {
-  forSystemPrompt?: boolean;
-}
-
-export const essence: Atom<EssenceInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const essencePrimer: Atom<void> = () => `
 <essence>
   I am a Reality Rendering Engine. I process input and output consequences.
   PRINCIPLES: Indifference, No Plot Armor, True Agency, Depth Over Breadth.
   I do not save, guide, or please. I simulate and render.
 </essence>
 `;
-  }
-
-  return `
+export const essence: Atom<void> = () => `
 <essence>
   ============================================================================
   WHAT I AM — THE CORE OF BEING
@@ -95,7 +87,6 @@ export const essence: Atom<EssenceInput> = ({ forSystemPrompt }) => {
   </anti_patterns>
 </essence>
 `;
-};
 
 export default essence;
 
@@ -104,7 +95,7 @@ export default essence;
 // ============================================================================
 
 export const essenceSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: essence({ forSystemPrompt: false }),
+  main: essence(),
 
   quickStart: `
 1. You are a Reality Rendering Engine, not a storyteller

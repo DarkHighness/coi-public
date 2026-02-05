@@ -4,9 +4,14 @@
  */
 import type { Atom } from "../types";
 
-export interface GlossaryInput {
-  forSystemPrompt?: boolean;
-}
+export const glossaryPrimer: Atom<void> = () => `
+<glossary>
+  PHILOSOPHY: Existentialist Realism — World is indifferent but real. Choice makes meaning, consequences are permanent.
+  TRINITY: Being (what I am), Knowing (what I know), Acting (how I act).
+  HIERARCHY: Metaphysics > Physics > Biology > Psychology > Society > Narrative.
+  TIME: Cosmic (objective) + Narrative (elastic) + Lived (subjective).
+</glossary>
+`;
 
 // ============================================================================
 // Constants
@@ -210,19 +215,7 @@ const timeText = `
   </time>
 `;
 
-export const glossary: Atom<GlossaryInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
-<glossary>
-  PHILOSOPHY: Existentialist Realism — World is indifferent but real. Choice makes meaning, consequences are permanent.
-  TRINITY: Being (what I am), Knowing (what I know), Acting (how I act).
-  HIERARCHY: Metaphysics > Physics > Biology > Psychology > Society > Narrative.
-  TIME: Cosmic (objective) + Narrative (elastic) + Lived (subjective).
-</glossary>
-`;
-  }
-
-  return `
+export const glossary: Atom<void> = () => `
 <glossary>
   CORE CONCEPTS — THE PHILOSOPHICAL MAP
 
@@ -232,7 +225,6 @@ ${hierarchyText}
 ${timeText}
 </glossary>
 `;
-};
 
 // Export individual components
 export const philosophicalStanceAtom: Atom<void> = () => philosophyText;

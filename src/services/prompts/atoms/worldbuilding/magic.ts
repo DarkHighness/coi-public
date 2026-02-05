@@ -234,9 +234,9 @@ Good answers:
 `;
 
 /**
- * Magic Systems - 精简版
+ * Magic systems primer (system-prompt safe).
  */
-export const magicSystemLite: Atom<void> = () => `
+export const magicSystemPrimer: Atom<void> = () => `
 <worldbuilding_context>
 **MAGIC SYSTEMS**: Magic without limits isn't magic—it's wish fulfillment.
 - Cost framework (personal, material, social)

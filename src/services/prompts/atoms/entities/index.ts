@@ -4,10 +4,10 @@
  * ============================================================================
  */
 
-export { npcDesign, npcDesignLite } from "./npcDesign";
-export { locationDesign, locationDesignLite } from "./locationDesign";
-export { itemDesign, itemDesignLite } from "./itemDesign";
-export { questDesign, questDesignLite } from "./questDesign";
+export { npcDesign, npcDesignPrimer } from "./npcDesign";
+export { locationDesign, locationDesignPrimer } from "./locationDesign";
+export { itemDesign, itemDesignPrimer } from "./itemDesign";
+export { questDesign, questDesignPrimer } from "./questDesign";
 export {
   npcLogic,
   type NpcLogicInput,
@@ -23,11 +23,11 @@ export {
   groupBehaviorAtom,
   gossipNetworkAtom,
 } from "./npcLogic";
-export { factionDesign, factionDesignLite } from "./factionDesign";
-export { knowledgeDesign, knowledgeDesignLite } from "./knowledgeDesign";
-export { timelineDesign, timelineDesignLite } from "./timelineDesign";
+export { factionDesign, factionDesignPrimer } from "./factionDesign";
+export { knowledgeDesign, knowledgeDesignPrimer } from "./knowledgeDesign";
+export { timelineDesign, timelineDesignPrimer } from "./timelineDesign";
 export {
   characterDesign,
-  characterDesignLite,
+  characterDesignPrimer,
   type CharacterDesignInput,
 } from "./characterDesign";
