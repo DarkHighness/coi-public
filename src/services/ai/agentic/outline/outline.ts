@@ -183,13 +183,10 @@ const getOutlineDefaultReadOnlyAllowPrefixes = (
   theme: string,
   isImageBasedFlow: boolean,
 ): string[] => {
-  const prefixes: string[] = [
-    "refs/atmosphere",
-    // Core skill domains useful for outline quality, but still strictly read-only.
-    "skills/gm",
-    "skills/craft",
-    "skills/worldbuilding",
-  ];
+  // Keep defaults simple and not overly strict:
+  // - `skills/**` is a built-in read-only library intended to improve generation quality.
+  // - `refs/**` is a read-only reference pack(s) seeded into VFS (e.g. atmosphere).
+  const prefixes: string[] = ["skills", "refs"];
 
   // Theme skills are optional and only useful when we have a stable theme key.
   if (!isImageBasedFlow && theme && theme !== IMAGE_BASED_THEME) {
