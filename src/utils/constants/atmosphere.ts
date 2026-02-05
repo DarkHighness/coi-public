@@ -61,6 +61,14 @@ const AMBIENCE_TO_THEME: Record<Ambience, EnvThemeKey> = {
 
   // Urban & Social
   city: "modern",
+  office: "modern",
+  hospital: "foundation",
+  courtroom: "intrigue",
+  studio: "glamour",
+  nightclub: "rgb",
+  cafe: "romance",
+  laboratory: "foundation",
+  subway: "mystery",
   market: "gold",
   tavern: "wuxia",
   village: "nature",
@@ -99,6 +107,14 @@ const AMBIENCE_TO_EFFECT: Record<Ambience, VisualEffect> = {
 
   // Urban & Social
   city: null,
+  office: null,
+  hospital: null,
+  courtroom: null,
+  studio: "sunny",
+  nightclub: "flicker",
+  cafe: "sunny",
+  laboratory: null,
+  subway: null,
   market: "sunny",
   tavern: "embers",
   village: "sunny",

@@ -44,6 +44,7 @@ You are in AGENTIC MODE (VFS-only).
    AVAILABLE TOOLS in this loop:
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.turn.tools)}
 2. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
+   - Atmosphere reference data is available under \`current/refs/atmosphere/\` (use \`vfs_ls\` / \`vfs_read\` / \`vfs_search\` instead of inlining long descriptions).
 3. **STATE CHANGES = FILE CHANGES**: Update JSON under \`current/world/\` with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
 4. **FINISH BY WRITING TURN FILES**: Your LAST tool call must write:
    - \`current/conversation/turns/fork-<id>/turn-<n>.json\`

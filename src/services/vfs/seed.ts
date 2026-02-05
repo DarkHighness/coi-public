@@ -12,6 +12,7 @@ import type {
 import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { VfsSession } from "./vfsSession";
 import { writeConversationIndex, writeForkTree, writeTurnFile } from "./conversation";
+import { seedAtmosphereRefs } from "./refs/atmosphere";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -168,6 +169,8 @@ export const seedVfsSessionFromGameState = (
   session: VfsSession,
   state: GameState,
 ): void => {
+  seedAtmosphereRefs(session);
+
   writeJson(session, "world/global.json", {
     time: state.time,
     theme: state.theme,
@@ -266,6 +269,8 @@ export const seedVfsSessionFromGameState = (
 };
 
 export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
+  seedAtmosphereRefs(session);
+
   writeJson(session, "world/global.json", {
     time: "Day 1, 08:00",
     theme: "fantasy",
@@ -347,6 +352,8 @@ export const seedVfsSessionFromOutline = (
     narrativeScale?: GameState["narrativeScale"];
   },
 ): void => {
+  seedAtmosphereRefs(session);
+
   writeJson(session, "world/global.json", {
     time: options.time,
     theme: options.theme,
