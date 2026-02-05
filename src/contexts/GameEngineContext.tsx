@@ -22,6 +22,7 @@ import type {
   SaveSlot,
   ActionResult,
   ThemeConfig,
+  ForkTree,
 } from "../types";
 import type { OutlinePhaseProgress } from "../services/aiService";
 import type { VfsSession } from "../services/vfs/vfsSession";
@@ -120,6 +121,8 @@ export interface GameEngineActions {
     success: boolean;
     hasOutline?: boolean;
     hasOutlineConversation?: boolean;
+    forkId?: number;
+    forkTree?: ForkTree;
   }>;
   /** Delete a save slot */
   deleteSlot: (id: string) => void;

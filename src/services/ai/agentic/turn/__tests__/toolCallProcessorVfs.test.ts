@@ -175,6 +175,19 @@ describe("toolCallProcessor VFS integration", () => {
 
     const baseline = getConversationMarker(session);
 
+    // Read-before-overwrite: vfs_write blocks overwriting existing files unless
+    // they have been read in this session.
+    executeGenericTool(
+      "vfs_read",
+      { path: "current/conversation/index.json" },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+        vfsSession: session,
+      },
+    );
+
     executeGenericTool(
       "vfs_write",
       {

@@ -852,8 +852,8 @@ function AppContent() {
           try {
             await ragContext.actions.switchSave(
               mostRecent.id,
-              gameState.forkId || 0,
-              gameState.forkTree,
+              result.forkId || 0,
+              result.forkTree || gameState.forkTree,
             );
             console.log("[ContinueGame] RAG context switched successfully");
           } catch (error) {
@@ -864,10 +864,29 @@ function AppContent() {
           }
         }
 
-        // After loading, check the game state and handle appropriately
-        // Note: gameState may not be updated yet due to React's async state updates
-        // So we navigate to /game and let GamePage handle the routing
-        navigate("/game");
+        // After loading, handle appropriately (including partial outline resume)
+        if (result.hasOutline) {
+          navigate("/game");
+        } else if (result.hasOutlineConversation) {
+          console.log(
+            "[ContinueGame] Loaded save has partial outline; resuming generation",
+          );
+          setStreamedText("");
+          setPhaseProgress(null);
+          await resumeOutlineGeneration(
+            (text) => setStreamedText((prev) => prev + text),
+            (progress) => setPhaseProgress(progress),
+          );
+        } else {
+          console.warn(
+            "[ContinueGame] Loaded save has no outline or conversation state",
+          );
+          showToast(
+            t("saves.invalidState") || "Save appears to be corrupted",
+            "error",
+          );
+          navigate("/");
+        }
       }
     }
   };
@@ -897,8 +916,8 @@ function AppContent() {
       try {
         await ragContext.actions.switchSave(
           id,
-          gameState.forkId || 0,
-          gameState.forkTree,
+          result.forkId || 0,
+          result.forkTree || gameState.forkTree,
         );
         console.log("[LoadSlot] RAG context switched successfully");
       } catch (error) {

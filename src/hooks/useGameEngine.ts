@@ -531,6 +531,7 @@ export const useGameEngine = () => {
               outlineConversation: conversationState,
             };
             setGameState(updatedState);
+            gameStateRef.current = updatedState;
             writeOutlineProgress(vfsSession, conversationState);
             // Persist immediately with the updated state
             await saveToSlot(slotId, updatedState);
@@ -1038,6 +1039,7 @@ export const useGameEngine = () => {
               outlineConversation: conversationState,
             };
             setGameState(updatedState);
+            gameStateRef.current = updatedState;
             writeOutlineProgress(vfsSession, conversationState);
             await saveToSlot(currentSlotId!, updatedState);
             console.log(

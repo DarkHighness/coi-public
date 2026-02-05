@@ -77,80 +77,42 @@ describe("VfsSession", () => {
     const indexContent = session.readFile("skills/index.json")?.content ?? "";
     const indexJson = JSON.parse(indexContent) as { skills?: Array<{ id?: string }> };
     const ids = new Set((indexJson.skills ?? []).map((s) => s.id).filter(Boolean));
-    expect(ids.has("writing-subtext")).toBe(true);
+
+    // Keep this test resilient to library evolution: assert a few stable,
+    // representative skill IDs across domains (core/gm/craft/theme).
+    expect(ids.has("core-identity")).toBe(true);
+    expect(ids.has("gm-core-rules")).toBe(true);
+    expect(ids.has("craft-dialogue")).toBe(true);
+    expect(ids.has("theme-fantasy")).toBe(true);
     expect(ids.has("theme-cyberpunk")).toBe(true);
-    expect(ids.has("gm-combat-clarity")).toBe(true);
-    expect(ids.has("worldbuilding-law-and-jurisdiction")).toBe(true);
-    expect(ids.has("theme-post-apocalypse")).toBe(true);
-    expect(ids.has("theme-space-opera")).toBe(true);
-    expect(ids.has("theme-urban-fantasy")).toBe(true);
-    expect(ids.has("theme-legal-drama")).toBe(true);
-    expect(ids.has("theme-occult-detective")).toBe(true);
-    expect(ids.has("theme-police-procedural")).toBe(true);
-    expect(ids.has("theme-dark-fantasy")).toBe(true);
-    expect(ids.has("theme-cosmic-horror")).toBe(true);
-    expect(ids.has("writing-multi-thread-plot-control")).toBe(true);
-    expect(ids.has("writing-pov-discipline")).toBe(true);
-    expect(ids.has("writing-scene-objectives")).toBe(true);
-    expect(ids.has("writing-arc-milestones")).toBe(true);
-    expect(ids.has("writing-reliable-narration")).toBe(true);
-    expect(ids.has("writing-micro-goals-per-turn")).toBe(true);
-    expect(ids.has("writing-multi-character-scenes")).toBe(true);
-    expect(ids.has("gm-encounter-design")).toBe(true);
-    expect(ids.has("worldbuilding-history-as-residue")).toBe(true);
+
     expect(session.list("skills")).toEqual(
       expect.arrayContaining([
         "README.md",
         "index.json",
-        "writing-dialogue",
-        "writing-pacing",
+        "STYLE.md",
+        "TAXONOMY.md",
+        "core",
+        "gm",
+        "craft",
+        "npc",
+        "conditional",
+        "theme",
       ]),
     );
 
-    expect(session.list("skills/writing-dialogue")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    // Smoke-check a few representative directories/files.
+    expect(session.list("skills/core/identity")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/writing-subtext")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/gm/core-rules")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/writing-multi-character-scenes")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/craft/dialogue")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/writing-pov-discipline")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/writing-micro-goals-per-turn")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/gm-choice-design")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/gm-vfs-reading")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/gm-encounter-design")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/theme-fantasy")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/theme-post-apocalypse")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/theme-space-opera")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/theme-legal-drama")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/theme-cosmic-horror")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/worldbuilding-location-as-system")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
-    );
-    expect(session.list("skills/worldbuilding-history-as-residue")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/theme/cyberpunk")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
   });
 

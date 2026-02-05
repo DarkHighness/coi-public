@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { GameState, SaveSlot, EmbeddingIndex } from "../types";
+import type { GameState, SaveSlot, EmbeddingIndex, ForkTree } from "../types";
 import {
   saveMetadata,
   loadMetadata,
@@ -604,6 +604,8 @@ export const useVfsPersistence = (
     savedModelId?: string;
     hasOutline?: boolean;
     hasOutlineConversation?: boolean;
+    forkId?: number;
+    forkTree?: ForkTree;
   }> => {
     try {
       isRestoringRef.current = true;
@@ -663,6 +665,8 @@ export const useVfsPersistence = (
         hasOutline: Boolean(derived.outline),
         hasOutlineConversation: Boolean(derived.outlineConversation),
         savedModelId: derived.outlineConversation?.modelId,
+        forkId: typeof derived.forkId === "number" ? derived.forkId : 0,
+        forkTree: derived.forkTree,
       };
     } catch (error) {
       console.error("[VFS Persistence] Failed to load slot:", error);
