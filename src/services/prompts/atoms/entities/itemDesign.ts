@@ -242,7 +242,7 @@ What happens when items are lost?
 /**
  * Item 设计上下文 - 精简版
  */
-export const itemDesignLite: Atom<void> = () => `
+export const itemDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **ITEM DESIGN**: Items are history pieces, not loot.
 - Categories (weapons, armor, consumables, keys, artifacts, mundane)

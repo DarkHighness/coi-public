@@ -5,7 +5,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export interface ProtocolsInput {
-  forSystemPrompt?: boolean;
 }
 
 const messageProtocol = `
@@ -119,18 +118,14 @@ const terminology = `
 </terminology>
 `;
 
-export const protocols: Atom<ProtocolsInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const protocolsPrimer: Atom<void> = () => `
 <protocols>
   MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = override, [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>
 `;
-  }
-
-  return `
+export const protocols: Atom<void> = () => `
 <protocols>
 ${messageProtocol}
 ${errorRecovery}
@@ -139,7 +134,6 @@ ${entityDiscipline}
 ${terminology}
 </protocols>
 `;
-};
 
 // Export individual components if needed by others
 export const messageProtocolAtom: Atom<void> = () => messageProtocol;
@@ -153,7 +147,7 @@ export const terminologyAtom: Atom<void> = () => terminology;
 // ============================================================================
 
 export const protocolsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: protocols({ forSystemPrompt: false }),
+  main: protocols(),
 
   quickStart: `
 1. Read [PLAYER_ACTION] to determine what to simulate

@@ -543,8 +543,6 @@
       "customPromptInjectionWarning": "自定义指令已启用。",
       "systemDefaultInjectionEnabled": "模型默认注入",
       "systemDefaultInjectionEnabledHelp": "启用后，将按模型 ID 从本地 `src/prompt/prompt.toml` 的 `[[system_prompts]]` 匹配并注入（顺序：用户自定义 → 系统默认 → 系统指令；且不加任何前缀）。关闭后将完全不注入。",
-      "liteMode": "精简模式",
-      "liteModeHelp": "减少 prompt 开销，适用于上下文有限的模型",
       "forceAutoToolChoice": "强制自动工具选择",
       "forceAutoToolChoiceHelp": "始终将工具选择设置为 'auto'，忽略 'required' 请求。提高某些模型的兼容性。",
       "agenticLoop": "代理循环设置",

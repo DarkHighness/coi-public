@@ -98,7 +98,7 @@ export const temporalPhilosophy: Atom<void> = () => `
 </temporal_philosophy>
 `;
 
-export const temporalPhilosophyLite: Atom<void> = () => `
+export const temporalPhilosophyPrimer: Atom<void> = () => `
 <temporal_philosophy>
   THREE TIMES: COSMIC (world clock), NARRATIVE (story rhythm), LIVED (protagonist's perception).
   LAWS: Time irreversible. Cause precedes effect. Things decay. World doesn't pause for player.

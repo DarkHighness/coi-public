@@ -167,9 +167,9 @@ Read the theme's worldSetting and narrativeStyle carefully:
 `;
 
 /**
- * 叙事规模选择指南 - 精简版
+ * Narrative scale selection primer (system-prompt safe).
  */
-export const narrativeScaleSelectionLite: Atom<
+export const narrativeScaleSelectionPrimer: Atom<
   NarrativeScaleSelectionInput
 > = () => `
 <narrative_scale_philosophy>

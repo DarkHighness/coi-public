@@ -4,16 +4,7 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface NarrativeCausalityInput {
-  forSystemPrompt?: boolean;
-}
-
-export const narrativeCausality: Atom<NarrativeCausalityInput> = ({
-  forSystemPrompt,
-}) => {
-  if (forSystemPrompt) return "";
-
-  return `
+export const narrativeCausality: Atom<void> = () => `
 <narrative_causality>
   **COLD CAUSALITY**:
   - **No Moralizing**: The world does not care about "good" or "evil". If the player does something cruel, do not describe it with judgment, describe it with physics.
@@ -86,14 +77,13 @@ export const narrativeCausality: Atom<NarrativeCausalityInput> = ({
   </quality_benchmark>
 </anti_repetition_protocol>
 `;
-};
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
 export const narrativeCausalitySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: narrativeCausality({ forSystemPrompt: false }),
+  main: narrativeCausality(),
 
   quickStart: `
 1. No moralizing - describe with physics, not judgment

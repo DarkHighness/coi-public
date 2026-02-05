@@ -102,7 +102,7 @@ export async function runOutlineLoopRefactored(
     resumeFrom,
   );
 
-  const systemInstruction = getOutlineSystemInstruction(language);
+  const systemInstruction = getOutlineSystemInstruction({ language });
   const allLogs: LogEntry[] = [];
   const hasImage = !!seedImageBase64;
 

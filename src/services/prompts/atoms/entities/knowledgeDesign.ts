@@ -49,9 +49,9 @@ Hint at revelations the protagonist will discover later:
 `;
 
 /**
- * Knowledge 设计上下文 - 精简版
+ * Knowledge design primer (system-prompt safe).
  */
-export const knowledgeDesignLite: Atom<void> = () => `
+export const knowledgeDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **KNOWLEDGE DESIGN**: Knowledge is what the world believes (often wrong).
 - Visible vs hidden contradiction

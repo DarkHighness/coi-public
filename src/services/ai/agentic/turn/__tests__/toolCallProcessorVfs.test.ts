@@ -175,7 +175,20 @@ describe("toolCallProcessor VFS integration", () => {
 
     const baseline = getConversationMarker(session);
 
-    executeGenericTool(
+    // Inspect before overwrite (tooling enforces read-before-write on existing paths).
+    const inspected = executeGenericTool(
+      "vfs_read",
+      { path: "current/conversation/index.json" },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+        vfsSession: session,
+      },
+    ) as { success?: boolean };
+    expect(inspected.success).toBe(true);
+
+    const overwrite = executeGenericTool(
       "vfs_write",
       {
         files: [
@@ -213,7 +226,8 @@ describe("toolCallProcessor VFS integration", () => {
         settings: DEFAULTS,
         vfsSession: session,
       },
-    );
+    ) as { success?: boolean };
+    expect(overwrite.success).toBe(true);
 
     const response = buildResponseFromVfs(session, baseline);
     expect(response?.narrative).toBe("second");

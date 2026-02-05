@@ -7,7 +7,6 @@ import type { Atom } from "../types";
 export interface PlayerProfileInput {
   crossSaveProfile?: string;
   perSaveProfile?: string;
-  forSystemPrompt?: boolean;
 }
 
 const observationProtocol = `
@@ -90,23 +89,9 @@ const criticalDistinction = `
 export const playerProfile: Atom<PlayerProfileInput> = ({
   crossSaveProfile,
   perSaveProfile,
-  forSystemPrompt,
 }) => {
   const csProfile = crossSaveProfile || "(Empty - begin observing)";
   const psProfile = perSaveProfile || "(Empty - begin observing)";
-
-  if (forSystemPrompt) {
-    return `
-<player_psychology>
-  <two_layer_system>
-    **Cross-Save**: ${csProfile}
-    **This Story**: ${psProfile}
-  </two_layer_system>
-  <protocol>Observe player choices (moral, risk, social). Update profile when choices reveal character.</protocol>
-  <distinction>Player ≠ Protagonist.</distinction>
-</player_psychology>
-`;
-  }
 
   return `
 <player_psychology>
@@ -131,6 +116,25 @@ ${observationProtocol}
 ${updateTiming}
 ${narrativeApplication}
 ${criticalDistinction}
+</player_psychology>
+`;
+};
+
+export const playerProfilePrimer: Atom<PlayerProfileInput> = ({
+  crossSaveProfile,
+  perSaveProfile,
+}) => {
+  const csProfile = crossSaveProfile || "(Empty - begin observing)";
+  const psProfile = perSaveProfile || "(Empty - begin observing)";
+
+  return `
+<player_psychology>
+  <two_layer_system>
+    **Cross-Save**: ${csProfile}
+    **This Story**: ${psProfile}
+  </two_layer_system>
+  <protocol>Observe player choices (moral, risk, social). Update profile when choices reveal character.</protocol>
+  <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;
 };

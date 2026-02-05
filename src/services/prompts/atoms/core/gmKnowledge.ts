@@ -5,10 +5,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 
-export interface GmKnowledgeInput {
-  forSystemPrompt?: boolean;
-}
-
 const visibilityStructure = `
   <visibility_layer_structure>
     **CRITICAL: DUAL-LAYER INFORMATION ARCHITECTURE**
@@ -160,9 +156,7 @@ const temporalEpistemology = `
   </temporal_epistemology>
 `;
 
-export const gmKnowledge: Atom<GmKnowledgeInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const gmKnowledgePrimer: Atom<void> = () => `
 <gm_knowledge>
   **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = player knows.
 
@@ -188,9 +182,7 @@ export const gmKnowledge: Atom<GmKnowledgeInput> = ({ forSystemPrompt }) => {
   </unlock_protocol>
 </gm_knowledge>
 `;
-  }
-
-  return `
+export const gmKnowledge: Atom<void> = () => `
 <gm_knowledge_model>
   **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
 
@@ -201,7 +193,6 @@ ${unlockProtocol}
 ${temporalEpistemology}
 </gm_knowledge_model>
 `;
-};
 
 // Export individual components
 export const visibilityStructureAtom: Atom<void> = () => visibilityStructure;

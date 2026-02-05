@@ -77,80 +77,129 @@ describe("VfsSession", () => {
     const indexContent = session.readFile("skills/index.json")?.content ?? "";
     const indexJson = JSON.parse(indexContent) as { skills?: Array<{ id?: string }> };
     const ids = new Set((indexJson.skills ?? []).map((s) => s.id).filter(Boolean));
-    expect(ids.has("writing-subtext")).toBe(true);
+    expect(ids.has("core-identity")).toBe(true);
+    expect(ids.has("gm-knowledge")).toBe(true);
+    expect(ids.has("gm-state-management")).toBe(true);
+    expect(ids.has("craft-writing")).toBe(true);
+    expect(ids.has("npc-logic")).toBe(true);
+    expect(ids.has("conditional-nsfw")).toBe(true);
     expect(ids.has("theme-cyberpunk")).toBe(true);
-    expect(ids.has("gm-combat-clarity")).toBe(true);
-    expect(ids.has("worldbuilding-law-and-jurisdiction")).toBe(true);
-    expect(ids.has("theme-post-apocalypse")).toBe(true);
-    expect(ids.has("theme-space-opera")).toBe(true);
-    expect(ids.has("theme-urban-fantasy")).toBe(true);
-    expect(ids.has("theme-legal-drama")).toBe(true);
-    expect(ids.has("theme-occult-detective")).toBe(true);
-    expect(ids.has("theme-police-procedural")).toBe(true);
-    expect(ids.has("theme-dark-fantasy")).toBe(true);
-    expect(ids.has("theme-cosmic-horror")).toBe(true);
-    expect(ids.has("writing-multi-thread-plot-control")).toBe(true);
-    expect(ids.has("writing-pov-discipline")).toBe(true);
-    expect(ids.has("writing-scene-objectives")).toBe(true);
-    expect(ids.has("writing-arc-milestones")).toBe(true);
-    expect(ids.has("writing-reliable-narration")).toBe(true);
-    expect(ids.has("writing-micro-goals-per-turn")).toBe(true);
-    expect(ids.has("writing-multi-character-scenes")).toBe(true);
-    expect(ids.has("gm-encounter-design")).toBe(true);
-    expect(ids.has("worldbuilding-history-as-residue")).toBe(true);
+    expect(ids.has("theme-era-modern")).toBe(true);
+    expect(ids.has("theme-era-ancient")).toBe(true);
+    expect(ids.has("theme-era-feudal")).toBe(true);
+    expect(ids.has("theme-era-republican")).toBe(true);
+    expect(ids.has("theme-trade-mercantilism")).toBe(true);
+    expect(ids.has("theme-element-urban")).toBe(true);
+    expect(ids.has("worldbuilding-magic-system")).toBe(true);
+    expect(ids.has("worldbuilding-economy")).toBe(true);
+    expect(ids.has("worldbuilding-law-jurisdiction")).toBe(true);
+    expect(ids.has("worldbuilding-travel")).toBe(true);
+    expect(ids.has("worldbuilding-culture-ritual")).toBe(true);
+    expect(ids.has("worldbuilding-infrastructure")).toBe(true);
+    expect(ids.has("worldbuilding-history-residue")).toBe(true);
+    expect(ids.has("worldbuilding-religion")).toBe(true);
+    expect(ids.has("worldbuilding-institutions")).toBe(true);
+    expect(ids.has("worldbuilding-technology")).toBe(true);
+    expect(ids.has("worldbuilding-ecology")).toBe(true);
+    expect(ids.has("worldbuilding-war-logistics")).toBe(true);
+    expect(ids.has("worldbuilding-governance-politics")).toBe(true);
+    expect(ids.has("worldbuilding-class-status")).toBe(true);
+    expect(ids.has("worldbuilding-crime-underworld")).toBe(true);
+    expect(ids.has("worldbuilding-knowledge-education")).toBe(true);
+    expect(ids.has("worldbuilding-disasters-recovery")).toBe(true);
+    expect(ids.has("worldbuilding-locations")).toBe(true);
+    expect(ids.has("worldbuilding-factions")).toBe(true);
     expect(session.list("skills")).toEqual(
       expect.arrayContaining([
         "README.md",
         "index.json",
-        "writing-dialogue",
-        "writing-pacing",
+        "STYLE.md",
+        "TAXONOMY.md",
+        "core",
+        "gm",
+        "worldbuilding",
+        "craft",
+        "npc",
+        "conditional",
+        "theme",
       ]),
     );
 
-    expect(session.list("skills/writing-dialogue")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/gm/state-management")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/writing-subtext")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/craft/writing")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/writing-multi-character-scenes")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/theme/cyberpunk")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/writing-pov-discipline")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/theme/era-modern")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/writing-micro-goals-per-turn")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/theme/trade-mercantilism")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/gm-choice-design")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/theme/element-urban")).toEqual(
+      expect.arrayContaining(["SKILL.md"]),
     );
-    expect(session.list("skills/gm-vfs-reading")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+
+    expect(session.list("skills/worldbuilding/magic-system")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/gm-encounter-design")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/economy")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme-fantasy")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/law-jurisdiction")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme-post-apocalypse")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/travel")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme-space-opera")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/culture-ritual")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme-legal-drama")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/infrastructure")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/theme-cosmic-horror")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/history-residue")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/worldbuilding-location-as-system")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/religion")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/worldbuilding-history-as-residue")).toEqual(
-      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "TEMPLATES.md", "EXAMPLES.md"]),
+    expect(session.list("skills/worldbuilding/institutions")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/technology")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/ecology")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/war-logistics")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/governance-politics")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/class-status")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/crime-underworld")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/knowledge-education")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/disasters-recovery")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/locations")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+    expect(session.list("skills/worldbuilding/factions")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
   });
 

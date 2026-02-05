@@ -3,9 +3,8 @@ import {
   idAndEntityPolicy,
   memoryPolicy,
   outputFormat,
-  protocols,
+  protocolsPrimer,
   roleInstruction,
-  styleGuide,
   toolUsage,
 } from "../index";
 
@@ -13,10 +12,9 @@ describe("core prompt hygiene", () => {
   it("removes deprecated tool references from core prompts", () => {
     const content = [
       roleInstruction(),
-      protocols({ forSystemPrompt: false }),
+      protocolsPrimer(),
       outputFormat({ language: "en" }),
-      styleGuide({ language: "en" }),
-      toolUsage({}),
+      toolUsage({ finishToolName: "vfs_commit_turn" }),
       idAndEntityPolicy(),
       memoryPolicy(),
     ].join("\n");

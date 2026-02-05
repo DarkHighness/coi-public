@@ -11,13 +11,7 @@
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface MoralComplexityInput {
-  forSystemPrompt?: boolean;
-}
-
-export const moralComplexity: Atom<MoralComplexityInput> = ({ forSystemPrompt }) => {
-  if (forSystemPrompt) {
-    return `
+export const moralComplexityPrimer: Atom<void> = () => `
 <moral_complexity>
   **MORAL GREY ZONES**:
   - Good people do terrible things under pressure
@@ -26,9 +20,7 @@ export const moralComplexity: Atom<MoralComplexityInput> = ({ forSystemPrompt })
   - Complexity is not redemption; it is reality
 </moral_complexity>
 `;
-  }
-
-  return `
+export const moralComplexity: Atom<void> = () => `
 <rule name="MORAL_COMPLEXITY">
   **THE WORLD WITHOUT CLEAN ANSWERS**:
 
@@ -217,7 +209,6 @@ export const moralComplexity: Atom<MoralComplexityInput> = ({ forSystemPrompt })
   </moral_exhaustion>
 </rule>
 `;
-};
 
 export default moralComplexity;
 
@@ -226,7 +217,7 @@ export default moralComplexity;
 // ============================================================================
 
 export const moralComplexitySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: moralComplexity({ forSystemPrompt: false }),
+  main: moralComplexity(),
 
   quickStart: `
 1. No pure heroes, no pure villains - everyone is capable of everything

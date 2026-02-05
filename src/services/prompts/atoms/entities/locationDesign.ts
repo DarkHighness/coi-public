@@ -159,9 +159,9 @@ Who "owns" this space?
 `;
 
 /**
- * Location 设计上下文 - 精简版
+ * Location design primer (system-prompt safe).
  */
-export const locationDesignLite: Atom<void> = () => `
+export const locationDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **LOCATION DESIGN**: Locations are characters with history.
 - Sensory details (smell, sound, touch, sight, taste)

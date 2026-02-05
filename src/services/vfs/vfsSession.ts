@@ -342,7 +342,8 @@ export class VfsSession {
     const entries = Object.keys(this.snapshotAll())
       .filter((p) => p.startsWith(prefix + "/"))
       .map((p) => p.slice(prefix.length + 1))
-      .filter((p) => !p.includes("/"));
+      .map((p) => p.split("/")[0])
+      .filter(Boolean);
     return Array.from(new Set(entries));
   }
 

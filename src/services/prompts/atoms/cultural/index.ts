@@ -4,10 +4,14 @@
  * ============================================================================
  */
 
-export { culturalAdaptation, type CulturalAdaptationInput } from "./adaptation";
+export {
+  culturalAdaptation,
+  culturalAdaptationPrimer,
+  type CulturalAdaptationInput,
+} from "./adaptation";
 
 export {
   languageEnforcement,
-  languageEnforcementLite,
+  languageEnforcementPrimer,
   type LanguageEnforcementInput,
 } from "./languageEnforcement";

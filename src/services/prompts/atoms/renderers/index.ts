@@ -94,7 +94,7 @@ export {
 // Entity Context (for turn context injection)
 export {
   renderEntityContext,
-  renderEntityContextLite,
+  renderEntityContextPrimer,
   type EntityContextInput,
   type EntityEntry,
   type NpcEntry,

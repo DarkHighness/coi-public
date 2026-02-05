@@ -569,8 +569,6 @@
       "customPromptInjectionWarning": "Custom instruction is active.",
       "systemDefaultInjectionEnabled": "Model Default Injection",
       "systemDefaultInjectionEnabledHelp": "When enabled, a matched `[[system_prompts]]` entry from local `src/prompt/prompt.toml` is prepended (order: user custom → system default → system instruction; with no prefixes). When disabled, nothing is injected.",
-      "liteMode": "Lite Mode",
-      "liteModeHelp": "Reduce prompt overhead for models with limited context",
       "forceAutoToolChoice": "Force Auto Tool Choice",
       "forceAutoToolChoiceHelp": "Always use 'auto' for tool choice, overriding 'required' requests. Improves compatibility for some models.",
       "agenticLoop": "Agentic Loop Settings",

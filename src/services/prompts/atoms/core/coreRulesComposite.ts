@@ -22,16 +22,13 @@ import { livingWorld } from "./livingWorld";
 import { informationRevelation } from "./informationRevelation";
 
 export interface CoreRulesInput {
-  forSystemPrompt?: boolean;
 }
 
 /**
  * Full version of core rules - combines all world operation atoms
  */
 export function coreRulesComposite(input: CoreRulesInput = {}): string {
-  if (input.forSystemPrompt) {
-    return coreRulesLite();
-  }
+  void input;
 
   return `
 <core_rules>
@@ -48,9 +45,9 @@ ${informationRevelation()}
 }
 
 /**
- * Lite version of core rules
+ * Primer version of core rules (minimal, system-prompt safe)
  */
-export function coreRulesLite(): string {
+export function coreRulesPrimer(): string {
   return `
 <core_rules>
   <rule>WORLD CONSISTENCY: Adhere strictly to genre (realistic/fantasy/sci-fi). No crossover elements.</rule>

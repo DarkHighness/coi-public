@@ -65,7 +65,7 @@ The LAST timeline event should set up why the story begins NOW:
 /**
  * Timeline 设计上下文 - 精简版
  */
-export const timelineDesignLite: Atom<void> = () => `
+export const timelineDesignPrimer: Atom<void> = () => `
 <game_system_context>
 **TIMELINE DESIGN**: Events create cause-and-effect chains.
 - Causal chain (Event A → B → C)

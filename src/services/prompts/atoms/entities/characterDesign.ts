@@ -86,9 +86,9 @@ Give the protagonist at least ONE petty, human weakness:
 `;
 
 /**
- * 主角设计上下文 - 精简版
+ * Character design primer (system-prompt safe).
  */
-export const characterDesignLite: Atom<CharacterDesignInput> = ({
+export const characterDesignPrimer: Atom<CharacterDesignInput> = ({
   protagonistFeature,
 }) => `
 <game_system_context>
@@ -167,4 +167,3 @@ someone struck him while he was down."
     },
   ],
 });
-
