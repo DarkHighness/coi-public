@@ -488,10 +488,42 @@ export async function generateContent(
 
       if (options?.onChunk) {
         // 流式生成
-        const response = await client.chat.completions.create({
-          ...requestParams,
-          stream: true,
-        });
+        const createStream = async (includeUsage: boolean) => {
+          const params: any = {
+            ...requestParams,
+            stream: true,
+          };
+          if (includeUsage) {
+            // OpenAI streaming usage only arrives when explicitly requested.
+            // Some OpenAI-compatible proxies may not support this param.
+            params.stream_options = { include_usage: true };
+          }
+          return client.chat.completions.create(params);
+        };
+
+        let response: AsyncIterable<ChatCompletionChunk>;
+        try {
+          response = (await createStream(true)) as any;
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          const lower = message.toLowerCase();
+          const looksLikeStreamOptionsUnsupported =
+            lower.includes("stream_options") ||
+            lower.includes("include_usage") ||
+            lower.includes("unknown parameter") ||
+            lower.includes("unrecognized") ||
+            lower.includes("unexpected");
+
+          if (!looksLikeStreamOptionsUnsupported) {
+            throw error;
+          }
+
+          console.warn(
+            "[OpenAI] Streaming usage not supported by endpoint; retrying without stream_options",
+          );
+          response = (await createStream(false)) as any;
+        }
 
         rawResponse = response;
 

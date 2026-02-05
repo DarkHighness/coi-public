@@ -1590,10 +1590,21 @@ export const useGameEngine = () => {
             generatingNodeId: null,
             logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
-              ...prev.tokenUsage,
+              promptTokens:
+                (prev.tokenUsage?.promptTokens || 0) +
+                (log.usage?.promptTokens || 0),
+              completionTokens:
+                (prev.tokenUsage?.completionTokens || 0) +
+                (log.usage?.completionTokens || 0),
               totalTokens:
                 (prev.tokenUsage?.totalTokens || 0) +
                 (log.usage?.totalTokens || 0),
+              cacheRead:
+                (prev.tokenUsage?.cacheRead || 0) +
+                (log.usage?.cacheRead || 0),
+              cacheWrite:
+                (prev.tokenUsage?.cacheWrite || 0) +
+                (log.usage?.cacheWrite || 0),
             },
             nodes: {
               ...prev.nodes,
@@ -1612,10 +1623,21 @@ export const useGameEngine = () => {
             generatingNodeId: null,
             logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
-              ...prev.tokenUsage,
+              promptTokens:
+                (prev.tokenUsage?.promptTokens || 0) +
+                (log.usage?.promptTokens || 0),
+              completionTokens:
+                (prev.tokenUsage?.completionTokens || 0) +
+                (log.usage?.completionTokens || 0),
               totalTokens:
                 (prev.tokenUsage?.totalTokens || 0) +
                 (log.usage?.totalTokens || 0),
+              cacheRead:
+                (prev.tokenUsage?.cacheRead || 0) +
+                (log.usage?.cacheRead || 0),
+              cacheWrite:
+                (prev.tokenUsage?.cacheWrite || 0) +
+                (log.usage?.cacheWrite || 0),
             },
             nodes: {
               ...prev.nodes,
@@ -1631,10 +1653,21 @@ export const useGameEngine = () => {
             generatingNodeId: null,
             logs: [log, ...prev.logs].slice(0, 100),
             tokenUsage: {
-              ...prev.tokenUsage,
+              promptTokens:
+                (prev.tokenUsage?.promptTokens || 0) +
+                (log.usage?.promptTokens || 0),
+              completionTokens:
+                (prev.tokenUsage?.completionTokens || 0) +
+                (log.usage?.completionTokens || 0),
               totalTokens:
                 (prev.tokenUsage?.totalTokens || 0) +
                 (log.usage?.totalTokens || 0),
+              cacheRead:
+                (prev.tokenUsage?.cacheRead || 0) +
+                (log.usage?.cacheRead || 0),
+              cacheWrite:
+                (prev.tokenUsage?.cacheWrite || 0) +
+                (log.usage?.cacheWrite || 0),
             },
           }));
           // Treat empty result as failure
