@@ -786,6 +786,11 @@ export const useGameEngine = () => {
             seedImageId,
             narrativeScale: outline.narrativeScale,
           });
+          vfsSession.writeFile(
+            "world/theme_config.json",
+            JSON.stringify(themeConfig),
+            "application/json",
+          );
           writeOutlineFile(vfsSession, outline);
           clearOutlineProgress(vfsSession);
           writeConversationIndex(vfsSession, {
@@ -874,6 +879,17 @@ export const useGameEngine = () => {
           // Store initial prompt for potential retry (backward compatibility)
           const themeName = getThemeName(selectedTheme, t);
           const fallbackPrompt = t("initialPrompt.begin", { theme: themeName });
+
+          try {
+            vfsSession.mergeJson("world/global.json", {
+              initialPrompt: fallbackPrompt,
+            });
+          } catch (e) {
+            console.warn(
+              "[StartNewGame] Failed to persist initialPrompt in VFS",
+              e,
+            );
+          }
 
           setGameState((prev) => ({
             ...prev,
@@ -1201,6 +1217,11 @@ export const useGameEngine = () => {
           customContext,
           narrativeScale: outline.narrativeScale,
         });
+        vfsSession.writeFile(
+          "world/theme_config.json",
+          JSON.stringify(resolvedThemeConfig),
+          "application/json",
+        );
         writeOutlineFile(vfsSession, outline);
         clearOutlineProgress(vfsSession);
         writeConversationIndex(vfsSession, {
@@ -1284,6 +1305,17 @@ export const useGameEngine = () => {
             (customContext
               ? ` ${t("initialPrompt.context")}: ${customContext}`
               : "");
+
+          try {
+            vfsSession.mergeJson("world/global.json", {
+              initialPrompt: fallbackPrompt,
+            });
+          } catch (e) {
+            console.warn(
+              "[ResumeOutline] Failed to persist initialPrompt in VFS",
+              e,
+            );
+          }
 
           setGameState((prev) => ({
             ...prev,

@@ -5,40 +5,53 @@
 import type { Atom } from "../types";
 
 const globalNotes = `
-  <rule name="GLOBAL MEMORY (VFS)">
-    **THE "META-NARRATIVE" LAYER**:
-    Global memory tracks facts that transcend individual entities or turns and must persist across time.
+  <rule name="NOTES (VFS MARKDOWN) - SCRATCH PAD">
+    **NOTES ARE A FLEXIBLE FALLBACK.**
+    Use notes to store important information that does not fit cleanly into the structured entity JSON fields.
+    Notes are markdown and may contain headings, lists, tables, TODOs, and reminders.
+
+    <paths>
+      **GLOBAL SCRATCH PAD**:
+      - \`current/world/notes.md\`
+
+      **ENTITY NOTES (ONE PER ENTITY)**:
+      - For any entity JSON file at \`current/world/<...>/<id>.json\`, the notes file is:
+        - \`current/world/<...>/<id>/notes.md\`
+      - Examples:
+        - Quest: \`current/world/quests/quest:1.json\` → \`current/world/quests/quest:1/notes.md\`
+        - Character: \`current/world/characters/char:player/profile.json\` → \`current/world/characters/char:player/notes.md\`
+        - Skill: \`current/world/characters/char:player/skills/skill:1.json\` → \`current/world/characters/char:player/skills/skill:1/notes.md\`
+    </paths>
 
     <when_to_use>
-      **STORE GLOBAL MEMORY FOR**:
-      1.  **Cross-Entity Patterns**: "The Player has lied to 3 different guards about his identity."
-      2.  **Meta-Plot & Time**: "Prophecy Countdown: 5 turns until the eclipse."
-      3.  **Orphaned Information**: "A mysterious blue symbol was seen in the forest."
-      4.  **Complex World States**: "The Kingdom is on high alert due to the dragon attack."
-      5.  **GM Secrets**: "The 'Black Knight' is actually the King's brother."
+      ✅ USE NOTES FOR:
+      1. **Cross-entity patterns** (relationships, repeated lies, recurring symbols)
+      2. **Long-range foreshadowing** and plot threads that span many turns
+      3. **GM secrets / hidden truth reminders** that must stay consistent
+      4. **Style/voice constraints** that are too detailed for structured fields
+      5. **TODOs** for future continuity checks
 
-      **DO NOT STORE HERE**:
-      - Simple Item Properties → Use \`item.visible.description\` or \`item.notes\`
-      - NPC Personality → Use \`npc.personality\`
-      - Quest Objectives → Use \`quest.visible.objectives\`
+      ❌ DO NOT LEAVE CANONICAL FACTS ONLY IN NOTES:
+      - If a fact is stable and can be expressed structurally, write it back into the appropriate entity JSON using
+        \`vfs_edit\` / \`vfs_merge\` / \`vfs_write\`.
+      - Notes are not the canonical world state; they are a scratch pad.
     </when_to_use>
 
-    <storage_rules>
-      **STORE AS KNOWLEDGE ENTRIES**:
-      - Use \`current/world/knowledge/<id>.json\` to persist global memory.
-      - Write with \`vfs_write\` (create/replace) or \`vfs_edit\` (patch fields).
-      - Remove obsolete entries with \`vfs_delete\`.
-      - **CURRENT ARCHITECTURE**: discovery/unlock/UI fields for knowledge are per-actor:
-        - \`current/world/characters/char:player/views/knowledge/<id>.json\` (e.g. \`unlocked\`, discovery time, highlight)
-    </storage_rules>
+    <read_write_protocol>
+      **IMPORTANT (tool-seen constraints):**
+      - If a \`notes.md\` file already exists, you MUST:
+        1) \`vfs_read\` it first
+        2) Then \`vfs_write\` the updated full markdown content (read → modify → write)
+      - If it does not exist, you may \`vfs_write\` to create it.
+      - Do NOT use \`vfs_edit\` for notes (it is JSON Patch only).
+    </read_write_protocol>
 
     <search_strategy>
-      **AVOID DUPLICATES via SCAN → SEARCH → READ**:
-      - **Problem**: You want to track "The Red Dragon". You don't know if a file exists.
-      - **Good**:
-        1. \`vfs_ls\` on \`current/world/knowledge/\`
-        2. \`vfs_search\` or \`vfs_grep\` for "dragon"
-        3. \`vfs_read\` the closest match and update it instead of creating a new file
+      **AVOID FULL SCANS**:
+      - Start with \`vfs_read path="current/world/notes.md"\` (if present).
+      - When you need related entity notes, use:
+        - \`vfs_glob pattern="current/**/notes.md"\`
+      - Then \`vfs_read\` only the relevant notes files.
     </search_strategy>
   </rule>
 `;

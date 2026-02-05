@@ -18,6 +18,14 @@ const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
 };
 
+const ensureGlobalNotes = (session: VfsSession): void => {
+  // Notes are a flexible scratch pad (markdown stored as text/plain).
+  // Keep it empty by default; the AI may populate it when needed.
+  if (!session.readFile("world/notes.md")) {
+    session.writeFile("world/notes.md", "", "text/plain");
+  }
+};
+
 const writeEntities = <T extends { id?: string }>(
   session: VfsSession,
   basePath: string,
@@ -170,6 +178,7 @@ export const seedVfsSessionFromGameState = (
   state: GameState,
 ): void => {
   seedAtmosphereRefs(session);
+  ensureGlobalNotes(session);
 
   writeJson(session, "world/global.json", {
     time: state.time,
@@ -182,12 +191,25 @@ export const seedVfsSessionFromGameState = (
     customContext: state.customContext,
     seedImageId: state.seedImageId,
     narrativeScale: state.narrativeScale,
+    initialPrompt: state.initialPrompt,
   });
 
   writeJson(session, "summary/state.json", {
     summaries: state.summaries ?? [],
     lastSummarizedIndex: state.lastSummarizedIndex ?? 0,
   });
+
+  if (state.themeConfig) {
+    writeJson(session, "world/theme_config.json", state.themeConfig);
+  }
+
+  if (Array.isArray(state.customRules)) {
+    for (const rule of state.customRules as any[]) {
+      const id = (rule as any)?.id;
+      if (typeof id !== "string" || id.trim().length === 0) continue;
+      writeJson(session, `world/custom_rules/${id.trim()}.json`, rule);
+    }
+  }
 
   for (const actor of state.actors) {
     writeActorBundle(session, actor);
@@ -270,6 +292,7 @@ export const seedVfsSessionFromGameState = (
 
 export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
   seedAtmosphereRefs(session);
+  ensureGlobalNotes(session);
 
   writeJson(session, "world/global.json", {
     time: "Day 1, 08:00",
@@ -353,6 +376,7 @@ export const seedVfsSessionFromOutline = (
   },
 ): void => {
   seedAtmosphereRefs(session);
+  ensureGlobalNotes(session);
 
   writeJson(session, "world/global.json", {
     time: options.time,

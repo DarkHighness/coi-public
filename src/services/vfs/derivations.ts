@@ -3,6 +3,7 @@ import type {
   AtmosphereObject,
   CausalChain,
   CharacterStatus,
+  CustomRule,
   Faction,
   GameState,
   InventoryItem,
@@ -237,6 +238,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const factionDefinitions: Faction[] = [];
   const timelineDefinitions: TimelineEvent[] = [];
   const causalChainDefinitions: CausalChain[] = [];
+  const customRules: CustomRule[] = [];
 
   // Per-actor views (player only for UI derivation)
   const playerQuestViews = new Map<string, any>();
@@ -268,6 +270,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         customContext?: string;
         seedImageId?: string;
         narrativeScale?: GameState["narrativeScale"];
+        initialPrompt?: string;
       };
       if (typeof globalData.time === "string" && globalData.time.trim() !== "") {
         state.time = globalData.time.trim();
@@ -306,11 +309,19 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       if (typeof globalData.narrativeScale === "string") {
         state.narrativeScale = globalData.narrativeScale;
       }
+      if (typeof globalData.initialPrompt === "string") {
+        state.initialPrompt = globalData.initialPrompt;
+      }
       continue;
     }
 
     if (pathWithoutCurrent === "world/world_info.json") {
       state.worldInfo = data as any;
+      continue;
+    }
+
+    if (pathWithoutCurrent === "world/theme_config.json") {
+      state.themeConfig = data as any;
       continue;
     }
 
@@ -325,6 +336,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       if (typeof summaryData.lastSummarizedIndex === "number") {
         state.lastSummarizedIndex = summaryData.lastSummarizedIndex;
       }
+      continue;
+    }
+
+    if (pathWithoutCurrent.startsWith("world/custom_rules/")) {
+      customRules.push(data as CustomRule);
       continue;
     }
 
@@ -494,6 +510,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       causalChainDefinitions.push(data as CausalChain);
     }
   }
+
+  state.customRules = customRules;
 
   // Merge canonical entities with player views into UI-friendly view models.
   const playerId = state.playerActorId;

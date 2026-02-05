@@ -36,6 +36,50 @@ describe("vfs schemas", () => {
     ).not.toThrow();
   });
 
+  it("accepts optional initialPrompt in global schema", () => {
+    const schema = getSchemaForPath("world/global.json");
+    expect(() =>
+      schema.parse({
+        time: "t",
+        theme: "fantasy",
+        currentLocation: "loc:1",
+        atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+        turnNumber: 0,
+        forkId: 0,
+        initialPrompt: "Begin.",
+      }),
+    ).not.toThrow();
+  });
+
+  it("matches custom rules paths to custom rule schema", () => {
+    const schema = getSchemaForPath("world/custom_rules/rule_1.json");
+    expect(() =>
+      schema.parse({
+        id: "rule_1",
+        category: "systemCore",
+        title: "Rule 1",
+        content: "Do X",
+        enabled: true,
+        priority: 0,
+        createdAt: 1,
+      }),
+    ).not.toThrow();
+  });
+
+  it("matches theme_config path to theme config schema", () => {
+    const schema = getSchemaForPath("world/theme_config.json");
+    expect(() =>
+      schema.parse({
+        name: "Fantasy",
+        narrativeStyle: "",
+        worldSetting: "",
+        backgroundTemplate: "",
+        example: "",
+        isRestricted: false,
+      }),
+    ).not.toThrow();
+  });
+
   it("matches character skill paths to skill schema", () => {
     const schema = getSchemaForPath("world/characters/char:player/skills/skill:1.json");
     expect(schema).toBe(skillSchema);

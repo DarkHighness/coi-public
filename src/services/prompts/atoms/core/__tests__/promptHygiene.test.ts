@@ -33,5 +33,10 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("query_");
     expect(content).not.toContain("add_");
     expect(content).toContain("vfs_");
+
+    // Notes scratch pad policy (VFS markdown)
+    expect(content).toContain("current/world/notes.md");
+    expect(content).toContain("current/**/notes.md");
+    expect(content).toContain("read → modify → write");
   });
 });

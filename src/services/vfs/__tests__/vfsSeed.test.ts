@@ -8,6 +8,7 @@ describe("seedVfsSessionFromDefaults", () => {
     seedVfsSessionFromDefaults(session);
 
     expect(session.readFile("world/global.json")).toBeTruthy();
+    expect(session.readFile("world/notes.md")).toBeTruthy();
     expect(session.readFile("conversation/index.json")).toBeTruthy();
     expect(
       session.readFile("conversation/turns/fork-0/turn-0.json"),

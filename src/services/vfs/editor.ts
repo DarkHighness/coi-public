@@ -11,6 +11,7 @@ type SectionName =
   | "factions"
   | "timeline"
   | "causalChains"
+  | "customRules"
   | "outline";
 
 interface SectionEditOptions {
@@ -223,6 +224,24 @@ export const applySectionEdit = (
       throw new Error("Outline edits are not allowed.");
     }
     writeJson(session, "outline/outline.json", data);
+    return;
+  }
+
+  if (section === "customRules") {
+    if (!Array.isArray(data)) {
+      throw new Error(`Section "${section}" expects an array.`);
+    }
+
+    clearDir(session, "world/custom_rules");
+
+    for (const rule of data as any[]) {
+      if (!rule || typeof rule !== "object") continue;
+      const id = (rule as any).id;
+      if (typeof id !== "string" || id.trim().length === 0) {
+        throw new Error("Missing id for custom rule entry.");
+      }
+      writeJson(session, `world/custom_rules/${id.trim()}.json`, rule);
+    }
     return;
   }
 

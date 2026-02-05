@@ -17,6 +17,7 @@ export type EditableVfsSection =
   | "factions"
   | "timeline"
   | "causalChains"
+  | "customRules"
   | "outline";
 
 interface ApplyVfsStateEditParams {

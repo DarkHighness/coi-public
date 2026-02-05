@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CustomRule, RuleCategory, GameState } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
+import { applyVfsStateEdit } from "./stateEditorUtils";
 
 // All available rule categories
 const RULE_CATEGORIES: RuleCategory[] = [
@@ -41,6 +43,8 @@ interface RulesEditorModalProps {
   onClose: () => void;
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  vfsSession: VfsSession | null;
+  triggerSave: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
 
@@ -49,6 +53,8 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   onClose,
   gameState,
   setGameState,
+  vfsSession,
+  triggerSave,
   onShowToast,
 }) => {
   const { t } = useTranslation();
@@ -111,10 +117,22 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       createdAt: Date.now(),
     };
 
-    setGameState((prev) => ({
-      ...prev,
-      customRules: [...(prev.customRules || []), newRule],
-    }));
+    const nextRules = [...(gameState.customRules || []), newRule];
+    if (vfsSession) {
+      const nextState = applyVfsStateEdit({
+        session: vfsSession,
+        section: "customRules",
+        data: nextRules,
+        baseState: gameState,
+      });
+      setGameState(nextState);
+      triggerSave();
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        customRules: nextRules,
+      }));
+    }
 
     setNewTitle("");
     setNewContent("");
@@ -128,14 +146,26 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       return;
     }
 
-    setGameState((prev) => ({
-      ...prev,
-      customRules: (prev.customRules || []).map((r) =>
-        r.id === editingRule.id
-          ? { ...r, title: newTitle.trim(), content: newContent.trim() }
-          : r,
-      ),
-    }));
+    const nextRules = (gameState.customRules || []).map((r) =>
+      r.id === editingRule.id
+        ? { ...r, title: newTitle.trim(), content: newContent.trim() }
+        : r,
+    );
+    if (vfsSession) {
+      const nextState = applyVfsStateEdit({
+        session: vfsSession,
+        section: "customRules",
+        data: nextRules,
+        baseState: gameState,
+      });
+      setGameState(nextState);
+      triggerSave();
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        customRules: nextRules,
+      }));
+    }
 
     setEditingRule(null);
     setNewTitle("");
@@ -146,21 +176,45 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
   // Delete rule
   const handleDeleteRule = (id: string) => {
-    setGameState((prev) => ({
-      ...prev,
-      customRules: (prev.customRules || []).filter((r) => r.id !== id),
-    }));
+    const nextRules = (gameState.customRules || []).filter((r) => r.id !== id);
+    if (vfsSession) {
+      const nextState = applyVfsStateEdit({
+        session: vfsSession,
+        section: "customRules",
+        data: nextRules,
+        baseState: gameState,
+      });
+      setGameState(nextState);
+      triggerSave();
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        customRules: nextRules,
+      }));
+    }
     onShowToast?.(t("rules.deleted"), "info");
   };
 
   // Toggle rule enabled
   const handleToggleRule = (id: string) => {
-    setGameState((prev) => ({
-      ...prev,
-      customRules: (prev.customRules || []).map((r) =>
-        r.id === id ? { ...r, enabled: !r.enabled } : r,
-      ),
-    }));
+    const nextRules = (gameState.customRules || []).map((r) =>
+      r.id === id ? { ...r, enabled: !r.enabled } : r,
+    );
+    if (vfsSession) {
+      const nextState = applyVfsStateEdit({
+        session: vfsSession,
+        section: "customRules",
+        data: nextRules,
+        baseState: gameState,
+      });
+      setGameState(nextState);
+      triggerSave();
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        customRules: nextRules,
+      }));
+    }
   };
 
   // Start editing a rule

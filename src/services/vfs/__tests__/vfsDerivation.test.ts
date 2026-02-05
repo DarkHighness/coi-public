@@ -25,7 +25,28 @@ describe("deriveGameStateFromVfs", () => {
         atmosphere: { envTheme: "wuxia", ambience: "rainy" },
         turnNumber: 3,
         forkId: 1,
+        initialPrompt: "Begin.",
       }),
+      "world/theme_config.json": makeJsonFile("world/theme_config.json", {
+        name: "Wuxia",
+        narrativeStyle: "test style",
+        worldSetting: "test world",
+        backgroundTemplate: "test bg",
+        example: "test example",
+        isRestricted: false,
+      }),
+      "world/custom_rules/rule_1.json": makeJsonFile(
+        "world/custom_rules/rule_1.json",
+        {
+          id: "rule_1",
+          category: "systemCore",
+          title: "Rule 1",
+          content: "Do X",
+          enabled: true,
+          priority: 0,
+          createdAt: 1,
+        },
+      ),
       "world/characters/char:player/profile.json": makeJsonFile(
         "world/characters/char:player/profile.json",
         {
@@ -68,6 +89,9 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.atmosphere).toEqual({ envTheme: "wuxia", ambience: "rainy" });
     expect(state.turnNumber).toBe(3);
     expect(state.forkId).toBe(1);
+    expect(state.initialPrompt).toBe("Begin.");
+    expect(state.themeConfig?.name).toBe("Wuxia");
+    expect(state.customRules).toHaveLength(1);
     expect(state.character.name).toBe("Arin");
     expect(state.character.skills).toEqual([]);
     expect(state.character.conditions).toEqual([]);

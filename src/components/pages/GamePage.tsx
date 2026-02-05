@@ -645,6 +645,8 @@ export const GamePage: React.FC<GamePageProps> = ({
             onClose={() => setIsRulesEditorOpen(false)}
             gameState={gameState}
             setGameState={setGameState}
+            vfsSession={vfsSession}
+            triggerSave={triggerSave}
             onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}

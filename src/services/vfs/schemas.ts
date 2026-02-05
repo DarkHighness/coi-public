@@ -37,6 +37,42 @@ const GlobalSchema = z.object({
   customContext: z.string().optional(),
   seedImageId: z.string().optional(),
   narrativeScale: z.enum(["epic", "intimate", "balanced"]).optional(),
+  initialPrompt: z.string().optional(),
+});
+
+const RuleCategorySchema = z.enum([
+  "systemCore",
+  "worldSetting",
+  "protagonist",
+  "npcBehavior",
+  "combatAction",
+  "writingStyle",
+  "dialogue",
+  "mystery",
+  "stateManagement",
+  "hiddenTruth",
+  "imageStyle",
+  "cultural",
+  "custom",
+]);
+
+const CustomRuleSchema = z.object({
+  id: z.string(),
+  category: RuleCategorySchema,
+  title: z.string(),
+  content: z.string(),
+  enabled: z.boolean(),
+  priority: z.number(),
+  createdAt: z.number(),
+});
+
+const ThemeConfigSchema = z.object({
+  name: z.string(),
+  narrativeStyle: z.string(),
+  worldSetting: z.string(),
+  backgroundTemplate: z.string(),
+  example: z.string(),
+  isRestricted: z.boolean(),
 });
 
 const ConversationTurnSchema = z.object({
@@ -56,6 +92,8 @@ const SummaryStateSchema = z.object({
 
 const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/world_info\.json$/, schema: worldInfoSchema },
+  { pattern: /^world\/theme_config\.json$/, schema: ThemeConfigSchema },
+  { pattern: /^world\/custom_rules\/[^/]+\.json$/, schema: CustomRuleSchema },
   { pattern: /^world\/locations\/[^/]+\.json$/, schema: locationSchema },
   {
     pattern: /^world\/locations\/[^/]+\/items\/[^/]+\.json$/,
