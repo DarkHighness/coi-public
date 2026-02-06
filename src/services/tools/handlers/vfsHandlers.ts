@@ -94,7 +94,7 @@ const isReadOnlyToolPath = (path: string): boolean => {
 const requireToolSeenForExistingFile = (
   session: VfsSession,
   path: string,
-  operation: "overwrite" | "edit" | "merge" | "delete",
+  operation: "overwrite" | "append" | "text_edit" | "edit" | "merge" | "delete",
 ): ToolCallResult<never> | null => {
   const normalized = normalizeVfsPath(path);
 
@@ -2188,6 +2188,10 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
       }
 
       const existing = draft.readFile(resolved.path);
+      const seenError = requireToolSeenForExistingFile(draft, resolved.path, "append");
+      if (seenError) {
+        return seenError;
+      }
       const ensureNewline = op.ensureNewline ?? true;
       const maxTotalChars =
         typeof op.maxTotalChars === "number" ? op.maxTotalChars : null;
@@ -2251,6 +2255,10 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
       }
 
       if (existing) {
+        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "text_edit");
+        if (seenError) {
+          return seenError;
+        }
         if (existing.contentType !== "text/plain") {
           return createError(
             `File is not text/plain: ${fileEdit.path}`,

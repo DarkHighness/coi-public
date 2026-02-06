@@ -1274,7 +1274,25 @@ describe("VFS handlers", () => {
       ctx,
     ) as { success: boolean };
 
-    expect(appendResult.success).toBe(true);
+    expect(appendResult.success).toBe(false);
+
+    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
+
+    const appendOk = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/world/notes.md",
+            content: "- b",
+            ensureNewline: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(appendOk.success).toBe(true);
 
     const read = dispatchToolCall(
       "vfs_read",
@@ -1287,10 +1305,31 @@ describe("VFS handlers", () => {
     expect(read.data?.content ?? "").toContain("- b");
   });
 
-  it("allows vfs_text_edit on world markdown without requiring a prior read", () => {
+  it("blocks vfs_text_edit until the file is read in this session", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "A\nB\n", "text/plain");
     const ctx = { vfsSession: session };
+
+    const blocked = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            ops: [
+              { op: "replace", from: "B", to: "C" },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+    expect(blocked.error ?? "").toContain("must read file before text_edit");
+
+    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const ok = dispatchToolCall(
       "vfs_text_edit",
@@ -1305,7 +1344,7 @@ describe("VFS handlers", () => {
         ],
       },
       ctx,
-    ) as { success: boolean; code?: string; error?: string };
+    ) as { success: boolean };
 
     expect(ok.success).toBe(true);
   });
