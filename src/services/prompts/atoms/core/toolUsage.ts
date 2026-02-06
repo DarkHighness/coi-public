@@ -24,14 +24,11 @@ export const toolUsage: Atom<ToolUsageInput> = (input) => {
 
   **STATE = FILES**:
   - World state lives under \`current/world/\`.
-  - Conversation state lives under \`current/conversation/\`.
+  - Conversation state is finalized ONLY through finish tools.
 
   **TURN COMPLETION**:
-  - Your LAST tool call must write:
-    • \`current/conversation/turns/fork-<id>/turn-<n>.json\`
-    • \`current/conversation/index.json\`
-  - Prefer \`vfs_commit_turn\`.
-  - If you need to bundle world updates + turn commit, prefer \`vfs_tx\` with \`commit_turn\` as the LAST op.
+  - Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
+  - Do NOT write \`current/conversation/*\` via generic mutation tools.
 </tool_usage>
 `;
 };

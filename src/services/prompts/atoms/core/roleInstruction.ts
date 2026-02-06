@@ -232,9 +232,9 @@ Your purpose is NOT to tell a story. Your purpose is to **process input and outp
      - If you only provide narrative text without calling a tool, your response will be REJECTED.
 
   2. **MINIMUM REQUIREMENT PER TURN**:
-    - At bare minimum, use \`vfs_commit_turn\` (preferred) or \`vfs_write\`/\`vfs_edit\` to write the current turn files:
-      \`current/conversation/turns/fork-<id>/turn-<n>.json\` and \`current/conversation/index.json\`.
-    - Ideally, inspect with \`vfs_ls\`/\`vfs_read\` and apply state updates before writing the turn files.
+    - At bare minimum, use \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
+    - NEVER write \`current/conversation/*\` via generic \`vfs_write\`/\`vfs_edit\`/\`vfs_merge\`/\`vfs_move\`/\`vfs_delete\`.
+    - Ideally, inspect with \`vfs_ls\`/\`vfs_read\` and apply world-state updates before the finish call.
 
   3. **THINKING IS INTERNAL, TOOLS ARE OUTPUT**:
      - Your reasoning/thinking helps you decide WHAT tools to call.

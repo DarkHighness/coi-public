@@ -517,7 +517,7 @@ export const SettingsExtra: React.FC = () => {
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.promptInjectionHelp") ||
-                "When enabled, this text is prepended to the system instruction."}
+                "When enabled, this player instruction can guide style, plot direction, setting bias, and world rules."}
             </div>
           </div>
           <button
@@ -548,7 +548,7 @@ export const SettingsExtra: React.FC = () => {
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.systemDefaultInjectionEnabledHelp") ||
-                "When enabled, a matched system default prompt is prepended (no prefixes)."}
+                "When enabled, model-matched default prompt injection runs after runtime floor and before user custom + base system instruction."}
             </div>
           </div>
           <button
@@ -583,7 +583,7 @@ export const SettingsExtra: React.FC = () => {
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.customPromptInjectionHelp") ||
-                "Write style/tone/language requirements here."}
+                "Write style, plot direction, setting assumptions, or world-rule bias here."}
             </div>
           </div>
           <textarea

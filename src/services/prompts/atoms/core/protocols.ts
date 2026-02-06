@@ -52,7 +52,7 @@ const errorRecovery = `
   1. Read the error message carefully
   2. Look for "Did you mean: ...?" suggestions
   3. Retry with corrected arguments OR search files to find correct IDs
-  4. Do NOT write turn files while errors remain unhandled
+  4. Do NOT finish the turn while errors remain unhandled
 
   **Self-Correction**:
   - If NOT_FOUND, use \`vfs_search\`/\`vfs_grep\` to find the correct entity file
@@ -69,7 +69,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least write the turn files. Ideally: inspect → update → write turn files.
+  At least call \`vfs_commit_turn\` (or \`vfs_tx\` with LAST op \`commit_turn\`). Ideally: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)

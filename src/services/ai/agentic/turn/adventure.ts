@@ -8,6 +8,7 @@ import {
   TurnContext,
   GameResponse,
   ToolCallRecord,
+  CustomRulesAckPendingReason,
 } from "../../../../types";
 
 import { isContextLengthError } from "../../contextCompressor";
@@ -43,6 +44,11 @@ import {
 
 // Import refactored agentic loop
 import { runAgenticLoopRefactored } from "./agenticLoop";
+import {
+  composeSystemInstruction,
+  getTurnRuntimeFloor,
+} from "../../../prompts/runtimeFloor";
+import { syncCustomRulesAckState } from "../../../customRulesAckState";
 
 // ============================================================================
 // Turn Context and Agentic Loop
@@ -119,7 +125,7 @@ export const generateAdventureTurn = async (
   const isRAGEnabled = settings.embedding?.enabled ?? false;
 
   // ===== Build system instruction using Skills System =====
-  let systemInstruction = buildCoreSystemInstructionWithSkills({
+  const baseSystemInstruction = buildCoreSystemInstructionWithSkills({
     language: context.language,
     themeStyle: narrativeStyle,
     isRestricted,
@@ -149,40 +155,60 @@ export const generateAdventureTurn = async (
   });
 
   console.log(
-    `[Adventure] Built system instruction with skills. Length: ${systemInstruction.length} chars`,
+    `[Adventure] Built system instruction with skills. Length: ${baseSystemInstruction.length} chars`,
   );
 
-  // System default model-specific injection (for consistent style across models).
-  // Required order at the very front of systemInstruction: (1) user custom instruction, (2) system default injection, then base.
+  const runtimeFloor = getTurnRuntimeFloor();
+
   const systemDefaultInjectionEnabled =
     settings.extra?.systemDefaultInjectionEnabled ?? true;
   const systemDefaultInjection = systemDefaultInjectionEnabled
     ? pickModelMatchedPrompt((promptToml as any)?.system_prompts, modelId)
     : undefined;
 
-  // Optional user-provided prompt prefix (typically used for language/style preferences).
   const customInstructionRaw = settings.extra?.customInstruction;
   const customInstruction =
     typeof customInstructionRaw === "string" ? customInstructionRaw : "";
   const customInstructionEnabled =
     settings.extra?.customInstructionEnabled ??
     Boolean(customInstruction.trim());
+  const effectiveCustomInstruction =
+    customInstructionEnabled && customInstruction.trim()
+      ? customInstruction.trim()
+      : undefined;
 
-  const prepends: string[] = [];
-  if (customInstruction.trim() && customInstructionEnabled) {
-    prepends.push(customInstruction.trim());
+  if (effectiveCustomInstruction) {
     console.warn(
-      `[CustomInstruction] Prepended custom instruction (${customInstruction.length} chars)`,
+      `[CustomInstruction] Prepended custom instruction (${effectiveCustomInstruction.length} chars)`,
     );
   }
   if (systemDefaultInjection) {
-    prepends.push(systemDefaultInjection);
     console.warn(
       `[SystemDefaultInjection] Matched model ${modelId} (${systemDefaultInjection.length} chars)`,
     );
   }
-  if (prepends.length > 0) {
-    systemInstruction = `${prepends.join("\n\n")}\n\n${systemInstruction}`;
+
+  const systemInstruction = composeSystemInstruction({
+    runtimeFloor,
+    systemDefaultInjection,
+    customInstruction: effectiveCustomInstruction,
+    baseSystemInstruction,
+  });
+
+  const customRulesAckState = syncCustomRulesAckState(context.vfsSession, {
+    customRules: gameState.customRules ?? [],
+  });
+  const retconAckPending = customRulesAckState.pendingHash
+    ? {
+        hash: customRulesAckState.pendingHash,
+        reason: customRulesAckState.pendingReason,
+      }
+    : undefined;
+
+  if (retconAckPending) {
+    console.warn(
+      `[CustomRulesAck] Turn requires retcon ack hash=${retconAckPending.hash} reason=${retconAckPending.reason ?? "customRules"}`,
+    );
   }
 
   // Get RAG context from parameter
@@ -265,6 +291,7 @@ export const generateAdventureTurn = async (
       isCleanupMode,
       sessionId,
       context.vfsSession,
+      retconAckPending,
       context.onToolCallsUpdate,
     );
 
@@ -304,6 +331,10 @@ export const runAgenticLoop = async (
   isCleanupMode: boolean = false,
   _sessionId: string,
   vfsSession: VfsSession,
+  retconAckPending?: {
+    hash: string;
+    reason?: CustomRulesAckPendingReason;
+  },
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
@@ -320,6 +351,7 @@ export const runAgenticLoop = async (
     isCleanupMode,
     sessionId: _sessionId,
     vfsSession,
+    retconAckPending,
     onToolCallsUpdate,
   });
 };

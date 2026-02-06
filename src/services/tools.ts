@@ -16,6 +16,18 @@ import type {
   TypedToolDefinition,
   InferToolParams,
 } from "./providers/types";
+import {
+  outlinePhase0Schema,
+  outlinePhase1Schema,
+  outlinePhase2Schema,
+  outlinePhase3Schema,
+  outlinePhase4Schema,
+  outlinePhase5Schema,
+  outlinePhase6Schema,
+  outlinePhase7Schema,
+  outlinePhase8Schema,
+  outlinePhase9Schema,
+} from "./schemas";
 
 // ============================================================================
 // Type-Safe Tool Definition Helper
@@ -727,6 +739,18 @@ const vfsTxOpSchema = z.discriminatedUnion("op", [
         })
         .strict()
         .describe("Assistant payload stored in the turn file."),
+      retconAck: z
+        .object({
+          hash: z.string().describe("Pending prompt injection hash to acknowledge."),
+          summary: z
+            .string()
+            .describe("Short in-world retcon acknowledgement summary."),
+        })
+        .strict()
+        .nullish()
+        .describe(
+          "Required when a prompt retcon acknowledgement is pending for this save.",
+        ),
       createdAt: z
         .number()
         .int()
@@ -813,6 +837,18 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
       })
       .strict()
       .describe("Assistant payload stored in the turn file."),
+    retconAck: z
+      .object({
+        hash: z.string().describe("Pending prompt injection hash to acknowledge."),
+        summary: z
+          .string()
+          .describe("Short in-world retcon acknowledgement summary."),
+      })
+      .strict()
+      .nullish()
+      .describe(
+        "Required when a prompt retcon acknowledgement is pending for this save.",
+      ),
     createdAt: z
       .number()
       .int()
@@ -982,24 +1018,73 @@ export const VFS_FINISH_SUMMARY_TOOL = defineTool({
     .strict(),
 });
 
-export const VFS_SUBMIT_OUTLINE_PHASE_TOOL = defineTool({
-  name: "vfs_submit_outline_phase",
-  description:
-    "Submit a StoryOutline phase payload. Validates the phase schema and writes it to current/outline/phases/phase{N}.json (VFS).",
-  parameters: z
-    .object({
-      phase: z
-        .number()
-        .int()
-        .min(0)
-        .max(9)
-        .describe("Outline phase number (0-9)."),
-      data: z
-        .record(z.any())
-        .describe("Phase payload JSON object (must match that phase's schema)."),
-    })
-    .strict(),
-});
+const buildOutlineSubmitTool = <TSchema extends ZodObject<ZodRawShape>>(
+  phase: number,
+  schema: TSchema,
+) =>
+  defineTool({
+    name: `vfs_submit_outline_phase_${phase}`,
+    description: `Submit outline phase ${phase} payload. Validates and writes to current/outline/phases/phase${phase}.json (VFS).`,
+    parameters: z
+      .object({
+        data: schema.describe(`Outline phase ${phase} payload JSON object.`),
+      })
+      .strict(),
+  });
+
+export const VFS_SUBMIT_OUTLINE_PHASE_0_TOOL = buildOutlineSubmitTool(
+  0,
+  outlinePhase0Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_1_TOOL = buildOutlineSubmitTool(
+  1,
+  outlinePhase1Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_2_TOOL = buildOutlineSubmitTool(
+  2,
+  outlinePhase2Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_3_TOOL = buildOutlineSubmitTool(
+  3,
+  outlinePhase3Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_4_TOOL = buildOutlineSubmitTool(
+  4,
+  outlinePhase4Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_5_TOOL = buildOutlineSubmitTool(
+  5,
+  outlinePhase5Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_6_TOOL = buildOutlineSubmitTool(
+  6,
+  outlinePhase6Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_7_TOOL = buildOutlineSubmitTool(
+  7,
+  outlinePhase7Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_8_TOOL = buildOutlineSubmitTool(
+  8,
+  outlinePhase8Schema,
+);
+export const VFS_SUBMIT_OUTLINE_PHASE_9_TOOL = buildOutlineSubmitTool(
+  9,
+  outlinePhase9Schema,
+);
+
+export const VFS_SUBMIT_OUTLINE_PHASE_TOOLS = [
+  VFS_SUBMIT_OUTLINE_PHASE_0_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_1_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_2_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_3_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_4_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_5_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_6_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_7_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_8_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_9_TOOL,
+] as const;
 
 export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_LS_TOOL,
@@ -1024,7 +1109,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
   VFS_FINISH_SUMMARY_TOOL,
-  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
+  ...VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
 ];
 
 // Legacy export name kept for compatibility (internal-only).
@@ -1060,8 +1145,35 @@ export type VfsSuggestDuplicatesParams = InferToolParams<
 export type VfsFinishSummaryParams = InferToolParams<
   typeof VFS_FINISH_SUMMARY_TOOL
 >;
-export type VfsSubmitOutlinePhaseParams = InferToolParams<
-  typeof VFS_SUBMIT_OUTLINE_PHASE_TOOL
+export type VfsSubmitOutlinePhase0Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_0_TOOL
+>;
+export type VfsSubmitOutlinePhase1Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_1_TOOL
+>;
+export type VfsSubmitOutlinePhase2Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_2_TOOL
+>;
+export type VfsSubmitOutlinePhase3Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_3_TOOL
+>;
+export type VfsSubmitOutlinePhase4Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_4_TOOL
+>;
+export type VfsSubmitOutlinePhase5Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_5_TOOL
+>;
+export type VfsSubmitOutlinePhase6Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_6_TOOL
+>;
+export type VfsSubmitOutlinePhase7Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_7_TOOL
+>;
+export type VfsSubmitOutlinePhase8Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_8_TOOL
+>;
+export type VfsSubmitOutlinePhase9Params = InferToolParams<
+  typeof VFS_SUBMIT_OUTLINE_PHASE_9_TOOL
 >;
 
 export interface ToolParamsMap {
@@ -1087,7 +1199,16 @@ export interface ToolParamsMap {
   vfs_commit_turn: VfsCommitTurnParams;
   vfs_tx: VfsTxParams;
   vfs_finish_summary: VfsFinishSummaryParams;
-  vfs_submit_outline_phase: VfsSubmitOutlinePhaseParams;
+  vfs_submit_outline_phase_0: VfsSubmitOutlinePhase0Params;
+  vfs_submit_outline_phase_1: VfsSubmitOutlinePhase1Params;
+  vfs_submit_outline_phase_2: VfsSubmitOutlinePhase2Params;
+  vfs_submit_outline_phase_3: VfsSubmitOutlinePhase3Params;
+  vfs_submit_outline_phase_4: VfsSubmitOutlinePhase4Params;
+  vfs_submit_outline_phase_5: VfsSubmitOutlinePhase5Params;
+  vfs_submit_outline_phase_6: VfsSubmitOutlinePhase6Params;
+  vfs_submit_outline_phase_7: VfsSubmitOutlinePhase7Params;
+  vfs_submit_outline_phase_8: VfsSubmitOutlinePhase8Params;
+  vfs_submit_outline_phase_9: VfsSubmitOutlinePhase9Params;
 }
 
 export type ToolName = keyof ToolParamsMap;

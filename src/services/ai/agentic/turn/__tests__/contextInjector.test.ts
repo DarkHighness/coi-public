@@ -4,6 +4,7 @@ import {
   injectNoToolCallError,
   injectNormalTurnInstruction,
   injectReadyConsequences,
+  injectRetconAckRequired,
   injectSudoModeInstruction,
 } from "../contextInjector";
 
@@ -45,6 +46,18 @@ describe("contextInjector", () => {
     expect(getText(history[0])).toContain("[SYSTEM: BUDGET STATUS]");
     expect(getText(history[0])).toContain("budget_status");
     expect(getText(history[1])).toContain("NO_TOOL_CALL");
+  });
+
+
+  it("injects retcon ack required system message", () => {
+    const history: any[] = [];
+
+    injectRetconAckRequired(history, "hash_123", "customRules");
+
+    expect(history).toHaveLength(1);
+    expect(getText(history[0])).toContain("RETCON_ACK_REQUIRED");
+    expect(getText(history[0])).toContain("hash_123");
+    expect(getText(history[0])).toContain("retconAck");
   });
 
   it("keeps ready consequences injection as no-op", () => {

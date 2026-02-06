@@ -2003,4 +2003,172 @@ describe("VFS handlers", () => {
     expect(invalidJson.code).toBe("INVALID_DATA");
   });
 
+
+  it("submits outline phase 0 through phase-specific tool", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_submit_outline_phase_0",
+      {
+        data: {
+          worldSetting: "A haunted valley wrapped in perpetual mist.",
+          narrativeStyle: "Dark and grounded.",
+          backgroundTemplate: "In [Valley], you seek [Truth].",
+          suggestedTitle: "Mistbound Oath",
+          openingSceneDescription: "You stand before a cracked shrine in the fog.",
+          visualElements: ["cracked shrine", "cold lantern light"],
+          suggestedEnvTheme: "fantasy",
+          suggestedAmbience: "cave",
+        },
+      },
+      ctx,
+    ) as { success: boolean; data?: { phase?: number; path?: string } };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.phase).toBe(0);
+    expect(result.data?.path).toBe("current/outline/phases/phase0.json");
+
+    const saved = session.readFile("outline/phases/phase0.json");
+    expect(saved).not.toBeNull();
+    expect(saved?.contentType).toBe("application/json");
+  });
+
+  it("returns path-level validation errors for outline submit tool", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_submit_outline_phase_0",
+      {
+        data: {
+          suggestedTitle: "Only title",
+        },
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error ?? "").toContain("data.worldSetting");
+  });
+
+  it("requires retconAck on commit when custom rules pending", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/runtime/custom_rules_ack_state.json",
+      JSON.stringify({
+        effectiveHash: "hash_new",
+        acknowledgedHash: "hash_old",
+        pendingHash: "hash_new",
+        pendingReason: "customRules",
+        updatedAt: Date.now(),
+      }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_commit_turn",
+      {
+        userAction: "Wait",
+        assistant: {
+          narrative: "You wait in silence.",
+          choices: [{ text: "Keep waiting" }, { text: "Move on" }],
+        },
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error ?? "").toContain("RETCON_ACK_REQUIRED");
+  });
+
+  it("accepts matching retconAck and clears pending state", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/runtime/custom_rules_ack_state.json",
+      JSON.stringify({
+        effectiveHash: "hash_new",
+        acknowledgedHash: "hash_old",
+        pendingHash: "hash_new",
+        pendingReason: "customRules",
+        updatedAt: Date.now(),
+      }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_commit_turn",
+      {
+        userAction: "Step forward",
+        assistant: {
+          narrative: "You step into the altered scene.",
+          choices: [{ text: "Observe" }, { text: "Act" }],
+        },
+        retconAck: {
+          hash: "hash_new",
+          summary: "A subtle continuity ripple passes through the world.",
+        },
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(result.success).toBe(true);
+
+    const stateFile = session.readFile("world/runtime/custom_rules_ack_state.json");
+    expect(stateFile).not.toBeNull();
+    const state = JSON.parse(stateFile!.content) as {
+      acknowledgedHash?: string;
+      pendingHash?: string;
+    };
+    expect(state.acknowledgedHash).toBe("hash_new");
+    expect(state.pendingHash).toBeUndefined();
+
+    const timelineEntries = session.list("world/timeline");
+    expect(timelineEntries.some((entry) => entry.startsWith("timeline:retcon_"))).toBe(
+      true,
+    );
+  });
+
+
+  it("requires retconAck in vfs_tx commit_turn when pending", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/runtime/custom_rules_ack_state.json",
+      JSON.stringify({
+        effectiveHash: "hash_new",
+        acknowledgedHash: "hash_old",
+        pendingHash: "hash_new",
+        pendingReason: "customRules",
+        updatedAt: Date.now(),
+      }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_tx",
+      {
+        ops: [
+          {
+            op: "commit_turn",
+            userAction: "Proceed",
+            assistant: {
+              narrative: "You proceed.",
+              choices: [{ text: "Left" }, { text: "Right" }],
+            },
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error ?? "").toContain("RETCON_ACK_REQUIRED");
+  });
+
 });

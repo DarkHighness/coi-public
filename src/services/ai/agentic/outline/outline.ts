@@ -38,7 +38,7 @@ import {
   VFS_READ_JSON_TOOL,
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
-  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
 } from "../../../tools";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { normalizeVfsPath } from "../../../vfs/utils";
@@ -89,6 +89,13 @@ import {
   getBudgetSummary,
 } from "../budgetUtils";
 
+import { getPhasePrompt } from "./outlinePrompts";
+import { mergeOutlinePhases } from "./outlineMerge";
+import {
+  composeSystemInstruction,
+  getOutlineRuntimeFloor,
+} from "../../../prompts/runtimeFloor";
+
 const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
   outlinePhase1Schema,
@@ -101,8 +108,6 @@ const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase8Schema,
   outlinePhase9Schema,
 ] as const;
-import { getPhasePrompt } from "./outlinePrompts";
-import { mergeOutlinePhases } from "./outlineMerge";
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -160,6 +165,19 @@ const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
 const READ_ONLY_VFS_TOOL_NAMES = new Set(
   READ_ONLY_VFS_TOOL_DEFS.map((t) => t.name),
 );
+
+const OUTLINE_SUBMIT_TOOL_DEFS = [...VFS_SUBMIT_OUTLINE_PHASE_TOOLS];
+const OUTLINE_SUBMIT_TOOL_NAMES = new Set(
+  OUTLINE_SUBMIT_TOOL_DEFS.map((t) => t.name),
+);
+
+const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
+  const tool = OUTLINE_SUBMIT_TOOL_DEFS[phase];
+  if (!tool) {
+    throw new Error(`Outline phase submit tool is missing for phase ${phase}`);
+  }
+  return tool;
+};
 
 const stripOutlineCurrentPrefix = (path?: string): string => {
   const normalized = normalizeVfsPath(path ?? "");
@@ -498,7 +516,7 @@ export const generateStoryOutlinePhased = async (
     customContext,
   });
 
-  let systemInstruction = getOutlineSystemInstruction({
+  const baseSystemInstruction = getOutlineSystemInstruction({
     language,
     isRestricted,
     narrativeStyle: resolvedNarrativeStyle,
@@ -521,38 +539,42 @@ export const generateStoryOutlinePhased = async (
       : undefined,
   });
 
-  // System default model-specific injection (for consistent style across models).
-  // Required order at the very front of systemInstruction: (1) user custom instruction, (2) system default injection, then base.
+  const runtimeFloor = getOutlineRuntimeFloor();
+
   const systemDefaultInjectionEnabled =
     settings.extra?.systemDefaultInjectionEnabled ?? true;
   const systemDefaultInjection = systemDefaultInjectionEnabled
     ? pickModelMatchedPrompt((promptToml as any)?.system_prompts, modelId)
     : undefined;
 
-  // Optional user-provided prompt prefix (typically used for language/style preferences).
   const customInstructionRaw = settings.extra?.customInstruction;
   const customInstruction =
     typeof customInstructionRaw === "string" ? customInstructionRaw : "";
   const customInstructionEnabled =
     settings.extra?.customInstructionEnabled ??
     Boolean(customInstruction.trim());
+  const effectiveCustomInstruction =
+    customInstructionEnabled && customInstruction.trim()
+      ? customInstruction.trim()
+      : undefined;
 
-  const prepends: string[] = [];
-  if (customInstruction.trim() && customInstructionEnabled) {
-    prepends.push(customInstruction.trim());
+  if (effectiveCustomInstruction) {
     console.warn(
-      `[CustomInstruction] Prepended custom instruction (${customInstruction.length} chars)`,
+      `[CustomInstruction] Prepended custom instruction (${effectiveCustomInstruction.length} chars)`,
     );
   }
   if (systemDefaultInjection) {
-    prepends.push(systemDefaultInjection);
     console.warn(
       `[SystemDefaultInjection] Matched model ${modelId} (${systemDefaultInjection.length} chars)`,
     );
   }
-  if (prepends.length > 0) {
-    systemInstruction = `${prepends.join("\n\n")}\n\n${systemInstruction}`;
-  }
+
+  const systemInstruction = composeSystemInstruction({
+    runtimeFloor,
+    systemDefaultInjection,
+    customInstruction: effectiveCustomInstruction,
+    baseSystemInstruction,
+  });
 
   // Initialize or restore from checkpoint
   let conversationHistory: UnifiedMessage[];
@@ -589,7 +611,7 @@ export const generateStoryOutlinePhased = async (
       .join("\n");
 
     const vfsReadOnlyHint = readOnlyVfsEnabled
-      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine \`vfs_submit_outline_phase\` with other tools in the same message. Use separate rounds: read first, then submit.\n`
+      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine the current phase submit tool with other tools in the same message. Use separate rounds: read first, then submit.\n`
       : "";
 
     // Create the initial task instruction
@@ -863,7 +885,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   while (currentPhase <= 9) {
     const phaseNum = currentPhase;
     const phaseSchema = OUTLINE_PHASE_SCHEMAS[phaseNum];
-    const submitTool = VFS_SUBMIT_OUTLINE_PHASE_TOOL;
+    const submitTool = getOutlineSubmitToolByPhase(phaseNum);
 
     console.log(
       `[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`,
@@ -875,6 +897,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       phaseNum,
       theme,
       language,
+      submitTool.name,
       customContext,
       !!options.seedImageBase64,
       options.protagonistFeature,
@@ -994,6 +1017,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
         }> = [];
 
         const submitCalls = toolCalls.filter((tc) => tc.name === submitTool.name);
+        const allowedToolNames = activeTools.map((tool) => tool.name);
+
         if (submitCalls.length > 1) {
           for (const tc of submitCalls) {
             toolResponses.push({
@@ -1008,9 +1033,24 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
           }
         }
 
-	        for (const tc of toolCalls) {
-	          if (tc.name === submitTool.name) {
-	            if (toolCalls.length !== 1) {
+        for (const tc of toolCalls) {
+          if (OUTLINE_SUBMIT_TOOL_NAMES.has(tc.name) && tc.name !== submitTool.name) {
+            toolResponses.push({
+              toolCallId: tc.id!,
+              name: tc.name,
+              content: {
+                success: false,
+                error:
+                  `[ERROR: DISALLOWED_SUBMIT_TOOL] This round only allows "${submitTool.name}" as the submit tool. ` +
+                  `Allowed tools: ${allowedToolNames.join(", ")}`,
+                code: "INVALID_ACTION",
+              },
+            });
+            continue;
+          }
+
+          if (tc.name === submitTool.name) {
+            if (toolCalls.length !== 1) {
               toolResponses.push({
                 toolCallId: tc.id!,
                 name: tc.name,
@@ -1022,55 +1062,45 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
                   code: "INVALID_ACTION",
                 },
               });
-	              continue;
-	            }
+              continue;
+            }
 
-	            const submitArgsParsed = submitTool.parameters.safeParse(tc.args);
-	            if (!submitArgsParsed.success) {
-	              toolResponses.push({
-	                toolCallId: tc.id!,
-	                name: tc.name,
-	                content: {
-	                  success: false,
-	                  error: `vfs_submit_outline_phase: invalid arguments`,
-	                  code: "INVALID_DATA",
-	                },
-	              });
-	              continue;
-	            }
-	            const submitArgs = submitArgsParsed.data;
-	            if (submitArgs.phase !== phaseNum) {
-	              toolResponses.push({
-	                toolCallId: tc.id!,
-	                name: tc.name,
+            const submitArgsParsed = submitTool.parameters.safeParse(tc.args);
+            if (!submitArgsParsed.success) {
+              toolResponses.push({
+                toolCallId: tc.id!,
+                name: tc.name,
                 content: {
                   success: false,
-                  error: `vfs_submit_outline_phase: phase mismatch (expected ${phaseNum}, got ${submitArgs.phase})`,
+                  error:
+                    `${submitTool.name}: invalid arguments: ${formatOutlineSubmitValidationError(submitArgsParsed.error)}`,
                   code: "INVALID_DATA",
                 },
               });
-	              continue;
-	            }
+              continue;
+            }
 
-	            const validatedDataParsed = phaseSchema.safeParse(submitArgs.data);
-	            if (!validatedDataParsed.success) {
-	              toolResponses.push({
-	                toolCallId: tc.id!,
-	                name: tc.name,
-	                content: {
-	                  success: false,
-	                  error: `Phase ${phaseNum}: schema validation failed: ${formatOutlineSubmitValidationError(validatedDataParsed.error)}`,
-	                  code: "INVALID_DATA",
-	                },
-	              });
-	              continue;
-	            }
+            const submitArgs = submitArgsParsed.data;
 
-	            const validatedData = validatedDataParsed.data;
+            const validatedDataParsed = phaseSchema.safeParse(submitArgs.data);
+            if (!validatedDataParsed.success) {
+              toolResponses.push({
+                toolCallId: tc.id!,
+                name: tc.name,
+                content: {
+                  success: false,
+                  error: `Phase ${phaseNum}: schema validation failed: ${formatOutlineSubmitValidationError(validatedDataParsed.error)}`,
+                  code: "INVALID_DATA",
+                },
+              });
+              continue;
+            }
 
-	            // Phase 2: Additional gender validation
-	            if (phaseNum === 2 && settings.extra?.genderPreference) {
-	              const genderPref = settings.extra.genderPreference;
+            const validatedData = validatedDataParsed.data;
+
+            // Phase 2: Additional gender validation
+            if (phaseNum === 2 && settings.extra?.genderPreference) {
+              const genderPref = settings.extra.genderPreference;
               if (genderPref === "male" || genderPref === "female") {
                 const genderError = validateGenderPreferencePhase2(
                   validatedData,
@@ -1083,28 +1113,28 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
                     content: { success: false, error: genderError, code: "INVALID_DATA" },
                   });
                   continue;
-	                }
-	              }
-	            }
+                }
+              }
+            }
 
-	            const output = await dispatchToolCallAsync(tc.name, tc.args, {
-	              vfsSession,
-	              settings,
-	              gameState: { forkId: -1, turnNumber: 0 } as any,
-	            });
+            const output = await dispatchToolCallAsync(tc.name, tc.args, {
+              vfsSession,
+              settings,
+              gameState: { forkId: -1, turnNumber: 0 } as any,
+            });
 
-	            if ((output as any)?.success === true) {
-	              const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
-	              (partial as any)[phaseKey] = validatedData;
-	              phaseSubmitted = true;
-	            }
-	            toolResponses.push({
-	              toolCallId: tc.id!,
-	              name: tc.name,
-	              content: output,
-	            });
-	            continue;
-	          }
+            if ((output as any)?.success === true) {
+              const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
+              (partial as any)[phaseKey] = validatedData;
+              phaseSubmitted = true;
+            }
+            toolResponses.push({
+              toolCallId: tc.id!,
+              name: tc.name,
+              content: output,
+            });
+            continue;
+          }
 
           if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(tc.name)) {
             const violation = validateOutlineReadOnlyVfsArgs(
@@ -1142,7 +1172,9 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
             name: tc.name,
             content: {
               success: false,
-              error: `Unknown or disallowed tool in outline generation: ${tc.name}`,
+              error:
+                `Unknown or disallowed tool in outline generation: ${tc.name}. ` +
+                `Allowed tools this round: ${allowedToolNames.join(", ")}`,
               code: "UNKNOWN_TOOL",
             },
           });

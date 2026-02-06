@@ -25,7 +25,7 @@ import {
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
   VFS_FINISH_SUMMARY_TOOL,
-  VFS_SUBMIT_OUTLINE_PHASE_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
   getTypedArgs,
 } from "../../tools";
 import {
@@ -71,6 +71,7 @@ import {
   validateWritePayload,
 } from "./vfsMutationGuard";
 import type { Operation } from "fast-json-patch";
+import { applyCustomRulesRetconAck } from "../../customRulesAckState";
 
 interface VfsMatch {
   path: string;
@@ -1294,9 +1295,16 @@ const formatOutlineSubmitValidationError = (error: unknown): string => {
     return String(err?.message ?? error);
   }
   return issues
-    .slice(0, 8)
+    .slice(0, 12)
     .map((issue: any) => {
-      const path = Array.isArray(issue?.path) ? issue.path.join(".") : "";
+      const path = Array.isArray(issue?.path)
+        ? issue.path
+            .map((part: unknown) =>
+              typeof part === "number" ? `[${part}]` : String(part),
+            )
+            .join(".")
+            .replace(/\.\[/g, "[")
+        : "";
       const message =
         typeof issue?.message === "string" ? issue.message : "Invalid";
       return path ? `${path}: ${message}` : message;
@@ -1304,38 +1312,41 @@ const formatOutlineSubmitValidationError = (error: unknown): string => {
     .join("; ");
 };
 
-registerToolHandler(VFS_SUBMIT_OUTLINE_PHASE_TOOL, (args, ctx) => {
-  const session = getSession(ctx);
-  const typedArgs = getTypedArgs("vfs_submit_outline_phase", args);
-  const phase = typedArgs.phase;
-  if (
-    typeof phase !== "number" ||
-    !Number.isInteger(phase) ||
-    phase < 0 ||
-    phase > 9
-  ) {
-    return createError(
-      `Invalid outline phase: ${String(typedArgs.phase)}`,
-      "INVALID_DATA",
-    );
-  }
+const OUTLINE_SUBMIT_DEFS = VFS_SUBMIT_OUTLINE_PHASE_TOOLS.map((tool, phase) => ({
+  tool,
+  phase,
+  schema: OUTLINE_PHASE_SCHEMAS[phase],
+}));
 
-  const schema = OUTLINE_PHASE_SCHEMAS[phase];
-  const parsed = schema.safeParse(typedArgs.data);
-  if (!parsed.success) {
-    return createError(
-      `Outline phase ${phase} validation failed: ${formatOutlineSubmitValidationError(parsed.error)}`,
-      "INVALID_DATA",
-    );
-  }
+for (const { tool, phase, schema } of OUTLINE_SUBMIT_DEFS) {
+  registerToolHandler(tool, (args, ctx) => {
+    const session = getSession(ctx);
 
-  const path = `outline/phases/phase${phase}.json`;
-  session.writeFile(path, JSON.stringify(parsed.data), "application/json");
-  return createSuccess(
-    { phase, path: toCurrentPath(path) },
-    "Outline phase submitted",
-  );
-});
+    const parsedArgs = tool.parameters.safeParse(args);
+    if (!parsedArgs.success) {
+      return createError(
+        `${tool.name}: invalid arguments: ${formatOutlineSubmitValidationError(parsedArgs.error)}`,
+        "INVALID_DATA",
+      );
+    }
+
+    const parsedData = schema.safeParse(parsedArgs.data.data);
+    if (!parsedData.success) {
+      return createError(
+        `${tool.name}: schema validation failed: ${formatOutlineSubmitValidationError(parsedData.error)}`,
+        "INVALID_DATA",
+      );
+    }
+
+    const path = `outline/phases/phase${phase}.json`;
+    session.writeFile(path, JSON.stringify(parsedData.data), "application/json");
+
+    return createSuccess(
+      { phase, path: toCurrentPath(path) },
+      `Outline phase ${phase} submitted`,
+    );
+  });
+}
 
 const isInScope = (filePath: string, rootPath?: string): boolean => {
   if (!rootPath) {
@@ -2690,6 +2701,28 @@ registerToolHandler(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_turn", args);
 
   return withAtomicSession(ctx, (draft) => {
+    const normalizedRetconAck =
+      typedArgs.retconAck &&
+      typeof typedArgs.retconAck.hash === "string" &&
+      typeof typedArgs.retconAck.summary === "string"
+        ? {
+            hash: typedArgs.retconAck.hash,
+            summary: typedArgs.retconAck.summary,
+          }
+        : undefined;
+
+    if (typedArgs.retconAck && !normalizedRetconAck) {
+      return createError(
+        "vfs_commit_turn: retconAck must include hash and summary strings",
+        "INVALID_DATA",
+      );
+    }
+
+    const retconAckResult = applyCustomRulesRetconAck(draft, normalizedRetconAck);
+    if (retconAckResult.ok === false) {
+      return createError(retconAckResult.message, retconAckResult.code);
+    }
+
     const existingIndex = ensureConversationIndex(draft);
 
     const forkId = existingIndex.activeForkId ?? 0;
@@ -2896,6 +2929,28 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
       }
 
       if (op.op === "commit_turn") {
+        const normalizedRetconAck =
+          op.retconAck &&
+          typeof op.retconAck.hash === "string" &&
+          typeof op.retconAck.summary === "string"
+            ? {
+                hash: op.retconAck.hash,
+                summary: op.retconAck.summary,
+              }
+            : undefined;
+
+        if (op.retconAck && !normalizedRetconAck) {
+          return createError(
+            "vfs_tx commit_turn: retconAck must include hash and summary strings",
+            "INVALID_DATA",
+          );
+        }
+
+        const retconAckResult = applyCustomRulesRetconAck(draft, normalizedRetconAck);
+        if (retconAckResult.ok === false) {
+          return createError(retconAckResult.message, retconAckResult.code);
+        }
+
         const existingIndex = ensureConversationIndex(draft);
 
         const forkId = existingIndex.activeForkId ?? 0;

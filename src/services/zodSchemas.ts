@@ -258,6 +258,9 @@ export const ambienceSchema = z.enum([
   "school",
 ]);
 
+export const OUTLINE_PHASE0_SUGGESTED_ENV_THEME_VALUES = envThemeSchema.options;
+export const OUTLINE_PHASE0_SUGGESTED_AMBIENCE_VALUES = ambienceSchema.options;
+
 /** 天气特效枚举 */
 export const weatherEffectSchema = z.enum([
   "none",
@@ -759,7 +762,7 @@ export const timelineEventHiddenSchema = z.object({
 
 /** 完整时间线事件 Schema */
 export const timelineEventSchema = z.object({
-  id: z.string().describe("Unique ID for the event. Format: evt:N"),
+  id: z.string().describe("Unique ID for the event. Use descriptive snake_case (e.g., great_flood_start, ancient_pact_sealing)."),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this timeline event exists.",
   ),
@@ -1670,6 +1673,10 @@ export const storyOutlineSchema = z.object({
         )
         .describe("Initial choices for the player."),
       atmosphere: atmosphereSchema.nullish().describe("Override atmosphere."),
+      imagePrompt: z
+        .string()
+        .nullish()
+        .describe("Optional opening scene image prompt in story language."),
     })
     .nullish()
     .describe("Opening narrative generated in Phase 9."),
@@ -1729,64 +1736,12 @@ export const outlinePhase0Schema = z.object({
 
   // 建议的环境主题
   suggestedEnvTheme: z
-    .enum([
-      "fantasy",
-      "scifi",
-      "cyberpunk",
-      "horror",
-      "mystery",
-      "romance",
-      "royal",
-      "wuxia",
-      "demonic",
-      "ethereal",
-      "modern",
-      "gold",
-      "villain",
-      "sepia",
-      "rose",
-      "war",
-      "sunset",
-      "cold",
-      "violet",
-      "nature",
-      "artdeco",
-      "intrigue",
-      "wasteland",
-      "patriotic",
-      "cyan",
-      "silver",
-      "obsidian",
-    ])
+    .enum(OUTLINE_PHASE0_SUGGESTED_ENV_THEME_VALUES)
     .describe("The visual theme most appropriate for the image."),
 
   // 建议的音频氛围
   suggestedAmbience: z
-    .enum([
-      "cave",
-      "city",
-      "combat",
-      "desert",
-      "dungeon",
-      "forest",
-      "horror",
-      "market",
-      "mystical",
-      "ocean",
-      "quiet",
-      "rain",
-      "scifi",
-      "snow",
-      "storm",
-      "tavern",
-      "mountain",
-      "night",
-      "temple",
-      "festival",
-      "space",
-      "river",
-      "hell",
-    ])
+    .enum(OUTLINE_PHASE0_SUGGESTED_AMBIENCE_VALUES)
     .describe("The audio ambience most appropriate for the image."),
 
   // 主角在场景中的角色提示
@@ -1953,6 +1908,10 @@ export const outlinePhase9Schema = z.object({
     atmosphere: atmosphereSchema
       .nullish()
       .describe("Override initial atmosphere if the opening scene differs."),
+    imagePrompt: z
+      .string()
+      .nullish()
+      .describe("Optional opening scene image prompt in story language."),
   }),
 });
 

@@ -4,7 +4,7 @@
  * Handles injection of system messages into conversation history.
  */
 
-import type { UnifiedMessage } from "../../../../types";
+import type { CustomRulesAckPendingReason, UnifiedMessage } from "../../../../types";
 import { createUserMessage } from "../../../messageTypes";
 import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
 import {
@@ -13,6 +13,7 @@ import {
   cleanupTurnInstruction,
   budgetStatusMessage,
   noToolCallError,
+  retconAckRequiredMessage,
 } from "../../../prompts/atoms/core";
 
 // ============================================================================
@@ -40,6 +41,24 @@ export function injectNormalTurnInstruction(
     createUserMessage(
       (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
         finishToolName,
+      }),
+    ),
+  );
+}
+
+/**
+ * Inject retcon acknowledgement requirement when custom rules changed.
+ */
+export function injectRetconAckRequired(
+  history: UnifiedMessage[],
+  pendingHash: string,
+  pendingReason?: CustomRulesAckPendingReason,
+): void {
+  history.push(
+    createUserMessage(
+      retconAckRequiredMessage({
+        pendingHash,
+        pendingReason,
       }),
     ),
   );

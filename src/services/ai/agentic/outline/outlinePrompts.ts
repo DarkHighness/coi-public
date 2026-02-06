@@ -24,13 +24,14 @@ export function getPhasePrompt(
   phase: number,
   theme: string,
   language: string,
+  submitToolName: string,
   customContext?: string,
   hasImageContext?: boolean,
   protagonistFeature?: string,
 ): string | null {
   switch (phase) {
     case 0:
-      return getOutlinePhase0Prompt(language);
+      return getOutlinePhase0Prompt(language, submitToolName);
     case 1:
       return getOutlinePhase1Prompt(
         theme,
@@ -38,23 +39,24 @@ export function getPhasePrompt(
         customContext,
         hasImageContext,
         protagonistFeature,
+        submitToolName,
       );
     case 2:
-      return getOutlinePhase2Prompt(protagonistFeature);
+      return getOutlinePhase2Prompt(protagonistFeature, submitToolName);
     case 3:
-      return getOutlinePhase3Prompt();
+      return getOutlinePhase3Prompt(submitToolName);
     case 4:
-      return getOutlinePhase4Prompt();
+      return getOutlinePhase4Prompt(submitToolName);
     case 5:
-      return getOutlinePhase5Prompt();
+      return getOutlinePhase5Prompt(submitToolName);
     case 6:
-      return getOutlinePhase6Prompt();
+      return getOutlinePhase6Prompt(submitToolName);
     case 7:
-      return getOutlinePhase7Prompt();
+      return getOutlinePhase7Prompt(submitToolName);
     case 8:
-      return getOutlinePhase8Prompt();
+      return getOutlinePhase8Prompt(submitToolName);
     case 9:
-      return getOutlinePhase9Prompt(hasImageContext);
+      return getOutlinePhase9Prompt(hasImageContext, submitToolName);
     default:
       return null;
   }

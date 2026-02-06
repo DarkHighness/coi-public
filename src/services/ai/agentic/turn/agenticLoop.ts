@@ -15,6 +15,7 @@ import type {
   ProviderProtocol,
   ProviderInstance,
   ToolCallRecord,
+  CustomRulesAckPendingReason,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ToolCallResult } from "../../../providers/types";
@@ -35,6 +36,7 @@ import {
   injectReadyConsequences,
   injectBudgetStatus,
   injectNoToolCallError,
+  injectRetconAckRequired,
 } from "./contextInjector";
 import {
   checkBudgetExhaustion,
@@ -71,6 +73,7 @@ export interface AgenticLoopConfig {
   sessionId: string;
   vfsSession: VfsSession;
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
+  retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
 }
 
 export interface AgenticLoopResult {
@@ -101,6 +104,7 @@ export async function runAgenticLoopRefactored(
     isCleanupMode = false,
     sessionId,
     onToolCallsUpdate,
+    retconAckPending,
   } = config;
 
   // Initialize provider
@@ -121,6 +125,14 @@ export async function runAgenticLoopRefactored(
   try {
     // Inject ready consequences
     injectReadyConsequences(conversationHistory);
+
+    if (retconAckPending?.hash) {
+      injectRetconAckRequired(
+        conversationHistory,
+        retconAckPending.hash,
+        retconAckPending.reason,
+      );
+    }
 
     // Inject mode-specific instruction
     if (isSudoMode) {
@@ -300,6 +312,7 @@ interface ProcessToolCallsParams {
   turnId: string;
   allLogs: LogEntry[];
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
+  retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
 }
 
 interface ProcessToolCallsResult {

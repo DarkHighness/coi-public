@@ -111,10 +111,8 @@ export const stateManagement: Atom<void> = () => `
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * Inspect before you change: \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`.
       * Always reference explicit file paths under \`current/\` (e.g., \`current/world/characters/char:someone/profile.json\`).
-      * After each turn, write BOTH:
-        - \`current/conversation/turns/fork-<id>/turn-<n>.json\` (full snapshot)
-        - \`current/conversation/index.json\` (active turn + ordering)
-        Prefer \`vfs_commit_turn\`, or write both files via \`vfs_write\`/\`vfs_edit\`.
+      * After each turn, finish with \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
+      * Do NOT write \`current/conversation/*\` via generic mutation tools.
 
     - **VFS OUTLINE RULES (MANDATORY)**:
       * The outline is immutable once generated. Do NOT edit it by default.
@@ -144,7 +142,7 @@ export const stateManagementSkill: SkillAtom<void> = (): SkillOutput => ({
 2. Update state IMMEDIATELY when events occur (same turn)
 3. Consider CASCADE effects (death → update all related entities)
 4. VFS is the ONLY source of truth - all changes via VFS tools
-5. Write turn files after every response
+5. Finish every response with commit_turn protocol
 `.trim(),
 
   checklist: [
@@ -152,7 +150,7 @@ export const stateManagementSkill: SkillAtom<void> = (): SkillOutput => ({
     "Updating state in the SAME turn as events?",
     "Considering cascade effects (death → related updates)?",
     "Using VFS tools for ALL state changes?",
-    "Writing both turn file and index after each turn?",
+    "Finishing each turn with commit_turn protocol?",
     "Checking entity existence before updates?",
     "Respecting trait continuity (mute NPC can't shout)?",
   ],

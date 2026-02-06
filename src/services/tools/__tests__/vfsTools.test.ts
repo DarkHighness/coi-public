@@ -19,6 +19,7 @@ import {
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
   VFS_TX_TOOL,
+  VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
   ALL_DEFINED_TOOLS,
 } from "../../tools";
 
@@ -43,6 +44,18 @@ describe("VFS tools", () => {
     expect(VFS_DELETE_TOOL.name).toBe("vfs_delete");
     expect(VFS_COMMIT_TURN_TOOL.name).toBe("vfs_commit_turn");
     expect(VFS_TX_TOOL.name).toBe("vfs_tx");
+  });
+
+
+  it("defines phase-specific outline submit tools and removes legacy submit tool", () => {
+    const submitNames = VFS_SUBMIT_OUTLINE_PHASE_TOOLS.map((tool) => tool.name);
+    expect(submitNames).toHaveLength(10);
+    for (let phase = 0; phase <= 9; phase += 1) {
+      expect(submitNames).toContain(`vfs_submit_outline_phase_${phase}`);
+    }
+
+    const allNames = ALL_DEFINED_TOOLS.map((tool) => tool.name);
+    expect(allNames).not.toContain("vfs_submit_outline_phase");
   });
 
   it("only exposes vfs tools", () => {

@@ -1220,10 +1220,10 @@ export interface AISettings {
     nsfw?: boolean; // Enable NSFW/adult content generation
     genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
     customInstructionEnabled?: boolean;
-    customInstruction?: string; // Prepended to system instruction
+    customInstruction?: string; // Player instruction block (style + plot direction + setting bias), injected before base system instruction
     /**
      * Enable per-model system default injection from `src/prompt/prompt.toml` (`[[system_prompts]]`).
-     * When enabled, injection is prepended to SystemInstruction (after user custom instruction).
+     * Effective order: RuntimeFloor -> systemDefaultInjection -> customInstruction -> baseSystemInstruction.
      */
     systemDefaultInjectionEnabled?: boolean;
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
@@ -1294,6 +1294,18 @@ export interface AISettings {
   // Player Psychology System - cross-save player portrait
   // Records the meta-player's personality patterns across all saves
   playerProfile?: string;
+}
+
+
+export type CustomRulesAckPendingReason = "customRules";
+
+export interface CustomRulesAckState {
+  effectiveHash: string;
+  acknowledgedHash: string;
+  pendingHash?: string;
+  pendingReason?: CustomRulesAckPendingReason;
+  updatedAt: number;
+  customRulesHash?: string;
 }
 
 // ============================================================================

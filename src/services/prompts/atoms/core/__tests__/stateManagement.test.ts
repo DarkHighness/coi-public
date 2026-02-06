@@ -11,7 +11,7 @@ describe("stateManagement atom", () => {
     expect(content).toContain("JSON Patch");
     expect(content).toContain("vfs_delete");
     expect(content).toContain("current/world/");
-    expect(content).toContain("current/conversation/turns/fork-");
+    expect(content).toContain("vfs_commit_turn");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).toContain("omit optional fields");
   });
