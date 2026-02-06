@@ -33,7 +33,7 @@ describe("systemMessages atoms", () => {
   });
 
   it("sudo mode instruction uses VFS-only workflow", () => {
-    const content = sudoModeInstruction();
+    const content = sudoModeInstruction({});
     const legacyForceUpdateTool = ["complete", "force", "update"].join("_");
     expect(content).toContain("vfs_write");
     expect(content).not.toContain(legacyForceUpdateTool);

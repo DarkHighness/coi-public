@@ -16,11 +16,7 @@ import { UnifiedMessage } from "../../../messageTypes";
 
 import {
   buildCoreSystemInstructionWithSkills,
-  registerAllSkills,
 } from "../../../prompts/skills";
-
-// registerAllSkills is now a no-op (skills system simplified)
-registerAllSkills();
 
 import {
   getProviderConfig,

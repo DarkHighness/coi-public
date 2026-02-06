@@ -7,25 +7,25 @@
  */
 
 // Magic System
-export { magicSystem, magicSystemLite, magicSystemSkill } from "./magic";
+export { magicSystem, magicSystemPrimer, magicSystemSkill } from "./magic";
 
 // Economy System
-export { economySystem, economySystemLite, economySystemSkill } from "./economy";
+export { economy, economyPrimer, economySkill } from "./economy";
 
 // Law & Justice
 export { lawSystem, lawSystemLite, lawSystemSkill } from "./law";
 
 // Travel & Distance
-export { travelSystem, travelSystemLite, travelSystemSkill } from "./travel";
+export { travel, travelPrimer, travelSkill } from "./travel";
 
 // Culture & Customs
 export { cultureSystem, cultureSystemLite, cultureSystemSkill } from "./culture";
 
 // Infrastructure
 export {
-  infrastructureSystem,
-  infrastructureSystemLite,
-  infrastructureSystemSkill,
+  infrastructure,
+  infrastructurePrimer,
+  infrastructureSkill,
 } from "./infrastructure";
 
 // History & Legends

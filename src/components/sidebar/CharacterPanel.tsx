@@ -477,7 +477,6 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
           </span>
 
           <div className="flex items-center gap-2 text-[10px] text-theme-text-secondary uppercase tracking-wider whitespace-nowrap shrink-0">
-            {condition.duration && <span>{condition.duration}</span>}
             {condition.startTime && <span>{condition.startTime}</span>}
             {condition.severity && <span>{condition.severity}</span>}
             <svg

@@ -5,12 +5,14 @@ import {
 } from "./InitializingButterflies";
 
 const sample = {
+  id: 1,
   left: 10,
   top: 20,
   rotation: 15,
   scale: 1,
   duration: 5,
   delay: 0.2,
+  color: "#ffffff",
   flyOutDelay: 0.1,
 };
 

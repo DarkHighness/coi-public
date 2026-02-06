@@ -4,7 +4,7 @@ import { toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
-import { createError, type ToolCallResult } from "../toolResult";
+import { createError, type ToolCallError } from "../toolResult";
 
 export type MutationOperation =
   | "overwrite"
@@ -65,7 +65,7 @@ export const requireReadBeforeMutateForExistingFile = (
   session: VfsSession,
   path: string,
   operation: MutationOperation,
-): ToolCallResult<never> | null => {
+): ToolCallError | null => {
   const normalized = normalizeVfsPath(path);
   if (isReadOnlyToolPath(normalized)) {
     return null;
@@ -90,7 +90,7 @@ export const validateExpectedHash = (
   existing: VfsFile | null,
   expectedHash: string | null | undefined,
   path: string,
-): ToolCallResult<never> | null => {
+): ToolCallError | null => {
   if (!existing || !expectedHash) {
     return null;
   }
@@ -108,7 +108,7 @@ export const validateExpectedHash = (
 export const ensureTextFile = (
   existing: VfsFile | null,
   path: string,
-): ToolCallResult<never> | null => {
+): ToolCallError | null => {
   if (!existing) {
     return null;
   }
@@ -134,7 +134,7 @@ export const validateWritePayload = (
   contentType: VfsContentType,
 ):
   | { ok: true; normalizedContent: string; contentType: VfsContentType }
-  | { ok: false; error: ToolCallResult<never> } => {
+  | { ok: false; error: ToolCallError } => {
   const isJsonPath = normalizedPath.endsWith(".json");
 
   if (isJsonPath && contentType !== "application/json") {

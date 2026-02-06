@@ -14,10 +14,4 @@ export type { PromptContext } from "./builder";
 export {
   buildSkillContext,
   buildCoreSystemInstructionWithSkills,
-  getCoreSystemInstructionWithSkills,
-  registerAllSkills,
 } from "./builder";
-
-// Legacy type exports for backward compatibility
-// These are deprecated but kept to avoid breaking changes during migration
-export type SkillContext = import("./builder").PromptContext;

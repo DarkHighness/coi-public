@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
 import { dispatchToolCall, dispatchToolCallAsync } from "../handlers";
+import { pickHintSignatureLines } from "../../__tests__/utils/schemaHint";
 
 const createValidGlobal = () => ({
   time: "Day 1",
@@ -456,6 +457,34 @@ describe("VFS handlers", () => {
     expect(readResult.data?.totalChars).toBe(26);
   });
 
+  it("rejects vfs_read start without offset/maxChars", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            content: "hello world",
+            contentType: "text/markdown",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const result = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md", start: 1 },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+  });
+
   it("reads JSON subfields via vfs_read_json", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
@@ -488,6 +517,43 @@ describe("VFS handlers", () => {
     expect(result.data?.extracts?.[0]?.json).toBe("\"Bob\"");
   });
 
+  it("reports missing pointers for invalid vfs_read_json pointers", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/characters/char:npc_1/profile.json",
+            content: JSON.stringify(createValidActorProfile("char:npc_1")),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    const result = dispatchToolCall(
+      "vfs_read_json",
+      {
+        path: "current/world/characters/char:npc_1/profile.json",
+        pointers: ["visible/name", "/visible/missingField"],
+      },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { extracts?: Array<{ pointer: string }>; missing?: Array<{ pointer: string; error: string }> };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.extracts ?? []).toHaveLength(0);
+    expect(result.data?.missing?.map((m) => m.pointer)).toEqual(
+      expect.arrayContaining(["visible/name", "/visible/missingField"]),
+    );
+  });
+
 	  it("describes schemas via vfs_schema", () => {
 	    const session = new VfsSession();
 	    const ctx = { vfsSession: session };
@@ -511,6 +577,46 @@ describe("VFS handlers", () => {
 	    expect(result.data?.schemas?.[1]?.hint).toContain("visible");
 	    expect(result.data?.schemas?.[1]?.hint).toContain("id");
 	  });
+
+  it("keeps a stable vfs_schema hint signature for world/global.json", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["world/global.json"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { schemas?: Array<{ path: string; hint: string }>; missing?: any[] };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.missing).toEqual([]);
+
+    const hint = result.data?.schemas?.[0]?.hint ?? "";
+    expect(hint).not.toContain("createdAt");
+
+    const signatureLines = pickHintSignatureLines(hint, [
+      "time:",
+      "atmosphere:",
+      "weather?:",
+      "turnNumber:",
+      "forkId:",
+      "narrativeScale?:",
+    ]);
+
+    expect(signatureLines).toMatchInlineSnapshot(`
+      [
+        "time: string;",
+        "atmosphere: {",
+        "weather?: \"none\" | \"rain\" | \"snow\" | \"fog\" | \"embers\" | \"flicker\" | \"sunny\" | \"clear\" | \"partly_cloudy\" | \"cloudy\" | \"overcast\" | \"drizzle\" | \"heavy_rain\" | \"thunderstorm\" | \"light_snow\" | \"heavy_snow\" | \"blizzard\" | \"mist\" | \"haze\" | \"windy\" | \"gale\" | \"dust_storm\" | \"sandstorm\"; // Specific visual weather effect to render.",
+        "turnNumber: number;",
+        "forkId: number;",
+        "narrativeScale?: \"epic\" | \"intimate\" | \"balanced\";",
+      ]
+    `);
+  });
 
   it("stats files and directories via vfs_stat", () => {
     const session = new VfsSession();
@@ -989,6 +1095,34 @@ describe("VFS handlers", () => {
 
     expect(searchResult.success).toBe(true);
     expect(searchResult.data?.results?.[0]?.text).toContain("hello");
+  });
+
+  it("returns INVALID_DATA for invalid vfs_search regex", async () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const searchResult = (await dispatchToolCallAsync(
+      "vfs_search",
+      { query: "(", regex: true },
+      ctx,
+    )) as { success: boolean; code?: string };
+
+    expect(searchResult.success).toBe(false);
+    expect(searchResult.code).toBe("INVALID_DATA");
+  });
+
+  it("returns INVALID_DATA for invalid vfs_grep regex", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_grep",
+      { pattern: "(", flags: "", limit: 5 },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
   });
 
   it("supports fuzzy search for typo-tolerant queries", async () => {

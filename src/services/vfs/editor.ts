@@ -102,6 +102,7 @@ const listSections: Record<
   knowledge: { prefix: "world/knowledge", idField: "id" },
   factions: { prefix: "world/factions", idField: "id" },
   timeline: { prefix: "world/timeline", idField: "id" },
+  customRules: { prefix: "world/custom_rules", idField: "id" },
   causalChains: { prefix: "world/causal_chains", idField: "chainId" },
 };
 

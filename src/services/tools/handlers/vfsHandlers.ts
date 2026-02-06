@@ -32,6 +32,7 @@ import {
   createError,
   createSuccess,
   type ToolCallResult,
+  type ToolCallError,
 } from "../toolResult";
 import type { VfsFileMap } from "../../vfs/types";
 import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
@@ -69,6 +70,7 @@ import {
   validateExpectedHash,
   validateWritePayload,
 } from "./vfsMutationGuard";
+import type { Operation } from "fast-json-patch";
 
 interface VfsMatch {
   path: string;
@@ -228,7 +230,7 @@ const globToRegExp = (pattern: string, options?: { ignoreCase?: boolean }): RegE
 
 const resolveCurrentPathLoose = (
   path?: string,
-): { ok: true; path: string } | { ok: false; error: ToolCallResult } => {
+): { ok: true; path: string } | { ok: false; error: ToolCallError } => {
   if (!path) {
     return resolveCurrentPath(path);
   }
@@ -1012,7 +1014,7 @@ const listCatalogEntriesForCategory = (
 
 const resolveCurrentPath = (
   path?: string,
-): { ok: true; path: string } | { ok: false; error: ToolCallResult } => {
+): { ok: true; path: string } | { ok: false; error: ToolCallError } => {
   try {
     return { ok: true, path: stripCurrentPath(path ?? "current") };
   } catch (error) {
@@ -1043,6 +1045,20 @@ const withAtomicSession = <T>(
     return createError(message, "UNKNOWN");
   }
 };
+
+const isPathResolveError = (
+  result: { ok: true; path: string } | { ok: false; error: ToolCallError },
+): result is { ok: false; error: ToolCallError } => !result.ok;
+
+const isJsonPointerResolveError = (
+  result: JsonPointerResolveResult,
+): result is { ok: false; error: string } => !result.ok;
+
+const isWritePayloadError = (
+  result:
+    | { ok: true; normalizedContent: string; contentType: import("../../vfs/types").VfsContentType }
+    | { ok: false; error: ToolCallError },
+): result is { ok: false; error: ToolCallError } => !result.ok;
 
 registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
   const session = getSession(ctx);
@@ -1585,7 +1601,7 @@ registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_ls", args);
   const resolved = resolveCurrentPath(typedArgs.path);
-  if (!resolved.ok) {
+  if (isPathResolveError(resolved)) {
     return resolved.error;
   }
   const entries = session.list(resolved.path);
@@ -1596,7 +1612,7 @@ registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read", args);
   const resolved = resolveCurrentPath(typedArgs.path);
-  if (!resolved.ok) {
+  if (isPathResolveError(resolved)) {
     return resolved.error;
   }
   const file = session.readFile(resolved.path);
@@ -1654,7 +1670,7 @@ registerToolHandler(VFS_SCHEMA_TOOL, (args, ctx) => {
 
   for (const inputPath of typedArgs.paths) {
     const resolved = resolveCurrentPathLoose(inputPath);
-    if (!resolved.ok) {
+    if (isPathResolveError(resolved)) {
       return resolved.error;
     }
 
@@ -1700,7 +1716,7 @@ registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
 
   for (const inputPath of typedArgs.paths) {
     const resolved = resolveCurrentPathLoose(inputPath);
-    if (!resolved.ok) {
+    if (isPathResolveError(resolved)) {
       return resolved.error;
     }
 
@@ -1761,7 +1777,7 @@ registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
   const regexes: RegExp[] = [];
   for (const raw of typedArgs.patterns) {
     const resolved = resolveCurrentPathLoose(raw);
-    if (!resolved.ok) return resolved.error;
+    if (isPathResolveError(resolved)) return resolved.error;
     const normalizedPattern = normalizeVfsPath(resolved.path);
     try {
       regexes.push(globToRegExp(normalizedPattern, { ignoreCase }));
@@ -1775,7 +1791,7 @@ registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
   if (typedArgs.excludePatterns) {
     for (const raw of typedArgs.excludePatterns) {
       const resolved = resolveCurrentPathLoose(raw);
-      if (!resolved.ok) return resolved.error;
+      if (isPathResolveError(resolved)) return resolved.error;
       const normalizedPattern = normalizeVfsPath(resolved.path);
       try {
         excludeRegexes.push(globToRegExp(normalizedPattern, { ignoreCase }));
@@ -1836,7 +1852,7 @@ registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read_json", args);
   const resolved = resolveCurrentPath(typedArgs.path);
-  if (!resolved.ok) {
+  if (isPathResolveError(resolved)) {
     return resolved.error;
   }
   const file = session.readFile(resolved.path);
@@ -1868,7 +1884,7 @@ registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
 
   for (const pointer of typedArgs.pointers) {
     const resolvedPointer = resolveJsonPointer(document, pointer);
-    if (!resolvedPointer.ok) {
+    if (isJsonPointerResolveError(resolvedPointer)) {
       missing.push({ pointer, error: resolvedPointer.error });
       continue;
     }
@@ -1924,7 +1940,7 @@ registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
 
   for (const inputPath of typedArgs.paths) {
     const resolved = resolveCurrentPath(inputPath);
-    if (!resolved.ok) {
+    if (isPathResolveError(resolved)) {
       return resolved.error;
     }
     const file = session.readFile(resolved.path);
@@ -1965,7 +1981,7 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
   const resolvedPath = typedArgs.path
     ? resolveCurrentPath(typedArgs.path)
     : null;
-  if (resolvedPath && !resolvedPath.ok) {
+  if (resolvedPath && isPathResolveError(resolvedPath)) {
     return resolvedPath.error;
   }
   const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
@@ -2058,7 +2074,7 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   const resolvedPath = typedArgs.path
     ? resolveCurrentPath(typedArgs.path)
     : null;
-  if (resolvedPath && !resolvedPath.ok) {
+  if (resolvedPath && isPathResolveError(resolvedPath)) {
     return resolvedPath.error;
   }
   const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
@@ -2091,7 +2107,7 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
 
     for (const file of typedArgs.files) {
       const resolved = resolveCurrentPath(file.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
       const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
@@ -2103,7 +2119,7 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
         file.content,
         file.contentType,
       );
-      if (!validated.ok) {
+      if (isWritePayloadError(validated)) {
         return validated.error;
       }
       draft.writeFile(
@@ -2179,7 +2195,7 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
 
     for (const op of typedArgs.appends) {
       const resolved = resolveCurrentPath(op.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
 
@@ -2238,7 +2254,7 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
 
     for (const fileEdit of typedArgs.files) {
       const resolved = resolveCurrentPath(fileEdit.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
 
@@ -2477,7 +2493,7 @@ registerToolHandler(VFS_TEXT_PATCH_TOOL, (args, ctx) => {
 
     for (const filePatch of typedArgs.files) {
       const resolved = resolveCurrentPath(filePatch.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
 
@@ -2561,7 +2577,7 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
 
     for (const edit of typedArgs.edits) {
       const resolved = resolveCurrentPath(edit.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
       const existing = draft.readFile(resolved.path);
@@ -2572,7 +2588,7 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
       if (seenError) {
         return seenError;
       }
-      draft.applyJsonPatch(resolved.path, edit.patch);
+      draft.applyJsonPatch(resolved.path, edit.patch as Operation[]);
       edited.push(toCurrentPath(resolved.path));
     }
 
@@ -2588,7 +2604,7 @@ registerToolHandler(VFS_MERGE_TOOL, (args, ctx) => {
 
     for (const file of typedArgs.files) {
       const resolved = resolveCurrentPath(file.path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
       const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
@@ -2611,11 +2627,11 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
 
     for (const move of typedArgs.moves) {
       const resolvedFrom = resolveCurrentPath(move.from);
-      if (!resolvedFrom.ok) {
+      if (isPathResolveError(resolvedFrom)) {
         return resolvedFrom.error;
       }
       const resolvedTo = resolveCurrentPath(move.to);
-      if (!resolvedTo.ok) {
+      if (isPathResolveError(resolvedTo)) {
         return resolvedTo.error;
       }
       const from = normalizeVfsPath(resolvedFrom.path);
@@ -2645,7 +2661,7 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
 
     for (const path of typedArgs.paths) {
       const resolved = resolveCurrentPath(path);
-      if (!resolved.ok) {
+      if (isPathResolveError(resolved)) {
         return resolved.error;
       }
       const normalized = normalizeVfsPath(resolved.path);
@@ -2707,7 +2723,14 @@ registerToolHandler(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
       parentTurnId,
       createdAt: typedArgs.createdAt ?? Date.now(),
       userAction: typedArgs.userAction,
-      assistant: typedArgs.assistant,
+      assistant: typedArgs.assistant as {
+        narrative: string;
+        choices: unknown[];
+        narrativeTone?: string;
+        atmosphere?: unknown;
+        ending?: string;
+        forceEnd?: boolean;
+      },
     });
 
     const nextOrder = order.includes(turnId) ? order : [...order, turnId];
@@ -2767,7 +2790,7 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
     for (const op of typedArgs.ops) {
       if (op.op === "write") {
         const resolved = resolveCurrentPath(op.path);
-        if (!resolved.ok) {
+        if (isPathResolveError(resolved)) {
           return resolved.error;
         }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
@@ -2779,7 +2802,7 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
           op.content,
           op.contentType,
         );
-        if (!validated.ok) {
+        if (isWritePayloadError(validated)) {
           return validated.error;
         }
         draft.writeFile(
@@ -2793,7 +2816,7 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
 
       if (op.op === "edit") {
         const resolved = resolveCurrentPath(op.path);
-        if (!resolved.ok) {
+        if (isPathResolveError(resolved)) {
           return resolved.error;
         }
         const existing = draft.readFile(resolved.path);
@@ -2804,14 +2827,14 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (seenError) {
           return seenError;
         }
-        draft.applyJsonPatch(resolved.path, op.patch);
+        draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
         edited.push(toCurrentPath(resolved.path));
         continue;
       }
 
       if (op.op === "merge") {
         const resolved = resolveCurrentPath(op.path);
-        if (!resolved.ok) {
+        if (isPathResolveError(resolved)) {
           return resolved.error;
         }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
@@ -2825,11 +2848,11 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
 
       if (op.op === "move") {
         const resolvedFrom = resolveCurrentPath(op.from);
-        if (!resolvedFrom.ok) {
+        if (isPathResolveError(resolvedFrom)) {
           return resolvedFrom.error;
         }
         const resolvedTo = resolveCurrentPath(op.to);
-        if (!resolvedTo.ok) {
+        if (isPathResolveError(resolvedTo)) {
           return resolvedTo.error;
         }
         const from = normalizeVfsPath(resolvedFrom.path);
@@ -2850,7 +2873,7 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
 
       if (op.op === "delete") {
         const resolved = resolveCurrentPath(op.path);
-        if (!resolved.ok) {
+        if (isPathResolveError(resolved)) {
           return resolved.error;
         }
         const normalized = normalizeVfsPath(resolved.path);
@@ -2906,7 +2929,14 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
           parentTurnId,
           createdAt: op.createdAt ?? Date.now(),
           userAction: op.userAction,
-          assistant: op.assistant,
+          assistant: op.assistant as {
+            narrative: string;
+            choices: unknown[];
+            narrativeTone?: string;
+            atmosphere?: unknown;
+            ending?: string;
+            forceEnd?: boolean;
+          },
         });
 
         const nextOrder = order.includes(turnId) ? order : [...order, turnId];

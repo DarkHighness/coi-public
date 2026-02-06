@@ -23,6 +23,7 @@ const INITIAL_STATE: GameState = {
   currentFork: [],
   actors: [],
   playerActorId: "char:player",
+  worldInfo: null,
   placeholders: [],
   locationItemsByLocationId: {},
   inventory: [],

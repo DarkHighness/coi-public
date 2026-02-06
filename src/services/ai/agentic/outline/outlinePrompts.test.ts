@@ -1,0 +1,75 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getPhasePrompt } from "./outlinePrompts";
+
+const promptsMock = vi.hoisted(() => ({
+  getOutlinePhase0Prompt: vi.fn(),
+  getOutlinePhase1Prompt: vi.fn(),
+  getOutlinePhase2Prompt: vi.fn(),
+  getOutlinePhase3Prompt: vi.fn(),
+  getOutlinePhase4Prompt: vi.fn(),
+  getOutlinePhase5Prompt: vi.fn(),
+  getOutlinePhase6Prompt: vi.fn(),
+  getOutlinePhase7Prompt: vi.fn(),
+  getOutlinePhase8Prompt: vi.fn(),
+  getOutlinePhase9Prompt: vi.fn(),
+}));
+
+vi.mock("../../../prompts/index", () => ({
+  getOutlinePhase0Prompt: promptsMock.getOutlinePhase0Prompt,
+  getOutlinePhase1Prompt: promptsMock.getOutlinePhase1Prompt,
+  getOutlinePhase2Prompt: promptsMock.getOutlinePhase2Prompt,
+  getOutlinePhase3Prompt: promptsMock.getOutlinePhase3Prompt,
+  getOutlinePhase4Prompt: promptsMock.getOutlinePhase4Prompt,
+  getOutlinePhase5Prompt: promptsMock.getOutlinePhase5Prompt,
+  getOutlinePhase6Prompt: promptsMock.getOutlinePhase6Prompt,
+  getOutlinePhase7Prompt: promptsMock.getOutlinePhase7Prompt,
+  getOutlinePhase8Prompt: promptsMock.getOutlinePhase8Prompt,
+  getOutlinePhase9Prompt: promptsMock.getOutlinePhase9Prompt,
+}));
+
+describe("outlinePrompts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    promptsMock.getOutlinePhase0Prompt.mockReturnValue("p0");
+    promptsMock.getOutlinePhase1Prompt.mockReturnValue("p1");
+    promptsMock.getOutlinePhase2Prompt.mockReturnValue("p2");
+    promptsMock.getOutlinePhase3Prompt.mockReturnValue("p3");
+    promptsMock.getOutlinePhase4Prompt.mockReturnValue("p4");
+    promptsMock.getOutlinePhase5Prompt.mockReturnValue("p5");
+    promptsMock.getOutlinePhase6Prompt.mockReturnValue("p6");
+    promptsMock.getOutlinePhase7Prompt.mockReturnValue("p7");
+    promptsMock.getOutlinePhase8Prompt.mockReturnValue("p8");
+    promptsMock.getOutlinePhase9Prompt.mockReturnValue("p9");
+  });
+
+  it("routes each phase to corresponding prompt builder", () => {
+    expect(getPhasePrompt(0, "th", "en")).toBe("p0");
+    expect(promptsMock.getOutlinePhase0Prompt).toHaveBeenCalledWith("en");
+
+    expect(getPhasePrompt(1, "th", "zh", "ctx", true, "feat")).toBe("p1");
+    expect(promptsMock.getOutlinePhase1Prompt).toHaveBeenCalledWith(
+      "th",
+      "zh",
+      "ctx",
+      true,
+      "feat",
+    );
+
+    expect(getPhasePrompt(2, "th", "en", undefined, false, "hero")).toBe("p2");
+    expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith("hero");
+
+    expect(getPhasePrompt(3, "th", "en")).toBe("p3");
+    expect(getPhasePrompt(4, "th", "en")).toBe("p4");
+    expect(getPhasePrompt(5, "th", "en")).toBe("p5");
+    expect(getPhasePrompt(6, "th", "en")).toBe("p6");
+    expect(getPhasePrompt(7, "th", "en")).toBe("p7");
+    expect(getPhasePrompt(8, "th", "en")).toBe("p8");
+
+    expect(getPhasePrompt(9, "th", "en", undefined, true)).toBe("p9");
+    expect(promptsMock.getOutlinePhase9Prompt).toHaveBeenCalledWith(true);
+  });
+
+  it("returns null for unknown phases", () => {
+    expect(getPhasePrompt(99, "th", "en")).toBeNull();
+  });
+});

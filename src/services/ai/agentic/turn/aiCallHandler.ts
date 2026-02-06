@@ -65,12 +65,11 @@ export async function handleAICall(
     parameters: t.parameters as any,
   }));
 
-  const effectiveToolChoice = sessionId
-    sessionManager.getEffectiveToolChoice(
-      sessionId,
-      "required",
-      settings.extra?.forceAutoToolChoice,
-    );
+  const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
+    sessionId,
+    "required",
+    settings.extra?.forceAutoToolChoice,
+  );
 
   try {
     const storyCfg = settings.story;

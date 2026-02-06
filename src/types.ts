@@ -234,7 +234,14 @@ export type StorySummary = ZodStorySummary;
 export type GameResponse = ZodGameResponse & {
   finalState?: GameState; // System-populated after agentic loop processing
 };
-export type { Atmosphere, EnvTheme, Ambience, Skill, Condition };
+export type {
+  Atmosphere,
+  EnvTheme,
+  Ambience,
+  Skill,
+  Condition,
+  AtmosphereObject,
+};
 export type {
   OutlinePhase1,
   OutlinePhase2,

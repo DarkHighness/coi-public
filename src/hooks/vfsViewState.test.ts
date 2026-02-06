@@ -18,6 +18,7 @@ const makeState = (overrides: Partial<GameState> = {}): GameState =>
     character: {} as any,
     knowledge: [],
     factions: [],
+    worldInfo: null,
     currentLocation: "Base Camp",
     locations: [],
     uiState: {
@@ -65,7 +66,7 @@ describe("mergeDerivedViewState", () => {
         npcs: { pinnedIds: [], customOrder: [] },
         knowledge: { pinnedIds: [], customOrder: [] },
         quests: { pinnedIds: [], customOrder: [] },
-        feedLayout: "cards",
+        feedLayout: "scroll",
       },
       language: "en",
     });
@@ -85,7 +86,7 @@ describe("mergeDerivedViewState", () => {
     expect(merged.theme).toBe("noir");
     expect(merged.turnNumber).toBe(3);
     expect(merged.forkId).toBe(2);
-    expect(merged.uiState.feedLayout).toBe("cards");
+    expect(merged.uiState.feedLayout).toBe("scroll");
     expect(merged.language).toBe("fr");
   });
 

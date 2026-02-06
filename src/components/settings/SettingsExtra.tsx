@@ -12,7 +12,7 @@ function DiscreteSlider(props: {
   value: string;
   onChange: (value: string) => void;
   options: Array<SliderOption<string>>;
-}): JSX.Element {
+}): React.JSX.Element {
   const { id, value, onChange, options } = props;
   const selectedIndex = Math.max(
     0,

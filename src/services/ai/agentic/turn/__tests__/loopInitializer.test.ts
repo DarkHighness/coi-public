@@ -1,0 +1,100 @@
+import { describe, expect, it } from "vitest";
+import { VfsSession } from "@/services/vfs/vfsSession";
+import { VFS_TOOLSETS } from "@/services/vfsToolsets";
+import {
+  accumulateUsage,
+  addToolIfNew,
+  createEmptyResponse,
+  createInitialTools,
+  createLoopState,
+} from "../loopInitializer";
+
+describe("loopInitializer", () => {
+  it("creates empty response with expected action arrays", () => {
+    const response = createEmptyResponse();
+
+    expect(response).toMatchObject({
+      narrative: "",
+      choices: [],
+      inventoryActions: [],
+      npcActions: [],
+      locationActions: [],
+      questActions: [],
+      knowledgeActions: [],
+      factionActions: [],
+      timelineEvents: [],
+    });
+  });
+
+  it("creates initial tools strictly from VFS allowlist", () => {
+    const turnTools = createInitialTools({
+      isSudoMode: false,
+      isRAGEnabled: false,
+      isCleanupMode: false,
+    });
+
+    expect(turnTools.length).toBe(VFS_TOOLSETS.turn.tools.length);
+    expect(turnTools.every((tool) => VFS_TOOLSETS.turn.tools.includes(tool.name))).toBe(
+      true,
+    );
+    expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(true);
+    expect(turnTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
+      false,
+    );
+
+    const cleanupTools = createInitialTools({
+      isSudoMode: true,
+      isRAGEnabled: true,
+      isCleanupMode: true,
+    });
+    expect(
+      cleanupTools.every((tool) => VFS_TOOLSETS.cleanup.tools.includes(tool.name)),
+    ).toBe(true);
+  });
+
+  it("deduplicates added tools and accumulates usage", () => {
+    const activeTools = createInitialTools({
+      isSudoMode: false,
+      isRAGEnabled: false,
+      isCleanupMode: false,
+    });
+    const existing = activeTools[0];
+
+    expect(addToolIfNew(activeTools, existing)).toBe(false);
+    expect(activeTools.filter((tool) => tool.name === existing.name)).toHaveLength(1);
+
+    const totalUsage = { promptTokens: 1, completionTokens: 2, totalTokens: 3 };
+    accumulateUsage(totalUsage, {
+      promptTokens: 4,
+      completionTokens: 5,
+      totalTokens: 9,
+    });
+    accumulateUsage(totalUsage, undefined);
+
+    expect(totalUsage).toEqual({
+      promptTokens: 5,
+      completionTokens: 7,
+      totalTokens: 12,
+    });
+  });
+
+  it("creates loop state with expected defaults and marker", () => {
+    const vfsSession = new VfsSession();
+    const state = createLoopState(
+      {} as any,
+      { embedding: { enabled: true } } as any,
+      false,
+      false,
+      vfsSession,
+    );
+
+    expect(state.conversationMarker).toBeNull();
+    expect(state.finishToolName).toBe("vfs_commit_turn");
+    expect(state.isRAGEnabled).toBe(true);
+    expect(state.budgetState).toMatchObject({
+      toolCallsMax: 50,
+      retriesMax: 3,
+      loopIterationsMax: 20,
+    });
+  });
+});

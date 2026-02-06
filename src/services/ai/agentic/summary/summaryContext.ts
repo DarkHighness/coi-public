@@ -95,7 +95,7 @@ ${entityDefinitions()}
   ${styleGuide({})}
 </style_injection>
 
-${narrativeCausality({})}
+${narrativeCausality()}
 
 ${languageEnforcement({ language })}`;
 }

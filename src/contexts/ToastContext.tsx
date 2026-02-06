@@ -32,7 +32,7 @@ interface ToastContextType {
   clearToasts: () => void;
   pushStateChangeToasts: (
     changes: StateChanges,
-    t: (key: string) => string,
+    t: (key: string, options?: Record<string, unknown>) => string,
   ) => void;
 }
 
@@ -72,7 +72,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   // Helper to push state change toasts with detailed items
   const pushStateChangeToasts = useCallback(
-    (changes: StateChanges, t: (key: string) => string) => {
+    (
+      changes: StateChanges,
+      t: (key: string, options?: Record<string, unknown>) => string,
+    ) => {
       const mobile = isMobile;
 
       // Collect all changes for potential grouping on mobile

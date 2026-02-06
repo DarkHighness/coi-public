@@ -47,7 +47,7 @@ export interface OpenAISchema {
   required?: string[];
   items?: OpenAISchema;
   enum?: string[];
-  additionalProperties?: boolean;
+  additionalProperties?: boolean | OpenAISchema;
   // Index signature to satisfy Record<string, unknown> constraint
   [key: string]: unknown;
 }
