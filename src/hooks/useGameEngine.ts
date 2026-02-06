@@ -351,6 +351,12 @@ export const useGameEngine = () => {
       },
       triggerSave,
       vfsSession,
+      onLiveToolCallsUpdate: (toolCalls) => {
+        setGameState((prev) => ({
+          ...prev,
+          liveToolCalls: toolCalls,
+        }));
+      },
     });
 
   const startNewGame = async (
@@ -436,6 +442,7 @@ export const useGameEngine = () => {
         summaries: [],
         lastSummarizedIndex: 0,
         logs: [],
+        liveToolCalls: [],
         turnNumber: 0,
         forkId: 0,
         theme: persistedTheme,
@@ -453,7 +460,11 @@ export const useGameEngine = () => {
     resetState(displayTheme);
 
     // Set processing state BEFORE navigation so InitializingPage sees it
-    setGameState((prev) => ({ ...prev, isProcessing: true }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      liveToolCalls: [],
+    }));
 
     navigate("/initializing");
 
@@ -520,6 +531,12 @@ export const useGameEngine = () => {
           seedImageBase64,
           // Pass protagonist feature
           protagonistFeature,
+          onToolCallsUpdate: (toolCalls) => {
+            setGameState((prev) => ({
+              ...prev,
+              liveToolCalls: toolCalls,
+            }));
+          },
           // Save conversation state after each phase for fault recovery
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
@@ -528,6 +545,7 @@ export const useGameEngine = () => {
             const updatedState = {
               ...gameStateRef.current,
               outlineConversation: conversationState,
+              liveToolCalls: conversationState.liveToolCalls || [],
             };
             setGameState(updatedState);
             gameStateRef.current = updatedState;
@@ -577,6 +595,7 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        liveToolCalls: [],
         // Clear outline conversation if corrupted
         outlineConversation: isHistoryCorrupted
           ? undefined
@@ -605,7 +624,12 @@ export const useGameEngine = () => {
             `[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhase}`,
           );
           // Set processing state back
-          setGameState((prev) => ({ ...prev, isProcessing: true }));
+          setGameState((prev) => ({
+            ...prev,
+            isProcessing: true,
+            liveToolCalls:
+              gameStateRef.current.outlineConversation?.liveToolCalls || [],
+          }));
           // Call resumeOutlineGeneration instead of starting over
           return resumeOutlineGeneration(onStream, onPhaseProgress);
         } else {
@@ -895,6 +919,7 @@ export const useGameEngine = () => {
             rootNodeId: firstNodeId,
             currentFork: [firstNode],
             isProcessing: false,
+            liveToolCalls: [],
             initialPrompt: fallbackPrompt, // Keep for backward compatibility with retry
             turnNumber: 0,
             atmosphere: openingAtmosphere,
@@ -944,6 +969,7 @@ export const useGameEngine = () => {
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
+            liveToolCalls: [],
             error: message,
           }));
         }
@@ -960,6 +986,7 @@ export const useGameEngine = () => {
         ...prev,
         error: message,
         isProcessing: false,
+        liveToolCalls: [],
       }));
       navigate("/");
     }
@@ -1032,7 +1059,11 @@ export const useGameEngine = () => {
     );
 
     // Set processing state
-    setGameState((prev) => ({ ...prev, isProcessing: true }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      liveToolCalls: gameStateRef.current.outlineConversation?.liveToolCalls || [],
+    }));
     navigate("/initializing");
 
     try {
@@ -1048,12 +1079,19 @@ export const useGameEngine = () => {
           resumeFrom: savedConversation,
           // Allow read-only VFS tools during outline generation (skills/** virtual files, etc.)
           vfsSession,
+          onToolCallsUpdate: (toolCalls) => {
+            setGameState((prev) => ({
+              ...prev,
+              liveToolCalls: toolCalls,
+            }));
+          },
           onSaveCheckpoint: async (
             conversationState: OutlineConversationState,
           ) => {
             const updatedState = {
               ...gameStateRef.current,
               outlineConversation: conversationState,
+              liveToolCalls: conversationState.liveToolCalls || [],
             };
             setGameState(updatedState);
             gameStateRef.current = updatedState;
@@ -1174,6 +1212,7 @@ export const useGameEngine = () => {
           category: e.category || "world_event",
         })),
         isProcessing: true,
+        liveToolCalls: [],
         logs: [...logs, ...gameStateRef.current.logs],
         tokenUsage: {
           promptTokens:
@@ -1321,6 +1360,7 @@ export const useGameEngine = () => {
             rootNodeId: firstNodeId,
             currentFork: [firstNode],
             isProcessing: false,
+            liveToolCalls: [],
             initialPrompt: fallbackPrompt,
             turnNumber: 0,
             atmosphere: openingAtmosphere,
@@ -1335,6 +1375,7 @@ export const useGameEngine = () => {
           setGameState((prev) => ({
             ...prev,
             isProcessing: false,
+            liveToolCalls: [],
             error: message,
           }));
         }
@@ -1360,6 +1401,7 @@ export const useGameEngine = () => {
         ...prev,
         error: resumeErrorMsg,
         isProcessing: false,
+        liveToolCalls: [],
         // Clear outline conversation if corrupted
         outlineConversation: isHistoryCorrupted
           ? undefined
@@ -1435,7 +1477,12 @@ export const useGameEngine = () => {
     }
 
     // Lock UI while we restore VFS + re-derive state.
-    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      error: null,
+      liveToolCalls: [],
+    }));
 
     try {
       const restored = await restoreVfsToTurn(currentSlotId, forkId, turn);
@@ -1525,6 +1572,7 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        liveToolCalls: [],
         error: message,
       }));
     }
@@ -1928,7 +1976,12 @@ export const useGameEngine = () => {
   const handleForceUpdate = async (prompt: string) => {
     if (gameStateRef.current.isProcessing) return;
 
-    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      error: null,
+      liveToolCalls: [],
+    }));
 
     try {
       // Construct TurnContext
@@ -1950,6 +2003,12 @@ export const useGameEngine = () => {
         settings: aiSettings,
         slotId: currentSlotId || "default",
         vfsSession,
+        onToolCallsUpdate: (toolCalls) => {
+          setGameState((prev) => ({
+            ...prev,
+            liveToolCalls: toolCalls,
+          }));
+        },
       };
 
       const { response, logs } = await generateForceUpdate(
@@ -2075,6 +2134,7 @@ export const useGameEngine = () => {
           currentFork: deriveHistory(newNodes, resultNodeId),
           atmosphere: responseAtmosphere,
           isProcessing: false,
+          liveToolCalls: [],
         };
       });
 
@@ -2087,6 +2147,7 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        liveToolCalls: [],
         error: errorMsg,
       }));
       return { success: false, error: errorMsg };
@@ -2099,7 +2160,12 @@ export const useGameEngine = () => {
   const handleCleanupEntities = async () => {
     if (gameStateRef.current.isProcessing) return;
 
-    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      liveToolCalls: [],
+      error: null,
+    }));
 
     try {
       // Cleanup is a maintenance action; preserve the story conversation files so
@@ -2139,6 +2205,12 @@ export const useGameEngine = () => {
         // Use a dedicated session id so cleanup doesn't overwrite story retry checkpoints.
         slotId: `${currentSlotId || "default"}:cleanup`,
         vfsSession,
+        onToolCallsUpdate: (toolCalls) => {
+          setGameState((prev) => ({
+            ...prev,
+            liveToolCalls: toolCalls,
+          }));
+        },
       };
 
       const { response, logs, changedEntities } = await generateEntityCleanup(
@@ -2240,6 +2312,7 @@ export const useGameEngine = () => {
           activeNodeId: cleanupNodeId,
           currentFork: deriveHistory(newNodes, cleanupNodeId),
           isProcessing: false,
+          liveToolCalls: [],
         };
       });
 
@@ -2265,6 +2338,7 @@ export const useGameEngine = () => {
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        liveToolCalls: [],
         error: errorMsg,
       }));
       return { success: false, error: errorMsg };

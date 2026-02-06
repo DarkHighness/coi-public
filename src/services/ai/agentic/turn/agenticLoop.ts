@@ -14,6 +14,7 @@ import type {
   GameResponse,
   ProviderProtocol,
   ProviderInstance,
+  ToolCallRecord,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ToolCallResult } from "../../../providers/types";
@@ -69,6 +70,7 @@ export interface AgenticLoopConfig {
   isCleanupMode?: boolean;
   sessionId: string;
   vfsSession: VfsSession;
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 export interface AgenticLoopResult {
@@ -98,6 +100,7 @@ export async function runAgenticLoopRefactored(
     isSudoMode = false,
     isCleanupMode = false,
     sessionId,
+    onToolCallsUpdate,
   } = config;
 
   // Initialize provider
@@ -227,6 +230,7 @@ export async function runAgenticLoopRefactored(
         modelId,
         turnId,
         allLogs,
+        onToolCallsUpdate,
       });
 
       // Add tool responses to history
@@ -237,12 +241,14 @@ export async function runAgenticLoopRefactored(
       // Check if turn finished
       if (toolResult.turnFinished) {
         didFinishTurn = true;
+        onToolCallsUpdate?.([]);
         break;
       }
 
       incrementIterations(loopState.budgetState);
     }
   } catch (error) {
+    onToolCallsUpdate?.([]);
     const rolledBack = rollbackVfsSessionToCheckpoint(
       sessionId,
       config.vfsSession,
@@ -257,6 +263,7 @@ export async function runAgenticLoopRefactored(
   }
 
   if (!didFinishTurn) {
+    onToolCallsUpdate?.([]);
     const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, config.vfsSession);
     if (!rolledBack) {
       throw new Error(
@@ -292,6 +299,7 @@ interface ProcessToolCallsParams {
   modelId: string;
   turnId: string;
   allLogs: LogEntry[];
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 interface ProcessToolCallsResult {
@@ -313,6 +321,7 @@ async function processToolCalls(
     modelId,
     turnId,
     allLogs,
+    onToolCallsUpdate,
   } = params;
 
   const finishToolName = loopState.finishToolName;
@@ -539,6 +548,14 @@ async function processToolCalls(
   }> = [];
   let turnFinished = false;
 
+  const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
+    name: call.name,
+    input: (call.args || {}) as Record<string, unknown>,
+    output: null,
+    timestamp: Date.now(),
+  }));
+  onToolCallsUpdate?.([...liveToolCalls]);
+
   const toolCtx: ToolCallContext = {
     loopState,
     gameState,
@@ -578,6 +595,15 @@ async function processToolCalls(
       content: output,
     });
 
+    const callIndex = functionCalls.findIndex((toolCall) => toolCall.id === call.id);
+    if (callIndex >= 0) {
+      liveToolCalls[callIndex] = {
+        ...liveToolCalls[callIndex],
+        output,
+      };
+      onToolCallsUpdate?.([...liveToolCalls]);
+    }
+
     const responseFromVfs = buildResponseFromVfs(
       loopState.vfsSession,
       loopState.conversationMarker,
@@ -585,6 +611,7 @@ async function processToolCalls(
     if (responseFromVfs) {
       loopState.accumulatedResponse = responseFromVfs;
       turnFinished = true;
+      onToolCallsUpdate?.([]);
       break;
     }
 
@@ -602,6 +629,10 @@ async function processToolCalls(
         turnNumber: gameState.turnNumber,
       }),
     );
+  }
+
+  if (!turnFinished) {
+    onToolCallsUpdate?.([...liveToolCalls]);
   }
 
   return { responses, turnFinished };

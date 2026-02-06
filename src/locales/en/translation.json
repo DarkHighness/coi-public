@@ -98,6 +98,8 @@
   "initializing": {
     "audioPreload": "Audio Preload",
     "timeElapsed": "Time Elapsed",
+    "toolCallCarouselLabel": "Outline Tool Calls",
+    "waitingToolCalls": "Waiting for tool calls...",
     "outline": {
       "phase": {
         "0": {
@@ -554,6 +556,8 @@
       },
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
+      "toolCallCarousel": "Tool Call Carousel",
+      "toolCallCarouselHelp": "Show a rotating tool-call style loading animation (e.g., vfs_read({...})) while AI is generating.",
       "genderPreference": "Gender Preference",
       "genderPreferenceHelp": "Force the protagonist's gender when generating stories.",
       "genderPreferences": {
@@ -786,6 +790,10 @@
   "hideSystem": "Hide System",
   "showSystem": "Show System",
   "viewLogs": "View Logs",
+  "storyFeed": {
+    "toolCallCarouselLabel": "Live Tool Calls",
+    "waitingToolCalls": "Waiting for tool calls..."
+  },
   "viewAll": "View All",
   "clickToCycle": "Click to Cycle",
   "models": {

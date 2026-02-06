@@ -8,6 +8,7 @@ import {
   ActionResult,
   GameState,
   LanguageCode,
+  ToolCallRecord,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { generateAdventureTurn } from "../services/aiService";
@@ -39,6 +40,7 @@ interface UseGameActionProps {
   ) => Promise<void>;
   triggerSave: () => void;
   vfsSession: VfsSession;
+  onLiveToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 export const useGameAction = ({
@@ -52,6 +54,7 @@ export const useGameAction = ({
   generateImageForNode,
   triggerSave,
   vfsSession,
+  onLiveToolCallsUpdate,
 }: UseGameActionProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -172,6 +175,7 @@ export const useGameAction = ({
             return {
               ...prev,
               isProcessing: true,
+              liveToolCalls: [],
               error: null,
               forkId: currentForkId,
               forkTree: currentForkTree,
@@ -205,6 +209,7 @@ export const useGameAction = ({
           return {
             ...prev,
             isProcessing: true,
+            liveToolCalls: [],
             error: null,
             nodes: newNodes,
             activeNodeId: userNodeId,
@@ -215,8 +220,15 @@ export const useGameAction = ({
           };
         });
       } else {
-        setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+        setGameState((prev) => ({
+          ...prev,
+          isProcessing: true,
+          liveToolCalls: [],
+          error: null,
+        }));
       }
+
+      onLiveToolCallsUpdate?.([]);
 
       try {
         // --- Summarization Logic ---
@@ -360,6 +372,7 @@ export const useGameAction = ({
           slotId: currentSlotId || "default",
           isInit: isInit,
           vfsSession,
+          onToolCallsUpdate: onLiveToolCallsUpdate,
         });
 
         // ===== STATE UPDATE =====
@@ -555,6 +568,7 @@ export const useGameAction = ({
                 ? modelNodeId
                 : null,
             atmosphere: responseAtmosphere,
+            liveToolCalls: [],
             logs: [...turnLogs, ...mergedBase.logs].slice(0, 100),
             tokenUsage: {
               promptTokens:
@@ -648,6 +662,7 @@ export const useGameAction = ({
         setGameState((prev) => ({
           ...prev,
           isProcessing: false,
+          liveToolCalls: [],
           error: userFacingErrorMessage,
           // History clearing handled by session manager
         }));
@@ -657,6 +672,7 @@ export const useGameAction = ({
           error: userFacingErrorMessage,
         };
       } finally {
+        onLiveToolCallsUpdate?.([]);
         processingRef.current = false;
       }
     },
@@ -687,7 +703,12 @@ export const useGameAction = ({
     // Confirmation is handled by ActionPanel modal
 
     processingRef.current = true;
-    setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      liveToolCalls: [],
+      error: null,
+    }));
 
     try {
       const parentId = gameStateRef.current.activeNodeId;
@@ -767,6 +788,7 @@ export const useGameAction = ({
               summaries: effectiveSummaries,
               lastSummarizedIndex: lastIndex,
               isProcessing: false,
+              liveToolCalls: [],
             };
             // CRITICAL: Update ref immediately for subsequent handleAction calls
             gameStateRef.current = newState;
@@ -792,6 +814,7 @@ export const useGameAction = ({
             summaries: effectiveSummaries,
             lastSummarizedIndex: lastIndex,
             isProcessing: false,
+            liveToolCalls: [],
           };
           // CRITICAL: Update ref immediately for subsequent handleAction calls
           gameStateRef.current = newState;
@@ -811,7 +834,11 @@ export const useGameAction = ({
         triggerSave();
       } else {
         // No new summary created (maybe already summarized or no new nodes)
-        setGameState((prev) => ({ ...prev, isProcessing: false }));
+        setGameState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          liveToolCalls: [],
+        }));
         showToast(t("game.info.noNewNodesToSummarize"), "info");
       }
     } catch (error) {
@@ -821,6 +848,7 @@ export const useGameAction = ({
       setGameState((prev) => ({
         ...prev,
         isProcessing: false,
+        liveToolCalls: [],
         error: message,
       }));
     } finally {

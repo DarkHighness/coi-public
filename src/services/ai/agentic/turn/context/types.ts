@@ -9,6 +9,7 @@
 
 import type { GameState, AISettings, StorySegment } from "@/types";
 import type { UnifiedMessage } from "@/services/messageTypes";
+import type { ToolCallRecord } from "@/types";
 
 // ============================================================================
 // Core Context Types
@@ -122,4 +123,8 @@ export interface ContextBuilderConfig {
   settings: AISettings;
   /** Translation function */
   tFunc?: (key: string, options?: Record<string, unknown>) => string;
+}
+
+export interface LiveToolCallUpdateOptions {
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }

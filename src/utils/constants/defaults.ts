@@ -148,6 +148,7 @@ export const DEFAULTS: AISettings = {
     autoCompactEnabled: true,
     autoCompactThreshold: 0.7,
     forceAutoToolChoice: false,
+    toolCallCarousel: true,
     customInstructionEnabled: false,
     customInstruction: "",
     systemDefaultInjectionEnabled: true,

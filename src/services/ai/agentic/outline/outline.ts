@@ -12,6 +12,7 @@ import {
   UnifiedMessage,
   OutlineConversationState,
   ResolvedThemeConfig,
+  ToolCallRecord,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { writeOutlineProgress } from "../../../vfs/outline";
@@ -141,6 +142,8 @@ export interface PhasedOutlineOptions {
   seedImageBase64?: string;
   /** Optional protagonist feature/role selected by user */
   protagonistFeature?: string;
+  /** Real-time hook for current round tool calls */
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
@@ -555,17 +558,22 @@ export const generateStoryOutlinePhased = async (
   let conversationHistory: UnifiedMessage[];
   let partial: PartialStoryOutline;
   let currentPhase: number;
+  let liveToolCalls: ToolCallRecord[] = [];
 
   if (options.resumeFrom) {
     // Resume from checkpoint
     conversationHistory = [...options.resumeFrom.conversationHistory];
     partial = { ...options.resumeFrom.partial };
     currentPhase = options.resumeFrom.currentPhase;
+    liveToolCalls = [...(options.resumeFrom.liveToolCalls || [])];
     console.log(`[OutlineAgentic] Resuming from phase ${currentPhase}`);
+    options.onToolCallsUpdate?.(liveToolCalls);
   } else {
     // Start fresh
     conversationHistory = [];
     partial = {};
+    liveToolCalls = [];
+    options.onToolCallsUpdate?.([]);
 
     // If seedImage provided, start at Phase 0 (image interpretation)
     // Otherwise start at Phase 1 (normal flow)
@@ -651,6 +659,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       currentPhase: phase,
       modelId, // Track which model was used
       providerId: instance.id, // Track which provider was used
+      liveToolCalls: [...liveToolCalls],
     };
 
     try {
@@ -953,6 +962,14 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
           }
         }
 
+        liveToolCalls = toolCalls.map((tc) => ({
+          name: tc.name,
+          input: (tc.args || {}) as Record<string, unknown>,
+          output: null,
+          timestamp: Date.now(),
+        }));
+        options.onToolCallsUpdate?.([...liveToolCalls]);
+
         // Budget accounting
         incrementToolCalls(budgetState, toolCalls.length);
         incrementIterations(budgetState);
@@ -1133,11 +1150,23 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
 
         conversationHistory.push(createToolResponseMessage(toolResponses));
 
+        const responseMapById = new Map(
+          toolResponses.map((tr) => [tr.toolCallId, tr.content]),
+        );
+        liveToolCalls = liveToolCalls.map((call, index) => ({
+          ...call,
+          output:
+            responseMapById.get(toolCalls[index]?.id || "") ?? call.output,
+        }));
+        options.onToolCallsUpdate?.([...liveToolCalls]);
+
         // Persist progress for breakpoint-resume (mid-phase tool rounds).
         await saveCheckpoint(phaseNum);
       }
 
       console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
+      liveToolCalls = [];
+      options.onToolCallsUpdate?.([]);
       reportProgress(phaseNum, "completed");
 
       // Move to next phase and save checkpoint
@@ -1146,6 +1175,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       console.error(`[OutlineAgentic] Phase ${phaseNum} failed:`, error);
+      liveToolCalls = [];
+      options.onToolCallsUpdate?.([]);
       reportProgress(phaseNum, "error", error);
 
       // Check for invalid argument error (likely corrupted conversation history)

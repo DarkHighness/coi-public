@@ -335,6 +335,35 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Tool Call Carousel Toggle */}
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.toolCallCarousel") || "Tool Call Carousel"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.toolCallCarouselHelp") ||
+                "Show a tool-call style rotating animation (like vfs_read({...})) while AI is generating."}
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              updateExtra("toolCallCarousel", !(extra.toolCallCarousel ?? true))
+            }
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.toolCallCarousel ?? true
+                ? "bg-green-500"
+                : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.toolCallCarousel ?? true ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Player Profiling Toggle */}
         <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>

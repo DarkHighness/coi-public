@@ -99,6 +99,8 @@
   "initializing": {
     "audioPreload": "音频预加载",
     "timeElapsed": "已用时间",
+    "toolCallCarouselLabel": "大纲工具调用",
+    "waitingToolCalls": "等待工具调用中...",
     "outline": {
       "phase": {
         "0": { "name": "解析图片", "desc": "分析上传的图片以激发故事世界" },
@@ -528,6 +530,8 @@
       },
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
+      "toolCallCarousel": "工具调用轮播",
+      "toolCallCarouselHelp": "在 AI 生成时显示类似工具调用的轮播加载动画（例如 vfs_read({...})）。",
       "genderPreference": "性别偏好",
       "genderPreferenceHelp": "在生成故事时强制要求主角的性别。",
       "genderPreferences": {
@@ -636,6 +640,10 @@
   "hideSystem": "隐藏系统",
   "showSystem": "显示系统",
   "viewLogs": "日志",
+  "storyFeed": {
+    "toolCallCarouselLabel": "实时工具调用",
+    "waitingToolCalls": "等待工具调用中..."
+  },
   "viewAll": "全部",
   "modes": {
     "day": "日间",

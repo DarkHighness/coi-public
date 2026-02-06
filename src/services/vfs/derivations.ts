@@ -87,6 +87,7 @@ const createBaseGameState = (): GameState => ({
     cacheWrite: 0,
   },
   logs: [],
+  liveToolCalls: [],
   timeline: [],
   causalChains: [],
   turnNumber: 0,

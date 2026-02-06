@@ -379,6 +379,8 @@ export interface GameState {
   // Stats & Logs
   tokenUsage: TokenUsage;
   logs: LogEntry[];
+  // Live tool calls for current in-flight AI generation (for loading UI)
+  liveToolCalls?: ToolCallRecord[];
 
   // Cached Veo Script
   veoScript?: string;
@@ -429,6 +431,8 @@ export interface OutlineConversationState {
   modelId?: string;
   /** Provider ID used for this outline generation (for mismatch detection) */
   providerId?: string;
+  /** Live tool calls captured during current outline phase generation */
+  liveToolCalls?: ToolCallRecord[];
 }
 
 /** Partial results from phased outline generation */
@@ -719,6 +723,8 @@ export interface TurnContext {
   isInit?: boolean;
   /** VFS session for file-based state */
   vfsSession: VfsSession;
+  /** Optional real-time callback for currently executing tool calls */
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 export interface GameStateSnapshot {
@@ -1216,6 +1222,7 @@ export interface AISettings {
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
     clearerSearchTool?: boolean; // Return detailed tool info (description, schema) in search results
+    toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)

@@ -7,6 +7,7 @@ import {
   GameState,
   TurnContext,
   GameResponse,
+  ToolCallRecord,
 } from "../../../../types";
 
 import { isContextLengthError } from "../../contextCompressor";
@@ -268,6 +269,7 @@ export const generateAdventureTurn = async (
       isCleanupMode,
       sessionId,
       context.vfsSession,
+      context.onToolCallsUpdate,
     );
 
     // Append new messages to session history
@@ -306,6 +308,7 @@ export const runAgenticLoop = async (
   isCleanupMode: boolean = false,
   _sessionId: string,
   vfsSession: VfsSession,
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -321,5 +324,6 @@ export const runAgenticLoop = async (
     isCleanupMode,
     sessionId: _sessionId,
     vfsSession,
+    onToolCallsUpdate,
   });
 };

@@ -12,6 +12,7 @@ import { StoryCard } from "./StoryCard";
 import { FeedHeader } from "./feed/FeedHeader";
 import { StackControls } from "./feed/StackControls";
 import { GenerationTimer } from "./common/GenerationTimer";
+import { ToolCallCarousel } from "./common/ToolCallCarousel";
 import { MarkdownText } from "./render/MarkdownText";
 import { useGameEngineContext } from "../contexts/GameEngineContext";
 import { useSettingsContext } from "../contexts/SettingsContext";
@@ -85,6 +86,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     // Stack pagination state
     const stackItemsPerPage = settings.stackItemsPerPage ?? 10;
     const stackShowOutline = settings.stackShowOutline ?? true;
+    const showToolCallCarousel = settings.extra?.toolCallCarousel ?? true;
     const [currentPage, setCurrentPage] = useState(0);
 
     // Legacy single-card navigation (kept for backward compatibility with non-paginated mode)
@@ -991,8 +993,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
             )}
 
             {gameState.isProcessing && (
-              <div className="flex justify-center py-8 animate-pulse flex-none">
-                <div className="flex flex-col items-center space-y-2">
+              <div className="flex justify-center py-8 flex-none">
+                <div className="flex flex-col items-center space-y-3 w-full max-w-2xl px-2">
                   <div className="w-2 h-2 bg-theme-primary rounded-full animate-bounce delay-75"></div>
                   <div className="flex items-center gap-2 text-theme-text-secondary text-xs uppercase tracking-widest">
                     <span>
@@ -1002,6 +1004,20 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                     </span>
                     <GenerationTimer isActive={true} />
                   </div>
+                  {showToolCallCarousel && (
+                    <ToolCallCarousel
+                      calls={gameState.liveToolCalls || []}
+                      label={
+                        t("storyFeed.toolCallCarouselLabel") ||
+                        "Live Tool Calls"
+                      }
+                      emptyText={
+                        t("storyFeed.waitingToolCalls") ||
+                        "Waiting for tool calls..."
+                      }
+                      intervalMs={1650}
+                    />
+                  )}
                 </div>
               </div>
             )}

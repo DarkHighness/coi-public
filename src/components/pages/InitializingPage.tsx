@@ -6,6 +6,10 @@ import { preloadAudio } from "../../utils/audioLoader";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { InitializingButterflies } from "../effects/InitializingButterflies";
+import {
+  ToolCallCarousel,
+} from "../common/ToolCallCarousel";
+import type { ToolCallRecord } from "../../types";
 import type { OutlinePhaseProgress } from "../../services/aiService";
 
 // Phase descriptions for animated display
@@ -81,6 +85,8 @@ interface InitializingPageProps {
   streamedText?: string;
   phaseProgress?: OutlinePhaseProgress | null;
   seedImageUrl?: string | null;
+  showToolCallCarousel?: boolean;
+  liveToolCalls?: ToolCallRecord[];
 }
 
 export const InitializingPage: React.FC<InitializingPageProps> = ({
@@ -89,6 +95,8 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   streamedText = "",
   phaseProgress = null,
   seedImageUrl = null,
+  showToolCallCarousel = true,
+  liveToolCalls = [],
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -432,6 +440,23 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
               <span className="font-light">{t("loading")}</span>
               <span className="w-8 md:w-12 h-px bg-gradient-to-r from-transparent via-theme-primary/60 to-transparent" />
             </div>
+
+            {showToolCallCarousel && isProcessing && (
+              <div className="flex justify-center px-2">
+                <ToolCallCarousel
+                  calls={liveToolCalls}
+                  label={
+                    t("initializing.toolCallCarouselLabel") ||
+                    "Outline Tool Calls"
+                  }
+                  emptyText={
+                    t("initializing.waitingToolCalls") ||
+                    "Waiting for tool calls..."
+                  }
+                  intervalMs={1700}
+                />
+              </div>
+            )}
 
             {/* Stats Card */}
             <div className="flex flex-col items-center gap-2 text-xs text-theme-muted/70 font-mono backdrop-blur-md bg-theme-surface/20 px-6 py-3 rounded-2xl border border-theme-border/20 shadow-lg transition-all duration-300 ease-in-out">

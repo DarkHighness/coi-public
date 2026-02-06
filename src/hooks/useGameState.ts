@@ -70,6 +70,7 @@ const INITIAL_STATE: GameState = {
     cacheWrite: 0,
   },
   logs: [],
+  liveToolCalls: [],
   time: "Day 1, 08:00",
 
   timeline: [],
@@ -100,6 +101,7 @@ export const useGameState = () => {
       activeNodeId: null,
       outline: null,
       logs: [],
+      liveToolCalls: [],
       turnNumber: 0,
       // Reset fork system
       forkId: 0,

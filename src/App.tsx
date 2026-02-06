@@ -1016,6 +1016,10 @@ function AppContent() {
                   streamedText={streamedText}
                   phaseProgress={phaseProgress}
                   seedImageUrl={seedImageUrl}
+                  showToolCallCarousel={
+                    aiSettings.extra?.toolCallCarousel ?? true
+                  }
+                  liveToolCalls={gameState.liveToolCalls || []}
                 />
               </SectionErrorBoundary>
             }
