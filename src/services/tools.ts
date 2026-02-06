@@ -367,6 +367,190 @@ export const VFS_WRITE_TOOL = defineTool({
   }),
 });
 
+export const VFS_APPEND_TOOL = defineTool({
+  name: "vfs_append",
+  description:
+    "Append text to one or more VFS text files (atomic batch). Designed for markdown notes without needing a full rewrite.",
+  parameters: z
+    .object({
+      appends: z
+        .array(
+          z
+            .object({
+              path: vfsFilePathSchema.describe("File path (text/plain)."),
+              content: z.string().describe("Text to append."),
+              ensureNewline: z
+                .boolean()
+                .nullish()
+                .describe(
+                  "If true, insert a newline between existing content and appended content when needed. Prefer omitting; null uses default true.",
+                ),
+              maxTotalChars: z
+                .number()
+                .int()
+                .positive()
+                .nullish()
+                .describe(
+                  "Optional max characters allowed after append. Prefer omitting; null uses default (no cap).",
+                ),
+            })
+            .strict(),
+        )
+        .min(1)
+        .describe("Append operations."),
+    })
+    .strict(),
+});
+
+const vfsTextOccurrenceSchema = z.enum(["first", "last"]);
+const vfsIfNotFoundSchema = z.enum(["error", "append"]);
+
+const vfsTextEditOpSchema = z.discriminatedUnion("op", [
+  z
+    .object({
+      op: z.literal("insert_after"),
+      marker: z.string().describe("Marker text (literal or regex)."),
+      markerIsRegex: z
+        .boolean()
+        .nullish()
+        .describe("Treat marker as regex. Prefer omitting; null is false."),
+      markerFlags: z
+        .string()
+        .nullish()
+        .describe("Regex flags (e.g. 'i'). Only used when markerIsRegex=true."),
+      occurrence: vfsTextOccurrenceSchema
+        .nullish()
+        .describe("Which match to use. Prefer omitting; null is first."),
+      content: z.string().describe("Text to insert."),
+      ifNotFound: vfsIfNotFoundSchema
+        .nullish()
+        .describe(
+          "Behavior when marker is missing. Prefer omitting; null is error.",
+        ),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("insert_before"),
+      marker: z.string().describe("Marker text (literal or regex)."),
+      markerIsRegex: z
+        .boolean()
+        .nullish()
+        .describe("Treat marker as regex. Prefer omitting; null is false."),
+      markerFlags: z
+        .string()
+        .nullish()
+        .describe("Regex flags (e.g. 'i'). Only used when markerIsRegex=true."),
+      occurrence: vfsTextOccurrenceSchema
+        .nullish()
+        .describe("Which match to use. Prefer omitting; null is first."),
+      content: z.string().describe("Text to insert."),
+      ifNotFound: vfsIfNotFoundSchema
+        .nullish()
+        .describe(
+          "Behavior when marker is missing. Prefer omitting; null is error.",
+        ),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("replace_between"),
+      start: z.string().describe("Start marker text (literal or regex)."),
+      startIsRegex: z
+        .boolean()
+        .nullish()
+        .describe("Treat start marker as regex. Prefer omitting; null is false."),
+      startFlags: z
+        .string()
+        .nullish()
+        .describe("Regex flags for start marker."),
+      end: z.string().describe("End marker text (literal or regex)."),
+      endIsRegex: z
+        .boolean()
+        .nullish()
+        .describe("Treat end marker as regex. Prefer omitting; null is false."),
+      endFlags: z.string().nullish().describe("Regex flags for end marker."),
+      occurrence: vfsTextOccurrenceSchema
+        .nullish()
+        .describe("Which start marker match to use. Prefer omitting; null is first."),
+      content: z.string().describe("Replacement text for the region between markers."),
+      ifNotFound: vfsIfNotFoundSchema
+        .nullish()
+        .describe(
+          "Behavior when markers are missing. Prefer omitting; null is error.",
+        ),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("replace"),
+      from: z.string().describe("Literal substring to replace."),
+      to: z.string().describe("Replacement string."),
+      count: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe("Max replacements. Prefer omitting; null is 1."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("regex_replace"),
+      pattern: z.string().describe("Regex pattern."),
+      flags: z
+        .string()
+        .nullish()
+        .describe("Regex flags (e.g. 'i'). Prefer omitting; null is default."),
+      replacement: z.string().describe("Replacement string."),
+      count: z
+        .number()
+        .int()
+        .positive()
+        .nullish()
+        .describe("Max replacements. Prefer omitting; null is 1."),
+    })
+    .strict(),
+]);
+
+export const VFS_TEXT_EDIT_TOOL = defineTool({
+  name: "vfs_text_edit",
+  description:
+    "Edit one or more VFS text files using marker/regex-based operations (atomic batch). Intended for notes.md updates without manual full rewrites.",
+  parameters: z
+    .object({
+      files: z
+        .array(
+          z
+            .object({
+              path: vfsFilePathSchema.describe("File path (text/plain)."),
+              createIfMissing: z
+                .boolean()
+                .nullish()
+                .describe(
+                  "Create the file if it does not exist. Prefer omitting; null is true.",
+                ),
+              maxTotalChars: z
+                .number()
+                .int()
+                .positive()
+                .nullish()
+                .describe(
+                  "Optional max characters allowed after edits. Prefer omitting; null uses default (no cap).",
+                ),
+              ops: z
+                .array(vfsTextEditOpSchema)
+                .min(1)
+                .describe("Text edit operations applied sequentially."),
+            })
+            .strict(),
+        )
+        .min(1)
+        .describe("Files to edit."),
+    })
+    .strict(),
+});
+
 export const VFS_EDIT_TOOL = defineTool({
   name: "vfs_edit",
   description: "Apply JSON Patch edits to VFS files (atomic batch).",
@@ -736,6 +920,8 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_LS_ENTRIES_TOOL,
   VFS_SUGGEST_DUPLICATES_TOOL,
   VFS_WRITE_TOOL,
+  VFS_APPEND_TOOL,
+  VFS_TEXT_EDIT_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
@@ -763,6 +949,8 @@ export type VfsReadJsonParams = InferToolParams<typeof VFS_READ_JSON_TOOL>;
 export type VfsSearchParams = InferToolParams<typeof VFS_SEARCH_TOOL>;
 export type VfsGrepParams = InferToolParams<typeof VFS_GREP_TOOL>;
 export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
+export type VfsAppendParams = InferToolParams<typeof VFS_APPEND_TOOL>;
+export type VfsTextEditParams = InferToolParams<typeof VFS_TEXT_EDIT_TOOL>;
 export type VfsEditParams = InferToolParams<typeof VFS_EDIT_TOOL>;
 export type VfsMergeParams = InferToolParams<typeof VFS_MERGE_TOOL>;
 export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
@@ -793,6 +981,8 @@ export interface ToolParamsMap {
   vfs_ls_entries: VfsLsEntriesParams;
   vfs_suggest_duplicates: VfsSuggestDuplicatesParams;
   vfs_write: VfsWriteParams;
+  vfs_append: VfsAppendParams;
+  vfs_text_edit: VfsTextEditParams;
   vfs_edit: VfsEditParams;
   vfs_merge: VfsMergeParams;
   vfs_move: VfsMoveParams;

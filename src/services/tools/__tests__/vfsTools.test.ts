@@ -10,6 +10,8 @@ import {
   VFS_SEARCH_TOOL,
   VFS_GREP_TOOL,
   VFS_WRITE_TOOL,
+  VFS_APPEND_TOOL,
+  VFS_TEXT_EDIT_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
@@ -31,6 +33,8 @@ describe("VFS tools", () => {
     expect(VFS_SEARCH_TOOL.name).toBe("vfs_search");
     expect(VFS_GREP_TOOL.name).toBe("vfs_grep");
     expect(VFS_WRITE_TOOL.name).toBe("vfs_write");
+    expect(VFS_APPEND_TOOL.name).toBe("vfs_append");
+    expect(VFS_TEXT_EDIT_TOOL.name).toBe("vfs_text_edit");
     expect(VFS_EDIT_TOOL.name).toBe("vfs_edit");
     expect(VFS_MERGE_TOOL.name).toBe("vfs_merge");
     expect(VFS_MOVE_TOOL.name).toBe("vfs_move");

@@ -39,10 +39,14 @@ const globalNotes = `
 
     <read_write_protocol>
       **IMPORTANT (tool-seen constraints):**
-      - If a \`notes.md\` file already exists, you MUST:
-        1) \`vfs_read\` it first
+      - Prefer \`vfs_append\` for additive updates (fast + safe, no full rewrite):
+        - \`vfs_append({ appends: [{ path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
+      - For non-additive changes, use read → modify → write:
+        1) \`vfs_read\` the notes file
         2) Then \`vfs_write\` the updated full markdown content (read → modify → write)
       - If it does not exist, you may \`vfs_write\` to create it.
+      - For marker/regex edits without manual full rewrites, use \`vfs_text_edit\` (requires reading first):
+        - Use marker-based ops (insert/replace-between), and fall back to regex ops when needed.
       - Do NOT use \`vfs_edit\` for notes (it is JSON Patch only).
     </read_write_protocol>
 
@@ -53,6 +57,16 @@ const globalNotes = `
         - \`vfs_glob pattern="current/**/notes.md"\`
       - Then \`vfs_read\` only the relevant notes files.
     </search_strategy>
+
+    <hygiene>
+      **KEEP NOTES SMALL AND LINK OUT**:
+      - Keep \`notes.md\` as an INDEX + short bullets.
+      - If notes grow too large, split into topic files (still markdown) and link them from \`notes.md\`.
+      - Example:
+        - \`current/world/notes.md\` (index)
+        - \`current/world/notes/plot_threads.md\`
+        - \`current/world/notes/unresolved_questions.md\`
+    </hygiene>
   </rule>
 `;
 

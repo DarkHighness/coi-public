@@ -32,6 +32,8 @@ export const VFS_TOOLSETS: Record<VfsToolsetId, VfsToolset> = {
       "vfs_grep",
       "vfs_suggest_duplicates",
       "vfs_write",
+      "vfs_append",
+      "vfs_text_edit",
       "vfs_edit",
       "vfs_merge",
       "vfs_move",
@@ -56,6 +58,8 @@ export const VFS_TOOLSETS: Record<VfsToolsetId, VfsToolset> = {
       "vfs_grep",
       "vfs_suggest_duplicates",
       "vfs_write",
+      "vfs_append",
+      "vfs_text_edit",
       "vfs_edit",
       "vfs_merge",
       "vfs_move",
@@ -87,4 +91,3 @@ export const VFS_TOOLSETS: Record<VfsToolsetId, VfsToolset> = {
 export function formatVfsToolsForPrompt(tools: string[]): string {
   return tools.map((t) => `- \`${t}\``).join("\n");
 }
-

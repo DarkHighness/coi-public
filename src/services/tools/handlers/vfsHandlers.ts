@@ -15,6 +15,8 @@ import {
   VFS_LS_ENTRIES_TOOL,
   VFS_SUGGEST_DUPLICATES_TOOL,
   VFS_WRITE_TOOL,
+  VFS_APPEND_TOOL,
+  VFS_TEXT_EDIT_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
@@ -2161,6 +2163,264 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
     }
 
     return createSuccess({ written }, "VFS files written");
+  });
+});
+
+const findTextMarker = (
+  text: string,
+  marker: string,
+  options: { regex: boolean; flags?: string; occurrence: "first" | "last" },
+): { start: number; end: number } | null => {
+  if (!marker) return null;
+
+  if (!options.regex) {
+    const idx =
+      options.occurrence === "last" ? text.lastIndexOf(marker) : text.indexOf(marker);
+    if (idx < 0) return null;
+    return { start: idx, end: idx + marker.length };
+  }
+
+  let re: RegExp;
+  try {
+    const flags = options.flags ?? "";
+    const hasGlobal = flags.includes("g");
+    re = new RegExp(marker, hasGlobal ? flags : `${flags}g`);
+  } catch (error) {
+    throw new Error(
+      `Invalid regex marker: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  let match: RegExpExecArray | null = null;
+  let last: RegExpExecArray | null = null;
+  while ((match = re.exec(text))) {
+    last = match;
+    if (options.occurrence === "first") {
+      break;
+    }
+    if (match[0].length === 0) {
+      // Avoid infinite loops on empty matches.
+      re.lastIndex += 1;
+    }
+  }
+  if (!last) return null;
+  return { start: last.index, end: last.index + last[0].length };
+};
+
+const ensureSeparatorNewline = (left: string, right: string): string => {
+  if (!left) return "";
+  if (left.endsWith("\n")) return "";
+  if (right.startsWith("\n")) return "";
+  return "\n";
+};
+
+registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_append", args);
+
+  return withAtomicSession(ctx, (draft) => {
+    const appended: Array<{
+      path: string;
+      appendedChars: number;
+      totalChars: number;
+      created: boolean;
+    }> = [];
+
+    for (const op of typedArgs.appends) {
+      const resolved = resolveCurrentPath(op.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+
+      const existing = draft.readFile(resolved.path);
+      const ensureNewline = op.ensureNewline ?? true;
+      const maxTotalChars =
+        typeof op.maxTotalChars === "number" ? op.maxTotalChars : null;
+
+      if (existing && existing.contentType !== "text/plain") {
+        return createError(
+          `File is not text/plain: ${op.path}`,
+          "INVALID_DATA",
+        );
+      }
+
+      const base = existing ? existing.content : "";
+      const sep = existing && ensureNewline ? ensureSeparatorNewline(base, op.content) : "";
+      const next = `${base}${sep}${op.content}`;
+
+      if (maxTotalChars && next.length > maxTotalChars) {
+        return createError(
+          `Append would exceed maxTotalChars (${maxTotalChars}) for ${op.path}`,
+          "INVALID_DATA",
+        );
+      }
+
+      draft.writeFile(resolved.path, next, "text/plain");
+      appended.push({
+        path: toCurrentPath(resolved.path),
+        appendedChars: (sep + op.content).length,
+        totalChars: next.length,
+        created: !existing,
+      });
+    }
+
+    return createSuccess({ appended }, "VFS files appended");
+  });
+});
+
+registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_text_edit", args);
+
+  return withAtomicSession(ctx, (draft) => {
+    const edited: Array<{ path: string; totalChars: number; created: boolean }> = [];
+
+    for (const fileEdit of typedArgs.files) {
+      const resolved = resolveCurrentPath(fileEdit.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+
+      const existing = draft.readFile(resolved.path);
+      const createIfMissing = fileEdit.createIfMissing ?? true;
+      const maxTotalChars =
+        typeof fileEdit.maxTotalChars === "number" ? fileEdit.maxTotalChars : null;
+
+      if (!existing && !createIfMissing) {
+        return createError(`File not found: ${fileEdit.path}`, "NOT_FOUND");
+      }
+
+      if (existing) {
+        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
+        if (seenError) {
+          return seenError;
+        }
+        if (existing.contentType !== "text/plain") {
+          return createError(
+            `File is not text/plain: ${fileEdit.path}`,
+            "INVALID_DATA",
+          );
+        }
+      }
+
+      let content = existing ? existing.content : "";
+      const created = !existing;
+
+      for (const op of fileEdit.ops as any[]) {
+        if (op.op === "insert_after" || op.op === "insert_before") {
+          const markerMatch = findTextMarker(content, op.marker, {
+            regex: op.markerIsRegex === true,
+            flags: typeof op.markerFlags === "string" ? op.markerFlags : undefined,
+            occurrence: op.occurrence === "last" ? "last" : "first",
+          });
+
+          if (!markerMatch) {
+            const ifNotFound = op.ifNotFound === "append" ? "append" : "error";
+            if (ifNotFound === "append") {
+              const sep = ensureSeparatorNewline(content, op.marker);
+              content = `${content}${sep}${op.marker}\n${op.content}`;
+              continue;
+            }
+            return createError(
+              `Marker not found for ${op.op}: ${fileEdit.path}`,
+              "NOT_FOUND",
+            );
+          }
+
+          const insertAt = op.op === "insert_after" ? markerMatch.end : markerMatch.start;
+          content = `${content.slice(0, insertAt)}${op.content}${content.slice(insertAt)}`;
+          continue;
+        }
+
+        if (op.op === "replace_between") {
+          const startMatch = findTextMarker(content, op.start, {
+            regex: op.startIsRegex === true,
+            flags: typeof op.startFlags === "string" ? op.startFlags : undefined,
+            occurrence: op.occurrence === "last" ? "last" : "first",
+          });
+          if (!startMatch) {
+            const ifNotFound = op.ifNotFound === "append" ? "append" : "error";
+            if (ifNotFound === "append") {
+              const sep = ensureSeparatorNewline(content, op.start);
+              content = `${content}${sep}${op.start}\n${op.content}\n${op.end}\n`;
+              continue;
+            }
+            return createError(
+              `Start marker not found: ${fileEdit.path}`,
+              "NOT_FOUND",
+            );
+          }
+
+          const afterStart = content.slice(startMatch.end);
+          const endMatchInTail = findTextMarker(afterStart, op.end, {
+            regex: op.endIsRegex === true,
+            flags: typeof op.endFlags === "string" ? op.endFlags : undefined,
+            occurrence: "first",
+          });
+          if (!endMatchInTail) {
+            const ifNotFound = op.ifNotFound === "append" ? "append" : "error";
+            if (ifNotFound === "append") {
+              const sep = ensureSeparatorNewline(content, op.start);
+              content = `${content}${sep}${op.start}\n${op.content}\n${op.end}\n`;
+              continue;
+            }
+            return createError(`End marker not found: ${fileEdit.path}`, "NOT_FOUND");
+          }
+
+          const endAbsStart = startMatch.end + endMatchInTail.start;
+          content = `${content.slice(0, startMatch.end)}${op.content}${content.slice(endAbsStart)}`;
+          continue;
+        }
+
+        if (op.op === "replace") {
+          const count = typeof op.count === "number" ? op.count : 1;
+          let remaining = count;
+          while (remaining > 0) {
+            const idx = content.indexOf(op.from);
+            if (idx < 0) break;
+            content = `${content.slice(0, idx)}${op.to}${content.slice(idx + op.from.length)}`;
+            remaining -= 1;
+          }
+          continue;
+        }
+
+        if (op.op === "regex_replace") {
+          let re: RegExp;
+          try {
+            const flags = typeof op.flags === "string" ? op.flags : "";
+            const hasGlobal = flags.includes("g");
+            re = new RegExp(op.pattern, hasGlobal ? flags : `${flags}g`);
+          } catch (error) {
+            return createError(
+              `Invalid regex: ${error instanceof Error ? error.message : String(error)}`,
+              "INVALID_DATA",
+            );
+          }
+
+          const count = typeof op.count === "number" ? op.count : 1;
+          let replacements = 0;
+          content = content.replace(re, (match: string, ...rest: any[]) => {
+            void rest;
+            if (replacements >= count) return match;
+            replacements += 1;
+            return op.replacement;
+          });
+          continue;
+        }
+
+        return createError(`Unknown text edit op: ${String(op?.op)}`, "INVALID_DATA");
+      }
+
+      if (maxTotalChars && content.length > maxTotalChars) {
+        return createError(
+          `Edits would exceed maxTotalChars (${maxTotalChars}) for ${fileEdit.path}`,
+          "INVALID_DATA",
+        );
+      }
+
+      draft.writeFile(resolved.path, content, "text/plain");
+      edited.push({ path: toCurrentPath(resolved.path), totalChars: content.length, created });
+    }
+
+    return createSuccess({ edited }, "VFS text files edited");
   });
 });
 

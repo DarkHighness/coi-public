@@ -1239,4 +1239,135 @@ describe("VFS handlers", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
   });
+
+  it("appends to text files via vfs_append (create and existing)", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const createResult = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/world/notes.md",
+            content: "# Notes\n- a",
+            ensureNewline: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(createResult.success).toBe(true);
+
+    const appendResult = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/world/notes.md",
+            content: "- b",
+            ensureNewline: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(appendResult.success).toBe(true);
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+
+    expect(read.success).toBe(true);
+    expect(read.data?.content ?? "").toContain("- a");
+    expect(read.data?.content ?? "").toContain("- b");
+  });
+
+  it("blocks vfs_text_edit until the file is read in this session", () => {
+    const session = new VfsSession();
+    session.writeFile("world/notes.md", "A\nB\n", "text/plain");
+    const ctx = { vfsSession: session };
+
+    const blocked = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            ops: [
+              { op: "replace", from: "B", to: "C" },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+    expect(blocked.error ?? "").toContain("must read file before edit");
+
+    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
+
+    const ok = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            ops: [
+              { op: "replace", from: "B", to: "C" },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(ok.success).toBe(true);
+  });
+
+  it("can append a marker block via vfs_text_edit replace_between when markers are missing", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            createIfMissing: true,
+            ops: [
+              {
+                op: "replace_between",
+                start: "## Threads",
+                end: "## End Threads",
+                content: "\n- t1\n",
+                ifNotFound: "append",
+              },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(result.success).toBe(true);
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+
+    expect(read.success).toBe(true);
+    expect(read.data?.content ?? "").toContain("## Threads");
+    expect(read.data?.content ?? "").toContain("- t1");
+    expect(read.data?.content ?? "").toContain("## End Threads");
+  });
 });
