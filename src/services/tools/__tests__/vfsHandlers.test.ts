@@ -1287,31 +1287,10 @@ describe("VFS handlers", () => {
     expect(read.data?.content ?? "").toContain("- b");
   });
 
-  it("blocks vfs_text_edit until the file is read in this session", () => {
+  it("allows vfs_text_edit on world markdown without requiring a prior read", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "A\nB\n", "text/plain");
     const ctx = { vfsSession: session };
-
-    const blocked = dispatchToolCall(
-      "vfs_text_edit",
-      {
-        files: [
-          {
-            path: "current/world/notes.md",
-            ops: [
-              { op: "replace", from: "B", to: "C" },
-            ],
-          },
-        ],
-      },
-      ctx,
-    ) as { success: boolean; code?: string; error?: string };
-
-    expect(blocked.success).toBe(false);
-    expect(blocked.code).toBe("INVALID_ACTION");
-    expect(blocked.error ?? "").toContain("must read file before edit");
-
-    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const ok = dispatchToolCall(
       "vfs_text_edit",
@@ -1326,9 +1305,31 @@ describe("VFS handlers", () => {
         ],
       },
       ctx,
-    ) as { success: boolean };
+    ) as { success: boolean; code?: string; error?: string };
 
     expect(ok.success).toBe(true);
+  });
+
+  it("blocks vfs_text_edit outside current/world/**.md", () => {
+    const session = new VfsSession();
+    session.writeFile("conversation/index.json", "{}", "text/plain");
+    const ctx = { vfsSession: session };
+
+    const blocked = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/conversation/index.json",
+            ops: [{ op: "replace", from: "{", to: "[" }],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
   });
 
   it("can append a marker block via vfs_text_edit replace_between when markers are missing", () => {

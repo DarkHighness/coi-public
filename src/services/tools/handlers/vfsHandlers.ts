@@ -2230,6 +2230,12 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
       if (!resolved.ok) {
         return resolved.error;
       }
+      if (!resolved.path.startsWith("world/") || !resolved.path.endsWith(".md")) {
+        return createError(
+          `vfs_append is only allowed under current/world/**.md: ${op.path}`,
+          "INVALID_ACTION",
+        );
+      }
 
       const existing = draft.readFile(resolved.path);
       const ensureNewline = op.ensureNewline ?? true;
@@ -2278,6 +2284,12 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
       if (!resolved.ok) {
         return resolved.error;
       }
+      if (!resolved.path.startsWith("world/") || !resolved.path.endsWith(".md")) {
+        return createError(
+          `vfs_text_edit is only allowed under current/world/**.md: ${fileEdit.path}`,
+          "INVALID_ACTION",
+        );
+      }
 
       const existing = draft.readFile(resolved.path);
       const createIfMissing = fileEdit.createIfMissing ?? true;
@@ -2289,10 +2301,6 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
       }
 
       if (existing) {
-        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
-        if (seenError) {
-          return seenError;
-        }
         if (existing.contentType !== "text/plain") {
           return createError(
             `File is not text/plain: ${fileEdit.path}`,

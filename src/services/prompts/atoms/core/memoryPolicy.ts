@@ -45,8 +45,9 @@ const globalNotes = `
         1) \`vfs_read\` the notes file
         2) Then \`vfs_write\` the updated full markdown content (read → modify → write)
       - If it does not exist, you may \`vfs_write\` to create it.
-      - For marker/regex edits without manual full rewrites, use \`vfs_text_edit\` (requires reading first):
+      - For marker/regex edits without manual full rewrites, use \`vfs_text_edit\`:
         - Use marker-based ops (insert/replace-between), and fall back to regex ops when needed.
+        - If you are unsure about the existing content, \`vfs_read\` first for context.
       - Do NOT use \`vfs_edit\` for notes (it is JSON Patch only).
     </read_write_protocol>
 
