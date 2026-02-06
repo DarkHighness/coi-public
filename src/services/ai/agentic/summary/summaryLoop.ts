@@ -571,9 +571,4 @@ export async function runSummaryLoop(
   }
 }
 
-// Back-compat: previous export name, now delegates to the unified loop (auto mode).
-export async function runSummaryLoopRefactored(
-  input: SummaryLoopInput,
-): Promise<SummaryAgenticLoopResult> {
-  return runSummaryLoop(input, "auto");
-}
+// NOTE: Intentionally no legacy "Refactored" alias; call runSummaryLoop directly.

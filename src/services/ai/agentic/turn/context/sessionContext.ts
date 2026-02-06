@@ -200,7 +200,7 @@ export function handleRetryDetection(
   activeHistory: UnifiedMessage[],
   userAction: string,
   protocol: ProviderProtocol,
-  vfsSession?: VfsSession,
+  vfsSession: VfsSession,
 ): UnifiedMessage[] {
   if (activeHistory.length === 0) return activeHistory;
 
@@ -242,7 +242,7 @@ export function handleRetryDetection(
  */
 export function createCheckpoint(
   sessionId: string,
-  vfsSession?: VfsSession,
+  vfsSession: VfsSession,
 ): void {
   sessionManager.checkpoint(sessionId);
   checkpointVfsSession(sessionId, vfsSession);

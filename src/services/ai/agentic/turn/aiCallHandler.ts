@@ -31,7 +31,7 @@ export interface AICallParams {
   conversationHistory: UnifiedMessage[];
   loopState: LoopState;
   settings: AISettings;
-  sessionId?: string;
+  sessionId: string;
   requiredToolName?: string;
 }
 
@@ -66,12 +66,11 @@ export async function handleAICall(
   }));
 
   const effectiveToolChoice = sessionId
-    ? sessionManager.getEffectiveToolChoice(
-        sessionId,
-        "required",
-        settings.extra?.forceAutoToolChoice,
-      )
-    : "auto";
+    sessionManager.getEffectiveToolChoice(
+      sessionId,
+      "required",
+      settings.extra?.forceAutoToolChoice,
+    );
 
   try {
     const storyCfg = settings.story;

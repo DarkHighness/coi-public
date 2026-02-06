@@ -84,9 +84,7 @@ const commitSession = (target: VfsSession, source: VfsSession): void => {
   target.restoreToolSeenPaths(source.snapshotToolSeenPaths());
 };
 
-const getSession = (ctx: ToolContext): VfsSession | null => {
-  return ctx.vfsSession ?? null;
-};
+const getSession = (ctx: ToolContext): VfsSession => ctx.vfsSession;
 
 const isReadOnlyToolPath = (path: string): boolean => {
   const normalized = normalizeVfsPath(path);
@@ -1038,10 +1036,6 @@ const withAtomicSession = <T>(
   action: (draft: VfsSession) => ToolCallResult<T>,
 ): ToolCallResult<T> => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const draft = cloneSession(session);
 
   try {
@@ -1062,10 +1056,6 @@ const withAtomicSession = <T>(
 
 registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_ls_entries", args);
   const limitPerCategory =
     typeof typedArgs.limitPerCategory === "number"
@@ -1110,10 +1100,6 @@ registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_SUGGEST_DUPLICATES_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_suggest_duplicates", args);
   const threshold =
     typeof typedArgs.threshold === "number" ? typedArgs.threshold : 0.25;
@@ -1314,10 +1300,6 @@ const formatOutlineSubmitValidationError = (error: unknown): string => {
 
 registerToolHandler(VFS_SUBMIT_OUTLINE_PHASE_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_submit_outline_phase", args);
   const phase = typedArgs.phase;
   if (
@@ -1611,10 +1593,6 @@ const searchSemanticWithRag = async (
 
 registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_ls", args);
   const resolved = resolveCurrentPath(typedArgs.path);
   if (!resolved.ok) {
@@ -1626,10 +1604,6 @@ registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_read", args);
   const resolved = resolveCurrentPath(typedArgs.path);
   if (!resolved.ok) {
@@ -1711,10 +1685,6 @@ registerToolHandler(VFS_SCHEMA_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_stat", args);
   const snapshot = session.snapshotAll();
   const snapshotPaths = Object.keys(snapshot);
@@ -1786,10 +1756,6 @@ registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_glob", args);
   const limit = typedArgs.limit ?? 200;
   const ignoreCase = Boolean(typedArgs.ignoreCase);
@@ -1878,10 +1844,6 @@ registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_read_json", args);
   const resolved = resolveCurrentPath(typedArgs.path);
   if (!resolved.ok) {
@@ -1956,10 +1918,6 @@ registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_read_many", args);
   const maxChars = typedArgs.maxChars;
 
@@ -2009,10 +1967,6 @@ registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
 
 registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_search", args);
   const limit = typedArgs.limit ?? 20;
   if (limit <= 0) {
@@ -2109,10 +2063,6 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
 
 registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   const session = getSession(ctx);
-  if (!session) {
-    return createError("VFS session is not available", "INVALID_DATA");
-  }
-
   const typedArgs = getTypedArgs("vfs_grep", args);
   const limit = typedArgs.limit ?? 20;
   const resolvedPath = typedArgs.path

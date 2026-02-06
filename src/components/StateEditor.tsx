@@ -22,7 +22,7 @@ interface StateEditorProps {
   onClose: () => void;
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  vfsSession: VfsSession | null;
+  vfsSession: VfsSession;
   triggerSave: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
@@ -51,11 +51,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const canEditOutline = gameState.godMode || allowOutlineEdit;
 
   const snapshot = useMemo<VfsFileMap>(() => {
-    if (!vfsSession) {
-      return {};
-    }
     return vfsSession.snapshotAll();
-  }, [vfsSession, gameState]);
+  }, [vfsSession]);
 
   const filteredSnapshot = useMemo<VfsFileMap>(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -102,7 +99,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !vfsSession) {
+    if (!isOpen) {
       return;
     }
 
@@ -114,7 +111,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     if (!selectedPath || !filteredSnapshot[selectedPath]) {
       setSelectedPath(filePaths[0]);
     }
-  }, [isOpen, vfsSession, filePaths, filteredSnapshot, selectedPath]);
+  }, [isOpen, filePaths, filteredSnapshot, selectedPath]);
 
   useEffect(() => {
     if (!selectedPath) {
@@ -135,7 +132,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   }, [selectedPath]);
 
   useEffect(() => {
-    if (!isOpen || !vfsSession || !selectedPath) {
+    if (!isOpen || !selectedPath) {
       setFileContent("");
       setError(null);
       setHasChanges(false);
@@ -187,7 +184,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   };
 
   const handleReset = () => {
-    if (!vfsSession || !selectedPath) return;
+    if (!selectedPath) return;
     const file = readVfsFile(vfsSession, selectedPath);
     if (!file) return;
     setFileContent(formatVfsContent(file.content, file.contentType));
@@ -211,7 +208,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   };
 
   const handleSave = () => {
-    if (!vfsSession || !selectedPath) {
+    if (!selectedPath) {
       onShowToast?.(applyFailedMessage, "error");
       return;
     }

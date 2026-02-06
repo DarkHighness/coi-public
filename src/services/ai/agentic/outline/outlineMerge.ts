@@ -1,15 +1,10 @@
 /**
- * Outline Phase Handler
+ * Outline Merge
  *
- * Handles processing of outline phase results.
+ * Utilities for merging phased outline submissions into a full StoryOutline.
  */
 
 import type { StoryOutline, PartialStoryOutline } from "../../../../types";
-import type { OutlineLoopState } from "./outlineInitializer";
-import {
-  createToolCallMessage,
-  createToolResponseMessage,
-} from "../../../messageTypes";
 import type {
   OutlinePhase0,
   OutlinePhase1,
@@ -22,45 +17,6 @@ import type {
   OutlinePhase8,
   OutlinePhase9,
 } from "../../../schemas";
-
-// ============================================================================
-// Phase Result Processing
-// ============================================================================
-
-export function processPhaseResult(
-  phaseNum: number,
-  result: any,
-  loopState: OutlineLoopState,
-): void {
-  const functionCalls = result.functionCalls;
-  if (!functionCalls || functionCalls.length === 0) return;
-
-  const call = functionCalls[0];
-
-  // Record in history
-  loopState.conversationHistory.push(
-    createToolCallMessage([
-      {
-        id: call.id || `call_${Date.now()}`,
-        name: call.name,
-        arguments: call.args,
-      },
-    ]),
-  );
-
-  loopState.conversationHistory.push(
-    createToolResponseMessage([
-      {
-        toolCallId: call.id || `call_${Date.now()}`,
-        name: call.name,
-        content: { success: true, message: `Phase ${phaseNum} completed` },
-      },
-    ]),
-  );
-
-  // Store phase data
-  loopState.partial[`phase${phaseNum}`] = call.args;
-}
 
 // ============================================================================
 // Merge Phases

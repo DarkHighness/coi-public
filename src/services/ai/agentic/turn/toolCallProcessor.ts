@@ -12,7 +12,6 @@ import {
   ToolContext,
 } from "../../../tools/handlers";
 import type { LoopState } from "./loopInitializer";
-import type { VfsSession } from "../../../vfs/vfsSession";
 
 // ============================================================================
 // Types
@@ -22,8 +21,6 @@ export interface ToolCallContext {
   loopState: LoopState;
   gameState: any;
   settings: any;
-  /** VFS session for file-based tools */
-  vfsSession?: VfsSession;
 }
 
 // ============================================================================
@@ -104,7 +101,7 @@ export function executeGenericTool(
       changedEntities: loopState.changedEntities,
       gameState,
       settings,
-      vfsSession: ctx.vfsSession ?? loopState.vfsSession,
+      vfsSession: loopState.vfsSession,
     };
     return dispatchToolCall(name, args, toolContext);
   }

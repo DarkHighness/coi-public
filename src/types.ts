@@ -718,7 +718,7 @@ export interface TurnContext {
   /** Whether this is the initial turn of a new game */
   isInit?: boolean;
   /** VFS session for file-based state */
-  vfsSession?: VfsSession;
+  vfsSession: VfsSession;
 }
 
 export interface GameStateSnapshot {

@@ -77,10 +77,6 @@ export interface GameEngineState {
   currentThemeConfig: ThemeConfig;
   /** Current theme font class (shortcut) */
   themeFont: string;
-  /** Count of legacy (non-VFS) saves detected */
-  legacySaveCount: number;
-  /** Whether the legacy save notice has been dismissed */
-  legacySaveNoticeDismissed: boolean;
 }
 
 /**
@@ -128,8 +124,6 @@ export interface GameEngineActions {
   deleteSlot: (id: string) => void;
   /** Refresh save slots list (after import) */
   refreshSlots: () => Promise<SaveSlot[]>;
-  /** Dismiss the legacy save notice (non-VFS saves are unsupported) */
-  dismissLegacySavesNotice: () => Promise<void>;
   /** Toggle theme mode */
   toggleThemeMode: () => void;
   /** Set theme mode */
@@ -264,8 +258,6 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         isSettingsOpen: engine.isSettingsOpen,
         currentThemeConfig,
         themeFont: currentThemeConfig.fontClass,
-        legacySaveCount: engine.legacySaveCount ?? 0,
-        legacySaveNoticeDismissed: Boolean(engine.legacySaveNoticeDismissed),
       },
       actions: {
         setLanguage: engine.setLanguage,
@@ -277,7 +269,6 @@ export function GameEngineProvider({ children }: GameEngineProviderProps) {
         loadSlot: engine.loadSlot,
         deleteSlot: engine.deleteSlot,
         refreshSlots: engine.refreshSlots,
-        dismissLegacySavesNotice: engine.dismissLegacySavesNotice,
         toggleThemeMode: engine.toggleThemeMode,
         setThemeMode: engine.setThemeMode,
         resetSettings: engine.resetSettings,

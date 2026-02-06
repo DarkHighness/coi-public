@@ -10,7 +10,7 @@ describe("toolCallProcessor VFS integration", () => {
   it("passes VFS session to tool handlers", () => {
     const session = new VfsSession();
     const gameState = deriveGameStateFromVfs({});
-    const loopState = createLoopState(gameState, DEFAULTS, false);
+    const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
     const output = executeGenericTool(
       "vfs_write",
@@ -27,7 +27,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     ) as { success?: boolean };
 
@@ -38,7 +37,7 @@ describe("toolCallProcessor VFS integration", () => {
   it("builds response from conversation turn files", () => {
     const session = new VfsSession();
     const gameState = deriveGameStateFromVfs({});
-    const loopState = createLoopState(gameState, DEFAULTS, false);
+    const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
     executeGenericTool(
       "vfs_write",
@@ -74,7 +73,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     );
 
@@ -85,7 +83,7 @@ describe("toolCallProcessor VFS integration", () => {
   it("returns null when conversation has not advanced from baseline", () => {
     const session = new VfsSession();
     const gameState = deriveGameStateFromVfs({});
-    const loopState = createLoopState(gameState, DEFAULTS, false);
+    const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
     executeGenericTool(
       "vfs_write",
@@ -121,7 +119,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     );
 
@@ -133,7 +130,7 @@ describe("toolCallProcessor VFS integration", () => {
   it("returns response when conversation advances beyond baseline", () => {
     const session = new VfsSession();
     const gameState = deriveGameStateFromVfs({});
-    const loopState = createLoopState(gameState, DEFAULTS, false);
+    const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
     executeGenericTool(
       "vfs_write",
@@ -169,7 +166,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     );
 
@@ -183,7 +179,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     ) as { success?: boolean };
     expect(inspected.success).toBe(true);
@@ -224,7 +219,6 @@ describe("toolCallProcessor VFS integration", () => {
         loopState,
         gameState,
         settings: DEFAULTS,
-        vfsSession: session,
       },
     ) as { success?: boolean };
     expect(overwrite.success).toBe(true);
@@ -234,8 +228,9 @@ describe("toolCallProcessor VFS integration", () => {
   });
 
   it("initial tools are vfs-only", () => {
+    const session = new VfsSession();
     const gameState = deriveGameStateFromVfs({});
-    const loopState = createLoopState(gameState, DEFAULTS, false);
+    const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
     expect(
       loopState.activeTools.every((tool) => tool.name.startsWith("vfs_")),

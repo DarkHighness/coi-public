@@ -89,8 +89,6 @@ function AppContent() {
     persistenceError,
     failedImageNodes,
     isSettingsOpen,
-    legacySaveCount,
-    legacySaveNoticeDismissed,
   } = engineState;
   const {
     setLanguage,
@@ -111,7 +109,6 @@ function AppContent() {
     triggerSave,
     handleForceUpdate,
     setIsSettingsOpen,
-    dismissLegacySavesNotice,
   } = engineActions;
 
   const { t } = useTranslation();
@@ -127,19 +124,6 @@ function AppContent() {
 
   // Use Toast Context
   const { showToast } = useToast();
-
-  // Non-blocking warning for legacy (non-VFS) saves.
-  // These saves cannot be loaded or migrated in this version.
-  useEffect(() => {
-    if (!legacySaveCount) return;
-    if (legacySaveNoticeDismissed) return;
-    showToast(
-      t("saves.legacyNotice.short", { count: legacySaveCount }) ||
-        `Detected ${legacySaveCount} legacy saves (non-VFS). This version can't load or migrate them.`,
-      "warning",
-      8000,
-    );
-  }, [legacySaveCount, legacySaveNoticeDismissed, showToast, t]);
 
   // Track currently viewed segment for dynamic theme/background
   const [viewedSegment, setViewedSegmentLocal] = useState<any | null>(null);
@@ -1017,9 +1001,6 @@ function AppContent() {
                   onSwitchSlot={handleLoadSlot}
                   onDeleteSlot={deleteSlot}
                   onRefreshSlots={refreshSlots}
-                  legacySaveCount={legacySaveCount}
-                  legacySaveNoticeDismissed={legacySaveNoticeDismissed}
-                  onDismissLegacySaveNotice={dismissLegacySavesNotice}
                 />
               </SectionErrorBoundary>
             }
@@ -1081,9 +1062,6 @@ function AppContent() {
               }
             }}
             initialImportFile={importFile || undefined}
-            legacySaveCount={legacySaveCount}
-            legacySaveNoticeDismissed={legacySaveNoticeDismissed}
-            onDismissLegacySaveNotice={dismissLegacySavesNotice}
           />
         )}
       </Suspense>
